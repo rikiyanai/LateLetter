@@ -6,12 +6,11 @@ garden.py — Procedural ASCII flower garden
   python garden.py --seed N    reproducible garden
   python garden.py --season S  override season (spring/summer/autumn/winter)
   python garden.py --width W --height H  (with --ansi)
-Keys: q quit · r regenerate
+Keys: q quit · o objects · a actions · semantic command help is always visible
 """
 
 import argparse
 import curses
-import random
 import shutil
 import sys
 from pathlib import Path
@@ -26,7 +25,7 @@ def main():
     ap = argparse.ArgumentParser(description='Procedural ASCII flower garden')
     ap.add_argument('file', nargs='?', default=None,
                     help='.lateletter bundle file (recipient mode)')
-    ap.add_argument('--seed', type=int, default=random.randint(0, 99999))
+    ap.add_argument('--seed', type=int, default=42301)
     ap.add_argument('--ansi', action='store_true', help='print static frame to stdout')
     ap.add_argument('--season', type=str, default=None,
                     choices=['spring', 'summer', 'autumn', 'winter'],

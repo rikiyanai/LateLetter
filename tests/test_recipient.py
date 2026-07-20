@@ -1,54 +1,63 @@
-"""
-Tests for recipient mode — RecipientStore, trigger evaluation, and animal system.
+"""Recipient regressions for canonical Garden ownership."""
 
-Uses tmp_path so tests never touch real ~/.lateletter files.
-"""
+from __future__ import annotations
 
-import json
 from datetime import date, timedelta
-from pathlib import Path
 
 import pytest
 
-from lateletter.bundle import Bundle, GardenGift, Trigger, create_dev_fixture
+from lateletter.bundle import Bundle, GardenGift, Trigger
+from lateletter.garden.renderer import GardenRenderer
+from lateletter.garden.terminal import (
+    FULL_GARDEN_PARITY,
+    TERMINAL_HELP_LINES,
+    TERMINAL_WORLD_WIRED,
+    TerminalWorldSession,
+    handle_terminal_key,
+)
 from lateletter.recipient import (
     RecipientStore,
-    _ANIMAL_ART,
-    _ANIMAL_DELIVERY_FRAMES,
-    _ANIMAL_FOOTPRINTS,
+    _apply_legacy_gifts,
     _build_archive_rows,
-    _find_animal_gift,
-    gift_catalog_entry,
-    _animal_home_pos,
-    _trust_tier,
     _unlock_content,
     _verify_passphrase,
-    is_gift_triggered,
+    gift_catalog_entry,
 )
 from lateletter.sealed import seal_bundle, seal_gift_sentiment, seal_message
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture()
-def store(tmp_path, monkeypatch):
-    """RecipientStore pointed at tmp_path, bundle id 'test-bundle'."""
+def receipt_store(tmp_path, monkeypatch):
     monkeypatch.setattr("lateletter.recipient._RECIPIENT_DIR", tmp_path)
-    monkeypatch.setattr("lateletter.recipient._RECEIPTS_FILE",
-                        tmp_path / "receipts.json")
-    monkeypatch.setattr("lateletter.recipient._GARDEN_STATE_FILE",
-                        tmp_path / "garden_state.json")
-    return RecipientStore("test-bundle")
+    monkeypatch.setattr("lateletter.recipient._RECEIPTS_FILE", tmp_path / "receipts.json")
+    return RecipientStore("bundle-under-test")
 
 
-@pytest.fixture()
-def dev_bundle():
-    return create_dev_fixture()
+def _session(tmp_path, *, visits: int = 0) -> TerminalWorldSession:
+    session = TerminalWorldSession.open(
+        world_id="bundle-under-test",
+        seed=41,
+        width=80,
+        height=24,
+        path=tmp_path / "world.json",
+        observed_wall_time=1_000,
+        record_visit=False,
+    )
+    for _ in range(visits):
+        session.record_visit()
+    return session
 
 
-def test_real_sealed_bundle_unlocks_messages_and_gifts():
+def _gift(gift_id: str, gift_type: str, catalog_id: str, trigger_type: str, value: str):
+    return GardenGift(
+        id=gift_id,
+        type=gift_type,
+        catalog_id=catalog_id,
+        trigger=Trigger(type=trigger_type, value=value),
+    )
+
+
+def test_real_sealed_bundle_unlocks_exact_message_and_gift():
     passphrase = "correct horse"
     message = seal_message(
         passphrase,
@@ -57,357 +66,116 @@ def test_real_sealed_bundle_unlocks_messages_and_gifts():
         label="Open today",
         body="The real terminal letter.",
     )
-    gift = GardenGift(
-        id="g1",
-        type="item",
-        catalog_id="coffee_mug",
-        trigger=Trigger(type="date", value=date.today().isoformat()),
-    )
+    gift = _gift("g1", "item", "coffee_mug", "date", date.today().isoformat())
     seal_gift_sentiment(passphrase, gift, "Two sugars, always.")
     bundle = Bundle(messages=[message], garden_gifts=[gift])
     seal_bundle(bundle, passphrase)
 
     assert _verify_passphrase(passphrase, bundle, False)
     assert not _verify_passphrase("wrong", bundle, False)
-    messages, gifts = _unlock_content(passphrase, bundle, False)
-    assert messages == [("Open today", "The real terminal letter.")]
-    assert gifts == {"g1": "Two sugars, always."}
+    assert _unlock_content(passphrase, bundle, False) == (
+        [("Open today", "The real terminal letter.")],
+        {"g1": "Two sugars, always."},
+    )
 
 
-def test_archive_includes_every_triggered_gift_type():
+def test_recipient_store_owns_only_read_receipts(receipt_store):
+    receipt_store.mark_read("letter.one")
+    assert receipt_store.is_read("letter.one")
+    assert receipt_store.read_set() == {"letter.one"}
+    for stale_owner in ("record_visit", "feed_animal", "discover", "total_visits"):
+        assert not hasattr(receipt_store, stale_owner)
+
+
+def test_archive_uses_canonical_eligibility_receipts():
     gifts = [
-        GardenGift(
-            id=f"g-{gift_type}",
-            type=gift_type,
-            catalog_id="rabbit" if gift_type == "animal" else "coffee_mug",
-            trigger=Trigger(type="date", value=date.today().isoformat()),
-        )
-        for gift_type in ("item", "landmark", "animal", "plant", "nudge")
+        _gift("mug", "item", "coffee_mug", "cumulative_visits", "1"),
+        _gift("cat", "animal", "cat", "cumulative_visits", "2"),
     ]
-    rows = _build_archive_rows(Bundle(garden_gifts=gifts), date.today(), 1, set())
+    rows = _build_archive_rows(Bundle(garden_gifts=gifts), {"mug"})
+    assert [row[1] for row in rows if row[0] == "gift"] == ["mug"]
+    rows = _build_archive_rows(Bundle(garden_gifts=gifts), set(), post_complete=True)
+    assert [row[1] for row in rows if row[0] == "gift"] == ["mug", "cat"]
 
-    assert [row[2].type for row in rows if row[0] == "gift"] == [
-        "item", "landmark", "animal", "plant", "nudge",
-    ]
+
+def test_authored_animal_name_is_preserved():
+    gift = _gift("cat", "animal", "cat", "cumulative_visits", "1")
+    gift.animal_name = "Miso"
+    assert gift_catalog_entry(gift)[0] == "Miso"
 
 
-def test_archive_releases_future_gifts_after_completion():
-    gift = GardenGift(
-        id="future",
-        type="item",
-        catalog_id="pressed_flower",
-        trigger=Trigger(type="date", value="2099-01-01"),
+def test_legacy_gifts_materialize_once_into_canonical_world(tmp_path):
+    session = _session(tmp_path, visits=1)
+    bundle = Bundle(garden_gifts=[
+        _gift("mug", "item", "coffee_mug", "cumulative_visits", "1"),
+        _gift("rabbit", "animal", "rabbit", "cumulative_visits", "1"),
+        _gift("rose", "plant", "rosebush", "cumulative_visits", "1"),
+    ])
+
+    eligible = _apply_legacy_gifts(
+        session, bundle, {"mug": "Memory"}, date.today(), set()
     )
+    first_ids = session.world.object_ids()
+    assert eligible == {"mug", "rabbit", "rose"}
+    assert {"legacy-entity.mug", "legacy-entity.rabbit", "legacy-entity.rose"} <= set(first_ids)
 
-    rows = _build_archive_rows(
-        Bundle(garden_gifts=[gift]), date.today(), 1, set(), post_complete=True,
+    _apply_legacy_gifts(session, bundle, {"mug": "Memory"}, date.today(), set())
+    assert session.world.object_ids() == first_ids
+    reopened = _session(tmp_path)
+    assert reopened.world.object_ids() == first_ids
+
+
+def test_post_letter_and_completion_release_use_migration_evaluator(tmp_path):
+    session = _session(tmp_path)
+    letter = seal_message(
+        "pw", message_id="last", date=date.today().isoformat(), label="Last", body="Body"
     )
-
-    assert [row[2].id for row in rows if row[0] == "gift"] == ["future"]
-
-
-def test_animal_memory_uses_authored_name_and_recognizable_art():
-    gift = GardenGift(
-        id="rabbit",
-        type="animal",
-        catalog_id="rabbit",
-        animal_name="Clover",
-        trigger=Trigger(type="cumulative_visits", value="1"),
+    gift = _gift("keepsake", "item", "old_key", "post_letter", "last")
+    future = _gift(
+        "future", "item", "book", "date", (date.today() + timedelta(days=100)).isoformat()
     )
-
-    name, art = gift_catalog_entry(gift)
-
-    assert name == "Clover"
-    assert "\\" in art
-
-
-# ---------------------------------------------------------------------------
-# _trust_tier
-# ---------------------------------------------------------------------------
-
-class TestTrustTier:
-    def test_zero_actions_is_wild(self):
-        assert _trust_tier(0) == 0
-
-    def test_below_first_threshold_is_wild(self):
-        assert _trust_tier(2) == 0
-
-    def test_at_first_threshold_is_curious(self):
-        assert _trust_tier(3) == 1
-
-    def test_between_tiers(self):
-        assert _trust_tier(6) == 1
-
-    def test_at_second_threshold_is_familiar(self):
-        assert _trust_tier(7) == 2
-
-    def test_at_bonded_threshold(self):
-        assert _trust_tier(14) == 3
-
-    def test_above_bonded_stays_three(self):
-        assert _trust_tier(100) == 3
-
-
-# ---------------------------------------------------------------------------
-# _ANIMAL_ART completeness
-# ---------------------------------------------------------------------------
-
-class TestAnimalArt:
-    @pytest.mark.parametrize("animal", ["cat", "bird", "rabbit", "turtle"])
-    def test_all_four_tiers_defined(self, animal):
-        art = _ANIMAL_ART[animal]
-        for tier in range(4):
-            assert tier in art, f"{animal} missing tier {tier}"
-            assert len(art[tier]) >= 1, f"{animal} tier {tier} has no art lines"
-
-    @pytest.mark.parametrize("animal", ["cat", "bird", "rabbit", "turtle"])
-    def test_delivery_frames_defined(self, animal):
-        assert animal in _ANIMAL_DELIVERY_FRAMES
-        assert len(_ANIMAL_DELIVERY_FRAMES[animal]) >= 1
-
-    @pytest.mark.parametrize("animal", ["cat", "bird", "rabbit", "turtle"])
-    def test_footprints_defined(self, animal):
-        assert animal in _ANIMAL_FOOTPRINTS
-        assert len(_ANIMAL_FOOTPRINTS[animal]) >= 1
-
-
-# ---------------------------------------------------------------------------
-# _find_animal_gift
-# ---------------------------------------------------------------------------
-
-class TestFindAnimalGift:
-    def test_finds_animal_in_dev_fixture(self, dev_bundle):
-        ag = _find_animal_gift(dev_bundle)
-        assert ag is not None
-        assert ag.type == "animal"
-        assert ag.catalog_id == "cat"
-
-    def test_returns_none_when_no_animal(self):
-        bundle = create_dev_fixture(include_gifts=False)
-        assert _find_animal_gift(bundle) is None
-
-    def test_returns_first_animal_only(self, dev_bundle):
-        """Only one animal per v1 bundle; _find_animal_gift returns the first."""
-        ag = _find_animal_gift(dev_bundle)
-        assert ag is not None
-
-
-# ---------------------------------------------------------------------------
-# _animal_home_pos
-# ---------------------------------------------------------------------------
-
-class TestAnimalHomePos:
-    def test_within_bounds(self):
-        for animal in ("cat", "bird", "rabbit", "turtle"):
-            row, col = _animal_home_pos(animal, 42301, 80, 24)
-            assert 0 <= row < 24
-            assert 0 <= col < 80
-
-    def test_stable_across_calls(self):
-        r1, c1 = _animal_home_pos("cat", 42301, 80, 24)
-        r2, c2 = _animal_home_pos("cat", 42301, 80, 24)
-        assert (r1, c1) == (r2, c2)
-
-    def test_different_animals_may_differ(self):
-        pos_cat = _animal_home_pos("cat", 42301, 80, 24)
-        pos_bird = _animal_home_pos("bird", 42301, 80, 24)
-        # Not guaranteed, but almost certainly distinct with different hash seeds
-        # Just ensure both are valid
-        for row, col in (pos_cat, pos_bird):
-            assert 0 <= row < 24
-            assert 0 <= col < 80
-
-
-# ---------------------------------------------------------------------------
-# is_gift_triggered
-# ---------------------------------------------------------------------------
-
-class TestIsGiftTriggered:
-    def _gift(self, trigger_type, value):
-        return GardenGift(
-            id="test-id",
-            type="item",
-            catalog_id="candle",
-            trigger=Trigger(type=trigger_type, value=value),
-        )
-
-    def test_date_trigger_before_date(self):
-        gift = self._gift("date", "2099-01-01")
-        assert not is_gift_triggered(gift, date.today(), 100, set())
-
-    def test_date_trigger_on_date(self):
-        gift = self._gift("date", date.today().isoformat())
-        assert is_gift_triggered(gift, date.today(), 0, set())
-
-    def test_date_trigger_past_date(self):
-        gift = self._gift("date", "2020-01-01")
-        assert is_gift_triggered(gift, date.today(), 0, set())
-
-    def test_cumulative_visits_not_met(self):
-        gift = self._gift("cumulative_visits", "10")
-        assert not is_gift_triggered(gift, date.today(), 5, set())
-
-    def test_cumulative_visits_met(self):
-        gift = self._gift("cumulative_visits", "10")
-        assert is_gift_triggered(gift, date.today(), 10, set())
-
-    def test_cumulative_visits_exceeded(self):
-        gift = self._gift("cumulative_visits", "10")
-        assert is_gift_triggered(gift, date.today(), 99, set())
-
-    def test_post_letter_not_read(self):
-        gift = self._gift("post_letter", "msg-abc")
-        assert not is_gift_triggered(gift, date.today(), 0, set())
-
-    def test_post_letter_read(self):
-        gift = self._gift("post_letter", "msg-abc")
-        assert is_gift_triggered(gift, date.today(), 0, {"msg-abc"})
-
-    def test_invalid_date_value_returns_false(self):
-        gift = self._gift("date", "not-a-date")
-        assert not is_gift_triggered(gift, date.today(), 0, set())
-
-    def test_invalid_visits_value_returns_false(self):
-        gift = self._gift("cumulative_visits", "banana")
-        assert not is_gift_triggered(gift, date.today(), 99, set())
-
-
-# ---------------------------------------------------------------------------
-# RecipientStore — basic visit tracking
-# ---------------------------------------------------------------------------
-
-class TestRecipientStoreVisits:
-    def test_initial_total_visits_zero(self, store):
-        assert store.total_visits() == 0
-
-    def test_increment_visit_increments(self, store):
-        store.increment_visit()
-        assert store.total_visits() == 1
-
-    def test_multiple_increments(self, store):
-        for _ in range(5):
-            store.increment_visit()
-        assert store.total_visits() == 5
-
-    def test_was_absent_false_on_first_visit(self, store):
-        store.increment_visit()
-        assert store.was_absent is False
-
-    def test_was_absent_false_same_day(self, store, tmp_path):
-        store.increment_visit()
-        store2 = RecipientStore.__new__(RecipientStore)
-        store2.bundle_id = "test-bundle"
-        store2.was_absent = False
-        store2._receipts = store._receipts
-        store2._state = store._state
-        store2.increment_visit()
-        assert store2.was_absent is False
-
-    def test_was_absent_true_after_gap(self, store, monkeypatch):
-        # Simulate last_visit two days ago
-        yesterday = (date.today() - timedelta(days=2)).isoformat()
-        store._state["test-bundle"]["last_visit"] = yesterday
-        store.increment_visit()
-        assert store.was_absent is True
-
-    def test_persists_across_instances(self, store, tmp_path, monkeypatch):
-        store.increment_visit()
-        monkeypatch.setattr("lateletter.recipient._RECIPIENT_DIR", tmp_path)
-        monkeypatch.setattr("lateletter.recipient._RECEIPTS_FILE",
-                            tmp_path / "receipts.json")
-        monkeypatch.setattr("lateletter.recipient._GARDEN_STATE_FILE",
-                            tmp_path / "garden_state.json")
-        store2 = RecipientStore("test-bundle")
-        assert store2.total_visits() == 1
-
-
-# ---------------------------------------------------------------------------
-# RecipientStore — read receipts
-# ---------------------------------------------------------------------------
-
-class TestRecipientStoreReceipts:
-    def test_not_read_initially(self, store):
-        assert not store.is_read("msg-1")
-
-    def test_mark_read(self, store):
-        store.mark_read("msg-1")
-        assert store.is_read("msg-1")
-
-    def test_read_set(self, store):
-        store.mark_read("msg-1")
-        store.mark_read("msg-2")
-        assert store.read_set() == {"msg-1", "msg-2"}
-
-    def test_discovered_initially_false(self, store):
-        assert not store.is_discovered("gift-1")
-
-    def test_mark_discovered(self, store):
-        store.mark_discovered("gift-1")
-        assert store.is_discovered("gift-1")
-
-
-# ---------------------------------------------------------------------------
-# RecipientStore — animal system
-# ---------------------------------------------------------------------------
-
-class TestRecipientStoreAnimal:
-    def test_get_animal_state_default(self, store):
-        s = store.get_animal_state("cat")
-        assert s["trust_actions"] == 0
-        assert s["trust_tier"] == 0
-        assert s["last_fed"] is None
-
-    def test_feed_animal_increments_actions(self, store):
-        store.feed_animal("cat")
-        s = store.get_animal_state("cat")
-        assert s["trust_actions"] == 1
-
-    def test_feed_animal_returns_tier(self, store):
-        for _ in range(2):
-            store.feed_animal("cat")
-        tier = store.feed_animal("cat")  # 3rd feed → tier 1
-        assert tier == 1
-
-    def test_feed_animal_tier_progression(self, store):
-        # Reach tier 3 at exactly 14 actions
-        for _ in range(13):
-            store.feed_animal("cat")
-        tier = store.feed_animal("cat")
-        assert tier == 3
-
-    def test_feed_animal_updates_last_fed(self, store):
-        store.feed_animal("cat")
-        s = store.get_animal_state("cat")
-        assert s["last_fed"] == date.today().isoformat()
-
-    def test_feed_different_animals_independent(self, store):
-        store.feed_animal("cat")
-        store.feed_animal("cat")
-        store.feed_animal("cat")
-        store.feed_animal("bird")
-        assert store.get_animal_state("cat")["trust_actions"] == 3
-        assert store.get_animal_state("bird")["trust_actions"] == 1
-
-    def test_animal_state_persists(self, store, tmp_path, monkeypatch):
-        for _ in range(7):
-            store.feed_animal("cat")
-        monkeypatch.setattr("lateletter.recipient._RECIPIENT_DIR", tmp_path)
-        monkeypatch.setattr("lateletter.recipient._RECEIPTS_FILE",
-                            tmp_path / "receipts.json")
-        monkeypatch.setattr("lateletter.recipient._GARDEN_STATE_FILE",
-                            tmp_path / "garden_state.json")
-        store2 = RecipientStore("test-bundle")
-        s = store2.get_animal_state("cat")
-        assert s["trust_actions"] == 7
-        assert s["trust_tier"] == 2
-
-    def test_animals_slot_in_default_state(self, store):
-        """New bundles get an empty animals dict in garden_state."""
-        s = store._state["test-bundle"]
-        assert "animals" in s
-        assert s["animals"] == {}
-
-    def test_tier_not_exceed_three(self, store):
-        for _ in range(50):
-            tier = store.feed_animal("cat")
-        assert tier == 3
+    bundle = Bundle(messages=[letter], garden_gifts=[gift, future])
+
+    assert _apply_legacy_gifts(session, bundle, {}, date.today(), set()) == set()
+    assert _apply_legacy_gifts(session, bundle, {}, date.today(), {"last"}) == {
+        "keepsake", "future"
+    }
+
+
+def test_terminal_session_is_canonical_persistent_owner_and_resize_is_presentation_only(tmp_path):
+    session = _session(tmp_path)
+    before = session.world.canonical_bytes()
+    session.resize(132, 43)
+    assert session.world.canonical_bytes() == before
+
+    result = handle_terminal_key(session, ord("o"))
+    assert result is not None and result.accepted
+    result = handle_terminal_key(session, ord("i"))
+    assert result is not None and result.accepted
+    trace = session.world.event_trace
+    assert trace
+
+    reopened = _session(tmp_path)
+    assert reopened.world.event_trace == trace
+    rendered_before = reopened.world.canonical_bytes()
+    assert GardenRenderer(52, 16).render_lines(reopened.world)
+    assert reopened.world.canonical_bytes() == rendered_before
+
+
+def test_terminal_rejects_missing_target_and_has_no_random_reset(tmp_path):
+    session = _session(tmp_path)
+    result = session.dispatch("inspect")
+    assert not result.accepted
+    assert "target_id" in result.reason
+    assert handle_terminal_key(session, ord("r")) is None
+
+
+def test_terminal_controls_are_discoverable_and_flags_are_honest():
+    help_text = " ".join(TERMINAL_HELP_LINES)
+    for action in (
+        "objects", "actions", "primary", "inspect", "tend", "feed", "play",
+        "collect", "place", "move", "undo", "journal", "pan", "pause", "back",
+    ):
+        assert action in help_text
+    assert TERMINAL_WORLD_WIRED is True
+    assert FULL_GARDEN_PARITY is False

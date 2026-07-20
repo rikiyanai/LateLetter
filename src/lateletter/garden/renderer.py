@@ -1,197 +1,173 @@
-"""Garden renderer — 5-layer compositor, curses main loop, ANSI output.
+"""Read-only terminal projection for canonical Garden ``WorldState``."""
 
-The compositor owns the screen buffer and all layers. Each frame:
-  1. Clear the buffer
-  2. Update layers that are due (per their update_interval_ms)
-  3. Render all layers into the buffer back-to-front (0 → 4)
-  4. Blit the buffer to the terminal (curses or ANSI)
-"""
 from __future__ import annotations
 
 import curses
-import math
-import random
-import time
+from pathlib import Path
 
-from .background import BackgroundLayer
-from .colors import ANSI_CODES, ANSI_RESET, curses_attr, init_curses_colors
-from .creatures import CreatureLayer
-from .particles import ParticleLayer
-from .plants import PlantLayer
-from .screen_buffer import ScreenBuffer
-from .seasons import detect_season, get_weights
-from .special import SpecialLayer
-from .state import GardenState
+from .creatures import animal_symbol
+from .plants import plant_symbol
+from .state import TerminalViewport
+from .terminal import (
+    TERMINAL_HELP_LINES,
+    TerminalWorldSession,
+    handle_terminal_key,
+)
+from .world.model import WorldState
+from .world.projection import SceneObjectProjection, project_scene
+
+
+_FIXTURE_SYMBOLS = {
+    "bench": "=",
+    "fence": "#",
+    "gate": "+",
+    "sundial": "@",
+    "trellis": "H",
+    "birdbath": "U",
+    "lantern": "!",
+    "pond": "~",
+    "memory_shrine": "M",
+    "stepping_stone": ".",
+    "bridge": "-",
+    "planter": "[]",
+    "table": "T",
+    "chair": "h",
+}
+
+
+def _symbol(item: SceneObjectProjection) -> str:
+    if item.kind == "plant":
+        return plant_symbol(str(item.semantic_state["species_id"]))
+    if item.kind == "animal":
+        return animal_symbol(
+            str(item.semantic_state["species_id"]),
+            str(item.semantic_state["intent"]),
+        )
+    if item.kind == "fixture":
+        return _FIXTURE_SYMBOLS.get(str(item.semantic_state["catalog_id"]), "F")
+    return "*"
 
 
 class GardenRenderer:
-    """5-layer compositing renderer for the garden.
+    """Quantize a read-only scene projection into a terminal viewport."""
 
-    Layers (drawn back-to-front):
-      0 — Background  (sky, ground)
-      1 — Plants       (trees, flowers, wind sway)
-      2 — Particles    (rain, snow, leaves, splashes)
-      3 — Creatures    (birds, butterflies, fireflies)
-      4 — Special      (letter-bird, overlays)
-    """
-
-    def __init__(self, width: int, height: int, seed: int,
-                 season: str | None = None) -> None:
-        self.state = GardenState(
-            width, height, seed,
-            season=season or detect_season(),
-        )
-        self.buf = ScreenBuffer(width, height)
-
-        # Layers in draw order
-        self.background = BackgroundLayer()
-        self.plants = PlantLayer()
-        self.particles = ParticleLayer()
-        self.creatures = CreatureLayer()
-        self.special = SpecialLayer()
-        self._layers = [
-            self.background,
-            self.plants,
-            self.particles,
-            self.creatures,
-            self.special,
-        ]
-
-        # Generate initial garden
-        self.plants.regenerate(self.state, get_weights(self.state.season))
+    def __init__(self, width: int, height: int) -> None:
+        self.viewport = TerminalViewport(width, height)
 
     def resize(self, width: int, height: int) -> None:
-        self.state.resize(width, height)
-        self.buf.resize(width, height)
-        self.plants.regenerate(self.state, get_weights(self.state.season))
-        for layer in self._layers:
-            if layer is not self.plants:
-                layer.on_resize(self.state)
+        self.viewport.resize(width, height)
 
-    def new_seed(self, seed: int) -> None:
-        self.state.seed = seed
-        self.plants.regenerate(self.state, get_weights(self.state.season))
+    def render_lines(self, world: WorldState) -> list[str]:
+        width = self.viewport.width
+        height = self.viewport.height
+        canvas_height = max(1, height - 4)
+        canvas = [[" " for _ in range(width)] for _ in range(canvas_height)]
+        projection = project_scene(world)
+        camera = projection.camera
+        for item in projection.objects:
+            x = item.position.x - camera.x
+            y = item.position.y - camera.y
+            symbol = _symbol(item)
+            if item.object_id == world.ui.focus_id:
+                symbol = symbol.upper()
+            if not (0 <= y < canvas_height):
+                continue
+            for offset, char in enumerate(symbol):
+                if 0 <= x + offset < width:
+                    canvas[y][x + offset] = char
 
-    def tick(self) -> None:
-        """Advance one frame: update wind/time, update layers, composite."""
-        self.state.frame += 1
-        self.state.now = time.monotonic()
-        self.state.wind = 0.5 * math.sin(self.state.frame * 0.008)
+        title = (
+            f"Garden {world.world_id} · camera {camera.x},{camera.y} · "
+            f"trace {len(world.event_trace)}"
+        )
+        if canvas:
+            canvas[0][:min(width, len(title))] = list(title[:width])
 
-        # Decrement flash counter (set by lightning in particle layer)
-        if self.state.flash_frames > 0:
-            self.state.flash_frames -= 1
+        objects = [
+            item for item in projection.objects
+            if item.object_id == world.ui.focus_id
+        ]
+        if objects and canvas_height > 2:
+            focused = objects[0]
+            detail = f"> {focused.semantic_name}: {', '.join(focused.actions)}"
+            canvas[1][:min(width, len(detail))] = list(detail[:width])
+        if world.ui.journal_open and canvas_height > 3:
+            journal = f"Journal: {len(world.journal)} entries"
+            canvas[2][:min(width, len(journal))] = list(journal[:width])
+        return ["".join(row) for row in canvas]
 
-        # Update all layers
-        for layer in self._layers:
-            layer.update(self.state)
-
-        # Clear and composite back-to-front
-        self.buf.clear()
-        for layer in self._layers:
-            layer.render(self.buf, self.state)
-
-    # ── ANSI static output ──────────────────────────────────────────
-
-    def render_ansi(self) -> str:
-        """Render a single composited frame as an ANSI string."""
-        self.tick()
-        lines: list[str] = []
-        buf = self.buf
-        for row in range(buf.height - 1):  # reserve last row for status
-            line = ''
-            prev_color = None
-            for col in range(buf.width):
-                ch, color = buf.get(row, col)
-                if color != prev_color:
-                    line += ANSI_RESET + ANSI_CODES.get(color, '')
-                    prev_color = color
-                line += ch
-            lines.append(line + ANSI_RESET)
-        return '\n'.join(lines)
-
-    # ── Curses blit ─────────────────────────────────────────────────
-
-    def blit_curses(self, scr: curses.window) -> None:
-        """Write the buffer to a curses window, batching same-color runs."""
-        buf = self.buf
-        w = buf.width
-        for row in range(buf.height - 1):  # skip status bar row
-            col = 0
-            while col < w:
-                ch, color = buf.get(row, col)
-                if ch == ' ' and color == 'sky':
-                    col += 1
-                    continue
-                # Batch consecutive cells with the same color
-                run = ch
-                end = col + 1
-                while end < w:
-                    nch, ncol = buf.get(row, end)
-                    if ncol != color:
-                        break
-                    run += nch
-                    end += 1
-                try:
-                    scr.addstr(row, col, run, curses_attr(color))
-                except curses.error:
-                    pass
-                col = end
-
-
-# ── Curses main loop ────────────────────────────────────────────────
-
-def run_curses(stdscr: curses.window, seed: int,
-               season: str | None = None) -> None:
-    """Interactive curses garden with keyboard controls."""
-    init_curses_colors()
-    curses.curs_set(0)
-    stdscr.nodelay(True)
-
-    h, w = stdscr.getmaxyx()
-    renderer = GardenRenderer(w, h, seed, season=season)
-
-    while True:
-        nh, nw = stdscr.getmaxyx()
-        if (nh, nw) != (h, w):
-            h, w = nh, nw
-            renderer.resize(w, h)
-
-        stdscr.erase()
-        renderer.tick()
-        renderer.blit_curses(stdscr)
-
-        # Lightning flash (DECSCNM reverse video)
-        if renderer.state.flash_frames > 0:
+    def blit_curses(self, screen: curses.window, world: WorldState) -> None:
+        for row, line in enumerate(self.render_lines(world)):
             try:
-                curses.flash()
+                screen.addstr(row, 0, line)
             except curses.error:
                 pass
 
-        # Status bar
-        bar = f'  seed={renderer.state.seed}  q=quit  r=new garden  '
-        try:
-            stdscr.addstr(h - 1, 0, bar[:w].ljust(w), curses.A_REVERSE)
-        except curses.error:
-            pass
+    def render_ansi(self, world: WorldState) -> str:
+        return "\n".join(self.render_lines(world))
 
+
+def run_curses(
+    stdscr: curses.window,
+    seed: int = 42_301,
+    season: str | None = None,
+    *,
+    world_path: str | Path | None = None,
+    observed_wall_time: int | None = None,
+) -> None:
+    """Run standalone canonical Garden mode with discoverable commands."""
+    del season  # Presentation override is not allowed to own canonical season.
+    curses.curs_set(0)
+    stdscr.timeout(100)
+    height, width = stdscr.getmaxyx()
+    session = TerminalWorldSession.open(
+        world_id="standalone",
+        seed=seed,
+        width=width,
+        height=height,
+        path=world_path,
+        observed_wall_time=observed_wall_time,
+    )
+    renderer = GardenRenderer(width, height)
+    message = "Use o to select an object; a opens its semantic actions."
+    while True:
+        new_height, new_width = stdscr.getmaxyx()
+        if (new_height, new_width) != (height, width):
+            height, width = new_height, new_width
+            session.resize(width, height)
+            renderer.resize(width, height)
+        stdscr.erase()
+        renderer.blit_curses(stdscr, session.world)
+        status_rows = [message, *TERMINAL_HELP_LINES]
+        for offset, line in enumerate(status_rows):
+            row = height - len(status_rows) + offset
+            if row < 0:
+                continue
+            try:
+                stdscr.addstr(row, 0, line[:width].ljust(width), curses.A_REVERSE)
+            except curses.error:
+                pass
         stdscr.refresh()
-
         key = stdscr.getch()
-        if key == ord('q'):
+        if key == ord("q"):
             break
-        if key == ord('r'):
-            new_seed = random.randint(0, 99999)
-            renderer.new_seed(new_seed)
+        if key == -1:
+            continue
+        result = handle_terminal_key(session, key)
+        if result is not None:
+            message = result.summary if result.accepted else result.reason
 
-        time.sleep(0.05)
 
+def print_ansi(
+    width: int,
+    height: int,
+    seed: int,
+    season: str | None = None,
+) -> None:
+    del season
+    from .world.generation import generate_initial_world
 
-# ── ANSI static entry point ────────────────────────────────────────
-
-def print_ansi(width: int, height: int, seed: int,
-               season: str | None = None) -> None:
-    """Print a single static ANSI frame to stdout."""
-    renderer = GardenRenderer(width, height, seed, season=season)
-    print(renderer.render_ansi())
-    print(f'\033[2m  --seed {seed}  |  q quit · r new garden\033[0m')
+    world = generate_initial_world("ansi-preview", seed)
+    renderer = GardenRenderer(width, height)
+    print(renderer.render_ansi(world))
+    print("\n".join(TERMINAL_HELP_LINES))
