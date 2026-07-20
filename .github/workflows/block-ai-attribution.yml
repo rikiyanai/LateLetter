@@ -10,6 +10,7 @@ permissions:
 jobs:
   audit:
     name: AI attribution policy
+    if: github.repository_visibility == 'public'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
