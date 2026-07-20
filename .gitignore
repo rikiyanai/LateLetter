@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+*.egg-info/
+.context/
+# real letter sources hold plaintext letters AND passcodes — never commit
+letters/*
+!letters/letter_source.example.json

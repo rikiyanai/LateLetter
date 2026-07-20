@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare static site
+        run: |
+          mkdir _site
+          cp viewer-bnw.html _site/index.html
+          cp test_fixture.lateletter _site/test_fixture.lateletter
+          cp sealed_demo.lateletter _site/sealed_demo.lateletter
+          # Published sealed letters: /lateletter/?l=<name> plus a pretty
+          # path /lateletter/<name>/ that redirects to it.
+          if compgen -G "public_letters/*.lateletter" > /dev/null; then
+            mkdir -p _site/public_letters
+            cp public_letters/*.lateletter _site/public_letters/
+            for f in public_letters/*.lateletter; do
+              name=$(basename "$f" .lateletter)
+              mkdir -p "_site/$name"
+              printf '%s\n' \
+                '<!doctype html><meta charset="utf-8">' \
+                "<meta http-equiv=\"refresh\" content=\"0;url=../?l=$name\">" \
+                '<title>a letter</title>' \
+                "<a href=\"../?l=$name\">open your letter</a>" \
+                > "_site/$name/index.html"
+            done
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "bundle_id": "0b7e542c-ade0-4bb7-8e4b-48067c07e150",
+  "author_name": "Demo Author",
+  "passphrase_hint": "where flowers grow",
+  "bundle_auth_salt": "r7CGwnLg8Y+gLEibGfLRCg==",
+  "garden_seed": 20260721,
+  "messages": [
+    {
+      "id": "ff113738-5eb2-4d12-840a-2c75354cb690",
+      "date": "2026-07-21",
+      "ciphertext": "aV0S6OJ7nIqxiKp7yuYtdH75wg5QXHAZbrPDRsECrf7xFbC89Y54c13ouRIc4fql/UiHZU78+Cw1GLl3lT/bibx9HQWmKONlDcj43Py3s9V6n+FxGmlHLR+0AEjAm3LwdR35yc+muAcOZdasBOXa9xD+7crtgTswgJICrjxvD6d9EcV6SE35FowX6fVbXWWXb5vNA8WovYSaEQH7OjlXMC+NaLaWKKLT38mo4ztKB+7KEC369QqOtPmXaYXz0HIWmzFblj4Nb9xzT+OqAnzA+xZTR1NwcWcahTO4ysLuWBs3hJHBaqXiwD8lU6T6EwdM8wQdCFkWc38yv+UGRy0aPRfL3sKQGAA=",
+      "salt": "XLDs9LpC/m39V4UBrVC1FQ==",
+      "nonce": "cRpr5/K2jO0PFHhk",
+      "kdf_params": {
+        "name": "PBKDF2",
+        "hash": "SHA-256",
+        "iterations": 600000
+      }
+    }
+  ],
+  "garden_gifts": [],
+  "notification": null,
+  "checksum": "39f6aee4490acffb688a9c3229a894965b645e502fda27a39b3c82eadf21bd10",
+  "hmac": "d5c7437b7701d1f2ea7bf8154484b80fef5970237c66c6f3db8ced97b3b3e41f"
+}

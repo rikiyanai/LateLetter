@@ -1,0 +1,158 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — ASCII Animation Research Index
+  Phase 5: Garden Expansion (docs/SPEC.md §7, lines 662-670)
+  Created: 2026-04-18
+═══════════════════════════════════════════════════════════════
+
+PURPOSE
+  Collect reference ASCII art, animation frames, and motion
+  patterns for LateLetter's garden TUI animations. These feed
+  into the Phase 5 "motion/style sheet" deliverable described
+  in the spec.
+
+SPEC REQUIREMENTS (§7.2 Ambient Animations)
+  ┌────────────────┬──────────────────────────────────────────┐
+  │ Animation      │ Description                              │
+  ├────────────────┼──────────────────────────────────────────┤
+  │ Butterfly      │ Small >< or ^v^, wanders L-R, up-dip    │
+  │ Bird (ambient) │ V or > formation across sky              │
+  │ Falling leaves │ Autumn: * or , drift diagonally          │
+  │ Rain           │ Dense | streaks, ground splashes         │
+  │ Snow           │ Sparse · or *, accumulates on plants     │
+  │ Lightning bug  │ Small * blinks on/off, lower third       │
+  │ Clouds         │ (~~~) drifting slowly left at sky row    │
+  └────────────────┴──────────────────────────────────────────┘
+
+SPEC REQUIREMENTS (§7.1 New Plant Types)
+  Willow, Cactus, Bamboo, Lily, Sunflower (tall), Dead tree
+
+SPEC REQUIREMENTS (§6.3 Letter-bird)
+  Visually distinct from ambient bird, carries [✉],
+  perches on tree tops, only after bundle auth + message due
+
+DIRECTORY STRUCTURE
+  ascii-animations/
+  ├── ANIMATION-RESEARCH.txt         ← this file (index)
+  ├── flowers/
+  │   ├── collected-flowers.txt      ← 9 pieces from asciiart.website
+  │   └── flower-animations.txt      ← wind sway, bloom, growth frames
+  ├── weather/
+  │   └── rain-snow-effects.txt      ← rain, snow, clouds, lightning, leaves
+  ├── creatures/
+  │   ├── birds-and-insects.txt      ← birds, letter-bird, butterfly, firefly
+  │   ├── animasci-frames.txt        ← real frame data (cat, bird flap, snail)
+  │   └── firefly-patterns.txt       ← Photinus species flash patterns
+  └── nature/
+      ├── trees-and-leaves.txt       ← willow, dead tree, cactus, bamboo, etc.
+      ├── seasonal-trees.txt         ← same tree in 4 seasons + oak/bare variants
+      └── leaf-physics.py            ← runnable prototype: falling leaves + fireflies
+
+SOURCES
+  1. Christopher Johnson's ASCII Art Collection
+     https://asciiart.website/cat.php?category_id=97 (Flowers, 82 pieces)
+     Downloaded HTML: Desktop/Category_ Flowers — ...html
+     Artists: Joan Stark, Laura Brown, Marie Bird, Sebastian Stöcker,
+              Hayley Jane Wakenshaw, Normand Veilleux, hrr, jrei
+
+  2. animasci.com — Multiple Animations (CC BY 3.0)
+     - Cat Walking By: 22 frames (cat peeking over wall)
+     - Bird flapping: 9 frames at 150ms (full wing cycle)
+     - Bird landing: 2 frames (in-flight → perched)
+     - Snail: 10 frames at 417ms (crawling with block chars)
+     - FLOWRUNS: 30 frames (flower/tree running across screen)
+     - Star: 8 frames at 500ms (rotating/twinkling)
+     Full JSON: /tmp/animasci-all-extracted.json
+
+  3. rovira_isabela_leaffalling.gif
+     Dark gnarled tree with falling leaf aesthetic
+     Inspires: dead tree silhouette, falling leaf particle style
+
+  4. anim_J_bounce.py (from asciicker project)
+     Path: /Users/r/Downloads/asciicker-Y9-2/testing/anim_J_bounce.py
+     Reference implementation for:
+     - Rain physics (diagonal fall, variable speed, gravity)
+     - Fragment bouncing (Bresenham lines, surface normals, damping)
+     - Ground splashes (spread + fade)
+     - Lightning bolts (jagged walk, forks, char aging # → + → *)
+     - Screen flash (DECSCNM reverse video)
+     - Thunder (bell char \a with distance delay)
+     - Frame timing: 40ms (25 FPS)
+
+  5. ASCII art research (web search results)
+     - ascii.co.uk, ascii-art.de: bird art collections
+     - Joan Stark (jgs) collection: birds, flowers, doves
+     - llizard/ejm: singing bird 2-frame animation
+     - PyBonsai / cbonsai: procedural tree generation algorithms
+     - Photinus firefly flash pattern research (Neopixel studies)
+
+  6. Full research outputs (temp files):
+     /tmp/claude-flowers-ascii-art.md     (27KB, flower collection)
+     /tmp/claude-birds-ascii-art.md       (bird art + frames)
+     /tmp/claude-animasci-cat-walking.md  (all animasci data)
+     /tmp/claude-nature-animations.md     (19KB, trees/leaves/fireflies)
+     /tmp/claude-weather-effects.md       (weather techniques)
+
+TECHNICAL NOTES (from anim_J_bounce.py analysis)
+  - Uses raw terminal mode (no curses) — direct ANSI escape sequences
+  - Alt screen buffer for clean entry/exit
+  - SIGWINCH handler for terminal resize
+  - Particle system: position + velocity + lifetime per particle
+  - Gravity applied per-frame to vertical velocity
+  - Collision detection via pre-built normal map (dict lookup)
+  - Reflection: v' = (v - 2(v·n)n) * damping
+  - Key constants to tune:
+    FRAME_S = 0.040     (frame time)
+    GRAVITY = 0.08      (acceleration per frame)
+    BOUNCE_DAMP = 0.32  (energy retained on bounce)
+    FRAG_LIFE = 14      (frames before fragment dies)
+
+IMPLEMENTATION APPROACH FOR LATELETTER
+  The garden already uses curses (garden.py). Weather/creature animations
+  should integrate as overlay layers:
+  1. Background layer: sky gradient, clouds
+  2. Plant layer: trees, flowers (with sway frames)
+  3. Particle layer: rain, snow, leaves (particle system)
+  4. Creature layer: birds, butterflies, fireflies
+  5. Special layer: letter-bird (only when authenticated)
+
+  Each layer updates independently at its own cadence:
+  - Clouds: every 200-500ms (slow drift)
+  - Plants/sway: every 300-500ms
+  - Rain/snow: every 40-80ms (fast particles)
+  - Creatures: every 100-200ms
+  - Fireflies: every 150ms (blink cycle)
+
+COVERAGE MATRIX (spec requirement → collected material)
+  ┌────────────────┬────────┬──────────────────────────────────┐
+  │ Spec Item      │ Status │ Where                            │
+  ├────────────────┼────────┼──────────────────────────────────┤
+  │ Butterfly      │ ✓      │ creatures/birds-and-insects.txt  │
+  │ Bird (ambient) │ ✓      │ creatures/animasci-frames.txt    │
+  │ Letter-bird    │ ✓      │ creatures/birds-and-insects.txt  │
+  │ Falling leaves │ ✓      │ nature/leaf-physics.py           │
+  │ Rain           │ ✓      │ weather/rain-snow-effects.txt    │
+  │ Snow           │ ✓      │ weather/rain-snow-effects.txt    │
+  │ Lightning bug  │ ✓      │ creatures/firefly-patterns.txt   │
+  │ Clouds         │ ✓      │ weather/rain-snow-effects.txt    │
+  │ Lightning      │ ✓      │ weather/ + anim_J_bounce.py ref  │
+  │ Willow         │ ✓      │ nature/seasonal-trees.txt        │
+  │ Cactus         │ ✓      │ nature/trees-and-leaves.txt      │
+  │ Bamboo         │ ✓      │ nature/trees-and-leaves.txt      │
+  │ Lily           │ ✓      │ nature/trees-and-leaves.txt      │
+  │ Sunflower      │ ✓      │ flowers/collected-flowers.txt    │
+  │ Dead tree      │ ✓      │ nature/seasonal-trees.txt        │
+  │ Cat (bonus)    │ ✓      │ creatures/animasci-frames.txt    │
+  │ Snail (bonus)  │ ✓      │ creatures/animasci-frames.txt    │
+  │ Bee (bonus)    │ ✓      │ creatures/birds-and-insects.txt  │
+  │ Wind sway      │ ✓      │ flowers/flower-animations.txt    │
+  │ Bloom anim     │ ✓      │ flowers/flower-animations.txt    │
+  │ Seasons        │ ✓      │ nature/seasonal-trees.txt        │
+  └────────────────┴────────┴──────────────────────────────────┘
+
+NEXT STEPS
+  □ Run leaf-physics.py prototype: python3 ascii-animations/nature/leaf-physics.py
+  □ Select best-fitting art for 80x24 constraints
+  □ Build curses integration prototype in garden.py
+  □ Test readability at small terminal sizes
+  □ Define motion/style sheet deliverable per spec
+  □ Integrate seasonal tree switching based on system date

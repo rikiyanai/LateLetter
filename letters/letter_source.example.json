@@ -1,0 +1,14 @@
+{
+  "author_name": "Demo Author",
+  "passphrase": "garden",
+  "passphrase_hint": "where flowers grow",
+  "garden_seed": 20260721,
+  "messages": [
+    {
+      "date": "2026-07-21",
+      "label": "A demo letter",
+      "body": "Dear friend,\n\nThis is fictional sample text for testing LateLetter. Replace this entire example with your own words in a separate, ignored source file before sealing a real letter.\n\nWith care,\nDemo Author"
+    }
+  ],
+  "garden_gifts": []
+}
