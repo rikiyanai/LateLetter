@@ -63,6 +63,10 @@ ITEM_CATALOG: dict[str, tuple[str, str]] = {
     "old_key":        ("An old key",         " >-) "),
     "small_stone":    ("A small stone",      " (.) "),
     "ribbon":         ("A ribbon",           " ~o~ "),
+    "cat":            ("A cat",              "/\\_/\\"),
+    "bird":           ("A bird",             " >o< "),
+    "rabbit":         ("A rabbit",           "(\\ /)"),
+    "turtle":         ("A turtle",           " (~) "),
 }
 
 _CATALOG_DEFAULT: tuple[str, str] = ("A small object", " (·) ")
@@ -71,6 +75,14 @@ _CATALOG_DEFAULT: tuple[str, str] = ("A small object", " (·) ")
 def catalog_entry(catalog_id: str) -> tuple[str, str]:
     """Return (display_name, art) for a catalog_id, with a safe fallback."""
     return ITEM_CATALOG.get(catalog_id, _CATALOG_DEFAULT)
+
+
+def gift_catalog_entry(gift: GardenGift) -> tuple[str, str]:
+    """Return recipient-facing gift name/art, including authored animal names."""
+    name, art = catalog_entry(gift.catalog_id)
+    if gift.type == "animal" and gift.animal_name:
+        name = gift.animal_name
+    return name, art
 
 
 # ---------------------------------------------------------------------------
@@ -328,6 +340,7 @@ def _build_archive_rows(
     today: date,
     total_visits: int,
     read_msg_ids: set[str],
+    post_complete: bool = False,
 ) -> list[_ArchiveRow]:
     """Build the flat row list for the archive overlay."""
     rows: list[_ArchiveRow] = []
@@ -335,8 +348,9 @@ def _build_archive_rows(
         rows.append(("letter", i, msg))
     triggered = [
         g for g in bundle.garden_gifts
-        if g.type in ("item", "landmark")
-        and is_gift_triggered(g, today, total_visits, read_msg_ids)
+        if post_complete or is_gift_triggered(
+            g, today, total_visits, read_msg_ids
+        )
     ]
     if triggered:
         rows.append(("divider", None, None))
@@ -510,7 +524,7 @@ def _draw_archive(
 
         elif rtype == "gift":
             gift = row[2]
-            name, art = catalog_entry(gift.catalog_id)
+            name, art = gift_catalog_entry(gift)
             disc = "✦" if store.is_discovered(gift.id) else "·"
             text = f"{mk}{disc}  {art}  {name}"
             try:
@@ -529,7 +543,7 @@ def _draw_memory(
     sentiment: str,
 ) -> None:
     """Overlay showing the author's sentiment for a discovered item."""
-    name, art = catalog_entry(gift.catalog_id)
+    name, art = gift_catalog_entry(gift)
     bw = min(54, w - 4)
     bh = 9
     bx = (w - bw) // 2
@@ -557,7 +571,7 @@ def _draw_item_select(
     _draw_centered(scr, by + 1, "What would you like to examine?", curses.A_BOLD)
     _draw_centered(scr, by + 2, "─" * (bw - 4))
     for i, gift in enumerate(items):
-        name, art = catalog_entry(gift.catalog_id)
+        name, art = gift_catalog_entry(gift)
         marker = "▸ " if i == sel else "  "
         attr = curses.A_BOLD if i == sel else 0
         _draw_centered(scr, by + 3 + i,
@@ -842,7 +856,7 @@ def run_recipient(
     memory_return_state: str = _ST_ARCHIVE  # where esc goes after viewing a memory
 
     unread_due: list[int] = []
-    triggered_items: list[GardenGift] = []  # items/landmarks whose trigger is met
+    triggered_items: list[GardenGift] = []  # garden memories whose trigger is met
     item_sel = 0  # cursor for _ST_ITEM_SELECT
     post_complete = False  # all messages read (§6.7)
     save_flash_msg = ""    # brief save-to-text confirmation in status bar
@@ -897,6 +911,8 @@ def run_recipient(
                     pass
             # Draw triggered garden items in the scene
             for gift in triggered_items:
+                if gift.type not in ("item", "landmark"):
+                    continue
                 grow, gcol = _item_position(gift, bundle.garden_seed, w, h)
                 _, art = catalog_entry(gift.catalog_id)
                 try:
@@ -1073,37 +1089,24 @@ def run_recipient(
 
         if state == _ST_GARDEN:
             seed = bundle.garden_seed
-            # Animal nudge overrides the whole bar at tier 0 (§6.8.2)
-            _animal_nudge = ""
-            if animal_type and animal_triggered and authenticated:
-                _alabel = _ANIMAL_LABEL.get(animal_type, animal_type)
-                _aname = (animal_gift.animal_name or _alabel) if animal_gift else _alabel
-                if animal_tier == 0:
-                    _animal_nudge = (
-                        f"a stray {_alabel} lingers at the edge… "
-                        f"press f to leave food"
-                    )
-                elif animal_tier < 3:
-                    _animal_nudge = f"f · feed {_aname}"
-            if _animal_nudge:
-                bar = f"  {_animal_nudge}"
-            elif not authenticated:
+            if not authenticated:
                 bar = f"  seed={seed}  q=quit  · e · unlock letters"
-            elif post_complete:
-                parts = [f"  seed={seed}  q=quit"]
-                if triggered_items:
-                    parts.append("i · examine")
-                parts.append("l · your letters")
-                bar = "  ·  ".join(parts)
             else:
-                parts = [f"  seed={seed}  q=quit"]
+                parts = ["  q quit"]
                 if unread_due:
                     n = len(unread_due)
-                    lbl = "a letter has arrived" if n == 1 else f"{n} letters have arrived"
-                    parts.append(f"e · {lbl}")
+                    lbl = "letter" if n == 1 else f"{n} letters"
+                    parts.append(f"e {lbl}")
                 if triggered_items:
-                    parts.append("i · examine")
-                parts.append("l · your letters")
+                    parts.append("i examine")
+                if animal_type and animal_triggered and animal_tier < 3:
+                    _alabel = _ANIMAL_LABEL.get(animal_type, animal_type)
+                    _aname = (
+                        animal_gift.animal_name or _alabel
+                        if animal_gift else _alabel
+                    )
+                    parts.append(f"f feed {_aname}")
+                parts.append("l letters")
                 bar = "  ·  ".join(parts)
         elif state == _ST_PASSPHRASE:
             bar = "  enter passphrase  ·  esc cancel"
@@ -1152,15 +1155,13 @@ def run_recipient(
                     post_complete = _is_post_complete(bundle, read_ids)
                     triggered_items = [
                         g for g in bundle.garden_gifts
-                        if g.type in ("item", "landmark")
-                        and (post_complete or is_gift_triggered(
-                            g, today, total_visits, read_ids))
+                        if post_complete or is_gift_triggered(
+                            g, today, total_visits, read_ids)
                     ]
                     # Re-evaluate animal trigger (post_letter trigger may now fire)
                     if animal_gift is not None and animal_type is not None:
-                        animal_triggered = is_gift_triggered(
-                            animal_gift, today, total_visits, read_ids
-                        )
+                        animal_triggered = post_complete or is_gift_triggered(
+                            animal_gift, today, total_visits, read_ids)
                     if unread_due:
                         bird_visible = True
                         bird_x = -10
@@ -1228,7 +1229,7 @@ def run_recipient(
                 animal_tier = store.feed_animal(animal_type)
             elif key == ord("l") and authenticated:
                 archive_rows = _build_archive_rows(
-                    bundle, today, total_visits, read_ids
+                    bundle, today, total_visits, read_ids, post_complete
                 )
                 archive_sel = 0
                 archive_scroll = 0
@@ -1271,9 +1272,8 @@ def run_recipient(
                 # Post-letter triggers (and post-completion unlock) may now fire
                 triggered_items = [
                     g for g in bundle.garden_gifts
-                    if g.type in ("item", "landmark")
-                    and (post_complete or is_gift_triggered(
-                        g, today, total_visits, read_ids))
+                    if post_complete or is_gift_triggered(
+                        g, today, total_visits, read_ids)
                 ]
                 # Animal trigger may also fire on post_letter
                 if animal_gift is not None and animal_type is not None:
