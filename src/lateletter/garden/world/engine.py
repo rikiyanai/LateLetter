@@ -6,6 +6,7 @@ from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from .commands import CommandKind, GardenCommand, validate_command
+from .fixtures import validate_fixture_placement
 from .model import (
     AnimalState,
     CollectibleState,
@@ -311,8 +312,6 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         position = _position(value.args)
         if not _inside_world(state, position):
             return state, _reject("placement is outside the world")
-        if _occupied(state, position):
-            return state, _reject("placement cell is occupied")
         object_kind = str(value.args.get("object_kind", "fixture"))
         catalog = str(value.args["catalog_id"])
         object_id = str(value.args.get("object_id") or stable_id(object_kind, state.world_id, value.command_id))
@@ -320,10 +319,17 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
             return state, _reject("object ID already exists")
         undo = UndoRecord(object_kind, object_id, None, None, True)
         if object_kind == "fixture":
+            placement_errors = validate_fixture_placement(
+                state, catalog, position, fixture_id=object_id,
+            )
+            if placement_errors:
+                return state, _reject("; ".join(placement_errors))
             fixture = FixtureState(object_id, catalog, position, int(value.args.get("rotation", 0)) % 360)
             updated = replace(state, fixtures=state.fixtures + (fixture,), undo_stack=state.undo_stack + (undo,))
             details = fixture.to_dict()
         else:
+            if _occupied(state, position):
+                return state, _reject("placement cell is occupied")
             root = OrganNode(
                 node_id=stable_id("organ", object_id, "root"),
                 parent_id=None,
@@ -346,8 +352,15 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         position = _position(value.args)
         if not _inside_world(state, position):
             return state, _reject("move is outside the world")
-        if _occupied(state, position, except_id=fixture.fixture_id):
-            return state, _reject("move cell is occupied")
+        placement_errors = validate_fixture_placement(
+            state,
+            fixture.catalog_id,
+            position,
+            fixture_id=fixture.fixture_id,
+            except_id=fixture.fixture_id,
+        )
+        if placement_errors:
+            return state, _reject("; ".join(placement_errors))
         moved = replace(fixture, position=position, rotation=int(value.args.get("rotation", fixture.rotation)) % 360)
         fixtures = tuple(moved if item.fixture_id == target else item for item in state.fixtures)
         undo = UndoRecord("fixture", fixture.fixture_id, fixture.position, fixture.rotation)

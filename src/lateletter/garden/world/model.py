@@ -235,6 +235,14 @@ class AnimalState:
     play_appetite: int = 50
     rest_appetite: int = 40
     choreography_lock: str | None = None
+    current_intent: str = "idle"
+    intent_started_at: int = 0
+    minimum_dwell_until: int = 0
+    decision_index: int = 0
+    cooldowns: tuple[tuple[str, int], ...] = ()
+    favorite_fixture_ids: tuple[str, ...] = ()
+    authored_preferences: tuple[str, ...] = ()
+    authored_prohibitions: tuple[str, ...] = ()
 
     def interaction_count(self, kind: str) -> int:
         return dict(self.interaction_counts).get(kind, 0)
@@ -256,11 +264,20 @@ class AnimalState:
             "play_appetite": self.play_appetite,
             "rest_appetite": self.rest_appetite,
             "choreography_lock": self.choreography_lock,
+            "current_intent": self.current_intent,
+            "intent_started_at": self.intent_started_at,
+            "minimum_dwell_until": self.minimum_dwell_until,
+            "decision_index": self.decision_index,
+            "cooldowns": {key: value for key, value in sorted(self.cooldowns)},
+            "favorite_fixture_ids": sorted(set(self.favorite_fixture_ids)),
+            "authored_preferences": sorted(set(self.authored_preferences)),
+            "authored_prohibitions": sorted(set(self.authored_prohibitions)),
         }
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> AnimalState:
         counts = data.get("interaction_counts", {})
+        cooldowns = data.get("cooldowns", {})
         return cls(
             animal_id=str(data["animal_id"]),
             species_id=str(data["species_id"]),
@@ -277,6 +294,14 @@ class AnimalState:
             play_appetite=max(0, min(100, int(data.get("play_appetite", 50)))),
             rest_appetite=max(0, min(100, int(data.get("rest_appetite", 40)))),
             choreography_lock=(str(data["choreography_lock"]) if data.get("choreography_lock") else None),
+            current_intent=str(data.get("current_intent", "idle")),
+            intent_started_at=max(0, int(data.get("intent_started_at", 0))),
+            minimum_dwell_until=max(0, int(data.get("minimum_dwell_until", 0))),
+            decision_index=max(0, int(data.get("decision_index", 0))),
+            cooldowns=tuple(sorted((str(key), int(value)) for key, value in cooldowns.items())),
+            favorite_fixture_ids=tuple(str(item) for item in data.get("favorite_fixture_ids", [])),
+            authored_preferences=tuple(str(item) for item in data.get("authored_preferences", [])),
+            authored_prohibitions=tuple(str(item) for item in data.get("authored_prohibitions", [])),
         )
 
 

@@ -150,7 +150,7 @@ def test_invalid_commands_do_not_consume_sequence(world):
     )
     state, result = dispatch(world, value)
     assert not result.accepted
-    assert "occupied" in result.reason
+    assert "overlaps a plant" in result.reason
     assert state.command_sequence == 0
 
 

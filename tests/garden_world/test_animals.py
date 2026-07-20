@@ -1,0 +1,115 @@
+from __future__ import annotations
+
+from dataclasses import replace
+
+import pytest
+
+from lateletter.garden.world.animals import (
+    ANIMAL_SPECIES,
+    AnimalContext,
+    ChoreographyLockError,
+    acquire_choreography,
+    create_animal,
+    decide_animal,
+    release_choreography,
+    step_animal,
+)
+from lateletter.garden.world.clock import reconcile_offline
+from lateletter.garden.world.commands import command
+from lateletter.garden.world.engine import dispatch
+from lateletter.garden.world.model import Vec2
+
+
+def test_four_species_have_distinct_repertoires_and_affinities():
+    assert set(ANIMAL_SPECIES) == {"bird", "cat", "rabbit", "turtle"}
+    assert len({item.repertoire for item in ANIMAL_SPECIES.values()}) == 4
+    for definition in ANIMAL_SPECIES.values():
+        assert len(definition.repertoire) >= 6
+        assert definition.fixture_affinities
+        assert definition.weather_response
+
+
+@pytest.mark.parametrize("species_id", sorted(ANIMAL_SPECIES))
+def test_controller_is_deterministic_for_each_species(species_id):
+    animal = create_animal("seed", f"animal:{species_id}", species_id, Vec2(4, 4))
+    context = AnimalContext(100, nearby_affordances=ANIMAL_SPECIES[species_id].fixture_affinities)
+    assert decide_animal(animal, context, "seed") == decide_animal(animal, context, "seed")
+
+
+def test_priority_orders_safety_then_relationship_then_utility():
+    animal = create_animal("seed", "animal:cat", "cat", Vec2(4, 4))
+    unsafe = replace(animal, energy=10, bond_tier=3)
+    decision = decide_animal(
+        unsafe,
+        AnimalContext(100, recipient_focus_id=unsafe.animal_id),
+        "seed",
+    )
+    assert decision.intent == "rest"
+    assert decision.priority_reason == "safety_or_interruption"
+
+    social = replace(animal, bond_tier=1)
+    decision = decide_animal(
+        social,
+        AnimalContext(100, recipient_focus_id=social.animal_id),
+        "seed",
+    )
+    assert decision.intent == "greet"
+    assert decision.priority_reason == "relationship_response"
+
+
+def test_minimum_dwell_hysteresis_prevents_rapid_oscillation():
+    animal = create_animal("seed", "animal:rabbit", "rabbit", Vec2(4, 4))
+    first, decision = step_animal(animal, AnimalContext(100), "seed")
+    assert not decision.retained_by_hysteresis
+    second, decision = step_animal(first, AnimalContext(101, weather="rain"), "seed")
+    assert decision.retained_by_hysteresis
+    assert second == first
+
+
+def test_choreography_lock_is_exclusive_idempotent_and_released_to_recovery():
+    animal = create_animal("seed", "animal:bird", "bird", Vec2(4, 4))
+    locked = acquire_choreography(animal, "scene:arrival", 100)
+    assert acquire_choreography(locked, "scene:arrival", 101) == locked
+    with pytest.raises(ChoreographyLockError):
+        acquire_choreography(locked, "scene:other", 101)
+    decision = decide_animal(locked, AnimalContext(102, interrupted=True), "seed")
+    assert decision.priority_reason == "authored_choreography"
+    released = release_choreography(locked, "scene:arrival", 110)
+    assert released.choreography_lock is None
+    assert released.current_intent == "recover"
+    with pytest.raises(ChoreographyLockError):
+        release_choreography(released, "scene:arrival", 111)
+
+
+def test_humane_absence_preserves_bond_memories_and_personality(world):
+    original = replace(
+        world.animals[0],
+        bond_points=25,
+        bond_tier=2,
+        session_interactions=("feed", "play"),
+    )
+    state = replace(world, animals=(original,), last_observed_wall_time=100)
+    returned, _ = reconcile_offline(state, 100 + 365 * 86_400)
+    animal = returned.animals[0]
+    assert animal.bond_points == original.bond_points
+    assert animal.bond_tier == original.bond_tier
+    assert animal.personality == original.personality
+    assert animal.recent_memories == original.recent_memories
+    assert animal.session_interactions == ()
+
+
+def test_varied_interactions_create_bounded_episodic_memories(world):
+    state = world
+    for sequence, kind in enumerate(("feed", "play", "feed"), start=1):
+        value = command(
+            state.world_id,
+            sequence,
+            kind,
+            target_id="animal:rabbit",
+        )
+        state, result = dispatch(state, value)
+        assert result.accepted
+    memories = state.animals[0].recent_memories
+    assert [memory.kind for memory in memories] == ["feed", "play", "feed"]
+    assert all(memory.timestamp == state.effective_time for memory in memories)
+    assert len({memory.memory_id for memory in memories}) == 3
