@@ -4,11 +4,17 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 
 ## 2026-07-21
 
+### The recreated private repository had no Pages site
+- Symptom: `https://rikiworld.com/lateletter/` returned GitHub's 404 page, the repository Pages API returned 404, and every deploy job was skipped by the temporary public-visibility gate.
+- Impact: The clean replacement repository preserved safe history but the normal public LateLetter viewer URL stayed offline after the GitHub Pro upgrade.
+- Resolution: Removed the temporary visibility gate, recreated the GitHub Pages site with GitHub Actions as its build source, deployed the current clean `master`, and verified the custom-domain project route and published viewer assets.
+- Status: Fixed and live from the private source repository; the Pages site itself remains public
+
 ### Pages deployment kept failing after the repository was recreated as private
 - Symptom: Every replacement-repository push started `Deploy to GitHub Pages`, but GitHub refused to start private-repository jobs because of the account billing/spending-limit restriction.
 - Impact: The clean replacement showed a failed deployment for every otherwise-valid signed commit, while Pages could not be served from the current private GitHub Free repository anyway.
-- Resolution: Gated the deploy job to public repository visibility and updated `actions/checkout` to the current Node 24-compatible major. The deployment path remains available if repository visibility or plan changes.
-- Status: Fixed; Pages intentionally remains offline while the repository is private on GitHub Free
+- Resolution: Temporarily gated the deploy job to public repository visibility and updated `actions/checkout` to the current Node 24-compatible major. After the GitHub Pro upgrade, removed that gate and recreated Pages from the private repository.
+- Status: Superseded by the restored Pages deployment above
 
 ### A plaintext personal letter and its passphrase were committed beside the encrypted bundle
 - Symptom: `letters/letter_source.example.json` is tracked by an explicit `.gitignore` exception even though it now contains a personal letter body and the passphrase used to seal it. Commit `ba8f62a` exposes both in its diff and history.
