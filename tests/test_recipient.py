@@ -6,8 +6,9 @@ from datetime import date, timedelta
 
 import pytest
 
-from lateletter.bundle import Bundle, GardenGift, Trigger
+from lateletter.bundle import BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, GardenGift, Trigger
 from lateletter.garden.renderer import GardenRenderer
+from lateletter.garden.program import parse_program
 from lateletter.garden.terminal import (
     FULL_GARDEN_PARITY,
     TERMINAL_HELP_LINES,
@@ -18,12 +19,15 @@ from lateletter.garden.terminal import (
 from lateletter.recipient import (
     RecipientStore,
     _apply_legacy_gifts,
+    _apply_open_program,
     _build_archive_rows,
     _unlock_content,
+    _open_authenticated_program,
+    _reapply_after_semantic_change,
     _verify_passphrase,
     gift_catalog_entry,
 )
-from lateletter.sealed import seal_bundle, seal_gift_sentiment, seal_message
+from lateletter.sealed import seal_bundle, seal_garden_program, seal_gift_sentiment, seal_message
 
 
 @pytest.fixture()
@@ -179,3 +183,88 @@ def test_terminal_controls_are_discoverable_and_flags_are_honest():
         assert action in help_text
     assert TERMINAL_WORLD_WIRED is True
     assert FULL_GARDEN_PARITY is False
+
+
+def test_normal_sealed_v2_bundle_opens_and_materializes_program(tmp_path):
+    passphrase = "normal production passphrase"
+    raw_program = {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1", "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {},
+        "entities": [{"id": "gift.key", "kind": "item", "catalog_id": "old_key"}],
+        "animals": [],
+        "events": [{
+            "id": "sealed-welcome",
+            "conditions": {"fact": "visit.total", "op": ">=", "value": 0},
+            "schedule": None,
+            "occurrence": "once", "priority": 0, "exclusive_group": None,
+            "cooldown": None,
+            "actions": [
+                {"type": "entity.reveal", "target": "gift.key", "params": {"state": "For you"}},
+                {"type": "narrative.show", "target": None,
+                 "params": {"kind": "memory", "label": "Sealed memory", "text": "Private text"}},
+            ],
+        }],
+    }
+    message = seal_message(
+        passphrase, message_id="letter.one", date=date.today().isoformat(),
+        label="For today", body="Private letter",
+    )
+    bundle = Bundle(
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+        bundle_id="sealed-v2", garden_seed=99, messages=[message],
+        garden_program=seal_garden_program(passphrase, raw_program),
+    )
+    seal_bundle(bundle, passphrase)
+
+    assert _verify_passphrase(passphrase, bundle, False)
+    messages, gifts = _unlock_content(passphrase, bundle, False)
+    program = _open_authenticated_program(passphrase, bundle, gifts)
+    session = TerminalWorldSession.open(
+        world_id=bundle.bundle_id, seed=bundle.garden_seed, width=80, height=24,
+        path=tmp_path / "sealed-v2.json", observed_wall_time=1_000,
+    )
+    _apply_open_program(session, bundle, program, today=date.today(), read_ids=set())
+
+    assert messages == [("For today", "Private letter")]
+    assert any(item.collectible_id == "gift.key" for item in session.world.collectibles)
+    assert any(entry.label == "Sealed memory" for entry in session.world.journal)
+    assert session.world.program_state["applied_occurrences"]
+    before = session.world.canonical_bytes()
+    _apply_open_program(session, bundle, program, today=date.today(), read_ids=set())
+    assert session.world.canonical_bytes() == before
+
+
+def test_changed_semantic_command_re_evaluates_program_in_session(tmp_path):
+    session = _session(tmp_path)
+    program = parse_program({
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1", "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {}, "entities": [], "animals": [],
+        "events": [{
+            "id": "after-tending",
+            "conditions": {"fact": "plant.growth_stage", "op": ">=", "value": 1},
+            "schedule": None, "occurrence": "once", "priority": 0,
+            "exclusive_group": None, "cooldown": None,
+            "actions": [{
+                "type": "narrative.show", "target": None,
+                "params": {"kind": "memory", "label": "Care remembered", "text": "It grew."},
+            }],
+        }],
+    })
+    bundle = Bundle(
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+        bundle_id="bundle-under-test",
+    )
+    _apply_open_program(session, bundle, program, today=date.today(), read_ids=set())
+    assert not any(entry.label == "Care remembered" for entry in session.world.journal)
+
+    result = session.dispatch(
+        "tend", target_id=session.world.plants[0].plant_id,
+        args={"care_action": "water"},
+    )
+    assert result.accepted and result.changed
+    _reapply_after_semantic_change(
+        session, bundle, program, result, today=date.today(), read_ids=set(),
+    )
+    assert any(entry.label == "Care remembered" for entry in session.world.journal)

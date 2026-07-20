@@ -5,7 +5,7 @@ from __future__ import annotations
 import base64
 import curses
 from dataclasses import replace
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 import json
 import os
 from pathlib import Path
@@ -14,15 +14,13 @@ import time
 from typing import Any, Mapping
 
 from .bundle import Bundle, GardenGift, Message, read_bundle, verify_checksum
-from .garden.world.animals import ANIMAL_SPECIES, create_animal
-from .garden.evaluator import evaluate_program
 from .garden.legacy import migrate_legacy_gifts
+from .garden.materializer import apply_program, build_runtime_facts, eligible_occurrences
+from .garden.program import GardenProgram, parse_program
 from .garden.renderer import GardenRenderer
 from .garden.terminal import TERMINAL_HELP_LINES, TerminalWorldSession, handle_terminal_key
-from .garden.world.model import CollectibleState, Vec2
-from .garden.world.plants import SPECIES_CATALOG, create_plant
-from .garden.world.rng import DeterministicRNG, derive_seed
-from .sealed import open_gift_sentiment, open_message, verify_bundle_hmac
+from .garden.world.engine import CommandResult
+from .sealed import open_garden_program, open_gift_sentiment, open_message, verify_bundle_hmac
 
 
 ITEM_CATALOG: dict[str, tuple[str, str]] = {
@@ -224,33 +222,49 @@ def _clamp_scroll(
     return scroll
 
 
-def _legacy_position(session: TerminalWorldSession, gift: GardenGift) -> Vec2:
-    world = session.world
-    occupied = {
-        item.position
-        for collection in (world.plants, world.fixtures, world.animals, world.collectibles)
-        for item in collection
-    }
-    rng = DeterministicRNG(derive_seed(world.seed, "legacy", gift.id, "position"))
-    for _ in range(256):
-        if gift.placement_hint == "by_edge":
-            x = 2 if rng.randbelow(2) == 0 else world.world_width - 3
-        elif gift.placement_hint == "near_tallest_tree":
-            x = world.world_width // 2 + rng.randint(-8, 8)
-        else:
-            x = rng.randint(2, world.world_width - 3)
-        position = Vec2(max(1, min(world.world_width - 2, x)), rng.randint(2, world.world_height - 3))
-        if position not in occupied:
-            return position
-    raise ValueError(f"could not place legacy gift {gift.id}")
-
-
-def _eligible_legacy_gift_ids(receipts: tuple[str, ...]) -> set[str]:
+def _eligible_legacy_gift_ids(program_state: Mapping[str, Any]) -> set[str]:
     result: set[str] = set()
-    for receipt in receipts:
-        if receipt.startswith("legacy.") and "@" in receipt:
-            result.add(receipt[len("legacy."):receipt.index("@")])
+    for receipt in program_state.get("applied_occurrences", []):
+        event_id = str(receipt).split("@", 1)[0]
+        if event_id.startswith("legacy."):
+            result.add(event_id[len("legacy."):])
     return result
+
+
+def _program_now(session: TerminalWorldSession, today: date) -> datetime:
+    observed = session.world.last_observed_wall_time
+    current = datetime.fromtimestamp(
+        observed if observed is not None else int(time.time()), tz=timezone.utc,
+    )
+    return current.replace(year=today.year, month=today.month, day=today.day)
+
+
+def _apply_program_to_session(
+    session: TerminalWorldSession,
+    program: GardenProgram,
+    *,
+    today: date,
+    read_ids: set[str],
+    due_letter_ids: tuple[str, ...] = (),
+) -> None:
+    now = _program_now(session, today)
+    absence = max(0, session.offline_report.elapsed_seconds)
+    last_seen = now - timedelta(seconds=max(60, absence))
+    scheduled = eligible_occurrences(
+        program, last_seen_utc=last_seen, now_utc=now,
+    )
+    facts = build_runtime_facts(
+        session.world,
+        program,
+        now_utc=now,
+        total_visits=session.total_visits,
+        absence_seconds=absence,
+        read_ids=read_ids,
+        due_letter_ids=due_letter_ids,
+    )
+    result = apply_program(session.world, program, facts=facts, eligible=scheduled)
+    session.world = result.world
+    session.save()
 
 
 def _apply_legacy_gifts(
@@ -260,72 +274,79 @@ def _apply_legacy_gifts(
     today: date,
     read_ids: set[str],
 ) -> set[str]:
-    """Evaluate v1 gifts once through migration/evaluator, then materialize effects."""
+    """Compatibility wrapper: migrate v1 then use the general program adapter."""
     program = migrate_legacy_gifts(
         bundle.garden_gifts,
         authenticated=True,
         decrypted_sentiments=gift_content,
         message_ids=[message.id for message in bundle.messages],
     )
-    prior_receipts = [
+    return _apply_open_program(
+        session, bundle, program, today=today, read_ids=read_ids,
+    )
+
+
+def _apply_open_program(
+    session: TerminalWorldSession,
+    bundle: Bundle,
+    program: GardenProgram,
+    *,
+    today: date,
+    read_ids: set[str],
+    due_letter_ids: tuple[str, ...] = (),
+) -> set[str]:
+    """Apply an already-authenticated v1 or v2 program through one owner."""
+    old_ledger = [
         receipt for receipt in session.world.milestone_receipts
         if receipt.startswith("legacy.")
     ]
-    evaluation = evaluate_program(
-        program,
-        {"applied_occurrences": prior_receipts},
-        {
-            "facts": {
-                "time.local": f"{today.isoformat()}T12:00:00",
-                "visit.total": session.total_visits,
-                "letter.read": sorted(read_ids),
-            },
-            "seed": session.world.seed,
-        },
+    if old_ledger and not session.world.program_state.get("applied_occurrences"):
+        session.world = replace(
+            session.world,
+            program_state={"applied_occurrences": old_ledger},
+        )
+    _apply_program_to_session(
+        session, program, today=today, read_ids=read_ids,
+        due_letter_ids=due_letter_ids,
     )
-    gifts = {f"legacy-entity.{gift.id}": gift for gift in bundle.garden_gifts}
-    world = session.world
-    plants = list(world.plants)
-    animals = list(world.animals)
-    collectibles = list(world.collectibles)
-    existing_ids = set(world.object_ids())
-    for effect in evaluation.effects:
-        target = effect.get("target")
-        if not isinstance(target, str) or target not in gifts or target in existing_ids:
-            continue
-        gift = gifts[target]
-        position = _legacy_position(session, gift)
-        if effect["type"] == "animal.arrive" and gift.catalog_id in ANIMAL_SPECIES:
-            animals.append(create_animal(world.seed, target, gift.catalog_id, position))
-        elif effect["type"] == "plant.plant":
-            species = {
-                "rosebush": "rose",
-                "sapling": "oak",
-            }.get(gift.catalog_id, gift.catalog_id)
-            species = species if species in SPECIES_CATALOG else "rose"
-            plants.append(create_plant(world.seed, target, species, position, planted_at=world.effective_time))
-        elif effect["type"] == "entity.reveal":
-            label, _ = gift_catalog_entry(gift)
-            collectibles.append(CollectibleState(
-                collectible_id=target,
-                family="authored_keepsake",
-                provenance="author-authored",
-                label=label,
-                description=gift_content.get(gift.id, "An authored garden memory."),
-                position=position,
-                authored=True,
-            ))
-        existing_ids.add(target)
-    receipts = tuple(str(item) for item in evaluation.state.get("applied_occurrences", []))
-    session.world = replace(
-        world,
-        plants=tuple(plants),
-        animals=tuple(animals),
-        collectibles=tuple(collectibles),
-        milestone_receipts=tuple(sorted(set(world.milestone_receipts).union(receipts))),
+    if bundle.version < 2:
+        return _eligible_legacy_gift_ids(session.world.program_state)
+    return set()
+
+
+def _open_authenticated_program(
+    passphrase: str,
+    bundle: Bundle,
+    gift_content: Mapping[str, str],
+) -> GardenProgram:
+    if bundle.version >= 2:
+        if bundle.garden_program is None:
+            raise ValueError("version 2 bundle is missing its Garden program")
+        return parse_program(open_garden_program(passphrase, bundle.garden_program))
+    return migrate_legacy_gifts(
+        bundle.garden_gifts,
+        authenticated=True,
+        decrypted_sentiments=gift_content,
+        message_ids=[message.id for message in bundle.messages],
     )
-    session.save()
-    return _eligible_legacy_gift_ids(session.world.milestone_receipts)
+
+
+def _reapply_after_semantic_change(
+    session: TerminalWorldSession,
+    bundle: Bundle,
+    program: GardenProgram,
+    result: CommandResult,
+    *,
+    today: date,
+    read_ids: set[str],
+    due_letter_ids: tuple[str, ...] = (),
+) -> set[str] | None:
+    if not result.accepted or not result.changed:
+        return None
+    return _apply_open_program(
+        session, bundle, program, today=today, read_ids=read_ids,
+        due_letter_ids=due_letter_ids,
+    )
 
 
 def _draw_centered(screen: curses.window, row: int, text: str, attr: int = 0) -> None:
@@ -412,6 +433,7 @@ def run_recipient(
     read_ids = store.read_set()
     due: list[int] = []
     eligible_gifts: set[str] = set()
+    active_program: GardenProgram | None = None
     selected = 0
     reading_index = 0
     reading_scroll = 0
@@ -499,10 +521,18 @@ def run_recipient(
                 if _verify_passphrase(passphrase, bundle, is_dev_fixture):
                     try:
                         message_content, gift_content = _unlock_content(passphrase, bundle, is_dev_fixture)
+                        active_program = _open_authenticated_program(passphrase, bundle, gift_content)
                         authenticated = True
                         read_ids = store.read_set()
                         due = _compute_due(bundle, today, read_ids)
-                        eligible_gifts = _apply_legacy_gifts(session, bundle, gift_content, today, read_ids)
+                        eligible_gifts = _apply_open_program(
+                            session,
+                            bundle,
+                            active_program,
+                            today=today,
+                            read_ids=read_ids,
+                            due_letter_ids=tuple(bundle.messages[index].id for index in due),
+                        )
                         status = "Letters unlocked; Garden actions use the canonical command trace."
                         error = ""
                         state = _ST_GARDEN
@@ -533,7 +563,15 @@ def run_recipient(
                 store.mark_read(bundle.messages[reading_index].id)
                 read_ids = store.read_set()
                 due = _compute_due(bundle, today, read_ids)
-                eligible_gifts = _apply_legacy_gifts(session, bundle, gift_content, today, read_ids)
+                if active_program is not None:
+                    eligible_gifts = _apply_open_program(
+                        session,
+                        bundle,
+                        active_program,
+                        today=today,
+                        read_ids=read_ids,
+                        due_letter_ids=tuple(bundle.messages[index].id for index in due),
+                    )
                 state = _ST_SELECTION if due else _ST_GARDEN
             elif key == ord("p"):
                 label, body = message_content[reading_index]
@@ -599,6 +637,18 @@ def run_recipient(
         result = handle_terminal_key(session, key)
         if result is not None:
             status = result.summary if result.accepted else result.reason
+            if authenticated and active_program is not None:
+                updated_eligibility = _reapply_after_semantic_change(
+                    session,
+                    bundle,
+                    active_program,
+                    result,
+                    today=today,
+                    read_ids=read_ids,
+                    due_letter_ids=tuple(bundle.messages[index].id for index in due),
+                )
+                if updated_eligibility is not None:
+                    eligible_gifts = updated_eligibility
             if key == ord("i") and session.focused_id() and session.focused_id().startswith("legacy-entity."):
                 gift_id = session.focused_id()[len("legacy-entity."):]
                 memory_gift = next((gift for gift in bundle.garden_gifts if gift.id == gift_id), None)

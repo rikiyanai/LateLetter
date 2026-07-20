@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping
 
@@ -480,6 +481,7 @@ class WorldState:
     ui: UIState = field(default_factory=UIState)
     undo_stack: tuple[UndoRecord, ...] = ()
     milestone_receipts: tuple[str, ...] = ()
+    program_state: Mapping[str, Any] = field(default_factory=dict)
     processed_commands: tuple[str, ...] = ()
     event_trace: tuple[TraceEntry, ...] = ()
 
@@ -511,6 +513,7 @@ class WorldState:
             "ui": self.ui.to_dict(),
             "undo_stack": [item.to_dict() for item in self.undo_stack],
             "milestone_receipts": sorted(set(self.milestone_receipts)),
+            "program_state": _canonical_value(self.program_state),
             "processed_commands": list(self.processed_commands),
             "event_trace": [item.to_dict() for item in self.event_trace],
         }
@@ -542,6 +545,7 @@ class WorldState:
             ui=UIState.from_dict(data.get("ui", {})),
             undo_stack=tuple(UndoRecord.from_dict(item) for item in data.get("undo_stack", [])),
             milestone_receipts=tuple(str(item) for item in data.get("milestone_receipts", [])),
+            program_state=deepcopy(dict(data.get("program_state", {}))),
             processed_commands=tuple(str(item) for item in data.get("processed_commands", [])),
             event_trace=tuple(TraceEntry.from_dict(item) for item in data.get("event_trace", [])),
         )
