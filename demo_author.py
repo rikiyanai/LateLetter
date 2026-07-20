@@ -27,8 +27,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'src'))
 
-from lateletter.bundle import Bundle, GardenGift, Notification, Trigger, write_bundle
-from lateletter.sealed import seal_bundle, seal_gift_sentiment, seal_message
+from lateletter.bundle import (
+    BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, Notification, write_bundle,
+)
+from lateletter.garden.program import parse_program
+from lateletter.sealed import seal_bundle, seal_garden_program, seal_message
 
 # ---------------------------------------------------------------------------
 # Pre-seeded author content
@@ -192,36 +195,70 @@ def run_demo(out_path: Path, quiet: bool) -> None:
         for m in MESSAGES
     ]
 
-    garden_gifts = [
-        GardenGift(
-            id=str(uuid.uuid4()),
-            type="animal",
-            catalog_id=GARDEN_DIRECTION["animal"]["catalog_id"],
-            trigger=Trigger(**GARDEN_DIRECTION["animal"]["trigger"]),
-            placement_hint="random",
-        ),
-        GardenGift(
-            id=str(uuid.uuid4()),
-            type="item",
-            catalog_id=GARDEN_DIRECTION["item"]["catalog_id"],
-            trigger=Trigger(**GARDEN_DIRECTION["item"]["trigger"]),
-            placement_hint="random",
-        ),
-    ]
-    seal_gift_sentiment(
-        PASSPHRASE, garden_gifts[0], GARDEN_DIRECTION["animal"]["sentiment"],
-    )
-    seal_gift_sentiment(
-        PASSPHRASE, garden_gifts[1], GARDEN_DIRECTION["item"]["sentiment"],
-    )
+    garden_program = {
+        "version": 1,
+        "evaluator_version": 1,
+        "world_state_version": 1,
+        "atlas_version": "garden-atlas-1",
+        "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC",
+        "variables": {},
+        "entities": [{
+            "id": "plate-of-food", "kind": "collectible",
+            "catalog_id": "collectible.seed_packet",
+            "initial_state": {"revealed": False}, "placement": "random",
+        }],
+        "animals": [{
+            "id": "demo-rabbit", "species": "rabbit", "catalog_id": "animal.rabbit",
+            "name": "Clover", "personality": "cautious, patient, and curious",
+            "routine": "forage at dawn, nap by the hedge, approach after quiet visits",
+            "favorite_places": ["hedge", "bench"],
+            "prohibited_behaviors": ["startle the recipient", "leave the garden"],
+            "initial_state": {"present": False},
+        }],
+        "events": [
+            {
+                "id": "rabbit-arrives",
+                "conditions": {"fact": "visit.total", "op": ">=", "value": 1},
+                "schedule": None, "occurrence": "once", "priority": 0,
+                "exclusive_group": None, "cooldown": None,
+                "actions": [
+                    {"type": "animal.arrive", "target": "demo-rabbit",
+                     "params": {"position": "random", "routine": "forage at dawn"}},
+                    {"type": "narrative.show", "target": None,
+                     "params": {"kind": "memory",
+                                "text": GARDEN_DIRECTION["animal"]["sentiment"],
+                                "label": "Clover"}},
+                ],
+            },
+            {
+                "id": "food-appears",
+                "conditions": {"fact": "time.local", "op": ">=",
+                               "value": f"{TODAY + timedelta(days=90)}T00:00:00"},
+                "schedule": None, "occurrence": "once", "priority": 0,
+                "exclusive_group": None, "cooldown": None,
+                "actions": [
+                    {"type": "entity.reveal", "target": "plate-of-food",
+                     "params": {"position": "random"}},
+                    {"type": "narrative.show", "target": None,
+                     "params": {"kind": "memory",
+                                "text": GARDEN_DIRECTION["item"]["sentiment"],
+                                "label": "A plate left for you"}},
+                ],
+            },
+        ],
+    }
+    parse_program(garden_program)
 
     bundle = Bundle(
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
         bundle_id=str(uuid.uuid4()),
         author_name=AUTHOR_NAME,
         passphrase_hint=PASSPHRASE_HINT,
         garden_seed=42301,
         messages=messages,
-        garden_gifts=garden_gifts,
+        garden_gifts=[],
+        garden_program=seal_garden_program(PASSPHRASE, garden_program),
         notification=Notification(),
     )
 

@@ -209,6 +209,17 @@ class TestSaveSessionPassphraseGuard:
         assert result["passphrase_hint"] == "first dog"
 
 
+class TestGardenTimeline:
+    def test_resumable_timeline_roundtrip(self, store):
+        timeline = {"version": 1, "beats": [{"id": "welcome"}]}
+        store.save_garden_timeline(timeline)
+        assert store.load_garden_timeline() == timeline
+
+    def test_nested_secret_is_rejected(self, store):
+        with pytest.raises(ValueError, match="sensitive Garden"):
+            store.save_garden_timeline({"beats": [{"secret": "do not persist"}]})
+
+
 # ---------------------------------------------------------------------------
 # Secure temp-file creation
 # ---------------------------------------------------------------------------

@@ -200,6 +200,42 @@ class SessionStore:
         if self._selector_file.exists():
             self._selector_file.unlink()
 
+    # ---- garden timeline --------------------------------------------------
+
+    def load_garden_timeline(self) -> dict[str, Any] | None:
+        """Return the resumable plain-language Garden timeline, if present."""
+        value = self.load_session().get("garden_timeline")
+        return value if isinstance(value, dict) else None
+
+    def save_garden_timeline(self, timeline: dict[str, Any]) -> None:
+        """Persist author-private beat cards without ever accepting secrets."""
+        blocked: set[str] = set()
+
+        def inspect(value: Any) -> None:
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    if str(key).lower() in _PASSPHRASE_DENY:
+                        blocked.add(str(key))
+                    inspect(child)
+            elif isinstance(value, list):
+                for child in value:
+                    inspect(child)
+
+        inspect(timeline)
+        if blocked:
+            raise ValueError(
+                f"Refusing to persist sensitive Garden key(s): {sorted(blocked)}"
+            )
+        session = self.load_session()
+        session["garden_timeline"] = timeline
+        self.save_session(session)
+
+    def clear_garden_timeline(self) -> None:
+        session = self.load_session()
+        if "garden_timeline" in session:
+            del session["garden_timeline"]
+            self.save_session(session)
+
     # ---- message helpers ----
 
     def get_message(self, message_id: str) -> dict[str, Any] | None:
