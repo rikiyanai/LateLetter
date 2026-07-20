@@ -217,10 +217,13 @@ python3 demo_author.py
 # Intended to produce demo_output.lateletter in ≤60s
 ```
 
-Current audit note (2026-04-27): `demo_author.py` currently writes `bundle.to_dict()` directly and does not compute the bundle checksum first. Do not use its output as proof of a valid export or terminal-recipient-ready handoff until that path is fixed in code.
-Deferred until checksum/export wiring is fixed:
-- Terminal validation of `demo_output.lateletter`
-- Browser validation of `demo_output.lateletter` as a canonical export artifact
+Updated verification note (2026-07-21): `demo_author.py` now creates real
+PBKDF2/AES-GCM sealed messages and gifts, finalizes the bundle HMAC, and writes
+through the canonical atomic `write_bundle()` path. Its output passes checksum
+and HMAC verification and decrypts with the documented `biscuit` passphrase.
+The exact generated artifact also completed the HTML unlock and letter-reading
+flow in an automated interactive browser check. This is implementation evidence,
+not the Part D human emotional-observation sign-off.
 
 ---
 

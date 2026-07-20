@@ -19,9 +19,6 @@ Usage:
 """
 
 import argparse
-import base64
-import json
-import os
 import sys
 import time
 import uuid
@@ -30,7 +27,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'src'))
 
-from lateletter.bundle import Bundle, GardenGift, Message, Notification, Trigger
+from lateletter.bundle import Bundle, GardenGift, Notification, Trigger, write_bundle
+from lateletter.sealed import seal_bundle, seal_gift_sentiment, seal_message
 
 # ---------------------------------------------------------------------------
 # Pre-seeded author content
@@ -151,15 +149,6 @@ def _step(quiet: bool, msg: str, delay: float = 0.3) -> None:
         time.sleep(delay)
 
 
-def _enc(label: str, body: str) -> str:
-    """Encode message as base64 JSON (dev fixture passthrough)."""
-    return base64.b64encode(json.dumps({"label": label, "body": body}).encode()).decode()
-
-
-def _enc_sentiment(text: str) -> str:
-    return base64.b64encode(text.encode()).decode()
-
-
 def run_demo(out_path: Path, quiet: bool) -> None:
     t_start = time.monotonic()
 
@@ -193,10 +182,12 @@ def run_demo(out_path: Path, quiet: bool) -> None:
     _step(quiet, "[ export  ]  Building bundle…", 0.3)
 
     messages = [
-        Message(
-            id=str(uuid.uuid4()),
+        seal_message(
+            PASSPHRASE,
+            message_id=str(uuid.uuid4()),
             date=m["date"],
-            ciphertext=_enc(m["label"], m["body"]),
+            label=m["label"],
+            body=m["body"],
         )
         for m in MESSAGES
     ]
@@ -208,7 +199,6 @@ def run_demo(out_path: Path, quiet: bool) -> None:
             catalog_id=GARDEN_DIRECTION["animal"]["catalog_id"],
             trigger=Trigger(**GARDEN_DIRECTION["animal"]["trigger"]),
             placement_hint="random",
-            sentiment_ciphertext=_enc_sentiment(GARDEN_DIRECTION["animal"]["sentiment"]),
         ),
         GardenGift(
             id=str(uuid.uuid4()),
@@ -216,25 +206,28 @@ def run_demo(out_path: Path, quiet: bool) -> None:
             catalog_id=GARDEN_DIRECTION["item"]["catalog_id"],
             trigger=Trigger(**GARDEN_DIRECTION["item"]["trigger"]),
             placement_hint="random",
-            sentiment_ciphertext=_enc_sentiment(GARDEN_DIRECTION["item"]["sentiment"]),
         ),
     ]
+    seal_gift_sentiment(
+        PASSPHRASE, garden_gifts[0], GARDEN_DIRECTION["animal"]["sentiment"],
+    )
+    seal_gift_sentiment(
+        PASSPHRASE, garden_gifts[1], GARDEN_DIRECTION["item"]["sentiment"],
+    )
 
     bundle = Bundle(
         bundle_id=str(uuid.uuid4()),
         author_name=AUTHOR_NAME,
         passphrase_hint=PASSPHRASE_HINT,
-        bundle_auth_salt=base64.b64encode(os.urandom(16)).decode(),
         garden_seed=42301,
         messages=messages,
         garden_gifts=garden_gifts,
         notification=Notification(),
-        checksum="",
-        hmac="",
     )
 
     # ── Step 7: Write output file ──────────────────────────────────────
-    out_path.write_text(json.dumps(bundle.to_dict(), indent=2))
+    seal_bundle(bundle, PASSPHRASE)
+    write_bundle(bundle, out_path)
 
     elapsed = time.monotonic() - t_start
 

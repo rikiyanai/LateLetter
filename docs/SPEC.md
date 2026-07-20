@@ -1836,7 +1836,7 @@ The product is not shippable until all of the following are true:
 - The self-hosted email notification script sends a due-date email correctly when run via cron.
 - The product can read bundles created by prior v1 builds used during the release cycle.
 
-**Audit note (2026-04-27):** These criteria remain open in live code. The current gaps confirmed by source and runtime checks are: (1) the `lateletter --write` path does not yet complete the end-to-end author workflow, (2) the browser viewer does not yet enforce launch-time checksum validation, and (3) `demo_author.py` is not yet valid evidence for the export path because it emits bundles without a computed checksum.
+**Runtime audit update (2026-07-21):** The three implementation gaps recorded on 2026-04-27 are now closed in code: `lateletter --write` reaches Q&A, reviewed drafting, real sealing, and canonical export/append; the browser enforces launch-time checksum validation; and `demo_author.py` emits a checksummed, HMAC-authenticated real sealed bundle. The same generated artifact passed Python checksum/HMAC/decryption checks and an automated interactive HTML unlock/read check. Corrupted-file negative-path human QA, the full browser matrix, handoff-package generation, and the other release criteria above remain open until separately verified.
 
 ## 19. Test Matrix
 
@@ -1886,7 +1886,7 @@ v1 ships self-contained delivery channels (§13): a local macOS app, a local bro
 
 This is the canonical execution order for the project. The critical path runs through steps 1→17→ship. Items marked **[parallel]** may run alongside the current critical-path step. Items in the **Garden Polish** track (step 4P) are explicitly **non-ship-blocking** per §15.
 
-*Last updated: 2026-04-27 — step 6 downgraded back to in progress after execution audit (`lateletter --write` still stops after intake); step 10 remains in progress with browser checksum/corruption parity still open; step 11 done (notify.py); step 11a Part C downgraded because `demo_author.py` currently emits bundles without a computed checksum; Part D still awaiting human observation pass*
+*Last updated: 2026-07-21 — step 6 end-to-end offline author integration and step 11a Part C canonical sealed demo are complete; step 10's checksum gate is implemented with valid-bundle automated browser evidence, while corrupt-file negative-path and cross-browser human QA remain open; Part D still awaits human observation.*
 
 ---
 
@@ -1946,14 +1946,14 @@ These subphases improve the garden's visual richness but are not required for v1
    - ~~`--accessible` line-mode path for consent + intake~~ ✓
    - ~~Minimal curses draft editor (§8.4) — arrow keys, Ctrl+S/X, atomic draft saves~~ ✓
    - ~~External-editor path via LATELETTER_EDITOR env var~~ ✓
-   - ~~CLI entry point (`lateletter --write`, `--accessible`, `--garden`, `--wipe-session`)~~ ✓ — dispatcher exists, but `--write` still stops after intake pending step 6 integration
-6. **[IN PROGRESS — audit downgrade 2026-04-27]** Build the offline author workflow
+   - ~~CLI entry point (`lateletter --write`, `--accessible`, `--garden`, `--wipe-session`)~~ ✓
+6. **[DONE — 2026-07-21]** Build the offline author workflow
    - ~~Temporary reviewed seed bank (`data/question_bank_seed.v0.json`)~~ ✓
    - ~~Offline question selector (universal base set + personalization + gating)~~ ✓
    - ~~Q&A session loop with autosave~~ ✓
    - ~~Session resumption with split-state healing~~ ✓
    - ~~Incapacitation/steward handling (§5.6) — steward info, handoff summary, session compaction~~ ✓
-   - End-to-end `lateletter --write` integration (message list → Q&A → draft → export / append-later) — **NOT DONE**. Current CLI still exits after intake.
+   - ~~End-to-end `lateletter --write` integration (message list → Q&A → draft → export / append-later)~~ ✓ — canonical owner in `src/lateletter/author.py`; real sealing/export is regression-tested
 
 ### Recipient experience and delivery
 
@@ -2006,7 +2006,7 @@ These subphases improve the garden's visual richness but are not required for v1
     - ~~**TODO 10c — Animal dev fixture:**~~ ✓ `_ANIMAL_ART` (4 animals × 4 tiers), `_ANIMAL_DELIVERY_FRAMES`, `_ANIMAL_FOOTPRINTS` ported to JS. Animal renders in CreatureLayer at home position (tiers 1–3) or peeks from right edge (tier 0); footprints when absent; bonded perch in SpecialLayer post-complete. `f` key feeds (authenticated, triggered, tier < 3). `Shift+A` dev shortcut cycles all 16 animal states. Animal state persisted in IndexedDB per bundle. Eager trigger eval on bundle load (date + cumulative_visits fire without auth).
     - ~~**TODO 10d — First-run sequence:**~~ ✓ `#frb` banner fades in at 3s, auto-hides at 12s, shown once per session via `_frbDone` flag. Text: "This garden was planted for you by [author_name]." Tracked via existing `kFirst()` storage key.
     - ~~**TODO 10e — HTML grid-fidelity gap:**~~ ✓ `_measure()` now appends test span/div inside `#g` (not `document.body`) for exact font-rendering context; CH measured from real `div` inheriting `height:15px` from CSS rule. `getSeason()` checks `?season=` URL param first. `_arcSeed()` added for `?arc=` browser demo seeding. **Pending:** browser QA pass (Safari/Chrome/Firefox at 100% + 150% zoom) — human verification needed.
-    - **Audit note (2026-04-27):** The browser viewer still does **not** recompute/verify the bundle checksum on load, so corruption-handling parity with the terminal recipient remains open even though most recipient UI/progression features are wired.
+    - **Audit update (2026-07-21):** The browser recomputes the canonical visible-payload checksum before unlock. A valid real sealed demo passed the automated interactive load/unlock/read path; corrupted-file negative-path and Safari/Chrome/Firefox human QA remain open.
     - Crypto in a **Web Worker** using chosen Phase 3 primitive (`age-encryption` or `argon2-browser`) — wired in step 13
     - Package as a single self-contained HTML file (inline JS/CSS, no external WASM until step 13)
     - Test in Safari, Chrome, Firefox (desktop and mobile)
@@ -2020,7 +2020,7 @@ These subphases improve the garden's visual richness but are not required for v1
     - Generates cron/launchd instructions for the author/steward
     - Include in handoff package (§15.1)
 
-11a. **[Parts A/B done — 2026-04-21; Part C downgraded 2026-04-27; Part D pending human observation]** Demo harnesses and emotional verification — the next critical-path cluster. These steps make the emotional arc (§6.9) evaluable as a lived experience rather than a code review. All three parts must complete before step 13 (encryption), because the emotional bar must be set before the product is sealed.
+11a. **[Parts A/B/C done; Part D pending human observation]** Demo harnesses and emotional verification — the next critical-path cluster. These steps make the emotional arc (§6.9) evaluable as a lived experience rather than a code review. All three parts must complete before step 13 (encryption), because the emotional bar must be set before the product is sealed.
 
    ~~**Part A — HTML grid-fidelity gap**~~ ✓ *(tied to TODO 10e above)*
    - ~~Measure true glyph metrics for the chosen monospace font at 1× zoom; lock in matching CW/CH constants~~ ✓ `_measure()` appends to `#g`, CH from real div
@@ -2032,8 +2032,8 @@ These subphases improve the garden's visual richness but are not required for v1
    - ~~`--browser` flag~~ ✓ generates dev fixture `.lateletter` per arc + prints `?season=`+`?arc=` URL
    - ~~`docs/DEMO_SCRIPT.md`~~ ✓ produced
 
-   **Part C — Author e2e demo** *(pre-seeded fixture walkthrough; currently downgraded)*
-   - `demo_author.py` exists and stages the intended consent→intake→Q&A→draft→export narrative, but its current output is **not yet a valid proof artifact** because it writes a bundle without computing the checksum. Treat Part C as open until the script uses the canonical bundle writer path.
+   ~~**Part C — Author e2e demo**~~ ✓ *(pre-seeded fixture walkthrough)*
+   - `demo_author.py` stages the consent→intake→Q&A→draft→export narrative and now emits real sealed messages/gifts through `seal_bundle()` plus the canonical `write_bundle()` path. Checksum, HMAC, Python decryption, and an automated interactive HTML unlock/read check passed on 2026-07-21.
 
    **Part D — Emotional arc verification pass**
    - Run the recipient demo harness (Part B) as a human observer, not a developer

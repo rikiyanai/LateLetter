@@ -14,9 +14,9 @@ Loads a .lateletter bundle and runs the living garden delivery experience:
   • Read receipts  → ~/.lateletter/recipient/receipts.json (§6.4 step 8)
   • Garden state   → ~/.lateletter/recipient/garden_state.json (§6.8.7)
 
-Encryption is Phase 3.  Dev fixtures (bundle.hmac == "") store base64(plaintext)
-in ciphertext fields; this module decodes them directly.  Real bundles with a
-populated hmac field will require Argon2id + AES-GCM decryption (not yet built).
+Dev fixtures (bundle.hmac == "") store base64(plaintext) in ciphertext fields.
+Real v0 sealed bundles use the same PBKDF2-SHA256 + AES-256-GCM implementation
+as the browser viewer and are authenticated before any delivery state appears.
 """
 from __future__ import annotations
 
@@ -30,6 +30,11 @@ from pathlib import Path
 from typing import Any
 
 from .bundle import Bundle, GardenGift, Message, read_bundle, verify_checksum
+from .sealed import (
+    open_gift_sentiment,
+    open_message,
+    verify_bundle_hmac,
+)
 from .garden.renderer import GardenRenderer
 from .garden.colors import curses_attr, init_curses_colors
 
@@ -521,16 +526,10 @@ def _draw_archive(
 def _draw_memory(
     scr: curses.window, h: int, w: int,
     gift: GardenGift,
-    is_dev_fixture: bool,
+    sentiment: str,
 ) -> None:
     """Overlay showing the author's sentiment for a discovered item."""
     name, art = catalog_entry(gift.catalog_id)
-    sentiment = (
-        _b64decode(gift.sentiment_ciphertext)
-        if is_dev_fixture
-        else "(This memory requires Phase 3 decryption.)"
-    )
-
     bw = min(54, w - 4)
     bh = 9
     bx = (w - bw) // 2
@@ -568,18 +567,42 @@ def _draw_item_select(
 
 
 # ---------------------------------------------------------------------------
-# Passphrase verification stub
-#
-# Dev fixtures (hmac == ""): accept "biscuit" (matches fixture hint "The name
-# of our first dog").
-# Real bundles: Phase 3 Argon2id HMAC verification is not yet built.
+# Passphrase verification and content unlock
 # ---------------------------------------------------------------------------
 
 def _verify_passphrase(passphrase: str, bundle: Bundle, is_dev: bool) -> bool:
     if is_dev:
-        return passphrase == "biscuit"
-    # Real bundle — Phase 3 required
-    return False
+        return True
+    try:
+        return verify_bundle_hmac(bundle, passphrase)
+    except (ValueError, TypeError):
+        return False
+
+
+def _unlock_content(
+    passphrase: str,
+    bundle: Bundle,
+    is_dev: bool,
+) -> tuple[list[tuple[str, str]], dict[str, str]]:
+    """Return decrypted messages and gift sentiments after authentication."""
+    if is_dev:
+        return (
+            [_decode_message(message) for message in bundle.messages],
+            {
+                gift.id: _b64decode(gift.sentiment_ciphertext)
+                for gift in bundle.garden_gifts
+            },
+        )
+    messages: list[tuple[str, str]] = []
+    for message in bundle.messages:
+        opened = open_message(passphrase, message)
+        messages.append((opened.get("label", ""), opened.get("body", "")))
+    gifts = {
+        gift.id: open_gift_sentiment(passphrase, gift)
+        for gift in bundle.garden_gifts
+        if gift.sentiment_ciphertext
+    }
+    return messages, gifts
 
 
 def _is_post_complete(bundle: Bundle, read_ids: set[str]) -> bool:
@@ -784,9 +807,16 @@ def run_recipient(
     # Decode message content (dev fixtures only)
     msg_content: list[tuple[str, str]] = [
         _decode_message(m) if is_dev_fixture
-        else ("(encrypted)", "(Phase 3 decryption required.)")
+        else ("", "")
         for m in bundle.messages
     ]
+    gift_content: dict[str, str] = (
+        {
+            gift.id: _b64decode(gift.sentiment_ciphertext)
+            for gift in bundle.garden_gifts
+        }
+        if is_dev_fixture else {}
+    )
 
     state = _ST_CORRUPTED if corrupted else _ST_GARDEN
     authenticated = False
@@ -1034,7 +1064,10 @@ def run_recipient(
             _draw_item_select(stdscr, h, w, triggered_items, item_sel)
 
         elif state == _ST_MEMORY and memory_gift is not None:
-            _draw_memory(stdscr, h, w, memory_gift, is_dev_fixture)
+            _draw_memory(
+                stdscr, h, w, memory_gift,
+                gift_content.get(memory_gift.id, ""),
+            )
 
         # ── Status bar ────────────────────────────────────────────────────
 
@@ -1103,6 +1136,13 @@ def run_recipient(
         if state == _ST_VERIFYING:
             if time.monotonic() - verify_start > 1.5:
                 ok = _verify_passphrase(passphrase_buf, bundle, is_dev_fixture)
+                if ok:
+                    try:
+                        msg_content, gift_content = _unlock_content(
+                            passphrase_buf, bundle, is_dev_fixture,
+                        )
+                    except Exception:
+                        ok = False
                 if ok:
                     authenticated = True
                     passphrase_buf = ""

@@ -19,8 +19,11 @@ from lateletter.recipient import (
     _find_animal_gift,
     _animal_home_pos,
     _trust_tier,
+    _unlock_content,
+    _verify_passphrase,
     is_gift_triggered,
 )
+from lateletter.sealed import seal_bundle, seal_gift_sentiment, seal_message
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +44,32 @@ def store(tmp_path, monkeypatch):
 @pytest.fixture()
 def dev_bundle():
     return create_dev_fixture()
+
+
+def test_real_sealed_bundle_unlocks_messages_and_gifts():
+    passphrase = "correct horse"
+    message = seal_message(
+        passphrase,
+        message_id="m1",
+        date=date.today().isoformat(),
+        label="Open today",
+        body="The real terminal letter.",
+    )
+    gift = GardenGift(
+        id="g1",
+        type="item",
+        catalog_id="coffee_mug",
+        trigger=Trigger(type="date", value=date.today().isoformat()),
+    )
+    seal_gift_sentiment(passphrase, gift, "Two sugars, always.")
+    bundle = Bundle(messages=[message], garden_gifts=[gift])
+    seal_bundle(bundle, passphrase)
+
+    assert _verify_passphrase(passphrase, bundle, False)
+    assert not _verify_passphrase("wrong", bundle, False)
+    messages, gifts = _unlock_content(passphrase, bundle, False)
+    assert messages == [("Open today", "The real terminal letter.")]
+    assert gifts == {"g1": "Two sugars, always."}
 
 
 # ---------------------------------------------------------------------------

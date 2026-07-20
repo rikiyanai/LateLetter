@@ -133,6 +133,11 @@ class SessionStore:
             self._asked_file = QUESTIONS_ASKED_FILE
             self._selector_file = SELECTOR_STATE_FILE
 
+    @property
+    def author_dir(self) -> Path:
+        """Directory containing this store's author-private files."""
+        return self._author_dir
+
     # ---- session.json ----
 
     def load_session(self) -> dict[str, Any]:
