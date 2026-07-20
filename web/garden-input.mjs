@@ -46,7 +46,7 @@ export function canonicalJson(value) {
   return JSON.stringify(canonicalValue(value));
 }
 
-async function sha256Hex(text) {
+export async function sha256Hex(text) {
   if (!globalThis.crypto?.subtle) {
     throw new Error('WebCrypto SHA-256 is required for Garden command IDs');
   }
@@ -57,12 +57,12 @@ async function sha256Hex(text) {
     byte.toString(16).padStart(2, '0')).join('');
 }
 
-async function stableId(namespace, ...parts) {
+export async function stableId(namespace, ...parts) {
   const digest = await sha256Hex(canonicalJson([namespace, ...parts]));
   return `${namespace}:${digest.slice(0, 24)}`;
 }
 
-function validateCommand(value) {
+export function validateGardenCommand(value) {
   const errors = [];
   if (!Number.isInteger(value.sequence) || value.sequence < 1) {
     errors.push('sequence must be positive');
@@ -130,7 +130,7 @@ export async function normalizeGardenInput(envelope) {
     target_id: targetId,
     args: canonicalValue(args),
   };
-  const errors = validateCommand(normalized);
+  const errors = validateGardenCommand(normalized);
   if (errors.length) throw new Error(errors.join('; '));
   return normalized;
 }
