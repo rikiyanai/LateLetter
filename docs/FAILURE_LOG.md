@@ -4,6 +4,12 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 
 ## 2026-07-21
 
+### Pages deployment kept failing after the repository was recreated as private
+- Symptom: Every replacement-repository push started `Deploy to GitHub Pages`, but GitHub refused to start private-repository jobs because of the account billing/spending-limit restriction.
+- Impact: The clean replacement showed a failed deployment for every otherwise-valid signed commit, while Pages could not be served from the current private GitHub Free repository anyway.
+- Resolution: Gated the deploy job to public repository visibility and updated `actions/checkout` to the current Node 24-compatible major. The deployment path remains available if repository visibility or plan changes.
+- Status: Fixed; Pages intentionally remains offline while the repository is private on GitHub Free
+
 ### A plaintext personal letter and its passphrase were committed beside the encrypted bundle
 - Symptom: `letters/letter_source.example.json` is tracked by an explicit `.gitignore` exception even though it now contains a personal letter body and the passphrase used to seal it. Commit `ba8f62a` exposes both in its diff and history.
 - Impact: The published `.lateletter` files use real passphrase-derived encryption, but confidentiality is defeated because the plaintext and passphrase are available from Git history. Deleting only the current source file or changing repository visibility does not erase existing copies or history.
