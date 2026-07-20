@@ -4,6 +4,32 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 
 ## 2026-07-21
 
+### Published browser garden exposes no usable garden-feature loop
+- Symptom: The live sealed demo and public letter open into an animated garden, but a normal recipient can only open the letter archive. The production HUD exposes only `open letters` / `letters`; clicking plants creates cosmetic particles; feeding exists only as the undiscoverable physical `f` key and only after an animal gift has triggered; the source comment mentioning `i · examine` has no production key handler or visible button; and the remaining gift, visit, reaction, season, and post-completion controls are gated to dev fixtures.
+- Production evidence: `sealed_demo.lateletter`, `public_letters/to-a-friend.lateletter`, and their tracked synthetic source all contain `garden_gifts: []`. Consequently the published paths cannot trigger an animal, feeding/trust progression, gift discovery, nudges, memory examination, or gift-driven return visits. There is no touch equivalent for feeding, so mobile recipients have even less access.
+- Impact: The recipient-visible site is currently a letter reader with an animated garden backdrop, not the interactive garden described by the feature/spec surfaces. A recipient cannot discover or use the garden systems from the normal published flow.
+- Documentation contradiction: `docs/GARDEN_PARITY.md` labels triggered items, memories, animal trust, and post-completion behavior as full contracts based on code paths and fixture capabilities, but the currently published production bundles and controls do not make those features reachable. Those rows are proxy implementation evidence, not proof of production usability.
+- Required direction: Publish synthetic gifts that exercise the intended loop, expose visible mouse/touch/keyboard controls for core recipient actions, wire a real examine/memories path, and verify the complete flow against the live sealed URL rather than only a dev fixture.
+- Fix attempt 1 (started 2026-07-21): The intended owner is the authenticated recipient garden HUD, with keyboard shortcuts and pointer/touch buttons delegating to the same feed/examine actions. The stale owners are the keyboard-only `f` branch and archive-only memory buttons. The intervention will add visible shared actions, include animal memories in the terminal archive, and publish only synthetic gifts in the demo bundles. Falsifier: any core gift action remains fixture-only, keyboard-only in HTML, absent from the terminal archive, or unreachable from the published sealed demo after a clean recipient-state run. Acceptance requires exact decrypted letter and gift text, wrong-passphrase and checksum rejection, desktop keyboard/pointer operation, a mobile-width touch path, terminal parity, and canonical checksum/HMAC verification.
+- Fix attempt 1 runtime result (2026-07-21): Implemented one authenticated HTML garden-action owner used by visible pointer/touch buttons and the `i`/`f` shortcuts; added compact terminal action discoverability without the animal nudge hiding `i`, `e`, or `l`; made terminal archives and memory selection include every triggered gift with authored animal names; aligned post-completion all-gift release; and regenerated both tracked production artifacts from the canonical synthetic source with a visit-triggered rabbit, date-triggered coffee mug, and post-letter pressed flower. The exact fictional sentiments decrypt in both channels.
+- Fix attempt 1 verification: Canonical checksum and HMAC verification passed for both generated artifacts. Interactive terminal QA at 80×24 opened the exact letter, Clover memory, coffee-mug memory, and post-letter pressed flower. Interactive HTML QA passed mouse and keyboard actions with no console errors. Safari responsive mode at 375×812 exposed tappable feed/examine buttons; tapping feed advanced trust and tapping examine opened the exact decrypted memory. Focused automated recipient, sealing, demo, and browser-contract coverage passed.
+- Fix attempt 1 boundary: The bounded published-demo reachability defect is fixed in repository artifacts, but the live URL remains old until protected-default-branch merge and Pages deployment. The broader standalone-game and authored-world requirements remain unimplemented, so this umbrella entry cannot close.
+- Status: Open — bounded recipient gift loop implemented and locally verified; protected-branch deployment, live-URL re-verification, and the remaining full-game gates are outstanding
+
+### Author mode stopped after intake instead of producing a letter
+- Symptom: `lateletter --write` returned immediately after intake with an integration placeholder; the existing question selector, Q&A loop, draft editor, sealing layer, and canonical writer were never connected.
+- Impact: An author could not complete the product's primary questions → draft → seal → export path from the shipped CLI.
+- Resolution: Added a single author-workflow owner in `src/lateletter/author.py`. The CLI now continues into resumable message selection, offline Q&A, reviewed drafting, PBKDF2/AES-GCM sealing, canonical atomic export/append, backup warnings, and optional completed-plaintext cleanup. Q&A notes must be removed from the draft before sealing, preventing accidental export of interview scaffolding.
+- Verification: Regression coverage exercises a fresh ten-question session through drafting, a written draft through real sealing/export, and the Q&A-notes safety gate.
+- Status: Fixed
+
+### Terminal recipient could load real bundles but never authenticate or decrypt them
+- Symptom: The terminal returned `False` for every real bundle passphrase and substituted `(encrypted)` / `Phase 3 decryption required` for letter and memory content.
+- Impact: Real bundles produced by `make_letter.py` and the browser-compatible sealed path were unreadable in the terminal recipient.
+- Resolution: Connected the terminal recipient to the canonical sealed-bundle HMAC verifier and PBKDF2-SHA256/AES-256-GCM message and gift decryptors. Content is populated only after HMAC authentication succeeds; dev fixtures retain their explicit base64 passthrough path.
+- Verification: A real sealed bundle now rejects the wrong passphrase, accepts the correct passphrase, and returns the exact message label/body and gift sentiment. The same generated demo artifact was opened and read in the HTML viewer.
+- Status: Fixed
+
 ### The recreated private repository had no Pages site
 - Symptom: `https://rikiworld.com/lateletter/` returned GitHub's 404 page, the repository Pages API returned 404, and every deploy job was skipped by the temporary public-visibility gate.
 - Impact: The clean replacement repository preserved safe history but the normal public LateLetter viewer URL stayed offline after the GitHub Pro upgrade.
@@ -50,7 +76,7 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 - Symptom: README, CLI, viewer, and commit copy use both “encrypted” and “sealed” without clearly separating the encrypted output bundle from the plaintext authoring source and plaintext metadata.
 - Impact: The language can create false confidence that a password protects the letter even when a tracked source file or history exposes the message and passphrase.
 - Resolution: Changed recipient-facing demo and README copy to “passcode-locked,” documented the plaintext source boundary, and fixed the browser memory modal to render the already-decrypted gift sentiment instead of the stale `[encrypted — decryption in step 13]` placeholder.
-- Status: Fixed for the browser and publishing workflow; terminal-only Phase 3 placeholders remain internal implementation debt
+- Status: Fixed for both browser and terminal recipient flows; publishing still intentionally serves synthetic copy until new personal copy and a new passphrase are approved
 
 ## 2026-07-18
 
@@ -66,20 +92,21 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 ### Execution canon overstated author workflow completion
 - Symptom: `docs/SPEC.md` step 6 marked the offline author workflow complete, but the live `lateletter --write` path still stops after intake and prints "Message list and Q&A session coming in the next integration step."
 - Impact: The canonical execution order claimed end-to-end author readiness that the shipped CLI does not provide. Future planning could incorrectly treat author integration as closed.
-- Resolution: Downgraded the execution-sequence status in `docs/SPEC.md`, added an explicit "end-to-end integration not done" checklist item, and added an audit note to the release-acceptance section.
-- Status: Fixed in spec/docs
+- Resolution: Initially corrected the overstated docs. On 2026-07-21, implemented and tested the end-to-end CLI path and restored the execution-sequence status to complete.
+- Status: Fixed in runtime and docs
 
 ### Demo author harness writes an invalid recipient artifact
 - Symptom: `demo_author.py` claimed to produce a ready-to-open `.lateletter` bundle, but it wrote `bundle.to_dict()` directly with `checksum=""` instead of using `write_bundle()`. Verified on 2026-04-27: generated bundle loaded structurally but `verify_checksum()` returned `False`.
 - Impact: The demo script cannot be used as proof of the export path or as a valid terminal recipient fixture. It also overstates Part C of the execution plan.
-- Resolution: Logged as an open code bug; downgraded the Part C completion claim in `docs/SPEC.md` and annotated the demo docs so they no longer treat the script as proof of a valid export artifact.
-- Status: Open — code fix pending; spec/docs corrected
+- Resolution: Replaced base64 dev-passthrough construction with the real sealed-message and sealed-gift path, finalized the bundle HMAC, and wrote it through `write_bundle()` so the checksum and atomic file semantics are canonical.
+- Verification: The demo artifact passes checksum and HMAC verification and decrypts its first letter with the documented `biscuit` passphrase.
+- Status: Fixed
 
 ### Browser viewer lacks the required launch-time checksum gate
 - Symptom: `viewer-bnw.html` loads bundle JSON by shape/version only and never recomputes the bundle checksum before proceeding, despite the spec requiring a launch-time corruption check in both delivery channels.
 - Impact: Browser-mode execution can present corrupted bundles as normal, so the implementation does not yet satisfy the canon's cross-channel integrity and acceptance requirements.
 - Resolution: Implemented a browser-side checksum verifier over the canonical visible payload, added damaged-file state gating to suppress unlock/archive access when checksum validation fails, and kept local dev fixtures usable when they omit a checksum. Browser corruption parity is now wired in code, pending human QA.
-- Status: Implemented (unproven)
+- Status: Implemented; the valid-bundle path passed an automated interactive browser check on 2026-07-21 using the exact real sealed demo also opened by Python. Corrupted-file negative-path and multi-browser human QA remain pending.
 
 ### Browser reader depended on CDN text layout with no fallback
 - Symptom: `viewer-bnw.html` imported `pretext` directly from jsDelivr at module top level. If the CDN was blocked, offline, or slow, the entire browser viewer failed before the garden or reading UI could initialize.
@@ -464,7 +491,7 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 - Symptom: Beyond plant click (leaf burst) and rustle-on-hover, the garden has no other discoverable interactions. Recipients exploring the space find nothing new after the first click.
 - Impact: Garden feels static after initial discovery; no reason to return and explore. Undermines the "living space" intent.
 - Fix planned: Plan additional interaction layer (see dev tool plan in SPEC §13.1).
-- Status: Needs planning
+- Status: Open — confirmed on 2026-07-21 as a production reachability failure; see “Published browser garden exposes no usable garden-feature loop” above
 
 ### Dev fixture shows no animal by default — hard to test animal system
 - Symptom: In dev fixture mode, animals are only visible if the bundle has a garden_gift of type 'animal' with a satisfied trigger. Most test bundles don't have this, so the entire animal system is invisible during dev.

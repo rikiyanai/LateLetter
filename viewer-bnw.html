@@ -109,7 +109,10 @@
     }
     #hud.vis { opacity: 1; pointer-events: auto; }
     #hud-author { margin-bottom: .6rem; }
-    #hud-btns   { display: flex; gap: 1.75rem; justify-content: center; }
+    #hud-btns, #hud-actions {
+      display: flex; gap: 1.75rem; justify-content: center; flex-wrap: wrap;
+    }
+    #hud-actions { margin-top: .65rem; }
 
     /* ── Passphrase ── */
     #s-passphrase .scrim { max-width: 440px; }
@@ -245,7 +248,10 @@
       .welcome-inner p { font-size: .9rem; }
       #drop-zone { padding: 2rem 1.5rem; }
       .btn-row { gap: 1rem; }
-      #hud { bottom: 35%; }
+      #hud {
+        bottom: 30%; width: calc(100% - 2rem); white-space: normal;
+      }
+      #hud-btns, #hud-actions { gap: .75rem 1.25rem; }
       #g { font-size: 11px; line-height: 13px; }
       #g > div { height: 13px; }
     }
@@ -263,6 +269,7 @@
 <div id="hud">
   <p id="hud-author" class="t2"></p>
   <div id="hud-btns"></div>
+  <div id="hud-actions" aria-label="garden actions"></div>
   <p id="hud-animal" class="t4" style="margin-top:.5rem"></p>
 </div>
 
@@ -2022,7 +2029,8 @@ async function evalTriggers(justRead=null){
   for(const g of bundle.garden_gifts||[]){
     if(giftDiscovered[g.id])continue;
     const t=g.trigger||{};let hit=false;
-    if(t.type==='date')hit=new Date(t.value+'T00:00:00')<=today;
+    if(postComplete)hit=true;
+    else if(t.type==='date')hit=new Date(t.value+'T00:00:00')<=today;
     else if(t.type==='cumulative_visits')hit=visitCount>=parseInt(t.value,10);
     else if(t.type==='post_letter'&&justRead)hit=t.value===justRead;
     if(hit){giftDiscovered[g.id]=true;await kvSet(kGift(bundle.bundle_id,g.id),'1');}
@@ -2034,6 +2042,7 @@ async function evalTriggers(justRead=null){
       animalTriggered=true;
       if(garden)garden.setAnimalData(_animalData());
       _updateAnimalHud();
+      _renderGardenActions();
     }
   }
 }
@@ -2061,6 +2070,7 @@ async function feedAnimal(options={}){
     await kvSet(kAnimal(bundle.bundle_id),JSON.stringify({trust_actions:animalTrustActions}));
     if(garden)garden.setAnimalData(_animalData());
     _updateAnimalHud();
+    _renderGardenActions();
   }
   if(garden)garden.triggerAnimalFeedReaction({type:animalType,tier:animalTier});
 }
@@ -2074,9 +2084,9 @@ function devCycleAnimal(){
 }
 function _updateAnimalHud(){
   const el=document.getElementById('hud-animal');if(!el)return;
-  if(!animalType||!animalTriggered){el.textContent='';return;}
-  if(animalTier===0)el.textContent=`a stray ${animalType} lingers at the edge… [f] to leave food`;
-  else if(animalTier<3)el.textContent=`[f] · feed the ${animalType}`;
+  if(cachedPassphrase===null||bundleCorrupted||!animalType||!animalTriggered){el.textContent='';return;}
+  if(animalTier===0)el.textContent=`a stray ${animalType} lingers at the edge…`;
+  else if(animalTier<3)el.textContent=`the ${animalType} is beginning to trust you`;
   else el.textContent='';
 }
 
@@ -2092,6 +2102,34 @@ function startFirstRunBanner(){
 }
 
 // ── Garden / HUD ──────────────────────────────────────────────────────
+function _gardenMemories(){
+  if(!bundle||cachedPassphrase===null||bundleCorrupted)return[];
+  return(bundle.garden_gifts||[]).filter(g=>giftDiscovered[g.id]);
+}
+function _mkHudButton(label,fn,key=null){
+  const b=document.createElement('button');
+  b.className='btn';b.type='button';b.textContent=label;b.onclick=fn;
+  if(key){b.setAttribute('aria-keyshortcuts',key);b.title=`keyboard: ${key}`;}
+  return b;
+}
+function _renderGardenActions(){
+  const actions=document.getElementById('hud-actions');
+  if(!actions)return;
+  actions.innerHTML='';
+  const memories=_gardenMemories();
+  if(memories.length)
+    actions.appendChild(_mkHudButton(memories.length===1?'examine memory':'examine memories',showGardenMemories,'i'));
+  if(cachedPassphrase!==null&&!bundleCorrupted&&animalType&&animalTriggered&&animalTier<3)
+    actions.appendChild(_mkHudButton(`feed ${animalType}`,()=>feedAnimal(),'f'));
+}
+function showGardenMemories(){
+  const memories=_gardenMemories();
+  if(memories.length===0)return;
+  if(memories.length===1){showMemory(memories[0]);return;}
+  showArchive();
+  const first=document.querySelector('#arc-content [data-gid]');
+  if(first)first.focus();
+}
 function showGarden(){
   garden.setPostComplete(postComplete);
   const name=bundle?.author_name||'someone who loves you';
@@ -2115,6 +2153,7 @@ function showGarden(){
   showScreen('garden');
   startFirstRunBanner();
   _updateAnimalHud();
+  _renderGardenActions();
 }
 function afterAuth(){ showArchive(); }
 function openDue(){
@@ -2155,8 +2194,9 @@ async function handleUnlock(){
   infoEl.classList.add('on'); inp.disabled=btn.disabled=true;
   try{
     await verifyPassphrase(inp.value);
+    postComplete=isPostComplete();
     await evalTriggers(null);
-    postComplete=isPostComplete(); dueIdxs=computeDue();
+    dueIdxs=computeDue();
     afterAuth();
   }catch(err){
     errEl.textContent=isDevFixture?`error: ${err.message}`:'incorrect passphrase, or file modified';
@@ -2239,8 +2279,8 @@ async function openLetter(msgIdx){
     dueIdxs=dueIdxs.filter(i=>bundle.messages[i].id!==msg.id);
     await kvSet(kRead(bundle.bundle_id,msg.id),'1');
   }
-  await evalTriggers(msg.id);
   postComplete=isPostComplete();
+  await evalTriggers(msg.id);
   if(isFirstRead&&!_deliveryPlayed){
     _deliveryPlayed=true;
     _playDelivery(()=>showReading(curMsg));
@@ -2664,8 +2704,13 @@ function wire(){
     if(e.target===document.getElementById('modal-mem'))closeMemory();});
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape')closeMemory();
+    const gardenReady=document.getElementById('hud').classList.contains('vis')&&
+      !document.getElementById('modal-mem').classList.contains('open');
+    // i = examine discovered garden memories
+    if(e.key==='i'&&gardenReady&&_gardenMemories().length){
+      e.preventDefault();showGardenMemories();}
     // f = feed animal (authenticated, triggered, not yet bonded)
-    if(e.key==='f'&&cachedPassphrase!==null&&animalType&&animalTriggered&&animalTier<3){
+    if(e.key==='f'&&gardenReady&&cachedPassphrase!==null&&animalType&&animalTriggered&&animalTier<3){
       e.preventDefault();feedAnimal();}
     // Shift+A = dev: cycle animal types/tiers (dev fixture only)
     if(e.key==='A'&&isDevFixture){e.preventDefault();devCycleAnimal();}

@@ -16,11 +16,16 @@ from lateletter.recipient import (
     _ANIMAL_ART,
     _ANIMAL_DELIVERY_FRAMES,
     _ANIMAL_FOOTPRINTS,
+    _build_archive_rows,
     _find_animal_gift,
+    gift_catalog_entry,
     _animal_home_pos,
     _trust_tier,
+    _unlock_content,
+    _verify_passphrase,
     is_gift_triggered,
 )
+from lateletter.sealed import seal_bundle, seal_gift_sentiment, seal_message
 
 
 # ---------------------------------------------------------------------------
@@ -41,6 +46,79 @@ def store(tmp_path, monkeypatch):
 @pytest.fixture()
 def dev_bundle():
     return create_dev_fixture()
+
+
+def test_real_sealed_bundle_unlocks_messages_and_gifts():
+    passphrase = "correct horse"
+    message = seal_message(
+        passphrase,
+        message_id="m1",
+        date=date.today().isoformat(),
+        label="Open today",
+        body="The real terminal letter.",
+    )
+    gift = GardenGift(
+        id="g1",
+        type="item",
+        catalog_id="coffee_mug",
+        trigger=Trigger(type="date", value=date.today().isoformat()),
+    )
+    seal_gift_sentiment(passphrase, gift, "Two sugars, always.")
+    bundle = Bundle(messages=[message], garden_gifts=[gift])
+    seal_bundle(bundle, passphrase)
+
+    assert _verify_passphrase(passphrase, bundle, False)
+    assert not _verify_passphrase("wrong", bundle, False)
+    messages, gifts = _unlock_content(passphrase, bundle, False)
+    assert messages == [("Open today", "The real terminal letter.")]
+    assert gifts == {"g1": "Two sugars, always."}
+
+
+def test_archive_includes_every_triggered_gift_type():
+    gifts = [
+        GardenGift(
+            id=f"g-{gift_type}",
+            type=gift_type,
+            catalog_id="rabbit" if gift_type == "animal" else "coffee_mug",
+            trigger=Trigger(type="date", value=date.today().isoformat()),
+        )
+        for gift_type in ("item", "landmark", "animal", "plant", "nudge")
+    ]
+    rows = _build_archive_rows(Bundle(garden_gifts=gifts), date.today(), 1, set())
+
+    assert [row[2].type for row in rows if row[0] == "gift"] == [
+        "item", "landmark", "animal", "plant", "nudge",
+    ]
+
+
+def test_archive_releases_future_gifts_after_completion():
+    gift = GardenGift(
+        id="future",
+        type="item",
+        catalog_id="pressed_flower",
+        trigger=Trigger(type="date", value="2099-01-01"),
+    )
+
+    rows = _build_archive_rows(
+        Bundle(garden_gifts=[gift]), date.today(), 1, set(), post_complete=True,
+    )
+
+    assert [row[2].id for row in rows if row[0] == "gift"] == ["future"]
+
+
+def test_animal_memory_uses_authored_name_and_recognizable_art():
+    gift = GardenGift(
+        id="rabbit",
+        type="animal",
+        catalog_id="rabbit",
+        animal_name="Clover",
+        trigger=Trigger(type="cumulative_visits", value="1"),
+    )
+
+    name, art = gift_catalog_entry(gift)
+
+    assert name == "Clover"
+    assert "\\" in art
 
 
 # ---------------------------------------------------------------------------

@@ -99,10 +99,10 @@ def _author_mode(accessible: bool = False) -> int:
     print(f"  Welcome, {data.author_name}.")
     print(f"  Writing letters for {data.recipient_name}.")
     print()
-    # Message list, Q&A, draft editor, and export are Phase 1 integration work.
-    # The individual components (qa_loop, draft_editor, steward) are ready.
-    print("  (Message list and Q&A session coming in the next integration step.)")
-    return 0
+    from .author import run_author_workflow
+    return run_author_workflow(
+        store, data, passphrase, accessible=accessible,
+    )
 
 
 def _garden_mode(season: str | None = None) -> int:

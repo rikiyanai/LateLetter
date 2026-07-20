@@ -45,9 +45,11 @@ class TestAuthorMode:
              patch("lateletter.cli.check_session_corruption", return_value=False), \
              patch("lateletter.intake_tui.run_intake_tui", side_effect=curses.error("no term")), \
              patch("lateletter.intake_accessible.run_intake_accessible",
-                   return_value=(data, "pass")):
+                   return_value=(data, "pass")), \
+             patch("lateletter.author.run_author_workflow", return_value=0) as workflow:
             result = _author_mode(accessible=False)
         assert result == 0
+        workflow.assert_called_once()
         assert "Robert" in capsys.readouterr().out
 
     def test_oserror_not_swallowed(self):

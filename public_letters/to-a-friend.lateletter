@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "bundle_id": "0b7e542c-ade0-4bb7-8e4b-48067c07e150",
+  "bundle_id": "a2a3fe35-8603-4a70-92d6-04e79beb6422",
   "author_name": "Demo Author",
   "passphrase_hint": "where flowers grow",
-  "bundle_auth_salt": "r7CGwnLg8Y+gLEibGfLRCg==",
+  "bundle_auth_salt": "Gns0dAHnAEXlX1Rd7MIjzw==",
   "garden_seed": 20260721,
   "messages": [
     {
-      "id": "ff113738-5eb2-4d12-840a-2c75354cb690",
+      "id": "8384fcca-ff01-40b3-ab62-370b2d90331f",
       "date": "2026-07-21",
-      "ciphertext": "aV0S6OJ7nIqxiKp7yuYtdH75wg5QXHAZbrPDRsECrf7xFbC89Y54c13ouRIc4fql/UiHZU78+Cw1GLl3lT/bibx9HQWmKONlDcj43Py3s9V6n+FxGmlHLR+0AEjAm3LwdR35yc+muAcOZdasBOXa9xD+7crtgTswgJICrjxvD6d9EcV6SE35FowX6fVbXWWXb5vNA8WovYSaEQH7OjlXMC+NaLaWKKLT38mo4ztKB+7KEC369QqOtPmXaYXz0HIWmzFblj4Nb9xzT+OqAnzA+xZTR1NwcWcahTO4ysLuWBs3hJHBaqXiwD8lU6T6EwdM8wQdCFkWc38yv+UGRy0aPRfL3sKQGAA=",
-      "salt": "XLDs9LpC/m39V4UBrVC1FQ==",
-      "nonce": "cRpr5/K2jO0PFHhk",
+      "ciphertext": "An8Cx4JmSzMcNsC/pcWcL1zLAQPq4vLiaWSTQevjtwmljVMhfppq0ez9NH7+lTHcVPjXbu9DN3v3ErV91MUVXlhzuJajmuRibInLpWkq5nHyNCf1xviEYnWptJHlg4Wwy4fjMxk4gGo5KAQm1rqVRihQozpe7zCfS8h48JDtWp7gcsOYMBQ3hKBJBwqx1gOgikUzwU1WgC+ywGJ7Dh1TuvzUU2/38Z1a4vEKXF+5a94LOtDFMwEW97zyYbr7ScaXfDWSQns1otbUt3FR8l/aTz2VsR3zBEB8EFDcEq0++NpG5fLaJzA+x5cQowJi4rBPdAvDnr/FYd4SpzErHlgAqoZud+2dlpk=",
+      "salt": "Bz9PoFg6iRLHNFG6wyniRw==",
+      "nonce": "L1JajEjcRLE6cybl",
       "kdf_params": {
         "name": "PBKDF2",
         "hash": "SHA-256",
@@ -19,8 +19,54 @@
       }
     }
   ],
-  "garden_gifts": [],
+  "garden_gifts": [
+    {
+      "id": "8c595ae0-e613-470f-8d47-594884cb8548",
+      "type": "animal",
+      "catalog_id": "rabbit",
+      "sentiment_ciphertext": "zpJRQBD3gSkcHaIlKu5/A01jk4Rke5EIRxmc+W/IfstA1BZct6nztebt5Wf6V9ZsZV1gNkb4QD/xDxdqIcKbcsSbBaNvfOhga7DCFQ==",
+      "salt": "Hzmi1Fdeue3BxidbV+xayw==",
+      "nonce": "fuFTleGIbb0Wx2nL",
+      "trigger": {
+        "type": "cumulative_visits",
+        "value": "1"
+      },
+      "placement_hint": "by_edge",
+      "animal_name": "Clover",
+      "animal_collar_color": null
+    },
+    {
+      "id": "3329f706-1811-446e-ae14-9d82f9380786",
+      "type": "item",
+      "catalog_id": "coffee_mug",
+      "sentiment_ciphertext": "DE6/zGrqBZuPsUcQ8W0FVcJ//yf5nThpLQLPRdFxkKeUPlt02XCKDBklwjZg9VgEdrszVeeRvSGM10ZonP3k9T2/E0H5ns+3oQ==",
+      "salt": "zzqQMWDZPCVa1ZjVL+NWGg==",
+      "nonce": "qo3ck7D/GyXtMhcn",
+      "trigger": {
+        "type": "date",
+        "value": "2026-07-21"
+      },
+      "placement_hint": "near_tallest_tree",
+      "animal_name": null,
+      "animal_collar_color": null
+    },
+    {
+      "id": "dda156e7-3f5c-4f12-98fd-9b383e64494d",
+      "type": "item",
+      "catalog_id": "pressed_flower",
+      "sentiment_ciphertext": "RAc+aaLw1iM13CyGanq4k6dKXMXzXo8Z8j+Wt9V16kq8lPRA6sy9D6tognLSlW/Kl5MI7ySPEPSK8/CMmmA+4VGHYAvPotE22cMBsJl9a2wPkMM=",
+      "salt": "2Z8C9/2sUhnStUQBx3HVrQ==",
+      "nonce": "xIkLFIN9e88rHiC+",
+      "trigger": {
+        "type": "post_letter",
+        "value": "8384fcca-ff01-40b3-ab62-370b2d90331f"
+      },
+      "placement_hint": "random",
+      "animal_name": null,
+      "animal_collar_color": null
+    }
+  ],
   "notification": null,
-  "checksum": "39f6aee4490acffb688a9c3229a894965b645e502fda27a39b3c82eadf21bd10",
-  "hmac": "d5c7437b7701d1f2ea7bf8154484b80fef5970237c66c6f3db8ced97b3b3e41f"
+  "checksum": "097dcc7cb338783287c9ddd0da203f2685a2a066d044cfe2f0da4c8bd76e6572",
+  "hmac": "bc6538dc4a4f60bff1095553d430888be4ae29293eeb02a20bc46a412f1059b3"
 }
