@@ -1,0 +1,52 @@
+{
+  "program": {
+    "version": 1,
+    "evaluator_version": 1,
+    "world_state_version": 1,
+    "atlas_version": "garden-atlas-1",
+    "astronomy_catalog_version": "bright-stars-1",
+    "author_timezone": "America/New_York",
+    "variables": {"visits_rewarded": 0},
+    "entities": [{"id": "fixture.bench", "asset_id": "fixture.bench"}],
+    "animals": [],
+    "events": [
+      {
+        "id": "event.spring-return",
+        "conditions": {
+          "all": [
+            {"fact": "visit.total", "op": ">=", "value": 3},
+            {"any": [
+              {"fact": "season.current", "op": "==", "value": "spring"},
+              {"fact": "season.current", "op": "==", "value": "summer"}
+            ]},
+            {"not": {"fact": "letter.read", "op": "contains", "ref": "letter.future"}}
+          ]
+        },
+        "schedule": null,
+        "occurrence": "once",
+        "priority": 20,
+        "exclusive_group": "return-beat",
+        "cooldown": null,
+        "actions": [
+          {"type": "variable.increment", "target": null, "params": {"name": "visits_rewarded", "amount": 1}},
+          {"type": "entity.reveal", "target": "fixture.bench", "params": {"state": "ready"}}
+        ]
+      },
+      {
+        "id": "event.fallback-return",
+        "conditions": {"fact": "visit.total", "op": ">=", "value": 1},
+        "schedule": null,
+        "occurrence": "once",
+        "priority": 10,
+        "exclusive_group": "return-beat",
+        "cooldown": null,
+        "actions": [
+          {"type": "variable.set", "target": null, "params": {"name": "visits_rewarded", "value": 99}}
+        ]
+      }
+    ]
+  },
+  "state": {"variables": {"visits_rewarded": 0}, "entities": {}, "applied_occurrences": []},
+  "context": {"seed": 42301, "facts": {"visit.total": 3, "season.current": "spring", "letter.read": []}},
+  "expected": {"visits_rewarded": 1, "applied_event": "event.spring-return", "blocked_event": "event.fallback-return"}
+}

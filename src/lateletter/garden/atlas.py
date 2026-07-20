@@ -1,0 +1,186 @@
+"""Versioned semantic atlas loading and portability validation."""
+
+from __future__ import annotations
+
+import json
+from importlib.resources import files
+from pathlib import Path
+import unicodedata
+from typing import Any, Mapping
+
+
+ATLAS_VERSION = "garden-atlas-1"
+REQUIRED_CONNECTED_FAMILIES = frozenset({"fence", "hedge", "path", "pond_edge", "wall"})
+REQUIRED_FIXTURES = frozenset({
+    "fixture.bench", "fixture.fence_gate", "fixture.sundial", "fixture.trellis",
+    "fixture.birdbath", "fixture.lantern", "fixture.pond", "fixture.mailbox",
+    "fixture.stepping_stones", "fixture.bridge", "fixture.planter",
+    "fixture.table_chairs", "fixture.well", "fixture.arbor",
+    "fixture.wind_chime", "fixture.shed_edge", "fixture.tool_rack",
+    "fixture.watering_can", "fixture.compost", "fixture.basket", "fixture.sign",
+    "fixture.memorial_stone",
+})
+REQUIRED_COLLECTIBLES = frozenset({
+    "collectible.pressed_flower", "collectible.feather",
+    "collectible.seed_packet", "collectible.smooth_stone",
+})
+
+_UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Cn"})
+_BIDI_UNSAFE = frozenset({"RLE", "LRE", "RLO", "LRO", "PDF", "RLI", "LRI", "FSI", "PDI"})
+
+
+class AtlasValidationError(ValueError):
+    def __init__(self, errors: list[str]) -> None:
+        self.errors = tuple(errors)
+        super().__init__("Invalid garden atlas: " + "; ".join(errors))
+
+
+def _validate_cell(cell: Any, profile: str, path: str, errors: list[str]) -> None:
+    if not isinstance(cell, str) or not cell:
+        errors.append(f"{path}: cell must be a non-empty grapheme string")
+        return
+    if unicodedata.normalize("NFC", cell) != cell:
+        errors.append(f"{path}: cell must be NFC-normalized")
+    if profile == "ascii-safe":
+        if len(cell) != 1 or not 32 <= ord(cell) <= 126:
+            errors.append(f"{path}: ascii-safe cells must be one printable ASCII character")
+        return
+    if unicodedata.combining(cell[0]):
+        errors.append(f"{path}: standalone combining marks are forbidden")
+    for char in cell:
+        if unicodedata.category(char) in _UNSAFE_CATEGORIES:
+            errors.append(f"{path}: unsafe Unicode category {unicodedata.category(char)}")
+            break
+        if unicodedata.bidirectional(char) in _BIDI_UNSAFE:
+            errors.append(f"{path}: bidirectional controls are forbidden")
+            break
+
+
+def validate_atlas(raw: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate an atlas and return a detached JSON-compatible copy."""
+    errors: list[str] = []
+    if not isinstance(raw, Mapping):
+        raise AtlasValidationError(["$: atlas must be an object"])
+    allowed_top = {"version", "id", "unicode_version", "profiles",
+                   "connected_tiles", "assets"}
+    unknown = sorted(set(raw) - allowed_top)
+    if unknown:
+        errors.append(f"$: unknown fields {', '.join(unknown)}")
+    if raw.get("version") != 1 or raw.get("id") != ATLAS_VERSION:
+        errors.append(f"$: expected version 1 and id {ATLAS_VERSION}")
+    profiles = raw.get("profiles")
+    if not isinstance(profiles, list) or "ascii-safe" not in profiles:
+        errors.append("$.profiles: ascii-safe is mandatory")
+        profiles = []
+    profile_set = set(profiles)
+
+    connected = raw.get("connected_tiles")
+    if not isinstance(connected, Mapping):
+        errors.append("$.connected_tiles: must be an object")
+        connected = {}
+    missing_families = sorted(REQUIRED_CONNECTED_FAMILIES - set(connected))
+    if missing_families:
+        errors.append("$.connected_tiles: missing " + ", ".join(missing_families))
+    expected_masks = {str(index) for index in range(16)}
+    for family, masks in connected.items():
+        path = f"$.connected_tiles.{family}"
+        if not isinstance(masks, Mapping):
+            errors.append(f"{path}: must be an object")
+            continue
+        if set(masks) != expected_masks:
+            errors.append(f"{path}: must define exactly masks 0 through 15")
+        for mask, cell in masks.items():
+            _validate_cell(cell, "ascii-safe", f"{path}.{mask}", errors)
+
+    assets = raw.get("assets")
+    if not isinstance(assets, list):
+        errors.append("$.assets: must be a list")
+        assets = []
+    seen: set[str] = set()
+    kinds: dict[str, str] = {}
+    for index, asset in enumerate(assets):
+        path = f"$.assets[{index}]"
+        if not isinstance(asset, Mapping):
+            errors.append(f"{path}: must be an object")
+            continue
+        allowed_asset = {"id", "kind", "label", "description", "cell_box",
+                         "profiles", "hotspots", "tags", "provenance"}
+        asset_unknown = sorted(set(asset) - allowed_asset)
+        if asset_unknown:
+            errors.append(f"{path}: unknown fields {', '.join(asset_unknown)}")
+        asset_id = asset.get("id")
+        if not isinstance(asset_id, str) or not asset_id:
+            errors.append(f"{path}.id: required")
+            continue
+        if asset_id in seen:
+            errors.append(f"{path}.id: duplicate {asset_id}")
+        seen.add(asset_id)
+        kind = asset.get("kind")
+        if kind not in {"fixture", "collectible", "terrain", "plant", "animal", "ambience"}:
+            errors.append(f"{path}.kind: unsupported kind")
+        kinds[asset_id] = kind
+        box = asset.get("cell_box")
+        if (not isinstance(box, list) or len(box) != 2
+                or any(isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                       for value in box)):
+            errors.append(f"{path}.cell_box: expected [positive width, positive height]")
+            continue
+        width, height = box
+        asset_profiles = asset.get("profiles")
+        if not isinstance(asset_profiles, Mapping) or "ascii-safe" not in asset_profiles:
+            errors.append(f"{path}.profiles: every asset needs ascii-safe fallback")
+            continue
+        for profile, states in asset_profiles.items():
+            profile_path = f"{path}.profiles.{profile}"
+            if profile not in profile_set:
+                errors.append(f"{profile_path}: undeclared profile")
+            if not isinstance(states, Mapping) or not states:
+                errors.append(f"{profile_path}: states must be a non-empty object")
+                continue
+            for state_name, frames in states.items():
+                state_path = f"{profile_path}.{state_name}"
+                if not isinstance(frames, list) or not frames:
+                    errors.append(f"{state_path}: needs at least one frame")
+                    continue
+                for frame_index, frame in enumerate(frames):
+                    frame_path = f"{state_path}[{frame_index}]"
+                    if not isinstance(frame, Mapping) or set(frame) != {"ticks", "cells"}:
+                        errors.append(f"{frame_path}: expected ticks and cells")
+                        continue
+                    ticks = frame.get("ticks")
+                    if isinstance(ticks, bool) or not isinstance(ticks, int) or ticks <= 0:
+                        errors.append(f"{frame_path}.ticks: must be a positive integer")
+                    rows = frame.get("cells")
+                    if not isinstance(rows, list) or len(rows) != height:
+                        errors.append(f"{frame_path}.cells: frame height must be {height}")
+                        continue
+                    for row_index, row in enumerate(rows):
+                        row_path = f"{frame_path}.cells[{row_index}]"
+                        if not isinstance(row, list) or len(row) != width:
+                            errors.append(f"{row_path}: frame width must be {width}")
+                            continue
+                        for col_index, cell in enumerate(row):
+                            _validate_cell(cell, profile, f"{row_path}[{col_index}]", errors)
+        if kind == "fixture":
+            hotspots = asset.get("hotspots")
+            if not isinstance(hotspots, list) or not hotspots:
+                errors.append(f"{path}.hotspots: functional fixtures need an interaction")
+        if kind == "collectible" and not asset.get("provenance"):
+            errors.append(f"{path}.provenance: collectible provenance is required")
+
+    missing_fixtures = sorted(REQUIRED_FIXTURES - seen)
+    missing_collectibles = sorted(REQUIRED_COLLECTIBLES - seen)
+    if missing_fixtures:
+        errors.append("$.assets: missing fixtures " + ", ".join(missing_fixtures))
+    if missing_collectibles:
+        errors.append("$.assets: missing collectibles " + ", ".join(missing_collectibles))
+    if errors:
+        raise AtlasValidationError(errors)
+    return json.loads(json.dumps(raw, ensure_ascii=False))
+
+
+def load_atlas(path: Path | None = None) -> dict[str, Any]:
+    target = path or Path(str(files(__package__).joinpath("data/atlas.v1.json")))
+    with target.open(encoding="utf-8") as handle:
+        raw = json.load(handle)
+    return validate_atlas(raw)
