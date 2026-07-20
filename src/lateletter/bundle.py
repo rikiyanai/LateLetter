@@ -33,6 +33,8 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 BUNDLE_VERSION = 1
+BUNDLE_VERSION_WITH_GARDEN_PROGRAM = 2
+SUPPORTED_BUNDLE_VERSIONS = (BUNDLE_VERSION, BUNDLE_VERSION_WITH_GARDEN_PROGRAM)
 _FILE_MODE = 0o600
 
 # Fields included in the checksum/HMAC visible payload (SPEC §3).
@@ -45,6 +47,20 @@ _VISIBLE_PAYLOAD_FIELDS = (
     "garden_seed",
     "messages",
     "garden_gifts",
+    "notification",
+)
+
+_VISIBLE_PAYLOAD_FIELDS_V2 = (
+    "version",
+    "bundle_id",
+    "author_name",
+    "passphrase_hint",
+    "bundle_auth_salt",
+    "bundle_auth_kdf_params",
+    "garden_seed",
+    "messages",
+    "garden_gifts",
+    "garden_program",
     "notification",
 )
 
@@ -184,6 +200,41 @@ class Notification:
 
 
 @dataclass
+class GardenProgramEnvelope:
+    """Encrypted author-directed Garden program carried by v2 bundles.
+
+    Narrative-bearing program data stays inside ``ciphertext``.  The envelope
+    contains only the fields required to select the deterministic evaluator and
+    decrypt the inner program after bundle authentication.
+    """
+
+    version: int = 1
+    ciphertext: str = ""
+    salt: str = ""
+    nonce: str = ""
+    kdf_params: dict[str, Any] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "version": self.version,
+            "ciphertext": self.ciphertext,
+            "salt": self.salt,
+            "nonce": self.nonce,
+            "kdf_params": self.kdf_params,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> GardenProgramEnvelope:
+        return cls(
+            version=int(data.get("version", 1)),
+            ciphertext=str(data.get("ciphertext", "")),
+            salt=str(data.get("salt", "")),
+            nonce=str(data.get("nonce", "")),
+            kdf_params=data.get("kdf_params"),
+        )
+
+
+@dataclass
 class Bundle:
     """The complete .lateletter bundle (SPEC §3).
 
@@ -194,9 +245,11 @@ class Bundle:
     author_name: str = ""
     passphrase_hint: str | None = None
     bundle_auth_salt: str = ""          # base64 (16 bytes)
+    bundle_auth_kdf_params: dict[str, Any] | None = None
     garden_seed: int = 0
     messages: list[Message] = field(default_factory=list)
     garden_gifts: list[GardenGift] = field(default_factory=list)
+    garden_program: GardenProgramEnvelope | None = None
     notification: Notification = field(default_factory=Notification)
     # Computed fields — not part of the visible payload
     checksum: str = ""
@@ -207,7 +260,7 @@ class Bundle:
 
         Includes all top-level fields except checksum and hmac (SPEC §3).
         """
-        return {
+        payload: dict[str, Any] = {
             "version": self.version,
             "bundle_id": self.bundle_id,
             "author_name": self.author_name,
@@ -218,6 +271,14 @@ class Bundle:
             "garden_gifts": [g.to_dict() for g in self.garden_gifts],
             "notification": self.notification.to_dict(),
         }
+        # Version 1's authenticated payload is frozen.  Adding even a null
+        # field would invalidate every existing checksum and HMAC.
+        if self.version >= BUNDLE_VERSION_WITH_GARDEN_PROGRAM:
+            payload["bundle_auth_kdf_params"] = self.bundle_auth_kdf_params
+            payload["garden_program"] = (
+                self.garden_program.to_dict() if self.garden_program else None
+            )
+        return payload
 
     def compute_checksum(self) -> str:
         """SHA-256 over canonical JSON of the visible payload.
@@ -249,11 +310,16 @@ class Bundle:
             author_name=data.get("author_name", ""),
             passphrase_hint=data.get("passphrase_hint"),
             bundle_auth_salt=data.get("bundle_auth_salt", ""),
+            bundle_auth_kdf_params=data.get("bundle_auth_kdf_params"),
             garden_seed=data.get("garden_seed", 0),
             messages=[Message.from_dict(m) for m in data.get("messages", [])],
             garden_gifts=[
                 GardenGift.from_dict(g) for g in data.get("garden_gifts", [])
             ],
+            garden_program=(
+                GardenProgramEnvelope.from_dict(data["garden_program"])
+                if data.get("garden_program") is not None else None
+            ),
             notification=Notification.from_dict(data.get("notification")),
             checksum=data.get("checksum", ""),
             hmac=data.get("hmac", ""),
@@ -282,9 +348,10 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
     version = data.get("version")
     if version is None:
         errors.append("Missing required field: version.")
-    elif version != BUNDLE_VERSION:
+    elif version not in SUPPORTED_BUNDLE_VERSIONS:
         errors.append(
-            f"Unsupported bundle version {version} (expected {BUNDLE_VERSION})."
+            f"Unsupported bundle version {version} "
+            f"(expected one of {SUPPORTED_BUNDLE_VERSIONS})."
         )
 
     # Required string fields
@@ -322,6 +389,38 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
     seed = data.get("garden_seed")
     if seed is not None and not isinstance(seed, int):
         errors.append("Field 'garden_seed' must be an integer.")
+
+    # Version 2 moves author-directed world ownership into one encrypted
+    # program.  It must never run beside plaintext legacy gift triggers.
+    if version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM:
+        if data.get("garden_gifts"):
+            errors.append(
+                "Version 2 bundles must leave 'garden_gifts' empty; "
+                "author direction belongs to 'garden_program'."
+            )
+        auth_params = data.get("bundle_auth_kdf_params")
+        if not isinstance(auth_params, dict):
+            errors.append(
+                "Version 2 bundles require 'bundle_auth_kdf_params'."
+            )
+        program = data.get("garden_program")
+        if not isinstance(program, dict):
+            errors.append("Version 2 bundles require an encrypted 'garden_program'.")
+        else:
+            for field_name in ("version", "ciphertext", "salt", "nonce", "kdf_params"):
+                if field_name not in program:
+                    errors.append(
+                        f"garden_program missing required field '{field_name}'."
+                    )
+            if program.get("version") != 1:
+                errors.append("Unsupported garden_program version.")
+            for field_name in ("ciphertext", "salt", "nonce"):
+                if not program.get(field_name):
+                    errors.append(f"garden_program field '{field_name}' must not be empty.")
+    elif version == BUNDLE_VERSION and "garden_program" in data:
+        errors.append(
+            "Version 1 bundles cannot contain 'garden_program'; use version 2."
+        )
 
     return errors
 

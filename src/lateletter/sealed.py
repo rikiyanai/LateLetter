@@ -29,7 +29,14 @@ from typing import Any
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-from .bundle import Bundle, GardenGift, Message, canonical_json
+from .bundle import (
+    BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+    Bundle,
+    GardenGift,
+    GardenProgramEnvelope,
+    Message,
+    canonical_json,
+)
 
 # Recorded in every sealed message so the viewer knows how to derive keys.
 KDF_PARAMS_V0: dict[str, Any] = {
@@ -41,6 +48,7 @@ KDF_PARAMS_V0: dict[str, Any] = {
 _SALT_LEN = 16
 _NONCE_LEN = 12
 _KEY_LEN = 32
+_GARDEN_PROGRAM_AAD = b"lateletter:garden-program:v1"
 
 
 def _b64e(raw: bytes) -> str:
@@ -106,8 +114,50 @@ def open_gift_sentiment(passphrase: str, gift: GardenGift) -> str:
     return plaintext.decode("utf-8")
 
 
+def seal_garden_program(
+    passphrase: str,
+    program: dict[str, Any],
+) -> GardenProgramEnvelope:
+    """Encrypt a validated inner Garden program for a version 2 bundle."""
+    salt = os.urandom(_SALT_LEN)
+    nonce = os.urandom(_NONCE_LEN)
+    params = dict(KDF_PARAMS_V0)
+    key = derive_key(passphrase, salt, params)
+    ciphertext = AESGCM(key).encrypt(
+        nonce, canonical_json(program), _GARDEN_PROGRAM_AAD,
+    )
+    return GardenProgramEnvelope(
+        version=1,
+        ciphertext=_b64e(ciphertext),
+        salt=_b64e(salt),
+        nonce=_b64e(nonce),
+        kdf_params=params,
+    )
+
+
+def open_garden_program(
+    passphrase: str,
+    envelope: GardenProgramEnvelope,
+) -> dict[str, Any]:
+    """Authenticate and decrypt a version 2 Garden program envelope."""
+    if envelope.version != 1:
+        raise ValueError(f"Unsupported garden program version: {envelope.version}")
+    key = derive_key(passphrase, _b64d(envelope.salt), envelope.kdf_params)
+    plaintext = AESGCM(key).decrypt(
+        _b64d(envelope.nonce), _b64d(envelope.ciphertext), _GARDEN_PROGRAM_AAD,
+    )
+    program = json.loads(plaintext.decode("utf-8"))
+    if not isinstance(program, dict):
+        raise ValueError("Garden program plaintext must be a JSON object.")
+    return program
+
+
 def compute_bundle_hmac(bundle: Bundle, passphrase: str) -> str:
-    key = derive_key(passphrase, _b64d(bundle.bundle_auth_salt))
+    params = (
+        bundle.bundle_auth_kdf_params
+        if bundle.version >= BUNDLE_VERSION_WITH_GARDEN_PROGRAM else None
+    )
+    key = derive_key(passphrase, _b64d(bundle.bundle_auth_salt), params)
     payload = canonical_json(bundle.visible_payload())
     return hmac_mod.new(key, payload, hashlib.sha256).hexdigest()
 
@@ -116,6 +166,13 @@ def seal_bundle(bundle: Bundle, passphrase: str) -> None:
     """Finalize a bundle: set bundle_auth_salt if missing, hmac, checksum."""
     if not bundle.bundle_auth_salt:
         bundle.bundle_auth_salt = _b64e(os.urandom(_SALT_LEN))
+    if bundle.version >= BUNDLE_VERSION_WITH_GARDEN_PROGRAM:
+        if bundle.garden_program is None:
+            raise ValueError("Version 2 bundles require an encrypted garden program.")
+        if bundle.garden_gifts:
+            raise ValueError("Version 2 bundles cannot carry legacy garden gifts.")
+        if bundle.bundle_auth_kdf_params is None:
+            bundle.bundle_auth_kdf_params = dict(KDF_PARAMS_V0)
     bundle.hmac = compute_bundle_hmac(bundle, passphrase)
     bundle.checksum = bundle.compute_checksum()
 
