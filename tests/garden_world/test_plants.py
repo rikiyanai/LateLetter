@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 from lateletter.garden.world.model import Vec2
 from lateletter.garden.world.plants import (
     SPECIES_CATALOG,
@@ -40,6 +42,15 @@ def test_age_visibility_changes_without_regenerating_topology():
     assert len(early) < len(late)
     assert age_visibility_hash(plant, at_birth) != age_visibility_hash(plant, after_maturity)
     assert plant.topology is topology
+
+
+def test_age_visibility_hash_is_canonical_across_topology_storage_order():
+    plant = create_plant("seed", "plant:rose", "rose", Vec2(5, 5))
+    effective_time = max(node.maturity_time for node in plant.topology) + 1
+    reordered = replace(plant, topology=tuple(reversed(plant.topology)))
+    assert age_visibility_hash(plant, effective_time) == age_visibility_hash(
+        reordered, effective_time,
+    )
 
 
 def test_topology_streams_are_domain_separated_by_plant_identity():

@@ -150,7 +150,9 @@ def visible_organs(plant: PlantState, effective_time: int) -> tuple[OrganNode, .
 def age_visibility_hash(plant: PlantState, effective_time: int) -> str:
     """Hash semantic visibility and quantized maturation, not rendered glyphs."""
     visible = []
-    for node in visible_organs(plant, effective_time):
+    for node in sorted(
+        visible_organs(plant, effective_time), key=lambda item: item.node_id,
+    ):
         duration = max(1, node.maturity_time - node.birth_time)
         maturity = max(0, min(1_000, ((effective_time - node.birth_time) * 1_000) // duration))
         visible.append([node.node_id, maturity, node.bloom_state])

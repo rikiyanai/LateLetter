@@ -1,0 +1,20 @@
+{
+  "spec": "7.8.13",
+  "bundle_requirement": "normal checksummed and HMAC-authenticated sealed v2 bundle",
+  "gates": [
+    {"gate": 1, "name": "Production reachability", "status": "PARTIAL", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/test_viewer_contract.py"], "blocker": "The isolated sealed v2 bundle proves content and evaluator reachability, not completion through the published visible UI."},
+    {"gate": 2, "name": "Input parity", "status": "PARTIAL", "evidence": ["tests/garden_adapters/test_input_adapters.py", "tests/garden_adapters/test_world_browser_conformance.py"], "blocker": "All semantic commands normalize identically, but every action has not been traversed through visible touch, mouse, keyboard, and terminal controls."},
+    {"gate": 3, "name": "Standalone value", "status": "BLOCKED", "evidence": [], "blocker": "Direct human glance, tend, and dwell observation is mandatory."},
+    {"gate": 4, "name": "Plant stability", "status": "PASS", "evidence": ["tests/garden_acceptance/garden_acceptance_runner.mjs", "tests/garden_acceptance/test_release_acceptance.py", "tests/garden_world/test_plants.py"], "blocker": ""},
+    {"gate": 5, "name": "Layout safety", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_world/test_generation_projection.py"], "blocker": ""},
+    {"gate": 6, "name": "Atlas portability", "status": "PARTIAL", "evidence": ["tests/garden_contract/test_atlas.py"], "blocker": "The supported browser and terminal screenshot matrix for tofu, overlap, and frame jitter is absent."},
+    {"gate": 7, "name": "Animal behavior", "status": "PARTIAL", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_world/test_animals.py"], "blocker": "Four species, deterministic choice, hysteresis, preferences, tiers, and absence are exercised, but distinct four-tier repertoires and memory-driven choice are incomplete."},
+    {"gate": 8, "name": "Author control", "status": "PARTIAL", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/test_author.py", "tests/garden_contract/test_authoring.py"], "blocker": "The sealed beat-card arc and exact evaluator trace work, but the full named arc has not been completed end-to-end through the interactive no-JSON author UI and both materializers."},
+    {"gate": 9, "name": "Temporal correctness", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_contract/test_schedule.py", "tests/garden_contract/test_program_evaluator.py"], "blocker": ""},
+    {"gate": 10, "name": "Parallax and performance", "status": "PARTIAL", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_contract/test_camera.py"], "blocker": "Deterministic fixed-point motion and replay are covered; browser p95 budgets, ten-minute rendered pan inspection, and terminal partial-diff acceptance are not."},
+    {"gate": 11, "name": "Sky accuracy and privacy", "status": "PARTIAL", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_contract/test_astronomy.py"], "blocker": "Coarse local-only storage and denial fallback pass, but only two trusted Alt/Az fixtures exist instead of twelve and browser activation/network behavior lacks an acceptance run."},
+    {"gate": 12, "name": "Accessibility", "status": "PARTIAL", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/test_viewer_contract.py"], "blocker": "Static semantics, target sizes, and motion controls exist; VoiceOver/NVDA, no-color, 200% zoom, and narrow mobile completion require observation."},
+    {"gate": 13, "name": "Absence and ethics", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_world/test_clock.py", "tests/garden_world/test_animals.py"], "blocker": ""},
+    {"gate": 14, "name": "Human acceptance", "status": "BLOCKED", "evidence": [], "blocker": "Direct human sign-off cannot be replaced by code or fixture evidence."}
+  ]
+}
