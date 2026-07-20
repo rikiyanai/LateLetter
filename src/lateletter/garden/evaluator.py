@@ -61,7 +61,10 @@ def _compare(observed: Any, op: str, expected: Any, exists: bool) -> bool:
     if op in {">", ">=", "<", "<="}:
         if isinstance(observed, bool) or isinstance(expected, bool):
             return False
-        if not isinstance(observed, (int, float)) or not isinstance(expected, (int, float)):
+        comparable_numbers = (isinstance(observed, (int, float))
+                              and isinstance(expected, (int, float)))
+        comparable_strings = isinstance(observed, str) and isinstance(expected, str)
+        if not comparable_numbers and not comparable_strings:
             return False
         return {
             ">": observed > expected,

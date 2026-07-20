@@ -1,0 +1,12 @@
+{
+  "gifts": [
+    {"id": "gift.rabbit", "type": "animal", "catalog_id": "rabbit", "animal_name": "Clover", "placement_hint": "by_edge", "trigger": {"type": "cumulative_visits", "value": "3"}},
+    {"id": "gift.flower", "type": "item", "catalog_id": "pressed_flower", "placement_hint": "near_tallest_tree", "trigger": {"type": "post_letter", "value": "letter.first"}},
+    {"id": "gift.mug", "type": "landmark", "catalog_id": "coffee_mug", "placement_hint": "random", "trigger": {"type": "date", "value": "2028-06-15"}}
+  ],
+  "sentiments": {
+    "gift.rabbit": "Clover comes close when you keep returning.",
+    "gift.flower": "This was tucked between the pages.",
+    "gift.mug": "Two sugars, always."
+  }
+}

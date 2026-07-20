@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "vectors": [
+    {
+      "name": "new-york-spring-gap-shifts-forward",
+      "schedule": {
+        "start": "2026-03-08T02:30:00",
+        "timezone": "America/New_York",
+        "recurrence": {"frequency": "yearly", "interval": 1, "count": 1, "dst_gap": "shift_forward", "dst_fold": "first"},
+        "exceptions": [],
+        "missed": "deliver_on_next_visit"
+      },
+      "last_seen_utc": "2026-03-08T00:00:00+00:00",
+      "now_utc": "2026-03-08T08:00:00+00:00",
+      "expected_occurrence_utc": "2026-03-08T07:00:00+00:00"
+    },
+    {
+      "name": "new-york-autumn-fold-selects-second",
+      "schedule": {
+        "start": "2026-11-01T01:30:00",
+        "timezone": "America/New_York",
+        "recurrence": {"frequency": "yearly", "interval": 1, "count": 1, "dst_gap": "shift_forward", "dst_fold": "second"},
+        "exceptions": [],
+        "missed": "deliver_on_next_visit"
+      },
+      "last_seen_utc": "2026-11-01T00:00:00+00:00",
+      "now_utc": "2026-11-01T08:00:00+00:00",
+      "expected_occurrence_utc": "2026-11-01T06:30:00+00:00"
+    }
+  ]
+}
