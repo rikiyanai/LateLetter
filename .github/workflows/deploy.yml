@@ -27,6 +27,8 @@ jobs:
         run: |
           mkdir _site
           cp viewer-bnw.html _site/index.html
+          mkdir -p _site/web
+          cp web/*.mjs _site/web/
           cp test_fixture.lateletter _site/test_fixture.lateletter
           cp sealed_demo.lateletter _site/sealed_demo.lateletter
           # Published sealed letters: /lateletter/?l=<name> plus a pretty

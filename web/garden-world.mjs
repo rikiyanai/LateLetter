@@ -1,10 +1,4 @@
-/**
- * Dormant browser implementation of the canonical Garden world schema.
- *
- * This module has no DOM access and is not wired into the live viewer.  It
- * mirrors the Python ``lateletter.garden.world`` schema and reducer so browser
- * adapters can prove state/trace parity before an ownership cutover.
- */
+/** Canonical, renderer-neutral Garden world model and reducer for browsers. */
 
 import {
   canonicalJson,
@@ -23,20 +17,57 @@ const PERSONALITY_FIELDS = Object.freeze([
 ]);
 
 const FIXTURE_CATALOG = Object.freeze({
-  bench: { footprint: [2, 1], blocks_movement: true },
-  fence: { footprint: [1, 1], blocks_movement: true },
-  gate: { footprint: [1, 1], blocks_movement: false },
-  sundial: { footprint: [1, 1], blocks_movement: true },
-  trellis: { footprint: [2, 1], blocks_movement: true },
-  birdbath: { footprint: [1, 1], blocks_movement: true },
-  lantern: { footprint: [1, 1], blocks_movement: true },
-  pond: { footprint: [3, 2], blocks_movement: true },
-  memory_shrine: { footprint: [2, 1], blocks_movement: true },
-  stepping_stone: { footprint: [1, 1], blocks_movement: false },
-  bridge: { footprint: [3, 1], blocks_movement: false },
-  planter: { footprint: [2, 1], blocks_movement: true },
-  table: { footprint: [2, 2], blocks_movement: true },
-  chair: { footprint: [1, 1], blocks_movement: true },
+  bench: { name: 'Garden bench', footprint: [2, 1], blocks_movement: true, affordances: ['sit', 'animal-rest', 'author-socket'], actions: ['inspect', 'primary_interact'] },
+  fence: { name: 'Fence', footprint: [1, 1], blocks_movement: true, affordances: ['boundary', 'perch', 'vine-support'], actions: ['inspect'] },
+  gate: { name: 'Garden gate', footprint: [1, 1], blocks_movement: false, affordances: ['open-close', 'route'], actions: ['inspect', 'primary_interact'] },
+  sundial: { name: 'Sundial', footprint: [1, 1], blocks_movement: true, affordances: ['garden-time', 'authored-beat'], actions: ['inspect'] },
+  trellis: { name: 'Trellis', footprint: [2, 1], blocks_movement: true, affordances: ['train-plant', 'animal-hide'], actions: ['inspect', 'tend'] },
+  birdbath: { name: 'Birdbath', footprint: [1, 1], blocks_movement: true, affordances: ['refill', 'drink', 'bathe'], actions: ['inspect', 'tend'] },
+  lantern: { name: 'Lantern', footprint: [1, 1], blocks_movement: true, affordances: ['light', 'moth-visit'], actions: ['inspect', 'primary_interact'] },
+  pond: { name: 'Pond', footprint: [3, 2], blocks_movement: true, affordances: ['ripples', 'aquatic-plant', 'water-visitor'], actions: ['inspect', 'tend'] },
+  memory_shrine: { name: 'Memory shrine', footprint: [2, 1], blocks_movement: true, affordances: ['keepsake', 'inscription', 'memory-discovery'], actions: ['inspect', 'open_journal'] },
+  stepping_stone: { name: 'Stepping stone', footprint: [1, 1], blocks_movement: false, affordances: ['path'], actions: ['inspect'] },
+  bridge: { name: 'Bridge', footprint: [3, 1], blocks_movement: false, affordances: ['cross-water', 'animal-route'], actions: ['inspect', 'primary_interact'] },
+  planter: { name: 'Planter', footprint: [2, 1], blocks_movement: true, affordances: ['plant-container', 'transplant'], actions: ['inspect', 'tend'] },
+  table: { name: 'Garden table', footprint: [2, 2], blocks_movement: true, affordances: ['place-keepsake', 'animal-sniff'], actions: ['inspect', 'primary_interact'] },
+  chair: { name: 'Garden chair', footprint: [1, 1], blocks_movement: true, affordances: ['sit', 'observe'], actions: ['inspect', 'primary_interact'] },
+});
+
+export const MINIMUM_WORLD_WIDTH = 64;
+export const MINIMUM_WORLD_HEIGHT = 40;
+
+const SPECIES_CATALOG = Object.freeze({
+  oak: ['tree', 18, 30, 86400, ['trunk', 'branch', 'broadleaf']],
+  pine: ['tree', 16, 26, 86400, ['trunk', 'conifer', 'needle']],
+  willow: ['tree', 20, 32, 86400, ['trunk', 'branch', 'drooping-leaf']],
+  rose: ['shrub', 10, 18, 64800, ['stem', 'thorn', 'rose-bloom']],
+  hydrangea: ['shrub', 12, 20, 64800, ['stem', 'broadleaf', 'cluster-bloom']],
+  ivy: ['vine', 12, 24, 43200, ['vine', 'ivy-leaf']],
+  wisteria: ['vine', 14, 26, 43200, ['vine', 'drooping-bloom']],
+  meadow_grass: ['grass', 8, 16, 21600, ['blade', 'seed-head']],
+  lavender: ['herb', 9, 17, 32400, ['stem', 'narrow-leaf', 'lavender-bloom']],
+  rosemary: ['herb', 9, 17, 32400, ['stem', 'needle-leaf', 'herb-bloom']],
+  tulip: ['flower', 6, 10, 21600, ['stem', 'tulip-leaf', 'tulip-bloom']],
+  sunflower: ['flower', 7, 12, 32400, ['stem', 'broadleaf', 'sunflower-bloom']],
+  water_lily: ['aquatic', 7, 13, 43200, ['rhizome', 'lily-pad', 'water-bloom']],
+});
+
+const ANIMAL_SPECIES = Object.freeze({
+  bird: { affinities: ['fence', 'birdbath', 'trellis'] },
+  cat: { affinities: ['bench', 'table', 'memory_shrine'] },
+  rabbit: { affinities: ['trellis', 'planter', 'bench'] },
+  turtle: { affinities: ['pond', 'bridge', 'stepping_stone'] },
+});
+
+const COLLECTIBLE_CATALOG = Object.freeze({
+  oak_leaf: ['plant_species', 'recipient-grown', 'Oak leaf', "A leaf showing the oak's branching veins."],
+  lavender_sprig: ['plant_species', 'recipient-grown', 'Lavender sprig', 'A fragrant sprig from a tended lavender plant.'],
+  first_snowflake: ['seasonal_natural_find', 'procedural', 'First snowflake', "A remembered trace of the season's first snow."],
+  fallen_acorn: ['seasonal_natural_find', 'procedural', 'Fallen acorn', 'A small autumn find beneath the trees.'],
+  rabbit_track: ['animal_trace', 'animal-given', 'Rabbit track', 'A soft print where a rabbit paused.'],
+  bird_feather: ['animal_trace', 'animal-given', 'Bird feather', 'A feather left near a favorite perch.'],
+  pressed_flower: ['authored_keepsake', 'author-authored', 'Pressed flower', 'A flower preserved with an authored memory.'],
+  small_key: ['authored_keepsake', 'author-authored', 'Small key', 'A keepsake key waiting without expiry.'],
 });
 
 const clone = value => globalThis.structuredClone
@@ -226,6 +257,7 @@ export function deserializeWorldState(raw) {
     ui: normalizeUi(data.ui),
     undo_stack: (data.undo_stack ?? []).map(normalizeUndo),
     milestone_receipts: (data.milestone_receipts ?? []).map(String),
+    program_state: clone(data.program_state ?? {}),
     processed_commands: (data.processed_commands ?? []).map(String),
     event_trace: (data.event_trace ?? []).map(normalizeTrace),
   };
@@ -255,6 +287,7 @@ export function serializeWorldState(state) {
     ui: normalizeUi(state.ui),
     undo_stack: state.undo_stack.map(normalizeUndo),
     milestone_receipts: uniqueSorted(state.milestone_receipts),
+    program_state: clone(state.program_state ?? {}),
     processed_commands: state.processed_commands.map(String),
     event_trace: state.event_trace.map(normalizeTrace),
   };
@@ -282,6 +315,184 @@ export async function newGardenWorld(
     world_width: Math.max(1, integer(world_width)),
     world_height: Math.max(1, integer(world_height)),
   });
+}
+
+const ZERO_REPLACEMENT = 0x6d2b79f5;
+
+async function deriveSeed(rootSeed, ...domain) {
+  const digest = await sha256Hex(canonicalJson([
+    'lateletter-garden-rng-v1', String(rootSeed), ...domain,
+  ]));
+  const value = Number.parseInt(digest.slice(0, 8), 16) >>> 0;
+  return value || ZERO_REPLACEMENT;
+}
+
+class DeterministicRng {
+  constructor(seed) { this.state = (Number(seed) >>> 0) || ZERO_REPLACEMENT; }
+  nextU32() {
+    let value = this.state >>> 0;
+    value = (value ^ ((value << 13) >>> 0)) >>> 0;
+    value = (value ^ (value >>> 17)) >>> 0;
+    value = (value ^ ((value << 5) >>> 0)) >>> 0;
+    this.state = value >>> 0;
+    return this.state;
+  }
+  randbelow(stop) {
+    if (!Number.isInteger(stop) || stop <= 0) throw new Error('stop must be positive');
+    const limit = 0x100000000 - (0x100000000 % stop);
+    for (;;) {
+      const value = this.nextU32();
+      if (value < limit) return value % stop;
+    }
+  }
+  randint(start, stop) {
+    if (stop < start) throw new Error('stop must be >= start');
+    return start + this.randbelow(stop - start + 1);
+  }
+  choice(values) {
+    if (!values.length) throw new Error('cannot choose from an empty sequence');
+    return values[this.randbelow(values.length)];
+  }
+}
+
+async function shuffled(values, rng) {
+  const output = [...values];
+  for (let index = output.length - 1; index > 0; index -= 1) {
+    const swap = rng.randbelow(index + 1);
+    [output[index], output[swap]] = [output[swap], output[index]];
+  }
+  return output;
+}
+
+function organKind(definition, index, total) {
+  const [category, , , , glyphs] = definition;
+  const progress = index / Math.max(1, total - 1);
+  if (category === 'tree' || category === 'shrub') {
+    if (progress < 0.28) return 'stem';
+    if (progress < 0.68) return 'branch';
+    return glyphs.at(-1).includes('bloom') ? 'bloom' : 'leaf';
+  }
+  if (category === 'vine') return index % 3 ? 'vine' : 'leaf';
+  if (category === 'aquatic') return progress > 0.8 ? 'bloom' : 'leaf';
+  if (progress < 0.45) return 'stem';
+  return progress > 0.82 ? 'bloom' : 'leaf';
+}
+
+async function generateTopology(worldSeed, plantId, speciesId, plantedAt = 0) {
+  const definition = SPECIES_CATALOG[speciesId];
+  const structure = new DeterministicRng(await deriveSeed(
+    worldSeed, 'plant', plantId, 'topology', 'structure',
+  ));
+  const timing = new DeterministicRng(await deriveSeed(
+    worldSeed, 'plant', plantId, 'topology', 'timing',
+  ));
+  const styling = new DeterministicRng(await deriveSeed(
+    worldSeed, 'plant', plantId, 'topology', 'style',
+  ));
+  const [, minimum, maximum, , glyphs] = definition;
+  const total = structure.randint(minimum, maximum);
+  const rootId = await stableId('organ', plantId, 'root');
+  const nodes = [normalizeOrgan({
+    node_id: rootId, parent_id: null, kind: 'root', birth_time: plantedAt,
+    maturity_time: plantedAt, final_direction: [0, -1], final_length: 1,
+    glyph_family: 'root', bloom_state: null,
+  })];
+  for (let index = 1; index < total; index += 1) {
+    const kind = organKind(definition, index, total);
+    const parentIndex = definition[0] === 'vine' || index < 4
+      ? index - 1 : structure.randbelow(index);
+    const parent = nodes[parentIndex];
+    let direction = [structure.randint(-1, 1), -structure.randint(0, 1)];
+    if (direction[0] === 0 && direction[1] === 0) direction = [0, -1];
+    const birth = plantedAt + index * timing.randint(2700, 7200);
+    const maturity = birth + timing.randint(3600, 14400);
+    nodes.push(normalizeOrgan({
+      node_id: await stableId('organ', plantId, index, kind, parent.node_id),
+      parent_id: parent.node_id, kind, birth_time: birth, maturity_time: maturity,
+      final_direction: direction, final_length: structure.randint(1, 4),
+      glyph_family: styling.choice(glyphs),
+      bloom_state: kind === 'bloom' ? 'bud' : null,
+    }));
+  }
+  return nodes;
+}
+
+async function freePosition(state, domain, occupied, margin = 2) {
+  const rng = new DeterministicRng(await deriveSeed(state.seed, 'layout', ...domain));
+  for (let attempt = 0; attempt < 512; attempt += 1) {
+    const candidate = [
+      rng.randint(margin, state.world_width - margin - 1),
+      rng.randint(margin, state.world_height - margin - 1),
+    ];
+    if (!occupied.has(cellKey(candidate))) {
+      occupied.add(cellKey(candidate));
+      return candidate;
+    }
+  }
+  throw new Error(`could not place ${canonicalJson(domain)} safely`);
+}
+
+/** Generate the same canonical initial state as Python; viewport is never input. */
+export async function generateInitialWorld(
+  worldId, seed, { world_width = 120, world_height = 80 } = {},
+) {
+  if (world_width < MINIMUM_WORLD_WIDTH || world_height < MINIMUM_WORLD_HEIGHT) {
+    throw new Error(`canonical world must be at least ${MINIMUM_WORLD_WIDTH}x${MINIMUM_WORLD_HEIGHT}`);
+  }
+  const state = await newGardenWorld(worldId, seed, { world_width, world_height });
+  const fixtureRng = new DeterministicRng(await deriveSeed(
+    state.seed, 'layout', 'fixtures',
+  ));
+  const fixtureIds = await shuffled(Object.keys(FIXTURE_CATALOG), fixtureRng);
+  const columns = 5;
+  const spacingX = Math.max(8, Math.floor((state.world_width - 8) / columns));
+  const startY = state.world_height - 18;
+  state.fixtures = [];
+  for (let index = 0; index < fixtureIds.length; index += 1) {
+    const catalogId = fixtureIds[index];
+    state.fixtures.push(normalizeFixture({
+      fixture_id: await stableId('fixture', state.world_id, catalogId),
+      catalog_id: catalogId,
+      position: [4 + (index % columns) * spacingX, startY + Math.floor(index / columns) * 5],
+      rotation: fixtureRng.randbelow(4) * 90,
+      authored: false,
+    }));
+  }
+  const occupied = new Set(state.fixtures.flatMap(fixtureCells).map(cellKey));
+  for (const speciesId of Object.keys(SPECIES_CATALOG).sort()) {
+    const plantId = await stableId('plant', state.world_id, speciesId);
+    const position = await freePosition(state, ['plant', speciesId], occupied, 3);
+    state.plants.push(normalizePlant({
+      plant_id: plantId, species_id: speciesId, position,
+      topology: await generateTopology(state.seed, plantId, speciesId),
+      growth_period_seconds: SPECIES_CATALOG[speciesId][3],
+    }));
+  }
+  const blocked = new Set([...occupied, ...state.plants.map(item => cellKey(item.position))]);
+  for (const speciesId of Object.keys(ANIMAL_SPECIES).sort()) {
+    const animalId = await stableId('animal', state.world_id, speciesId);
+    const position = await freePosition(state, ['animal', speciesId], blocked, 2);
+    const personalityRng = new DeterministicRng(await deriveSeed(
+      state.seed, 'animal', animalId, 'personality',
+    ));
+    state.animals.push(normalizeAnimal({
+      animal_id: animalId, species_id: speciesId, position,
+      personality: Object.fromEntries(PERSONALITY_FIELDS.map(field => [
+        field, personalityRng.randint(20, 80),
+      ])),
+    }));
+  }
+  for (const catalogId of Object.keys(COLLECTIBLE_CATALOG).sort()) {
+    const collectibleId = await stableId('collectible', state.world_id, catalogId);
+    const position = await freePosition(state, ['collectible', catalogId], blocked, 2);
+    const [family, provenance, label, description] = COLLECTIBLE_CATALOG[catalogId];
+    state.collectibles.push(normalizeCollectible({
+      collectible_id: collectibleId, family, provenance, label, description,
+      position, authored: family === 'authored_keepsake',
+    }));
+  }
+  if (!layoutIsSafe(state)) throw new Error('generated Garden layout failed safety validation');
+  return deserializeWorldState(serializeWorldState(state));
 }
 
 function objectIds(state) {
@@ -831,4 +1042,445 @@ export async function dispatchGardenCommand(sourceState, command) {
   }
 
   return [state, reject('unsupported command')];
+}
+
+async function topologyVisibilityHash(plant, effectiveTime) {
+  // Persistence intentionally sorts topology by stable node ID, so the
+  // semantic visibility hash is explicitly graph-order independent too.
+  const visible = plant.topology
+    .filter(node => node.birth_time <= effectiveTime)
+    .sort((left, right) => left.node_id.localeCompare(right.node_id))
+    .map(node => {
+      const duration = Math.max(1, node.maturity_time - node.birth_time);
+      const maturity = Math.max(0, Math.min(
+        1000, Math.floor(((effectiveTime - node.birth_time) * 1000) / duration),
+      ));
+      return [node.node_id, maturity, node.bloom_state];
+    });
+  return sha256Hex(canonicalJson(visible));
+}
+
+/** Build a read-only semantic projection; renderers may not mutate this state. */
+export async function projectGardenScene(sourceState) {
+  const state = deserializeWorldState(serializeWorldState(sourceState));
+  const objects = [];
+  for (const plant of state.plants) {
+    const visible = plant.topology.filter(node => node.birth_time <= state.effective_time);
+    objects.push({
+      object_id: plant.plant_id, kind: 'plant',
+      semantic_name: plant.species_id.replaceAll('_', ' '),
+      position: [...plant.position], depth: 100, collision: true, occlusion: true,
+      affordances: ['observe', 'water', 'prune', 'train', 'transplant'],
+      actions: ['inspect', 'tend'],
+      hotspot: { x: plant.position[0], y: plant.position[1], width: 1, height: 1 },
+      semantic_state: {
+        species_id: plant.species_id, visible_organ_count: visible.length,
+        topology_hash: await topologyVisibilityHash(plant, state.effective_time),
+        growth_points: plant.growth_points,
+      },
+    });
+  }
+  for (const fixture of state.fixtures) {
+    const definition = FIXTURE_CATALOG[fixture.catalog_id];
+    objects.push({
+      object_id: fixture.fixture_id, kind: 'fixture', semantic_name: definition.name,
+      position: [...fixture.position], depth: 100,
+      collision: definition.blocks_movement, occlusion: definition.blocks_movement,
+      affordances: [...definition.affordances], actions: [...definition.actions],
+      hotspot: {
+        x: fixture.position[0], y: fixture.position[1],
+        width: definition.footprint[0], height: definition.footprint[1],
+      },
+      semantic_state: { catalog_id: fixture.catalog_id, rotation: fixture.rotation },
+    });
+  }
+  for (const animal of state.animals) {
+    objects.push({
+      object_id: animal.animal_id, kind: 'animal', semantic_name: animal.species_id,
+      position: [...animal.position], depth: 110, collision: false, occlusion: true,
+      affordances: [...ANIMAL_SPECIES[animal.species_id].affinities],
+      actions: ['inspect', 'feed', 'play'],
+      hotspot: { x: animal.position[0], y: animal.position[1], width: 1, height: 1 },
+      semantic_state: {
+        species_id: animal.species_id, high_level_state: animal.high_level_state,
+        intent: animal.current_intent, bond_tier: animal.bond_tier,
+        choreography_locked: animal.choreography_lock !== null,
+      },
+    });
+  }
+  for (const item of state.collectibles.filter(candidate => !candidate.collected)) {
+    objects.push({
+      object_id: item.collectible_id, kind: 'collectible', semantic_name: item.label,
+      position: [...item.position], depth: 120, collision: false, occlusion: false,
+      affordances: ['discover', 'journal'], actions: ['inspect', 'collect'],
+      hotspot: { x: item.position[0], y: item.position[1], width: 1, height: 1 },
+      semantic_state: {
+        family: item.family, provenance: item.provenance, authored: item.authored,
+      },
+    });
+  }
+  objects.sort((left, right) => left.depth - right.depth ||
+    left.object_id.localeCompare(right.object_id));
+  return {
+    world_id: state.world_id, effective_time: state.effective_time,
+    camera: [...state.ui.camera], motion_paused: state.ui.motion_paused, objects,
+  };
+}
+
+/** Aggregate humane absence progress without replaying elapsed ticks. */
+export async function reconcileGardenOffline(sourceState, observedWallTime, maxSummaries = 3) {
+  const state = deserializeWorldState(serializeWorldState(sourceState));
+  const observed = Math.max(0, integer(observedWallTime));
+  const previous = state.last_observed_wall_time;
+  if (previous === null) {
+    state.last_observed_wall_time = observed;
+    return [state, { elapsed_seconds: 0, rollback_clamped: false, summaries: [], receipt_ids: [] }];
+  }
+  if (observed <= previous) {
+    return [state, {
+      elapsed_seconds: 0, rollback_clamped: observed < previous,
+      summaries: [], receipt_ids: [],
+    }];
+  }
+  const elapsed = observed - previous;
+  const start = state.effective_time;
+  const end = start + elapsed;
+  const changes = [];
+  const receipts = [];
+  for (const plant of state.plants) {
+    const milestones = Math.max(0,
+      Math.floor(end / Math.max(1, plant.growth_period_seconds)) -
+      Math.floor(start / Math.max(1, plant.growth_period_seconds)));
+    if (milestones) {
+      plant.growth_points += milestones;
+      changes.push([plant.plant_id, milestones]);
+      receipts.push(await stableId(
+        'milestone', state.world_id, 'plant-growth', plant.plant_id, start, end,
+      ));
+    }
+  }
+  for (const animal of state.animals) {
+    animal.session_interactions = [];
+    animal.energy = Math.max(50, animal.energy);
+    animal.social_appetite = 50;
+    animal.play_appetite = 50;
+    animal.rest_appetite = 40;
+  }
+  if (state.animals.length) {
+    receipts.push(await stableId('milestone', state.world_id, 'animal-return', start, end));
+  }
+  const available = state.collectibles.filter(item => !item.collected);
+  if (available.length) {
+    receipts.push(await stableId('milestone', state.world_id, 'finds-waiting', start, end));
+  }
+  const candidates = [
+    ...changes.map(([id, count]) => [10, id,
+      `A plant changed while you were away (${count} growth milestone${count === 1 ? '' : 's'}).`]),
+    ...state.animals.map(animal => [20, animal.animal_id,
+      `Your ${animal.species_id} is glad to see you.`]),
+  ];
+  if (available.length) candidates.push([30, available[0].collectible_id,
+    `${available.length} garden find${available.length === 1 ? ' is' : 's are'} waiting to be noticed.`]);
+  candidates.sort((left, right) => left[0] - right[0] || String(left[1]).localeCompare(String(right[1])));
+  const summaries = candidates.slice(0, Math.max(0, maxSummaries)).map(item => item[2]);
+  state.effective_time = end;
+  state.last_observed_wall_time = observed;
+  state.milestone_receipts = uniqueSorted([...state.milestone_receipts, ...receipts]);
+  state.event_trace.push({
+    trace_id: await stableId('trace', state.world_id, 'offline', start, end),
+    sequence: state.command_sequence, kind: 'offline_reconcile', target_id: null,
+    effective_time: end, summary: `Reconciled ${elapsed} seconds in aggregate.`,
+  });
+  return [state, {
+    elapsed_seconds: elapsed, rollback_clamped: false, summaries,
+    receipt_ids: receipts,
+  }];
+}
+
+async function authoredPosition(state, target, kind, catalogId, requested) {
+  let candidate = null;
+  if (Array.isArray(requested) && requested.length === 2) candidate = requested;
+  else if (requested && typeof requested === 'object' &&
+    Object.hasOwn(requested, 'x') && Object.hasOwn(requested, 'y')) {
+    candidate = [requested.x, requested.y];
+  }
+  if (candidate) {
+    candidate = [
+      clamp(candidate[0], 1, state.world_width - 2),
+      clamp(candidate[1], 1, state.world_height - 2),
+    ];
+    if (kind !== 'fixture' || !validateFixturePlacement(
+      state, catalogId, candidate, { fixtureId: target, exceptId: target },
+    ).length) return candidate;
+  }
+  const occupiedCells = new Set([
+    ...state.plants, ...state.fixtures, ...state.animals, ...state.collectibles,
+  ].map(item => cellKey(item.position)));
+  const rng = new DeterministicRng(await deriveSeed(
+    state.seed, 'program', target, kind, 'position',
+  ));
+  for (let attempt = 0; attempt < 512; attempt += 1) {
+    const value = [
+      rng.randint(2, state.world_width - 3),
+      rng.randint(2, state.world_height - 3),
+    ];
+    if (occupiedCells.has(cellKey(value))) continue;
+    if (kind === 'fixture' && validateFixturePlacement(
+      state, catalogId, value, { fixtureId: target, exceptId: target },
+    ).length) continue;
+    return value;
+  }
+  throw new Error(`could not place authored Garden object ${target}`);
+}
+
+function programDefinition(program, target) {
+  return program.animals?.find(item => item.id === target)
+    ?? program.entities?.find(item => item.id === target) ?? {};
+}
+
+function programDefinitions(program) {
+  return [...(program.entities ?? []), ...(program.animals ?? [])]
+    .filter(item => typeof item?.id === 'string')
+    .sort((left, right) => String(left.id).localeCompare(String(right.id)));
+}
+
+const catalogLeaf = value => {
+  const leaf = String(value ?? '').split('.').at(-1);
+  return ({ rosebush: 'rose', sapling: 'oak' })[leaf] ?? leaf;
+};
+
+function programKind(definition) {
+  const catalogId = catalogLeaf(
+    definition.catalog_id ?? definition.asset_id ?? definition.species,
+  );
+  const rawKind = String(definition.kind ?? '');
+  if (definition.species || Object.hasOwn(ANIMAL_SPECIES, catalogId)) return ['animal', catalogId];
+  if (rawKind === 'plant' || Object.hasOwn(SPECIES_CATALOG, catalogId)) return ['plant', catalogId];
+  if (rawKind === 'fixture' || Object.hasOwn(FIXTURE_CATALOG, catalogId)) return ['fixture', catalogId];
+  return ['collectible', catalogId || 'authored_keepsake'];
+}
+
+export function seedGardenProgramState(sourceState, program) {
+  const state = deserializeWorldState(serializeWorldState(sourceState));
+  const programState = clone(state.program_state ?? {});
+  const variables = programState.variables ??= {};
+  for (const [name, value] of Object.entries(program.variables ?? {})) {
+    if (!Object.hasOwn(variables, name)) variables[name] = clone(value);
+  }
+  const entities = programState.entities ??= {};
+  for (const definition of programDefinitions(program)) {
+    const target = String(definition.id);
+    const slot = entities[target] ??= { id: target };
+    const initial = definition.initial_state;
+    if (initial && typeof initial === 'object' && !Array.isArray(initial)) {
+      for (const [name, value] of Object.entries(initial)) {
+        if (!Object.hasOwn(slot, name)) slot[name] = clone(value);
+      }
+    }
+  }
+  programState.applied_occurrences ??= [];
+  programState.exclusive_claims ??= {};
+  state.program_state = programState;
+  return state;
+}
+
+function initialProgramEffects(program) {
+  const effects = [];
+  for (const definition of programDefinitions(program)) {
+    const initial = definition.initial_state;
+    if (!initial || typeof initial !== 'object' || Array.isArray(initial)) continue;
+    const [kind, catalogId] = programKind(definition);
+    const params = {};
+    const requested = definition.position ?? definition.placement;
+    if (requested !== undefined) params.position = clone(requested);
+    let type = null;
+    if (kind === 'animal' && initial.present === true) {
+      type = 'animal.arrive';
+      if (definition.routine !== undefined) params.routine = clone(definition.routine);
+    } else if (kind === 'plant' && initial.planted === true) {
+      type = 'plant.plant'; params.species_id = catalogId;
+    } else if (['fixture', 'collectible'].includes(kind) && initial.revealed === true) {
+      type = 'entity.reveal';
+    }
+    if (type) {
+      const effect = { type, event_id: 'program.initial', target: String(definition.id) };
+      if (Object.keys(params).length) effect.params = params;
+      effects.push(effect);
+    }
+  }
+  return effects;
+}
+
+function animalWithAuthoredData(animal, definition, routine = undefined) {
+  const output = clone(animal);
+  if (definition.personality && typeof definition.personality === 'object' &&
+    !Array.isArray(definition.personality)) output.personality = normalizePersonality(definition.personality);
+  output.favorite_fixture_ids = uniqueSorted(definition.favorite_places ?? []);
+  output.authored_prohibitions = uniqueSorted(definition.prohibited_behaviors ?? []);
+  const value = routine !== undefined ? routine : definition.routine;
+  output.authored_preferences = uniqueSorted(
+    Array.isArray(value) ? value : value ? [value] : [],
+  );
+  return output;
+}
+
+async function programJournal(state, receipt, objectId, label, description, status = 'discovered') {
+  const entryId = await stableId('journal', state.world_id, receipt);
+  if (!state.journal.some(item => item.entry_id === entryId)) state.journal.push(normalizeJournal({
+    entry_id: entryId, object_id: objectId, status, label, description,
+    discovered_at: state.effective_time,
+  }));
+}
+
+function pythonJson(value) {
+  if (Array.isArray(value)) return `[${value.map(pythonJson).join(', ')}]`;
+  if (value && typeof value === 'object') return `{${Object.keys(value).sort().map(key =>
+    `${JSON.stringify(key)}: ${pythonJson(value[key])}`).join(', ')}}`;
+  return JSON.stringify(value);
+}
+
+/**
+ * Materialize evaluator effects into the authoritative WorldState.
+ * The evaluator owns only occurrence/variable bookkeeping; it never becomes
+ * a renderer-local gameplay state. Receipts make recurring/replayed results
+ * idempotent and every change is visible in canonical persistence/projection.
+ */
+export async function materializeGardenProgramEffects(
+  sourceState, program, evaluation,
+) {
+  const state = seedGardenProgramState(sourceState, program);
+  state.program_state = clone(evaluation.state ?? {});
+  const occurrences = { 'program.initial': 'definition', ...Object.fromEntries(evaluation.trace
+    .filter(row => row.status === 'applied' && row.occurrence_id)
+    .map(row => [String(row.event_id), String(row.occurrence_id)])) };
+  const actionIndexes = {};
+  const materialized = [];
+  for (const effect of [...initialProgramEffects(program), ...evaluation.effects]) {
+    const eventId = String(effect.event_id);
+    const index = actionIndexes[eventId] ?? 0;
+    actionIndexes[eventId] = index + 1;
+    const receiptId = await stableId(
+      'program-receipt', state.world_id, eventId,
+      occurrences[eventId] ?? 'unscheduled', index, effect,
+    );
+    if (state.milestone_receipts.includes(receiptId)) continue;
+    const target = effect.target === undefined || effect.target === null
+      ? null : String(effect.target);
+    const params = clone(effect.params ?? {});
+    const definition = programDefinition(program, target);
+    const [kind, catalogId] = programKind(definition);
+    const requested = params.position ?? definition.position ?? definition.placement;
+
+    if (effect.type === 'animal.arrive') {
+      const species = catalogLeaf(definition.species ?? definition.catalog_id ?? catalogId);
+      if (Object.hasOwn(ANIMAL_SPECIES, species)) {
+        const position = await authoredPosition(state, target, 'animal', species, requested);
+        const personalityRng = new DeterministicRng(await deriveSeed(
+          state.seed, 'animal', target, 'personality',
+        ));
+        let animal = normalizeAnimal({
+          animal_id: target, species_id: species, position,
+          personality: Object.fromEntries(PERSONALITY_FIELDS.map(field => [
+            field, personalityRng.randint(20, 80),
+          ])),
+        });
+        animal = animalWithAuthoredData(animal, definition, params.routine);
+        state.animals = [...state.animals.filter(item => item.animal_id !== target), animal];
+      }
+    } else if (effect.type === 'animal.depart') {
+      state.animals = state.animals.filter(item => item.animal_id !== target);
+    } else if (effect.type.startsWith('animal.')) {
+      const animal = state.animals.find(item => item.animal_id === target);
+      if (animal && effect.type === 'animal.behave') {
+        animal.current_intent = String(params.behavior ?? 'idle');
+        animal.intent_started_at = state.effective_time;
+        animal.minimum_dwell_until = state.effective_time + Math.max(0, integer(params.duration_ticks));
+      } else if (animal && effect.type === 'animal.routine') {
+        Object.assign(animal, animalWithAuthoredData(animal, definition, params.routine));
+      } else if (animal && effect.type === 'animal.set_destination') {
+        let destination = null;
+        if (Array.isArray(params.position) && params.position.length === 2) destination = vec2(params.position);
+        else if (params.position && typeof params.position === 'object') destination = [integer(params.position.x), integer(params.position.y)];
+        if (!destination && params.fixture_id) destination = state.fixtures.find(item =>
+          item.fixture_id === params.fixture_id)?.position ?? null;
+        if (destination) animal.position = [...destination];
+      } else if (animal && ['animal.deliver', 'animal.present_gift'].includes(effect.type)) {
+        animal.choreography_lock = effect.type;
+      }
+      if (['animal.deliver', 'animal.present_gift'].includes(effect.type)) {
+        await programJournal(state, receiptId, target, 'Authored animal moment', pythonJson(params));
+      }
+    } else if (effect.type === 'plant.plant') {
+      const species = catalogLeaf(params.species_id ?? catalogId);
+      if (Object.hasOwn(SPECIES_CATALOG, species)) {
+        const position = await authoredPosition(state, target, 'plant', species, requested);
+        const plant = normalizePlant({
+          plant_id: target, species_id: species, position,
+          topology: await generateTopology(state.seed, target, species, state.effective_time),
+          growth_period_seconds: SPECIES_CATALOG[species][3],
+        });
+        state.plants = [...state.plants.filter(item => item.plant_id !== target), plant];
+      }
+    } else if (effect.type.startsWith('plant.')) {
+      const plant = state.plants.find(item => item.plant_id === target);
+      if (plant && effect.type === 'plant.grow') {
+        const value = params.amount ?? params.stage ?? 1;
+        const amount = typeof value === 'number' && !Number.isNaN(value) ? integer(value) : 1;
+        plant.growth_points = Math.max(0, plant.growth_points + amount);
+      } else if (plant && effect.type === 'plant.bloom') {
+        plant.topology = plant.topology.map(node =>
+          node.kind === 'bloom' ? { ...node, bloom_state: 'bloom' } : node);
+      } else if (plant && effect.type === 'plant.prune') {
+        const removed = new Set((params.node_ids ?? []).map(String));
+        let changed = true;
+        while (changed) {
+          const before = removed.size;
+          for (const node of plant.topology) if (removed.has(node.parent_id)) removed.add(node.node_id);
+          changed = removed.size !== before;
+        }
+        plant.topology = plant.topology.filter(node => !removed.has(node.node_id));
+      }
+    } else if (effect.type.startsWith('entity.')) {
+      if (effect.type === 'entity.retire') {
+        state.fixtures = state.fixtures.filter(item => item.fixture_id !== target);
+        state.plants = state.plants.filter(item => item.plant_id !== target);
+        state.collectibles = state.collectibles.filter(item => item.collectible_id !== target);
+      } else if (kind === 'fixture' && Object.hasOwn(FIXTURE_CATALOG, catalogId)) {
+        const position = await authoredPosition(state, target, kind, catalogId, requested);
+        state.fixtures = [...state.fixtures.filter(item => item.fixture_id !== target),
+          normalizeFixture({ fixture_id: target, catalog_id: catalogId, position, authored: true })];
+      } else if (kind === 'plant' && Object.hasOwn(SPECIES_CATALOG, catalogId)) {
+        const position = await authoredPosition(state, target, kind, catalogId, requested);
+        state.plants = [...state.plants.filter(item => item.plant_id !== target), normalizePlant({
+          plant_id: target, species_id: catalogId, position,
+          topology: await generateTopology(state.seed, target, catalogId, state.effective_time),
+          growth_period_seconds: SPECIES_CATALOG[catalogId][3],
+        })];
+      } else {
+        const position = await authoredPosition(state, target, 'collectible', catalogId, requested);
+        const properties = definition.properties && typeof definition.properties === 'object'
+          ? definition.properties : {};
+        const label = String(properties.label ?? target);
+        const rawDescription = params.state ?? properties.description ?? 'An authored garden keepsake.';
+        const description = typeof rawDescription === 'string' ? rawDescription : String(rawDescription);
+        state.collectibles = [...state.collectibles.filter(item => item.collectible_id !== target),
+          normalizeCollectible({ collectible_id: target, family: 'authored_keepsake',
+            provenance: 'author-authored', label, description, position, authored: true })];
+      }
+    } else if (['narrative.show', 'scene.set', 'letter.present'].includes(effect.type)) {
+      const labels = { 'scene.set': 'The Garden changed', 'letter.present': 'A letter is ready' };
+      const label = String(params.label ?? labels[effect.type] ?? 'Garden memory');
+      const description = String(params.text ?? pythonJson(params));
+      await programJournal(state, receiptId, target ?? effect.type, label, description);
+    }
+    state.milestone_receipts = uniqueSorted([...state.milestone_receipts, receiptId]);
+    state.event_trace.push(normalizeTrace({
+      trace_id: await stableId('trace', state.world_id, 'program', receiptId),
+      sequence: state.command_sequence, kind: `program:${effect.type}`,
+      target_id: target, effective_time: state.effective_time,
+      summary: `Applied authored Garden event ${eventId}.`,
+    }));
+    materialized.push(receiptId);
+  }
+  return [deserializeWorldState(serializeWorldState(state)), materialized];
 }
