@@ -1,30 +1,56 @@
-# Garden Runtime Parity
+# Garden Feature-Gap and Renderer Parity
 
-Verified 2026-07-21 against the repository's real sealed synthetic demo with
-passcode `garden`. This table is deliberately bounded: “Full” means the named
-recipient-visible behavior was exercised in both implementations. It does not
-claim completion of the broader planned standalone-garden release contract or
-substitute for deployment and human acceptance.
+Verified 2026-07-21 against the normal, checksummed, HMAC-authenticated,
+encrypted v2 synthetic bundle in `sealed_demo.lateletter` with passcode
+`garden`. “Renderer parity” below means that terminal and HTML consume the
+same canonical world state, evaluator, materialization receipts, event trace,
+and semantic commands. It does **not** mean that the full §7.8 product contract
+or its human acceptance gates have passed.
 
-| Recipient-visible contract | Terminal | HTML | Parity | Verification |
+The specification finding remains controlling:
+
+> The existing Garden began as a renderer-backed recipient gift loop, not the
+> standalone, author-directed cozy garden promised by §7.8. Shared runtime
+> ownership is now implemented, but the product must not be described as a
+> “full,” “standalone,” or “parity” Garden until every §7.8.13 gate passes a
+> normal sealed production bundle in every supported modality.
+
+## Feature parity
+
+| §7.8 contract | Terminal | HTML | Renderer parity | Release state |
 |---|---|---|---|---|
-| Canonical bundle load and checksum gate | Canonical reader blocks damaged bundles | File, demo, and public-letter loaders block damaged bundles | Full | Valid and deliberately corrupted sealed bundles were exercised in both channels. |
-| HMAC passcode gate | Canonical HMAC verifier | WebCrypto HMAC verifier | Full | Correct passcode accepted; wrong passcode rejected without content disclosure. |
-| Real letter decryption | PBKDF2-SHA256/AES-256-GCM | Matching WebCrypto derivation/decryption | Full | Exact synthetic label and body rendered in both channels. |
-| Real gift-memory decryption | Canonical gift decryptor | Matching per-gift WebCrypto decryptor | Full | Exact Clover, coffee-mug, and pressed-flower sentiments decrypt from the generated artifacts. |
-| Discoverable garden actions after authentication | Status bar shows compact `e`, `i`, `f`, and `l` actions together | Visible `letters`, `examine memories`, and `feed rabbit` buttons plus `i`/`f` shortcuts | Full for implemented actions | Terminal 80×24 interaction and desktop HTML pointer/keyboard interaction passed. |
-| Pointer/touch access | Not applicable to terminal | Core actions are real buttons invoking the same handlers as keyboard shortcuts | Full for HTML | Safari responsive mode at 375×812 exposed both actions; pointer taps opened memory and advanced animal trust. |
-| Triggered memory archive | Every triggered gift type is selectable, including authored animal names | Every discovered gift is selectable | Full | Both archives showed Clover and the coffee mug before the letter, then the pressed flower after reading. |
-| Direct garden-memory action | `i` opens one memory or a selection list | `i` or the visible examine button opens one memory or focuses the archive memory choices | Full | Keyboard and pointer paths exercised against the same sealed content. |
-| Animal feeding/trust | `f` persists feed actions and applies shared tier thresholds | `f` and the visible feed button persist the same thresholds | Full for trust state | Three pointer taps visibly changed the rabbit from wild to curious; terminal feed action remained visible alongside other controls. |
-| Date, visit, and post-letter triggers | All three trigger types; post-completion releases remaining gifts | All three trigger types; post-completion releases remaining gifts | Full | Demo uses visit-triggered rabbit, date-triggered mug, and post-letter pressed flower. |
-| Read receipts and reread | Recipient-private JSON state | IndexedDB with localStorage fallback | Full contract | Storage mechanisms intentionally differ; message/gift outcomes match. |
-| Delivery animation | Letter bird, or bonded animal | Letter bird, or bonded animal | Full contract | Same semantic delivery rule; renderer-specific animation is expected. |
-| Post-completion memorial | Memorial state and all-gift release | Memorial state and all-gift release | Functional parity | All-gift release was exercised; emotional/visual human sign-off remains open. |
-| Weather and particle breadth | Clouds, lightning, splashes, and the terminal weather set | Browser rain, snow, leaves, resting leaves, and accumulation | Partial | Visual breadth still differs and requires comparative human review. |
-| Full standalone cozy-garden / authored-world contract | Not implemented | Not implemented | Open | The planned contract requires tending, placement/undo, journal/collections, a shared world model, richer animal AI, author programming, deterministic sky, accessibility, and acceptance gates beyond this fix. |
-| Published production reachability | Local sealed artifact is ready | Tracked `sealed_demo.lateletter` and `public_letters/to-a-friend.lateletter` contain the three synthetic gifts | Awaiting deployment | Repository artifacts pass checksum/HMAC/decrypt verification. The live URL remains old until this change is merged to the protected default branch and Pages deploys it. |
+| One authoritative deterministic world | Canonical immutable `WorldState`, reducer, persistence, clock, and projection | Byte-conformant JS model, reducer, persistence, clock, and projection | **Yes** — golden command replay and authored materialization compare exact canonical bytes | Automated core complete |
+| Authentication, checksum, and real decryption | Canonical checksum/HMAC gate and AES-GCM message/program open | Matching checksum, WebCrypto HMAC, AES-GCM message/program open | **Yes** | Production-path pass |
+| Semantic input vocabulary | All 15 commands route through the terminal adapter | Touch, mouse, and browser-keyboard adapters emit the same command bytes | **Yes at adapter/reducer level** | **Partial Gate 2** — every visible action has not been traversed in every modality |
+| Standalone glance/tend/dwell entry | Garden works without a bundle; object/action help, care, arrangement, journal, pause | Visible standalone entry, object list, care, arrangement, journal, dwell/pause | **Functional parity** | **Blocked Gate 3** — human usefulness observation is mandatory |
+| Plant care and stable growth topology | Persistent rooted topology; inspect, water, prune/train/transplant semantics; offline growth | Same stable IDs/topology hashes and care reducer | **Yes for canonical semantics** | Gate 4 pass; richer authored bounds/visual-stage observation remain open |
+| Placement, movement, and undo | Place plant/fixture, move fixture, undo | Visible place/move/undo controls using the same reducer | **Yes** | Production-path subset observed |
+| Fixtures and connected tiles | Versioned catalog and all 16 masks for five connected families | Same canonical fixtures and masks | **Yes for data/state** | **Partial** — several promised direct fixture verbs remain inspect-only and screenshot portability is open |
+| Collectibles, inventory, and journal | Stable collectibles, collect state, inventory, automatic journal | Same; accessible object list and visible journal | **Yes** | Production v2 keepsake collected in both-runtime verification |
+| Deterministic animal AI and bonding | Four species, persistent personality/memory/needs, utility choice, hysteresis, choreography lock, varied bonding | Shared animal state/interactions and authored materialization | **State parity; presentation partial** | **Partial Gate 7** — distinct four-tier repertoires and memory-driven live choices are incomplete |
+| Encrypted author programming | v2 program decrypt, schedule expansion, evaluator, materializer, re-evaluation after actions | Same program schema/evaluator/schedules/materializer and in-session re-evaluation | **Yes for runtime** | **Partial Gate 8** — full no-JSON interactive author arc has not passed end to end |
+| Conditions, recurrence, missed events, rollback | Priority/exclusivity, once/recurring, DST gap/fold, bounded catch-up, three missed policies | Matching evaluator and schedule vectors | **Yes** | Gate 9 pass |
+| Shared camera/world coordinates and reduced motion | Canonical camera projected to terminal cells; pause command | Same fixed-point camera; visible pan and persistent pause/reduced-motion control | **Canonical parity** | **Partial Gate 10** — long rendered pans and p95 budgets remain open |
+| Versioned Unicode/ASCII atlas | `ascii-safe` and `unicode-cell-safe` profiles | `browser-font-locked`/rich profiles with fallbacks | **Manifest parity** | **Partial Gate 6** — supported screenshot matrix for tofu/overlap/jitter is absent |
+| Astronomical, privacy-preserving sky | Coarse-location and labeled fallback contracts exist | Live viewer still uses its artistic renderer sky; no complete shared star projection path | **No** | **Partial Gate 11** — only 2/12 trusted vectors and no live activation/privacy browser run |
+| Accessibility and target size | Full semantic command help and line-readable state | Focusable object list/action sheet, scene summary, persistent pause, 44px controls, narrow layout | **Semantic parity** | **Partial Gate 12** — VoiceOver/NVDA, no-color, and 200% zoom observation remain open |
+| Deterministic replay and humane absence | Clock rollback clamps; 1/7/30/365-day absence loses nothing; bounded summaries | Matching clock/replay state and persistence | **Yes** | Gate 13 pass; deterministic replay covered |
+| Production bundle | v2 program materializes authored bench, rabbit, keepsake, and letter state | Same visible objects and exact decrypted letter | **Yes locally** | **Partial Gate 1** — third-return plant arc and published deployment still need completion observation |
+| Human emotional/standalone acceptance | Not signed off | Not signed off | Not applicable | **Blocked Gates 3 and 14** |
 
-The safe-content boundary is unchanged: only fictional demo text and fictional
-gift sentiments are tracked. The compromised personal message and passphrase
-remain unpublished.
+## Current §7.8.13 gate result
+
+| Result | Gates |
+|---|---|
+| **PASS** | 4 Plant stability; 5 Layout safety; 9 Temporal correctness; 13 Absence/ethics |
+| **PARTIAL** | 1 Production reachability; 2 Input parity; 6 Atlas portability; 7 Animal behavior; 8 Author control; 10 Parallax/performance; 11 Sky accuracy/privacy; 12 Accessibility |
+| **BLOCKED on required human evidence** | 3 Standalone value; 14 Human acceptance |
+
+Machine-readable evidence is in
+`tests/garden_acceptance/gate_matrix.json`; print it with
+`PYTHONPATH=src python3 -m tests.garden_acceptance.report`. The direct terminal
+and browser observations are recorded in `docs/GARDEN_QA_2026-07-21.md`.
+
+The safe-content boundary is unchanged: tracked artifacts contain fictional
+demo text only. The compromised personal letter and passphrase remain
+unpublished.
