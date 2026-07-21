@@ -10,6 +10,7 @@ from lateletter.bundle import (
     BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
     Bundle,
     GardenGift,
+    Message,
     Trigger,
     create_dev_fixture,
     write_bundle,
@@ -31,6 +32,7 @@ from lateletter.recipient import (
     _unlock_content,
     _open_authenticated_program,
     _reapply_after_semantic_change,
+    _sync_story_completion,
     _verify_passphrase,
     gift_catalog_entry,
     run_recipient_file,
@@ -113,6 +115,37 @@ def test_recipient_store_owns_only_read_receipts(receipt_store):
     assert receipt_store.read_set() == {"letter.one"}
     for stale_owner in ("record_visit", "feed_animal", "discover", "total_visits"):
         assert not hasattr(receipt_store, stale_owner)
+
+
+def test_terminal_all_letters_read_persists_lasting_canonical_memorial(tmp_path):
+    session = _session(tmp_path)
+    bundle = Bundle(messages=[
+        Message("letter.one", date.today().isoformat()),
+        Message("letter.two", date.today().isoformat()),
+    ])
+    assert not _sync_story_completion(session, bundle, {"letter.one"})
+    assert "story_complete" not in session.world.program_state
+
+    assert _sync_story_completion(
+        session, bundle, {"letter.one", "letter.two"},
+    )
+    assert session.world.program_state["story_complete"] is True
+    memorial = session.world.program_state["memorial"]
+    assert memorial == {
+        "active": True,
+        "completed_at": session.world.effective_time,
+        "examined_gifts": [],
+        "lasting": True,
+    }
+    assert session.projection().scene["memorial"] == memorial
+    assert not _sync_story_completion(
+        session, bundle, {"letter.one", "letter.two"},
+    )
+
+    reopened = _session(tmp_path)
+    assert reopened.world.program_state["story_complete"] is True
+    assert reopened.world.program_state["memorial"] == memorial
+    assert reopened.projection().scene["memorial"] == memorial
 
 
 def test_archive_uses_canonical_eligibility_receipts():

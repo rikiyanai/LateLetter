@@ -178,6 +178,17 @@ def _is_post_complete(bundle: Bundle, read_ids: set[str]) -> bool:
     return bool(bundle.messages) and all(message.id in read_ids for message in bundle.messages)
 
 
+def _sync_story_completion(
+    session: TerminalWorldSession,
+    bundle: Bundle,
+    read_ids: set[str],
+) -> bool:
+    """Transfer authenticated receipt completion into canonical Garden state."""
+    if not _is_post_complete(bundle, read_ids):
+        return False
+    return session.mark_story_complete()
+
+
 _ArchiveRow = tuple[str, Any, Any]
 
 
@@ -533,6 +544,7 @@ def run_recipient(
                             read_ids=read_ids,
                             due_letter_ids=tuple(bundle.messages[index].id for index in due),
                         )
+                        _sync_story_completion(session, bundle, read_ids)
                         status = "Letters unlocked; Garden actions use the canonical command trace."
                         error = ""
                         state = _ST_GARDEN
@@ -572,6 +584,7 @@ def run_recipient(
                         read_ids=read_ids,
                         due_letter_ids=tuple(bundle.messages[index].id for index in due),
                     )
+                _sync_story_completion(session, bundle, read_ids)
                 state = _ST_SELECTION if due else _ST_GARDEN
             elif key == ord("p"):
                 label, body = message_content[reading_index]
