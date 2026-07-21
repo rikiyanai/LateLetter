@@ -79,6 +79,9 @@
     .btn:hover   { opacity: 1; }
     .btn.hi      { opacity: .8; }
     .btn-row     { display: flex; gap: 1.75rem; flex-wrap: wrap; }
+    button, [role="button"], .fi {
+      min-width: 44px; min-height: 44px;
+    }
 
     /* ── Underline inputs ── */
     .fi {
@@ -384,9 +387,10 @@
   </div>
 </div>
 
-<div id="modal-mem" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="mem-inner">
-    <p class="t3 mem-type" id="mem-type"></p>
+<div id="modal-mem" role="dialog" aria-modal="true" aria-hidden="true"
+     aria-labelledby="mem-type" aria-describedby="mem-text">
+  <div class="mem-inner" tabindex="-1">
+    <h2 class="t3 mem-type" id="mem-type"></h2>
     <p class="mem-text" id="mem-text"></p>
     <div class="btn-row"><button class="btn hi" id="btn-close-mem">close</button></div>
   </div>
@@ -411,7 +415,13 @@
 
 <script type="module">
 
-import { GardenRuntime } from './web/garden-runtime.mjs';
+import {
+  GardenRuntime,
+  decodeStrictBase64,
+  effectiveAmbientMotion,
+  inputModalityFromBrowserEvent,
+  validateBrowserPbkdf2Params,
+} from './web/garden-runtime.mjs';
 import {
   evaluateGardenProgram,
   expandGardenSchedule,
@@ -502,15 +512,10 @@ function _applyNightPalette(on) {
 }
 
 async function initTextLayout(){
-  try{
-    ({prepareWithSegments,layoutWithLines,clearCache} =
-      await import('https://cdn.jsdelivr.net/npm/@chenglou/pretext@0.0.4/+esm'));
-    _textLayoutMode='pretext';
-  }catch(err){
-    console.warn('[viewer] pretext unavailable; using browser text fallback',err);
-    prepareWithSegments=null; layoutWithLines=null; clearCache=()=>{};
-    _textLayoutMode='fallback';
-  }
+  // Secret-bearing pages execute only same-origin bundled code. Native wrapping
+  // is deterministic enough for letters and remains available fully offline.
+  prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
+  _textLayoutMode='fallback';
 }
 
 // ── Moon phase art (FL-G20) ──────────────────────────────────────────
@@ -1830,6 +1835,25 @@ let _lineCount=0,_progressScrollOff=null;
 let gardenRuntime=null,gardenProgram=null,gardenProgramState={applied_occurrences:[]};
 let standaloneMode=false,_gardenFocusReturn=null;
 let gardenSessionStarted=0;
+let gardenProgramTail=Promise.resolve();
+const reducedMotionQuery=window.matchMedia?.('(prefers-reduced-motion: reduce)')??{
+  matches:false,addEventListener:()=>{},
+};
+let _memoryInvoker=null,_memoryBackground=[];
+
+function syncAmbientMotion(){
+  const motionPaused=Boolean(gardenRuntime?.state?.ui?.motion_paused);
+  if(effectiveAmbientMotion({prefersReducedMotion:reducedMotionQuery.matches,motionPaused}))
+    garden?.start();
+  else garden?.stop();
+}
+
+function clearCanonicalGardenUi(){
+  document.getElementById('garden-object-list')?.replaceChildren();
+  document.getElementById('garden-action-sheet')?.replaceChildren();
+  const summary=document.getElementById('garden-scene-summary');
+  if(summary)summary.textContent='Garden preparing.';
+}
 
 // ── Storage ───────────────────────────────────────────────────────────
 let _db=null,storageOk=false;
@@ -1948,12 +1972,18 @@ async function verifyBundleChecksum(data,allowMissing){
 }
 
 // ── Bundle loading ────────────────────────────────────────────────────
-async function loadBundle(file){
+async function loadBundle(file,{trustedDevFixture=false}={}){
   const text=await file.text(),data=JSON.parse(text);
   if(!data||typeof data!=='object')throw new Error('Not a valid .lateletter file.');
   if(![1,2].includes(data.version))throw new Error(`Unsupported version: ${data.version??'(missing)'}`);
   if(!data.bundle_id)throw new Error('Bundle missing bundle_id.');
-  bundle=data; isDevFixture=!bundle.hmac;
+  await gardenProgramTail;
+  if(!data.hmac&&!trustedDevFixture)
+    throw new Error('Unsigned letter bundles are not accepted.');
+  bundle=data;isDevFixture=trustedDevFixture;
+  cachedPassphrase=null;decoded={};gardenProgram=null;gardenRuntime=null;
+  gardenProgramState={applied_occurrences:[]};visitCount=0;
+  clearCanonicalGardenUi();
   bundleCorrupted=false; bundleCorruptionReason='';
   const checksum=await verifyBundleChecksum(bundle,isDevFixture);
   if(!checksum.ok){
@@ -1977,21 +2007,41 @@ async function loadBundle(file){
   if(_ag){
     animalType=_ag.catalog_id||null;
   }
-  await openCanonicalGarden(`bundle:${bundle.bundle_id}`,bundle.garden_seed);
-  gardenProgramState={...(gardenRuntime.state.program_state||{})};
-  if(!Array.isArray(gardenProgramState.applied_occurrences))gardenProgramState.applied_occurrences=[];
-  visitCount=(parseInt(gardenProgramState.visit_total,10)||0)+1;
-  gardenProgramState.visit_total=visitCount;
-  wasAbsent=(gardenRuntime.absenceReport?.elapsed_seconds||0)>86400;
+  // Before authentication only an isolated base Garden exists. Persisted state
+  // may contain decrypted author prose, so it cannot be loaded or rendered yet.
+  await openCanonicalGarden(`preview:${bundle.bundle_id}`,bundle.garden_seed,{persistent:false});
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────
 // Sealed-bundle crypto (SPEC §4, step 13): PBKDF2-SHA256 + AES-256-GCM,
 // recorded per-message in kdf_params. WebCrypto-native — no network, no WASM.
-function _b64ToBytes(s){
-  const bin=atob(s),buf=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-  return buf;
+const _b64ToBytes=decodeStrictBase64;
+const _validatePbkdf2Params=validateBrowserPbkdf2Params;
+function _validateSealedBundleCrypto(data,kdf){
+  _validatePbkdf2Params(kdf,data.version>=2?'bundle_auth_kdf_params':'messages[0].kdf_params');
+  _b64ToBytes(data.bundle_auth_salt,{field:'bundle_auth_salt',exact:16});
+  for(const [index,message] of (data.messages||[]).entries()){
+    _validatePbkdf2Params(message.kdf_params||kdf,`messages[${index}].kdf_params`);
+    _b64ToBytes(message.salt,{field:`messages[${index}].salt`,exact:16});
+    _b64ToBytes(message.nonce,{field:`messages[${index}].nonce`,exact:12});
+    _b64ToBytes(message.ciphertext,{field:`messages[${index}].ciphertext`,minimum:16});
+  }
+  for(const [index,gift] of (data.garden_gifts||[]).entries()){
+    if(!gift.sentiment_ciphertext)continue;
+    _b64ToBytes(gift.salt,{field:`garden_gifts[${index}].salt`,exact:16});
+    _b64ToBytes(gift.nonce,{field:`garden_gifts[${index}].nonce`,exact:12});
+    _b64ToBytes(gift.sentiment_ciphertext,{
+      field:`garden_gifts[${index}].sentiment_ciphertext`,minimum:16,
+    });
+  }
+  if(data.version>=2){
+    const envelope=data.garden_program;
+    if(!envelope||envelope.version!==1)throw new Error('Unsupported garden program envelope.');
+    _validatePbkdf2Params(envelope.kdf_params, 'garden_program.kdf_params');
+    _b64ToBytes(envelope.salt,{field:'garden_program.salt',exact:16});
+    _b64ToBytes(envelope.nonce,{field:'garden_program.nonce',exact:12});
+    _b64ToBytes(envelope.ciphertext,{field:'garden_program.ciphertext',minimum:16});
+  }
 }
 function _bundleKdfParams(){
   if(bundle?.version>=2&&bundle.bundle_auth_kdf_params)return bundle.bundle_auth_kdf_params;
@@ -2001,11 +2051,12 @@ function _bundleKdfParams(){
   }
   return null;
 }
-async function _pbkdf2Key(pp,saltBytes,iterations){
+async function _pbkdf2Key(pp,saltBytes,params){
+  _validatePbkdf2Params(params);
   const base=await crypto.subtle.importKey(
     'raw',new TextEncoder().encode(pp),'PBKDF2',false,['deriveBits']);
   return new Uint8Array(await crypto.subtle.deriveBits(
-    {name:'PBKDF2',hash:'SHA-256',salt:saltBytes,iterations},base,256));
+    {name:'PBKDF2',hash:'SHA-256',salt:saltBytes,iterations:params.iterations},base,256));
 }
 async function _timingSafeHexEq(aHex,bHex){
   // Compare digests of both sides so mismatch position leaks nothing.
@@ -2015,7 +2066,8 @@ async function _timingSafeHexEq(aHex,bHex){
 async function _gcmDecrypt(keyBytes,nonceB64,ctB64,aad=null){
   const key=await crypto.subtle.importKey('raw',keyBytes,'AES-GCM',false,['decrypt']);
   const pt=await crypto.subtle.decrypt(
-    {name:'AES-GCM',iv:_b64ToBytes(nonceB64),...(aad?{additionalData:new TextEncoder().encode(aad)}:{})},key,_b64ToBytes(ctB64));
+    {name:'AES-GCM',iv:_b64ToBytes(nonceB64,{field:'nonce',exact:12}),...(aad?{additionalData:new TextEncoder().encode(aad)}:{})},
+    key,_b64ToBytes(ctB64,{field:'ciphertext',minimum:16}));
   return new TextDecoder().decode(pt);
 }
 async function verifyPassphrase(pp){
@@ -2033,13 +2085,16 @@ async function verifyPassphrase(pp){
       decrypted_sentiments:Object.fromEntries((bundle.garden_gifts||[]).map(g=>[g.id,g._sentiment||''])),
       message_ids:(bundle.messages||[]).map(m=>m.id),
     });
+    await openAuthenticatedBundleGarden();
     cachedPassphrase=pp; return true;
   }
   const kdf=_bundleKdfParams();
   if(!kdf)throw new Error('This letter uses a lock format this viewer cannot open yet.');
   if(!crypto.subtle)throw new Error('This browser cannot unlock letters (no WebCrypto).');
+  _validateSealedBundleCrypto(bundle,kdf);
   // 1. Bundle HMAC gate — nothing is announced until this passes (SPEC §4).
-  const hmacKeyBytes=await _pbkdf2Key(pp,_b64ToBytes(bundle.bundle_auth_salt),kdf.iterations);
+  const hmacKeyBytes=await _pbkdf2Key(pp,
+    _b64ToBytes(bundle.bundle_auth_salt,{field:'bundle_auth_salt',exact:16}),kdf);
   const hmacKey=await crypto.subtle.importKey(
     'raw',hmacKeyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign']);
   const mac=new Uint8Array(await crypto.subtle.sign(
@@ -2050,22 +2105,24 @@ async function verifyPassphrase(pp){
   // 2. Decrypt messages (per-message salt → per-message key).
   decoded={};
   for(const m of bundle.messages||[]){
-    const key=await _pbkdf2Key(pp,_b64ToBytes(m.salt),(m.kdf_params||kdf).iterations);
+    const params=m.kdf_params||kdf;
+    const key=await _pbkdf2Key(pp,_b64ToBytes(m.salt,{field:'message.salt',exact:16}),params);
     const p=JSON.parse(await _gcmDecrypt(key,m.nonce,m.ciphertext));
     decoded[m.id]={label:p.label||'',body:p.body||''};
   }
   // 3. Decrypt gift sentiments (per-gift salt, bundle-wide KDF params).
   for(const g of bundle.garden_gifts||[]){
     if(!g.sentiment_ciphertext){g._sentiment='';continue;}
-    const key=await _pbkdf2Key(pp,_b64ToBytes(g.salt),kdf.iterations);
+    const key=await _pbkdf2Key(pp,_b64ToBytes(g.salt,{field:'gift.salt',exact:16}),kdf);
     try{g._sentiment=await _gcmDecrypt(key,g.nonce,g.sentiment_ciphertext);}
     catch(_){g._sentiment='';}
   }
   if(bundle.version>=2){
     const envelope=bundle.garden_program;
     if(!envelope||envelope.version!==1)throw new Error('Unsupported garden program envelope.');
-    const key=await _pbkdf2Key(pp,_b64ToBytes(envelope.salt),
-      (envelope.kdf_params||bundle.bundle_auth_kdf_params||kdf).iterations);
+    const params=envelope.kdf_params||bundle.bundle_auth_kdf_params||kdf;
+    const key=await _pbkdf2Key(pp,
+      _b64ToBytes(envelope.salt,{field:'garden_program.salt',exact:16}),params);
     gardenProgram=parseGardenProgram(JSON.parse(await _gcmDecrypt(
       key,envelope.nonce,envelope.ciphertext,'lateletter:garden-program:v1')));
   }else{
@@ -2075,6 +2132,7 @@ async function verifyPassphrase(pp){
       message_ids:(bundle.messages||[]).map(m=>m.id),
     });
   }
+  await openAuthenticatedBundleGarden();
   cachedPassphrase=pp; return true;
 }
 
@@ -2096,13 +2154,23 @@ function _animalData(){
 }
 
 // ── Canonical Garden owner ───────────────────────────────────────────
-async function openCanonicalGarden(worldId,seed){
+async function openCanonicalGarden(worldId,seed,{persistent=true}={}){
   gardenRuntime=await new GardenRuntime({
-    worldId,seed,load:kvGet,save:kvSet,
+    worldId,seed,
+    load:persistent?kvGet:async()=>null,
+    save:persistent?kvSet:async()=>{},
     now:()=>Math.floor(Date.now()/1000),
   }).open();
   gardenSessionStarted=gardenRuntime.state.last_observed_wall_time||0;
   await renderCanonicalGarden();
+}
+async function openAuthenticatedBundleGarden(){
+  await openCanonicalGarden(`bundle:${bundle.bundle_id}`,bundle.garden_seed,{persistent:true});
+  gardenProgramState={...(gardenRuntime.state.program_state||{})};
+  if(!Array.isArray(gardenProgramState.applied_occurrences))gardenProgramState.applied_occurrences=[];
+  visitCount=(parseInt(gardenProgramState.visit_total,10)||0)+1;
+  gardenProgramState.visit_total=visitCount;
+  wasAbsent=(gardenRuntime.absenceReport?.elapsed_seconds||0)>86400;
 }
 async function dispatchGardenUi(modality,intent,{target_id=null,args={},metadata={}}={}){
   if(!gardenRuntime)return null;
@@ -2123,7 +2191,7 @@ async function renderCanonicalGarden(){
   const list=document.getElementById('garden-object-list');
   const sheet=document.getElementById('garden-action-sheet');
   if(!panel||!gardenRuntime?.projection)return;
-  if(gardenRuntime.state.ui.motion_paused)garden?.stop();else garden?.start();
+  syncAmbientMotion();
   document.getElementById('garden-scene-summary').textContent=gardenRuntime.sceneSummary();
   const focusId=gardenRuntime.state.ui.focus_id;list.innerHTML='';
   for(const object of gardenRuntime.projection.objects){
@@ -2132,9 +2200,10 @@ async function renderCanonicalGarden(){
     button.textContent=`${object.semantic_name} — ${object.kind}`;
     button.setAttribute('aria-current',String(object.object_id===focusId));
     button.onclick=async event=>{
+      const modality=inputModalityFromBrowserEvent(event);
       _gardenFocusReturn=object.object_id;
-      await dispatchGardenUi('mouse','move_focus',{args:{target_id:object.object_id},metadata:{source:'object-list'}});
-      await dispatchGardenUi('mouse','open_actions',{target_id:object.object_id});
+      await dispatchGardenUi(modality,'move_focus',{args:{target_id:object.object_id},metadata:{source:'object-list'}});
+      await dispatchGardenUi(modality,'open_actions',{target_id:object.object_id});
       document.querySelector('#garden-action-sheet button')?.focus();
     };
     li.appendChild(button);list.appendChild(li);
@@ -2151,19 +2220,31 @@ async function renderCanonicalGarden(){
     for(const action of focused.actions){
       const button=document.createElement('button');button.type='button';button.className='btn';
       button.textContent=action==='inspect'?'glance':action.replaceAll('_',' ');
-      button.onclick=()=>dispatchGardenUi('touch',action,{target_id:focused.object_id,
-        args:action==='tend'?{care_action:'water'}:{},metadata:{control:'action-sheet'}});
+      button.onclick=event=>dispatchGardenUi(inputModalityFromBrowserEvent(event),action,{
+        target_id:focused.object_id,args:action==='tend'?{care_action:'water'}:{},
+        metadata:{control:'action-sheet'},
+      });
       sheet.appendChild(button);
     }
     if(focused.kind==='fixture'){
       const move=document.createElement('button');move.type='button';move.className='btn';move.textContent='move';
-      move.onclick=()=>dispatchGardenUi('touch','move_fixture',{target_id:focused.object_id,
-        args:{x:Math.min(gardenRuntime.state.world_width-1,focused.position[0]+1),y:focused.position[1]}});
+      move.onclick=event=>dispatchGardenUi(inputModalityFromBrowserEvent(event),'move_fixture',{
+        target_id:focused.object_id,
+        args:{x:Math.min(gardenRuntime.state.world_width-1,focused.position[0]+1),y:focused.position[1]},
+        metadata:{control:'action-sheet'},
+      });
       sheet.appendChild(move);
     }
   }
 }
 async function runAuthenticatedGardenProgram(){
+  const pending=gardenProgramTail.then(
+    _runAuthenticatedGardenProgramNow,_runAuthenticatedGardenProgramNow,
+  );
+  gardenProgramTail=pending.then(()=>undefined,()=>undefined);
+  return pending;
+}
+async function _runAuthenticatedGardenProgramNow(){
   if(!gardenProgram||cachedPassphrase===null||bundleCorrupted)return;
   gardenProgramState=gardenRuntime.prepareProgram(gardenProgram);
   gardenProgramState.visit_total=visitCount;
@@ -2229,9 +2310,11 @@ function showScreen(name){
 }
 
 // ── Animal helpers ────────────────────────────────────────────────────
-async function feedAnimal(){
+async function feedAnimal(event){
   const animal=gardenRuntime?.projection?.objects.find(item=>item.kind==='animal');
-  if(animal)await dispatchGardenUi('touch','feed',{target_id:animal.object_id});
+  if(animal)await dispatchGardenUi(inputModalityFromBrowserEvent(event),'feed',{
+    target_id:animal.object_id,metadata:{control:'hud'},
+  });
 }
 function devCycleAnimal(){
   if(!_devAnimal){_devAnimal={ti:0,tier:0};}
@@ -2279,7 +2362,7 @@ function _renderGardenActions(){
   if(memories.length)
     actions.appendChild(_mkHudButton(memories.length===1?'examine memory':'examine memories',showGardenMemories,'i'));
   if(cachedPassphrase!==null&&!bundleCorrupted&&animalType&&animalTriggered&&animalTier<3)
-    actions.appendChild(_mkHudButton(`feed ${animalType}`,()=>feedAnimal(),'f'));
+    actions.appendChild(_mkHudButton(`feed ${animalType}`,feedAnimal,'f'));
 }
 function showGardenMemories(){
   const memories=_gardenMemories();
@@ -2512,6 +2595,7 @@ function buildArchive(){
 
 // ── Memory ────────────────────────────────────────────────────────────
 function showMemory(gift){
+  _memoryInvoker=document.activeElement instanceof HTMLElement?document.activeElement:null;
   document.getElementById('mem-type').textContent=giftLabel(gift);
   let s='';
   if(isDevFixture){
@@ -2524,12 +2608,32 @@ function showMemory(gift){
   }else{s=gift._sentiment||'';}
   document.getElementById('mem-text').textContent=s||'(no text)';
   const m=document.getElementById('modal-mem');
+  _memoryBackground=[...document.body.children]
+    .filter(element=>element!==m&&element.tagName!=='SCRIPT')
+    .map(element=>[element,element.hasAttribute('inert')]);
+  for(const [element] of _memoryBackground)element.setAttribute('inert','');
   m.classList.add('open');m.setAttribute('aria-hidden','false');
   document.getElementById('btn-close-mem').focus();
 }
 function closeMemory(){
   const m=document.getElementById('modal-mem');
+  if(!m.classList.contains('open'))return;
   m.classList.remove('open');m.setAttribute('aria-hidden','true');
+  for(const [element,wasInert] of _memoryBackground)
+    if(!wasInert)element.removeAttribute('inert');
+  _memoryBackground=[];
+  const invoker=_memoryInvoker;_memoryInvoker=null;
+  if(invoker?.isConnected)invoker.focus();
+}
+function trapMemoryFocus(event){
+  const modal=document.getElementById('modal-mem');
+  const focusable=[...modal.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )].filter(element=>!element.hidden);
+  if(focusable.length===0){event.preventDefault();modal.querySelector('.mem-inner')?.focus();return;}
+  const first=focusable[0],last=focusable.at(-1),active=document.activeElement;
+  if(event.shiftKey&&(active===first||!modal.contains(active))){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&(active===last||!modal.contains(active))){event.preventDefault();first.focus();}
 }
 
 // ── Pretext letter body ───────────────────────────────────────────────
@@ -2680,10 +2784,10 @@ async function _arcSeed(arc){
 }
 
 // ── File handling ─────────────────────────────────────────────────────
-async function handleFile(file){
+async function handleFile(file,options={}){
   if(!file)return;
   try{
-    await loadBundle(file);
+    await loadBundle(file,options);
     const arc=new URLSearchParams(location.search).get('arc');
     if(arc)await _arcSeed(arc);
     garden.setSeed(bundle.garden_seed||12345);
@@ -2797,7 +2901,7 @@ function wire(){
   };
 
   document.querySelectorAll('[data-garden-action]').forEach(button=>{
-    button.onclick=async()=>{
+    button.onclick=async event=>{
       const action=button.dataset.gardenAction;
       const focus=gardenRuntime?.focusedObject();let args={};let target_id=null;
       if(action==='pan')args={dx:Number(button.dataset.dx||0),dy:Number(button.dataset.dy||0)};
@@ -2805,7 +2909,9 @@ function wire(){
       else if(action==='place'){
         args={object_kind:'plant',catalog_id:'lavender',x:10,y:10};
       }else if(['inspect','tend','feed','play','collect','move_fixture'].includes(action))target_id=focus?.object_id||null;
-      await dispatchGardenUi('touch',action,{target_id,args,metadata:{control:'global-actions'}});
+      await dispatchGardenUi(inputModalityFromBrowserEvent(event),action,{
+        target_id,args,metadata:{control:'global-actions'},
+      });
       if(action==='back'&&_gardenFocusReturn){
         document.querySelectorAll('#garden-object-list [data-object-id]').forEach(item=>{
           if(item.dataset.objectId===_gardenFocusReturn)item.focus();
@@ -2825,7 +2931,7 @@ function wire(){
       const blob=new Blob([text],{type:'application/json'});
       // Auto-load it directly
       const file=new File([blob],'demo.lateletter',{type:'application/json'});
-      await handleFile(file);
+      await handleFile(file,{trustedDevFixture:true});
     }catch(err){
       // Fallback: trigger download so user can upload manually
       const a=document.createElement('a');a.href='test_fixture.lateletter';
@@ -2870,11 +2976,15 @@ function wire(){
   document.getElementById('modal-mem').addEventListener('click',e=>{
     if(e.target===document.getElementById('modal-mem'))closeMemory();});
   document.addEventListener('keydown',async e=>{
-    if(e.key==='Escape')closeMemory();
+    if(document.getElementById('modal-mem').classList.contains('open')){
+      if(e.key==='Escape'){e.preventDefault();closeMemory();return;}
+      if(e.key==='Tab'){trapMemoryFocus(e);return;}
+    }
     const gardenReady=document.getElementById('hud').classList.contains('vis')&&
       !document.getElementById('modal-mem').classList.contains('open');
-    const typing=/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target?.tagName||'');
-    if(gardenReady&&!typing&&gardenRuntime){
+    const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName||'')||e.target?.isContentEditable;
+    const nativeButtonActivation=e.target?.tagName==='BUTTON'&&(e.key==='Enter'||e.key===' ');
+    if(gardenReady&&!typing&&!nativeButtonActivation&&gardenRuntime){
       const focus=gardenRuntime.focusedObject();
       const bindings={
         '[':['move_focus',{args:{direction:'previous'}}],
@@ -2965,6 +3075,7 @@ function wire(){
       console.log('[dev] visitCount →',visitCount);
     }
   });
+  reducedMotionQuery.addEventListener('change',syncAmbientMotion);
   window.addEventListener('pagehide',()=>{cachedPassphrase=null;});
   window.addEventListener('resize',()=>{if(garden)garden.onResize();_refreshDevGridBg();});
 }
@@ -2995,7 +3106,7 @@ async function init(){
   try{
     garden=new GardenEngine(document.getElementById('g'));
     garden._reset();
-    garden.start();
+    syncAmbientMotion();
   }catch(e){console.error('[init] garden failed:',e);}
   try{await storageInit();}catch(e){console.error('[init] storage failed:',e);}
   wire();

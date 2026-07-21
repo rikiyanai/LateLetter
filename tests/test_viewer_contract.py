@@ -16,7 +16,8 @@ def _viewer_source() -> str:
 def test_viewer_uses_canonical_runtime_for_live_garden_actions():
     source = _viewer_source()
 
-    assert "import { GardenRuntime } from './web/garden-runtime.mjs'" in source
+    assert "GardenRuntime," in source
+    assert "from './web/garden-runtime.mjs'" in source
     assert "gardenRuntime.dispatch(modality,intent" in source
     assert "if(result.changed&&gardenProgram&&cachedPassphrase!==null&&!bundleCorrupted)" in source
     assert "await runAuthenticatedGardenProgram()" in source
@@ -35,6 +36,7 @@ def test_viewer_exposes_focusable_44px_semantic_controls():
     assert 'id="garden-action-sheet"' in source
     assert 'id="garden-scene-summary"' in source
     assert 'aria-live="polite"' in source
+    assert 'button, [role="button"], .fi {' in source
     assert "min-width: 44px; min-height: 44px" in source
     for action in ("open_journal", "undo", "place", "pause_motion", "back"):
         assert f'data-garden-action="{action}"' in source
@@ -54,6 +56,45 @@ def test_v1_and_v2_programs_share_authenticated_materialization_path():
     assert "'plant.growth_stage'" in source
     load_end = source.index("// ── Auth")
     assert "migrateAuthenticatedLegacyGifts" not in source[source.index("async function loadBundle"):load_end]
+
+
+def test_secret_bearing_viewer_is_offline_and_redacts_persisted_world_until_authentication():
+    source = _viewer_source()
+
+    assert "cdn.jsdelivr.net" not in source
+    assert "await import('http" not in source
+    assert "_textLayoutMode='fallback'" in source
+    load = source[source.index("async function loadBundle"):source.index("// ── Auth")]
+    assert "cachedPassphrase=null;decoded={};gardenProgram=null;gardenRuntime=null" in load
+    assert "{persistent:false}" in load
+    assert "`bundle:${bundle.bundle_id}`" not in load
+    assert "await openAuthenticatedBundleGarden()" in source
+    assert "_validateSealedBundleCrypto(bundle,kdf)" in source
+    assert "decodeStrictBase64" in source
+    assert "validateBrowserPbkdf2Params" in source
+    assert "isDevFixture=!bundle.hmac" not in source
+    assert "if(!data.hmac&&!trustedDevFixture)" in source
+    assert "Unsigned letter bundles are not accepted." in source
+    assert "handleFile(file,{trustedDevFixture:true})" in source
+    assert source.count("trustedDevFixture:true") == 1
+    authenticated = source[source.index("async function openAuthenticatedBundleGarden"):
+                           source.index("async function dispatchGardenUi")]
+    assert "{persistent:true}" in authenticated
+
+
+def test_viewer_derives_modality_and_implements_reduced_motion_and_modal_contracts():
+    source = _viewer_source()
+
+    assert "inputModalityFromBrowserEvent(event)" in source
+    assert "dispatchGardenUi('touch'" not in source
+    assert "dispatchGardenUi('mouse'" not in source
+    assert "const nativeButtonActivation=" in source
+    assert "effectiveAmbientMotion({prefersReducedMotion:" in source
+    assert "reducedMotionQuery.addEventListener('change',syncAmbientMotion)" in source
+    assert 'aria-labelledby="mem-type" aria-describedby="mem-text"' in source
+    assert "element.setAttribute('inert','')" in source
+    assert "trapMemoryFocus(e)" in source
+    assert "if(invoker?.isConnected)invoker.focus()" in source
 
 
 def test_resize_cannot_regenerate_canonical_topology():

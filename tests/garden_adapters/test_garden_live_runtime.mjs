@@ -3,7 +3,13 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
 import { canonicalWorldJson, generateInitialWorld, projectGardenScene } from '../../web/garden-world.mjs';
-import { GardenRuntime } from '../../web/garden-runtime.mjs';
+import {
+  GardenRuntime,
+  decodeStrictBase64,
+  effectiveAmbientMotion,
+  inputModalityFromBrowserEvent,
+  validateBrowserPbkdf2Params,
+} from '../../web/garden-runtime.mjs';
 import {
   evaluateGardenProgram,
   expandGardenSchedule,
@@ -21,7 +27,7 @@ test('initial generation and projection are viewport-independent', async () => {
   assert.equal(canonicalWorldJson(left), canonicalWorldJson(right));
   const before = canonicalWorldJson(left);
   const projection = await projectGardenScene(left);
-  assert.equal(projection.objects.length, 39);
+  assert.equal(projection.objects.length, 47);
   assert.equal(canonicalWorldJson(left), before);
 });
 
@@ -46,6 +52,62 @@ test('runtime persists exact canonical state and routes every action through red
     save: async (key, value) => values.set(key, value),
   }).open();
   assert.equal(canonicalWorldJson(restored.state), canonicalWorldJson(runtime.state));
+});
+
+test('runtime serializes concurrent accepted commands without losing either mutation', async () => {
+  const values = new Map();
+  const runtime = await new GardenRuntime({
+    worldId: 'concurrent:test', seed: 'queue', now: () => 100,
+    load: async key => values.get(key) ?? null,
+    save: async (key, value) => {
+      await new Promise(resolve => setTimeout(resolve, 2));
+      values.set(key, value);
+    },
+  }).open();
+  const animal = runtime.projection.objects.find(item => item.kind === 'animal');
+  const before = runtime.state.command_sequence;
+  const [feed, play] = await Promise.all([
+    runtime.dispatch('mouse', 'feed', { target_id: animal.object_id }),
+    runtime.dispatch('touch', 'play', { target_id: animal.object_id }),
+  ]);
+  assert.equal(feed.accepted, true);
+  assert.equal(play.accepted, true);
+  assert.equal(runtime.state.command_sequence, before + 2);
+  const stored = JSON.parse(values.get(runtime.storageKey));
+  assert.equal(stored.command_sequence, before + 2);
+  const updated = runtime.state.animals.find(item => item.animal_id === animal.object_id);
+  assert.equal(updated.interaction_counts.feed, 1);
+  assert.equal(updated.interaction_counts.play, 1);
+  assert.deepEqual(runtime.state.event_trace.slice(-2).map(row => row.kind), ['feed', 'play']);
+});
+
+test('browser event modality and reduced-motion policy reflect their real source', () => {
+  assert.equal(inputModalityFromBrowserEvent({ type: 'click', detail: 1, pointerType: 'mouse' }),
+    'mouse');
+  assert.equal(inputModalityFromBrowserEvent({ type: 'click', detail: 1, pointerType: 'touch' }),
+    'touch');
+  assert.equal(inputModalityFromBrowserEvent({ type: 'click', detail: 0 }), 'browser_keyboard');
+  assert.equal(inputModalityFromBrowserEvent({ type: 'keydown', detail: 1 }), 'browser_keyboard');
+  assert.equal(effectiveAmbientMotion({ prefersReducedMotion: false, motionPaused: false }), true);
+  assert.equal(effectiveAmbientMotion({ prefersReducedMotion: true, motionPaused: false }), false);
+  assert.equal(effectiveAmbientMotion({ prefersReducedMotion: false, motionPaused: true }), false);
+});
+
+test('browser rejects weak, excessive, and malformed cryptographic inputs before derivation', () => {
+  const params = iterations => ({ name: 'PBKDF2', hash: 'SHA-256', iterations });
+  assert.equal(validateBrowserPbkdf2Params(params(600000)).iterations, 600000);
+  assert.equal(validateBrowserPbkdf2Params(params(2000000)).iterations, 2000000);
+  for (const iterations of [true, '600000', 599999, 2000001, 10 ** 12]) {
+    assert.throws(() => validateBrowserPbkdf2Params(params(iterations)), /iterations/);
+  }
+  assert.throws(() => validateBrowserPbkdf2Params({ ...params(600000), extra: true }),
+    /exactly/);
+  assert.throws(() => validateBrowserPbkdf2Params({ ...params(600000), hash: 'sha256' }),
+    /unsupported/);
+  assert.equal(decodeStrictBase64('AAAAAAAAAAAAAAAAAAAAAA==', { exact: 16 }).length, 16);
+  assert.throws(() => decodeStrictBase64('not base64!', { exact: 16 }), /padded base64/);
+  assert.throws(() => decodeStrictBase64('AAAAAAAAAAAAAAAA', { exact: 16 }), /exactly 16/);
+  assert.throws(() => decodeStrictBase64('AAAAAAAAAAAAAAAA', { minimum: 16 }), /at least 16/);
 });
 
 test('program evaluator and authenticated v1 migration match fixtures', async () => {
@@ -89,6 +151,54 @@ test('program evaluator and authenticated v1 migration match fixtures', async ()
   assert.ok(receipts.every(receipt => runtime.state.milestone_receipts.includes(receipt)));
   assert.deepEqual(await runtime.materializeProgram(migrated, migratedResult), []);
   assert.equal(values.get(runtime.storageKey), canonicalWorldJson(runtime.state));
+
+  const parallelValues = new Map();
+  const parallel = await new GardenRuntime({
+    worldId: 'bundle:parallel-program', seed: '7', now: () => 100,
+    load: async key => parallelValues.get(key) ?? null,
+    save: async (key, value) => {
+      await new Promise(resolve => setTimeout(resolve, 2));
+      parallelValues.set(key, value);
+    },
+  }).open();
+  const baseAnimal = parallel.projection.objects.find(item => item.kind === 'animal');
+  const [parallelReceipts, parallelPlay] = await Promise.all([
+    parallel.materializeProgram(migrated, migratedResult),
+    parallel.dispatch('mouse', 'play', { target_id: baseAnimal.object_id }),
+  ]);
+  assert.ok(parallelReceipts.length > 0);
+  assert.equal(parallelPlay.accepted, true);
+  assert.ok(parallel.state.journal.some(item => item.label === 'Clover'));
+  assert.equal(parallel.state.animals.find(item => item.animal_id === baseAnimal.object_id)
+    .interaction_counts.play, 1);
+  assert.equal(parallelValues.get(parallel.storageKey), canonicalWorldJson(parallel.state));
+});
+
+test('program cooldown state survives visits and blocks until every bound clears', async () => {
+  const program = {
+    version: 1, evaluator_version: 1, world_state_version: 1,
+    atlas_version: 'garden-atlas-1', astronomy_catalog_version: 'bright-stars-1',
+    author_timezone: 'UTC', variables: {}, entities: [], animals: [],
+    events: [{ id: 'return.memory',
+      conditions: { fact: 'visit.total', op: '>=', value: 1 }, schedule: null,
+      occurrence: 'recurring', priority: 0, exclusive_group: null,
+      cooldown: { duration_seconds: 3600, visits: 2 },
+      actions: [{ type: 'narrative.show', target: null,
+        params: { text: 'Welcome back.' } }],
+    }],
+  };
+  const first = await evaluateGardenProgram(program, {}, { facts: {
+    'visit.total': 1, 'time.utc': '2026-07-21T00:00:00Z',
+  } });
+  assert.equal(first.trace[0].status, 'applied');
+  const tooSoon = await evaluateGardenProgram(program, first.state, { facts: {
+    'visit.total': 2, 'time.utc': '2026-07-21T02:00:00Z',
+  } });
+  assert.equal(tooSoon.trace[0].reason, 'cooldown_active');
+  const ready = await evaluateGardenProgram(program, tooSoon.state, { facts: {
+    'visit.total': 3, 'time.utc': '2026-07-21T02:00:00Z',
+  } });
+  assert.equal(ready.trace[0].status, 'applied');
 });
 
 test('browser schedule resolves DST gap and fold vectors', async () => {
