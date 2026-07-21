@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import math
 import re
 from typing import Any, Mapping, Sequence
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .schedule import ScheduleValidationError, parse_schedule
 from .world.animals import ANIMAL_SPECIES
@@ -26,7 +27,7 @@ MAX_STRING_LENGTH = 16_384
 MAX_SAFE_INTEGER = 9_007_199_254_740_991
 
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
-_TZ_RE = re.compile(r"^(?:UTC|[A-Za-z_+-]+(?:/[A-Za-z0-9_+.-]+)+)$")
+_TZ_RE = re.compile(r"^[A-Za-z_+-]+(?:/[A-Za-z0-9_+.-]+)*$")
 _REMOTE_URL_RE = re.compile(r"(?:https?|ftp|data|javascript):", re.IGNORECASE)
 _MANIPULATIVE_COPY: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("guilt", re.compile(
@@ -55,6 +56,9 @@ SUPPORTED_FACTS = frozenset({
 SUPPORTED_OPERATORS = frozenset({
     "==", "!=", ">", ">=", "<", "<=", "contains", "not_contains",
     "in", "not_in", "exists",
+})
+SUPPORTED_PLACEMENT_HINTS = frozenset({
+    "random", "authored", "path", "near_tallest_tree", "near_bench", "by_edge",
 })
 
 SUPPORTED_ACTIONS = frozenset({
@@ -117,7 +121,7 @@ _ACTION_PARAMS: dict[str, frozenset[str]] = {
     "plant.prune": frozenset({"node_ids"}),
     "plant.revive": frozenset(),
     "scene.set": frozenset({"weather", "palette", "story_time", "sky_mode",
-                             "ambience", "population"}),
+                             "ambience", "population", "author_region"}),
     "narrative.show": frozenset({"kind", "text", "label"}),
     "variable.set": frozenset({"name", "value"}),
     "variable.increment": frozenset({"name", "amount"}),
@@ -179,11 +183,16 @@ def _narrative_values(raw: Mapping[str, Any]) -> list[tuple[str, str]]:
     for index, item in enumerate(entities if isinstance(entities, list) else []):
         if isinstance(item, Mapping):
             add(f"$.entities[{index}].properties", item.get("properties"))
+            add(f"$.entities[{index}].initial_state", item.get("initial_state"))
+            add(f"$.entities[{index}].tags", item.get("tags"))
     animals = raw.get("animals", [])
     for index, item in enumerate(animals if isinstance(animals, list) else []):
         if not isinstance(item, Mapping):
             continue
-        for field in ("name", "personality", "routine", "gifts", "milestones"):
+        for field in (
+            "name", "personality", "routine", "gifts", "milestones",
+            "prohibited_behaviors", "initial_state",
+        ):
             add(f"$.animals[{index}].{field}", item.get(field))
     events = raw.get("events", [])
     for event_index, event in enumerate(events if isinstance(events, list) else []):
@@ -193,14 +202,14 @@ def _narrative_values(raw: Mapping[str, Any]) -> list[tuple[str, str]]:
         for action_index, action in enumerate(actions if isinstance(actions, list) else []):
             if not isinstance(action, Mapping):
                 continue
-            if action.get("type") in {
-                "narrative.show", "scene.set", "entity.transform",
-                "animal.behave", "animal.routine",
-            }:
-                add(
-                    f"$.events[{event_index}].actions[{action_index}].params",
-                    action.get("params"),
-                )
+            # Action parameters are the last author-controlled boundary before
+            # materialization.  Several action families can become visible
+            # indirectly (for example entity.reveal.state becomes a journal
+            # description), so an allow-list here is unsafe.
+            add(
+                f"$.events[{event_index}].actions[{action_index}].params",
+                action.get("params"),
+            )
     return values
 
 
@@ -245,6 +254,76 @@ class GardenProgram:
     entities: tuple[Mapping[str, Any], ...]
     animals: tuple[Mapping[str, Any], ...]
     events: tuple[ProgramEvent, ...]
+
+
+def _condition_leaves(condition: Condition) -> tuple[Condition, ...]:
+    if condition.kind == "leaf":
+        return (condition,)
+    return tuple(
+        leaf for child in condition.children for leaf in _condition_leaves(child)
+    )
+
+
+def _reference_values(condition: Condition) -> tuple[str, ...]:
+    if condition.ref is not None:
+        return (condition.ref,)
+    if isinstance(condition.value, str):
+        return (condition.value,)
+    if isinstance(condition.value, (list, tuple)):
+        return tuple(value for value in condition.value if isinstance(value, str))
+    return ()
+
+
+def validate_program_references(
+    program: GardenProgram,
+    *,
+    known_letter_ids: set[str] | frozenset[str] | None = None,
+) -> None:
+    """Bind semantic references that the inner schema cannot resolve alone.
+
+    Object references are resolved while parsing.  Letter references require
+    the final bundle message set, while event references require the complete
+    parsed event set.  Keeping this as a public boundary lets authoring, the
+    JSON builder, and recipients apply the same validation after decryption.
+    """
+    errors: list[str] = []
+    event_ids = {event.id for event in program.events}
+    letters = set(known_letter_ids) if known_letter_ids is not None else None
+    for event_index, event in enumerate(program.events):
+        for leaf in _condition_leaves(event.conditions):
+            references = _reference_values(leaf)
+            if leaf.fact in {"letter.read", "letter.due"} and letters is not None:
+                for reference in references:
+                    if reference not in letters:
+                        errors.append(
+                            f"$.events[{event_index}].conditions: unknown bundle letter "
+                            f"{reference!r}"
+                        )
+            elif leaf.fact == "event.completed":
+                for reference in references:
+                    if reference not in event_ids:
+                        errors.append(
+                            f"$.events[{event_index}].conditions: unknown program event "
+                            f"{reference!r}"
+                        )
+        for action_index, action in enumerate(event.actions):
+            action_path = f"$.events[{event_index}].actions[{action_index}]"
+            if action.type == "letter.present" and letters is not None:
+                reference = action.params.get("letter_id")
+                if reference not in letters:
+                    errors.append(
+                        f"{action_path}.params.letter_id: unknown bundle letter "
+                        f"{reference!r}"
+                    )
+            if action.type == "event.complete":
+                reference = action.params.get("event_id")
+                if reference is not None and reference not in event_ids:
+                    errors.append(
+                        f"{action_path}.params.event_id: unknown program event "
+                        f"{reference!r}"
+                    )
+    if errors:
+        raise ProgramValidationError(errors)
 
 
 def _safe_json(value: Any, path: str, errors: list[str], *, depth: int = 0) -> None:
@@ -295,8 +374,38 @@ def _valid_id(value: Any) -> bool:
     return isinstance(value, str) and bool(_ID_RE.fullmatch(value))
 
 
+def _valid_timezone(value: Any) -> bool:
+    if not isinstance(value, str) or not _TZ_RE.fullmatch(value):
+        return False
+    try:
+        ZoneInfo(value)
+    except (ZoneInfoNotFoundError, ValueError):
+        return False
+    return True
+
+
 def _catalog_leaf(value: Any) -> str:
     return str(value or "").rsplit(".", 1)[-1]
+
+
+def _validate_position(value: Any, path: str, errors: list[str]) -> None:
+    """Validate the one cross-runtime authored-position representation."""
+    if isinstance(value, str):
+        if value not in SUPPORTED_PLACEMENT_HINTS:
+            errors.append(f"{path}: unsupported placement hint {value!r}")
+        return
+    coordinates: tuple[Any, Any] | None = None
+    if isinstance(value, list) and len(value) == 2:
+        coordinates = (value[0], value[1])
+    elif isinstance(value, Mapping) and set(value) == {"x", "y"}:
+        coordinates = (value["x"], value["y"])
+    if coordinates is None or any(
+        isinstance(coordinate, bool) or not isinstance(coordinate, int)
+        for coordinate in coordinates or ()
+    ):
+        errors.append(
+            f"{path}: expected [integer x, integer y], {{x, y}}, or a supported hint"
+        )
 
 
 def _parse_condition(raw: Any, path: str, errors: list[str], depth: int = 0) -> Condition:
@@ -380,6 +489,29 @@ def _parse_action(raw: Any, path: str, errors: list[str]) -> ProgramAction:
             errors.append(f"{path}.params.amount: must be numeric")
     if action_type == "scene.set" and not params:
         errors.append(f"{path}.params: scene.set requires at least one scene field")
+    if action_type == "scene.set" and "author_region" in params:
+        region = params["author_region"]
+        if (
+            not isinstance(region, Mapping)
+            or set(region) != {"latitude_cell", "longitude_cell", "grid_degrees"}
+            or isinstance(region.get("latitude_cell"), bool)
+            or not isinstance(region.get("latitude_cell"), int)
+            or isinstance(region.get("longitude_cell"), bool)
+            or not isinstance(region.get("longitude_cell"), int)
+            or isinstance(region.get("grid_degrees"), bool)
+            or not isinstance(region.get("grid_degrees"), int)
+            or region.get("grid_degrees") != 1
+            or not -90 <= region.get("latitude_cell", 999) <= 90
+            or not -180 <= region.get("longitude_cell", 999) <= 179
+        ):
+            errors.append(
+                f"{path}.params.author_region: must be a coarse one-degree region"
+            )
+    if "position" in params and action_type in {
+        "entity.reveal", "entity.place", "entity.move", "animal.arrive",
+        "animal.set_destination", "plant.plant",
+    }:
+        _validate_position(params["position"], f"{path}.params.position", errors)
     if action_type == "animal.behave" and (
         not isinstance(params.get("behavior"), str) or not params.get("behavior")
     ):
@@ -395,7 +527,11 @@ def _parse_action(raw: Any, path: str, errors: list[str]) -> ProgramAction:
     return ProgramAction(type=action_type, target=target, params=dict(params))
 
 
-def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
+def parse_program(
+    raw: Mapping[str, Any],
+    *,
+    known_letter_ids: set[str] | frozenset[str] | None = None,
+) -> GardenProgram:
     """Parse and strictly validate a decrypted ``garden_program`` payload."""
     errors: list[str] = []
     if not isinstance(raw, Mapping):
@@ -427,8 +563,8 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
             errors.append(f"$.{field_name}: invalid version identifier")
 
     timezone = raw.get("author_timezone")
-    if not isinstance(timezone, str) or not _TZ_RE.fullmatch(timezone):
-        errors.append("$.author_timezone: expected UTC or an IANA timezone name")
+    if not _valid_timezone(timezone):
+        errors.append("$.author_timezone: expected an available IANA timezone name")
         timezone = "UTC"
 
     variables = raw.get("variables", {})
@@ -440,6 +576,7 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
             errors.append(f"$.variables: invalid variable name {name!r}")
 
     all_object_ids: set[str] = set()
+    object_kinds: dict[str, str] = {}
 
     def parse_entity_list(field: str) -> tuple[Mapping[str, Any], ...]:
         values = raw.get(field, [])
@@ -469,6 +606,7 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
                 item.get("species") or item.get("catalog_id") or item.get("asset_id")
             )
             if field == "animals":
+                runtime_kind = "animal"
                 if catalog not in ANIMAL_SPECIES:
                     errors.append(f"{path}.species: unknown runtime animal species {catalog!r}")
                 if item.get("name") is not None and (
@@ -480,10 +618,23 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
                     errors.append(f"{path}.personality: expected prose or a trait object")
             else:
                 kind = str(item.get("kind", ""))
-                if kind == "fixture" and catalog not in FIXTURE_CATALOG:
+                if kind == "plant" or catalog in SPECIES_CATALOG:
+                    runtime_kind = "plant"
+                elif kind == "fixture" or catalog in FIXTURE_CATALOG:
+                    runtime_kind = "fixture"
+                else:
+                    runtime_kind = "collectible"
+                if runtime_kind == "fixture" and catalog not in FIXTURE_CATALOG:
                     errors.append(f"{path}: unknown runtime fixture asset {catalog!r}")
-                if kind == "plant" and catalog not in SPECIES_CATALOG:
+                if runtime_kind == "plant" and catalog not in SPECIES_CATALOG:
                     errors.append(f"{path}: unknown runtime plant asset {catalog!r}")
+                for position_field in ("position", "placement"):
+                    if position_field in item:
+                        _validate_position(
+                            item[position_field], f"{path}.{position_field}", errors,
+                        )
+            if _valid_id(item_id) and item_id not in object_kinds:
+                object_kinds[item_id] = runtime_kind
             parsed.append(dict(item))
         return tuple(parsed)
 
@@ -602,10 +753,54 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
                 action.target not in all_object_ids
             ):
                 errors.append(f"{action_path}.target: unknown world object {action.target!r}")
+            target_kind = object_kinds.get(action.target or "")
+            if action.type.startswith("animal.") and target_kind not in {None, "animal"}:
+                errors.append(f"{action_path}.target: must reference an animal")
+            if action.type.startswith("plant.") and target_kind not in {None, "plant"}:
+                errors.append(f"{action_path}.target: must reference a plant")
+            if action.type.startswith("entity.") and target_kind == "animal":
+                errors.append(f"{action_path}.target: must reference a non-animal entity")
             for param_name in ("fixture_id", "entity_id", "gift_id"):
                 referenced = action.params.get(param_name)
                 if referenced is not None and referenced not in all_object_ids:
                     errors.append(f"{action_path}.params.{param_name}: unknown world object {referenced!r}")
+                elif referenced is not None:
+                    referenced_kind = object_kinds.get(str(referenced))
+                    if param_name == "fixture_id" and referenced_kind != "fixture":
+                        errors.append(
+                            f"{action_path}.params.fixture_id: must reference a fixture"
+                        )
+                    elif param_name in {"entity_id", "gift_id"} and referenced_kind == "animal":
+                        errors.append(
+                            f"{action_path}.params.{param_name}: must reference a non-animal entity"
+                        )
+            if action.type == "plant.plant":
+                species = _catalog_leaf(action.params.get("species_id"))
+                if species not in SPECIES_CATALOG:
+                    errors.append(
+                        f"{action_path}.params.species_id: unknown runtime plant asset {species!r}"
+                    )
+            if action.type == "entity.transform" and "asset_id" in action.params:
+                asset_id = action.params.get("asset_id")
+                asset = _catalog_leaf(asset_id)
+                if not _valid_id(asset_id):
+                    errors.append(f"{action_path}.params.asset_id: invalid asset identifier")
+                elif target_kind == "fixture" and asset not in FIXTURE_CATALOG:
+                    errors.append(
+                        f"{action_path}.params.asset_id: unknown runtime fixture asset {asset!r}"
+                    )
+                elif target_kind == "plant" and asset not in SPECIES_CATALOG:
+                    errors.append(
+                        f"{action_path}.params.asset_id: unknown runtime plant asset {asset!r}"
+                    )
+                elif target_kind == "collectible" and (
+                    asset in FIXTURE_CATALOG
+                    or asset in SPECIES_CATALOG
+                    or asset in ANIMAL_SPECIES
+                ):
+                    errors.append(
+                        f"{action_path}.params.asset_id: asset kind does not match collectible target"
+                    )
         events.append(ProgramEvent(
             id=event_id, conditions=condition,
             schedule=dict(schedule) if isinstance(schedule, Mapping) else None,
@@ -616,10 +811,12 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
 
     if errors:
         raise ProgramValidationError(errors)
-    return GardenProgram(
+    program = GardenProgram(
         version=version, evaluator_version=evaluator_version,
         world_state_version=world_state_version, atlas_version=atlas_version,
         astronomy_catalog_version=astronomy_version, author_timezone=timezone,
         variables=dict(variables), entities=entities, animals=animals,
         events=tuple(events),
     )
+    validate_program_references(program, known_letter_ids=known_letter_ids)
+    return program

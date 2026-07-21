@@ -45,8 +45,8 @@ Usage:
       asked_all_sessions={"u-001", "u-003"},  # from questions_asked.json
   )
   selector = QuestionSelector.load(
-      base_bank_path="data/question_bank_seed.v0.json",
-      domain_pools_path="data/question_bank_domain_pools.v0.json",
+      base_bank_path="src/lateletter/data/question_bank_seed.v0.json",
+      domain_pools_path="src/lateletter/data/question_bank_domain_pools.v0.json",
   )
   q = selector.next(session)
   selector.mark_asked(session, q)

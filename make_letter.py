@@ -48,11 +48,13 @@ from lateletter.bundle import (  # noqa: E402
     BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, Notification, read_bundle,
     write_bundle,
 )
-from lateletter.garden.program import GardenProgram, parse_program  # noqa: E402
+from lateletter.garden.program import (  # noqa: E402
+    GardenProgram, ProgramValidationError, parse_program,
+)
 from lateletter.intake import passphrase_strength_warning  # noqa: E402
 from lateletter.sealed import (  # noqa: E402
-    open_garden_program, open_message, seal_bundle, seal_garden_program,
-    seal_message, verify_bundle_hmac,
+    open_garden_program, open_gift_sentiment, open_message, seal_bundle,
+    seal_garden_program, seal_message, verify_bundle_hmac,
 )
 
 
@@ -264,7 +266,9 @@ def _garden_program_from_source(src: dict, message_ids: list[str]) -> dict | Non
     if not isinstance(raw, dict):
         raise ValueError("'garden_program' must be an object")
     resolved = _replace_message_references(raw, message_ids)
-    return _program_to_mapping(parse_program(resolved))
+    return _program_to_mapping(parse_program(
+        resolved, known_letter_ids=set(message_ids),
+    ))
 
 
 def _message_specs(src: dict) -> list[tuple[str, dict]]:
@@ -382,7 +386,10 @@ def build(
     assert verify_bundle_hmac(reread, passphrase), "HMAC round-trip failed"
     for msg in reread.messages:
         open_message(passphrase, msg)
-    parse_program(open_garden_program(passphrase, reread.garden_program))
+    parse_program(
+        open_garden_program(passphrase, reread.garden_program),
+        known_letter_ids={message.id for message in reread.messages},
+    )
 
     print(f"sealed  {out_path}")
     print(f"  author: {bundle.author_name}   seed: {bundle.garden_seed}")
@@ -393,7 +400,7 @@ def build(
     print("  passcode is NOT stored in the file — share it in person.")
     if out_path.parent.name == "public_letters":
         name = out_path.stem
-        print("  publishable — after commit to master + Pages deploy:")
+        print("  publishable — after commit to main + Pages deploy:")
         print(f"    https://rikiworld.com/lateletter/{name}/")
         print(f"    https://rikiworld.com/lateletter/?l={name}")
         print("  note: author name, hint, and dates are plaintext in the")
@@ -413,7 +420,13 @@ def verify(path: Path) -> None:
         text = open_gift_sentiment(passphrase, gift)
         print(f"  gift {gift.type}/{gift.catalog_id}: {text!r}")
     if bundle.garden_program is not None:
-        program = parse_program(open_garden_program(passphrase, bundle.garden_program))
+        try:
+            program = parse_program(
+                open_garden_program(passphrase, bundle.garden_program),
+                known_letter_ids={message.id for message in bundle.messages},
+            )
+        except ProgramValidationError as exc:
+            raise SystemExit(f"garden verification FAILED — {exc}") from exc
         print(
             f"  garden program v{program.version}: "
             f"{len(program.events)} event(s), {len(program.animals)} animal(s)"

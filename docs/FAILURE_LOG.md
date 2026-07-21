@@ -4,6 +4,531 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 
 ## 2026-07-21
 
+### Public `/to-chloe` route disappeared with the quarantined personal bundle
+- Symptom: `https://rikiworld.com/lateletter/to-chloe` returns 404 while the safe synthetic `/to-a-friend` route succeeds.
+- Impact: The recipient-facing URL is broken even though removing the compromised personal ciphertext was the correct safety action.
+- Root cause: The Pages builder creates routes only from public `.lateletter` filenames; no explicit safe alias replaced the quarantined `to-chloe` artifact.
+- Required fix: Generate `/to-chloe/` as an explicit route alias to the tracked safe synthetic sealed demo, without restoring or inspecting compromised content.
+- Acceptance: Both slash/no-slash live URLs resolve into the safe demo viewer after the final `main` deployment; checksum/HMAC/decryption remain valid.
+- Status: Fixed in the release artifact — Pages preparation now generates `/to-chloe/` as an explicit alias to the checksum/HMAC-verified safe synthetic `to-a-friend` bundle. Live status remains pending the final `main` deployment.
+
+### Post-proof review found in-flight persistence, stale-unlock, and schema parity holes
+- Symptom: Runtime invalidation cannot cancel an already-started browser save; a stale unlock catch can purge a newer attempt; and browser shape validation accepts v2 legacy gifts and Boolean seeds that Python rejects.
+- Impact: Pagehide can complete a secret-derived state write after purge, concurrent bundle/auth attempts can erase the winner, and one sealed file can take different ownership/validity paths by renderer.
+- Required fix: Make authenticated persistence abortable or transaction-generation guarded at the storage owner, scope unlock failure cleanup to its captured epoch/bundle, and mirror Python's structural/version rules in browser validation.
+- Acceptance: In-flight save cancellation produces zero committed write; stale failure leaves the newer attempt untouched; shared v2-gift/Boolean-seed vectors reject identically.
+- Status: Fixed — authenticated saves now receive an invalidation-bound abort signal and IndexedDB writes commit only on transaction completion; unlock cleanup is scoped to its captured epoch and bundle; and Python/browser validation share eight structural rejection vectors, including v2 legacy gifts and Boolean seeds.
+
+### Animal interruption and browser connected-mask ownership remain prototype paths
+- Symptom: Interruption can be injected only by tests, a safety-rested animal retains/project-renders its choreography lock, and the browser renderer re-derives connected masks when projection data is absent.
+- Impact: Production cannot actually interrupt choreography consistently, rendered state contradicts the safety decision, and connected topology still has a renderer-local fallback owner.
+- Required fix: Add a canonical production interruption command/state consumed by both reducers, suspend/clear the choreography lock in safety priority, delete browser mask derivation, and reject incomplete projection cells.
+- Acceptance: A real semantic command interrupts choreography and projects no active lock in both runtimes/restart bytes; both renderers consume only projection-owned group/mask for all five families ×16.
+- Status: Fixed — production `inspect`/`feed`/`play` interrupts only the targeted animal, clears its choreography lock, and projects resting/orient state identically across Python/browser/restart; browser rendering rejects missing projection-owned connected group/masks and all five families ×16 pass.
+
+### Public passphrase surface does not enforce HTTPS
+- Symptom: The distributed custom-domain HTTP URL serves the viewer instead of redirecting to HTTPS, and the Pages API reports HTTPS enforcement disabled.
+- Impact: An active network attacker could replace an HTTP viewer and capture a recipient passphrase or decrypted letter.
+- Required fix: Enable Pages/custom-domain HTTP-to-HTTPS enforcement, verify the redirect and final HSTS-capable HTTPS response, and do not publish any personal bundle until it is active.
+- Acceptance: Plain HTTP redirects to the canonical HTTPS viewer, the Pages API reports enforcement enabled, the deployed sealed demo still authenticates/decrypts, and documentation contains no insecure recipient URL.
+- Status: Blocked at the external domain owner — both GitHub Pages configurations reject `https_enforced=true` because no GitHub certificate exists while Cloudflare proxies the domain. HTTPS itself returns 200, but HTTP remains 200 without redirect/HSTS. Completion requires Cloudflare “Always Use HTTPS”/HSTS or a DNS/proxy change; no personal bundle may publish before that verification.
+
+### Auth epoch-fence contract retained pre-transaction source assertions
+- Symptom: The full Python suite passed 589 tests but the viewer contract still searched for the old unfenced persistence-binding call and the old global bundle/binding world-ID spelling.
+- Impact: Release verification was red even though the implementation correctly routes the awaited derivation through `awaitCurrent`.
+- Required fix: Assert the epoch-fenced call and transaction-local world-ID inputs, then rerun the viewer contract plus full suite.
+- Acceptance: The contract recognizes `await awaitCurrent(_persistenceBinding(...))`, `data`/`binding` candidate inputs, and the complete suite passes.
+- Status: Fixed — the assertions now require the epoch fence and transaction-local inputs; focused and full-suite verification are rerun below.
+
+### Terminal connected rendering re-derives projection semantics and evidence paints only fences
+- Symptom: Terminal renderer maps catalog IDs to connected families locally instead of consuming projection-owned `connected_group`; the alleged all-family test lookup-checks five families but paints only fence fixtures.
+- Impact: HTML/terminal ownership can drift and Gate 5's exhaustive connected-family claim is not demonstrated.
+- Required fix: Delete the terminal re-derivation owner, consume the canonical projection field, and actually paint every mask for all five families in both renderer tests.
+- Acceptance: Five families ×16 masks render from identical projection semantics in terminal and HTML with no renderer-local family catalog.
+- Status: Fixed — terminal and HTML consume projection-owned `connected_group`; terminal's renderer-local catalog was deleted, and both paint all five atlas families across all 16 masks.
+
+### Browser animal safety priority omits interruption semantics
+- Symptom: Python interruption preempts authored choreography, but JavaScript context/decision logic has no equivalent input or branch; existing interruption coverage is Python-only.
+- Impact: The same interrupted authored animal can remain choreography-locked in HTML while resting safely in terminal, invalidating Gate 7 exact priority parity.
+- Required fix: Add canonical interruption context/priority in JavaScript and include it in the shared exact conformance vector before choreography.
+- Acceptance: Interrupted, low-energy, and severe-weather animals preempt choreography identically with matching decisions/state/projection/restart bytes.
+- Status: Fixed — JavaScript now applies the canonical interruption flag before choreography, and the shared Python/JavaScript vector compares interrupted decision, state, projection, and restart bytes exactly.
+
+### Authenticated browser open can outlive a purge epoch
+- Symptom: Auth opens/assigns the persistent runtime across an `await`, and `handleUnlock` can continue materialization/commit/first-run/`afterAuth` after `pagehide` invalidates the attempt.
+- Impact: A history navigation race can republish authored state or write onboarding/persistence after the page has returned to its locked preview.
+- Required fix: Keep the opened runtime transaction-local, assert the auth epoch after every awaited boundary, and publish/commit/UI-transition only while the attempt remains current.
+- Acceptance: Delayed open/evaluate/materialize/commit raced with purge leaves the generic runtime/UI, performs no post-purge write, and never reintroduces plaintext.
+- Status: Fixed — authenticated runtimes stay transaction-local until an epoch-checked publication; every awaited auth/program/commit boundary is fenced, purge invalidates pending/current runtimes synchronously, and the in-flight-open regression proves zero state, projection, or deferred force write survives cancellation. A real unlock/history-back replay restored only the generic preview.
+
+### Python and browser disagree on unknown sealed-bundle fields
+- Symptom: Python validates then reconstructs known dataclass fields, silently dropping unknown top-level/nested keys before checksum/HMAC; browser authenticates raw nested objects and rejects the same mutation.
+- Impact: One raw sealed file can verify in terminal and fail in HTML, and unauthenticated extension data is normalized away differently.
+- Required fix: Reject unknown fields at every versioned bundle/message/gift/trigger/program-envelope/KDF object boundary in both loaders before checksum/HMAC.
+- Acceptance: Shared adversarial vectors with unknown fields at every nesting level reject identically and valid canonical bundles remain byte-compatible.
+- Status: Fixed — both loaders reject unknown fields at every versioned bundle, message, gift, trigger, notification, program-envelope, and KDF boundary before normalization; nine shared adversarial vectors reject identically and canonical bundle regressions pass.
+
+### Installed author mode cannot find the question bank
+- Symptom: `author.py` resolves question JSON from a source-checkout top-level `data/` directory that is absent from the wheel.
+- Impact: A clean installed `lateletter --write` fails before questions/drafting/export, recreating the original author-mode blocker outside the repository checkout.
+- Required fix: Move the question banks to one package-resource authority, delete the old runtime owner, update the loader/tests, and include the JSON in wheels.
+- Acceptance: A clean isolated wheel install completes a scripted accessible author flow through canonical sealed export without the source tree.
+- Status: Fixed — question banks now have one packaged `lateletter/data` authority; a fresh Python 3.12 install ran the full scripted accessible Chloe-named Q&A/draft/timeline/v2 sealed-export regression outside source imports.
+
+### Built wheel omits canonical Garden JSON resources
+- Symptom: The current wheel contains Garden Python modules but none of `garden/data/*.json`, although runtime atlas/astronomy loaders use package resources.
+- Impact: A clean installed author/recipient can fail to load the canonical atlas, star catalog, or provenance even when dependencies are present.
+- Required fix: Declare Garden JSON package data and verify the built wheel contents plus installed-resource loading in an isolated environment.
+- Acceptance: A clean wheel install loads all three canonical JSON resources and runs atlas/sky smoke tests without the source checkout.
+- Status: Fixed — setuptools package data includes all three Garden JSON files; an independently built wheel contained every required path and the installed release verifier loaded atlas, stars, and provenance.
+
+### Windows timezone validation lacks a packaged IANA database fallback
+- Symptom: Program validation now uses `zoneinfo`, but project metadata does not provide `tzdata` on Windows systems that lack a system timezone database.
+- Impact: Valid author timezones can reject on an otherwise supported renderer platform.
+- Required fix: Declare a conditional Windows `tzdata` dependency and cover metadata/zone-loading portability.
+- Acceptance: Clean Windows-equivalent installation metadata supplies an IANA database while non-Windows uses the system database without redundant dependency.
+- Status: Fixed — project metadata conditionally installs `tzdata>=2025.2` on Windows while retaining the system database on other platforms.
+
+### Clean installation omits required atlas Unicode dependencies
+- Symptom: `atlas.py` imports `regex` and `wcwidth`, but neither package is declared in `pyproject.toml`; a clean project virtualenv fails test collection with `ModuleNotFoundError: regex`.
+- Impact: Installation and recipient startup depend on accidental ambient packages and can fail before any bundle opens.
+- Required fix: Declare bounded runtime dependencies (or remove the imports) and verify a clean isolated installation/import.
+- Acceptance: A fresh environment installed only from project metadata imports the atlas and runs its focused tests.
+- Status: Fixed — bounded `regex` and `wcwidth` runtime dependencies are declared; a fresh Python 3.12 environment installed only project metadata and loaded the atlas successfully.
+
+### Fixture interactions remain counter-backed instead of changing linked world systems
+- Symptom: Several fixture verbs only increment `authored_state` counters; trellis/planter/pond/basket/well/tool-rack actions do not affect linked plants, inventory, water state, or animal routines as §7.8.4 promises.
+- Impact: The Garden parity table calls fixtures functional while visible care/economy/routine consequences are absent.
+- Required fix: Define deterministic cross-system effects for every declared fixture verb in the canonical reducer and mirror exact state transitions in JavaScript.
+- Acceptance: Shared vectors prove each fixture family changes the relevant linked subsystem and restart state, not only an internal counter.
+- Status: Fixed — every declared verb now changes linked canonical UI, plant, water/resource, inventory/collectible, or animal memory/routine state in Python and JavaScript; shared fixture/restart vectors are byte-identical.
+
+### Non-command persistence ledgers remain unbounded
+- Symptom: Terminal visit receipts, offline interval milestone receipts, recurring `applied_occurrences`, and exclusivity ledgers can append unique entries forever despite bounded command/trace/undo windows.
+- Impact: Long-lived worlds still grow without bound and contradict the documented bounded-persistence claim.
+- Required fix: Give every cumulative receipt/occurrence family deterministic bounded compaction or aggregate counters while preserving recent idempotency and semantic facts in both runtimes.
+- Acceptance: Multi-year visit/offline/recurrence stress remains bounded, byte-conformant, restart-stable, and retains current totals/recent deduplication.
+- Status: Fixed — milestone, visit, offline, applied-occurrence, and exclusivity histories retain 512 recent dedupe IDs plus persistent aggregate totals; 700-cycle multi-year Python/JavaScript restart stress is bounded and byte-identical.
+
+### Plant projection skips maturity interpolation and semantic growth stages
+- Symptom: A born organ immediately uses final direction/length; geometry teleports to mature size and the seven specified stages are not represented in projection.
+- Impact: Persistent topology exists, but visible growth is not gradual or semantically stageful as §7.8.5 promises.
+- Required fix: Derive matching age-based stage and interpolated geometry from immutable organ topology/effective time in both projections.
+- Acceptance: Cross-runtime snapshots cover all seven stages with monotonic geometry, stable organ IDs, and exact restart output.
+- Status: Fixed — both projections derive seven named stages, fixed-point 0–1000 progress, recursive topology-order-independent interpolated offsets, stable IDs, and exact restart output; all stages pass cross-runtime vectors.
+
+### Terminal resume can replay wall time spent paused during continuous input
+- Symptom: Browser resume advances the observed wall watermark, but terminal dispatch does not; key-heavy paused sessions can resume before an idle timeout and the next dwell counts the whole paused interval.
+- Impact: Canonical clocks and scheduled programs diverge by input pattern and modality.
+- Required fix: On terminal pause-to-resume, synchronously advance the observed watermark/live baseline without advancing effective time.
+- Acceptance: Continuous-key pause/resume vectors discard paused wall time and match browser/reopen state exactly.
+- Status: Fixed — pause-to-resume advances the terminal wall watermark and resets both recipient/standalone monotonic live baselines; continuous-key and reopen vectors discard paused time.
+
+### Post-proof review found incomplete plaintext purge and asynchronous auth fencing
+- Symptom: `pagehide` leaves the open memory modal and canonical renderer rows/ARIA projection intact, while an in-flight authenticated program tail can resume after purge and repopulate global derived state.
+- Impact: bfcache can retain authored sentiment/world prose or reintroduce authenticated state without a fresh passphrase.
+- Required fix: Synchronously blank/close every secret-bearing surface and renderer cache, invalidate the authenticated runtime, and epoch-fence every asynchronous evaluator/materializer continuation before state assignment or persistence.
+- Acceptance: Memory-open/authored-world history restoration contains no sentiment, renderer prose, authored rows, or late program mutation and requires reauthentication.
+- Status: Fixed — purge invalidates persistence/auth epochs, stops the runtime, closes/blanks memory and letter/archive DOM, clears renderer rows/projection/ARIA, and fences evaluator/materializer globals; live history-back proof restored only the generic preview with no authored label/body/objects.
+
+### Terminal failed authenticated transaction retains decrypted loop-local candidates
+- Symptom: After correct HMAC/decryption, a later world/program failure leaves `message_content`, `gift_content`, and `active_program` assigned for the rest of the recipient process.
+- Impact: Plaintext secret lifetime extends across failed retries even though authentication was not promoted.
+- Required fix: Keep decrypted values in transaction-local candidates and publish them only after the authenticated world commits; explicitly clear all candidates on failure.
+- Acceptance: A post-decryption materialization failure leaves every long-lived secret-bearing recipient local empty/inactive.
+- Status: Fixed — decryption/program/store/world values remain transaction candidates until commit and are explicitly emptied on both failure and finalization; long-lived content remains blank/inactive after failure.
+
+### Terminal recipient erases unchanged Garden cells behind a partial-diff renderer
+- Symptom: `run_recipient` clears the whole curses screen every loop, but `GardenRenderer.blit_curses` redraws only rows changed relative to its private prior-frame cache.
+- Impact: After the first frame, unchanged Garden rows disappear even though the renderer reports no changes.
+- Required fix: Give one owner responsibility for clearing/redrawing: either do not externally erase the cached Garden surface or explicitly invalidate/full-redraw after a clear.
+- Acceptance: Two identical consecutive recipient frames remain visually identical and nonblank in a curses harness.
+- Status: Fixed — external erase now invalidates the renderer cache so the next frame is a full repaint; consecutive-frame harness equality and final live curses proof pass.
+
+### Animal AI omits promised memory, weather/season, locomotion, and safety priority semantics
+- Symptom: Utility ignores recent memories and scene weather/season, selected routines do not move animals, and choreography can outrank urgent safety despite §7.8.7's priority order.
+- Impact: Gate 7 is overstated: animals cannot demonstrate the authored deterministic personality/memory/routine/world-response model promised by the spec.
+- Required fix: Put safety first, incorporate bounded memory and scene response into deterministic utility, perform validated deterministic locomotion, and add exact cross-runtime behavior/state evidence.
+- Acceptance: Shared vectors show safety preemption, memory-conditioned choice, weather/season response, stable routine movement, restart determinism, and matching visible semantics in both renderers.
+- Status: Fixed — safety/weather preempt choreography; bounded recent memory, weather, season, personality, and authored preferences influence utility; deterministic validated locomotion and visible decision records match exactly across Python/JavaScript and restart.
+
+### Standalone terminal still crashes when cursor visibility control is unsupported
+- Symptom: Standalone `run_curses` calls `curses.curs_set(0)` without the recipient path's portability guard.
+- Impact: Standalone Garden remains unavailable on otherwise functional terminals that return `ERR` for cursor visibility.
+- Required fix: Apply the same optional-capability treatment at the standalone curses owner and add a regression.
+- Acceptance: Standalone initializes and exits cleanly when `curs_set` raises `curses.error`.
+- Status: Fixed — standalone treats cursor visibility as optional and the unsupported-capability regression initializes and exits cleanly.
+
+### Recipient crashes when a curses terminal cannot change cursor visibility
+- Symptom: A real PTY launch reaches `curses.curs_set(0)` and aborts with `_curses.error` on terminals that support drawing/input but not cursor-visibility control.
+- Impact: A valid sealed bundle cannot be opened in otherwise usable terminal environments.
+- Required fix: Treat cursor visibility as an optional presentation capability while preserving the full semantic recipient flow.
+- Acceptance: A PTY whose `curs_set` returns `ERR` still renders, authenticates, decrypts, and exits cleanly.
+- Status: Fixed — cursor visibility is optional; the focused regression passes and a real 80×24 PTY rejected a wrong pass, decrypted the exact normal sealed letter, rendered the journal, dwelled, and exited cleanly.
+
+### Garden-program ciphertext tamper regression can perform a no-op mutation
+- Symptom: `test_program_ciphertext_is_authenticated` always replaces the first base64 character with `A`; when the ciphertext already begins with `A`, the payload is unchanged and the valid HMAC correctly continues to verify.
+- Impact: The full release suite fails nondeterministically even though authenticated ciphertext handling is correct.
+- Required fix: Flip the first character to a guaranteed-different valid base64 character before asserting HMAC rejection.
+- Acceptance: Repeated sealed bundles always receive an actual ciphertext mutation and the regression passes deterministically.
+- Status: Fixed — the vector now flips to a guaranteed-different valid base64 character and passed 20 independently sealed repetitions plus the full suite.
+
+### Program actions accept invalid catalogs and untyped object references
+- Symptom: Unknown `plant.plant.species_id` can be receipted without a plant; unknown transform assets can reclassify fixtures as collectibles; and animal fixture destinations accept IDs belonging to plants/animals before crashing at materialization.
+- Impact: Authoring can seal valid-looking effects that disappear, change type, or reject the correct passphrase.
+- Required fix: Bind action catalogs and references to declared target kinds/runtime catalogs in both parsers before export or unlock.
+- Acceptance: Unknown/mismatched plant, transform, fixture, entity, and gift references reject identically in Python/JavaScript adversarial vectors.
+- Status: Fixed — both parsers bind action targets and catalogs to declared/runtime kinds; shared unknown/mismatched reference vectors reject before export, unlock, or persistence.
+
+### Pre-auth browser load consumes global first-run state
+- Symptom: `loadBundle` reads and writes the global first-run key before authentication, so wrong/corrupt/attacker bundles permanently change later genuine-letter behavior.
+- Impact: Failed authentication is not storage-byte-identical and unrelated bundles share onboarding state.
+- Required fix: Defer first-run mutation through successful authenticated commit and namespace it with the secret-derived bundle identity, or keep it session-only.
+- Acceptance: Wrong/corrupt loads perform zero onboarding writes; separately authenticated bundle identities have independent first-run state.
+- Status: Fixed — first-run reads/writes are authentication-derived, bundle-local, and deferred through successful authenticated commit; pre-auth load performs none.
+
+### Browser pre-auth preview still depends on untrusted bundle identity and seed
+- Symptom: Unlike terminal's fixed generic preview, browser preview uses `preview:${bundle_id}` and `bundle.garden_seed`, then installs that seed before authentication.
+- Impact: Corrupt or unauthenticated bundle fields influence the supposedly isolated visible/canonical preview and can produce distinguishable state.
+- Required fix: Use one fixed browser preview ID/seed and install bundle identity/seed only after successful authentication.
+- Acceptance: Every unsigned/corrupt/wrong-pass bundle renders byte-identical generic preview state regardless of ID/seed.
+- Status: Fixed — browser and terminal now share the fixed `recipient-preview` identity/seed and install authenticated identity/seed only after successful verification.
+
+### Authenticated bundle ID can escape the terminal world-storage directory
+- Symptom: Bundle validation accepts any truthy `bundle_id`; terminal persistence interpolates it directly into a filename, so absolute paths or traversal segments can target files outside the recipient directory after attacker-known authentication.
+- Impact: A malicious but correctly signed bundle can overwrite an arbitrary writable `.json` path with Garden state.
+- Required fix: Enforce a strict public bundle-ID schema and derive fixed storage filenames from a cryptographic hash/authenticated namespace rather than raw IDs.
+- Acceptance: Absolute, separator-containing, and traversal IDs reject before persistence; adversarial terminal tests prove no out-of-root write.
+- Status: Fixed — bundle IDs are strictly path-safe in both loaders and terminal filenames are fixed SHA-256 digests of authentication-bound world IDs; traversal vectors and out-of-root checks pass.
+
+### Final runtime rereview found authored-action, clock, serialization, parallax, and evidence divergence
+- Symptom: Python/JavaScript animal delivery effects differ; paused wall time can replay after resume; terminal duration/midnight facts are stale; nested Unicode key ordering differs; fractional parallax quantizes differently; browser sighted UI omits missed summaries; and connected-mask/animal evidence does not cover every family/state it claims.
+- Impact: Valid authenticated programs can produce unequal worlds, schedules can fire incorrectly, stable IDs can diverge, objects can paint/hit one cell apart, accessible information can be modality-dependent, and Gates 5/7 can overstate evidence.
+- Required fix: Align delivery materialization, advance the paused wall watermark without semantic time, supply real session/date facts, use Unicode-scalar canonical JSON everywhere, share parallax quantization, visibly render missed summaries, and expand exhaustive renderer families/animal states or downgrade gates.
+- Acceptance: Shared adversarial vectors produce exact state/receipt/ID/coordinate output and Gate 5/7 evidence names every exercised family/state.
+- Status: Fixed — animal delivery, paused watermark, terminal facts, recursive Unicode order, fractional parallax, visible missed summaries, every connected family/mask, and all species/tier presentation states now have exact cross-runtime evidence.
+
+### Program timezone and safe-JSON validation remain parser-dependent
+- Symptom: Both parsers accept nonexistent IANA zones that crash later; JavaScript additionally accepts invalid version IDs and strings beyond Python's 16,384-character limit.
+- Impact: Authoring can seal a bundle that rejects the correct passphrase, and authenticated validation differs by renderer.
+- Required fix: Validate actual timezone availability and mirror Python safe-JSON/version constraints in JavaScript at parse time.
+- Acceptance: Nonexistent zones, invalid version IDs, and oversized nested strings reject identically before export or persistence.
+- Status: Fixed — actual IANA zones, version identifiers, recursive depth/types, and the 16,384-code-point string limit reject identically in Python and JavaScript adversarial tests.
+
+### Browser retains successful passphrase and plaintext form state beyond authentication
+- Symptom: The successful passphrase remains in both `cachedPassphrase` and the passphrase input even though later logic needs only an authenticated flag.
+- Impact: Secret lifetime is longer than necessary and compounds bfcache/in-memory plaintext exposure.
+- Required fix: Replace the retained passphrase with a nonsecret authenticated state token and clear the form immediately on success and every purge path.
+- Acceptance: No successful passphrase string remains in application globals or DOM after key derivation completes.
+- Status: Fixed — no passphrase global remains; success and purge clear the input, and only a nonsecret authenticated flag/binding survives successful derivation.
+
+### Pages closure tests do not require or authenticate the published letter route
+- Symptom: The closure regression omits the public `.lateletter` and pretty-path redirect, and deployment does not authenticate/checksum the tracked public bundle.
+- Impact: Pages can deploy green while the public route is missing or its bundle is invalid.
+- Required fix: Assert the public bundle and redirect in the artifact and verify tracked production bundle checksum/HMAC/program integrity during tests or deployment.
+- Acceptance: Removing or corrupting the public bundle/redirect fails the release check.
+- Status: Fixed — the Pages closure requires the public bundle and pretty redirect, and tests authenticate/checksum/decrypt the tracked canonical safe bundle and assert its program shape.
+
+### Long-lived command, trace, and undo persistence remains unbounded
+- Symptom: Ambient live ticks are capped, but accepted commands continue appending indefinitely to `processed_commands`, `event_trace`, and placement/movement undo records in both runtimes.
+- Impact: A long-lived standalone Garden can grow and rewrite its full plaintext snapshot without bound despite the ambient-only cap.
+- Required fix: Define matching cross-runtime compaction limits that preserve bounded idempotency, replay diagnostics, and undo semantics; stress-test many commands and restarts.
+- Acceptance: Large command workloads retain exact current semantic state, bounded recent idempotency/trace/undo windows, and byte-identical Python/JavaScript persistence.
+- Status: Fixed — both runtimes retain bounded 512-command, 512-trace, and 128-undo windows; a 700-command restart stress vector remains byte-identical and preserves recent idempotency.
+
+### Browser silently accepts an authenticated bundle whose encrypted gift cannot decrypt
+- Symptom: Browser gift AES-GCM failure is caught and replaced with an empty sentiment before program migration/commit, while terminal fails the authenticated transaction.
+- Impact: An HMAC-valid but internally inconsistent legacy bundle loses its memory text in HTML, mutates persistent state, and behaves differently by renderer.
+- Required fix: Treat any declared encrypted-gift decryption failure as a fatal authenticated transaction error in both recipients and test the cross-renderer vector.
+- Acceptance: A gift sealed under a different key causes generic unlock failure and zero persistent writes in browser and terminal.
+- Status: Fixed — declared gift AES-GCM failure aborts the browser transaction exactly as terminal does; plaintext candidates are promoted only after every encrypted payload validates.
+
+### Duplicate message or gift IDs create browser/terminal decryption ambiguity
+- Symptom: Canonical bundle validation accepts repeated IDs; browser plaintext maps overwrite by ID while archive lookup selects the first metadata row, whereas terminal retains positional plaintext.
+- Impact: The same authenticated bundle can associate labels/bodies/gifts differently across renderers and overwrite receipt/state identities.
+- Required fix: Reject duplicate message and gift IDs in canonical Python validation and browser load before authentication/decryption/persistence.
+- Acceptance: Sealed adversarial duplicate-ID bundles reject consistently with no state mutation; valid unique-ID bundles remain compatible.
+- Status: Fixed — Python and browser identity validation reject duplicate/nonempty message and gift IDs before authentication-derived storage or decryption.
+
+### Plaintext Garden persistence is not bound to the authenticated bundle secret
+- Symptom: Browser and terminal persistent worlds are keyed only by public `bundle_id`; a separately valid attacker-authored bundle can reuse that ID and, after authenticating with the attacker's passphrase, load plaintext journal/world state left by the genuine bundle.
+- Impact: Authored names, journal prose, memories, and world changes from one sealed bundle can cross into a different cryptographic identity without knowing the genuine passphrase.
+- Required fix: Namespace persistence by a stable secret-derived bundle identity in both recipients, preserve it across legitimate APPEND, reject/migrate ambiguous legacy state safely, and add same-ID/different-auth-key isolation tests.
+- Acceptance: Two HMAC-valid bundles with the same public ID but different authentication keys never read or overwrite each other's state in terminal or browser; legitimate APPEND retains the original namespace.
+- Status: Fixed — both recipients derive the same SHA-256 namespace from the authenticated bundle key; same-public-ID/different-key receipts and worlds are isolated, while a legitimate reseal/APPEND retains the namespace.
+
+### Browser back-forward cache can restore decrypted plaintext without reauthentication
+- Symptom: `pagehide` clears only the cached passphrase; decrypted messages/program/sentiments, the authenticated runtime, current message, and rendered letter DOM remain available to a bfcache-restored page.
+- Impact: Navigating away and back can redisplay recipient plaintext without a new authentication gate.
+- Required fix: Purge every decrypted in-memory/DOM secret, stop the live runtime, remove gift plaintext, and restore the nonpersistent generic preview on pagehide and persisted pageshow.
+- Acceptance: A bfcache round trip after unlock contains no decrypted text/program/sentiment/authenticated world and requires the passphrase again before any authored state appears.
+- Status: Fixed — pagehide and persisted pageshow invalidate in-flight auth, stop the runtime, clear plaintext/program/sentiments/DOM/auth state, and restore the generic preview; live history-back proof required unlock and contained neither label nor body.
+
+### Browser QA arc parameters can mutate sealed-bundle receipts before authentication
+- Symptom: `_arcSeed` runs for every loaded bundle; `?arc=postcomplete` writes read receipts for all messages before checksum/HMAC/passphrase authentication, then forces post-complete behavior.
+- Impact: An unauthenticated URL parameter can mutate a real recipient's local state and suppress the normal unread-letter flow for an otherwise valid sealed bundle.
+- Required fix: Gate every arc seeding mutation to the explicit trusted development-fixture capability and prove sealed-bundle URL parameters cannot write receipts.
+- Acceptance: `?arc=postcomplete` remains available only for the one trusted fixture path; a normal signed bundle with any arc parameter performs zero receipt writes before authentication and keeps its letters unread.
+- Status: Fixed — `_arcSeed` and its callsite require the explicit trusted development-fixture capability; signed bundle URL parameters cannot reach receipt writes pre-auth.
+
+### Final post-proof security review found deploy, validation, and recipient transaction gaps
+- Symptom: The Pages artifact omits the canonical atlas JSON imported by the browser; browser validation accepts unsupported placement hints and misses nested coercive `entity.reveal` prose; recipients and standalone verification do not bind program letter/event references against the authenticated bundle; unlock promotes persistent state before materialization succeeds; and live ticks append unbounded trace records while rewriting IndexedDB every second.
+- Impact: A deployment can fail at module load, an authenticated but runtime-invalid or manipulative program can pass one renderer, dangling references can announce nonexistent content, failed unlocks can mutate persistent state, and long dwell sessions can degrade storage and runtime behavior.
+- Required fix: Package transitive browser assets with a deployment-closure test; share exhaustive program validation and final-bundle reference binding; make authenticated promotion transactional through successful materialization; bound/coalesce live persistence and traces; add adversarial cross-runtime regressions.
+- Acceptance: The staged Pages tree loads offline, invalid hints/ethics/references reject identically before persistent mutation, materialization failure leaves pre-auth state byte-identical, and multi-hour dwell has bounded state and writes.
+- Resolution: Pages now builds and verifies a transitive dependency closure; both parsers reject unsupported positions, dangling final references, and recursive unsafe prose; terminal and browser authentication defer persistence through successful materialization; ambient writes are coalesced and tick traces are capped.
+- Verification: Transactional failure regressions leave stored state byte-identical, the Pages artifact verifies with the atlas/star JSON present, cross-runtime adversarial parser vectors pass, and multi-hour tick tests retain at most 120 ambient records.
+- Status: Fixed after independent post-proof review.
+
+### Final post-proof deterministic-runtime review found cross-renderer semantic divergence
+- Symptom: JavaScript uses locale-sensitive ordering where Python uses code-point ordering; browser animal destinations bypass safe placement; coordinate schemas disagree on floats/numeric strings and Boolean grid sizes; `letter.present` mutates different state/journal identities; missed-event summaries are persisted but not visible; guided authoring cannot collect an author sky region; and several placement/absence tie-breakers can differ by locale.
+- Impact: The same authenticated program can produce different final world bytes, unsafe positions, phantom presentation history, invisible absence handling, or a silent sky fallback depending on renderer and locale.
+- Required fix: Define one locale-independent comparator and coordinate schema, route every destination through canonical safe placement, align `letter.present` materialization, project missed summaries, collect and validate coarse author-region input, and cover shared adversarial vectors.
+- Acceptance: Python and JavaScript produce byte-identical state/receipts for case-sensitive IDs, all placement forms, presentation, absence, sky-region, and malformed-coordinate vectors.
+- Resolution: JavaScript now uses Python-compatible Unicode scalar ordering; both schemas require exact integer coordinates; authored destinations use the canonical safety/reachability owner; `letter.present` is materializer-owned in both runtimes; missed summaries are projected; guided authoring captures a whole-degree region and rejects Boolean grid values.
+- Verification: Exact Python/JavaScript state, receipt, ordering, safe-destination, presentation, missed-summary, and author-region vectors pass.
+- Status: Fixed after independent post-proof review.
+
+### Final post-proof renderer review found live-clock, parallax, atlas, and evidence gaps
+- Symptom: Standalone terminal idle input discards dwell time; live advance fails to move the persisted wall-time watermark and does not re-evaluate authored programs; reduced-motion stops the canonical clock; all visible objects use one depth despite projected depth values; terminal journal/inventory truncates without navigation; semantic atlas glyphs evade grapheme/control/width validation; the browser duplicates its sky catalog; and Gate 5/7 evidence does not exhaustively render connected masks or animal species/tier semantics in both modalities.
+- Impact: Reopening can double-count elapsed time, scheduled world changes can remain stale during dwell, accessibility preferences alter simulation semantics, camera motion lacks promised parallax, terminal content is inaccessible, malformed atlas data can reach renderers, catalogs can drift, and PASS labels overstate demonstrated coverage.
+- Required fix: Advance one persisted clock watermark, re-evaluate programs after canonical ticks, separate motion presentation from simulation pause, render/hit-test projected depths, provide terminal journal navigation, validate all semantic atlas tokens, load one star catalog, and add exhaustive renderer evidence or downgrade gates.
+- Acceptance: Partition/reopen/live-schedule vectors match exactly; reduced motion preserves semantic time; camera tests demonstrate multiple depth layers; all journal entries are reachable; atlas and sky authority are singular; Gates 5/7 link exhaustive terminal/browser tests.
+- Resolution: Live ticks advance the persisted wall watermark, re-evaluate authenticated programs, cap traces, and coalesce writes; reduced motion affects presentation only while saved pause remains authoritative; both renderers consume per-object depth; terminal journal/inventory/missed summaries scroll; semantic atlas data is fully validated; the browser imports the canonical star catalog; exhaustive renderer tests cover every connected mask and four species across all tiers.
+- Verification: Reopen/partition/pause tests, 589 Python tests, 48 browser adapter tests, real terminal and browser sealed-bundle dwell, mobile-width rendering, and the deployment closure all pass.
+- Status: Fixed after independent post-proof review.
+
+### Strict authored-position validation rejected the shipped semantic placement hints
+- Symptom: Final real-terminal proof authenticated and decrypted `sealed_demo.lateletter`, then displayed `Could not unlock this bundle.` because materialization rejected the documented `near_tallest_tree` hint on `demo-bench`. The same program also uses `near_bench` and `by_edge`.
+- Impact: Unit fixtures using only numeric or `random` positions passed while the normal production bundle failed after correct authentication.
+- Resolution: Added deterministic relative resolution for `near_tallest_tree`, `near_bench`, `by_edge`, and `path`; every candidate passes the same bounds, footprint, occupancy, and reachability checks in Python and JavaScript. Unknown hints still reject instead of degrading to random placement.
+- Verification: The normal sealed demo materialized successfully in the real terminal; a cross-runtime acceptance vector now covers bench/keepsake/rabbit semantic hints and compares exact canonical world bytes and receipts.
+- Status: Fixed after live multimodal proof exposed the regression.
+
+### Authenticated browser letter delivery throws before its animation can run
+- Symptom: Multimodal proof against the freshly sealed normal demo bundle decrypts and renders the exact letter, but `openLetter()` calls `_playDelivery()`, which references `_LETTERBIRD_FRAMES`; that symbol is not defined in the production viewer. The browser logs `ReferenceError: _LETTERBIRD_FRAMES is not defined` at `viewer-bnw.html:1157`.
+- Impact: The recipient reaches the letter only because later rendering continues; the intended authored delivery choreography crashes, browser QA is not clean, and the current production-path proof fails.
+- Required fix: Restore one defined canonical delivery-frame source (or remove the stale reference), cover both bonded-animal and letterbird delivery branches, and rerun authenticated wrong-pass/correct-pass/letter-open proof with an empty browser error log.
+- Acceptance: A normal sealed bundle opens its exact decrypted letter, both delivery branches complete without exceptions, and focused browser plus live console verification remain clean.
+- Status: Fixed — delivery frames now come from the canonical atlas; first-click delivery resolves before display/read persistence, and the normal sealed browser flow rendered the exact letter without the former exception.
+
+### Terminal exposes and mutates the authenticated Garden world before authentication
+- Symptom: Independent security review confirmed that `run_recipient()` opens the bundle's persistent world immediately, renders it on every pre-auth frame, records a visit, and routes Garden commands while `authenticated` is false. A previously unlocked world contains plaintext authored names, personality notes, and journal descriptions.
+- Impact: A later unauthenticated terminal launch can inspect or alter content derived from the encrypted author program before the current bundle has passed HMAC/passphrase verification.
+- Required fix: Use a separate nonpersistent generic preview world before authentication; only after successful verification/decryption may the persistent bundle world be opened, reconciled, visited, rendered, and mutated.
+- Acceptance: Pre-auth launches never load or write the bundle world file and expose only generic preview semantics; correct authentication opens the exact existing persistent state; wrong authentication leaves it byte-identical.
+- Status: Fixed — pre-auth uses a fixed nonpersistent preview; wrong/corrupt attempts leave the authored world byte-identical, while successful authentication restores and visits it.
+
+### Browser and terminal disagree on the frozen v1 bundle-authentication KDF
+- Symptom: Python verifies a v1 bundle HMAC with the frozen legacy default auth profile, while the browser derives the HMAC key using the first message's per-message KDF parameters. A structurally valid v1 bundle with 700,000 message PBKDF2 iterations verifies and decrypts in Python but is rejected by HTML with the correct passphrase.
+- Impact: Valid legacy bundles are renderer-dependent and can become unreadable in the browser despite authenticating correctly in the canonical Python recipient.
+- Required fix: Make browser v1 HMAC verification use the same frozen legacy auth profile as Python; retain per-message parameters only for message decryption.
+- Acceptance: Shared v1 vectors with non-default message KDFs authenticate and decrypt exact content in both runtimes, while tampered HMACs still fail.
+- Status: Fixed — browser v1 authentication uses the same frozen 600,000-iteration legacy profile as Python; message KDFs remain message-only.
+
+### APPEND can erase an existing v2 authored Garden program
+- Symptom: The author workflow builds the replacement program from only the newly entered timeline; its merge path preserves authenticated v1 legacy gifts but does not decrypt and merge an existing v2 program before overwriting `bundle.garden_program`.
+- Impact: Adding a letter to a real v2 Chloe bundle can silently delete all earlier authored entities, animals, events, schedules, and world changes.
+- Required fix: Authenticate/decrypt the existing v2 program, perform an ID-safe semantic merge with the new timeline, validate the combined program against the final bundle, and seal only after the complete merge succeeds.
+- Acceptance: APPEND preserves canonical bytes for every unrelated prior program object/event and rejects collisions atomically without changing the target bundle.
+- Status: Fixed — APPEND decrypts and ID-safely merges the prior v2 program, deduplicates identical definitions, and atomically rejects semantic collisions.
+
+### `letter.present` records prose but does not make a letter deliverable
+- Symptom: The materializer converts `letter.present` only into a journal entry, while both recipients compute due letters solely from the message date and read receipt.
+- Impact: An author can seal a conditional or scheduled delivery promise that visibly executes in the journal but leaves the referenced future letter unavailable.
+- Required fix: Store one canonical presented-letter eligibility state and include it in both due computations without bypassing authentication, date semantics, or idempotency.
+- Acceptance: A future-dated letter remains sealed until its authored presentation event fires, then becomes readable in both renderers with the same trace and restart behavior.
+- Status: Fixed — `program_state.presented_letters` is canonical, sorted, persistent, and included in both recipients' due computation.
+
+### Author validation can seal dangling letter references
+- Symptom: Timeline validation uses every message ID in the author session before the APPEND target is selected, even though the target bundle receives only the current message; recipient parsing validates syntax but does not bind references to final bundle message IDs.
+- Impact: A valid-looking export can contain `letter.present` actions or letter conditions that point to messages absent from the delivered bundle.
+- Required fix: Bind and validate every letter reference against the final post-merge target bundle immediately before sealing, and reject dangling references atomically.
+- Acceptance: Fresh export and APPEND both reject absent letter IDs and accept only references resolvable in the actual output bundle.
+- Status: Fixed — final export binds letter and event references against the actual post-merge bundle before sealing.
+
+### `entity.reveal` can bypass the recipient-facing ethics scan
+- Symptom: Program ethics validation scans entity properties and selected narrative action families but omits `entity.reveal`; the materializer can render `entity.reveal.params.state` directly as a collectible description.
+- Impact: Manipulative, guilt-inducing, urgent, or coercive authored copy can pass export validation and surface to Chloe through a revealed object.
+- Required fix: Route every recipient-facing string through one exhaustive ethics validator, including nested reveal/transform state, labels, descriptions, journals, and schedule summaries.
+- Acceptance: Adversarial prose is rejected at parse/preview/export and cannot be surfaced by either materializer.
+- Status: Fixed — the recursive ethics scan covers all entity/animal/action recipient-facing fields, including nested reveal/transform state.
+
+### Missed-event summaries are discarded before either renderer can show them
+- Symptom: Python and browser schedule adapters reduce `ScheduleResult` to the latest occurrence ID and drop `summarized_missed`; `summarize_then_current` therefore behaves like plain next-visit delivery.
+- Impact: Long absences lose the authored humane summary and provide no evidence that missed recurrences were handled as specified.
+- Required fix: Persist a bounded canonical missed-event summary/fact and project the same recipient-facing result in both renderers without replaying every missed event.
+- Acceptance: 1/7/30/365-day vectors produce identical bounded summaries and current occurrences after restart in Python and browser.
+- Status: Fixed — applied summarized recurrences persist as bounded canonical records (128 records, 400 missed maximum) with matching Python/browser merge rules.
+
+### Canonical scene, fixture, and plant state changes are accepted but often invisible
+- Symptom: `scene.set` persists weather, palette, story time, ambience, and population, but renderers consume only limited sky/static object data; fixture authored state such as gate/lantern/refill and plant prune/rest state do not select distinct atlas/visual output.
+- Impact: Author programs and recipient care can succeed semantically while Chloe sees no corresponding world change, invalidating visual parity.
+- Required fix: Project every supported visible canonical state into renderer-neutral presentation tokens and make both renderers consume those tokens as their only visual owner.
+- Acceptance: Shared state vectors visibly differentiate every supported scene, fixture, and plant transition in terminal and HTML without renderer-local mutation.
+- Status: Fixed — canonical projection tokens now drive visible scene, plant, fixture, animal, journal, inventory, absence, and memorial output in both renderers.
+
+### Absence and memorial state are not fully rendered
+- Symptom: Browser projection carries absence summary and memorial data but the runtime summary/renderer omit them; terminal shows absence text but ignores the memorial.
+- Impact: Humane return and lasting post-completion behavior remain invisible or renderer-dependent, so acceptance Gates 13 and 14 cannot pass.
+- Required fix: Give both renderers the same canonical absence and memorial presentation, with bounded text and stable later-launch behavior.
+- Acceptance: Normal sealed 1/7/30/365-day returns and post-completion relaunches visibly match across HTML and terminal.
+- Status: Fixed — both renderers expose bounded absence summaries and the canonical lasting memorial on later launches.
+
+### Sky catalogs and opt-in controls do not produce renderer parity
+- Symptom: Browser embeds 12 stars while terminal loads a 24-star catalog; browser rough/manual location controls set `readerRegion`, but sky resolution ignores it unless `scene.sky_mode` is already `reader_live`, so an apparent opt-in can do nothing.
+- Impact: Identical authenticated state renders different skies, and privacy-preserving user consent does not reliably change the visible result.
+- Required fix: Share one versioned star catalog and make explicit rough/manual opt-in activate the reader sky mode without retaining precise location.
+- Acceptance: Trusted Alt/Az vectors and visible star sets match across renderers; opt-in changes the sky, forget restores fallback, and no precise coordinates persist.
+- Status: Fixed — both runtimes use the 24-star catalog; explicit coarse reader opt-in activates the local sky and forget restores fallback. Twelve trusted vectors and live browser activation/revocation passed.
+
+### Placement and movement controls are hard-coded or use the wrong camera origin
+- Symptom: Browser global placement always creates lavender at `(10,10)` and movement/transplant force a one-cell offset; terminal calculates "center" by adding half the viewport to a camera already treated as the view center.
+- Impact: Authors/recipients cannot meaningfully choose what or where to place, renderer inputs have different semantics, and terminal can place objects at the right/bottom edge instead of the visible center.
+- Required fix: Add renderer-neutral placement intents for catalog, target coordinate, move, rotate, and cancel/undo; derive all positions through the shared camera transform.
+- Acceptance: Equivalent pointer, touch, keyboard, and terminal commands place/move the same object at the same canonical coordinate and undo identically.
+- Status: Fixed — HTML captures catalog and x/y; terminal uses the canonical camera center; move/rotate/transplant/place remain reducer-validated and undoable.
+
+### Connected-fixture acceptance does not render or test complete footprints
+- Symptom: The release test asserts connected-mask key strings but never constructs and renders all masks; both renderers draw one anchor glyph for fixtures whose canonical footprints are 2x2 or 3x2.
+- Impact: Gate 5 can pass while connected paths/fences/pond edges and larger fixtures are clipped, disconnected, or misleading.
+- Required fix: Project/render every footprint cell with connected-edge masks and test all masks and rotations in both renderers.
+- Acceptance: Exhaustive connected-mask/footprint fixtures produce matching canonical cell maps and visible output in terminal and HTML.
+- Status: Fixed — projection and both renderers consume every fixture footprint cell and connected mask; exhaustive renderer/layout tests replace token-only assertions.
+
+### Standalone dwell has no live world loop
+- Symptom: The browser renderer `start()` is a no-op, terminal idle ticks are discarded, animal AI advances only after a semantic command or one offline reconciliation, and the browser's dwell button dispatches the same pause command as pause motion.
+- Impact: A recipient who simply stays in the Garden sees no deterministic routines, growth cadence, or authored choreography, so the promised ten-minute dwell loop does not exist.
+- Required fix: Add one authoritative bounded clock/tick owner that advances the canonical world identically in browser and terminal while respecting pause, reduced motion, replay, and persistence.
+- Acceptance: Deterministic two- and ten-minute real-session traces visibly advance routines/world state in both renderers and replay to identical semantic bytes.
+- Status: Fixed — Python/JS share deterministic fixed-boundary live advancement; browser visible-time and terminal idle/explicit dwell persist the same world while pause stops time.
+
+### Responsive browser hit testing assumes fixed cell dimensions
+- Symptom: Browser inverse hit testing hard-codes 8×15 pixel cells while responsive CSS changes line height and browser zoom can change effective glyph geometry.
+- Impact: Narrow, zoomed, and mobile layouts can select a different canonical cell than the one visibly touched or clicked.
+- Required fix: Measure the rendered cell geometry from the same layout owner used to paint the scene and feed those dimensions into the shared inverse camera transform.
+- Acceptance: 320/375 px, 200% zoom, pointer, and touch vectors select the exact visible target across pan/resize without fixed-size assumptions.
+- Status: Fixed — the browser measures the actual rendered cell width/line height before painting and inverse hit testing; responsive tests cover the measured geometry.
+
+### Fixtures have counters but not meaningful functional state
+- Symptom: Many fixture verbs only increment authored-state counters; animal context treats catalog affordances as available regardless of whether a gate is open, lantern is lit, birdbath is filled, or fixture is tended.
+- Impact: Fixture actions do not materially affect routines, access, world behavior, or presentation, so they are not functional systems.
+- Required fix: Define canonical fixture state machines, access/effect rules, renderer tokens, and animal dependencies for every promised functional fixture.
+- Acceptance: Each verb changes deterministic world behavior and visible state, persists, replays, and matches across renderers.
+- Status: Fixed — canonical fixture state machines change presentation and animal affordances instead of recording inert counters only.
+
+### Animal personality, bond tier, routine, and memory are not visibly expressed
+- Symptom: Projection contains intent, tier, personality, memory, and choreography, but both renderers mostly show one species glyph; only choreography lock changes capitalization.
+- Impact: Deterministic AI may run internally while recipients cannot observe varied bonding, personality, routines, or authored behavior.
+- Required fix: Add shared presentation states/atlas variants and equivalent semantic descriptions for tier, intent, routine, memory response, and choreography.
+- Acceptance: Four species across four tiers produce distinct, deterministic, accessible behavior in terminal and HTML with matching trace/state.
+- Status: Fixed — tier, intent, routine, personality influence, memory, needs, and choreography are projected into shared glyph/semantic states; four-species behavior tests pass.
+
+### Browser and terminal do not consume one authoritative atlas
+- Symptom: Browser duplicates fixture/plant/animal glyph maps instead of consuming the versioned atlas manifest; both renderers hard-code additional plant-organ glyphs and ignore many atlas states/profiles.
+- Impact: Glyph families, bloom/fixture/animal states, portability fallbacks, and animation variants can silently diverge.
+- Required fix: Generate or load both renderer profiles from one versioned grapheme-aware atlas and reject unsupported versions before rendering.
+- Acceptance: Exhaustive atlas/profile vectors produce the declared Unicode/ASCII fallback in both runtimes with no duplicate glyph authority.
+- Status: Fixed — `atlas.v1.json` is the single glyph/tier/organ/delivery authority imported directly by browser and Python helpers.
+
+### Accessible Garden text omits state needed for equivalent play
+- Symptom: Browser raster rows are hidden from assistive technology while its accessible summary/object labels omit positions, condition, fixture state, animal intent, memorial, and absence; terminal journal exposes only a count and no inventory contents.
+- Impact: Nonvisual recipients cannot understand or operate the same Garden state, and journal/inventory parity is incomplete.
+- Required fix: Project one renderer-neutral semantic scene description with positions, state, actions, journal, inventory, absence, and memorial, then expose it through both modalities.
+- Acceptance: Keyboard/screen-reader and terminal sessions can locate, understand, act on, and verify the same objects and state without relying on color or raster glyphs.
+- Status: Fixed at implementation level — every browser object control now names position and canonical state, with journal/inventory/absence/memorial summaries; required VoiceOver/NVDA/no-color/200% human QA remains Gate 12 PARTIAL.
+
+### Release gate automation ratifies desired verdicts instead of deriving them
+- Symptom: Connected rendering, ten-minute camera/dwell, performance, and accessibility tests use token checks or direct state replacement; the release test then hard-codes gates 4, 5, 9, and 13 as PASS.
+- Impact: Prototype/static evidence can turn an invalid matrix green without exercising reducer input, responsive hit testing, live frame pacing, complete rendering, or assistive behavior.
+- Required fix: Derive machine-verifiable gate results from executable production-path evidence and leave human gates explicitly unaccepted until signed off.
+- Acceptance: Removing or breaking a required production behavior makes the corresponding gate fail without editing the expected verdict list.
+- Status: Fixed — behavioral footprint/dwell/hit-test/sky tests replace proxies, PASS rows link executable checks, and the matrix test no longer hard-codes a desired PASS set. Human/profiling gates remain non-PASS.
+
+### Published QA documents name an obsolete demo passphrase
+- Symptom: Garden parity/QA records still say `garden` although the fresh production demo authenticates with `garden-biscuit-2026`.
+- Impact: Recorded terminal/browser QA cannot be reproduced as written.
+- Required fix: Update every public demo instruction/evidence record after final bundle regeneration and verify exact paths/passphrase from a clean state.
+- Acceptance: README, parity table, QA record, and both tracked bundles agree and unlock in live proof.
+- Status: Fixed — README, parity, QA, and tracked synthetic bundles use `garden-biscuit-2026`.
+
+### Authored coordinates can violate bounds, occupancy, and reachability
+- Symptom: Explicit non-fixture positions bypass occupancy/reachability checks, and `animal.set_destination` directly replaces position without bounds, collision, or route validation.
+- Impact: A valid sealed program can trap or hide an authored object/animal even while Gate 5 reports PASS.
+- Required fix: Route every authored placement/destination through the authoritative layout validator and reject the entire program transaction if no valid reachable placement exists.
+- Acceptance: Adversarial out-of-bounds, occupied, blocked, and unreachable vectors fail identically in preview, Python, and browser without partial effects.
+- Status: Fixed — explicit coordinates and documented semantic hints pass bounds, footprint, occupancy, and reachability validation in both materializers; unsafe/unknown values reject atomically.
+
+### Author preview interprets local wall time as UTC
+- Symptom: The author workflow asks for a local preview time and then attaches UTC directly instead of resolving it through `timeline.author_timezone` and its DST policy.
+- Impact: Conditions/schedules can preview at a different instant than the delivered recipient runtime for every non-UTC author zone.
+- Required fix: Parse local preview time in the author timezone with explicit gap/fold handling, then convert to UTC using the same schedule rules as production.
+- Acceptance: Cross-zone and DST-boundary preview vectors match evaluator/runtime occurrence IDs exactly.
+- Status: Fixed — preview resolves the author IANA zone with explicit DST gap/fold policy before UTC evaluation.
+
+### The sole branch is named `master`, not the required `main`
+- Symptom: The repository has one worktree and no feature branches, but its only local/default remote branch is still named `master`.
+- Impact: The final repository shape does not literally satisfy the operator's explicit “only main” requirement.
+- Required fix: After all scoped fixes are committed, rename the sole branch to `main`, update the GitHub default branch and affected workflow/document references, push it, then delete remote `master` only after verifying `main` contains the exact valuable history.
+- Acceptance: One worktree; exactly one local and remote branch named `main`; no dangling non-main branch or lost commit; protected rules and Pages/CI target the new default.
+- Status: Open — confirmed by independent final review; deferred until the implementation commits are complete.
+
+### Security boundaries fail for sealed and previously unlocked content
+- Symptom: The browser executes a mutable CDN module that receives decrypted letter text; the terminal treats any v1 bundle without an HMAC as a trusted development fixture; v2 authentication KDF iteration counts are accepted without safe bounds; and the browser reloads plaintext authored world/journal state before the bundle is reauthenticated.
+- Impact: A compromised dependency can observe private letters, forged unsigned bundles can bypass passphrase authentication, malicious KDF parameters can freeze unlock or weaken derivation, and encrypted author prose can be disclosed or mutated before authentication on a later visit.
+- Required fix: Remove production remote-code execution, require an explicit trusted-fixture capability rather than inferring it from bundle fields, validate all KDF parameters before derivation and sealing, and keep authored plaintext encrypted or inaccessible until the current bundle has authenticated.
+- Acceptance: Offline/CSP browser operation; forged unsigned-bundle rejection; minimum/maximum KDF tests; and reload, corrupted-same-ID, and pre-auth redaction tests in both recipients.
+- Status: Fixed — authenticated persistence is isolated pre-auth, crypto bounds match, and the normal sealed demo passed wrong/correct-pass multimodal verification.
+
+### Browser Garden loses commands and does not provide real modality or accessibility parity
+- Symptom: Concurrent UI actions derive the same command sequence and one accepted action overwrites the other; visible controls hard-code `mouse` or `touch` regardless of activation source; focused buttons suppress advertised Garden keyboard bindings; the HUD letter control measures 42×21 px; reduced-motion leaves the continuous JavaScript loop running; and the memory dialog lacks naming, containment, and focus restoration.
+- Impact: Double-click/multitouch interactions lose state, traces misrepresent input modalities, keyboard-only operation is incomplete, and the published UI fails target-size, motion, and modal accessibility requirements.
+- Required fix: Serialize the canonical runtime mutation path, resolve modality from real events without creating modality-owned state, make keyboard commands reachable while controls are focused, size every production control, stop ambient motion for reduced-motion users, and implement a correctly named modal with inert background/focus restoration.
+- Acceptance: Concurrent dispatch regression, live DOM mouse/touch/keyboard conformance, 320 px and 200% target measurements, reduced-motion execution test, and keyboard/screen-reader modal test.
+- Status: Fixed at implementation level — commands serialize through the runtime queue, modalities derive from real events, measured hit tests and semantic controls are present; physical all-action and assistive QA remain Gates 2/12.
+
+### Author programs can validate and seal effects that crash, disappear, or do nothing
+- Symptom: Unknown animal species pass author validation and are permanently receipted without an animal; invalid schedules and actions missing required parameters pass parsing but can block correct-passphrase unlock; cooldowns are accepted but ignored; authored animal names and prose personality are discarded; and `scene.set` records only a journal sentence without changing palette, weather, or sky.
+- Impact: An author can preview, seal, and deliver a valid-looking Chloe bundle whose promised animal, timing, or world change is absent, misnamed, repeatedly triggered, or prevents all letters from opening.
+- Required fix: Make author validation use the runtime catalogs and authoritative schedule/action parsers, fail atomically before sealing, enforce cooldowns identically, preserve authored animal identity/personality, and give scene actions canonical world-state effects consumed by both renderers.
+- Acceptance: End-to-end no-JSON author tests for every action family, invalid-input export rejection, cooldown/restart vectors, and exact authored name/personality/scene assertions in terminal and HTML.
+- Status: Fixed — final-bundle bindings, APPEND merge, exhaustive ethics, missed summaries, presented letters, placement validation, and cross-runtime materialization are covered.
+
+### Canonical Garden systems diverge or remain prototype-only in production
+- Symptom: Python and JavaScript produce different valid weekly/month-end schedules; atlas fixtures can silently materialize as collectibles; projected fixture `tend` actions are rejected by the reducer; deterministic animal decision/step functions have no production caller; and tending/offline time increases plant counters without growing persistent topology.
+- Impact: Terminal and HTML can disagree about when authored events happen, valid author assets change type, visible actions fail, animals remain idle, and plant care has no meaningful persistent growth response. Gate 4 and Gate 9 PASS claims and several parity rows are therefore invalid.
+- Required fix: Share exhaustive schedule vectors and identical algorithms, reconcile atlas/runtime catalogs, implement every projected fixture action, advance animal AI from the authoritative clock/session owner, and grow topology deterministically from care and bounded offline milestones.
+- Acceptance: Cross-runtime schedule/atlas/action/AI/topology replay with byte-identical semantic state, plus visible normal-bundle verification in both renderers.
+- Status: Fixed at objective implementation level — deterministic live world, growth, fixtures, animals, author programming, shared camera/atlas/sky, absence, replay, and semantic accessibility are active; human/performance gates remain explicit.
+
+### Browser and terminal rendering do not yet consume the canonical world as their sole visual owner
+- Symptom: The browser still runs a legacy `GardenVisualState` that regenerates plants, collisions, stars, animation, and screen-cell hit tests independently of the canonical world; the canonical projection is exposed mainly through the object list. The terminal renderer collapses canonical plants, atlas assets, and topology into fixed symbols.
+- Impact: Exact semantic state can match while the recipient sees different plants, animals, fixtures, sky, camera behavior, or hit targets. The current “one authoritative world” parity claim is therefore not visually true.
+- Required fix: Delete the legacy visual owner before adding its replacement. Render both channels exclusively from canonical scene objects, topology, atlas frames, camera/depth transforms, sky projection, and clock state; all hit tests must invert the same canonical transform.
+- Acceptance: Same sealed bundle/state produces the same stable objects, authored scene changes, animal decisions, topology, connected masks, and event trace in browser and terminal; screenshot/profile differences are presentation-only.
+- Status: Fixed — the legacy visual owner was removed and both renderers now paint only canonical projection/topology/atlas/camera/sky state.
+
+### Release matrix falsely passes layout, temporal, and absence gates
+- Symptom: Layout safety ignores trapped plants and fixtures and does not prove connected masks render; exclusivity claims persist across later visits, evaluation does not reach dependent events to a fixed point, and duration/examined facts have dead runtime paths; offline summaries are stored but never shown and authored guilt/urgency prose is unrestricted.
+- Impact: Gates 5, 9, and 13 can report PASS while interactables are unreachable, later events are permanently blocked, dependent authored arcs do not execute, and absence/ethics behavior is invisible or unsafe.
+- Required fix: Validate reachability for every interactable; scope exclusivity to one deterministic evaluation transaction and iterate dependent events safely; supply real elapsed/examined facts; surface bounded absence summaries; and validate/prohibit manipulative authored copy across every narrative surface.
+- Acceptance: Adversarial trapped-layout vectors, multi-visit exclusivity, dependent-event fixed-point traces, elapsed/examined runtime tests, and sealed 1/7/30/365-day humane return flows in both renderers.
+- Status: Fixed — layout, connected footprints, temporal fixed point/missed summaries, visible absence, and ethics tests now exercise production owners; the matrix records remaining PARTIAL/BLOCKED gates honestly.
+
+### Standalone and post-completion Garden are not implementation-ready for human acceptance
+- Symptom: Dwell is only motion pause; visible tending is water-only; placement/movement use hardcoded objects and coordinates; direct fixture verbs collapse to inspect; animal tier behavior is not visibly distinct; and the memorial/post-completion state is browser-only legacy presentation rather than canonical persistent state.
+- Impact: Gates 3 and 14 are not merely awaiting human sign-off—the promised glance/tend/dwell, functional-garden, bonded-animal, and lasting memorial experiences are not present to observe.
+- Required fix: Complete discoverable care verbs, semantic placement/movement/rotation, fixture functions, four-species/four-tier behavior, canonical memorial state, later-launch post-completion, and recipient-facing return summaries before requesting human review.
+- Acceptance: A normal sealed production bundle supports useful glance, two-minute tend, ten-minute dwell, three-return authored arc, full bond/gift, absence return, and post-completion memorial through touch, mouse, keyboard, and terminal.
+- Status: Implementation-ready for human review — standalone glance/tend/dwell, complete care/placement/fixtures, four-species tiers, memorial, and normal sealed authored arcs now run; Gates 3 and 14 remain BLOCKED until direct human sign-off.
+
+### Archive tags preserved disconnected pre-recreation histories after branch cleanup
+- Symptom: Although `master` was the only local and remote branch, `archive/garden-leaf-tip-20260426` and `archive/review-base-20260418` existed as both local and GitHub tags. Git graph tools could therefore display multiple historical lines, and GitHub still exposed refs to the pre-recreation commits.
+- Impact: The repository did not satisfy the intended single clean-history surface; the archive tags also retained the old attribution/history that the repository recreation was meant to disconnect.
+- Verification before removal: The garden feature tip `eea5a4a` had already been fast-forward merged into old master and its implementation is present in current `master`. `review-base` pointed to `408baaf`, the same commit as master at checkout, and had no unique commit.
+- Resolution: Delete only those two archive tags locally and from GitHub, while retaining the current `master` tree and its carried-forward garden implementation.
+- Status: Fixed; both archive tags were deleted locally and from GitHub, leaving only `master` as a branch and no tags.
+
 ### Published browser garden exposes no usable garden-feature loop
 - Symptom: The live sealed demo and public letter open into an animated garden, but a normal recipient can only open the letter archive. The production HUD exposes only `open letters` / `letters`; clicking plants creates cosmetic particles; feeding exists only as the undiscoverable physical `f` key and only after an animal gift has triggered; the source comment mentioning `i · examine` has no production key handler or visible button; and the remaining gift, visit, reaction, season, and post-completion controls are gated to dev fixtures.
 - Production evidence: `sealed_demo.lateletter`, `public_letters/to-a-friend.lateletter`, and their tracked synthetic source all contain `garden_gifts: []`. Consequently the published paths cannot trigger an animal, feeding/trust progression, gift discovery, nudges, memory examination, or gift-driven return visits. There is no touch equivalent for feeding, so mobile recipients have even less access.
@@ -11,6 +536,9 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 - Documentation contradiction: `docs/GARDEN_PARITY.md` labels triggered items, memories, animal trust, and post-completion behavior as full contracts based on code paths and fixture capabilities, but the currently published production bundles and controls do not make those features reachable. Those rows are proxy implementation evidence, not proof of production usability.
 - Required direction: Publish synthetic gifts that exercise the intended loop, expose visible mouse/touch/keyboard controls for core recipient actions, wire a real examine/memories path, and verify the complete flow against the live sealed URL rather than only a dev fixture.
 - Fix attempt 1 (started 2026-07-21): The intended owner is the authenticated recipient garden HUD, with keyboard shortcuts and pointer/touch buttons delegating to the same feed/examine actions. The stale owners are the keyboard-only `f` branch and archive-only memory buttons. The intervention will add visible shared actions, include animal memories in the terminal archive, and publish only synthetic gifts in the demo bundles. Falsifier: any core gift action remains fixture-only, keyboard-only in HTML, absent from the terminal archive, or unreachable from the published sealed demo after a clean recipient-state run. Acceptance requires exact decrypted letter and gift text, wrong-passphrase and checksum rejection, desktop keyboard/pointer operation, a mobile-width touch path, terminal parity, and canonical checksum/HMAC verification.
+- Research/specification record (2026-07-21): Four research lanes covered cozy/idle mechanics, author narrative and temporal control, deterministic animal bonding AI, Unicode/ASCII atlas constraints, stable procedural plant growth, authored fixtures, parallax, and location-aware astronomy. `docs/SPEC.md` §7.8 now defines one authoritative world model, semantic input parity, standalone glance/tend/dwell loops, humane absence behavior, collections/journal, functional fixture and plant minimums, an encrypted author event program with preview/validation, hybrid animal AI, a versioned grapheme-aware atlas, accurate opt-in sky modes, and production acceptance gates.
+- Research result: The specification gap is addressed, and the previous “full parity” language is explicitly demoted to proxy implementation evidence. Runtime changes visible concurrently in the shared worktree were not evaluated or claimed by this research task.
+- Falsifier / remaining contradiction: The issue stays open until a normal sealed production bundle exposes the full loop through touch, mouse, keyboard, and terminal controls and passes the deterministic, accessibility, absence, sky, performance, and human-observation gates in §7.8.13.
 - Fix attempt 1 runtime result (2026-07-21): Implemented one authenticated HTML garden-action owner used by visible pointer/touch buttons and the `i`/`f` shortcuts; added compact terminal action discoverability without the animal nudge hiding `i`, `e`, or `l`; made terminal archives and memory selection include every triggered gift with authored animal names; aligned post-completion all-gift release; and regenerated both tracked production artifacts from the canonical synthetic source with a visit-triggered rabbit, date-triggered coffee mug, and post-letter pressed flower. The exact fictional sentiments decrypt in both channels.
 - Fix attempt 1 verification: Canonical checksum and HMAC verification passed for both generated artifacts. Interactive terminal QA at 80×24 opened the exact letter, Clover memory, coffee-mug memory, and post-letter pressed flower. Interactive HTML QA passed mouse and keyboard actions with no console errors. Safari responsive mode at 375×812 exposed tappable feed/examine buttons; tapping feed advanced trust and tapping examine opened the exact decrypted memory. Focused automated recipient, sealing, demo, and browser-contract coverage passed.
 - Fix attempt 1 boundary: The bounded published-demo reachability defect is fixed in repository artifacts, but the live URL remains old until protected-default-branch merge and Pages deployment. The broader standalone-game and authored-world requirements remain unimplemented, so this umbrella entry cannot close.
@@ -491,7 +1019,7 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 - Symptom: Beyond plant click (leaf burst) and rustle-on-hover, the garden has no other discoverable interactions. Recipients exploring the space find nothing new after the first click.
 - Impact: Garden feels static after initial discovery; no reason to return and explore. Undermines the "living space" intent.
 - Fix planned: Plan additional interaction layer (see dev tool plan in SPEC §13.1).
-- Status: Open — confirmed on 2026-07-21 as a production reachability failure; see “Published browser garden exposes no usable garden-feature loop” above
+- Status: Fixed in the tracked release artifact — authenticated semantic controls now expose inspect, collect, place/move/rotate/undo, plant care, fixture actions, feed/play, journal, pan, pause, and dwell through the canonical world reducer. The broader umbrella entry and §7.8.13 Gates 1–3/6/10/12/14 remain open where publication or mandatory human evidence is still outstanding.
 
 ### Dev fixture shows no animal by default — hard to test animal system
 - Symptom: In dev fixture mode, animals are only visible if the bundle has a garden_gift of type 'animal' with a satisfied trigger. Most test bundles don't have this, so the entire animal system is invisible during dev.

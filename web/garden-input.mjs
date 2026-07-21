@@ -32,11 +32,23 @@ const INTENT_FIELDS = Object.freeze({
   terminal: 'command',
 });
 
+/** Python-compatible Unicode scalar ordering for canonical JSON keys. */
+export function compareUnicodeScalars(leftValue, rightValue) {
+  const left = Array.from(String(leftValue), character => character.codePointAt(0));
+  const right = Array.from(String(rightValue), character => character.codePointAt(0));
+  const count = Math.min(left.length, right.length);
+  for (let index = 0; index < count; index += 1) {
+    if (left[index] !== right[index]) return left[index] < right[index] ? -1 : 1;
+  }
+  return left.length === right.length ? 0 : left.length < right.length ? -1 : 1;
+}
+
 function canonicalValue(value) {
   if (Array.isArray(value)) return value.map(canonicalValue);
   if (value !== null && typeof value === 'object') {
     return Object.fromEntries(
-      Object.keys(value).sort().map(key => [key, canonicalValue(value[key])]),
+      Object.keys(value).sort(compareUnicodeScalars)
+        .map(key => [key, canonicalValue(value[key])]),
     );
   }
   return value;

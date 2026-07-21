@@ -11,6 +11,11 @@ from typing import Any, Iterable, Mapping
 
 WORLD_SCHEMA_VERSION = 1
 ENGINE_VERSION = "garden-world-internal-v1"
+PROCESSED_COMMAND_LIMIT = 512
+EVENT_TRACE_LIMIT = 512
+LIVE_TRACE_LIMIT = 120
+UNDO_STACK_LIMIT = 128
+MILESTONE_RECEIPT_LIMIT = 512
 
 
 def _canonical_value(value: Any) -> Any:
@@ -42,6 +47,24 @@ def stable_id(namespace: str, *parts: Any) -> str:
         canonical_json_bytes([namespace, *parts])
     ).hexdigest()[:24]
     return f"{namespace}:{digest}"
+
+
+def compact_recent_strings(values: Iterable[str], limit: int) -> tuple[str, ...]:
+    """Keep a bounded insertion-ordered idempotency window.
+
+    Sorting receipt IDs destroys recency and makes a bounded ledger unable to
+    retain the entries most likely to be replayed.  Remove an older duplicate
+    in favour of its newest occurrence, then retain the newest fixed window.
+    """
+    bounded_limit = max(0, int(limit))
+    if bounded_limit == 0:
+        return ()
+    recent: dict[str, None] = {}
+    for value in values:
+        item = str(value)
+        recent.pop(item, None)
+        recent[item] = None
+    return tuple(recent)[-bounded_limit:]
 
 
 @dataclass(frozen=True, order=True)
@@ -479,6 +502,19 @@ class TraceEntry:
         )
 
 
+def compact_event_trace(entries: Iterable[TraceEntry]) -> tuple[TraceEntry, ...]:
+    """Bound diagnostics while retaining the newest command/program history."""
+    values = tuple(entries)
+    live_indexes = [
+        index for index, entry in enumerate(values) if entry.kind == "live_tick"
+    ]
+    discarded = set(live_indexes[:-LIVE_TRACE_LIMIT])
+    bounded_live = tuple(
+        entry for index, entry in enumerate(values) if index not in discarded
+    )
+    return bounded_live[-EVENT_TRACE_LIMIT:]
+
+
 @dataclass(frozen=True)
 class WorldState:
     world_id: str
@@ -530,7 +566,9 @@ class WorldState:
             "journal": [item.to_dict() for item in sorted(self.journal, key=lambda x: x.entry_id)],
             "ui": self.ui.to_dict(),
             "undo_stack": [item.to_dict() for item in self.undo_stack],
-            "milestone_receipts": sorted(set(self.milestone_receipts)),
+            "milestone_receipts": list(compact_recent_strings(
+                self.milestone_receipts, MILESTONE_RECEIPT_LIMIT,
+            )),
             "program_state": _canonical_value(self.program_state),
             "processed_commands": list(self.processed_commands),
             "event_trace": [item.to_dict() for item in self.event_trace],
@@ -561,11 +599,20 @@ class WorldState:
             inventory=tuple(str(item) for item in data.get("inventory", [])),
             journal=tuple(JournalEntry.from_dict(item) for item in data.get("journal", [])),
             ui=UIState.from_dict(data.get("ui", {})),
-            undo_stack=tuple(UndoRecord.from_dict(item) for item in data.get("undo_stack", [])),
-            milestone_receipts=tuple(str(item) for item in data.get("milestone_receipts", [])),
+            undo_stack=tuple(
+                UndoRecord.from_dict(item) for item in data.get("undo_stack", [])
+            )[-UNDO_STACK_LIMIT:],
+            milestone_receipts=compact_recent_strings(
+                (str(item) for item in data.get("milestone_receipts", [])),
+                MILESTONE_RECEIPT_LIMIT,
+            ),
             program_state=deepcopy(dict(data.get("program_state", {}))),
-            processed_commands=tuple(str(item) for item in data.get("processed_commands", [])),
-            event_trace=tuple(TraceEntry.from_dict(item) for item in data.get("event_trace", [])),
+            processed_commands=tuple(
+                str(item) for item in data.get("processed_commands", [])
+            )[-PROCESSED_COMMAND_LIMIT:],
+            event_trace=compact_event_trace(
+                TraceEntry.from_dict(item) for item in data.get("event_trace", [])
+            ),
         )
 
 

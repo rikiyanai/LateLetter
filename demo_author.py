@@ -238,7 +238,7 @@ def run_demo(out_path: Path, quiet: bool) -> None:
             {
                 "id": "demo-hedge", "kind": "fixture",
                 "catalog_id": "fixture.fence",
-                "initial_state": {"revealed": True}, "placement": "garden_edge",
+                "initial_state": {"revealed": True}, "placement": "by_edge",
             },
             {
                 "id": "demo-bench", "kind": "fixture",

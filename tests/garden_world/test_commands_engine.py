@@ -3,7 +3,12 @@ from __future__ import annotations
 from dataclasses import replace
 
 from lateletter.garden.world.commands import CommandKind, command
-from lateletter.garden.world.engine import dispatch
+from lateletter.garden.world.engine import advance_live_world, dispatch
+from lateletter.garden.world.clock import reconcile_offline
+from lateletter.garden.world.fixtures import fixture_active_affordances, fixture_presentation_state
+from lateletter.garden.world.model import (
+    EVENT_TRACE_LIMIT, PROCESSED_COMMAND_LIMIT, UNDO_STACK_LIMIT,
+)
 from lateletter.garden.world.plants import create_plant, visible_organs
 
 
@@ -38,6 +43,56 @@ def test_command_vocabulary_is_exact_and_complete():
         "pause_motion",
         "back",
     }
+
+
+def test_live_dwell_is_partition_deterministic_and_pause_is_authoritative(world):
+    observed = replace(world, last_observed_wall_time=1_000)
+    one_call = advance_live_world(observed, 600)
+    partitioned = observed
+    for _ in range(120):
+        partitioned = advance_live_world(partitioned, 5)
+    assert one_call.canonical_bytes() == partitioned.canonical_bytes()
+    assert one_call.effective_time == observed.effective_time + 600
+    assert one_call.last_observed_wall_time == 1_600
+    reopened, report = reconcile_offline(one_call, 1_600)
+    assert reopened.canonical_bytes() == one_call.canonical_bytes()
+    assert report.elapsed_seconds == 0
+    assert any(entry.kind == "live_tick" for entry in one_call.event_trace)
+    assert len([entry for entry in advance_live_world(observed, 3_600).event_trace
+                if entry.kind == "live_tick"]) == 120
+    paused = replace(observed, ui=replace(observed.ui, motion_paused=True))
+    paused_advanced = advance_live_world(paused, 600)
+    assert paused_advanced.effective_time == paused.effective_time
+    assert paused_advanced.last_observed_wall_time == 1_600
+    resumed = replace(
+        paused_advanced, ui=replace(paused_advanced.ui, motion_paused=False),
+    )
+    reopened_paused, paused_report = reconcile_offline(resumed, 1_600)
+    assert reopened_paused.effective_time == paused.effective_time
+    assert reopened_paused.last_observed_wall_time == 1_600
+    assert paused_report.elapsed_seconds == 0
+
+
+def test_command_idempotency_trace_and_undo_windows_are_bounded(world):
+    state = world
+    recent = None
+    for sequence in range(1, 701):
+        x = 7 if sequence % 2 else 8
+        recent = command(
+            state.world_id, sequence, "move_fixture", target_id="fixture:bench",
+            args={"x": x, "y": 5},
+        )
+        state, result = dispatch(state, recent)
+        assert result.accepted, result.reason
+    assert len(state.processed_commands) == PROCESSED_COMMAND_LIMIT
+    assert len(state.event_trace) == EVENT_TRACE_LIMIT
+    assert len(state.undo_stack) == UNDO_STACK_LIMIT
+    restored = type(state).from_dict(state.to_dict())
+    assert restored.canonical_bytes() == state.canonical_bytes()
+    assert recent is not None
+    duplicate, result = dispatch(restored, recent)
+    assert result.accepted and not result.changed
+    assert duplicate.canonical_bytes() == restored.canonical_bytes()
 
 
 def test_all_fifteen_commands_have_real_state_behavior(world):
@@ -218,3 +273,17 @@ def test_fixture_catalog_verbs_change_fixture_state(world):
     assert fixture.last_interaction == "sit"
     assert fixture.authored_state["sit_count"] == 1
     assert "sit" in result.summary.lower()
+
+
+def test_fixture_state_machine_controls_visible_state_and_animal_affordances(world):
+    birdbath = replace(world.fixtures[0], fixture_id="fixture:birdbath", catalog_id="birdbath")
+    state = replace(world, fixtures=(birdbath,))
+    assert fixture_presentation_state(birdbath) == "empty"
+    assert "bathe" not in fixture_active_affordances(birdbath)
+    state, _, _ = apply(
+        state, "primary_interact", target="fixture:birdbath",
+        args={"fixture_action": "refill"},
+    )
+    filled = state.fixtures[0]
+    assert fixture_presentation_state(filled) == "full"
+    assert {"drink", "bathe"}.issubset(fixture_active_affordances(filled))

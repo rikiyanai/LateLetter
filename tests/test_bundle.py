@@ -201,6 +201,90 @@ class TestValidation:
         errors = validate_bundle_dict(b.to_dict())
         assert errors == []
 
+    def test_shared_unknown_field_vectors_reject_before_normalization(self):
+        from lateletter.bundle import validate_bundle_dict
+
+        vectors = json.loads(
+            (Path(__file__).parent / "fixtures" / "bundle_unknown_field_vectors.json")
+            .read_text(encoding="utf-8")
+        )
+        pbkdf2 = {"name": "PBKDF2", "hash": "SHA-256", "iterations": 600_000}
+        for vector in vectors:
+            data = create_dev_fixture().to_dict()
+            data["messages"][0]["kdf_params"] = dict(pbkdf2)
+            if vector["version"] == 2:
+                data.update({
+                    "version": 2,
+                    "bundle_auth_kdf_params": dict(pbkdf2),
+                    "garden_gifts": [],
+                    "garden_program": {
+                        "version": 1,
+                        "ciphertext": "MDEyMzQ1Njc4OWFiY2RlZg==",
+                        "salt": "MDEyMzQ1Njc4OWFiY2RlZg==",
+                        "nonce": "MDEyMzQ1Njc4OWFi",
+                        "kdf_params": dict(pbkdf2),
+                    },
+                })
+            target = data
+            for part in vector["path"]:
+                target = target[part]
+            target["future_extension"] = True
+            errors = validate_bundle_dict(data)
+            assert any("unknown fields" in error for error in errors), vector["name"]
+
+    def test_shared_browser_python_schema_rejection_vectors(self):
+        from lateletter.bundle import validate_bundle_dict
+
+        vectors = json.loads(
+            (Path(__file__).parent / "fixtures" / "bundle_schema_rejection_vectors.json")
+            .read_text(encoding="utf-8")
+        )
+        pbkdf2 = {"name": "PBKDF2", "hash": "SHA-256", "iterations": 600_000}
+        block = "MDEyMzQ1Njc4OWFiY2RlZg=="
+        nonce = "MDEyMzQ1Njc4OWFi"
+
+        def message():
+            return {"id": "letter.one", "date": "2030-01-01", "ciphertext": block,
+                    "salt": block, "nonce": nonce, "kdf_params": dict(pbkdf2)}
+
+        def gift():
+            return {"id": "gift.one", "type": "item", "catalog_id": "plate_of_food",
+                    "sentiment_ciphertext": "", "salt": "", "nonce": "",
+                    "trigger": {"type": "post_letter", "value": "letter.one"},
+                    "placement_hint": "random", "animal_name": None,
+                    "animal_collar_color": None}
+
+        for vector in vectors:
+            raw = {"version": vector["version"], "bundle_id": "bundle-under-test",
+                   "author_name": "Demo", "passphrase_hint": None,
+                   "bundle_auth_salt": block, "garden_seed": 7,
+                   "messages": [message()],
+                   "garden_gifts": [] if vector["version"] == 2 else [gift()],
+                   "notification": None, "checksum": "", "hmac": "00"}
+            if vector["version"] == 2:
+                raw["bundle_auth_kdf_params"] = dict(pbkdf2)
+                raw["garden_program"] = {"version": 1, "ciphertext": block,
+                                         "salt": block, "nonce": nonce,
+                                         "kdf_params": dict(pbkdf2)}
+            mutation = vector["mutation"]
+            if mutation == "add_legacy_gift":
+                raw["garden_gifts"] = [gift()]
+            elif mutation == "boolean_seed":
+                raw["garden_seed"] = True
+            elif mutation == "remove_message_kdf":
+                del raw["messages"][0]["kdf_params"]
+            elif mutation == "remove_message_date":
+                del raw["messages"][0]["date"]
+            elif mutation == "remove_auth_kdf":
+                del raw["bundle_auth_kdf_params"]
+            elif mutation == "remove_program":
+                del raw["garden_program"]
+            elif mutation == "notification_array":
+                raw["notification"] = []
+            elif mutation == "unsupported_version":
+                raw["version"] = 99
+            assert validate_bundle_dict(raw), vector["name"]
+
     def test_missing_version(self):
         from lateletter.bundle import validate_bundle_dict
         errors = validate_bundle_dict({"bundle_id": "x"})
@@ -215,6 +299,22 @@ class TestValidation:
         from lateletter.bundle import validate_bundle_dict
         errors = validate_bundle_dict({"version": 1})
         assert any("bundle_id" in e for e in errors)
+
+    @pytest.mark.parametrize("bundle_id", [
+        "/tmp/lateletter", "../escape", ".hidden", "contains/slash",
+        "contains\\backslash", "space separated", "a" * 129,
+    ])
+    def test_bundle_id_must_be_a_bounded_path_safe_identifier(self, bundle_id):
+        from lateletter.bundle import validate_bundle_dict
+        errors = validate_bundle_dict({"version": 1, "bundle_id": bundle_id})
+        assert any("path-safe identifier" in error for error in errors)
+
+    @pytest.mark.parametrize("bundle_id", [
+        "x", "bundle-under_test.2", "550e8400-e29b-41d4-a716-446655440000",
+    ])
+    def test_bundle_id_accepts_supported_safe_identifiers(self, bundle_id):
+        from lateletter.bundle import validate_bundle_dict
+        assert validate_bundle_dict({"version": 1, "bundle_id": bundle_id}) == []
 
     def test_bad_messages_type(self):
         from lateletter.bundle import validate_bundle_dict
@@ -231,6 +331,17 @@ class TestValidation:
         })
         assert any("messages[0]" in e for e in errors)
 
+    def test_duplicate_message_ids_are_rejected(self):
+        from lateletter.bundle import validate_bundle_dict
+        errors = validate_bundle_dict({
+            "version": 1, "bundle_id": "x",
+            "messages": [
+                {"id": "letter.one", "date": "2028-01-01"},
+                {"id": "letter.one", "date": "2028-01-02"},
+            ],
+        })
+        assert any("messages[1].id duplicates 'letter.one'" in error for error in errors)
+
     def test_gift_missing_trigger(self):
         from lateletter.bundle import validate_bundle_dict
         errors = validate_bundle_dict({
@@ -238,6 +349,17 @@ class TestValidation:
             "garden_gifts": [{"id": "g1", "type": "item"}],
         })
         assert any("garden_gifts[0]" in e for e in errors)
+
+    def test_duplicate_gift_ids_are_rejected(self):
+        from lateletter.bundle import validate_bundle_dict
+        gift = {
+            "id": "gift.one", "type": "item", "catalog_id": "small_key",
+            "trigger": {"type": "date", "value": "2028-01-01"},
+        }
+        errors = validate_bundle_dict({
+            "version": 1, "bundle_id": "x", "garden_gifts": [gift, dict(gift)],
+        })
+        assert any("garden_gifts[1].id duplicates 'gift.one'" in error for error in errors)
 
     def test_bad_garden_seed_type(self):
         from lateletter.bundle import validate_bundle_dict

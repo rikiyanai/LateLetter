@@ -4,12 +4,20 @@ import test from 'node:test';
 
 import { canonicalJson, normalizeGardenInput } from '../../web/garden-input.mjs';
 import {
+  advanceGardenLive,
   canonicalWorldJson,
+  compareCodePoints,
   deserializeWorldState,
   dispatchGardenCommand,
   projectGardenScene,
   reconcileGardenOffline,
   serializeWorldState,
+  stepGardenAnimals,
+  EVENT_TRACE_LIMIT,
+  FIXTURE_VERBS,
+  MILESTONE_RECEIPT_LIMIT,
+  PROCESSED_COMMAND_LIMIT,
+  UNDO_STACK_LIMIT,
 } from '../../web/garden-world.mjs';
 
 
@@ -114,6 +122,111 @@ async function runAdvancedScenario() {
     offline: { state: serializeWorldState(offlineState), report: offlineReport } };
 }
 
+async function runStressScenario() {
+  let state = deserializeWorldState(scenario.initial_state);
+  for (let sequence = 1; sequence <= 700; sequence += 1) {
+    const value = await normalizeGardenInput({
+      modality: 'terminal', world_id: state.world_id, sequence,
+      command: 'move_fixture', target_id: 'fixture:bench',
+      args: { x: sequence % 2 ? 7 : 8, y: 5 }, metadata: {},
+    });
+    const [updated, result] = await dispatchGardenCommand(state, value);
+    assert.equal(result.accepted, true, result.reason);
+    state = updated;
+  }
+  const restored = deserializeWorldState(canonicalWorldJson(state));
+  return {
+    final_json: canonicalWorldJson(state),
+    restored_json: canonicalWorldJson(restored),
+    processed_count: state.processed_commands.length,
+    trace_count: state.event_trace.length,
+    undo_count: state.undo_stack.length,
+  };
+}
+
+async function runAnimalPlantConformanceVector(payload) {
+  const plantState = deserializeWorldState(payload.plant_state);
+  const stages = [];
+  for (const effectiveTime of payload.stage_times) {
+    plantState.effective_time = effectiveTime;
+    const projection = await projectGardenScene(plantState);
+    stages.push(projection.objects.find(item => item.object_id === payload.plant_id)
+      .semantic_state.visible_organs.find(item => item.node_id === payload.organ_id));
+  }
+  const animalState = deserializeWorldState(payload.animal_state);
+  await stepGardenAnimals(animalState);
+  const projection = await projectGardenScene(animalState);
+  const persisted = canonicalWorldJson(animalState);
+  const interruptedAnimalState = deserializeWorldState(payload.interrupted_animal_state);
+  const interruptedId = interruptedAnimalState.animals[0].animal_id;
+  const interruptedCommand = await normalizeGardenInput({
+    modality: 'browser_keyboard', world_id: interruptedAnimalState.world_id,
+    sequence: interruptedAnimalState.command_sequence + 1, binding: 'inspect',
+    target_id: interruptedId, args: {}, metadata: { source: 'conformance' },
+  });
+  const [interruptedUpdated, interruptedResult] = await dispatchGardenCommand(
+    interruptedAnimalState, interruptedCommand,
+  );
+  assert.equal(interruptedResult.accepted, true);
+  const interruptedProjection = await projectGardenScene(interruptedUpdated);
+  const interruptedPersisted = canonicalWorldJson(interruptedUpdated);
+  return {
+    stages,
+    animal_state: serializeWorldState(animalState),
+    animal_projection: projection,
+    restarted_projection: await projectGardenScene(deserializeWorldState(persisted)),
+    interrupted_animal_state: serializeWorldState(interruptedUpdated),
+    interrupted_animal_projection: interruptedProjection,
+    interrupted_restarted_projection: await projectGardenScene(
+      deserializeWorldState(interruptedPersisted),
+    ),
+  };
+}
+
+async function runFixtureScenario() {
+  const output = {};
+  for (const [catalogId, verbs] of Object.entries(FIXTURE_VERBS)) {
+    for (const verb of verbs) {
+      const state = deserializeWorldState(scenario.initial_state);
+      state.fixtures = [{
+        fixture_id: 'fixture:test', catalog_id: catalogId, position: [8, 5],
+        rotation: 0, authored: false, interaction_count: 0,
+        last_interaction: null,
+        authored_state: verb === 'water' ? { water_level: 3 } : {},
+      }];
+      if (verb === 'arrange') {
+        state.collectibles[0].collected = true;
+        state.inventory = [state.collectibles[0].collectible_id];
+      }
+      const value = await normalizeGardenInput({
+        modality: 'terminal', world_id: state.world_id, sequence: 1,
+        command: 'primary_interact', target_id: 'fixture:test',
+        args: { fixture_action: verb }, metadata: {},
+      });
+      const [updated, result] = await dispatchGardenCommand(state, value);
+      assert.equal(result.accepted, true, `${catalogId}:${verb}:${result.reason}`);
+      output[`${catalogId}:${verb}`] = canonicalWorldJson(updated);
+    }
+  }
+  return output;
+}
+
+async function runLedgerStressScenario() {
+  let state = deserializeWorldState(scenario.initial_state);
+  state.last_observed_wall_time = 0;
+  for (let day = 1; day <= 700; day += 1) {
+    [state] = await reconcileGardenOffline(state, day * 86400);
+  }
+  const restored = deserializeWorldState(canonicalWorldJson(state));
+  return {
+    final_json: canonicalWorldJson(state),
+    restored_json: canonicalWorldJson(restored),
+    receipt_count: state.milestone_receipts.length,
+    receipt_total: state.program_state.milestone_receipt_total,
+    offline_total: state.program_state.offline_reconciliation_total,
+  };
+}
+
 function assertFinalExpectations(state) {
   const expected = scenario.final_expectations;
   const plant = state.plants.find(item => item.plant_id === 'plant:rose');
@@ -141,7 +254,86 @@ if (process.argv.includes('--emit')) {
   process.stdout.write(JSON.stringify(await projectGardenScene(deserializeWorldState(scenario.initial_state))));
 } else if (process.argv.includes('--advanced-emit')) {
   process.stdout.write(JSON.stringify(await runAdvancedScenario()));
+} else if (process.argv.includes('--stress-emit')) {
+  process.stdout.write(JSON.stringify(await runStressScenario()));
+} else if (process.argv.includes('--fixture-emit')) {
+  process.stdout.write(JSON.stringify(await runFixtureScenario()));
+} else if (process.argv.includes('--ledger-stress-emit')) {
+  process.stdout.write(JSON.stringify(await runLedgerStressScenario()));
+} else if (process.argv.includes('--animal-plant-emit')) {
+  let input = '';
+  for await (const chunk of process.stdin) input += chunk;
+  process.stdout.write(JSON.stringify(
+    await runAnimalPlantConformanceVector(JSON.parse(input)),
+  ));
 } else {
+  test('canonical semantic tie-breaks use Python-compatible Unicode scalar order', () => {
+    assert.equal(compareCodePoints('a', 'b'), -1);
+    assert.equal(compareCodePoints('\u{10000}', '\uE000'), 1);
+    assert.equal(compareCodePoints('same', 'same'), 0);
+  });
+
+  test('live dwell is partition deterministic and canonical pause stops time', async () => {
+    const base = deserializeWorldState(scenario.initial_state);
+    base.last_observed_wall_time = 1000;
+    const oneCall = await advanceGardenLive(base, 600);
+    let partitioned = base;
+    for (let index = 0; index < 120; index += 1) partitioned = await advanceGardenLive(partitioned, 5);
+    assert.equal(canonicalWorldJson(oneCall), canonicalWorldJson(partitioned));
+    assert.equal(oneCall.effective_time, base.effective_time + 600);
+    assert.equal(oneCall.last_observed_wall_time, 1600);
+    const [reopened, report] = await reconcileGardenOffline(oneCall, 1600);
+    assert.equal(canonicalWorldJson(reopened), canonicalWorldJson(oneCall));
+    assert.equal(report.elapsed_seconds, 0);
+    assert.ok(oneCall.event_trace.some(entry => entry.kind === 'live_tick'));
+    const bounded = await advanceGardenLive(base, 3600);
+    assert.equal(bounded.event_trace.filter(entry => entry.kind === 'live_tick').length, 120);
+    const paused = deserializeWorldState(canonicalWorldJson(base));
+    paused.ui.motion_paused = true;
+    const pausedAdvanced = await advanceGardenLive(paused, 600);
+    assert.equal(pausedAdvanced.effective_time, paused.effective_time);
+    assert.equal(pausedAdvanced.last_observed_wall_time, 1600);
+    pausedAdvanced.ui.motion_paused = false;
+    const [reopenedPaused, pausedReport] = await reconcileGardenOffline(pausedAdvanced, 1600);
+    assert.equal(reopenedPaused.effective_time, paused.effective_time);
+    assert.equal(reopenedPaused.last_observed_wall_time, 1600);
+    assert.equal(pausedReport.elapsed_seconds, 0);
+  });
+
+  test('command idempotency trace and undo windows remain bounded after stress', async () => {
+    let state = deserializeWorldState(scenario.initial_state);
+    let recent = null;
+    for (let sequence = 1; sequence <= 700; sequence += 1) {
+      recent = await normalizeGardenInput({
+        modality: 'terminal', world_id: state.world_id, sequence,
+        command: 'move_fixture', target_id: 'fixture:bench',
+        args: { x: sequence % 2 ? 7 : 8, y: 5 }, metadata: {},
+      });
+      const [updated, result] = await dispatchGardenCommand(state, recent);
+      assert.equal(result.accepted, true, result.reason);
+      state = updated;
+    }
+    assert.equal(state.processed_commands.length, PROCESSED_COMMAND_LIMIT);
+    assert.equal(state.event_trace.length, EVENT_TRACE_LIMIT);
+    assert.equal(state.undo_stack.length, UNDO_STACK_LIMIT);
+    const restored = deserializeWorldState(canonicalWorldJson(state));
+    assert.equal(canonicalWorldJson(restored), canonicalWorldJson(state));
+    const [duplicate, result] = await dispatchGardenCommand(restored, recent);
+    assert.equal(result.accepted, true);
+    assert.equal(result.changed, false);
+    assert.equal(canonicalWorldJson(duplicate), canonicalWorldJson(restored));
+  });
+
+  test('milestone receipt serialization keeps the newest bounded window', () => {
+    const state = deserializeWorldState({
+      ...scenario.initial_state,
+      milestone_receipts: Array.from({ length: 700 }, (_, index) => `receipt:${index}`),
+    });
+    assert.equal(state.milestone_receipts.length, MILESTONE_RECEIPT_LIMIT);
+    assert.equal(state.milestone_receipts[0], 'receipt:188');
+    assert.equal(state.milestone_receipts.at(-1), 'receipt:699');
+  });
+
   test('golden scenario applies every canonical command', async () => {
     assert.equal(new Set(scenario.commands.map(item => item.kind)).size, 15);
     const output = await runScenario();
@@ -182,6 +374,13 @@ if (process.argv.includes('--emit')) {
     const fixture = projection.objects.find(item => item.kind === 'fixture');
     assert.ok(fixture.actions.includes('sit'));
     assert.equal(typeof fixture.semantic_state.connected_mask, 'number');
+    assert.equal(fixture.semantic_state.render_cells.length,
+      fixture.hotspot.width * fixture.hotspot.height);
+    assert.ok(fixture.semantic_state.semantic_description.includes('at '));
+    const animals = projection.objects.filter(item => item.kind === 'animal');
+    assert.deepEqual(new Set(animals.map(item => item.semantic_state.presentation_variant.split('.')[0])),
+      new Set(animals.map(item => item.semantic_state.species_id)));
+    assert.ok(animals.every(item => item.semantic_state.semantic_description.includes('bond tier')));
   });
   test('advanced care, fixture, inventory, memorial, and placement scenario is accepted', async () => {
     const output = await runAdvancedScenario();

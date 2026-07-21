@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import replace
 
 from lateletter.garden.world.animals import ANIMAL_SPECIES
@@ -13,7 +14,8 @@ from lateletter.garden.world.generation import (
     required_catalog_coverage,
 )
 from lateletter.garden.world.plants import SPECIES_CATALOG
-from lateletter.garden.world.projection import project_scene
+from lateletter.garden.world.model import OrganNode, Vec2, WorldState, canonical_json_bytes
+from lateletter.garden.world.projection import PLANT_MATURITY_STAGES, project_scene
 
 
 def test_initial_generation_is_deterministic_and_catalog_complete():
@@ -69,10 +71,20 @@ def test_scene_projection_is_renderer_neutral_and_stably_ordered():
     for plant in plants:
         for organ in plant["semantic_state"]["visible_organs"]:
             assert set(organ) == {
-                "node_id", "parent_id", "kind", "offset", "glyph_family", "bloom_state",
+                "node_id", "parent_id", "kind", "offset", "offset_milli",
+                "maturity_progress", "maturity_stage_index", "maturity_stage",
+                "glyph_family", "bloom_state",
             }
     fixtures = [item for item in serialized["objects"] if item["kind"] == "fixture"]
     assert all("connected_mask" in item["semantic_state"] for item in fixtures)
+    for fixture in fixtures:
+        cells = fixture["semantic_state"]["render_cells"]
+        assert len(cells) == fixture["hotspot"]["width"] * fixture["hotspot"]["height"]
+        assert all(set(cell) == {"dx", "dy", "connected_mask"} for cell in cells)
+        assert fixture["semantic_state"]["semantic_description"]
+    animals = [item for item in serialized["objects"] if item["kind"] == "animal"]
+    assert {item["semantic_state"]["presentation_variant"].split(".")[0] for item in animals} == set(ANIMAL_SPECIES)
+    assert all("bond tier" in item["semantic_state"]["semantic_description"] for item in animals)
 
 
 def test_projection_age_changes_semantics_without_changing_object_identity():
@@ -87,6 +99,47 @@ def test_projection_age_changes_semantics_without_changing_object_identity():
         != late_plants[key].semantic_state["topology_hash"]
         for key in early_plants
     )
+
+
+def test_plant_projection_has_seven_monotonic_interpolated_restart_stages():
+    world = generate_initial_world("maturity-world", 42, world_width=64, world_height=40)
+    plant = world.plants[0]
+    root = OrganNode(
+        "organ:root", None, "root", 0, 0, Vec2(0, -1), 1, "root",
+    )
+    branch = OrganNode(
+        "organ:branch", root.node_id, "branch", 0, 1_000,
+        Vec2(1, -1), 7, "branch",
+    )
+    world = replace(
+        world,
+        plants=(replace(plant, topology=(root, branch)),),
+        fixtures=(), animals=(), collectibles=(),
+    )
+    times = (0, 167, 334, 500, 667, 834, 1_000)
+    records = []
+    for effective_time in times:
+        projection = project_scene(replace(world, effective_time=effective_time))
+        projected_plant = next(item for item in projection.objects if item.kind == "plant")
+        records.append(next(
+            item for item in projected_plant.semantic_state["visible_organs"]
+            if item["node_id"] == branch.node_id
+        ))
+    assert [item["maturity_stage_index"] for item in records] == list(range(7))
+    assert [item["maturity_stage"] for item in records] == list(PLANT_MATURITY_STAGES)
+    assert [item["maturity_progress"] for item in records] == list(times)
+    assert [item["offset_milli"][0] for item in records] == [time * 7 for time in times]
+    assert all(
+        records[index]["offset_milli"][0] <= records[index + 1]["offset_milli"][0]
+        for index in range(6)
+    )
+    assert len({item["node_id"] for item in records}) == 1
+
+    persisted = canonical_json_bytes(replace(world, effective_time=667).to_dict())
+    restarted = WorldState.from_dict(json.loads(persisted))
+    assert project_scene(restarted).to_dict() == project_scene(
+        replace(world, effective_time=667),
+    ).to_dict()
 
 
 def test_projection_surfaces_bounded_absence_inventory_and_lasting_memorial():

@@ -14,17 +14,25 @@ from .program import GardenProgram, SUPPORTED_FACTS
 from .schedule import expand_schedule, parse_schedule
 from .seasons import season_for_month
 from .world.animals import ANIMAL_SPECIES, create_animal
-from .world.fixtures import FIXTURE_CATALOG, validate_fixture_placement
+from .world.fixtures import (
+    FIXTURE_CATALOG,
+    fixture_cells,
+    layout_is_safe,
+    validate_fixture_placement,
+)
 from .world.model import (
     AnimalState,
     CollectibleState,
     FixtureState,
     JournalEntry,
+    MILESTONE_RECEIPT_LIMIT,
     Personality,
     PlantState,
     TraceEntry,
     Vec2,
     WorldState,
+    compact_event_trace,
+    compact_recent_strings,
     stable_id,
 )
 from .world.plants import SPECIES_CATALOG, create_plant
@@ -38,6 +46,23 @@ class ProgramApplyResult:
     evaluation: EvaluationResult
     effect_receipts: tuple[str, ...]
     eligible_occurrences: Mapping[str, str]
+    missed_event_summaries: tuple[Mapping[str, Any], ...] = ()
+
+
+MAX_MISSED_EVENT_SUMMARIES = 128
+
+
+class EligibleOccurrences(dict[str, str]):
+    """Occurrence mapping plus bounded canonical missed-event metadata."""
+
+    def __init__(
+        self,
+        values: Mapping[str, str] | None = None,
+        *,
+        missed_event_summaries: tuple[Mapping[str, Any], ...] = (),
+    ) -> None:
+        super().__init__(values or {})
+        self.missed_event_summaries = missed_event_summaries
 
 
 def eligible_occurrences(
@@ -45,9 +70,10 @@ def eligible_occurrences(
     *,
     last_seen_utc: datetime,
     now_utc: datetime,
-) -> dict[str, str]:
+) -> EligibleOccurrences:
     """Expand authored schedules once in the clock-owning runtime."""
     result: dict[str, str] = {}
+    summaries: list[Mapping[str, Any]] = []
     for event in program.events:
         if event.schedule is None:
             continue
@@ -59,7 +85,21 @@ def eligible_occurrences(
         )
         if expanded.occurrences:
             result[event.id] = expanded.occurrences[-1].id
-    return result
+            if expanded.summarized_missed:
+                summaries.append({
+                    "event_id": event.id,
+                    "occurrence_id": expanded.occurrences[-1].id,
+                    "missed_count": min(
+                        expanded.summarized_missed,
+                        400,
+                    ),
+                    "catch_up_truncated": bool(expanded.catch_up_truncated),
+                })
+    summaries.sort(key=lambda item: (str(item["occurrence_id"]), str(item["event_id"])))
+    return EligibleOccurrences(
+        result,
+        missed_event_summaries=tuple(summaries[-MAX_MISSED_EVENT_SUMMARIES:]),
+    )
 
 
 def build_runtime_facts(
@@ -97,6 +137,10 @@ def build_runtime_facts(
         or session_duration_seconds < 0
     ):
         raise ValueError("session_duration_seconds must be a non-negative integer")
+    presented = {
+        str(value) for value in program_state.get("presented_letters", [])
+        if isinstance(value, str)
+    }
     facts = {
         "time.utc": now_utc.astimezone(timezone.utc).isoformat(timespec="seconds"),
         "time.local": local.replace(tzinfo=None).isoformat(timespec="seconds"),
@@ -106,7 +150,7 @@ def build_runtime_facts(
         "visit.nth": total_visits,
         "absence.days": max(0, absence_seconds // 86_400),
         "session.duration_seconds": int(session_duration_seconds),
-        "letter.due": list(due_letter_ids),
+        "letter.due": sorted(set(due_letter_ids) | presented),
         "letter.read": sorted(read_ids),
         "gift.revealed": sorted(
             key for key, value in entities.items()
@@ -155,12 +199,92 @@ def _position(value: Any) -> Vec2 | None:
     return None
 
 
-def _occupied(world: WorldState) -> set[Vec2]:
-    return {
-        item.position
-        for collection in (world.plants, world.fixtures, world.animals, world.collectibles)
-        for item in collection
-    }
+def _object_cells(world: WorldState, *, except_id: str | None = None) -> set[Vec2]:
+    cells: set[Vec2] = set()
+    for fixture in world.fixtures:
+        if fixture.fixture_id != except_id:
+            cells.update(fixture_cells(fixture))
+    cells.update(
+        plant.position for plant in world.plants if plant.plant_id != except_id
+    )
+    cells.update(
+        animal.position for animal in world.animals if animal.animal_id != except_id
+    )
+    cells.update(
+        item.position for item in world.collectibles
+        if item.collectible_id != except_id and not item.collected
+    )
+    return cells
+
+
+def _prospective_world(
+    world: WorldState,
+    *,
+    target: str,
+    kind: str,
+    catalog_id: str,
+    position: Vec2,
+) -> WorldState:
+    plants = tuple(item for item in world.plants if item.plant_id != target)
+    fixtures = tuple(item for item in world.fixtures if item.fixture_id != target)
+    animals = tuple(item for item in world.animals if item.animal_id != target)
+    collectibles = tuple(
+        item for item in world.collectibles if item.collectible_id != target
+    )
+    if kind == "fixture":
+        fixtures += (FixtureState(target, catalog_id, position, authored=True),)
+    elif kind == "plant":
+        plants += (PlantState(target, catalog_id, position),)
+    elif kind == "animal":
+        animals += (AnimalState(target, catalog_id, position),)
+    else:
+        collectibles += (CollectibleState(
+            target, "authored_keepsake", "author-authored", target,
+            "An authored garden keepsake.", position, authored=True,
+        ),)
+    return replace(
+        world,
+        plants=plants,
+        fixtures=fixtures,
+        animals=animals,
+        collectibles=collectibles,
+    )
+
+
+def _placement_errors(
+    world: WorldState,
+    target: str,
+    kind: str,
+    catalog_id: str,
+    candidate: Vec2,
+) -> tuple[str, ...]:
+    if kind == "fixture":
+        if catalog_id not in FIXTURE_CATALOG:
+            return (f"unknown fixture catalog ID {catalog_id!r}",)
+        candidate_cells = fixture_cells(FixtureState(target, catalog_id, candidate))
+    else:
+        candidate_cells = frozenset({candidate})
+    errors: list[str] = []
+    if any(
+        not (0 <= cell.x < world.world_width and 0 <= cell.y < world.world_height)
+        for cell in candidate_cells
+    ):
+        errors.append("position is outside the world")
+    if candidate_cells.intersection(_object_cells(world, except_id=target)):
+        errors.append("position overlaps another Garden object")
+    if kind == "fixture":
+        errors.extend(validate_fixture_placement(
+            world, catalog_id, candidate, fixture_id=target, except_id=target,
+        ))
+    if errors:
+        return tuple(dict.fromkeys(errors))
+    prospective = _prospective_world(
+        world, target=target, kind=kind, catalog_id=catalog_id,
+        position=candidate,
+    )
+    if not layout_is_safe(prospective):
+        errors.append("position makes a Garden object unreachable")
+    return tuple(errors)
 
 
 def _resolve_position(
@@ -170,31 +294,106 @@ def _resolve_position(
     catalog_id: str,
     requested: Any,
 ) -> Vec2:
+    hint: str | None = None
+    if isinstance(requested, str):
+        if requested not in {
+            "random", "authored", "path", "near_tallest_tree",
+            "near_bench", "by_edge",
+        }:
+            raise ValueError(
+                f"invalid authored position for Garden object {target}"
+            )
+        hint, requested = requested, None
     candidate = _position(requested)
-    if candidate is not None:
-        candidate = Vec2(
-            max(1, min(world.world_width - 2, candidate.x)),
-            max(1, min(world.world_height - 2, candidate.y)),
-        )
-        if kind != "fixture" or not validate_fixture_placement(
-            world, catalog_id, candidate, fixture_id=target, except_id=target,
-        ):
+    if requested is not None:
+        if candidate is None:
+            raise ValueError(
+                f"invalid authored position for Garden object {target}"
+            )
+        errors = _placement_errors(world, target, kind, catalog_id, candidate)
+        if not errors:
             return candidate
-    occupied = _occupied(world)
+        raise ValueError(
+            f"unsafe authored position for Garden object {target}: "
+            + "; ".join(errors)
+        )
+    anchors: list[Vec2] = []
+    if hint == "near_tallest_tree" and world.plants:
+        anchors = [sorted(
+            world.plants,
+            key=lambda item: (-len(item.topology), item.plant_id),
+        )[0].position]
+    elif hint == "near_bench":
+        anchors = [
+            item.position for item in sorted(
+                world.fixtures, key=lambda item: item.fixture_id,
+            ) if item.catalog_id == "bench"
+        ]
+    elif hint == "path":
+        anchors = [
+            item.position for item in sorted(
+                world.fixtures, key=lambda item: item.fixture_id,
+            ) if item.catalog_id in {"stepping_stone", "stepping_stones"}
+        ]
+    relative: list[Vec2] = []
+    for anchor in anchors:
+        for radius in range(1, 5):
+            for dy in range(-radius, radius + 1):
+                for dx in range(-radius, radius + 1):
+                    if max(abs(dx), abs(dy)) == radius:
+                        relative.append(Vec2(anchor.x + dx, anchor.y + dy))
+    if hint == "by_edge":
+        margin = 2
+        relative.extend(
+            Vec2(x, y)
+            for y in (margin, world.world_height - margin - 1)
+            for x in range(margin, world.world_width - margin)
+        )
+        relative.extend(
+            Vec2(x, y)
+            for x in (margin, world.world_width - margin - 1)
+            for y in range(margin + 1, world.world_height - margin - 1)
+        )
+    for value in relative:
+        if not _placement_errors(world, target, kind, catalog_id, value):
+            return value
+
     rng = DeterministicRNG(derive_seed(world.seed, "program", target, kind, "position"))
     for _ in range(512):
         value = Vec2(
             rng.randint(2, world.world_width - 3),
             rng.randint(2, world.world_height - 3),
         )
-        if value in occupied:
-            continue
-        if kind == "fixture" and validate_fixture_placement(
-            world, catalog_id, value, fixture_id=target, except_id=target,
-        ):
-            continue
-        return value
+        if not _placement_errors(world, target, kind, catalog_id, value):
+            return value
     raise ValueError(f"could not place authored Garden object {target}")
+
+
+def _destination_near_fixture(
+    world: WorldState,
+    *,
+    animal_id: str,
+    species_id: str,
+    fixture: FixtureState,
+) -> Vec2:
+    cells = fixture_cells(fixture)
+    candidates = {
+        neighbor
+        for cell in cells
+        for neighbor in (
+            Vec2(cell.x - 1, cell.y), Vec2(cell.x + 1, cell.y),
+            Vec2(cell.x, cell.y - 1), Vec2(cell.x, cell.y + 1),
+        )
+        if neighbor not in cells
+    }
+    for candidate in sorted(candidates, key=lambda value: (value.y, value.x)):
+        if not _placement_errors(
+            world, animal_id, "animal", species_id, candidate,
+        ):
+            return candidate
+    raise ValueError(
+        f"fixture {fixture.fixture_id!r} has no safe adjacent animal destination"
+    )
 
 
 def _definitions(program: GardenProgram) -> dict[str, Mapping[str, Any]]:
@@ -319,6 +518,52 @@ def _journal(
     ),))
 
 
+def _persist_missed_event_summaries(
+    state: Mapping[str, Any],
+    *,
+    summaries: tuple[Mapping[str, Any], ...],
+    applied_event_ids: set[str],
+) -> dict[str, Any]:
+    updated = deepcopy(dict(state))
+    records: dict[tuple[str, str], dict[str, Any]] = {}
+    existing = updated.get("missed_event_summaries", [])
+    if isinstance(existing, list):
+        for value in existing:
+            if not isinstance(value, Mapping):
+                continue
+            event_id = value.get("event_id")
+            occurrence_id = value.get("occurrence_id")
+            missed_count = value.get("missed_count")
+            if not isinstance(event_id, str) or not isinstance(occurrence_id, str):
+                continue
+            if isinstance(missed_count, bool) or not isinstance(missed_count, int):
+                continue
+            records[(event_id, occurrence_id)] = {
+                "event_id": event_id,
+                "occurrence_id": occurrence_id,
+                "missed_count": max(0, min(400, missed_count)),
+                "catch_up_truncated": bool(value.get("catch_up_truncated", False)),
+            }
+    for value in summaries:
+        event_id = str(value["event_id"])
+        if event_id not in applied_event_ids:
+            continue
+        occurrence_id = str(value["occurrence_id"])
+        records[(event_id, occurrence_id)] = {
+            "event_id": event_id,
+            "occurrence_id": occurrence_id,
+            "missed_count": max(0, min(400, int(value["missed_count"]))),
+            "catch_up_truncated": bool(value.get("catch_up_truncated", False)),
+        }
+    ordered = sorted(
+        records.values(),
+        key=lambda value: (value["occurrence_id"], value["event_id"]),
+    )[-MAX_MISSED_EVENT_SUMMARIES:]
+    if ordered or "missed_event_summaries" in updated:
+        updated["missed_event_summaries"] = ordered
+    return updated
+
+
 def _materialize_effect(
     world: WorldState,
     program: GardenProgram,
@@ -365,14 +610,30 @@ def _materialize_effect(
             elif effect_type == "animal.routine":
                 animal = _animal_with_authored_data(animal, definition, params.get("routine"))
             elif effect_type == "animal.set_destination":
-                destination = _position(params.get("position"))
-                if destination is None and params.get("fixture_id"):
-                    destination = next((
-                        item.position for item in world.fixtures
+                if params.get("position") is not None:
+                    destination = _resolve_position(
+                        world, target, "animal", animal.species_id,
+                        params.get("position"),
+                    )
+                elif params.get("fixture_id"):
+                    fixture = next((
+                        item for item in world.fixtures
                         if item.fixture_id == params["fixture_id"]
                     ), None)
-                if destination is not None:
-                    animal = replace(animal, position=destination)
+                    if fixture is None:
+                        raise ValueError(
+                            f"animal destination fixture {params['fixture_id']!r} "
+                            "is not present"
+                        )
+                    destination = _destination_near_fixture(
+                        world, animal_id=target, species_id=animal.species_id,
+                        fixture=fixture,
+                    )
+                else:
+                    raise ValueError(
+                        f"animal destination for {target!r} has no position or fixture"
+                    )
+                animal = replace(animal, position=destination)
             elif effect_type in {"animal.deliver", "animal.present_gift"}:
                 animal = replace(
                     animal,
@@ -494,9 +755,19 @@ def _materialize_effect(
             if not isinstance(scene, dict):
                 scene = {}
                 program_state["scene"] = scene
-            for key in ("weather", "palette", "story_time", "sky_mode", "ambience", "population"):
+            for key in ("weather", "palette", "story_time", "sky_mode", "ambience", "population", "author_region"):
                 if key in params:
                     scene[key] = deepcopy(params[key])
+            world = replace(world, program_state=program_state)
+        elif effect_type == "letter.present":
+            letter_id = str(params["letter_id"])
+            program_state = deepcopy(dict(world.program_state))
+            presented = {
+                str(value) for value in program_state.get("presented_letters", [])
+                if isinstance(value, str)
+            }
+            presented.add(letter_id)
+            program_state["presented_letters"] = sorted(presented)
             world = replace(world, program_state=program_state)
         label = str(params.get("label") or {
             "scene.set": "The Garden changed",
@@ -505,8 +776,12 @@ def _materialize_effect(
         description = str(params.get("text") or json.dumps(
             dict(params), sort_keys=True, ensure_ascii=False,
         ))
+        object_id = (
+            str(params["letter_id"])
+            if effect_type == "letter.present" else target or effect_type
+        )
         world = _journal(
-            world, receipt=receipt, object_id=target or effect_type,
+            world, receipt=receipt, object_id=object_id,
             label=label, description=description,
         )
     return world
@@ -521,7 +796,8 @@ def apply_program(
 ) -> ProgramApplyResult:
     """Evaluate a program and atomically project new effects into ``WorldState``."""
     world = _seed_program_state(world, program)
-    receipts = set(world.milestone_receipts)
+    prior_receipts = list(world.milestone_receipts)
+    receipts = set(prior_receipts)
     created: list[str] = []
 
     def materialize_once(
@@ -540,7 +816,7 @@ def apply_program(
         current = _materialize_effect(current, program, effect, receipt)
         receipts.add(receipt)
         created.append(receipt)
-        return replace(current, event_trace=current.event_trace + (
+        return replace(current, event_trace=compact_event_trace(current.event_trace + (
             TraceEntry(
                 trace_id=stable_id("trace", current.world_id, "program", receipt),
                 sequence=current.command_sequence,
@@ -549,7 +825,7 @@ def apply_program(
                 effective_time=current.effective_time,
                 summary=f"Applied authored Garden event {event_id}.",
             ),
-        ))
+        )))
 
     for index, effect in enumerate(_initial_effects(program)):
         world = materialize_once(world, effect, "program.initial", "definition", index)
@@ -564,6 +840,22 @@ def apply_program(
         for row in evaluation.trace
         if row.get("status") == "applied" and row.get("occurrence_id")
     }
+    applied_event_ids = {
+        str(row["event_id"])
+        for row in evaluation.trace
+        if row.get("status") == "applied" and row.get("event_id")
+    }
+    schedule_summaries = tuple(
+        getattr(eligible, "missed_event_summaries", ())
+    )
+    evaluation = replace(
+        evaluation,
+        state=_persist_missed_event_summaries(
+            evaluation.state,
+            summaries=schedule_summaries,
+            applied_event_ids=applied_event_ids,
+        ),
+    )
     world = replace(world, program_state=evaluation.state)
     action_indexes: dict[str, int] = {}
     for effect in evaluation.effects:
@@ -574,5 +866,22 @@ def apply_program(
             world, effect, event_id,
             occurrences.get(event_id, "unscheduled"), action_index,
         )
-    world = replace(world, milestone_receipts=tuple(sorted(receipts)))
-    return ProgramApplyResult(world, evaluation, tuple(created), dict(eligible or {}))
+    program_state = deepcopy(dict(world.program_state))
+    program_state["milestone_receipt_total"] = max(
+        len(prior_receipts), int(program_state.get("milestone_receipt_total", 0)),
+    ) + len(created)
+    world = replace(
+        world,
+        milestone_receipts=compact_recent_strings(
+            (*prior_receipts, *created), MILESTONE_RECEIPT_LIMIT,
+        ),
+        program_state=program_state,
+    )
+    persisted_summaries = tuple(
+        dict(value) for value in world.program_state.get("missed_event_summaries", [])
+        if isinstance(value, Mapping)
+    )
+    return ProgramApplyResult(
+        world, evaluation, tuple(created), dict(eligible or {}),
+        persisted_summaries,
+    )

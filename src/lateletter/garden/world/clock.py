@@ -5,7 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 
 from .animals import AnimalContext, step_animals
-from .model import AnimalState, PlantState, TraceEntry, WorldState, stable_id
+from .model import (
+    AnimalState, MILESTONE_RECEIPT_LIMIT, PlantState, TraceEntry, WorldState,
+    compact_event_trace, compact_recent_strings, stable_id,
+)
 from .plants import advance_topology
 
 
@@ -66,6 +69,12 @@ def reconcile_offline(
             OfflineReport(0, observed < previous_wall, (), ()),
         )
 
+    if state.ui.motion_paused:
+        return (
+            replace(state, last_observed_wall_time=observed),
+            OfflineReport(0, False, (), ()),
+        )
+
     elapsed = observed - previous_wall
     start = state.effective_time
     end = start + elapsed
@@ -99,7 +108,23 @@ def reconcile_offline(
         text for _, _, text in sorted(summary_candidates)[:max(0, max_summaries)]
     )
 
-    new_receipts = tuple(sorted(set(state.milestone_receipts).union(receipts)))
+    prior_receipts = tuple(state.milestone_receipts)
+    novel_receipts = tuple(item for item in receipts if item not in prior_receipts)
+    new_receipts = compact_recent_strings(
+        (*prior_receipts, *novel_receipts), MILESTONE_RECEIPT_LIMIT,
+    )
+    program_state = dict(state.program_state)
+    prior_receipt_total = max(
+        len(prior_receipts), int(program_state.get("milestone_receipt_total", 0)),
+    )
+    program_state.update({
+        "absence_summary": list(summaries),
+        "absence_elapsed_seconds": elapsed,
+        "offline_reconciliation_total": int(
+            program_state.get("offline_reconciliation_total", 0)
+        ) + 1,
+        "milestone_receipt_total": prior_receipt_total + len(novel_receipts),
+    })
     trace = TraceEntry(
         trace_id=stable_id("trace", state.world_id, "offline", start, end),
         sequence=state.command_sequence,
@@ -115,12 +140,8 @@ def reconcile_offline(
         plants=tuple(grown),
         animals=animals,
         milestone_receipts=new_receipts,
-        event_trace=state.event_trace + (trace,),
-        program_state={
-            **dict(state.program_state),
-            "absence_summary": list(summaries),
-            "absence_elapsed_seconds": elapsed,
-        },
+        event_trace=compact_event_trace(state.event_trace + (trace,)),
+        program_state=program_state,
     )
     if updated_state.animals:
         scene = updated_state.program_state.get("scene", {})

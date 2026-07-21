@@ -20,7 +20,13 @@ from .garden.program import GardenProgram, parse_program
 from .garden.renderer import GardenRenderer
 from .garden.terminal import TERMINAL_HELP_LINES, TerminalWorldSession, handle_terminal_key
 from .garden.world.engine import CommandResult
-from .sealed import open_garden_program, open_gift_sentiment, open_message, verify_bundle_hmac
+from .sealed import (
+    bundle_persistence_binding,
+    open_garden_program,
+    open_gift_sentiment,
+    open_message,
+    verify_bundle_hmac,
+)
 
 
 ITEM_CATALOG: dict[str, tuple[str, str]] = {
@@ -162,13 +168,23 @@ def _unlock_content(
     return messages, gifts
 
 
-def _compute_due(bundle: Bundle, today: date, read_ids: set[str]) -> list[int]:
+def _compute_due(
+    bundle: Bundle,
+    today: date,
+    read_ids: set[str],
+    program_state: Mapping[str, Any] | None = None,
+) -> list[int]:
+    presented = {
+        str(letter_id)
+        for letter_id in (program_state or {}).get("presented_letters", ())
+        if isinstance(letter_id, str)
+    }
     due: list[int] = []
     for index, message in enumerate(bundle.messages):
         try:
-            available = today >= date.fromisoformat(message.date)
+            available = today >= date.fromisoformat(message.date) or message.id in presented
         except ValueError:
-            available = False
+            available = message.id in presented
         if available and message.id not in read_ids:
             due.append(index)
     return due
@@ -242,12 +258,11 @@ def _eligible_legacy_gift_ids(program_state: Mapping[str, Any]) -> set[str]:
     return result
 
 
-def _program_now(session: TerminalWorldSession, today: date) -> datetime:
+def _program_now(session: TerminalWorldSession) -> datetime:
     observed = session.world.last_observed_wall_time
-    current = datetime.fromtimestamp(
+    return datetime.fromtimestamp(
         observed if observed is not None else int(time.time()), tz=timezone.utc,
     )
-    return current.replace(year=today.year, month=today.month, day=today.day)
 
 
 def _apply_program_to_session(
@@ -257,8 +272,10 @@ def _apply_program_to_session(
     today: date,
     read_ids: set[str],
     due_letter_ids: tuple[str, ...] = (),
+    session_duration_seconds: int = 0,
 ) -> None:
-    now = _program_now(session, today)
+    del today  # Letter-date eligibility is separate from the canonical UTC clock.
+    now = _program_now(session)
     absence = max(0, session.offline_report.elapsed_seconds)
     last_seen = now - timedelta(seconds=max(60, absence))
     scheduled = eligible_occurrences(
@@ -272,6 +289,7 @@ def _apply_program_to_session(
         absence_seconds=absence,
         read_ids=read_ids,
         due_letter_ids=due_letter_ids,
+        session_duration_seconds=session_duration_seconds,
     )
     result = apply_program(session.world, program, facts=facts, eligible=scheduled)
     session.world = result.world
@@ -305,6 +323,7 @@ def _apply_open_program(
     today: date,
     read_ids: set[str],
     due_letter_ids: tuple[str, ...] = (),
+    session_duration_seconds: int = 0,
 ) -> set[str]:
     """Apply an already-authenticated v1 or v2 program through one owner."""
     old_ledger = [
@@ -319,6 +338,7 @@ def _apply_open_program(
     _apply_program_to_session(
         session, program, today=today, read_ids=read_ids,
         due_letter_ids=due_letter_ids,
+        session_duration_seconds=session_duration_seconds,
     )
     if bundle.version < 2:
         return _eligible_legacy_gift_ids(session.world.program_state)
@@ -333,7 +353,10 @@ def _open_authenticated_program(
     if bundle.version >= 2:
         if bundle.garden_program is None:
             raise ValueError("version 2 bundle is missing its Garden program")
-        return parse_program(open_garden_program(passphrase, bundle.garden_program))
+        return parse_program(
+            open_garden_program(passphrase, bundle.garden_program),
+            known_letter_ids={message.id for message in bundle.messages},
+        )
     return migrate_legacy_gifts(
         bundle.garden_gifts,
         authenticated=True,
@@ -351,12 +374,14 @@ def _reapply_after_semantic_change(
     today: date,
     read_ids: set[str],
     due_letter_ids: tuple[str, ...] = (),
+    session_duration_seconds: int = 0,
 ) -> set[str] | None:
     if not result.accepted or not result.changed:
         return None
     return _apply_open_program(
         session, bundle, program, today=today, read_ids=read_ids,
         due_letter_ids=due_letter_ids,
+        session_duration_seconds=session_duration_seconds,
     )
 
 
@@ -411,7 +436,7 @@ _ST_CORRUPTED = "corrupted"
 def run_recipient(
     stdscr: curses.window,
     bundle: Bundle,
-    store: RecipientStore,
+    store: RecipientStore | None,
     season: str | None = None,
     is_dev_fixture: bool = False,
     corrupted: bool = False,
@@ -421,15 +446,18 @@ def run_recipient(
 ) -> None:
     """Run letters over a persistent canonical Garden terminal session."""
     del season
-    curses.curs_set(0)
+    try:
+        curses.curs_set(0)
+    except curses.error:
+        pass
     stdscr.timeout(100)
     height, width = stdscr.getmaxyx()
-    session = TerminalWorldSession.open(
-        world_id=bundle.bundle_id,
-        seed=bundle.garden_seed,
+    # The pre-auth and corruption surfaces must never load a previously
+    # decrypted bundle world.  This fixed, nonpersistent preview also absorbs
+    # any Garden commands entered before authentication without touching disk.
+    session = TerminalWorldSession.preview(
         width=width,
         height=height,
-        path=world_path,
         observed_wall_time=observed_wall_time,
     )
     renderer = GardenRenderer(width, height)
@@ -441,7 +469,10 @@ def run_recipient(
     status = "e unlocks letters · o selects a Garden object"
     message_content: list[tuple[str, str]] = [("", "") for _ in bundle.messages]
     gift_content: dict[str, str] = {}
-    read_ids = store.read_set()
+    # Production callers pass no store.  Its authentication-bound namespace is
+    # selected only after the bundle HMAC and every encrypted payload validate.
+    active_store = store
+    read_ids: set[str] = set()
     due: list[int] = []
     eligible_gifts: set[str] = set()
     active_program: GardenProgram | None = None
@@ -451,15 +482,23 @@ def run_recipient(
     archive_rows: list[_ArchiveRow] = []
     archive_selected = 0
     memory_gift: GardenGift | None = None
+    last_live_tick = time.monotonic()
+    garden_session_started = last_live_tick
 
     while True:
+        today = date.today()
         new_height, new_width = stdscr.getmaxyx()
         if (new_height, new_width) != (height, width):
             height, width = new_height, new_width
             session.resize(width, height)
             renderer.resize(width, height)
         stdscr.erase()
-        renderer.blit_curses(stdscr, session.world)
+        # The recipient clears the physical surface, so the diff renderer must
+        # forget its prior frame and repaint every canonical Garden cell.
+        renderer.invalidate()
+        renderer.blit_curses(
+            stdscr, session.world, journal_offset=session.journal_offset,
+        )
 
         if state == _ST_CORRUPTED:
             _draw_panel(stdscr, "This file appears damaged.", ["The letters inside may not be readable."], "q quit")
@@ -520,6 +559,36 @@ def run_recipient(
         stdscr.refresh()
         key = stdscr.getch()
         if key == -1:
+            observed_live = time.monotonic()
+            if state == _ST_GARDEN:
+                elapsed = int(observed_live - last_live_tick)
+                if elapsed > 0:
+                    live_result = session.dwell(elapsed)
+                    status = live_result.summary
+                    if authenticated and active_program is not None:
+                        updated_eligibility = _reapply_after_semantic_change(
+                            session,
+                            bundle,
+                            active_program,
+                            live_result,
+                            today=today,
+                            read_ids=read_ids,
+                            due_letter_ids=tuple(
+                                bundle.messages[index].id for index in due
+                            ),
+                            session_duration_seconds=max(
+                                0, int(observed_live - garden_session_started),
+                            ),
+                        )
+                        if updated_eligibility is not None:
+                            eligible_gifts = updated_eligibility
+                            due = _compute_due(
+                                bundle, today, read_ids,
+                                session.world.program_state,
+                            )
+                    last_live_tick += elapsed
+            else:
+                last_live_tick = observed_live
             continue
         if state == _ST_CORRUPTED:
             if key == ord("q"):
@@ -530,26 +599,93 @@ def run_recipient(
                 state = _ST_GARDEN
             elif key in (10, 13):
                 if _verify_passphrase(passphrase, bundle, is_dev_fixture):
+                    candidate_messages: list[tuple[str, str]] = []
+                    candidate_gifts: dict[str, str] = {}
+                    candidate_program: GardenProgram | None = None
+                    candidate_store: RecipientStore | None = None
+                    candidate_read_ids: set[str] = set()
+                    candidate_due: list[int] = []
+                    candidate_eligible_gifts: set[str] = set()
+                    authenticated_session: TerminalWorldSession | None = None
                     try:
-                        message_content, gift_content = _unlock_content(passphrase, bundle, is_dev_fixture)
-                        active_program = _open_authenticated_program(passphrase, bundle, gift_content)
-                        authenticated = True
-                        read_ids = store.read_set()
-                        due = _compute_due(bundle, today, read_ids)
-                        eligible_gifts = _apply_open_program(
-                            session,
-                            bundle,
-                            active_program,
-                            today=today,
-                            read_ids=read_ids,
-                            due_letter_ids=tuple(bundle.messages[index].id for index in due),
+                        candidate_messages, candidate_gifts = _unlock_content(
+                            passphrase, bundle, is_dev_fixture,
                         )
-                        _sync_story_completion(session, bundle, read_ids)
+                        candidate_program = _open_authenticated_program(
+                            passphrase, bundle, candidate_gifts,
+                        )
+                        if is_dev_fixture:
+                            persistence_id = f"dev:{bundle.bundle_id}"
+                            candidate_store = store
+                        else:
+                            binding = bundle_persistence_binding(bundle, passphrase)
+                            persistence_id = f"bundle:{bundle.bundle_id}:{binding}"
+                            candidate_store = RecipientStore(persistence_id)
+                        authenticated_session = TerminalWorldSession.open(
+                            world_id=persistence_id,
+                            seed=bundle.garden_seed,
+                            width=width,
+                            height=height,
+                            path=world_path,
+                            observed_wall_time=observed_wall_time,
+                            defer_persistence=True,
+                        )
+                        candidate_read_ids = (
+                            candidate_store.read_set()
+                            if candidate_store is not None else set()
+                        )
+                        candidate_due = _compute_due(bundle, today, candidate_read_ids)
+                        candidate_eligible_gifts = _apply_open_program(
+                            authenticated_session,
+                            bundle,
+                            candidate_program,
+                            today=today,
+                            read_ids=candidate_read_ids,
+                            due_letter_ids=tuple(
+                                bundle.messages[index].id for index in candidate_due
+                            ),
+                        )
+                        candidate_due = _compute_due(
+                            bundle, today, candidate_read_ids,
+                            authenticated_session.world.program_state,
+                        )
+                        _sync_story_completion(
+                            authenticated_session, bundle, candidate_read_ids,
+                        )
+                        authenticated_session.commit_persistence()
+                        message_content = candidate_messages
+                        gift_content = candidate_gifts
+                        active_program = candidate_program
+                        active_store = candidate_store
+                        read_ids = candidate_read_ids
+                        due = candidate_due
+                        eligible_gifts = candidate_eligible_gifts
+                        session = authenticated_session
+                        renderer = GardenRenderer(width, height)
+                        authenticated = True
+                        last_live_tick = time.monotonic()
+                        garden_session_started = last_live_tick
                         status = "Letters unlocked; Garden actions use the canonical command trace."
                         error = ""
                         state = _ST_GARDEN
                     except Exception:
+                        message_content = [("", "") for _ in bundle.messages]
+                        gift_content = {}
+                        active_program = None
+                        active_store = store
+                        read_ids = set()
+                        due = []
+                        eligible_gifts = set()
                         error = "Could not unlock this bundle."
+                    finally:
+                        candidate_messages = []
+                        candidate_gifts = {}
+                        candidate_program = None
+                        candidate_store = None
+                        candidate_read_ids = set()
+                        candidate_due = []
+                        candidate_eligible_gifts = set()
+                        authenticated_session = None
                 else:
                     error = "Incorrect passphrase, or this file was modified."
                 passphrase = ""
@@ -572,8 +708,10 @@ def run_recipient(
             continue
         if state == _ST_READING:
             if key in (27, ord("q")):
-                store.mark_read(bundle.messages[reading_index].id)
-                read_ids = store.read_set()
+                if active_store is None:
+                    raise RuntimeError("authenticated recipient store is unavailable")
+                active_store.mark_read(bundle.messages[reading_index].id)
+                read_ids = active_store.read_set()
                 due = _compute_due(bundle, today, read_ids)
                 if active_program is not None:
                     eligible_gifts = _apply_open_program(
@@ -583,7 +721,11 @@ def run_recipient(
                         today=today,
                         read_ids=read_ids,
                         due_letter_ids=tuple(bundle.messages[index].id for index in due),
+                        session_duration_seconds=max(
+                            0, int(time.monotonic() - garden_session_started),
+                        ),
                     )
+                    due = _compute_due(bundle, today, read_ids, session.world.program_state)
                 _sync_story_completion(session, bundle, read_ids)
                 state = _ST_SELECTION if due else _ST_GARDEN
             elif key == ord("p"):
@@ -647,7 +789,10 @@ def run_recipient(
             archive_selected = 0
             state = _ST_ARCHIVE
             continue
+        was_paused = session.world.ui.motion_paused
         result = handle_terminal_key(session, key)
+        if was_paused and not session.world.ui.motion_paused:
+            last_live_tick = time.monotonic()
         if result is not None:
             status = result.summary if result.accepted else result.reason
             if authenticated and active_program is not None:
@@ -659,9 +804,15 @@ def run_recipient(
                     today=today,
                     read_ids=read_ids,
                     due_letter_ids=tuple(bundle.messages[index].id for index in due),
+                    session_duration_seconds=max(
+                        0, int(time.monotonic() - garden_session_started),
+                    ),
                 )
                 if updated_eligibility is not None:
                     eligible_gifts = updated_eligibility
+                    due = _compute_due(
+                        bundle, today, read_ids, session.world.program_state,
+                    )
             if key == ord("i") and session.focused_id() and session.focused_id().startswith("legacy-entity."):
                 gift_id = session.focused_id()[len("legacy-entity."):]
                 memory_gift = next((gift for gift in bundle.garden_gifts if gift.id == gift_id), None)
@@ -686,11 +837,10 @@ def run_recipient_file(path: str | Path, season: str | None = None) -> None:
         )
         raise SystemExit(1)
     checksum_ok = verify_checksum(bundle)
-    store = RecipientStore(bundle.bundle_id)
     curses.wrapper(
         run_recipient,
         bundle,
-        store,
+        None,
         season,
         False,
         not checksum_ok,

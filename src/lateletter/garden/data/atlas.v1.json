@@ -3,6 +3,18 @@
   "id": "garden-atlas-1",
   "unicode_version": "15.1.0",
   "profiles": ["ascii-safe", "unicode-cell-safe", "browser-font-locked", "browser-rich"],
+  "semantic_tokens": {
+    "organ_kind_glyphs": {"root": "+", "stem": "|", "branch": "/", "vine": "\\", "leaf": "*", "bloom": "@", "fruit": "o"},
+    "plant_species_glyphs": {"oak": "Y", "pine": "^", "willow": "Y", "cherry": "Y", "maple": "Y", "hydrangea": "*", "wisteria": "v", "meadow_grass": "'", "rosemary": ";", "water_lily": "*", "lavender": "*", "rose": "@", "daisy": "*", "tulip": "u", "sunflower": "O", "fern": "f", "ivy": "v", "herb": ";", "grass": "'", "reed": "|", "lotus": "*"},
+    "animal_tier_glyphs": {"bird": ["v", "V", "w", "W"], "cat": ["c", "C", "m", "M"], "rabbit": ["r", "R", "b", "B"], "turtle": ["t", "T", "o", "O"]},
+    "delivery_frames": {
+      "letterbird": [["  \\      ", " >o<-[✉] ", "  /      "], ["  /      ", " >o<-[✉] ", "  \\      "]],
+      "cat": [["/\\_/\\  ", "(>[✉])  "], ["/\\_/\\  ", "(=[✉])  "]],
+      "bird": [["  >o<   ", " /|\\    ", " [✉]    "], ["  >o<   ", "  |\\    ", " [✉]    "]],
+      "rabbit": [["(\\ /)  ", ".[✉].   "], ["(\\ /)  ", " [✉]    "]],
+      "turtle": [[" (~)    ", "{[✉]}   "], [" (~)    ", "{[✉]}   "]]
+    }
+  },
   "connected_tiles": {
     "fence": {"0": ".", "1": "|", "2": "-", "3": "+", "4": "|", "5": "|", "6": "+", "7": "+", "8": "-", "9": "+", "10": "-", "11": "+", "12": "+", "13": "+", "14": "+", "15": "+"},
     "hedge": {"0": ".", "1": "#", "2": "#", "3": "#", "4": "#", "5": "#", "6": "#", "7": "#", "8": "#", "9": "#", "10": "#", "11": "#", "12": "#", "13": "#", "14": "#", "15": "#"},
@@ -33,7 +45,7 @@
     },
     {
       "id": "fixture.birdbath", "kind": "fixture", "label": "Birdbath", "description": "A shallow bath for visiting birds.", "cell_box": [1, 1],
-      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["U"]]}]}},
+      "profiles": {"ascii-safe": {"empty": [{"ticks": 1, "cells": [["u"]]}], "full": [{"ticks": 1, "cells": [["U"]]}]}},
       "hotspots": [{"id": "refill", "label": "Refill the birdbath", "action": "refill"}], "tags": ["animal_affordance"]
     },
     {
@@ -48,7 +60,7 @@
     },
     {
       "id": "fixture.mailbox", "kind": "fixture", "label": "Memory mailbox", "description": "Holds keepsakes and memories.", "cell_box": [1, 1],
-      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["M"]]}]}},
+      "profiles": {"ascii-safe": {"closed": [{"ticks": 1, "cells": [["M"]]}], "open": [{"ticks": 1, "cells": [["m"]]}]}},
       "hotspots": [{"id": "open", "label": "Open the mailbox", "action": "open"}], "tags": ["memory"]
     },
     {
@@ -88,7 +100,7 @@
     },
     {
       "id": "fixture.shed_edge", "kind": "fixture", "label": "Shed", "description": "The edge of a small tool shed.", "cell_box": [1, 1],
-      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["H"]]}]}},
+      "profiles": {"ascii-safe": {"closed": [{"ticks": 1, "cells": [["H"]]}], "open": [{"ticks": 1, "cells": [["h"]]}]}},
       "hotspots": [{"id": "inspect", "label": "Inspect the shed", "action": "inspect"}], "tags": ["storage"]
     },
     {
@@ -98,12 +110,12 @@
     },
     {
       "id": "fixture.watering_can", "kind": "fixture", "label": "Watering can", "description": "Used to water plants.", "cell_box": [1, 1],
-      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["W"]]}]}},
+      "profiles": {"ascii-safe": {"empty": [{"ticks": 1, "cells": [["w"]]}], "full": [{"ticks": 1, "cells": [["W"]]}]}},
       "hotspots": [{"id": "water", "label": "Water a plant", "action": "water"}], "tags": ["tending"]
     },
     {
       "id": "fixture.compost", "kind": "fixture", "label": "Compost", "description": "Turns garden scraps into soil.", "cell_box": [1, 1],
-      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["C"]]}]}},
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["C"]]}], "turned": [{"ticks": 1, "cells": [["c"]]}]}},
       "hotspots": [{"id": "turn", "label": "Turn the compost", "action": "turn"}], "tags": ["tending"]
     },
     {

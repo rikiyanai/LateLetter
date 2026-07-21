@@ -13,6 +13,7 @@ from lateletter.bundle import (
 )
 from lateletter.sealed import (
     KDF_PARAMS_V0,
+    bundle_persistence_binding,
     compute_bundle_hmac,
     derive_key,
     open_gift_sentiment,
@@ -89,6 +90,29 @@ def test_hmac_stable_across_reserialization():
     bundle = _sealed_bundle()
     reparsed = Bundle.from_dict(bundle.to_dict())
     assert compute_bundle_hmac(reparsed, PASS) == bundle.hmac
+
+
+def test_persistence_binding_is_stable_and_bound_to_sealed_identity():
+    bundle = _sealed_bundle()
+    reparsed = Bundle.from_dict(bundle.to_dict())
+    binding = bundle_persistence_binding(bundle, PASS)
+    assert len(binding) == 64
+    assert binding == bundle_persistence_binding(reparsed, PASS)
+
+    other = _sealed_bundle()
+    other.bundle_id = bundle.bundle_id
+    seal_bundle(other, PASS)
+    assert bundle_persistence_binding(other, PASS) != binding
+
+
+def test_persistence_binding_survives_legitimate_reseal_append():
+    bundle = _sealed_bundle()
+    binding = bundle_persistence_binding(bundle, PASS)
+    bundle.messages.append(seal_message(
+        PASS, message_id="m2", date="2028-01-01", label="Later", body="Still here.",
+    ))
+    seal_bundle(bundle, PASS)
+    assert bundle_persistence_binding(bundle, PASS) == binding
 
 
 def test_unicode_body_survives():

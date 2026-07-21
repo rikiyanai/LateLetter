@@ -6,10 +6,14 @@ from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from .commands import CommandKind, GardenCommand, validate_command
-from .fixtures import layout_is_safe, validate_fixture_placement
+from .fixtures import (
+    fixture_active_affordances,
+    layout_is_safe,
+    validate_fixture_placement,
+)
 from .animals import ANIMAL_GIFT_CATALOG, AnimalContext, step_animals
 from .fixtures import FIXTURE_CATALOG
-from .plants import SPECIES_CATALOG, care_for_plant, create_plant
+from .plants import SPECIES_CATALOG, advance_topology, care_for_plant, create_plant
 from .model import (
     AnimalState,
     CollectibleState,
@@ -23,6 +27,9 @@ from .model import (
     UndoRecord,
     Vec2,
     WorldState,
+    PROCESSED_COMMAND_LIMIT,
+    UNDO_STACK_LIMIT,
+    compact_event_trace,
     stable_id,
 )
 
@@ -239,6 +246,7 @@ def _fixture_interaction(
     if verb not in definition.interaction_verbs:
         return None
     values = dict(fixture.authored_state)
+    updated_state = state
     toggles = {"open": ("open", True), "close": ("open", False),
                "light": ("lit", True), "extinguish": ("lit", False)}
     if verb in toggles:
@@ -250,7 +258,16 @@ def _fixture_interaction(
         values["draw_count"] = int(values.get("draw_count", 0)) + 1
     elif verb == "turn":
         values["turned_count"] = int(values.get("turned_count", 0)) + 1
-    elif verb in {"organize", "arrange", "gather", "fill", "water", "tend", "train", "transplant"}:
+    elif verb == "fill":
+        values["water_level"] = 3
+        values["fill_count"] = int(values.get("fill_count", 0)) + 1
+    elif verb == "water" and fixture.catalog_id == "watering_can":
+        level = int(values.get("water_level", 0))
+        if level <= 0:
+            return None
+        values["water_level"] = level - 1
+        values["water_count"] = int(values.get("water_count", 0)) + 1
+    elif verb in {"organize", "arrange", "gather", "water", "tend", "train", "transplant"}:
         values[f"{verb}_count"] = int(values.get(f"{verb}_count", 0)) + 1
     elif verb == "read_time":
         values["last_read_hour"] = (state.effective_time // 3_600) % 24
@@ -266,8 +283,117 @@ def _fixture_interaction(
     )
     fixtures = tuple(
         updated_fixture if item.fixture_id == fixture.fixture_id else item
-        for item in state.fixtures
+        for item in updated_state.fixtures
     )
+
+    # Fixture verbs change their linked world subsystem, not merely a counter.
+    # Tie-breaks are renderer-neutral: nearest Manhattan distance, then ID.
+    plants = list(updated_state.plants)
+    plant_effects = {
+        "train": "train", "transplant": "train", "tend": "water",
+        "water": "water", "turn": "water", "organize": "train",
+    }
+    care = plant_effects.get(verb)
+    if care and plants:
+        plant_index = min(range(len(plants)), key=lambda index: (
+            abs(plants[index].position.x - fixture.position.x)
+            + abs(plants[index].position.y - fixture.position.y),
+            plants[index].plant_id,
+        ))
+        plants[plant_index] = care_for_plant(
+            plants[plant_index], state.effective_time, care,
+        )
+        values["linked_plant_id"] = plants[plant_index].plant_id
+        updated_state = replace(updated_state, plants=tuple(plants))
+
+    program_state = dict(updated_state.program_state)
+    resources = dict(program_state.get("garden_resources", {}))
+    if verb in {"refill", "draw_water"}:
+        resources["water_units"] = int(resources.get("water_units", 0)) + 3
+    elif verb == "fill":
+        available = int(resources.get("water_units", 0))
+        resources["water_units"] = max(0, available - 3)
+    elif verb == "water" and fixture.catalog_id == "watering_can":
+        resources["watered_total"] = int(resources.get("watered_total", 0)) + 1
+    elif verb == "turn":
+        resources["soil_units"] = int(resources.get("soil_units", 0)) + 1
+    if verb == "organize":
+        resources["tools_ready"] = True
+    if resources:
+        program_state["garden_resources"] = resources
+        updated_state = replace(updated_state, program_state=program_state)
+
+    if verb == "gather":
+        available = [
+            item for item in updated_state.collectibles if not item.collected
+        ]
+        if available:
+            found = min(available, key=lambda item: (
+                abs(item.position.x - fixture.position.x)
+                + abs(item.position.y - fixture.position.y),
+                item.collectible_id,
+            ))
+            collectibles = tuple(
+                replace(item, collected=True)
+                if item.collectible_id == found.collectible_id else item
+                for item in updated_state.collectibles
+            )
+            updated_state = replace(
+                updated_state,
+                collectibles=collectibles,
+                inventory=tuple(sorted(set(updated_state.inventory).union(
+                    {found.collectible_id},
+                ))),
+            )
+            values["gathered_collectible_id"] = found.collectible_id
+    elif verb == "arrange" and updated_state.inventory:
+        arranged_id = sorted(updated_state.inventory)[0]
+        updated_state = replace(
+            updated_state,
+            collectibles=tuple(
+                replace(item, position=fixture.position)
+                if item.collectible_id == arranged_id else item
+                for item in updated_state.collectibles
+            ),
+        )
+        values["arranged_collectible_id"] = arranged_id
+
+    if updated_state.animals:
+        animal_index = min(range(len(updated_state.animals)), key=lambda index: (
+            abs(updated_state.animals[index].position.x - fixture.position.x)
+            + abs(updated_state.animals[index].position.y - fixture.position.y),
+            updated_state.animals[index].animal_id,
+        ))
+        animals = list(updated_state.animals)
+        animal = animals[animal_index]
+        memory = EpisodicMemory(
+            memory_id=stable_id(
+                "memory", state.world_id, animal.animal_id,
+                "fixture", fixture.fixture_id, verb, state.command_sequence + 1,
+            ),
+            kind=f"fixture:{verb}",
+            target_id=fixture.fixture_id,
+            timestamp=state.effective_time,
+            valence=1,
+            salience=1,
+        )
+        animals[animal_index] = replace(
+            animal,
+            current_intent=f"fixture_{verb}",
+            intent_started_at=state.effective_time,
+            minimum_dwell_until=state.effective_time + 5,
+            recent_memories=(animal.recent_memories + (memory,))[-16:],
+        )
+        updated_state = replace(updated_state, animals=tuple(animals))
+
+    journal_verbs = {"remember", "read", "review_inventory"}
+    ui = replace(
+        updated_state.ui,
+        focus_id=fixture.fixture_id,
+        camera=fixture.position,
+        journal_open=(updated_state.ui.journal_open or verb in journal_verbs),
+    )
+    updated_state = replace(updated_state, ui=ui)
     journal = _journal_entry(
         state,
         fixture.fixture_id,
@@ -276,9 +402,9 @@ def _fixture_interaction(
         f"{definition.semantic_name}: {verb.replace('_', ' ')}.",
     )
     details = updated_fixture.to_dict()
-    details["inventory"] = list(state.inventory)
+    details["inventory"] = list(updated_state.inventory)
     return (
-        replace(state, fixtures=fixtures, journal=journal),
+        replace(updated_state, fixtures=fixtures, journal=journal),
         f"Used {verb.replace('_', ' ')} at {definition.semantic_name}.",
         details,
     )
@@ -305,6 +431,7 @@ def _finish(
     *,
     actions: tuple[str, ...] = (),
     details: Mapping[str, Any] | None = None,
+    interrupted_animal_id: str | None = None,
 ) -> tuple[WorldState, CommandResult]:
     trace = TraceEntry(
         trace_id=stable_id("trace", prior.world_id, value.command_id),
@@ -317,8 +444,11 @@ def _finish(
     final = replace(
         updated,
         command_sequence=value.sequence,
-        processed_commands=prior.processed_commands + (value.command_id,),
-        event_trace=updated.event_trace + (trace,),
+        processed_commands=(prior.processed_commands + (value.command_id,))[
+            -PROCESSED_COMMAND_LIMIT:
+        ],
+        event_trace=compact_event_trace(updated.event_trace + (trace,)),
+        undo_stack=updated.undo_stack[-UNDO_STACK_LIMIT:],
     )
     if final.animals:
         scene = final.program_state.get("scene", {})
@@ -327,7 +457,7 @@ def _finish(
         affordances = tuple(sorted({
             value
             for fixture in final.fixtures
-            for value in (fixture.catalog_id, *FIXTURE_CATALOG[fixture.catalog_id].affordances)
+            for value in (fixture.catalog_id, *fixture_active_affordances(fixture))
         }))
         final, _ = step_animals(final, AnimalContext(
             effective_time=final.effective_time,
@@ -335,9 +465,79 @@ def _finish(
             weather=str(scene.get("weather", "calm")),
             recipient_focus_id=final.ui.focus_id,
             nearby_affordances=affordances,
+            interrupted_animal_id=interrupted_animal_id,
         ))
     final = activate_memorial(final)
     return final, CommandResult(True, final != prior, "", summary, actions, details)
+
+
+LIVE_TICK_SECONDS = 5
+def advance_live_world(state: WorldState, elapsed_seconds: int) -> WorldState:
+    """Advance the canonical dwell loop on fixed deterministic boundaries.
+
+    The reducer is aggregation-safe: advancing 600 seconds in one call produces
+    the same semantic state and fixed-boundary trace as any partition totaling
+    600 seconds. Reduced motion is deliberately presentation-only; the saved
+    pause flag is the canonical control that stops world time.
+    """
+    elapsed = max(0, int(elapsed_seconds))
+    if elapsed == 0:
+        return state
+    observed = (
+        None if state.last_observed_wall_time is None
+        else state.last_observed_wall_time + elapsed
+    )
+    if state.ui.motion_paused:
+        return replace(state, last_observed_wall_time=observed)
+    start = state.effective_time
+    end = start + elapsed
+    plants: list[PlantState] = []
+    for plant in state.plants:
+        if plant.dormant:
+            plants.append(plant)
+            continue
+        period = max(1, plant.growth_period_seconds)
+        milestones = max(0, end // period - start // period)
+        grown = advance_topology(plant, end, milestones) if milestones else plant
+        plants.append(replace(grown, growth_points=plant.growth_points + milestones))
+    current = replace(state, plants=tuple(plants))
+    boundary = ((start // LIVE_TICK_SECONDS) + 1) * LIVE_TICK_SECONDS
+    while boundary <= end:
+        current = replace(current, effective_time=boundary)
+        scene = current.program_state.get("scene", {})
+        scene = scene if isinstance(scene, Mapping) else {}
+        affordances = tuple(sorted({
+            value
+            for fixture in current.fixtures
+            for value in (fixture.catalog_id, *fixture_active_affordances(fixture))
+        }))
+        hour = (boundary // 3_600) % 24
+        current, decisions = step_animals(current, AnimalContext(
+            effective_time=boundary,
+            time_of_day="night" if hour < 6 or hour >= 20 else "day",
+            weather=str(scene.get("weather", "calm")),
+            recipient_focus_id=current.ui.focus_id,
+            nearby_affordances=affordances,
+        ))
+        summary = ", ".join(
+            f"{decision.animal_id}:{decision.intent}" for decision in decisions
+        ) or "Garden time advanced."
+        trace_id = stable_id("trace", current.world_id, "live-tick", boundary)
+        if not any(entry.trace_id == trace_id for entry in current.event_trace):
+            current = replace(current, event_trace=compact_event_trace(current.event_trace + (TraceEntry(
+                trace_id=trace_id,
+                sequence=current.command_sequence,
+                kind="live_tick",
+                target_id=None,
+                effective_time=boundary,
+                summary=summary,
+            ),)))
+        boundary += LIVE_TICK_SECONDS
+    return activate_memorial(replace(
+        current,
+        effective_time=end,
+        last_observed_wall_time=observed,
+    ))
 
 
 def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, CommandResult]:
@@ -397,7 +597,11 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         if outcome is None:
             return state, _reject("target is not available")
         updated, summary, details = outcome
-        return _finish(state, updated, value, summary, actions=_available_actions(updated, chosen), details=details)
+        return _finish(
+            state, updated, value, summary,
+            actions=_available_actions(updated, chosen), details=details,
+            interrupted_animal_id=(chosen if chosen_kind == "animal" else None),
+        )
 
     if kind is CommandKind.OPEN_ACTIONS:
         chosen = target or state.ui.focus_id
@@ -453,7 +657,11 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         updated_animal = _animal_interaction(state, animal, interaction)
         animals = tuple(updated_animal if item.animal_id == target else item for item in state.animals)
         updated_state = _with_bond_gift(replace(state, animals=animals), animal, updated_animal)
-        return _finish(state, updated_state, value, f"Shared {interaction} with {animal.species_id}.", details=updated_animal.to_dict())
+        return _finish(
+            state, updated_state, value,
+            f"Shared {interaction} with {animal.species_id}.",
+            details=updated_animal.to_dict(), interrupted_animal_id=animal.animal_id,
+        )
 
     if kind is CommandKind.COLLECT:
         outcome = _collect(state, str(target))

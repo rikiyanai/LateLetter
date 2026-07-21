@@ -1,56 +1,54 @@
-# Garden Feature-Gap and Renderer Parity
+# Garden feature-gap and renderer parity
 
-Verified 2026-07-21 against the normal, checksummed, HMAC-authenticated,
-encrypted v2 synthetic bundle in `sealed_demo.lateletter` with passcode
-`garden`. “Renderer parity” below means that terminal and HTML consume the
-same canonical world state, evaluator, materialization receipts, event trace,
-and semantic commands. It does **not** mean that the full §7.8 product contract
-or its human acceptance gates have passed.
+Verified 2026-07-21 against the normal checksummed, HMAC-authenticated,
+encrypted v2 synthetic bundle in `sealed_demo.lateletter`, using the public
+demo passphrase `garden-biscuit-2026`.
 
-The specification finding remains controlling:
+The controlling finding remains:
 
-> The existing Garden began as a renderer-backed recipient gift loop, not the
-> standalone, author-directed cozy garden promised by §7.8. Shared runtime
-> ownership is now implemented, but the product must not be described as a
-> “full,” “standalone,” or “parity” Garden until every §7.8.13 gate passes a
-> normal sealed production bundle in every supported modality.
+> The original Garden was a renderer-backed recipient gift loop, not the
+> standalone, author-directed cozy garden promised by §7.8. Terminal and HTML
+> letter parity did not establish full Garden parity. The implementation now
+> shares canonical world semantics and substantially closes the objective
+> feature gaps, but it must not be called “full,” “parity,” or
+> “production-ready” until every §7.8.13 gate—including the required human
+> gates—passes.
 
-## Feature parity
+## Feature table
 
-| §7.8 contract | Terminal | HTML | Renderer parity | Release state |
+| §7.8 system | Terminal state | HTML state | Same canonical state? | §7.8.13 result |
 |---|---|---|---|---|
-| One authoritative deterministic world | Canonical immutable `WorldState`, reducer, persistence, clock, and projection | Byte-conformant JS model, reducer, persistence, clock, and projection | **Yes** — golden command replay and authored materialization compare exact canonical bytes | Automated core complete |
-| Authentication, checksum, and real decryption | Canonical checksum/HMAC gate and AES-GCM message/program open | Matching checksum, WebCrypto HMAC, AES-GCM message/program open | **Yes** | Production-path pass |
-| Semantic input vocabulary | All 15 commands route through the terminal adapter | Touch, mouse, and browser-keyboard adapters emit the same command bytes | **Yes at adapter/reducer level** | **Partial Gate 2** — every visible action has not been traversed in every modality |
-| Standalone glance/tend/dwell entry | Garden works without a bundle; object/action help, care, arrangement, journal, pause | Visible standalone entry, object list, care, arrangement, journal, dwell/pause | **Functional parity** | **Blocked Gate 3** — human usefulness observation is mandatory |
-| Plant care and stable growth topology | Persistent rooted topology; inspect, water, prune/train/transplant semantics; offline growth | Same stable IDs/topology hashes and care reducer | **Yes for canonical semantics** | Gate 4 pass; richer authored bounds/visual-stage observation remain open |
-| Placement, movement, and undo | Place plant/fixture, move fixture, undo | Visible place/move/undo controls using the same reducer | **Yes** | Production-path subset observed |
-| Fixtures and connected tiles | Versioned catalog and all 16 masks for five connected families | Same canonical fixtures and masks | **Yes for data/state** | **Partial** — several promised direct fixture verbs remain inspect-only and screenshot portability is open |
-| Collectibles, inventory, and journal | Stable collectibles, collect state, inventory, automatic journal | Same; accessible object list and visible journal | **Yes** | Production v2 keepsake collected in both-runtime verification |
-| Deterministic animal AI and bonding | Four species, persistent personality/memory/needs, utility choice, hysteresis, choreography lock, varied bonding | Shared animal state/interactions and authored materialization | **State parity; presentation partial** | **Partial Gate 7** — distinct four-tier repertoires and memory-driven live choices are incomplete |
-| Encrypted author programming | v2 program decrypt, schedule expansion, evaluator, materializer, re-evaluation after actions | Same program schema/evaluator/schedules/materializer and in-session re-evaluation | **Yes for runtime** | **Partial Gate 8** — full no-JSON interactive author arc has not passed end to end |
-| Conditions, recurrence, missed events, rollback | Priority/exclusivity, once/recurring, DST gap/fold, bounded catch-up, three missed policies | Matching evaluator and schedule vectors | **Yes** | Gate 9 pass |
-| Shared camera/world coordinates and reduced motion | Canonical camera projected to terminal cells; pause command | Same fixed-point camera; visible pan and persistent pause/reduced-motion control | **Canonical parity** | **Partial Gate 10** — long rendered pans and p95 budgets remain open |
-| Versioned Unicode/ASCII atlas | `ascii-safe` and `unicode-cell-safe` profiles | `browser-font-locked`/rich profiles with fallbacks | **Manifest parity** | **Partial Gate 6** — supported screenshot matrix for tofu/overlap/jitter is absent |
-| Astronomical, privacy-preserving sky | Coarse-location and labeled fallback contracts exist | Live viewer still uses its artistic renderer sky; no complete shared star projection path | **No** | **Partial Gate 11** — only 2/12 trusted vectors and no live activation/privacy browser run |
-| Accessibility and target size | Full semantic command help and line-readable state | Focusable object list/action sheet, scene summary, persistent pause, 44px controls, narrow layout | **Semantic parity** | **Partial Gate 12** — VoiceOver/NVDA, no-color, and 200% zoom observation remain open |
-| Deterministic replay and humane absence | Clock rollback clamps; 1/7/30/365-day absence loses nothing; bounded summaries | Matching clock/replay state and persistence | **Yes** | Gate 13 pass; deterministic replay covered |
-| Production bundle | v2 program materializes authored bench, rabbit, keepsake, and letter state | Same visible objects and exact decrypted letter | **Yes locally** | **Partial Gate 1** — third-return plant arc and published deployment still need completion observation |
-| Human emotional/standalone acceptance | Not signed off | Not signed off | Not applicable | **Blocked Gates 3 and 14** |
+| Authentication, checksum, and real decryption | HMAC/checksum gate, bounded PBKDF2, AES-GCM; strict raw schema; fixed pre-auth preview; secret-bound receipt/world namespace | Matching v1/v2 HMAC profiles, bounded WebCrypto KDF, AES-GCM; same strict raw schema; epoch-fenced transactional unlock; bfcache plaintext/runtime purge | Yes | Shared nine-boundary adversarial vectors, cancellation regression, production path, and history-restore boundary verified locally |
+| Author questions → draft → seal → export/append | Accessible and curses author paths complete; v2 APPEND decrypts and ID-safely merges the prior program | Recipient only | One canonical bundle writer/program schema | Gate 8 PASS by scripted no-JSON author flow and trace tests |
+| Author conditions, schedules, recurrence, missed events, and world changes | Encrypted program; fixed-point evaluation; DST gap/fold; visible bounded summaries; conditional letter presentation | Matching parser/evaluator/materializer and visible persisted summary/presented-letter state | Yes—cross-runtime state/effects/trace vectors | Gates 8 and 9 PASS |
+| Deterministic world and persistence | Immutable `WorldState`, reducer, clock, event trace, canonical JSON; bounded 512 command/trace/visit/offline/occurrence histories, aggregate totals, and 128 undo records | Byte-conformant JS world, reducer, clock, trace, persistence with identical bounds/totals | Yes—golden replay plus 700-command and multi-year restart stress compare exact bytes | Core parity implemented |
+| Glance / tend / dwell without a bundle | Standalone Garden, object/action navigation, full care verbs, 30-second dwell and real idle ticks | Standalone entry, semantic controls, real visible live loop, explicit dwell; authenticated schedules re-evaluate during live time | Yes | Gate 3 BLOCKED on required human usefulness observation |
+| Touch / mouse / keyboard / terminal input | All canonical commands have discoverable terminal keys/actions | Native controls derive touch/mouse; keyboard bindings route to the same command bytes | Yes at adapter/reducer level | Gate 2 PARTIAL until every visible action is physically traversed in every modality |
+| Plant care and persistent topology | Water/prune/train/rest/transplant; stable organ IDs; seven named fixed-point maturity stages with gradual geometry; undo | Same topology/care reducer, stage semantics, and interpolated organ geometry | Yes—every stage/restart projection matches exactly | Gate 4 PASS |
+| Placement, movement, rotation, and undo | Camera-centered copy/place, move, rotate, transplant, undo | Reader chooses kind, catalog, x/y; move/rotate/undo use canonical validation | Yes | Included in Gate 2 observation work |
+| Functional fixtures and connected footprints | State machines and verbs change linked UI, plants, water/resources, inventory/collectibles, or animal memory/routines; full footprints and all 16 masks render | Same linked canonical effects, projected state, footprints, masks, and actions | Yes—every verb/restart effect matches exact bytes | Gate 5 PASS by exhaustive terminal/browser renderer evidence; Gate 6 portability evidence remains partial |
+| Collectibles, inventory, and journal | Persistent collect/examine/inventory/journal and authored memories; scrollable inventory/journal/missed-summary panel | Same state plus accessible object list, complete journal, and missed summaries | Yes | Production demo verified locally |
+| Deterministic animal AI | Four species; safety-first priority, personality/needs, bounded episodic memory, weather/season utility, deterministic validated locomotion/routines, hysteresis, four bond tiers, authored choreography | Same decisions/movement/state; reason, score, context, tier, intent, personality, and memory are visible and semantically described | Yes—decision, position, projection, and restart bytes match | Gate 7 PASS |
+| Scene changes and memorial | Weather/palette/story/ambience tokens, bounded absence text, lasting memorial | Same semantic scene, absence, and memorial state | Yes | Gate 13 PASS; emotional sign-off remains Gate 14 |
+| Camera, parallax, responsive hit testing, reduced motion | Canonical camera center, per-object depth, and partial row diffs | Same per-object depth; matching inverse hit tests; measured glyph geometry; saved pause and presentation-only reduced motion | Yes | Gate 10 PARTIAL: reference-device p95 measurements remain |
+| Versioned Unicode/ASCII atlas | Python consumes and validates the canonical atlas manifest, semantic tokens, graphemes, and safe profiles | Browser imports that same manifest directly | Yes—no duplicate glyph owner | Gate 6 PARTIAL: supported screenshot matrix remains |
+| Privacy-preserving sky | Shared 24-star JSON catalog, author-region/storybook projection | Imports the same JSON catalog; explicit coarse reader opt-in, denial/fallback, and forget | Yes—12 trusted Alt/Az fixtures within 0.25° | Gate 11 PASS |
+| Accessibility | Line-readable state, ordinary-text help, journal/inventory/absence/memorial | Semantic per-object descriptions, focusable controls, 44px targets, narrow layout, reduced motion | Same projected facts/actions | Gate 12 PARTIAL: VoiceOver/NVDA, no-color, and 200% human runs remain |
+| Deterministic replay, absence, and ethics | Rollback clamp; 1/7/30/365-day aggregate return; exhaustive manipulative-copy rejection | Matching replay/absence state and parser restrictions | Yes | Gate 13 PASS |
+| Normal sealed production bundle | Wrong-pass rejection, exact fictional letter, authored bench/rabbit/plant/keepsake/third-return arc, live dwell | Same exact letter and authored world; transactional unlock; first-click delivery and mobile-width dwell verified | Yes locally | Gate 1 PARTIAL until the pushed Pages deployment is re-run end to end |
 
-## Current §7.8.13 gate result
+## Current gate summary
 
 | Result | Gates |
 |---|---|
-| **PASS** | 4 Plant stability; 5 Layout safety; 9 Temporal correctness; 13 Absence/ethics |
-| **PARTIAL** | 1 Production reachability; 2 Input parity; 6 Atlas portability; 7 Animal behavior; 8 Author control; 10 Parallax/performance; 11 Sky accuracy/privacy; 12 Accessibility |
-| **BLOCKED on required human evidence** | 3 Standalone value; 14 Human acceptance |
+| **PASS** | 4 Plant stability; 5 Layout safety; 7 Animal behavior; 8 Author control; 9 Temporal correctness; 11 Sky accuracy/privacy; 13 Absence/ethics |
+| **PARTIAL** | 1 Published production reachability; 2 physical input traversal; 6 atlas screenshot portability; 10 reference-device performance; 12 assistive-technology observation |
+| **BLOCKED on mandatory human evidence** | 3 Standalone value; 14 Human acceptance |
 
-Machine-readable evidence is in
-`tests/garden_acceptance/gate_matrix.json`; print it with
-`PYTHONPATH=src python3 -m tests.garden_acceptance.report`. The direct terminal
-and browser observations are recorded in `docs/GARDEN_QA_2026-07-21.md`.
+Machine-readable evidence is in `tests/garden_acceptance/gate_matrix.json`.
+The direct terminal/browser run is recorded in
+`docs/GARDEN_QA_2026-07-21.md`.
 
-The safe-content boundary is unchanged: tracked artifacts contain fictional
-demo text only. The compromised personal letter and passphrase remain
-unpublished.
+Tracked artifacts contain fictional demo copy only. The prior Chloe message
+and passphrase remain compromised and are intentionally not reused. A real
+Chloe bundle requires newly approved personal wording and a new passphrase.

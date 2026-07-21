@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Mapping
 
+from .fixtures import (
+    blocked_cells,
+    fixture_active_affordances,
+    fixture_cells,
+    layout_is_safe,
+)
 from .model import AnimalState, Personality, Vec2, WorldState
 from .rng import DeterministicRNG, derive_seed
 
@@ -89,6 +96,38 @@ ANIMAL_GIFT_CATALOG: dict[str, tuple[str, str, str]] = {
     "turtle": ("turtle_scute", "Turtle scute", "A naturally shed scute left by a familiar turtle."),
 }
 
+INTENT_AFFORDANCE_REQUIREMENTS: dict[str, tuple[str, ...]] = {
+    "bathe": ("bathe",),
+    "paddle": ("pond", "water-visitor"),
+    "perch": ("perch",),
+    "perch_nearby": ("perch",),
+    "use_bench": ("bench", "animal-rest"),
+    "share_bench": ("bench", "animal-rest"),
+    "use_trellis": ("trellis", "animal-hide"),
+    "share_planter": ("planter", "plant-container"),
+    "use_pond": ("pond", "water-visitor"),
+    "share_bridge": ("bridge", "animal-route"),
+    "follow_path": ("path", "route"),
+}
+
+RECENT_MEMORY_LIMIT = 16
+_CARDINAL_STEPS = (Vec2(0, -1), Vec2(1, 0), Vec2(0, 1), Vec2(-1, 0))
+_MOVING_INTENT_TOKENS = (
+    "approach", "bathe", "bring", "cross", "explore", "follow", "forage",
+    "greet", "hop", "paddle", "patrol", "play", "sniff", "walk",
+)
+_MEMORY_INTENT_TOKENS: dict[str, tuple[str, ...]] = {
+    "feed": ("approach", "bring", "forage", "greet", "recall", "sniff"),
+    "play": ("flop", "follow", "hop", "knead", "play", "sing", "song"),
+    "observe": ("groom", "near", "perch", "rest", "watch"),
+}
+_SEASON_INTENT_TOKENS: dict[str, tuple[str, ...]] = {
+    "spring": ("forage", "greet", "sing", "song"),
+    "summer": ("bathe", "paddle", "play", "sunbathe"),
+    "autumn": ("explore", "forage", "patrol", "sniff"),
+    "winter": ("hide", "nap", "rest", "settled"),
+}
+
 
 @dataclass(frozen=True)
 class AnimalContext:
@@ -98,7 +137,7 @@ class AnimalContext:
     weather: str = "calm"
     recipient_focus_id: str | None = None
     nearby_affordances: tuple[str, ...] = ()
-    interrupted: bool = False
+    interrupted_animal_id: str | None = None
     returning: bool = False
 
 
@@ -194,11 +233,40 @@ def _utility_score(
     if intent in animal.authored_preferences:
         score += 60
     definition = ANIMAL_SPECIES[animal.species_id]
+    required = INTENT_AFFORDANCE_REQUIREMENTS.get(intent, ())
+    if required and not any(value in context.nearby_affordances for value in required):
+        score -= 2_000
     if any(affordance in context.nearby_affordances for affordance in definition.fixture_affinities):
         score += 20
     cooldown_until = dict(animal.cooldowns).get(intent, 0)
     if cooldown_until > context.effective_time:
         score -= 1_000
+    recent = sorted(
+        animal.recent_memories,
+        key=lambda memory: (memory.timestamp, memory.memory_id),
+    )[-RECENT_MEMORY_LIMIT:]
+    for memory in recent:
+        tokens = _MEMORY_INTENT_TOKENS.get(memory.kind, ())
+        if tokens and any(token in intent for token in tokens):
+            magnitude = 8 + min(12, max(0, memory.salience) // 10)
+            score += magnitude if memory.valence >= 0 else -magnitude
+    weather = context.weather.casefold()
+    if weather in {"rain", "heavy_rain", "storm"}:
+        if any(token in intent for token in ("bathe", "hide", "nap", "paddle", "rest")):
+            score += 35
+        if any(token in intent for token in ("play", "sing", "sunbathe")):
+            score -= 35
+    elif weather in {"clear", "sunny"}:
+        if any(token in intent for token in ("play", "sing", "sunbathe")):
+            score += 25
+    elif weather in {"cold", "snow", "blizzard"}:
+        if any(token in intent for token in ("hide", "nap", "rest", "settled")):
+            score += 40
+        if any(token in intent for token in ("bathe", "paddle", "sunbathe")):
+            score -= 40
+    season_tokens = _SEASON_INTENT_TOKENS.get(context.season.casefold(), ())
+    if any(token in intent for token in season_tokens):
+        score += 30
     noise = DeterministicRNG(derive_seed(
         world_seed,
         "animal",
@@ -216,21 +284,40 @@ def decide_animal(
     world_seed: int | str | bytes,
 ) -> AnimalDecision:
     definition = ANIMAL_SPECIES[animal.species_id]
-    if animal.choreography_lock:
-        return AnimalDecision(
-            animal.animal_id,
-            "authored_scene",
-            f"choreography:{animal.choreography_lock}",
-            10_000,
-            priority_reason="authored_choreography",
-        )
-    if context.interrupted or animal.energy <= 15:
+    if context.interrupted_animal_id == animal.animal_id or animal.energy <= 15:
         return AnimalDecision(
             animal.animal_id,
             "resting",
             "rest",
             9_000,
             priority_reason="safety_or_interruption",
+        )
+    severe_weather = context.weather.casefold() in {"heavy_rain", "storm", "blizzard"}
+    cold_turtle = (
+        animal.species_id == "turtle"
+        and context.weather.casefold() in {"cold", "snow", "blizzard"}
+    )
+    if severe_weather or cold_turtle:
+        safe_intent = {
+            "bird": "perch",
+            "cat": "nap",
+            "rabbit": "hide",
+            "turtle": "rest",
+        }[animal.species_id]
+        return AnimalDecision(
+            animal.animal_id,
+            "resting",
+            safe_intent,
+            9_500,
+            priority_reason="weather_safety",
+        )
+    if animal.choreography_lock:
+        return AnimalDecision(
+            animal.animal_id,
+            "authored_scene",
+            f"choreography:{animal.choreography_lock}",
+            9_000,
+            priority_reason="authored_choreography",
         )
     if (
         animal.current_intent not in ("idle", "recover")
@@ -294,8 +381,14 @@ def step_animal(
         return animal, decision
     definition = ANIMAL_SPECIES[animal.species_id]
     dwell = definition.dwell_for(decision.intent)
+    # Safety and a recipient's direct semantic interruption release authored
+    # choreography before the resting decision is published.  The projection
+    # must never claim an animal is still performing while safety owns it.
+    source = replace(animal, choreography_lock=None) if decision.priority_reason in {
+        "safety_or_interruption", "weather_safety",
+    } else animal
     updated = replace(
-        animal,
+        source,
         high_level_state=decision.high_level_state,
         current_intent=decision.intent,
         intent_started_at=context.effective_time,
@@ -309,14 +402,122 @@ def step_animal(
     return updated, decision
 
 
+def _fixture_target_cells(
+    state: WorldState,
+    animal: AnimalState,
+    intent: str,
+) -> tuple[Vec2, ...]:
+    definition = ANIMAL_SPECIES[animal.species_id]
+    desired = set(INTENT_AFFORDANCE_REQUIREMENTS.get(intent, ()))
+    desired.update(definition.fixture_affinities)
+    candidates = []
+    for fixture in state.fixtures:
+        active = {fixture.catalog_id, *fixture_active_affordances(fixture)}
+        if not desired.intersection(active):
+            continue
+        candidates.append((fixture.fixture_id, fixture))
+    if not candidates:
+        return ()
+    _, target = min(
+        candidates,
+        key=lambda item: (
+            min(
+                abs(animal.position.x - cell.x) + abs(animal.position.y - cell.y)
+                for cell in fixture_cells(item[1])
+            ),
+            item[0],
+        ),
+    )
+    return tuple(sorted(fixture_cells(target), key=lambda cell: (cell.y, cell.x)))
+
+
+def _move_animal(
+    state: WorldState,
+    animal: AnimalState,
+    decision: AnimalDecision,
+) -> AnimalState:
+    if decision.high_level_state != "awake" or not any(
+        token in decision.intent for token in _MOVING_INTENT_TOKENS
+    ):
+        return animal
+    rng = DeterministicRNG(derive_seed(
+        state.seed,
+        "animal",
+        animal.animal_id,
+        "locomotion",
+        animal.decision_index,
+        decision.intent,
+    ))
+    rotation = rng.randbelow(len(_CARDINAL_STEPS))
+    steps = _CARDINAL_STEPS[rotation:] + _CARDINAL_STEPS[:rotation]
+    targets = _fixture_target_cells(state, animal, decision.intent)
+    ranked: list[tuple[int, int, Vec2]] = []
+    blockers = blocked_cells(state)
+    other_animals = {
+        item.position for item in state.animals if item.animal_id != animal.animal_id
+    }
+    for rank, step in enumerate(steps):
+        candidate = Vec2(animal.position.x + step.x, animal.position.y + step.y)
+        if not (0 <= candidate.x < state.world_width and 0 <= candidate.y < state.world_height):
+            continue
+        if candidate in blockers or candidate in other_animals:
+            continue
+        distance = min(
+            (abs(candidate.x - cell.x) + abs(candidate.y - cell.y) for cell in targets),
+            default=0,
+        )
+        ranked.append((distance, rank, candidate))
+    for _, _, candidate in sorted(ranked, key=lambda item: (item[0], item[1])):
+        moved = replace(animal, position=candidate)
+        animals = tuple(
+            moved if item.animal_id == animal.animal_id else item
+            for item in state.animals
+        )
+        if layout_is_safe(replace(state, animals=animals)):
+            return moved
+    return animal
+
+
 def step_animals(
     state: WorldState,
     context: AnimalContext,
 ) -> tuple[WorldState, tuple[AnimalDecision, ...]]:
+    if not state.animals:
+        return state, ()
+    scene = state.program_state.get("scene", {})
+    if isinstance(scene, Mapping) and "season" in scene:
+        context = replace(context, season=str(scene["season"]))
+    current = state
     updated: list[AnimalState] = []
     decisions: list[AnimalDecision] = []
+    decision_records: dict[str, dict[str, object]] = {}
     for animal in state.animals:
         next_animal, decision = step_animal(animal, context, state.seed)
+        before = next_animal.position
+        next_animal = _move_animal(current, next_animal, decision)
+        current = replace(
+            current,
+            animals=tuple(
+                next_animal if item.animal_id == animal.animal_id else item
+                for item in current.animals
+            ),
+        )
         updated.append(next_animal)
         decisions.append(decision)
-    return replace(state, animals=tuple(updated)), tuple(decisions)
+        decision_records[animal.animal_id] = {
+            "intent": decision.intent,
+            "priority_reason": decision.priority_reason,
+            "score": decision.score,
+            "retained_by_hysteresis": decision.retained_by_hysteresis,
+            "moved": next_animal.position != before,
+            "from_position": before.to_list(),
+            "to_position": next_animal.position.to_list(),
+            "weather": context.weather,
+            "season": context.season,
+            "memory_count": min(RECENT_MEMORY_LIMIT, len(animal.recent_memories)),
+        }
+    program_state = {
+        **dict(state.program_state),
+        "animal_decisions": decision_records,
+    }
+    return replace(current, animals=tuple(updated), program_state=program_state), tuple(decisions)

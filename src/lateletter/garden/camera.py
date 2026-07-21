@@ -20,6 +20,13 @@ def cells(value: int) -> int:
     return value * SUBCELLS_PER_CELL
 
 
+def whole_cells(value: int) -> int:
+    """Quantize subcells to the nearest cell with canonical half-away ties."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError("subcell coordinates must be integers")
+    return _round_ratio(value, SUBCELLS_PER_CELL)
+
+
 def _round_ratio(numerator: int, denominator: int) -> int:
     """Integer division rounded to nearest, with halves away from zero."""
     if denominator <= 0:

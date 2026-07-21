@@ -10,6 +10,9 @@ requires-python = ">=3.11"
 dependencies = [
     "cryptography>=42.0,<44",
     "argon2-cffi>=23.1,<25",
+    "regex>=2024.11,<2027",
+    "wcwidth>=0.2.13,<1",
+    "tzdata>=2025.2; platform_system == 'Windows'",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +26,10 @@ lateletter = "lateletter.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+lateletter = ["data/*.json"]
+"lateletter.garden" = ["data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

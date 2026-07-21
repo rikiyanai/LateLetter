@@ -57,3 +57,26 @@ def test_atlas_rejects_unsafe_control_private_use_and_width_drift():
     drift["assets"][0]["profiles"]["ascii-safe"]["idle"][0]["cells"] = [["=", "="]]
     with pytest.raises(AtlasValidationError):
         validate_atlas(drift)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda atlas: atlas["semantic_tokens"]["organ_kind_glyphs"].__setitem__(
+            "leaf", "e\u0301"), "NFC-normalized"),
+        (lambda atlas: atlas["semantic_tokens"]["plant_species_glyphs"].__setitem__(
+            "rose", "ab"), "exactly one grapheme"),
+        (lambda atlas: atlas["semantic_tokens"]["animal_tier_glyphs"]["cat"].__setitem__(
+            2, "\ue000"), "ascii-safe cells"),
+        (lambda atlas: atlas["semantic_tokens"]["delivery_frames"]["bird"][0].__setitem__(
+            0, "safe\u202etext"), "bidirectional controls"),
+        (lambda atlas: atlas["semantic_tokens"]["delivery_frames"]["bird"][0].__setitem__(
+            0, "wide界"), "exactly one column"),
+    ],
+)
+def test_semantic_atlas_tokens_reject_normalization_grapheme_and_unicode_hazards(
+        mutate, message):
+    atlas = load_atlas()
+    mutate(atlas)
+    with pytest.raises(AtlasValidationError, match=message):
+        validate_atlas(atlas)

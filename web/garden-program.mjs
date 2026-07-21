@@ -1,6 +1,7 @@
 /** Authenticated Garden program parsing, migration, schedules, and evaluation. */
 
 import { canonicalJson, sha256Hex } from './garden-input.mjs';
+import { decodeStrictBase64, validateBrowserPbkdf2Params } from './garden-runtime.mjs';
 import { gardenCatalogHas } from './garden-world.mjs';
 
 const FACTS = new Set([
@@ -21,7 +22,185 @@ const ACTIONS = new Set([
   'narrative.show', 'variable.set', 'variable.increment', 'event.complete',
 ]);
 const ID = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
+const BUNDLE_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
+const TIMEZONE_ID = /^[A-Za-z_+-]+(?:\/[A-Za-z0-9_+.-]+)*$/;
+const MAX_STRING_LENGTH = 16384;
+const MAX_SAFE_JSON_DEPTH = 20;
 const clone = value => JSON.parse(canonicalJson(value));
+const PLACEMENT_HINTS = new Set([
+  'random', 'authored', 'path', 'near_tallest_tree', 'near_bench', 'by_edge',
+]);
+const BUNDLE_V1_FIELDS = new Set([
+  'version', 'bundle_id', 'author_name', 'passphrase_hint', 'bundle_auth_salt',
+  'garden_seed', 'messages', 'garden_gifts', 'notification', 'checksum', 'hmac',
+]);
+const BUNDLE_V2_FIELDS = new Set([
+  ...BUNDLE_V1_FIELDS, 'bundle_auth_kdf_params', 'garden_program',
+]);
+const MESSAGE_FIELDS = new Set(['id', 'date', 'ciphertext', 'salt', 'nonce', 'kdf_params']);
+const GIFT_FIELDS = new Set([
+  'id', 'type', 'catalog_id', 'sentiment_ciphertext', 'salt', 'nonce', 'trigger',
+  'placement_hint', 'animal_name', 'animal_collar_color',
+]);
+const TRIGGER_FIELDS = new Set(['type', 'value']);
+const NOTIFICATION_FIELDS = new Set(['email', 'method']);
+const GARDEN_PROGRAM_FIELDS = new Set(['version', 'ciphertext', 'salt', 'nonce', 'kdf_params']);
+const PBKDF2_FIELDS = new Set(['name', 'hash', 'iterations']);
+
+function rejectUnknownFields(value, allowed, path, errors) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+  const unknown = Object.keys(value).filter(key => !allowed.has(key)).sort(compareCodePoints);
+  if (unknown.length) errors.push(`${path} contains unknown fields: ${unknown.join(', ')}`);
+}
+
+function validatePbkdf2Shape(value, path, errors, { required = false } = {}) {
+  if (value === null || value === undefined) {
+    if (required) errors.push(`${path} must contain the supported PBKDF2 profile`);
+    return;
+  }
+  rejectUnknownFields(value, PBKDF2_FIELDS, path, errors);
+  try { validateBrowserPbkdf2Params(value, path); } catch (error) {
+    errors.push(error.message);
+  }
+}
+
+function validateBase64Shape(value, path, errors, {
+  exact = null, minimum = null, required = false,
+} = {}) {
+  if (value === null || value === undefined || value === '') {
+    if (required) errors.push(`${path} must not be empty`);
+    return;
+  }
+  try { decodeStrictBase64(value, { field: path, exact, minimum }); } catch (error) {
+    errors.push(error.message);
+  }
+}
+
+export function compareCodePoints(leftValue, rightValue) {
+  const left = Array.from(String(leftValue));
+  const right = Array.from(String(rightValue));
+  const length = Math.min(left.length, right.length);
+  for (let index = 0; index < length; index += 1) {
+    const difference = left[index].codePointAt(0) - right[index].codePointAt(0);
+    if (difference) return difference;
+  }
+  return left.length - right.length;
+}
+
+/** Validate public bundle identities before browser authentication or storage. */
+export function validateBundleIdentityShape(raw) {
+  const errors = [];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new Error('Invalid bundle identity: bundle must be an object');
+  }
+  const version = raw.version;
+  if (typeof version !== 'number' || !Number.isInteger(version) || ![1, 2].includes(version)) {
+    errors.push(`unsupported bundle version ${String(version)}`);
+  }
+  if (typeof raw.bundle_id !== 'string' || !BUNDLE_ID.test(raw.bundle_id)) {
+    errors.push('bundle_id must be a 1-128 character path-safe identifier');
+  }
+  const topFields = version === 2 ? BUNDLE_V2_FIELDS : BUNDLE_V1_FIELDS;
+  rejectUnknownFields(raw, topFields, '$', errors);
+  const encryptedMessagesRequired = Boolean(raw.hmac) || version === 2;
+  for (const [field, values] of [['messages', raw.messages], ['garden_gifts', raw.garden_gifts]]) {
+    if (values !== undefined && !Array.isArray(values)) {
+      errors.push(`${field} must be a list`);
+      continue;
+    }
+    const seen = new Set();
+    for (const [index, value] of (values ?? []).entries()) {
+      rejectUnknownFields(
+        value,
+        field === 'messages' ? MESSAGE_FIELDS : GIFT_FIELDS,
+        `$.${field}[${index}]`,
+        errors,
+      );
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        errors.push(`${field}[${index}] must be an object`);
+        continue;
+      }
+      const path = `$.${field}[${index}]`;
+      if (typeof value.id !== 'string' || value.id.length === 0) {
+        errors.push(`${field}[${index}].id must be a non-empty string`);
+        continue;
+      }
+      if (seen.has(value.id)) errors.push(`${field}[${index}].id duplicates ${JSON.stringify(value.id)}`);
+      seen.add(value.id);
+      if (field === 'messages') {
+        if (!value.date) errors.push(`${field}[${index}] missing required field date`);
+        validatePbkdf2Shape(value.kdf_params, `${path}.kdf_params`, errors, {
+          required: encryptedMessagesRequired,
+        });
+        validateBase64Shape(value.salt, `${path}.salt`, errors, { exact: 16, required: true });
+        validateBase64Shape(value.nonce, `${path}.nonce`, errors, { exact: 12, required: true });
+        validateBase64Shape(value.ciphertext, `${path}.ciphertext`, errors, {
+          minimum: 16, required: true,
+        });
+      } else {
+        if (!value.type || !value.trigger) {
+          errors.push(`${field}[${index}] missing required field type or trigger`);
+        }
+        rejectUnknownFields(value.trigger, TRIGGER_FIELDS, `${path}.trigger`, errors);
+        validateBase64Shape(value.salt, `${path}.salt`, errors, { exact: 16 });
+        validateBase64Shape(value.nonce, `${path}.nonce`, errors, { exact: 12 });
+        validateBase64Shape(value.sentiment_ciphertext, `${path}.sentiment_ciphertext`, errors, {
+          minimum: 16,
+        });
+      }
+    }
+  }
+  if (raw.garden_seed !== undefined &&
+    (typeof raw.garden_seed !== 'number' || !Number.isInteger(raw.garden_seed))) {
+    errors.push('garden_seed must be an integer, not a boolean');
+  }
+  validateBase64Shape(raw.bundle_auth_salt, '$.bundle_auth_salt', errors, {
+    exact: 16, required: Boolean(raw.hmac) || version === 2,
+  });
+  if (raw.notification !== null && raw.notification !== undefined &&
+    (typeof raw.notification !== 'object' || Array.isArray(raw.notification))) {
+    errors.push('notification must be an object or null');
+  } else rejectUnknownFields(raw.notification, NOTIFICATION_FIELDS, '$.notification', errors);
+  if (version === 2) {
+    if (Array.isArray(raw.garden_gifts) && raw.garden_gifts.length) {
+      errors.push('version 2 bundles must leave garden_gifts empty');
+    }
+    validatePbkdf2Shape(raw.bundle_auth_kdf_params, '$.bundle_auth_kdf_params', errors, {
+      required: true,
+    });
+    const envelope = raw.garden_program;
+    if (!envelope || typeof envelope !== 'object' || Array.isArray(envelope)) {
+      errors.push('version 2 bundles require an encrypted garden_program');
+    } else {
+      rejectUnknownFields(envelope, GARDEN_PROGRAM_FIELDS, '$.garden_program', errors);
+      if (envelope.version !== 1) errors.push('unsupported garden_program version');
+      validatePbkdf2Shape(envelope.kdf_params, '$.garden_program.kdf_params', errors, {
+        required: true,
+      });
+      validateBase64Shape(envelope.salt, '$.garden_program.salt', errors, {
+        exact: 16, required: true,
+      });
+      validateBase64Shape(envelope.nonce, '$.garden_program.nonce', errors, {
+        exact: 12, required: true,
+      });
+      validateBase64Shape(envelope.ciphertext, '$.garden_program.ciphertext', errors, {
+        minimum: 16, required: true,
+      });
+    }
+  }
+  if (errors.length) throw new Error(`Invalid bundle identity: ${errors.join('; ')}`);
+  return raw;
+}
+
+function validTimezone(value) {
+  if (typeof value !== 'string' || !TIMEZONE_ID.test(value)) return false;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(0);
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
 const REQUIRED_PARAMS = Object.freeze({
   'letter.present': [['letter_id']],
   'entity.place': [['position']],
@@ -47,7 +226,7 @@ const ACTION_PARAMS = Object.freeze({
   'animal.present_gift': ['gift_id'], 'plant.plant': ['species_id', 'position', 'seed'],
   'plant.grow': ['stage', 'amount'], 'plant.bloom': ['bloom_id'],
   'plant.dormancy': ['dormant'], 'plant.prune': ['node_ids'], 'plant.revive': [],
-  'scene.set': ['weather', 'palette', 'story_time', 'sky_mode', 'ambience', 'population'],
+  'scene.set': ['weather', 'palette', 'story_time', 'sky_mode', 'ambience', 'population', 'author_region'],
   'narrative.show': ['kind', 'text', 'label'], 'variable.set': ['name', 'value'],
   'variable.increment': ['name', 'amount'], 'event.complete': ['event_id'],
 });
@@ -67,7 +246,37 @@ function rejectManipulativeNarrative(value, path, errors) {
   }
 }
 
-export function parseGardenProgram(raw) {
+function validatePosition(value, path, errors) {
+  if (typeof value === 'string') {
+    if (!PLACEMENT_HINTS.has(value)) errors.push(`${path}: unsupported placement hint ${JSON.stringify(value)}`);
+    return;
+  }
+  let coordinates = null;
+  if (Array.isArray(value) && value.length === 2) coordinates = value;
+  else if (value && typeof value === 'object' && !Array.isArray(value) &&
+    Object.keys(value).length === 2 && Object.hasOwn(value, 'x') && Object.hasOwn(value, 'y')) {
+    coordinates = [value.x, value.y];
+  }
+  if (!coordinates || !coordinates.every(Number.isSafeInteger)) {
+    errors.push(`${path}: expected [integer x, integer y], {x, y}, or a supported hint`);
+  }
+}
+
+function conditionReferences(condition, visit) {
+  if (!condition || typeof condition !== 'object' || Array.isArray(condition)) return;
+  const logical = ['all', 'any', 'not'].find(key => Object.hasOwn(condition, key));
+  if (logical) {
+    const children = logical === 'not' ? [condition.not] : condition[logical];
+    if (Array.isArray(children)) children.forEach(child => conditionReferences(child, visit));
+    return;
+  }
+  const values = condition.ref != null ? [condition.ref]
+    : typeof condition.value === 'string' ? [condition.value]
+      : Array.isArray(condition.value) ? condition.value.filter(value => typeof value === 'string') : [];
+  values.forEach(value => visit(condition.fact, value));
+}
+
+export function parseGardenProgram(raw, options = {}) {
   const errors = [];
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     throw new Error('Invalid garden program: $: program must be an object');
@@ -80,11 +289,18 @@ export function parseGardenProgram(raw) {
   if (raw.version !== 1) errors.push('$.version: expected 1');
   if ((raw.evaluator_version ?? 1) !== 1) errors.push('$.evaluator_version: expected 1');
   if ((raw.world_state_version ?? 1) !== 1) errors.push('$.world_state_version: expected 1');
-  if (typeof raw.author_timezone !== 'string') errors.push('$.author_timezone: expected timezone');
+  for (const [field, value] of [['atlas_version', raw.atlas_version ?? 'garden-atlas-1'],
+    ['astronomy_catalog_version', raw.astronomy_catalog_version ?? 'bright-stars-1']]) {
+    if (typeof value !== 'string' || !ID.test(value)) errors.push(`$.${field}: invalid version identifier`);
+  }
+  if (!validTimezone(raw.author_timezone)) {
+    errors.push('$.author_timezone: expected an available IANA timezone name');
+  }
   const variables = raw.variables ?? {};
   if (!variables || typeof variables !== 'object' || Array.isArray(variables)) errors.push('$.variables: must be an object');
   else for (const name of Object.keys(variables)) if (!ID.test(name)) errors.push(`$.variables: invalid variable name ${name}`);
   const objectIds = new Set();
+  const objectKinds = new Map();
   const entityKeys = new Set(['id', 'kind', 'catalog_id', 'asset_id', 'initial_state',
     'position', 'placement', 'properties', 'tags']);
   const animalKeys = new Set(['id', 'species', 'catalog_id', 'name', 'personality',
@@ -101,16 +317,31 @@ export function parseGardenProgram(raw) {
       else objectIds.add(item.id);
       const catalog = item.species ?? item.catalog_id ?? item.asset_id;
       if (field === 'animals') {
+        if (ID.test(item.id ?? '') && !objectKinds.has(item.id)) objectKinds.set(item.id, 'animal');
         if (!gardenCatalogHas('animal', catalog)) errors.push(`${path}.species: unknown runtime animal species`);
         if (item.name != null && (typeof item.name !== 'string' || !item.name)) errors.push(`${path}.name: must be non-empty text`);
         if (item.personality != null && typeof item.personality !== 'string' &&
           (!item.personality || typeof item.personality !== 'object' || Array.isArray(item.personality))) errors.push(`${path}.personality: expected prose or a trait object`);
-        for (const key of ['name', 'personality', 'routine', 'gifts', 'milestones']) {
+        for (const key of ['name', 'personality', 'routine', 'gifts', 'milestones',
+          'prohibited_behaviors', 'initial_state']) {
           rejectManipulativeNarrative(item[key], `${path}.${key}`, errors);
         }
-      } else if (item.kind === 'fixture' && !gardenCatalogHas('fixture', catalog)) errors.push(`${path}: unknown runtime fixture asset`);
-      else if (item.kind === 'plant' && !gardenCatalogHas('plant', catalog)) errors.push(`${path}: unknown runtime plant asset`);
-      if (field === 'entities') rejectManipulativeNarrative(item.properties, `${path}.properties`, errors);
+      } else {
+        const runtimeKind = item.kind === 'plant' || gardenCatalogHas('plant', catalog) ? 'plant'
+          : item.kind === 'fixture' || gardenCatalogHas('fixture', catalog) ? 'fixture'
+            : 'collectible';
+        if (ID.test(item.id ?? '') && !objectKinds.has(item.id)) objectKinds.set(item.id, runtimeKind);
+        if (runtimeKind === 'fixture' && !gardenCatalogHas('fixture', catalog)) errors.push(`${path}: unknown runtime fixture asset`);
+        if (runtimeKind === 'plant' && !gardenCatalogHas('plant', catalog)) errors.push(`${path}: unknown runtime plant asset`);
+      }
+      if (field === 'entities') {
+        for (const key of ['properties', 'initial_state', 'tags']) {
+          rejectManipulativeNarrative(item[key], `${path}.${key}`, errors);
+        }
+        for (const key of ['position', 'placement']) {
+          if (Object.hasOwn(item, key)) validatePosition(item[key], `${path}.${key}`, errors);
+        }
+      }
     });
   }
   if (Array.isArray(raw.animals)) raw.animals.forEach((animal, index) => {
@@ -162,6 +393,16 @@ export function parseGardenProgram(raw) {
         ID.test(action?.target ?? '') && !objectIds.has(action.target)) {
         errors.push(`${path}.actions[${actionIndex}].target: unknown world object`);
       }
+      const targetKind = objectKinds.get(action?.target);
+      if (action?.type?.startsWith('animal.') && targetKind != null && targetKind !== 'animal') {
+        errors.push(`${path}.actions[${actionIndex}].target: must reference an animal`);
+      }
+      if (action?.type?.startsWith('plant.') && targetKind != null && targetKind !== 'plant') {
+        errors.push(`${path}.actions[${actionIndex}].target: must reference a plant`);
+      }
+      if (action?.type?.startsWith('entity.') && targetKind === 'animal') {
+        errors.push(`${path}.actions[${actionIndex}].target: must reference a non-animal entity`);
+      }
       const requiredChoices = REQUIRED_PARAMS[action?.type] ?? [];
       const params = action?.params ?? {};
       if (!params || typeof params !== 'object' || Array.isArray(params)) {
@@ -176,6 +417,17 @@ export function parseGardenProgram(raw) {
         errors.push(`${path}.actions[${actionIndex}].params: missing required parameters`);
       }
       if (action?.type === 'scene.set' && Object.keys(params).length === 0) errors.push(`${path}.actions[${actionIndex}].params: scene.set requires at least one scene field`);
+      if (action?.type === 'scene.set' && Object.hasOwn(params, 'author_region')) {
+        const region = params.author_region;
+        const keys = region && typeof region === 'object' && !Array.isArray(region)
+          ? Object.keys(region).sort(compareCodePoints).join(',') : '';
+        if (keys !== 'grid_degrees,latitude_cell,longitude_cell' ||
+          !Number.isInteger(region?.latitude_cell) || !Number.isInteger(region?.longitude_cell) ||
+          region.grid_degrees !== 1 || region.latitude_cell < -90 || region.latitude_cell > 90 ||
+          region.longitude_cell < -180 || region.longitude_cell > 179) {
+          errors.push(`${path}.actions[${actionIndex}].params.author_region: must be a coarse one-degree region`);
+        }
+      }
       if (action?.type === 'plant.prune' && !Array.isArray(params.node_ids)) errors.push(`${path}.actions[${actionIndex}].params.node_ids: must be a list`);
       if (action?.type === 'variable.increment' && params.amount != null &&
         (typeof params.amount !== 'number' || !Number.isFinite(params.amount))) {
@@ -190,10 +442,39 @@ export function parseGardenProgram(raw) {
       }
       for (const key of ['fixture_id', 'entity_id', 'gift_id']) {
         if (params[key] != null && !objectIds.has(params[key])) errors.push(`${path}.actions[${actionIndex}].params.${key}: unknown world object`);
+        else if (params[key] != null) {
+          const referenceKind = objectKinds.get(params[key]);
+          if (key === 'fixture_id' && referenceKind !== 'fixture') {
+            errors.push(`${path}.actions[${actionIndex}].params.fixture_id: must reference a fixture`);
+          } else if (['entity_id', 'gift_id'].includes(key) && referenceKind === 'animal') {
+            errors.push(`${path}.actions[${actionIndex}].params.${key}: must reference a non-animal entity`);
+          }
+        }
       }
-      if (['narrative.show', 'scene.set', 'entity.transform', 'animal.behave', 'animal.routine'].includes(action?.type)) {
-        rejectManipulativeNarrative(params, `${path}.actions[${actionIndex}].params`, errors);
+      if (action?.type === 'plant.plant' && !gardenCatalogHas('plant', params.species_id)) {
+        errors.push(`${path}.actions[${actionIndex}].params.species_id: unknown runtime plant asset`);
       }
+      if (action?.type === 'entity.transform' && Object.hasOwn(params, 'asset_id')) {
+        const asset = params.asset_id;
+        if (typeof asset !== 'string' || !ID.test(asset)) {
+          errors.push(`${path}.actions[${actionIndex}].params.asset_id: invalid asset identifier`);
+        } else if (targetKind === 'fixture' && !gardenCatalogHas('fixture', asset)) {
+          errors.push(`${path}.actions[${actionIndex}].params.asset_id: unknown runtime fixture asset`);
+        } else if (targetKind === 'plant' && !gardenCatalogHas('plant', asset)) {
+          errors.push(`${path}.actions[${actionIndex}].params.asset_id: unknown runtime plant asset`);
+        } else if (targetKind === 'collectible' && (
+          gardenCatalogHas('fixture', asset) || gardenCatalogHas('plant', asset) ||
+          gardenCatalogHas('animal', asset))) {
+          errors.push(`${path}.actions[${actionIndex}].params.asset_id: asset kind does not match collectible target`);
+        }
+      }
+      if (Object.hasOwn(params, 'position') && [
+        'entity.reveal', 'entity.place', 'entity.move', 'animal.arrive',
+        'animal.set_destination', 'plant.plant',
+      ].includes(action?.type)) {
+        validatePosition(params.position, `${path}.actions[${actionIndex}].params.position`, errors);
+      }
+      rejectManipulativeNarrative(params, `${path}.actions[${actionIndex}].params`, errors);
     }
     if (!['once', 'recurring'].includes(event.occurrence ?? 'once')) errors.push(`${path}.occurrence: expected once or recurring`);
     if (!Number.isInteger(event.priority ?? 0) || (event.priority ?? 0) < -1000000 || (event.priority ?? 0) > 1000000) {
@@ -218,6 +499,30 @@ export function parseGardenProgram(raw) {
     return clone({ ...event, actions });
   }) : [];
   if (!Array.isArray(raw.events)) errors.push('$.events: must be a list');
+  const knownLetterIds = options.knownLetterIds == null
+    ? null : new Set([...options.knownLetterIds].map(String));
+  events.forEach((event, eventIndex) => {
+    conditionReferences(event.conditions, (fact, reference) => {
+      if (['letter.read', 'letter.due'].includes(fact) && knownLetterIds != null &&
+        !knownLetterIds.has(reference)) {
+        errors.push(`$.events[${eventIndex}].conditions: unknown bundle letter ${JSON.stringify(reference)}`);
+      } else if (fact === 'event.completed' && !eventIds.has(reference)) {
+        errors.push(`$.events[${eventIndex}].conditions: unknown program event ${JSON.stringify(reference)}`);
+      }
+    });
+    event.actions.forEach((action, actionIndex) => {
+      if (!action || typeof action !== 'object' || Array.isArray(action)) return;
+      const actionPath = `$.events[${eventIndex}].actions[${actionIndex}]`;
+      if (action.type === 'letter.present' && knownLetterIds != null &&
+        !knownLetterIds.has(action.params?.letter_id)) {
+        errors.push(`${actionPath}.params.letter_id: unknown bundle letter ${JSON.stringify(action.params?.letter_id)}`);
+      }
+      if (action.type === 'event.complete' && action.params?.event_id != null &&
+        !eventIds.has(action.params.event_id)) {
+        errors.push(`${actionPath}.params.event_id: unknown program event ${JSON.stringify(action.params?.event_id)}`);
+      }
+    });
+  });
   if (errors.length) throw new Error(`Invalid garden program: ${errors.join('; ')}`);
   return clone({
     version: 1, evaluator_version: raw.evaluator_version ?? 1,
@@ -230,13 +535,33 @@ export function parseGardenProgram(raw) {
 }
 
 function rejectUnsafe(value, path, errors, depth = 0) {
-  if (depth > 20) { errors.push(`${path}: nesting is too deep`); return; }
+  if (depth > MAX_SAFE_JSON_DEPTH) { errors.push(`${path}: nesting is too deep`); return; }
+  if (value === null || typeof value === 'boolean') return;
   if (typeof value === 'string') {
+    if (Array.from(value).length > MAX_STRING_LENGTH) {
+      errors.push(`${path}: string exceeds ${MAX_STRING_LENGTH} characters`);
+    }
     if (/[\x00-\x08\x0b\x0c\x0e-\x1f\x1b]/.test(value)) errors.push(`${path}: control characters are forbidden`);
     if (/(?:https?|ftp|data|javascript):/i.test(value)) errors.push(`${path}: remote or executable URLs are forbidden`);
-  } else if (typeof value === 'number' && !Number.isFinite(value)) errors.push(`${path}: non-finite numbers are forbidden`);
+  } else if (typeof value === 'number') {
+    if (!Number.isFinite(value)) errors.push(`${path}: non-finite numbers are forbidden`);
+    else if (Number.isInteger(value) && !Number.isSafeInteger(value)) {
+      errors.push(`${path}: integer exceeds cross-runtime safe range`);
+    }
+  }
   else if (Array.isArray(value)) value.forEach((item, index) => rejectUnsafe(item, `${path}[${index}]`, errors, depth + 1));
-  else if (value && typeof value === 'object') Object.entries(value).forEach(([key, item]) => rejectUnsafe(item, `${path}.${key}`, errors, depth + 1));
+  else if (value && typeof value === 'object') {
+    const prototype = Object.getPrototypeOf(value);
+    if (prototype !== Object.prototype && prototype !== null) {
+      errors.push(`${path}: unsupported JSON value type`);
+      return;
+    }
+    Object.entries(value).forEach(([key, item]) => {
+      rejectUnsafe(key, `${path}.<key>`, errors, depth + 1);
+      rejectUnsafe(item, `${path}.${key}`, errors, depth + 1);
+    });
+  }
+  else errors.push(`${path}: unsupported JSON value type`);
 }
 
 function validateCondition(value, path, errors, depth) {
@@ -315,6 +640,18 @@ export async function evaluateGardenCondition(condition, facts, options = {}) {
     expected: clone(expected ?? null), observed: clone(observed ?? null), exists, result }];
 }
 
+export const OCCURRENCE_LEDGER_LIMIT = 512;
+export const EXCLUSIVE_LEDGER_LIMIT = 512;
+
+function compactRecent(values, limit) {
+  const recent = new Map();
+  for (const raw of values) {
+    const value = String(raw);
+    recent.delete(value); recent.set(value, true);
+  }
+  return [...recent.keys()].slice(-limit);
+}
+
 function applyAction(action, state, eventId, effects) {
   const params = clone(action.params ?? {});
   const effect = { type: action.type, event_id: eventId };
@@ -328,7 +665,7 @@ function applyAction(action, state, eventId, effects) {
     const completed = state.completed_events ??= [];
     const id = params.event_id ?? eventId;
     if (!completed.includes(id)) completed.push(id);
-    completed.sort();
+    completed.sort(compareCodePoints);
   } else if (/^(entity|animal|plant)\./.test(action.type)) {
     const entity = (state.entities ??= {})[action.target] ??= { id: action.target };
     if (action.type.endsWith('.reveal')) entity.revealed = true;
@@ -356,15 +693,27 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
   const program = parseGardenProgram(programInput);
   const state = clone(stateInput); const context = clone(contextInput);
   const ledger = state.applied_occurrences ??= [];
+  const originalLedgerLength = ledger.length;
+  ledger.splice(0, ledger.length, ...compactRecent(ledger, OCCURRENCE_LEDGER_LIMIT));
+  state.applied_occurrence_total = Math.max(
+    originalLedgerLength, Number.parseInt(state.applied_occurrence_total, 10) || 0,
+  );
   const applied = new Set(ledger);
   delete state.exclusive_claims;
   const exclusiveOccurrences = state.exclusive_occurrences ??= [];
+  const originalExclusiveLength = exclusiveOccurrences.length;
+  exclusiveOccurrences.splice(0, exclusiveOccurrences.length, ...compactRecent(
+    exclusiveOccurrences, EXCLUSIVE_LEDGER_LIMIT,
+  ));
+  state.exclusive_occurrence_total = Math.max(
+    originalExclusiveLength, Number.parseInt(state.exclusive_occurrence_total, 10) || 0,
+  );
   const persistedExclusive = new Set(exclusiveOccurrences);
   const claimedGroups = new Set();
   const cooldowns = state.event_cooldowns ??= {};
   const effects = []; const trace = [];
   const events = [...program.events].sort((left, right) =>
-    (right.priority ?? 0) - (left.priority ?? 0) || left.id.localeCompare(right.id));
+    (right.priority ?? 0) - (left.priority ?? 0) || compareCodePoints(left.id, right.id));
   const occurrenceFor = event => {
     let occurrenceId = event.schedule == null
       ? event.occurrence === 'recurring'
@@ -388,12 +737,12 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
     facts['event.completed'] = [...new Set([
       ...(Array.isArray(facts['event.completed']) ? facts['event.completed'] : []),
       ...(state.completed_events ?? []),
-    ].map(String))].sort();
+    ].map(String))].sort(compareCodePoints);
     for (const [fact, key] of [['gift.revealed', 'revealed'], ['animal.arrived', 'present'], ['plant.bloom', 'blooming']]) {
       facts[fact] = [...new Set([
         ...(Array.isArray(facts[fact]) ? facts[fact] : []),
         ...Object.entries(entities).filter(([, value]) => value?.[key] === true).map(([id]) => id),
-      ].map(String))].sort();
+      ].map(String))].sort(compareCodePoints);
     }
     const growth = Object.values(entities).filter(value => value?.planted === true)
       .map(value => value.stage ?? value.amount ?? 0).filter(value => typeof value === 'number' && Number.isFinite(value));
@@ -434,10 +783,16 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
         trace.push({ ...row, conditions, status: 'blocked', reason: 'conditions_false' }); retry.push(event); continue;
       }
       for (const action of event.actions) applyAction(action, state, event.id, effects);
-      applied.add(ledgerId); ledger.push(ledgerId); ledger.sort();
+      applied.add(ledgerId); ledger.push(ledgerId);
+      ledger.splice(0, ledger.length, ...compactRecent(ledger, OCCURRENCE_LEDGER_LIMIT));
+      state.applied_occurrence_total += 1;
       if (event.exclusive_group) {
         claimedGroups.add(event.exclusive_group); persistedExclusive.add(exclusiveKey);
-        exclusiveOccurrences.push(exclusiveKey); exclusiveOccurrences.sort();
+        exclusiveOccurrences.push(exclusiveKey);
+        exclusiveOccurrences.splice(0, exclusiveOccurrences.length, ...compactRecent(
+          exclusiveOccurrences, EXCLUSIVE_LEDGER_LIMIT,
+        ));
+        state.exclusive_occurrence_total += 1;
       }
       if (event.cooldown) {
         const nowMs = Date.parse(facts['time.utc'] ?? ''); const visit = facts['visit.total'];
@@ -451,6 +806,33 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
     }
     if (!progressed) break;
     pending = retry;
+  }
+  const summaryRecords = new Map();
+  for (const value of Array.isArray(state.missed_event_summaries) ? state.missed_event_summaries : []) {
+    if (!value || typeof value.event_id !== 'string' || typeof value.occurrence_id !== 'string' ||
+      !Number.isInteger(value.missed_count)) continue;
+    summaryRecords.set(`${value.event_id}\u0000${value.occurrence_id}`, {
+      event_id: value.event_id, occurrence_id: value.occurrence_id,
+      missed_count: Math.max(0, Math.min(400, value.missed_count)),
+      catch_up_truncated: Boolean(value.catch_up_truncated),
+    });
+  }
+  const appliedEventIds = new Set(trace.filter(row => row.status === 'applied').map(row => row.event_id));
+  for (const value of Array.isArray(context.missed_event_summaries) ? context.missed_event_summaries : []) {
+    if (!value || !appliedEventIds.has(String(value.event_id))) continue;
+    const normalized = {
+      event_id: String(value.event_id), occurrence_id: String(value.occurrence_id),
+      missed_count: Math.max(0, Math.min(400, Number.parseInt(value.missed_count, 10) || 0)),
+      catch_up_truncated: Boolean(value.catch_up_truncated),
+    };
+    summaryRecords.set(`${normalized.event_id}\u0000${normalized.occurrence_id}`, normalized);
+  }
+  const orderedSummaries = [...summaryRecords.values()].sort((left, right) =>
+    compareCodePoints(left.occurrence_id, right.occurrence_id) ||
+      compareCodePoints(left.event_id, right.event_id),
+  ).slice(-128);
+  if (orderedSummaries.length || Object.hasOwn(state, 'missed_event_summaries')) {
+    state.missed_event_summaries = orderedSummaries;
   }
   return { state, effects, trace };
 }
@@ -466,7 +848,7 @@ function legacyCatalogId(type, value) {
 
 export function migrateAuthenticatedLegacyGifts(gifts, options = {}) {
   if (!options.authenticated) throw new Error('legacy gifts cannot influence world state before bundle authentication');
-  const messageIds = [...new Set(options.message_ids ?? [])].sort();
+  const messageIds = [...new Set(options.message_ids ?? [])].sort(compareCodePoints);
   const completion = messageIds.length ? { all: messageIds.map(ref => ({ fact: 'letter.read', op: 'contains', ref })) } : null;
   const entities = []; const animals = []; const events = [];
   for (const [index, gift] of gifts.entries()) {
@@ -540,7 +922,7 @@ export function parseGardenSchedule(raw) {
   return { start, timezone: raw.timezone, recurrence: recurrence ? {
     ...recurrence,
     interval: recurrence.interval ?? 1,
-    by_weekday: [...new Set(recurrence.by_weekday ?? [])].sort(),
+    by_weekday: [...new Set(recurrence.by_weekday ?? [])].sort(compareCodePoints),
     intentional_unbounded: recurrence.intentional_unbounded ?? false,
     dst_gap: recurrence.dst_gap ?? 'shift_forward',
     dst_fold: recurrence.dst_fold ?? 'first',

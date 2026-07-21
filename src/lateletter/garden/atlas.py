@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import lru_cache
 from importlib.resources import files
 from pathlib import Path
 import unicodedata
@@ -33,6 +34,33 @@ _UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Cn"})
 _BIDI_UNSAFE = frozenset({"RLE", "LRE", "RLO", "LRO", "PDF", "RLI", "LRI", "FSI", "PDI"})
 _TERMINAL_PROFILES = frozenset({"ascii-safe", "unicode-cell-safe"})
 
+@lru_cache(maxsize=1)
+def _semantic_tokens() -> Mapping[str, Any]:
+    return load_atlas()["semantic_tokens"]
+
+
+def animal_glyph(species_id: str, bond_tier: int, *, choreography: bool = False) -> str:
+    values = _semantic_tokens()["animal_tier_glyphs"].get(
+        species_id, ("a", "A", "a", "A"),
+    )
+    glyph = values[max(0, min(3, int(bond_tier)))]
+    return glyph.upper() if choreography else glyph
+
+
+def organ_glyph(kind: str, glyph_family: str = "") -> str:
+    if "bloom" in glyph_family:
+        return "@"
+    if "leaf" in glyph_family or glyph_family in {"needle", "blade"}:
+        return "*"
+    return str(_semantic_tokens()["organ_kind_glyphs"].get(kind, "*"))
+
+
+def atlas_asset_frame(asset: Mapping[str, Any], state: str = "idle",
+                      profile: str = "ascii-safe") -> tuple[tuple[str, ...], ...]:
+    states = asset["profiles"][profile]
+    frames = states.get(state) or states.get("idle") or states[sorted(states)[0]]
+    return tuple(tuple(str(cell) for cell in row) for row in frames[0]["cells"])
+
 
 def grapheme_cells(value: str) -> tuple[str, ...]:
     """Segment text into Unicode extended grapheme clusters."""
@@ -62,13 +90,14 @@ def _validate_cell(cell: Any, profile: str, path: str, errors: list[str]) -> Non
         return
     if unicodedata.combining(cell[0]):
         errors.append(f"{path}: standalone combining marks are forbidden")
-    for char in cell:
-        if unicodedata.category(char) in _UNSAFE_CATEGORIES:
-            errors.append(f"{path}: unsafe Unicode category {unicodedata.category(char)}")
-            break
-        if unicodedata.bidirectional(char) in _BIDI_UNSAFE:
-            errors.append(f"{path}: bidirectional controls are forbidden")
-            break
+    unsafe_categories = {
+        unicodedata.category(char) for char in cell
+        if unicodedata.category(char) in _UNSAFE_CATEGORIES
+    }
+    if unsafe_categories:
+        errors.append(f"{path}: unsafe Unicode category {sorted(unsafe_categories)[0]}")
+    if any(unicodedata.bidirectional(char) in _BIDI_UNSAFE for char in cell):
+        errors.append(f"{path}: bidirectional controls are forbidden")
     if profile in _TERMINAL_PROFILES:
         width = wcswidth(cell)
         if width != 1:
@@ -78,13 +107,42 @@ def _validate_cell(cell: Any, profile: str, path: str, errors: list[str]) -> Non
             errors.append(f"{path}: ambiguous-width characters need a separate profile")
 
 
+def _validate_semantic_row(row: Any, path: str, errors: list[str]) -> None:
+    """Validate a multi-cell semantic animation row without treating it as one cell."""
+    if not isinstance(row, str) or not row:
+        errors.append(f"{path}: row must be non-empty text")
+        return
+    if unicodedata.normalize("NFC", row) != row:
+        errors.append(f"{path}: row must be NFC-normalized")
+    clusters = grapheme_cells(row)
+    if not clusters:
+        errors.append(f"{path}: row must contain grapheme clusters")
+        return
+    for index, cluster in enumerate(clusters):
+        cluster_path = f"{path}[{index}]"
+        if unicodedata.combining(cluster[0]):
+            errors.append(f"{cluster_path}: standalone combining marks are forbidden")
+        unsafe_categories = {
+            unicodedata.category(char) for char in cluster
+            if unicodedata.category(char) in _UNSAFE_CATEGORIES
+        }
+        if unsafe_categories:
+            errors.append(
+                f"{cluster_path}: unsafe Unicode category {sorted(unsafe_categories)[0]}"
+            )
+        if any(unicodedata.bidirectional(char) in _BIDI_UNSAFE for char in cluster):
+            errors.append(f"{cluster_path}: bidirectional controls are forbidden")
+        if wcswidth(cluster) != 1:
+            errors.append(f"{cluster_path}: semantic frame cells must occupy exactly one column")
+
+
 def validate_atlas(raw: Mapping[str, Any]) -> dict[str, Any]:
     """Validate an atlas and return a detached JSON-compatible copy."""
     errors: list[str] = []
     if not isinstance(raw, Mapping):
         raise AtlasValidationError(["$: atlas must be an object"])
     allowed_top = {"version", "id", "unicode_version", "profiles",
-                   "connected_tiles", "assets"}
+                   "semantic_tokens", "connected_tiles", "assets"}
     unknown = sorted(set(raw) - allowed_top)
     if unknown:
         errors.append(f"$: unknown fields {', '.join(unknown)}")
@@ -97,6 +155,63 @@ def validate_atlas(raw: Mapping[str, Any]) -> dict[str, Any]:
         errors.append("$.profiles: ascii-safe is mandatory")
         profiles = []
     profile_set = set(profiles)
+
+    semantic = raw.get("semantic_tokens")
+    if not isinstance(semantic, Mapping):
+        errors.append("$.semantic_tokens: required object")
+    else:
+        organ = semantic.get("organ_kind_glyphs")
+        plants = semantic.get("plant_species_glyphs")
+        animals = semantic.get("animal_tier_glyphs")
+        delivery = semantic.get("delivery_frames")
+        required_organs = {"root", "stem", "branch", "vine", "leaf", "bloom", "fruit"}
+        if not isinstance(organ, Mapping) or not required_organs.issubset(organ):
+            errors.append("$.semantic_tokens.organ_kind_glyphs: incomplete")
+        if isinstance(organ, Mapping):
+            for kind, glyph in organ.items():
+                _validate_cell(
+                    glyph, "ascii-safe",
+                    f"$.semantic_tokens.organ_kind_glyphs.{kind}", errors,
+                )
+        if not isinstance(plants, Mapping) or not plants:
+            errors.append("$.semantic_tokens.plant_species_glyphs: required non-empty object")
+        else:
+            for species, glyph in plants.items():
+                _validate_cell(
+                    glyph, "ascii-safe",
+                    f"$.semantic_tokens.plant_species_glyphs.{species}", errors,
+                )
+        if (not isinstance(animals, Mapping)
+                or set(animals) != {"bird", "cat", "rabbit", "turtle"}
+                or any(not isinstance(values, list) or len(values) != 4
+                       for values in animals.values())):
+            errors.append("$.semantic_tokens.animal_tier_glyphs: four species need four tiers")
+        if isinstance(animals, Mapping):
+            for species, values in animals.items():
+                if not isinstance(values, list):
+                    continue
+                for tier, glyph in enumerate(values):
+                    _validate_cell(
+                        glyph, "ascii-safe",
+                        f"$.semantic_tokens.animal_tier_glyphs.{species}[{tier}]", errors,
+                    )
+        if (not isinstance(delivery, Mapping)
+                or not {"letterbird", "bird", "cat", "rabbit", "turtle"}.issubset(delivery)):
+            errors.append("$.semantic_tokens.delivery_frames: incomplete")
+        if isinstance(delivery, Mapping):
+            for species, frames in delivery.items():
+                frame_path = f"$.semantic_tokens.delivery_frames.{species}"
+                if not isinstance(frames, list) or not frames:
+                    errors.append(f"{frame_path}: needs at least one frame")
+                    continue
+                for frame_index, frame in enumerate(frames):
+                    if not isinstance(frame, list) or not frame:
+                        errors.append(f"{frame_path}[{frame_index}]: frame must contain rows")
+                        continue
+                    for row_index, row in enumerate(frame):
+                        _validate_semantic_row(
+                            row, f"{frame_path}[{frame_index}][{row_index}]", errors,
+                        )
 
     connected = raw.get("connected_tiles")
     if not isinstance(connected, Mapping):

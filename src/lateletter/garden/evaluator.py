@@ -17,6 +17,18 @@ from typing import Any, Mapping
 from .program import Condition, GardenProgram, ProgramAction, ProgramEvent
 
 
+OCCURRENCE_LEDGER_LIMIT = 512
+EXCLUSIVE_LEDGER_LIMIT = 512
+
+
+def _compact_recent(values: list[str], limit: int) -> list[str]:
+    recent: dict[str, None] = {}
+    for value in values:
+        recent.pop(value, None)
+        recent[value] = None
+    return list(recent)[-limit:]
+
+
 @dataclass(frozen=True)
 class EvaluationResult:
     state: dict[str, Any]
@@ -370,6 +382,12 @@ def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
     ledger = next_state.setdefault("applied_occurrences", [])
     if not isinstance(ledger, list) or any(not isinstance(item, str) for item in ledger):
         raise ValueError("state.applied_occurrences must be a list of strings")
+    original_ledger_length = len(ledger)
+    ledger[:] = _compact_recent(ledger, OCCURRENCE_LEDGER_LIMIT)
+    next_state["applied_occurrence_total"] = max(
+        original_ledger_length,
+        int(next_state.get("applied_occurrence_total", 0)),
+    )
     applied = set(ledger)
     # v1 persisted a single claim per group, which permanently suppressed later
     # visits.  Claims now include the shared visit/schedule occurrence scope.
@@ -379,6 +397,14 @@ def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
         not isinstance(item, str) for item in exclusive_occurrences
     ):
         raise ValueError("state.exclusive_occurrences must be a list of strings")
+    original_exclusive_length = len(exclusive_occurrences)
+    exclusive_occurrences[:] = _compact_recent(
+        exclusive_occurrences, EXCLUSIVE_LEDGER_LIMIT,
+    )
+    next_state["exclusive_occurrence_total"] = max(
+        original_exclusive_length,
+        int(next_state.get("exclusive_occurrence_total", 0)),
+    )
     persisted_exclusive = set(exclusive_occurrences)
     claimed_groups: set[str] = set()
     cooldowns = next_state.setdefault("event_cooldowns", {})
@@ -447,13 +473,17 @@ def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
                 _apply_action(action, next_state, event.id, effects)
             applied.add(ledger_id)
             ledger.append(ledger_id)
-            ledger.sort()
+            ledger[:] = _compact_recent(ledger, OCCURRENCE_LEDGER_LIMIT)
+            next_state["applied_occurrence_total"] += 1
             if event.exclusive_group:
                 claimed_groups.add(event.exclusive_group)
                 assert exclusive_key is not None
                 persisted_exclusive.add(exclusive_key)
                 exclusive_occurrences.append(exclusive_key)
-                exclusive_occurrences.sort()
+                exclusive_occurrences[:] = _compact_recent(
+                    exclusive_occurrences, EXCLUSIVE_LEDGER_LIMIT,
+                )
+                next_state["exclusive_occurrence_total"] += 1
             if event.cooldown:
                 now_seconds, visits = _cooldown_values(facts)
                 cooldowns[event.id] = {

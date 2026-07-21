@@ -10,13 +10,30 @@ import {
 
 export const WORLD_SCHEMA_VERSION = 1;
 export const ENGINE_VERSION = 'garden-world-internal-v1';
+export const PROCESSED_COMMAND_LIMIT = 512;
+export const EVENT_TRACE_LIMIT = 512;
+export const LIVE_TRACE_LIMIT = 120;
+export const UNDO_STACK_LIMIT = 128;
+export const MILESTONE_RECEIPT_LIMIT = 512;
+
+function compactRecentStrings(values, limit) {
+  const boundedLimit = Math.max(0, integer(limit));
+  if (boundedLimit === 0) return [];
+  const recent = new Map();
+  for (const raw of values ?? []) {
+    const value = String(raw);
+    recent.delete(value);
+    recent.set(value, true);
+  }
+  return [...recent.keys()].slice(-boundedLimit);
+}
 
 const PERSONALITY_FIELDS = Object.freeze([
   'boldness', 'sociability', 'curiosity', 'playfulness', 'patience',
   'routine_strength', 'food_motivation', 'day_preference',
 ]);
 
-const FIXTURE_CATALOG = Object.freeze({
+export const FIXTURE_CATALOG = Object.freeze({
   bench: { name: 'Garden bench', footprint: [2, 1], blocks_movement: true, affordances: ['sit', 'animal-rest', 'author-socket'], actions: ['inspect', 'primary_interact'] },
   fence: { name: 'Fence', footprint: [1, 1], blocks_movement: true, affordances: ['boundary', 'perch', 'vine-support'], actions: ['inspect'] },
   gate: { name: 'Garden gate', footprint: [1, 1], blocks_movement: false, affordances: ['open-close', 'route'], actions: ['inspect', 'primary_interact'] },
@@ -54,7 +71,7 @@ const REQUIRED_FUNCTIONAL_FIXTURES = Object.freeze([
   'basket', 'sign', 'memorial_stone',
 ]);
 
-const FIXTURE_VERBS = Object.freeze({
+export const FIXTURE_VERBS = Object.freeze({
   bench: ['sit', 'observe'], fence: ['open', 'close'], gate: ['open', 'close'], sundial: ['read_time'],
   trellis: ['train'], birdbath: ['refill', 'observe'], lantern: ['light', 'extinguish'], pond: ['observe', 'tend'],
   memory_shrine: ['open', 'remember'], stepping_stone: ['walk'], bridge: ['cross', 'observe'],
@@ -70,6 +87,31 @@ const FIXTURE_CONNECTED_GROUP = Object.freeze({
   stepping_stone: 'path', stepping_stones: 'path', pond: 'pond_edge',
 });
 
+function fixturePresentationState(fixture) {
+  const values = fixture.authored_state ?? {};
+  if (['fence', 'gate', 'fence_gate', 'mailbox', 'memory_shrine', 'shed_edge'].includes(fixture.catalog_id)) {
+    return values.open ? 'open' : 'closed';
+  }
+  if (fixture.catalog_id === 'lantern') return values.lit ? 'on' : 'off';
+  if (['birdbath', 'watering_can'].includes(fixture.catalog_id)) {
+    return integer(values.water_level) > 0 ? 'full' : 'empty';
+  }
+  if (fixture.catalog_id === 'compost') return integer(values.turned_count) > 0 ? 'turned' : 'idle';
+  return fixture.interaction_count > 0 ? 'active' : 'idle';
+}
+
+function fixtureActiveAffordances(fixture) {
+  const values = fixture.authored_state ?? {};
+  const enabled = new Set(FIXTURE_CATALOG[fixture.catalog_id].affordances);
+  if (['gate', 'fence_gate'].includes(fixture.catalog_id) && !values.open) enabled.delete('route');
+  if (fixture.catalog_id === 'birdbath' && integer(values.water_level) <= 0) {
+    enabled.delete('drink'); enabled.delete('bathe');
+  }
+  if (fixture.catalog_id === 'lantern' && !values.lit) enabled.delete('moth-visit');
+  if (fixture.catalog_id === 'watering_can' && integer(values.water_level) <= 0) enabled.delete('water');
+  return [...enabled].sort();
+}
+
 const TIER_REPERTOIRES = Object.freeze({
   bird: [['watch_from_branch', 'startle_flutter', 'explore_edge'], ['pause_approach', 'perch_nearby', 'bathe'], ['initiate_song_play', 'follow_overhead', 'rest_near', 'recall_perch'], ['return_greet', 'bring_feather', 'share_perch', 'deliver_song']],
   cat: [['watch_from_cover', 'startle_retreat', 'explore_edge'], ['pause_approach', 'sniff_nearby', 'use_bench'], ['initiate_string_play', 'follow_path', 'rest_near', 'recall_knead'], ['return_greet', 'bring_whisker', 'share_bench', 'settled_knead']],
@@ -83,6 +125,34 @@ const ANIMAL_GIFTS = Object.freeze({
   rabbit: ['rabbit_track', 'Rabbit track', 'A soft print left beside a shared garden path.'],
   turtle: ['turtle_scute', 'Turtle scute', 'A naturally shed scute left by a familiar turtle.'],
 });
+const INTENT_AFFORDANCE_REQUIREMENTS = Object.freeze({
+  bathe: ['bathe'], paddle: ['pond', 'water-visitor'], perch: ['perch'],
+  perch_nearby: ['perch'], use_bench: ['bench', 'animal-rest'],
+  share_bench: ['bench', 'animal-rest'], use_trellis: ['trellis', 'animal-hide'],
+  share_planter: ['planter', 'plant-container'], use_pond: ['pond', 'water-visitor'],
+  share_bridge: ['bridge', 'animal-route'], follow_path: ['path', 'route'],
+});
+const RECENT_MEMORY_LIMIT = 16;
+const CARDINAL_STEPS = Object.freeze([[0, -1], [1, 0], [0, 1], [-1, 0]]);
+const MOVING_INTENT_TOKENS = Object.freeze([
+  'approach', 'bathe', 'bring', 'cross', 'explore', 'follow', 'forage',
+  'greet', 'hop', 'paddle', 'patrol', 'play', 'sniff', 'walk',
+]);
+const MEMORY_INTENT_TOKENS = Object.freeze({
+  feed: ['approach', 'bring', 'forage', 'greet', 'recall', 'sniff'],
+  play: ['flop', 'follow', 'hop', 'knead', 'play', 'sing', 'song'],
+  observe: ['groom', 'near', 'perch', 'rest', 'watch'],
+});
+const SEASON_INTENT_TOKENS = Object.freeze({
+  spring: ['forage', 'greet', 'sing', 'song'],
+  summer: ['bathe', 'paddle', 'play', 'sunbathe'],
+  autumn: ['explore', 'forage', 'patrol', 'sniff'],
+  winter: ['hide', 'nap', 'rest', 'settled'],
+});
+const PLANT_MATURITY_STAGES = Object.freeze([
+  'emergent', 'sprouting', 'unfurling', 'juvenile', 'developing',
+  'near_mature', 'mature',
+]);
 
 export const MINIMUM_WORLD_WIDTH = 64;
 export const MINIMUM_WORLD_HEIGHT = 40;
@@ -140,6 +210,16 @@ const COLLECTIBLE_CATALOG = Object.freeze({
 const clone = value => globalThis.structuredClone
   ? globalThis.structuredClone(value)
   : JSON.parse(JSON.stringify(value));
+/** Python-compatible Unicode scalar ordering for canonical semantic tie-breaks. */
+export function compareCodePoints(leftValue, rightValue) {
+  const left = Array.from(String(leftValue), character => character.codePointAt(0));
+  const right = Array.from(String(rightValue), character => character.codePointAt(0));
+  const count = Math.min(left.length, right.length);
+  for (let index = 0; index < count; index += 1) {
+    if (left[index] !== right[index]) return left[index] < right[index] ? -1 : 1;
+  }
+  return left.length === right.length ? 0 : left.length < right.length ? -1 : 1;
+}
 const integer = (value, fallback = 0) => {
   const parsed = Number(value ?? fallback);
   return Number.isFinite(parsed) ? Math.trunc(parsed) : Math.trunc(fallback);
@@ -148,9 +228,16 @@ const clamp = (value, low, high) => Math.max(low, Math.min(high, integer(value))
 const rotation = value => ((integer(value) % 360) + 360) % 360;
 const optionalString = value => value ? String(value) : null;
 const vec2 = (value = [0, 0]) => [integer(value[0]), integer(value[1])];
-const uniqueSorted = values => [...new Set(values.map(String))].sort();
+const uniqueSorted = values => [...new Set(values.map(String))].sort(compareCodePoints);
 const sortBy = (values, field) => [...values].sort((left, right) =>
-  String(left[field]).localeCompare(String(right[field])));
+  compareCodePoints(left[field], right[field]));
+
+function compactEventTrace(entries) {
+  const liveIndexes = entries.map((entry, index) => entry.kind === 'live_tick' ? index : -1)
+    .filter(index => index >= 0);
+  const discarded = new Set(liveIndexes.slice(0, Math.max(0, liveIndexes.length - LIVE_TRACE_LIMIT)));
+  return entries.filter((_, index) => !discarded.has(index)).slice(-EVENT_TRACE_LIMIT);
+}
 
 function normalizeOrgan(data) {
   return {
@@ -334,11 +421,14 @@ export function deserializeWorldState(raw) {
     inventory: (data.inventory ?? []).map(String),
     journal: (data.journal ?? []).map(normalizeJournal),
     ui: normalizeUi(data.ui),
-    undo_stack: (data.undo_stack ?? []).map(normalizeUndo),
-    milestone_receipts: (data.milestone_receipts ?? []).map(String),
+    undo_stack: (data.undo_stack ?? []).map(normalizeUndo).slice(-UNDO_STACK_LIMIT),
+    milestone_receipts: compactRecentStrings(
+      (data.milestone_receipts ?? []).map(String), MILESTONE_RECEIPT_LIMIT,
+    ),
     program_state: clone(data.program_state ?? {}),
-    processed_commands: (data.processed_commands ?? []).map(String),
-    event_trace: (data.event_trace ?? []).map(normalizeTrace),
+    processed_commands: (data.processed_commands ?? []).map(String)
+      .slice(-PROCESSED_COMMAND_LIMIT),
+    event_trace: compactEventTrace((data.event_trace ?? []).map(normalizeTrace)),
   };
 }
 
@@ -364,11 +454,13 @@ export function serializeWorldState(state) {
     inventory: uniqueSorted(state.inventory),
     journal: sortBy(state.journal.map(normalizeJournal), 'entry_id'),
     ui: normalizeUi(state.ui),
-    undo_stack: state.undo_stack.map(normalizeUndo),
-    milestone_receipts: uniqueSorted(state.milestone_receipts),
+    undo_stack: state.undo_stack.map(normalizeUndo).slice(-UNDO_STACK_LIMIT),
+    milestone_receipts: compactRecentStrings(
+      state.milestone_receipts, MILESTONE_RECEIPT_LIMIT,
+    ),
     program_state: clone(state.program_state ?? {}),
-    processed_commands: state.processed_commands.map(String),
-    event_trace: state.event_trace.map(normalizeTrace),
+    processed_commands: state.processed_commands.map(String).slice(-PROCESSED_COMMAND_LIMIT),
+    event_trace: compactEventTrace(state.event_trace.map(normalizeTrace)),
   };
 }
 
@@ -502,7 +594,7 @@ function advanceTopology(plant, effectiveTime, milestones) {
   const selected = new Set([...plant.topology]
     .filter(node => node.birth_time > effectiveTime)
     .sort((left, right) => left.birth_time - right.birth_time ||
-      left.node_id.localeCompare(right.node_id))
+      compareCodePoints(left.node_id, right.node_id))
     .slice(0, count).map(node => node.node_id));
   plant.topology = plant.topology.map(node => selected.has(node.node_id) ? {
     ...node,
@@ -524,13 +616,13 @@ function careForPlant(plant, effectiveTime, care) {
   } else if (care === 'prune') {
     const candidates = plant.topology.filter(node =>
       node.birth_time <= effectiveTime && ['leaf', 'bloom', 'branch', 'vine'].includes(node.kind))
-      .sort((left, right) => left.birth_time - right.birth_time || left.node_id.localeCompare(right.node_id));
+      .sort((left, right) => left.birth_time - right.birth_time || compareCodePoints(left.node_id, right.node_id));
     const chosen = candidates.at(-1);
     if (chosen && !chosen.glyph_family.startsWith('shaped-')) chosen.glyph_family = `shaped-${chosen.glyph_family}`;
     gain = 1; dormant = false;
   } else if (care === 'train') {
     const candidates = plant.topology.filter(node => node.parent_id !== null)
-      .sort((left, right) => left.birth_time - right.birth_time || left.node_id.localeCompare(right.node_id));
+      .sort((left, right) => left.birth_time - right.birth_time || compareCodePoints(left.node_id, right.node_id));
     const chosen = candidates[Math.min(candidates.length - 1, plant.tended_count % candidates.length)];
     if (chosen) chosen.final_direction = [plant.tended_count % 2 === 0 ? 1 : -1, -1];
     gain = 2; dormant = false;
@@ -673,42 +765,137 @@ async function animalUtility(state, animal, intent, context) {
   if (['rest', 'nap', 'sunbathe', 'perch', 'groom', 'hide', 'settled'].some(token => intent.includes(token))) score += animal.rest_appetite + Math.max(0, 60 - animal.energy);
   if (intent === 'forage') score += personality.food_motivation;
   if (animal.authored_preferences.includes(intent)) score += 60;
+  const required = INTENT_AFFORDANCE_REQUIREMENTS[intent] ?? [];
+  if (required.length && !required.some(value => context.nearby_affordances.includes(value))) score -= 2000;
   if (ANIMAL_SPECIES[animal.species_id].affinities.some(value =>
     context.nearby_affordances.includes(value))) score += 20;
   if ((animal.cooldowns[intent] ?? 0) > context.effective_time) score -= 1000;
+  const recent = [...animal.recent_memories].sort((left, right) =>
+    left.timestamp - right.timestamp || compareCodePoints(left.memory_id, right.memory_id))
+    .slice(-RECENT_MEMORY_LIMIT);
+  for (const memory of recent) {
+    const tokens = MEMORY_INTENT_TOKENS[memory.kind] ?? [];
+    if (tokens.length && tokens.some(token => intent.includes(token))) {
+      const magnitude = 8 + Math.min(12, Math.floor(Math.max(0, memory.salience) / 10));
+      score += memory.valence >= 0 ? magnitude : -magnitude;
+    }
+  }
+  const weather = String(context.weather).toLocaleLowerCase('und');
+  if (['rain', 'heavy_rain', 'storm'].includes(weather)) {
+    if (['bathe', 'hide', 'nap', 'paddle', 'rest'].some(token => intent.includes(token))) score += 35;
+    if (['play', 'sing', 'sunbathe'].some(token => intent.includes(token))) score -= 35;
+  } else if (['clear', 'sunny'].includes(weather)) {
+    if (['play', 'sing', 'sunbathe'].some(token => intent.includes(token))) score += 25;
+  } else if (['cold', 'snow', 'blizzard'].includes(weather)) {
+    if (['hide', 'nap', 'rest', 'settled'].some(token => intent.includes(token))) score += 40;
+    if (['bathe', 'paddle', 'sunbathe'].some(token => intent.includes(token))) score -= 40;
+  }
+  const seasonTokens = SEASON_INTENT_TOKENS[String(context.season).toLocaleLowerCase('und')] ?? [];
+  if (seasonTokens.some(token => intent.includes(token))) score += 30;
   const noise = new DeterministicRng(await deriveSeed(
     state.seed, 'animal', animal.animal_id, 'utility', animal.decision_index, intent,
   )).randint(0, 9);
   return score + noise;
 }
 
-async function stepGardenAnimals(state, returning = false) {
+function animalTargetCells(state, animal, intent) {
+  const desired = new Set([
+    ...(INTENT_AFFORDANCE_REQUIREMENTS[intent] ?? []),
+    ...ANIMAL_SPECIES[animal.species_id].affinities,
+  ]);
+  const candidates = state.fixtures.filter(fixture => {
+    const active = new Set([fixture.catalog_id, ...fixtureActiveAffordances(fixture)]);
+    return [...desired].some(value => active.has(value));
+  });
+  if (!candidates.length) return [];
+  candidates.sort((left, right) => {
+    const leftDistance = Math.min(...fixtureCells(left).map(cell =>
+      Math.abs(animal.position[0] - cell[0]) + Math.abs(animal.position[1] - cell[1])));
+    const rightDistance = Math.min(...fixtureCells(right).map(cell =>
+      Math.abs(animal.position[0] - cell[0]) + Math.abs(animal.position[1] - cell[1])));
+    return leftDistance - rightDistance || compareCodePoints(left.fixture_id, right.fixture_id);
+  });
+  return fixtureCells(candidates[0]).sort((left, right) =>
+    left[1] - right[1] || left[0] - right[0]);
+}
+
+async function moveGardenAnimal(state, animal, decision) {
+  if (decision.high_level_state !== 'awake' ||
+    !MOVING_INTENT_TOKENS.some(token => decision.intent.includes(token))) return animal;
+  const rng = new DeterministicRng(await deriveSeed(
+    state.seed, 'animal', animal.animal_id, 'locomotion', animal.decision_index, decision.intent,
+  ));
+  const rotationIndex = rng.randbelow(CARDINAL_STEPS.length);
+  const steps = [...CARDINAL_STEPS.slice(rotationIndex), ...CARDINAL_STEPS.slice(0, rotationIndex)];
+  const targets = animalTargetCells(state, animal, decision.intent);
+  const blockers = blockedCells(state);
+  const otherAnimals = new Set(state.animals.filter(item => item.animal_id !== animal.animal_id)
+    .map(item => cellKey(item.position)));
+  const ranked = [];
+  steps.forEach((step, rank) => {
+    const candidate = [animal.position[0] + step[0], animal.position[1] + step[1]];
+    if (!insideWorld(state, candidate) || blockers.has(cellKey(candidate)) ||
+      otherAnimals.has(cellKey(candidate))) return;
+    const distance = targets.length ? Math.min(...targets.map(cell =>
+      Math.abs(candidate[0] - cell[0]) + Math.abs(candidate[1] - cell[1]))) : 0;
+    ranked.push([distance, rank, candidate]);
+  });
+  ranked.sort((left, right) => left[0] - right[0] || left[1] - right[1]);
+  for (const [, , candidate] of ranked) {
+    const trial = clone(state);
+    trial.animals.find(item => item.animal_id === animal.animal_id).position = [...candidate];
+    if (layoutIsSafe(trial)) {
+      animal.position = [...candidate];
+      return animal;
+    }
+  }
+  return animal;
+}
+
+export async function stepGardenAnimals(
+  state, returning = false, interruptedAnimalId = null,
+) {
   if (!state.animals.length) return state;
   const scene = state.program_state?.scene ?? {};
   const hour = Math.floor(state.effective_time / 3600) % 24;
   const context = {
     effective_time: state.effective_time,
     time_of_day: hour < 6 || hour >= 20 ? 'night' : 'day',
+    season: String(scene.season ?? 'spring'),
     weather: String(scene.weather ?? 'calm'),
     recipient_focus_id: state.ui.focus_id,
     nearby_affordances: uniqueSorted(state.fixtures.flatMap(fixture => [
-      fixture.catalog_id, ...FIXTURE_CATALOG[fixture.catalog_id].affordances,
+      fixture.catalog_id, ...fixtureActiveAffordances(fixture),
     ])),
+    interrupted_animal_id: interruptedAnimalId === null ? null : String(interruptedAnimalId),
   };
+  const decisionRecords = {};
   for (const animal of state.animals) {
-    let intent; let highLevel;
-    if (animal.choreography_lock) {
+    let intent; let highLevel; let score; let priorityReason; let retainedByHysteresis = false;
+    const normalizedWeather = context.weather.toLocaleLowerCase('und');
+    const severeWeather = ['heavy_rain', 'storm', 'blizzard'].includes(normalizedWeather);
+    const coldTurtle = animal.species_id === 'turtle' &&
+      ['cold', 'snow', 'blizzard'].includes(normalizedWeather);
+    if (context.interrupted_animal_id === animal.animal_id || animal.energy <= 15) {
+      intent = 'rest'; highLevel = 'resting'; score = 9000; priorityReason = 'safety_or_interruption';
+    } else if (severeWeather || coldTurtle) {
+      intent = { bird: 'perch', cat: 'nap', rabbit: 'hide', turtle: 'rest' }[animal.species_id];
+      highLevel = 'resting'; score = 9500; priorityReason = 'weather_safety';
+    } else if (animal.choreography_lock) {
       intent = `choreography:${animal.choreography_lock}`; highLevel = 'authored_scene';
-    } else if (animal.energy <= 15) {
-      intent = 'rest'; highLevel = 'resting';
+      score = 9000; priorityReason = 'authored_choreography';
     } else if (!['idle', 'recover'].includes(animal.current_intent) &&
-      context.effective_time < animal.minimum_dwell_until) continue;
+      context.effective_time < animal.minimum_dwell_until) {
+      intent = animal.current_intent; highLevel = animal.high_level_state;
+      score = 0; priorityReason = 'minimum_dwell'; retainedByHysteresis = true;
+    }
     else if (context.recipient_focus_id === animal.animal_id && animal.bond_tier >= 1) {
-      intent = 'greet'; highLevel = 'awake';
+      intent = 'greet'; highLevel = 'awake'; score = 8000; priorityReason = 'relationship_response';
     } else if (returning) {
       intent = TIER_REPERTOIRES[animal.species_id][animal.bond_tier][0]; highLevel = 'awake';
+      score = 7500; priorityReason = 'positive_return_greeting';
     } else if (context.time_of_day === 'night' && animal.personality.day_preference >= 65) {
-      intent = 'rest'; highLevel = 'sleeping';
+      intent = 'rest'; highLevel = 'sleeping'; score = 7000; priorityReason = 'routine';
     } else {
       const candidates = [
         ...ANIMAL_SPECIES[animal.species_id].repertoire,
@@ -718,28 +905,47 @@ async function stepGardenAnimals(state, returning = false) {
       for (const candidate of candidates) scored.push([
         await animalUtility(state, animal, candidate, context), candidate,
       ]);
-      scored.sort((left, right) => right[0] - left[0] || right[1].localeCompare(left[1]));
-      [, intent] = scored[0];
+      scored.sort((left, right) => right[0] - left[0] || compareCodePoints(right[1], left[1]));
+      [score, intent] = scored[0]; priorityReason = 'utility';
       highLevel = ['rest', 'nap', 'sunbathe', 'perch', 'groom', 'hide', 'settled'].some(token => intent.includes(token))
         ? 'resting' : 'awake';
     }
-    const dwell = ANIMAL_SPECIES[animal.species_id].dwell[intent] ?? 12;
-    animal.high_level_state = highLevel;
-    animal.current_intent = intent;
-    animal.intent_started_at = context.effective_time;
-    animal.minimum_dwell_until = context.effective_time + dwell;
-    animal.decision_index += 1;
-    animal.cooldowns[intent] = context.effective_time + dwell;
+    if (!retainedByHysteresis) {
+      if (['safety_or_interruption', 'weather_safety'].includes(priorityReason)) {
+        animal.choreography_lock = null;
+      }
+      const dwell = ANIMAL_SPECIES[animal.species_id].dwell[intent] ?? 12;
+      animal.high_level_state = highLevel;
+      animal.current_intent = intent;
+      animal.intent_started_at = context.effective_time;
+      animal.minimum_dwell_until = context.effective_time + dwell;
+      animal.decision_index += 1;
+      animal.cooldowns[intent] = context.effective_time + dwell;
+    }
+    const before = [...animal.position];
+    await moveGardenAnimal(state, animal, {
+      intent, high_level_state: highLevel,
+    });
+    decisionRecords[animal.animal_id] = {
+      intent, priority_reason: priorityReason, score,
+      retained_by_hysteresis: retainedByHysteresis,
+      moved: animal.position[0] !== before[0] || animal.position[1] !== before[1],
+      from_position: before, to_position: [...animal.position],
+      weather: context.weather, season: context.season,
+      memory_count: Math.min(RECENT_MEMORY_LIMIT, animal.recent_memories.length),
+    };
   }
+  state.program_state.animal_decisions = decisionRecords;
   return state;
 }
 
 async function finish(prior, updated, command, summary, {
-  actions = [], details = null,
+  actions = [], details = null, interruptedAnimalId = null,
 } = {}) {
   const final = clone(updated);
   final.command_sequence = command.sequence;
   final.processed_commands.push(command.command_id);
+  final.processed_commands = final.processed_commands.slice(-PROCESSED_COMMAND_LIMIT);
   final.event_trace.push({
     trace_id: await stableId('trace', prior.world_id, command.command_id),
     sequence: command.sequence,
@@ -748,7 +954,9 @@ async function finish(prior, updated, command, summary, {
     effective_time: prior.effective_time,
     summary,
   });
-  await stepGardenAnimals(final);
+  final.event_trace = compactEventTrace(final.event_trace);
+  final.undo_stack = final.undo_stack.slice(-UNDO_STACK_LIMIT);
+  await stepGardenAnimals(final, false, interruptedAnimalId);
   activateMemorial(final);
   return [final, {
     accepted: true,
@@ -856,11 +1064,75 @@ async function fixtureInteraction(state, fixtureId, requested = null) {
   else if (verb === 'refill') values.water_level = 3;
   else if (verb === 'draw_water') values.draw_count = integer(values.draw_count) + 1;
   else if (verb === 'turn') values.turned_count = integer(values.turned_count) + 1;
-  else if (['organize', 'arrange', 'gather', 'fill', 'water', 'tend', 'train', 'transplant'].includes(verb)) {
+  else if (verb === 'fill') {
+    values.water_level = 3; values.fill_count = integer(values.fill_count) + 1;
+  } else if (verb === 'water' && fixture.catalog_id === 'watering_can') {
+    if (integer(values.water_level) <= 0) return null;
+    values.water_level = integer(values.water_level) - 1;
+    values.water_count = integer(values.water_count) + 1;
+  } else if (['organize', 'arrange', 'gather', 'water', 'tend', 'train', 'transplant'].includes(verb)) {
     values[`${verb}_count`] = integer(values[`${verb}_count`]) + 1;
   } else if (verb === 'read_time') values.last_read_hour = Math.floor(state.effective_time / 3600) % 24;
   else if (verb === 'review_inventory') values.last_inventory_count = state.inventory.length;
   else values[`${verb}_count`] = integer(values[`${verb}_count`]) + 1;
+
+  const byDistance = position => (left, right) => {
+    const leftDistance = Math.abs(left.position[0] - position[0]) + Math.abs(left.position[1] - position[1]);
+    const rightDistance = Math.abs(right.position[0] - position[0]) + Math.abs(right.position[1] - position[1]);
+    return leftDistance - rightDistance || compareCodePoints(
+      left.plant_id ?? left.animal_id ?? left.collectible_id,
+      right.plant_id ?? right.animal_id ?? right.collectible_id,
+    );
+  };
+  const plantEffects = { train: 'train', transplant: 'train', tend: 'water',
+    water: 'water', turn: 'water', organize: 'train' };
+  const care = plantEffects[verb];
+  if (care && updated.plants.length) {
+    const plant = [...updated.plants].sort(byDistance(fixture.position))[0];
+    careForPlant(plant, state.effective_time, care);
+    values.linked_plant_id = plant.plant_id;
+  }
+  const resources = clone(updated.program_state.garden_resources ?? {});
+  if (['refill', 'draw_water'].includes(verb)) {
+    resources.water_units = integer(resources.water_units) + 3;
+  } else if (verb === 'fill') {
+    resources.water_units = Math.max(0, integer(resources.water_units) - 3);
+  } else if (verb === 'water' && fixture.catalog_id === 'watering_can') {
+    resources.watered_total = integer(resources.watered_total) + 1;
+  } else if (verb === 'turn') resources.soil_units = integer(resources.soil_units) + 1;
+  if (verb === 'organize') resources.tools_ready = true;
+  if (Object.keys(resources).length) updated.program_state.garden_resources = resources;
+
+  if (verb === 'gather') {
+    const available = updated.collectibles.filter(item => !item.collected)
+      .sort(byDistance(fixture.position));
+    if (available.length) {
+      available[0].collected = true;
+      updated.inventory = uniqueSorted([...updated.inventory, available[0].collectible_id]);
+      values.gathered_collectible_id = available[0].collectible_id;
+    }
+  } else if (verb === 'arrange' && updated.inventory.length) {
+    const arrangedId = uniqueSorted(updated.inventory)[0];
+    const arranged = updated.collectibles.find(item => item.collectible_id === arrangedId);
+    if (arranged) arranged.position = [...fixture.position];
+    values.arranged_collectible_id = arrangedId;
+  }
+
+  if (updated.animals.length) {
+    const animal = [...updated.animals].sort(byDistance(fixture.position))[0];
+    animal.current_intent = `fixture_${verb}`;
+    animal.intent_started_at = state.effective_time;
+    animal.minimum_dwell_until = state.effective_time + 5;
+    animal.recent_memories = [...animal.recent_memories, {
+      memory_id: await stableId('memory', state.world_id, animal.animal_id,
+        'fixture', fixture.fixture_id, verb, state.command_sequence + 1),
+      kind: `fixture:${verb}`, target_id: fixture.fixture_id,
+      timestamp: state.effective_time, valence: 1, salience: 1,
+    }].slice(-16);
+  }
+  updated.ui.focus_id = fixture.fixture_id;
+  updated.ui.camera = [...fixture.position];
+  if (['remember', 'read', 'review_inventory'].includes(verb)) updated.ui.journal_open = true;
   fixture.interaction_count += 1;
   fixture.last_interaction = verb;
   updated.journal = await journalEntry(
@@ -868,7 +1140,7 @@ async function fixtureInteraction(state, fixtureId, requested = null) {
     `${definition.name}: ${verb.replaceAll('_', ' ')}.`,
   );
   const details = normalizeFixture(fixture);
-  details.inventory = [...state.inventory];
+  details.inventory = [...updated.inventory];
   return [updated, `Used ${verb.replaceAll('_', ' ')} at ${definition.name}.`, details];
 }
 
@@ -1123,6 +1395,7 @@ export async function dispatchGardenCommand(sourceState, command) {
     const [updated, summary, details] = outcome;
     return finish(state, updated, command, summary, {
       actions: availableActions(updated, chosen), details,
+      interruptedAnimalId: chosenKind === 'animal' ? chosen : null,
     });
   }
 
@@ -1177,7 +1450,7 @@ export async function dispatchGardenCommand(sourceState, command) {
     updated.animals[index] = animal;
     await withBondGift(updated, priorAnimal, animal);
     return finish(state, updated, command, `Shared ${kind} with ${animal.species_id}.`, {
-      details: normalizeAnimal(animal),
+      details: normalizeAnimal(animal), interruptedAnimalId: animal.animal_id,
     });
   }
 
@@ -1352,7 +1625,7 @@ async function topologyVisibilityHash(plant, effectiveTime) {
   // semantic visibility hash is explicitly graph-order independent too.
   const visible = plant.topology
     .filter(node => node.birth_time <= effectiveTime)
-    .sort((left, right) => left.node_id.localeCompare(right.node_id))
+    .sort((left, right) => compareCodePoints(left.node_id, right.node_id))
     .map(node => {
       const duration = Math.max(1, node.maturity_time - node.birth_time);
       const maturity = Math.max(0, Math.min(
@@ -1363,23 +1636,50 @@ async function topologyVisibilityHash(plant, effectiveTime) {
   return sha256Hex(canonicalJson(visible));
 }
 
+function organMaturityProgress(node, effectiveTime) {
+  if (node.maturity_time <= node.birth_time) return 1000;
+  return Math.max(0, Math.min(1000, Math.floor(
+    ((effectiveTime - node.birth_time) * 1000) /
+    (node.maturity_time - node.birth_time),
+  )));
+}
+
 function visibleOrganGeometry(plant, effectiveTime) {
   const visible = new Set(plant.topology.filter(node => node.birth_time <= effectiveTime)
     .map(node => node.node_id));
-  const offsets = new Map();
+  const nodes = new Map(plant.topology.map(node => [node.node_id, node]));
+  const offsetsMilli = new Map();
+  const resolve = nodeId => {
+    if (offsetsMilli.has(nodeId)) return offsetsMilli.get(nodeId);
+    const node = nodes.get(nodeId);
+    let offset;
+    if (node.parent_id === null) offset = [0, 0];
+    else {
+      const parent = resolve(node.parent_id);
+      const progress = organMaturityProgress(node, effectiveTime);
+      offset = [
+        parent[0] + node.final_direction[0] * node.final_length * progress,
+        parent[1] + node.final_direction[1] * node.final_length * progress,
+      ];
+    }
+    offsetsMilli.set(nodeId, offset);
+    return offset;
+  };
   const records = [];
-  for (const node of plant.topology) {
+  for (const node of sortBy(plant.topology, 'node_id')) {
     if (!visible.has(node.node_id)) continue;
-    const parent = offsets.get(node.parent_id) ?? [0, 0];
-    const offset = node.parent_id === null ? [0, 0] : [
-      parent[0] + node.final_direction[0] * node.final_length,
-      parent[1] + node.final_direction[1] * node.final_length,
-    ];
-    offsets.set(node.node_id, offset);
+    const maturityProgress = organMaturityProgress(node, effectiveTime);
+    const maturityStageIndex = maturityProgress === 1000
+      ? 6 : Math.min(5, Math.floor((maturityProgress * 6) / 1000));
+    const offsetMilli = resolve(node.node_id);
+    const offset = offsetMilli.map(value => Math.trunc(value / 1000));
     records.push({ node_id: node.node_id, parent_id: node.parent_id, kind: node.kind,
-      offset, glyph_family: node.glyph_family, bloom_state: node.bloom_state });
+      offset, offset_milli: [...offsetMilli], maturity_progress: maturityProgress,
+      maturity_stage_index: maturityStageIndex,
+      maturity_stage: PLANT_MATURITY_STAGES[maturityStageIndex],
+      glyph_family: node.glyph_family, bloom_state: node.bloom_state });
   }
-  return records.sort((left, right) => left.node_id.localeCompare(right.node_id));
+  return records.sort((left, right) => compareCodePoints(left.node_id, right.node_id));
 }
 
 function fixtureConnectedMask(state, fixture) {
@@ -1394,6 +1694,26 @@ function fixtureConnectedMask(state, fixture) {
     if (own.some(([x, y]) => otherCells.has(cellKey([x + dx, y + dy])))) mask |= 1 << bit;
   });
   return mask;
+}
+
+function fixtureRenderCells(state, fixture) {
+  const group = FIXTURE_CONNECTED_GROUP[fixture.catalog_id] ?? null;
+  const grouped = group === null ? new Set() : new Set(state.fixtures
+    .filter(other => FIXTURE_CONNECTED_GROUP[other.catalog_id] === group)
+    .flatMap(fixtureCells).map(cellKey));
+  return fixtureCells(fixture).sort((left, right) => left[1] - right[1] || left[0] - right[0])
+    .map(([x, y]) => {
+      let mask = 0;
+      if (group !== null) [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([dx, dy], bit) => {
+        if (grouped.has(cellKey([x + dx, y + dy]))) mask |= 1 << bit;
+      });
+      return { dx: x - fixture.position[0], dy: y - fixture.position[1], connected_mask: mask };
+    });
+}
+
+function personalityEmphasis(personality) {
+  return Object.entries(personality).sort((left, right) =>
+    right[1] - left[1] || compareCodePoints(left[0], right[0]))[0]?.[0] ?? 'patient';
 }
 
 /** Build a read-only semantic projection; renderers may not mutate this state. */
@@ -1415,6 +1735,9 @@ export async function projectGardenScene(sourceState) {
         growth_points: plant.growth_points,
         dormant: plant.dormant,
         care_state: plant.dormant ? 'resting' : 'growing',
+        presentation_state: plant.dormant ? 'dormant'
+          : visible.some(node => node.bloom_state === 'bloom') ? 'blooming' : 'growing',
+        semantic_description: `${plant.species_id.replaceAll('_', ' ')} at ${plant.position[0]},${plant.position[1]}; ${plant.dormant ? 'resting' : 'growing'}, ${visible.length} visible organs.`,
         visible_organs: visibleOrganGeometry(plant, state.effective_time),
       },
     });
@@ -1425,7 +1748,7 @@ export async function projectGardenScene(sourceState) {
       object_id: fixture.fixture_id, kind: 'fixture', semantic_name: definition.name,
       position: [...fixture.position], depth: 100,
       collision: definition.blocks_movement, occlusion: definition.blocks_movement,
-      affordances: [...definition.affordances], actions: ['inspect', ...FIXTURE_VERBS[fixture.catalog_id], 'move', 'rotate'],
+      affordances: fixtureActiveAffordances(fixture), actions: ['inspect', ...FIXTURE_VERBS[fixture.catalog_id], 'move', 'rotate'],
       hotspot: {
         x: fixture.position[0], y: fixture.position[1],
         width: definition.footprint[0], height: definition.footprint[1],
@@ -1436,10 +1759,14 @@ export async function projectGardenScene(sourceState) {
         interaction_verbs: [...FIXTURE_VERBS[fixture.catalog_id]],
         connected_group: FIXTURE_CONNECTED_GROUP[fixture.catalog_id] ?? null,
         connected_mask: fixtureConnectedMask(state, fixture),
+        render_cells: fixtureRenderCells(state, fixture),
+        presentation_state: fixturePresentationState(fixture),
+        semantic_description: `${definition.name} at ${fixture.position[0]},${fixture.position[1]}; ${fixturePresentationState(fixture)}.`,
         authored_state: clone(fixture.authored_state) },
     });
   }
   for (const animal of state.animals) {
+    const decision = state.program_state?.animal_decisions?.[animal.animal_id] ?? {};
     objects.push({
       object_id: animal.animal_id, kind: 'animal',
       semantic_name: animal.display_name ?? animal.species_id,
@@ -1458,6 +1785,20 @@ export async function projectGardenScene(sourceState) {
         routine: animal.current_intent,
         choreography_phase: animal.choreography_lock !== null ? 'perform'
           : animal.current_intent === 'recover' ? 'recover' : 'orient',
+        presentation_variant: `${animal.species_id}.tier${animal.bond_tier}.${animal.current_intent}.${animal.choreography_lock !== null ? 'perform' : 'routine'}`,
+        personality_emphasis: personalityEmphasis(animal.personality),
+        memory_count: animal.recent_memories.length,
+        decision_reason: String(decision.priority_reason ?? 'not_yet_decided'),
+        decision_score: integer(decision.score),
+        decision_context: {
+          weather: String(decision.weather ?? 'calm'),
+          season: String(decision.season ?? 'spring'),
+          memory_count: integer(decision.memory_count),
+          moved: Boolean(decision.moved ?? false),
+          from_position: [...(decision.from_position ?? animal.position)],
+          to_position: [...(decision.to_position ?? animal.position)],
+        },
+        semantic_description: `${animal.display_name ?? animal.species_id}, ${animal.species_id}, bond tier ${animal.bond_tier}; ${animal.current_intent}; personality ${personalityEmphasis(animal.personality)}; ${animal.recent_memories.length} memories; decision ${decision.priority_reason ?? 'not_yet_decided'}.`,
       },
     });
   }
@@ -1469,20 +1810,74 @@ export async function projectGardenScene(sourceState) {
       hotspot: { x: item.position[0], y: item.position[1], width: 1, height: 1 },
       semantic_state: {
         family: item.family, provenance: item.provenance, authored: item.authored,
+        semantic_description: `${item.label} at ${item.position[0]},${item.position[1]}; ${item.provenance}.`,
       },
     });
   }
   objects.sort((left, right) => left.depth - right.depth ||
-    left.object_id.localeCompare(right.object_id));
+    compareCodePoints(left.object_id, right.object_id));
   return {
     world_id: state.world_id, effective_time: state.effective_time,
     camera: [...state.ui.camera], motion_paused: state.ui.motion_paused,
     scene: { ...clone(state.program_state?.scene ?? {}),
       absence_summary: [...(state.program_state.absence_summary ?? [])],
+      missed_event_summaries: Array.isArray(state.program_state.missed_event_summaries)
+        ? state.program_state.missed_event_summaries.slice(0, 3).map(item => {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) return String(item);
+          const count = Math.max(0, integer(item.missed_count));
+          return `${String(item.event_id ?? 'event')}: ${count} missed occurrence${count === 1 ? '' : 's'}${item.catch_up_truncated ? '; catch-up truncated' : ''}.`;
+        }) : [],
       absence_elapsed_seconds: integer(state.program_state.absence_elapsed_seconds),
       memorial: clone(state.program_state.memorial ?? {}), inventory: [...state.inventory],
-      journal_entry_count: state.journal.length }, objects,
+      journal_entry_count: state.journal.length,
+      journal_entries: state.journal.map(normalizeJournal) }, objects,
   };
+}
+
+export const LIVE_TICK_SECONDS = 5;
+
+/** Advance the canonical dwell loop on fixed deterministic boundaries. */
+export async function advanceGardenLive(sourceState, elapsedSeconds) {
+  const state = deserializeWorldState(serializeWorldState(sourceState));
+  const elapsed = Math.max(0, integer(elapsedSeconds));
+  if (elapsed === 0) return state;
+  const observed = state.last_observed_wall_time === null
+    ? null : state.last_observed_wall_time + elapsed;
+  if (state.ui.motion_paused) {
+    state.last_observed_wall_time = observed;
+    return state;
+  }
+  const start = state.effective_time;
+  const end = start + elapsed;
+  for (const plant of state.plants) {
+    if (plant.dormant) continue;
+    const period = Math.max(1, plant.growth_period_seconds);
+    const milestones = Math.max(0, Math.floor(end / period) - Math.floor(start / period));
+    if (milestones) {
+      advanceTopology(plant, end, milestones);
+      plant.growth_points += milestones;
+    }
+  }
+  for (let boundary = (Math.floor(start / LIVE_TICK_SECONDS) + 1) * LIVE_TICK_SECONDS;
+    boundary <= end; boundary += LIVE_TICK_SECONDS) {
+    state.effective_time = boundary;
+    await stepGardenAnimals(state);
+    const traceId = await stableId('trace', state.world_id, 'live-tick', boundary);
+    if (!state.event_trace.some(entry => entry.trace_id === traceId)) {
+      state.event_trace.push({
+        trace_id: traceId, sequence: state.command_sequence, kind: 'live_tick',
+        target_id: null, effective_time: boundary,
+        summary: state.animals.length
+          ? state.animals.map(animal => `${animal.animal_id}:${animal.current_intent}`).join(', ')
+          : 'Garden time advanced.',
+      });
+      state.event_trace = compactEventTrace(state.event_trace);
+    }
+  }
+  state.effective_time = end;
+  state.last_observed_wall_time = observed;
+  activateMemorial(state);
+  return deserializeWorldState(serializeWorldState(state));
 }
 
 /** Aggregate humane absence progress without replaying elapsed ticks. */
@@ -1500,6 +1895,13 @@ export async function reconcileGardenOffline(sourceState, observedWallTime, maxS
     return [state, {
       elapsed_seconds: 0, rollback_clamped: observed < previous,
       summaries: [], receipt_ids: [],
+    }];
+  }
+  if (state.ui.motion_paused) {
+    state.last_observed_wall_time = observed;
+    activateMemorial(state);
+    return [state, {
+      elapsed_seconds: 0, rollback_clamped: false, summaries: [], receipt_ids: [],
     }];
   }
   const elapsed = observed - previous;
@@ -1543,18 +1945,28 @@ export async function reconcileGardenOffline(sourceState, observedWallTime, maxS
   ];
   if (available.length) candidates.push([30, available[0].collectible_id,
     `${available.length} garden find${available.length === 1 ? ' is' : 's are'} waiting to be noticed.`]);
-  candidates.sort((left, right) => left[0] - right[0] || String(left[1]).localeCompare(String(right[1])));
+  candidates.sort((left, right) => left[0] - right[0] || compareCodePoints(left[1], right[1]));
   const summaries = candidates.slice(0, Math.max(0, maxSummaries)).map(item => item[2]);
   state.effective_time = end;
   state.last_observed_wall_time = observed;
   state.program_state.absence_summary = [...summaries];
   state.program_state.absence_elapsed_seconds = elapsed;
-  state.milestone_receipts = uniqueSorted([...state.milestone_receipts, ...receipts]);
+  state.program_state.offline_reconciliation_total =
+    integer(state.program_state.offline_reconciliation_total) + 1;
+  const priorReceipts = [...state.milestone_receipts];
+  const novelReceipts = receipts.filter(receipt => !priorReceipts.includes(receipt));
+  state.program_state.milestone_receipt_total = Math.max(
+    priorReceipts.length, integer(state.program_state.milestone_receipt_total),
+  ) + novelReceipts.length;
+  state.milestone_receipts = compactRecentStrings(
+    [...priorReceipts, ...novelReceipts], MILESTONE_RECEIPT_LIMIT,
+  );
   state.event_trace.push({
     trace_id: await stableId('trace', state.world_id, 'offline', start, end),
     sequence: state.command_sequence, kind: 'offline_reconcile', target_id: null,
     effective_time: end, summary: `Reconciled ${elapsed} seconds in aggregate.`,
   });
+  state.event_trace = compactEventTrace(state.event_trace);
   await stepGardenAnimals(state, true);
   activateMemorial(state);
   return [state, {
@@ -1563,25 +1975,88 @@ export async function reconcileGardenOffline(sourceState, observedWallTime, maxS
   }];
 }
 
+function authoredCandidateIsSafe(state, target, kind, catalogId, candidate) {
+  if (!Array.isArray(candidate) || candidate.length !== 2 ||
+    !candidate.every(Number.isInteger)) return false;
+  const cells = kind === 'fixture'
+    ? fixtureCells(normalizeFixture({ fixture_id: target, catalog_id: catalogId, position: candidate }))
+    : [candidate];
+  if (cells.some(cell => !insideWorld(state, cell))) return false;
+  const occupiedCells = new Set([
+    ...state.fixtures.filter(item => item.fixture_id !== target).flatMap(fixtureCells),
+    ...state.plants.filter(item => item.plant_id !== target).map(item => item.position),
+    ...state.animals.filter(item => item.animal_id !== target).map(item => item.position),
+    ...state.collectibles.filter(item => item.collectible_id !== target && !item.collected)
+      .map(item => item.position),
+  ].map(cellKey));
+  if (cells.some(cell => occupiedCells.has(cellKey(cell)))) return false;
+  const prospective = deserializeWorldState(serializeWorldState(state));
+  prospective.fixtures = prospective.fixtures.filter(item => item.fixture_id !== target);
+  prospective.plants = prospective.plants.filter(item => item.plant_id !== target);
+  prospective.animals = prospective.animals.filter(item => item.animal_id !== target);
+  prospective.collectibles = prospective.collectibles.filter(item => item.collectible_id !== target);
+  if (kind === 'fixture') prospective.fixtures.push(normalizeFixture({
+    fixture_id: target, catalog_id: catalogId, position: candidate, authored: true,
+  }));
+  else if (kind === 'plant') prospective.plants.push(normalizePlant({
+    plant_id: target, species_id: catalogId, position: candidate,
+  }));
+  else if (kind === 'animal') prospective.animals.push(normalizeAnimal({
+    animal_id: target, species_id: catalogId, position: candidate,
+  }));
+  else prospective.collectibles.push(normalizeCollectible({
+    collectible_id: target, family: 'authored_keepsake', provenance: 'author-authored',
+    label: target, description: 'An authored garden keepsake.', position: candidate,
+  }));
+  return layoutIsSafe(prospective);
+}
+
 async function authoredPosition(state, target, kind, catalogId, requested) {
-  let candidate = null;
-  if (Array.isArray(requested) && requested.length === 2) candidate = requested;
+  let hint = null; let candidate = null;
+  if (typeof requested === 'string') {
+    const hints = new Set(['random', 'authored', 'path', 'near_tallest_tree', 'near_bench', 'by_edge']);
+    if (!hints.has(requested)) throw new Error(`invalid authored position for Garden object ${target}`);
+    hint = requested;
+  } else if (Array.isArray(requested) && requested.length === 2) candidate = requested;
   else if (requested && typeof requested === 'object' &&
     Object.hasOwn(requested, 'x') && Object.hasOwn(requested, 'y')) {
     candidate = [requested.x, requested.y];
+  } else if (requested !== undefined && requested !== null) {
+    throw new Error(`invalid authored position for Garden object ${target}`);
   }
   if (candidate) {
-    candidate = [
-      clamp(candidate[0], 1, state.world_width - 2),
-      clamp(candidate[1], 1, state.world_height - 2),
-    ];
-    if (kind !== 'fixture' || !validateFixturePlacement(
-      state, catalogId, candidate, { fixtureId: target, exceptId: target },
-    ).length) return candidate;
+    if (authoredCandidateIsSafe(state, target, kind, catalogId, candidate)) return [...candidate];
+    throw new Error(`unsafe authored position for Garden object ${target}`);
   }
-  const occupiedCells = new Set([
-    ...state.plants, ...state.fixtures, ...state.animals, ...state.collectibles,
-  ].map(item => cellKey(item.position)));
+  let anchors = [];
+  if (hint === 'near_tallest_tree' && state.plants.length) anchors = [[...state.plants]
+    .sort((left, right) => right.topology.length - left.topology.length ||
+      compareCodePoints(left.plant_id, right.plant_id))[0].position];
+  else if (hint === 'near_bench') anchors = [...state.fixtures]
+    .sort((left, right) => compareCodePoints(left.fixture_id, right.fixture_id))
+    .filter(item => item.catalog_id === 'bench').map(item => item.position);
+  else if (hint === 'path') anchors = [...state.fixtures]
+    .sort((left, right) => compareCodePoints(left.fixture_id, right.fixture_id))
+    .filter(item => ['stepping_stone', 'stepping_stones'].includes(item.catalog_id))
+    .map(item => item.position);
+  const relative = [];
+  for (const anchor of anchors) for (let radius = 1; radius <= 4; radius += 1) {
+    for (let dy = -radius; dy <= radius; dy += 1) for (let dx = -radius; dx <= radius; dx += 1) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) === radius) relative.push([anchor[0] + dx, anchor[1] + dy]);
+    }
+  }
+  if (hint === 'by_edge') {
+    const margin = 2;
+    for (const y of [margin, state.world_height - margin - 1]) {
+      for (let x = margin; x < state.world_width - margin; x += 1) relative.push([x, y]);
+    }
+    for (const x of [margin, state.world_width - margin - 1]) {
+      for (let y = margin + 1; y < state.world_height - margin - 1; y += 1) relative.push([x, y]);
+    }
+  }
+  for (const value of relative) {
+    if (authoredCandidateIsSafe(state, target, kind, catalogId, value)) return value;
+  }
   const rng = new DeterministicRng(await deriveSeed(
     state.seed, 'program', target, kind, 'position',
   ));
@@ -1590,11 +2065,7 @@ async function authoredPosition(state, target, kind, catalogId, requested) {
       rng.randint(2, state.world_width - 3),
       rng.randint(2, state.world_height - 3),
     ];
-    if (occupiedCells.has(cellKey(value))) continue;
-    if (kind === 'fixture' && validateFixturePlacement(
-      state, catalogId, value, { fixtureId: target, exceptId: target },
-    ).length) continue;
-    return value;
+    if (authoredCandidateIsSafe(state, target, kind, catalogId, value)) return value;
   }
   throw new Error(`could not place authored Garden object ${target}`);
 }
@@ -1607,7 +2078,7 @@ function programDefinition(program, target) {
 function programDefinitions(program) {
   return [...(program.entities ?? []), ...(program.animals ?? [])]
     .filter(item => typeof item?.id === 'string')
-    .sort((left, right) => String(left.id).localeCompare(String(right.id)));
+    .sort((left, right) => compareCodePoints(left.id, right.id));
 }
 
 const catalogLeaf = value => {
@@ -1701,9 +2172,40 @@ async function programJournal(state, receipt, objectId, label, description, stat
 
 function pythonJson(value) {
   if (Array.isArray(value)) return `[${value.map(pythonJson).join(', ')}]`;
-  if (value && typeof value === 'object') return `{${Object.keys(value).sort().map(key =>
+  if (value && typeof value === 'object') return `{${Object.keys(value).sort(compareCodePoints).map(key =>
     `${JSON.stringify(key)}: ${pythonJson(value[key])}`).join(', ')}}`;
   return JSON.stringify(value);
+}
+
+async function revealProgramEntity(state, program, target, params = {}, catalogOverride = null) {
+  const definition = programDefinition(program, target);
+  const [kind, definitionCatalogId] = programKind(definition);
+  const catalogId = catalogOverride ?? definitionCatalogId;
+  const requested = params.position ?? definition.position ?? definition.placement;
+  if (kind === 'fixture' && Object.hasOwn(FIXTURE_CATALOG, catalogId)) {
+    const position = await authoredPosition(state, target, kind, catalogId, requested);
+    state.fixtures = [...state.fixtures.filter(item => item.fixture_id !== target),
+      normalizeFixture({ fixture_id: target, catalog_id: catalogId, position, authored: true,
+        authored_state: params.state && typeof params.state === 'object'
+          ? params.state : params.state === undefined ? {} : { value: params.state } })];
+  } else if (kind === 'plant' && Object.hasOwn(SPECIES_CATALOG, catalogId)) {
+    const position = await authoredPosition(state, target, kind, catalogId, requested);
+    state.plants = [...state.plants.filter(item => item.plant_id !== target), normalizePlant({
+      plant_id: target, species_id: catalogId, position,
+      topology: await generateTopology(state.seed, target, catalogId, state.effective_time),
+      growth_period_seconds: SPECIES_CATALOG[catalogId][3],
+    })];
+  } else {
+    const position = await authoredPosition(state, target, 'collectible', catalogId, requested);
+    const properties = definition.properties && typeof definition.properties === 'object'
+      ? definition.properties : {};
+    const label = String(properties.label ?? target);
+    const rawDescription = params.state ?? properties.description ?? 'An authored garden keepsake.';
+    const description = typeof rawDescription === 'string' ? rawDescription : String(rawDescription);
+    state.collectibles = [...state.collectibles.filter(item => item.collectible_id !== target),
+      normalizeCollectible({ collectible_id: target, family: 'authored_keepsake',
+        provenance: 'author-authored', label, description, position, authored: true })];
+  }
 }
 
 /**
@@ -1716,6 +2218,7 @@ export async function materializeGardenProgramEffects(
   sourceState, program, evaluation,
 ) {
   const state = seedGardenProgramState(sourceState, program);
+  const priorReceipts = [...state.milestone_receipts];
   state.program_state = clone(evaluation.state ?? {});
   const occurrences = { 'program.initial': 'definition', ...Object.fromEntries(evaluation.trace
     .filter(row => row.status === 'applied' && row.occurrence_id)
@@ -1767,17 +2270,49 @@ export async function materializeGardenProgramEffects(
       } else if (animal && effect.type === 'animal.routine') {
         Object.assign(animal, animalWithAuthoredData(animal, definition, params.routine));
       } else if (animal && effect.type === 'animal.set_destination') {
-        let destination = null;
-        if (Array.isArray(params.position) && params.position.length === 2) destination = vec2(params.position);
-        else if (params.position && typeof params.position === 'object') destination = [integer(params.position.x), integer(params.position.y)];
-        if (!destination && params.fixture_id) destination = state.fixtures.find(item =>
-          item.fixture_id === params.fixture_id)?.position ?? null;
-        if (destination) animal.position = [...destination];
+        let destination;
+        if (params.position !== undefined) {
+          destination = await authoredPosition(
+            state, target, 'animal', animal.species_id, params.position,
+          );
+        } else if (params.fixture_id) {
+          const fixture = state.fixtures.find(item => item.fixture_id === params.fixture_id);
+          if (!fixture) throw new Error(
+            `animal destination fixture ${JSON.stringify(params.fixture_id)} is not present`,
+          );
+          const own = new Set(fixtureCells(fixture).map(cellKey));
+          const candidates = new Map();
+          for (const cell of fixtureCells(fixture)) for (const neighbor of [
+            [cell[0] - 1, cell[1]], [cell[0] + 1, cell[1]],
+            [cell[0], cell[1] - 1], [cell[0], cell[1] + 1],
+          ]) if (!own.has(cellKey(neighbor))) candidates.set(cellKey(neighbor), neighbor);
+          destination = [...candidates.values()]
+            .sort((left, right) => left[1] - right[1] || left[0] - right[0])
+            .find(candidate => authoredCandidateIsSafe(
+              state, target, 'animal', animal.species_id, candidate,
+            ));
+          if (!destination) throw new Error(
+            `fixture ${JSON.stringify(fixture.fixture_id)} has no safe adjacent animal destination`,
+          );
+        } else throw new Error('animal.set_destination requires position or fixture_id');
+        animal.position = [...destination];
       } else if (animal && ['animal.deliver', 'animal.present_gift'].includes(effect.type)) {
-        animal.choreography_lock = effect.type;
+        animal.choreography_lock = null;
+        animal.current_intent = effect.type;
+        animal.intent_started_at = state.effective_time;
+        animal.minimum_dwell_until = state.effective_time;
       }
       if (['animal.deliver', 'animal.present_gift'].includes(effect.type)) {
-        await programJournal(state, receiptId, target, 'Authored animal moment', pythonJson(params));
+        const referenceKey = effect.type === 'animal.deliver' ? 'entity_id' : 'gift_id';
+        const deliveredId = params[referenceKey];
+        if (typeof deliveredId === 'string' && deliveredId) {
+          await revealProgramEntity(state, program, deliveredId);
+        }
+        await programJournal(
+          state, receiptId, target,
+          effect.type === 'animal.present_gift' ? 'Gift delivered' : 'Delivery complete',
+          'An authored animal delivery was completed.',
+        );
       }
     } else if (effect.type === 'plant.plant') {
       const species = catalogLeaf(params.species_id ?? catalogId);
@@ -1819,50 +2354,46 @@ export async function materializeGardenProgramEffects(
         state.fixtures = state.fixtures.filter(item => item.fixture_id !== target);
         state.plants = state.plants.filter(item => item.plant_id !== target);
         state.collectibles = state.collectibles.filter(item => item.collectible_id !== target);
-      } else if (kind === 'fixture' && Object.hasOwn(FIXTURE_CATALOG, catalogId)) {
-        const position = await authoredPosition(state, target, kind, catalogId, requested);
-        state.fixtures = [...state.fixtures.filter(item => item.fixture_id !== target),
-          normalizeFixture({ fixture_id: target, catalog_id: catalogId, position, authored: true,
-            authored_state: params.state && typeof params.state === 'object'
-              ? params.state : params.state === undefined ? {} : { value: params.state } })];
-      } else if (kind === 'plant' && Object.hasOwn(SPECIES_CATALOG, catalogId)) {
-        const position = await authoredPosition(state, target, kind, catalogId, requested);
-        state.plants = [...state.plants.filter(item => item.plant_id !== target), normalizePlant({
-          plant_id: target, species_id: catalogId, position,
-          topology: await generateTopology(state.seed, target, catalogId, state.effective_time),
-          growth_period_seconds: SPECIES_CATALOG[catalogId][3],
-        })];
       } else {
-        const position = await authoredPosition(state, target, 'collectible', catalogId, requested);
-        const properties = definition.properties && typeof definition.properties === 'object'
-          ? definition.properties : {};
-        const label = String(properties.label ?? target);
-        const rawDescription = params.state ?? properties.description ?? 'An authored garden keepsake.';
-        const description = typeof rawDescription === 'string' ? rawDescription : String(rawDescription);
-        state.collectibles = [...state.collectibles.filter(item => item.collectible_id !== target),
-          normalizeCollectible({ collectible_id: target, family: 'authored_keepsake',
-            provenance: 'author-authored', label, description, position, authored: true })];
+        await revealProgramEntity(
+          state, program, target, params,
+          effect.type === 'entity.transform' && params.asset_id ? catalogId : null,
+        );
       }
     } else if (['narrative.show', 'scene.set', 'letter.present'].includes(effect.type)) {
       if (effect.type === 'scene.set') {
         const scene = state.program_state.scene ??= {};
-        for (const key of ['weather', 'palette', 'story_time', 'sky_mode', 'ambience', 'population']) {
+        for (const key of ['weather', 'palette', 'story_time', 'sky_mode', 'ambience', 'population', 'author_region']) {
           if (Object.hasOwn(params, key)) scene[key] = clone(params[key]);
         }
+      } else if (effect.type === 'letter.present') {
+        const presented = Array.isArray(state.program_state.presented_letters)
+          ? state.program_state.presented_letters.filter(value => typeof value === 'string') : [];
+        state.program_state.presented_letters = uniqueSorted([
+          ...presented, String(params.letter_id),
+        ]);
       }
       const labels = { 'scene.set': 'The Garden changed', 'letter.present': 'A letter is ready' };
       const label = String(params.label ?? labels[effect.type] ?? 'Garden memory');
       const description = String(params.text ?? pythonJson(params));
-      await programJournal(state, receiptId, target ?? effect.type, label, description);
+      const objectId = effect.type === 'letter.present'
+        ? String(params.letter_id) : target ?? effect.type;
+      await programJournal(state, receiptId, objectId, label, description);
     }
-    state.milestone_receipts = uniqueSorted([...state.milestone_receipts, receiptId]);
+    state.milestone_receipts = compactRecentStrings(
+      [...state.milestone_receipts, receiptId], MILESTONE_RECEIPT_LIMIT,
+    );
     state.event_trace.push(normalizeTrace({
       trace_id: await stableId('trace', state.world_id, 'program', receiptId),
       sequence: state.command_sequence, kind: `program:${effect.type}`,
       target_id: target, effective_time: state.effective_time,
       summary: `Applied authored Garden event ${eventId}.`,
     }));
+    state.event_trace = compactEventTrace(state.event_trace);
     materialized.push(receiptId);
   }
+  state.program_state.milestone_receipt_total = Math.max(
+    priorReceipts.length, integer(state.program_state.milestone_receipt_total),
+  ) + materialized.length;
   return [deserializeWorldState(serializeWorldState(state)), materialized];
 }

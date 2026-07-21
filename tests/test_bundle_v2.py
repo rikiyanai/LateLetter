@@ -78,8 +78,9 @@ def test_v2_program_round_trip_and_hmac():
 def test_program_ciphertext_is_authenticated():
     bundle = _bundle()
     assert bundle.garden_program is not None
+    first = bundle.garden_program.ciphertext[0]
     bundle.garden_program.ciphertext = (
-        "A" + bundle.garden_program.ciphertext[1:]
+        ("B" if first == "A" else "A") + bundle.garden_program.ciphertext[1:]
     )
 
     assert not verify_bundle_hmac(bundle, PASS)

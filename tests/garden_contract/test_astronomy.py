@@ -27,6 +27,14 @@ def test_location_quantizes_immediately_and_persists_no_raw_coordinates():
         })
 
 
+@pytest.mark.parametrize("field", ["latitude_cell", "longitude_cell", "grid_degrees"])
+def test_coarse_location_mapping_rejects_boolean_integer_coercion(field):
+    raw = {"latitude_cell": 36, "longitude_cell": 140, "grid_degrees": 1}
+    raw[field] = True
+    with pytest.raises(ValueError, match="must be integers"):
+        CoarseLocation.from_mapping(raw)
+
+
 def test_location_denial_uses_labeled_storybook_fallback():
     resolution = resolve_sky_mode("reader_live")
     assert resolution.mode == "storybook_fallback"

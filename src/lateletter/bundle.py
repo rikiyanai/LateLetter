@@ -22,6 +22,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import date
@@ -40,6 +41,7 @@ _FILE_MODE = 0o600
 PBKDF2_MIN_ITERATIONS = 600_000
 PBKDF2_MAX_ITERATIONS = 2_000_000
 PBKDF2_PARAM_FIELDS = frozenset({"name", "hash", "iterations"})
+BUNDLE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 
 # Fields included in the checksum/HMAC visible payload (SPEC §3).
 _VISIBLE_PAYLOAD_FIELDS = (
@@ -67,6 +69,20 @@ _VISIBLE_PAYLOAD_FIELDS_V2 = (
     "garden_program",
     "notification",
 )
+
+_BUNDLE_COMPUTED_FIELDS = frozenset({"checksum", "hmac"})
+_MESSAGE_FIELDS = frozenset({
+    "id", "date", "ciphertext", "salt", "nonce", "kdf_params",
+})
+_GIFT_FIELDS = frozenset({
+    "id", "type", "catalog_id", "sentiment_ciphertext", "salt", "nonce",
+    "trigger", "placement_hint", "animal_name", "animal_collar_color",
+})
+_TRIGGER_FIELDS = frozenset({"type", "value"})
+_NOTIFICATION_FIELDS = frozenset({"email", "method"})
+_GARDEN_PROGRAM_FIELDS = frozenset({
+    "version", "ciphertext", "salt", "nonce", "kdf_params",
+})
 
 
 # ---------------------------------------------------------------------------
@@ -354,6 +370,9 @@ def validate_pbkdf2_params(
     if not isinstance(params, dict):
         return [f"{field_name} must be an object."]
     fields = set(params)
+    unknown = sorted(fields - PBKDF2_PARAM_FIELDS)
+    if unknown:
+        return [f"{field_name} contains unknown fields: {unknown!r}."]
     if fields != PBKDF2_PARAM_FIELDS:
         return [
             f"{field_name} must contain exactly "
@@ -397,6 +416,21 @@ def _validate_base64_field(
     return []
 
 
+def _reject_unknown_fields(
+    value: Any,
+    *,
+    allowed: frozenset[str],
+    field_name: str,
+) -> list[str]:
+    """Reject extension data before any parser can normalize it away."""
+    if not isinstance(value, dict):
+        return []
+    unknown = sorted(set(value) - allowed)
+    if not unknown:
+        return []
+    return [f"{field_name} contains unknown fields: {unknown!r}."]
+
+
 def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
     """Validate the raw bundle dict structure.  Returns list of error strings."""
     errors: list[str] = []
@@ -406,6 +440,16 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
 
     # Version
     version = data.get("version")
+    payload_fields = (
+        _VISIBLE_PAYLOAD_FIELDS_V2
+        if version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM
+        else _VISIBLE_PAYLOAD_FIELDS
+    )
+    errors.extend(_reject_unknown_fields(
+        data,
+        allowed=frozenset(payload_fields) | _BUNDLE_COMPUTED_FIELDS,
+        field_name="Bundle",
+    ))
     if version is None:
         errors.append("Missing required field: version.")
     elif (
@@ -418,9 +462,14 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
             f"(expected one of {SUPPORTED_BUNDLE_VERSIONS})."
         )
 
-    # Required string fields
-    if not data.get("bundle_id"):
-        errors.append("Missing required field: bundle_id.")
+    # Bundle IDs are public stable identifiers and are also used to derive
+    # local persistence namespaces.  Keep the raw value path-safe even though
+    # persistence owners additionally hash it before constructing filenames.
+    bundle_id = data.get("bundle_id")
+    if not isinstance(bundle_id, str) or not BUNDLE_ID_RE.fullmatch(bundle_id):
+        errors.append(
+            "Field 'bundle_id' must be a 1-128 character path-safe identifier."
+        )
 
     # Messages
     messages = data.get("messages")
@@ -431,12 +480,27 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
         if not isinstance(messages, list):
             errors.append("Field 'messages' must be a list.")
         else:
+            message_ids: set[str] = set()
             for i, m in enumerate(messages):
                 if not isinstance(m, dict):
                     errors.append(f"messages[{i}] must be an object.")
-                elif not m.get("id") or not m.get("date"):
-                    errors.append(f"messages[{i}] missing required field 'id' or 'date'.")
                 else:
+                    errors.extend(_reject_unknown_fields(
+                        m,
+                        allowed=_MESSAGE_FIELDS,
+                        field_name=f"messages[{i}]",
+                    ))
+                if isinstance(m, dict) and (
+                    not isinstance(m.get("id"), str)
+                    or not m.get("id")
+                    or not m.get("date")
+                ):
+                    errors.append(f"messages[{i}] missing required field 'id' or 'date'.")
+                elif isinstance(m, dict):
+                    message_id = m["id"]
+                    if message_id in message_ids:
+                        errors.append(f"messages[{i}].id duplicates {message_id!r}.")
+                    message_ids.add(message_id)
                     if m.get("kdf_params") is not None:
                         errors.extend(validate_pbkdf2_params(
                             m.get("kdf_params"),
@@ -466,15 +530,37 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
         if not isinstance(gifts, list):
             errors.append("Field 'garden_gifts' must be a list.")
         else:
+            gift_ids: set[str] = set()
             for i, g in enumerate(gifts):
                 if not isinstance(g, dict):
                     errors.append(f"garden_gifts[{i}] must be an object.")
-                elif not g.get("id") or not g.get("type") or not g.get("trigger"):
+                else:
+                    errors.extend(_reject_unknown_fields(
+                        g,
+                        allowed=_GIFT_FIELDS,
+                        field_name=f"garden_gifts[{i}]",
+                    ))
+                    if isinstance(g.get("trigger"), dict):
+                        errors.extend(_reject_unknown_fields(
+                            g["trigger"],
+                            allowed=_TRIGGER_FIELDS,
+                            field_name=f"garden_gifts[{i}].trigger",
+                        ))
+                if isinstance(g, dict) and (
+                    not isinstance(g.get("id"), str)
+                    or not g.get("id")
+                    or not g.get("type")
+                    or not g.get("trigger")
+                ):
                     errors.append(
                         f"garden_gifts[{i}] missing required field "
                         "'id', 'type', or 'trigger'."
                     )
-                else:
+                elif isinstance(g, dict):
+                    gift_id = g["id"]
+                    if gift_id in gift_ids:
+                        errors.append(f"garden_gifts[{i}].id duplicates {gift_id!r}.")
+                    gift_ids.add(gift_id)
                     errors.extend(_validate_base64_field(
                         g.get("salt"), field_name=f"garden_gifts[{i}].salt",
                         expected_length=16,
@@ -500,6 +586,17 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
         required=bool(data.get("hmac")) or version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
     ))
 
+    notification = data.get("notification")
+    if notification is not None:
+        if not isinstance(notification, dict):
+            errors.append("Field 'notification' must be an object or null.")
+        else:
+            errors.extend(_reject_unknown_fields(
+                notification,
+                allowed=_NOTIFICATION_FIELDS,
+                field_name="notification",
+            ))
+
     # Version 2 moves author-directed world ownership into one encrypted
     # program.  It must never run beside plaintext legacy gift triggers.
     if version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM:
@@ -521,6 +618,11 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
         if not isinstance(program, dict):
             errors.append("Version 2 bundles require an encrypted 'garden_program'.")
         else:
+            errors.extend(_reject_unknown_fields(
+                program,
+                allowed=_GARDEN_PROGRAM_FIELDS,
+                field_name="garden_program",
+            ))
             for field_name in ("version", "ciphertext", "salt", "nonce", "kdf_params"):
                 if field_name not in program:
                     errors.append(

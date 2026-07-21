@@ -15,6 +15,7 @@ import getpass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .bundle import (
     BUNDLE_VERSION,
@@ -40,7 +41,13 @@ from .garden.authoring import (
     preview_timeline,
 )
 from .garden.legacy import migrate_legacy_gifts
-from .garden.program import Condition, GardenProgram, parse_program
+from .garden.program import (
+    Condition,
+    GardenProgram,
+    ProgramValidationError,
+    parse_program,
+    validate_program_references,
+)
 from .garden.schedule import ScheduleValidationError, expand_schedule, parse_schedule
 from .intake import IntakeData
 from .intake import passphrase_strength_warning
@@ -58,7 +65,7 @@ from .session_store import SessionStore
 from .steward import compact_session
 
 
-_DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+_DATA_DIR = Path(__file__).resolve().parent / "data"
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 _NOTES_MARKER = "--- Q&A NOTES (remove this section before sealing) ---"
 
@@ -940,17 +947,70 @@ def _validation_context(timeline: Timeline, data: IntakeData,
     }
 
 
+def _resolve_preview_local(naive: datetime, timezone_name: str) -> datetime:
+    """Resolve an author-local preview time with schedule-compatible DST rules."""
+    try:
+        zone = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError as exc:
+        raise AuthorFlowError(f"Unknown author timezone {timezone_name!r}.") from exc
+
+    def valid(value: datetime, fold: int) -> datetime | None:
+        aware = value.replace(tzinfo=zone, fold=fold)
+        round_trip = aware.astimezone(timezone.utc).astimezone(zone)
+        if round_trip.replace(tzinfo=None) != value:
+            return None
+        return aware
+
+    first = valid(naive, 0)
+    second = valid(naive, 1)
+    if first is not None and second is not None:
+        # The canonical default for a repeated local time is the first fold.
+        return first
+    if first is not None:
+        return first
+    if second is not None:
+        return second
+    # The canonical default for a DST gap is shift-forward.  Gaps in the IANA
+    # database are bounded; four hours also accommodates historical changes.
+    shifted = naive
+    for _ in range(4 * 60):
+        shifted += timedelta(minutes=1)
+        resolved = valid(shifted, 0) or valid(shifted, 1)
+        if resolved is not None:
+            return resolved
+    raise AuthorFlowError(
+        f"Could not resolve {naive.isoformat()} in author timezone {timezone_name}."
+    )
+
+
 def _preview_author_timeline(timeline: Timeline, *, data: IntakeData,
                              message_ids: list[str], input_fn: Callable[[str], str],
                              output_fn: Callable[[str], None]) -> None:
-    today = datetime.now(timezone.utc)
+    try:
+        author_zone = ZoneInfo(timeline.author_timezone)
+    except ZoneInfoNotFoundError:
+        output_fn(f"  Preview unavailable: unknown timezone {timeline.author_timezone!r}.")
+        return
+    today = datetime.now(timezone.utc).astimezone(author_zone)
     preview_raw = _ask(f"  Preview local date/time [{today.date().isoformat()}]: ",
                        input_fn=input_fn)
     preview_text = (preview_raw or today.date().isoformat()).strip()
     if len(preview_text) == 10:
         preview_text += "T12:00:00"
-    preview_local = datetime.fromisoformat(preview_text)
-    preview_utc = preview_local.replace(tzinfo=timezone.utc)
+    try:
+        parsed_preview = datetime.fromisoformat(preview_text)
+        if parsed_preview.tzinfo is None:
+            resolved_preview = _resolve_preview_local(
+                parsed_preview, timeline.author_timezone,
+            )
+        else:
+            resolved_preview = parsed_preview.astimezone(author_zone)
+    except (ValueError, AuthorFlowError) as exc:
+        output_fn(f"  Preview unavailable: {exc}")
+        return
+    preview_local = resolved_preview.replace(tzinfo=None)
+    preview_utc = resolved_preview.astimezone(timezone.utc)
+    preview_text = preview_local.isoformat(timespec="seconds")
     visits_raw = _ask("  Total visits [1]: ", input_fn=input_fn)
     read_raw = _ask("  Read letter numbers, comma-separated [none]: ", input_fn=input_fn)
     read_ids: list[str] = []
@@ -1074,11 +1134,33 @@ def _run_garden_timeline_editor(store: SessionStore, data: IntakeData,
                     output_fn("  That letter selection was not recognized.")
                     continue
                 rabbit = _ask("  Rabbit's name [Clover]: ", input_fn=input_fn)
+                region_text = _ask(
+                    "  Author sky region as whole-degree latitude,longitude [storybook]: ",
+                    input_fn=input_fn,
+                )
+                author_region = None
+                if region_text and region_text.strip():
+                    region_values = [
+                        int(value.strip()) for value in region_text.split(",")
+                    ]
+                    if len(region_values) != 2:
+                        raise ValueError(
+                            "author sky region needs latitude,longitude"
+                        )
+                    latitude_cell, longitude_cell = region_values
+                    if not -90 <= latitude_cell <= 90 or not -180 <= longitude_cell <= 179:
+                        raise ValueError("author sky region is outside Earth bounds")
+                    author_region = {
+                        "latitude_cell": latitude_cell,
+                        "longitude_cell": longitude_cell,
+                        "grid_degrees": 1,
+                    }
                 timeline = build_letter_rabbit_autumn_arc(
                     recipient_name=data.recipient_name,
                     letter_id=letter_id,
                     author_timezone=timeline.author_timezone,
                     rabbit_name=(rabbit or "Clover").strip() or "Clover",
+                    author_region=author_region,
                 )
                 store.save_garden_timeline(_timeline_to_mapping(timeline))
                 output_fn(
@@ -1163,10 +1245,64 @@ def _backup_append_bundle(path: Path) -> Path:
 def _merge_programs(first: GardenProgram, second: GardenProgram) -> GardenProgram:
     first_raw = garden_program_to_mapping(first)
     second_raw = garden_program_to_mapping(second)
+    for field in (
+        "version", "evaluator_version", "world_state_version", "atlas_version",
+        "astronomy_catalog_version", "author_timezone",
+    ):
+        if first_raw[field] != second_raw[field]:
+            raise AuthorFlowError(
+                f"Garden program merge conflict: {field} differs between the "
+                "existing bundle and the current timeline."
+            )
     merged = dict(first_raw)
-    merged["variables"] = {**first_raw["variables"], **second_raw["variables"]}
-    for field in ("entities", "animals", "events"):
-        merged[field] = [*first_raw[field], *second_raw[field]]
+    variables = dict(first_raw["variables"])
+    for name, value in second_raw["variables"].items():
+        if name in variables and variables[name] != value:
+            raise AuthorFlowError(
+                f"Garden program merge conflict: variable {name!r} changed. "
+                "Rename it or edit the existing timeline explicitly."
+            )
+        variables.setdefault(name, value)
+    merged["variables"] = variables
+
+    # Entity and animal IDs share one runtime namespace.  Identical repeated
+    # definitions are idempotent; any semantic difference is an explicit
+    # collision rather than last-writer-wins data loss.
+    combined_objects: dict[str, tuple[str, dict]] = {}
+    for field in ("entities", "animals"):
+        merged[field] = []
+        for source_name, source in (("existing", first_raw), ("current", second_raw)):
+            for value in source[field]:
+                item = dict(value)
+                item_id = str(item.get("id"))
+                prior = combined_objects.get(item_id)
+                if prior is None:
+                    combined_objects[item_id] = (field, item)
+                    merged[field].append(item)
+                    continue
+                prior_field, prior_item = prior
+                if prior_field != field or prior_item != item:
+                    raise AuthorFlowError(
+                        f"Garden program merge conflict: object ID {item_id!r} "
+                        f"has different {source_name} definitions."
+                    )
+
+    events: list[dict] = []
+    event_by_id: dict[str, dict] = {}
+    for source_name, source in (("existing", first_raw), ("current", second_raw)):
+        for value in source["events"]:
+            item = dict(value)
+            event_id = str(item.get("id"))
+            prior = event_by_id.get(event_id)
+            if prior is None:
+                event_by_id[event_id] = item
+                events.append(item)
+            elif prior != item:
+                raise AuthorFlowError(
+                    f"Garden program merge conflict: event ID {event_id!r} "
+                    f"has a different {source_name} definition."
+                )
+    merged["events"] = events
     return parse_program(merged)
 
 
@@ -1199,9 +1335,22 @@ def _install_timeline_program(
             )
             program = _merge_programs(legacy, timeline_program)
         output_fn(f"  Authenticated version-1 backup created: {backup}")
+    elif existed and bundle.version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM:
+        if bundle.garden_program is None:
+            raise AuthorFlowError(
+                "The existing version-2 bundle has no encrypted Garden program."
+            )
+        existing_program = parse_program(
+            open_garden_program(passphrase, bundle.garden_program),
+            known_letter_ids={message.id for message in bundle.messages},
+        )
+        program = _merge_programs(existing_program, timeline_program)
     elif bundle.version not in {BUNDLE_VERSION, BUNDLE_VERSION_WITH_GARDEN_PROGRAM}:
         raise AuthorFlowError(f"Unsupported existing bundle version {bundle.version}.")
 
+    validate_program_references(
+        program, known_letter_ids={message.id for message in bundle.messages},
+    )
     bundle.version = BUNDLE_VERSION_WITH_GARDEN_PROGRAM
     bundle.garden_gifts = []
     bundle.garden_program = seal_garden_program(
@@ -1340,6 +1489,12 @@ def run_author_workflow(
             output_fn("  Garden export blocked until these errors are fixed:")
             for issue in exc.issues:
                 output_fn(f"    {issue.path}: {issue.message}")
+            output_fn("  The Garden timeline and plaintext draft remain saved.")
+            return 1
+        except ProgramValidationError as exc:
+            output_fn("  Garden export blocked until these errors are fixed:")
+            for issue in exc.errors:
+                output_fn(f"    {issue}")
             output_fn("  The Garden timeline and plaintext draft remain saved.")
             return 1
 

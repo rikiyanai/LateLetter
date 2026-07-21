@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import curses
 from dataclasses import dataclass, replace
+import hashlib
 from pathlib import Path
 import time
 from typing import Any, Mapping
@@ -11,9 +12,10 @@ from typing import Any, Mapping
 from .input_adapters import InputEnvelope, InputModality, InputNormalizationError, normalize_input
 from .state import TerminalViewport
 from .world.clock import OfflineReport, reconcile_offline
-from .world.engine import CommandResult, activate_memorial, dispatch
+from .world.engine import CommandResult, activate_memorial, advance_live_world, dispatch
 from .world.generation import generate_initial_world
 from .world.model import WorldState
+from .world.model import MILESTONE_RECEIPT_LIMIT, compact_recent_strings
 from .world.persistence import WorldPersistenceError, WorldStore
 from .world.projection import SceneProjection, project_scene
 
@@ -27,9 +29,33 @@ _DEFAULT_WORLD_DIR = Path.home() / ".lateletter" / "recipient" / "worlds"
 @dataclass
 class TerminalWorldSession:
     world: WorldState
-    store: WorldStore
+    store: WorldStore | None
     viewport: TerminalViewport
     offline_report: OfflineReport
+    journal_offset: int = 0
+    persistence_enabled: bool = True
+
+    @classmethod
+    def preview(
+        cls,
+        *,
+        width: int,
+        height: int,
+        observed_wall_time: int | None = None,
+    ) -> TerminalWorldSession:
+        """Return a generic in-memory Garden that cannot touch recipient state.
+
+        Recipient bundles use this session until their HMAC has authenticated.
+        Its fixed identity and seed ensure that neither an encrypted program nor
+        a previously decrypted persistent world can influence the pre-auth view.
+        """
+        observed = int(time.time()) if observed_wall_time is None else int(observed_wall_time)
+        world = generate_initial_world(
+            "recipient-preview",
+            "lateletter-recipient-preview-v1",
+        )
+        world, report = reconcile_offline(world, observed)
+        return cls(world, None, TerminalViewport(width, height), report)
 
     @classmethod
     def open(
@@ -42,8 +68,12 @@ class TerminalWorldSession:
         path: str | Path | None = None,
         observed_wall_time: int | None = None,
         record_visit: bool = True,
+        defer_persistence: bool = False,
     ) -> TerminalWorldSession:
-        world_path = Path(path) if path is not None else _DEFAULT_WORLD_DIR / f"{world_id}.json"
+        # A world ID can contain author-controlled identifiers.  Persistence
+        # filenames are fixed-length digests, never raw bundle IDs or paths.
+        safe_name = hashlib.sha256(world_id.encode("utf-8")).hexdigest()
+        world_path = Path(path) if path is not None else _DEFAULT_WORLD_DIR / f"{safe_name}.json"
         store = WorldStore(world_path)
         if world_path.exists():
             world = store.load()
@@ -54,7 +84,13 @@ class TerminalWorldSession:
         observed = int(time.time()) if observed_wall_time is None else int(observed_wall_time)
         world, report = reconcile_offline(world, observed)
         world = activate_memorial(world)
-        session = cls(world, store, TerminalViewport(width, height), report)
+        session = cls(
+            world,
+            store,
+            TerminalViewport(width, height),
+            report,
+            persistence_enabled=not defer_persistence,
+        )
         if record_visit:
             session.record_visit()
         else:
@@ -63,19 +99,43 @@ class TerminalWorldSession:
 
     @property
     def total_visits(self) -> int:
-        return sum(1 for receipt in self.world.milestone_receipts if receipt.startswith(_VISIT_PREFIX))
+        receipt_total = sum(
+            1 for receipt in self.world.milestone_receipts
+            if receipt.startswith(_VISIT_PREFIX)
+        )
+        persisted = self.world.program_state.get("visit_total")
+        if isinstance(persisted, int) and not isinstance(persisted, bool):
+            return max(0, persisted, receipt_total)
+        return receipt_total
 
     def record_visit(self) -> None:
         next_visit = self.total_visits + 1
         receipt = f"{_VISIT_PREFIX}{next_visit}"
+        prior_receipts = tuple(self.world.milestone_receipts)
+        program_state = dict(self.world.program_state)
+        program_state["visit_total"] = next_visit
+        program_state["milestone_receipt_total"] = max(
+            len(prior_receipts),
+            int(program_state.get("milestone_receipt_total", 0)),
+        ) + (0 if receipt in prior_receipts else 1)
         self.world = replace(
             self.world,
-            milestone_receipts=tuple(sorted(set(self.world.milestone_receipts).union({receipt}))),
+            milestone_receipts=compact_recent_strings(
+                (*prior_receipts, receipt), MILESTONE_RECEIPT_LIMIT,
+            ),
+            program_state=program_state,
         )
         self.save()
 
     def save(self) -> None:
-        self.store.save(self.world)
+        if self.store is not None and self.persistence_enabled:
+            self.store.save(self.world)
+
+    def commit_persistence(self, *, enable: bool = True) -> None:
+        """Write a deferred authenticated transaction exactly once."""
+        if self.store is not None:
+            self.store.save(self.world)
+        self.persistence_enabled = bool(enable)
 
     def mark_story_complete(self, completed_at: int | None = None) -> bool:
         """Persist the same lasting canonical memorial as the browser runtime."""
@@ -100,6 +160,36 @@ class TerminalWorldSession:
     def resize(self, width: int, height: int) -> None:
         """Resize presentation only; canonical world bytes remain unchanged."""
         self.viewport.resize(width, height)
+        self.journal_offset = min(self.journal_offset, self._max_journal_offset())
+
+    def _journal_row_count(self) -> int:
+        missed = self.world.program_state.get("missed_event_summaries", ())
+        missed_count = len(missed) if isinstance(missed, (list, tuple)) else 0
+        return (
+            2
+            + max(1, len(self.world.inventory))
+            + max(1, len(self.world.journal))
+            + (1 + min(3, missed_count) if missed_count else 0)
+        )
+
+    def _max_journal_offset(self) -> int:
+        visible_rows = max(1, self.viewport.height - 6)
+        return max(0, self._journal_row_count() - visible_rows)
+
+    def scroll_journal(self, delta: int) -> CommandResult:
+        previous = self.journal_offset
+        self.journal_offset = min(
+            self._max_journal_offset(), max(0, previous + int(delta)),
+        )
+        return CommandResult(
+            accepted=True,
+            changed=False,
+            reason="",
+            summary=(
+                f"Journal row {self.journal_offset + 1}."
+                if self.journal_offset != previous else "Journal edge reached."
+            ),
+        )
 
     def projection(self) -> SceneProjection:
         return project_scene(self.world)
@@ -127,6 +217,20 @@ class TerminalWorldSession:
             return CommandResult(accepted=False, changed=False, reason=str(exc))
         updated, result = dispatch(self.world, garden_command)
         if result.accepted:
+            if (
+                kind == "pause_motion"
+                and self.world.ui.motion_paused
+                and not updated.ui.motion_paused
+                and updated.last_observed_wall_time is not None
+            ):
+                # Discard wall time spent paused even when continuous key input
+                # prevents the idle loop from advancing its live baseline.
+                updated = replace(
+                    updated,
+                    last_observed_wall_time=max(
+                        updated.last_observed_wall_time, int(time.time()),
+                    ),
+                )
             self.world = updated
             if result.changed:
                 self.save()
@@ -136,15 +240,28 @@ class TerminalWorldSession:
         return self.world.ui.focus_id
 
     def center_world_position(self) -> tuple[int, int]:
-        x = min(
-            self.world.world_width - 1,
-            self.world.ui.camera.x + max(0, self.viewport.width // 2),
+        """Return the canonical world cell at the camera's screen center."""
+        return self.world.ui.camera.x, self.world.ui.camera.y
+
+    def dwell(self, seconds: int = 30) -> CommandResult:
+        """Advance the deterministic living-world loop while the reader dwells."""
+        prior_effective_time = self.world.effective_time
+        updated = advance_live_world(self.world, max(0, int(seconds)))
+        persistence_changed = updated.canonical_bytes() != self.world.canonical_bytes()
+        changed = updated.effective_time != prior_effective_time
+        self.world = updated
+        if persistence_changed:
+            self.save()
+        message = (
+            f"Dwelled for {max(0, int(seconds))} Garden seconds."
+            if changed else "The paused Garden stayed still."
         )
-        y = min(
-            self.world.world_height - 1,
-            self.world.ui.camera.y + max(0, (self.viewport.height - 4) // 2),
+        return CommandResult(
+            accepted=True,
+            changed=changed,
+            reason="",
+            summary=message,
         )
-        return x, y
 
     def focused_projection(self):
         focus = self.focused_id()
@@ -171,7 +288,7 @@ class TerminalWorldSession:
 
 TERMINAL_HELP_LINES = (
     "o objects · a actions · 1–9 choose action · enter primary · i inspect · w water/tend · x prune · f feed · p play · c collect",
-    "t train · y transplant · s rest · n place copy · m move · v rotate · u undo · j journal · arrows pan · space pause · esc back · q quit",
+    "t train · y transplant · s rest · d dwell · n place copy · m move · v rotate · u undo · j journal · arrows pan · space pause · esc back · q quit",
 )
 
 
@@ -210,6 +327,10 @@ def dispatch_terminal_action(
 
 def handle_terminal_key(session: TerminalWorldSession, key: int) -> CommandResult | None:
     focus = session.focused_id()
+    if session.world.ui.journal_open and key == curses.KEY_UP:
+        return session.scroll_journal(-1)
+    if session.world.ui.journal_open and key == curses.KEY_DOWN:
+        return session.scroll_journal(1)
     if ord("1") <= key <= ord("9"):
         item = session.focused_projection()
         if item is None:
@@ -237,6 +358,8 @@ def handle_terminal_key(session: TerminalWorldSession, key: int) -> CommandResul
         return session.dispatch("tend", target_id=focus, args={"care_action": "transplant", "x": x, "y": y})
     if key == ord("s"):
         return session.dispatch("tend", target_id=focus, args={"care_action": "rest"})
+    if key == ord("d"):
+        return session.dwell(30)
     if key == ord("f"):
         return session.dispatch("feed", target_id=focus)
     if key == ord("p"):
@@ -265,10 +388,16 @@ def handle_terminal_key(session: TerminalWorldSession, key: int) -> CommandResul
     if key == ord("u"):
         return session.dispatch("undo")
     if key == ord("j"):
+        if session.world.ui.journal_open:
+            session.journal_offset = 0
+            return session.dispatch("back")
+        session.journal_offset = 0
         return session.dispatch("open_journal")
     if key == ord(" "):
         return session.dispatch("pause_motion")
     if key in (27, ord("b")):
+        if session.world.ui.journal_open:
+            session.journal_offset = 0
         return session.dispatch("back")
     if key == curses.KEY_LEFT:
         return session.dispatch("pan", args={"dx": -1})

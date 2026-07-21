@@ -405,8 +405,14 @@
     <button class="btn" type="button" data-garden-action="pan" data-dx="1">pan right</button>
     <button class="btn" type="button" data-garden-action="open_journal">journal</button>
     <button class="btn" type="button" data-garden-action="undo">undo</button>
-    <button class="btn" type="button" data-garden-action="place">place plant</button>
-    <button class="btn" type="button" data-garden-action="pause_motion" data-dwell="true">dwell</button>
+    <label class="t3" for="garden-place-kind">place</label>
+    <select class="btn" id="garden-place-kind"><option value="plant">plant</option><option value="fixture">fixture</option></select>
+    <label class="t3" for="garden-place-catalog">catalog</label>
+    <input class="btn" id="garden-place-catalog" value="lavender" size="12" autocomplete="off">
+    <label class="t3" for="garden-place-x">x</label><input class="btn" id="garden-place-x" type="number" value="10" min="0">
+    <label class="t3" for="garden-place-y">y</label><input class="btn" id="garden-place-y" type="number" value="10" min="0">
+    <button class="btn" type="button" data-garden-action="place">place here</button>
+    <button class="btn" type="button" data-garden-action="dwell">dwell 30 seconds</button>
     <button class="btn" type="button" data-garden-action="pause_motion">pause motion</button>
     <button class="btn" type="button" data-garden-action="back">back</button>
   </div>
@@ -442,9 +448,11 @@ import {
   expandGardenSchedule,
   migrateAuthenticatedLegacyGifts,
   parseGardenProgram,
+  validateBundleIdentityShape,
 } from './web/garden-program.mjs';
 import { CanonicalGardenRenderer } from './web/garden-renderer.mjs';
 import { requestRoughSkyLocation } from './web/garden-sky.mjs';
+import { deliveryFramesFor } from './web/garden-atlas.mjs';
 
 let prepareWithSegments = null;
 let layoutWithLines = null;
@@ -469,7 +477,8 @@ const SIDS=['s-welcome','s-passphrase','s-status','s-select','s-reading','s-arch
 let bundle=null,isDevFixture=false,decoded={};
 let readIds=new Set(),giftDiscovered={};
 let visitCount=0,firstRun=true,postComplete=false;
-let dueIdxs=[],curMsg=null,cachedPassphrase=null;
+let dueIdxs=[],curMsg=null,authenticated=false,authenticatedBinding=null;
+let authEpoch=0;
 let _firstReadGuide=false;
 let garden=null;
 let bundleCorrupted=false,bundleCorruptionReason='';
@@ -483,9 +492,11 @@ let _devGridActive=false,_devGridRaf=null;
 // Reading progress
 let _lineCount=0,_progressScrollOff=null;
 let gardenRuntime=null,gardenProgram=null,gardenProgramState={applied_occurrences:[]};
+const pendingGardenRuntimes=new Set();
 let standaloneMode=false,_gardenFocusReturn=null;
 let gardenSessionStarted=0;
 let gardenProgramTail=Promise.resolve();
+let gardenNotice='';
 const reducedMotionQuery=window.matchMedia?.('(prefers-reduced-motion: reduce)')??{
   matches:false,addEventListener:()=>{},
 };
@@ -494,9 +505,27 @@ let _memoryInvoker=null,_memoryBackground=[];
 function syncAmbientMotion(){
   const motionPaused=Boolean(gardenRuntime?.state?.ui?.motion_paused);
   garden?.setReducedMotion?.(reducedMotionQuery.matches);
-  if(effectiveAmbientMotion({prefersReducedMotion:reducedMotionQuery.matches,motionPaused}))
-    garden?.start();
-  else garden?.stop();
+  updateCanonicalLiveLoop();
+}
+function updateCanonicalLiveLoop(){
+  if(!gardenRuntime)return;
+  const visible=document.getElementById('hud')?.classList.contains('vis')===true;
+  // Reduced motion changes presentation only. The saved canonical pause is
+  // the sole control allowed to stop Garden time and authored schedules.
+  const enabled=visible&&!Boolean(gardenRuntime.state?.ui?.motion_paused);
+  if(enabled&&!gardenRuntime.liveTimer)gardenRuntime.startLive({
+    intervalMs:1000,prefersReducedMotion:reducedMotionQuery.matches,
+    onProjection:()=>refreshAfterCanonicalLiveAdvance()
+      .catch(error=>console.error('[garden live]',error)),
+  });
+  else if(!enabled&&gardenRuntime.liveTimer)gardenRuntime.stopLive();
+}
+async function refreshAfterCanonicalLiveAdvance(){
+  if(gardenProgram&&authenticated&&!bundleCorrupted){
+    await runAuthenticatedGardenProgram();
+    dueIdxs=computeDue();
+  }
+  await renderCanonicalGarden();
 }
 
 function clearCanonicalGardenUi(){
@@ -529,16 +558,32 @@ async function kvGet(k){
   });
   return localStorage.getItem(k);
 }
-async function kvSet(k,v){
+async function kvSet(k,v,{signal}={}){
+  if(signal?.aborted)throw signal.reason||new DOMException('Storage write aborted','AbortError');
   if(!storageOk)return;
   if(_db)return new Promise((res,rej)=>{
-    const tx=_db.transaction('kv','readwrite'),r=tx.objectStore('kv').put(v,k);
-    r.onsuccess=()=>res(); r.onerror=e=>rej(e.target.error);
+    const tx=_db.transaction('kv','readwrite');
+    let settled=false;
+    const cleanup=()=>signal?.removeEventListener('abort',abort);
+    const finish=(callback,value)=>{if(settled)return;settled=true;cleanup();callback(value);};
+    const abort=()=>{
+      try{tx.abort();}catch(_){}
+      finish(rej,signal?.reason||new DOMException('Storage write aborted','AbortError'));
+    };
+    if(signal?.aborted){abort();return;}
+    signal?.addEventListener('abort',abort,{once:true});
+    tx.oncomplete=()=>finish(res);
+    tx.onerror=()=>finish(rej,tx.error||new Error('Storage write failed'));
+    tx.onabort=()=>finish(rej,signal?.reason||tx.error||new DOMException('Storage write aborted','AbortError'));
+    tx.objectStore('kv').put(v,k);
   });
+  if(signal?.aborted)throw signal.reason||new DOMException('Storage write aborted','AbortError');
   try{localStorage.setItem(k,v);}catch(_){}
 }
-const kRead     =(bid,mid)=>`${NS}${bid}_read_${mid}`;
-const kFirst    =()       =>`${NS}first_run`;
+const kRead     =(binding,mid)=>`${NS}auth_${binding}_read_${mid}`;
+const kFirst    =binding      =>`${NS}auth_${binding}_first_run`;
+const PREVIEW_WORLD_ID='recipient-preview';
+const PREVIEW_SEED='lateletter-recipient-preview-v1';
 
 // ── Worker ────────────────────────────────────────────────────────────
 const WORKER_SRC=`
@@ -624,30 +669,36 @@ async function verifyBundleChecksum(data,allowMissing){
 
 // ── Bundle loading ────────────────────────────────────────────────────
 async function loadBundle(file,{trustedDevFixture=false}={}){
+  const loadEpoch=++authEpoch;
+  const assertCurrent=()=>{
+    if(loadEpoch!==authEpoch)throw new Error('bundle load was cancelled');
+  };
   const text=await file.text(),data=JSON.parse(text);
+  assertCurrent();
   if(!data||typeof data!=='object')throw new Error('Not a valid .lateletter file.');
   if(![1,2].includes(data.version))throw new Error(`Unsupported version: ${data.version??'(missing)'}`);
-  if(!data.bundle_id)throw new Error('Bundle missing bundle_id.');
+  validateBundleIdentityShape(data);
   await gardenProgramTail;
+  assertCurrent();
   if(!data.hmac&&!trustedDevFixture)
     throw new Error('Unsigned letter bundles are not accepted.');
   bundle=data;isDevFixture=trustedDevFixture;
-  cachedPassphrase=null;decoded={};gardenProgram=null;gardenRuntime=null;
+  gardenRuntime?.invalidate?.();
+  authenticated=false;authenticatedBinding=null;decoded={};gardenProgram=null;gardenRuntime=null;
   gardenProgramState={applied_occurrences:[]};visitCount=0;
   clearCanonicalGardenUi();
   bundleCorrupted=false; bundleCorruptionReason='';
   const checksum=await verifyBundleChecksum(bundle,isDevFixture);
+  assertCurrent();
   if(!checksum.ok){
     bundleCorrupted=true;
     bundleCorruptionReason='this file appears damaged. the garden can still be viewed, but the letters stay sealed.';
   }else if(checksum.missing&&isDevFixture){
     console.warn('[viewer] dev fixture missing checksum; corruption gate relaxed for local demo flow');
   }
-  readIds=new Set();
-  for(const m of bundle.messages||[])
-    if(await kvGet(kRead(bundle.bundle_id,m.id))) readIds.add(m.id);
-  const fr=await kvGet(kFirst()); firstRun=!fr;
-  if(firstRun) await kvSet(kFirst(),'1');
+  // Read receipts and first-run state are authentication-bound and stay
+  // completely unavailable on the pre-auth surface.
+  readIds=new Set();firstRun=true;
   // Gifts/programs are deliberately inert until bundle authentication succeeds.
   giftDiscovered={};
   // Animal state
@@ -659,7 +710,10 @@ async function loadBundle(file,{trustedDevFixture=false}={}){
   }
   // Before authentication only an isolated base Garden exists. Persisted state
   // may contain decrypted author prose, so it cannot be loaded or rendered yet.
-  await openCanonicalGarden(`preview:${bundle.bundle_id}`,bundle.garden_seed,{persistent:false});
+  await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
+    persistent:false,expectedEpoch:loadEpoch,
+  });
+  assertCurrent();
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────
@@ -667,6 +721,9 @@ async function loadBundle(file,{trustedDevFixture=false}={}){
 // recorded per-message in kdf_params. WebCrypto-native — no network, no WASM.
 const _b64ToBytes=decodeStrictBase64;
 const _validatePbkdf2Params=validateBrowserPbkdf2Params;
+const _LEGACY_BUNDLE_AUTH_KDF=Object.freeze({
+  name:'PBKDF2',hash:'SHA-256',iterations:600000,
+});
 function _validateSealedBundleCrypto(data,kdf){
   _validatePbkdf2Params(kdf,data.version>=2?'bundle_auth_kdf_params':'messages[0].kdf_params');
   _b64ToBytes(data.bundle_auth_salt,{field:'bundle_auth_salt',exact:16});
@@ -693,13 +750,11 @@ function _validateSealedBundleCrypto(data,kdf){
     _b64ToBytes(envelope.ciphertext,{field:'garden_program.ciphertext',minimum:16});
   }
 }
-function _bundleKdfParams(){
-  if(bundle?.version>=2&&bundle.bundle_auth_kdf_params)return bundle.bundle_auth_kdf_params;
-  for(const m of bundle.messages||[]){
-    const k=m.kdf_params;
-    if(k&&k.name==='PBKDF2'&&k.hash==='SHA-256'&&k.iterations>0)return k;
-  }
-  return null;
+function _bundleKdfParams(data=bundle){
+  if(data?.version>=2&&data.bundle_auth_kdf_params)return data.bundle_auth_kdf_params;
+  // v1 bundle authentication was permanently defined with the original
+  // profile. Per-message parameters apply only to message decryption.
+  return data?.version===1?_LEGACY_BUNDLE_AUTH_KDF:null;
 }
 async function _pbkdf2Key(pp,saltBytes,params){
   _validatePbkdf2Params(params);
@@ -720,77 +775,144 @@ async function _gcmDecrypt(keyBytes,nonceB64,ctB64,aad=null){
     key,_b64ToBytes(ctB64,{field:'ciphertext',minimum:16}));
   return new TextDecoder().decode(pt);
 }
+async function _persistenceBinding(keyBytes){
+  const prefix=new TextEncoder().encode('lateletter:persistence:v1\0');
+  const material=new Uint8Array(prefix.length+keyBytes.length);
+  material.set(prefix);material.set(keyBytes,prefix.length);
+  const digest=await crypto.subtle.digest('SHA-256',material);
+  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function _readAuthenticatedReceipts(binding,data=bundle){
+  const loaded=new Set();
+  for(const message of data.messages||[])
+    if(await kvGet(kRead(binding,message.id)))loaded.add(message.id);
+  return{readIds:loaded,firstRun:!await kvGet(kFirst(binding))};
+}
 async function verifyPassphrase(pp){
-  if(isDevFixture){
-    const r=await wCall('dev_decode',{messages:bundle.messages||[]});
-    decoded={};
-    for(const m of r.messages) decoded[m.id]={label:m.label,body:m.body};
-    for(const g of bundle.garden_gifts||[]){
+  const attemptEpoch=authEpoch;
+  const attemptBundle=bundle,attemptIsDevFixture=isDevFixture;
+  const assertCurrent=()=>{
+    if(attemptEpoch!==authEpoch||bundle!==attemptBundle)
+      throw new Error('unlock was cancelled');
+  };
+  const awaitCurrent=async pending=>{
+    const value=await pending;assertCurrent();return value;
+  };
+  if(attemptIsDevFixture){
+    const r=await awaitCurrent(wCall('dev_decode',{messages:attemptBundle.messages||[]}));
+    const decodedCandidate={};
+    for(const m of r.messages)decodedCandidate[m.id]={label:m.label,body:m.body};
+    const sentiments={};
+    for(const g of attemptBundle.garden_gifts||[]){
       if(!g.sentiment_ciphertext)continue;
-      try{g._sentiment=new TextDecoder().decode(_b64ToBytes(g.sentiment_ciphertext));}
-      catch(_){g._sentiment='';}
+      try{sentiments[g.id]=new TextDecoder().decode(_b64ToBytes(g.sentiment_ciphertext));}
+      catch(_){sentiments[g.id]='';}
     }
-    gardenProgram=migrateAuthenticatedLegacyGifts(bundle.garden_gifts||[],{
+    const programCandidate=migrateAuthenticatedLegacyGifts(attemptBundle.garden_gifts||[],{
       authenticated:true,
-      decrypted_sentiments:Object.fromEntries((bundle.garden_gifts||[]).map(g=>[g.id,g._sentiment||''])),
-      message_ids:(bundle.messages||[]).map(m=>m.id),
+      decrypted_sentiments:sentiments,
+      message_ids:(attemptBundle.messages||[]).map(m=>m.id),
     });
-    await openAuthenticatedBundleGarden();
-    cachedPassphrase=pp; return true;
+    const candidateBinding=`dev-fixture:${attemptBundle.bundle_id}`;
+    const receipts=await awaitCurrent(
+      _readAuthenticatedReceipts(candidateBinding,attemptBundle),
+    );
+    const worldCandidate=await awaitCurrent(prepareAuthenticatedBundleGarden(
+      attemptBundle,candidateBinding,{deferPersistence:true},
+    ));
+    await publishAuthenticatedCandidate({
+      epoch:attemptEpoch,bundle:attemptBundle,runtime:worldCandidate.runtime,
+      programState:worldCandidate.programState,visitTotal:worldCandidate.visitTotal,
+      absent:worldCandidate.absent,decodedCandidate,programCandidate,candidateBinding,
+      receipts,sentiments,
+    });
+    assertCurrent();
+    return{epoch:attemptEpoch,runtime:worldCandidate.runtime};
   }
-  const kdf=_bundleKdfParams();
+  const kdf=_bundleKdfParams(attemptBundle);
   if(!kdf)throw new Error('This letter uses a lock format this viewer cannot open yet.');
   if(!crypto.subtle)throw new Error('This browser cannot unlock letters (no WebCrypto).');
-  _validateSealedBundleCrypto(bundle,kdf);
+  _validateSealedBundleCrypto(attemptBundle,kdf);
   // 1. Bundle HMAC gate — nothing is announced until this passes (SPEC §4).
-  const hmacKeyBytes=await _pbkdf2Key(pp,
-    _b64ToBytes(bundle.bundle_auth_salt,{field:'bundle_auth_salt',exact:16}),kdf);
-  const hmacKey=await crypto.subtle.importKey(
-    'raw',hmacKeyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign']);
-  const mac=new Uint8Array(await crypto.subtle.sign(
-    'HMAC',hmacKey,new TextEncoder().encode(_canonicalJson(_visiblePayload(bundle)))));
+  const hmacKeyBytes=await awaitCurrent(_pbkdf2Key(pp,
+    _b64ToBytes(attemptBundle.bundle_auth_salt,{field:'bundle_auth_salt',exact:16}),kdf));
+  const hmacKey=await awaitCurrent(crypto.subtle.importKey(
+    'raw',hmacKeyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign']));
+  const mac=new Uint8Array(await awaitCurrent(crypto.subtle.sign(
+    'HMAC',hmacKey,new TextEncoder().encode(_canonicalJson(_visiblePayload(attemptBundle))))));
   const macHex=Array.from(mac,b=>b.toString(16).padStart(2,'0')).join('');
-  if(!await _timingSafeHexEq(macHex,bundle.hmac))
+  if(!await awaitCurrent(_timingSafeHexEq(macHex,attemptBundle.hmac)))
     throw new Error('incorrect passphrase, or file modified');
+  const candidateBinding=await awaitCurrent(_persistenceBinding(hmacKeyBytes));
   // 2. Decrypt messages (per-message salt → per-message key).
-  decoded={};
-  for(const m of bundle.messages||[]){
+  const decodedCandidate={};
+  for(const m of attemptBundle.messages||[]){
     const params=m.kdf_params||kdf;
-    const key=await _pbkdf2Key(pp,_b64ToBytes(m.salt,{field:'message.salt',exact:16}),params);
-    const p=JSON.parse(await _gcmDecrypt(key,m.nonce,m.ciphertext));
-    decoded[m.id]={label:p.label||'',body:p.body||''};
+    const key=await awaitCurrent(
+      _pbkdf2Key(pp,_b64ToBytes(m.salt,{field:'message.salt',exact:16}),params),
+    );
+    const p=JSON.parse(await awaitCurrent(_gcmDecrypt(key,m.nonce,m.ciphertext)));
+    decodedCandidate[m.id]={label:p.label||'',body:p.body||''};
   }
   // 3. Decrypt gift sentiments (per-gift salt, bundle-wide KDF params).
-  for(const g of bundle.garden_gifts||[]){
-    if(!g.sentiment_ciphertext){g._sentiment='';continue;}
-    const key=await _pbkdf2Key(pp,_b64ToBytes(g.salt,{field:'gift.salt',exact:16}),kdf);
-    try{g._sentiment=await _gcmDecrypt(key,g.nonce,g.sentiment_ciphertext);}
-    catch(_){g._sentiment='';}
+  const sentiments={};
+  for(const g of attemptBundle.garden_gifts||[]){
+    if(!g.sentiment_ciphertext){sentiments[g.id]='';continue;}
+    const key=await awaitCurrent(
+      _pbkdf2Key(pp,_b64ToBytes(g.salt,{field:'gift.salt',exact:16}),kdf),
+    );
+    sentiments[g.id]=await awaitCurrent(_gcmDecrypt(key,g.nonce,g.sentiment_ciphertext));
   }
-  if(bundle.version>=2){
-    const envelope=bundle.garden_program;
+  let programCandidate;
+  if(attemptBundle.version>=2){
+    const envelope=attemptBundle.garden_program;
     if(!envelope||envelope.version!==1)throw new Error('Unsupported garden program envelope.');
-    const params=envelope.kdf_params||bundle.bundle_auth_kdf_params||kdf;
-    const key=await _pbkdf2Key(pp,
-      _b64ToBytes(envelope.salt,{field:'garden_program.salt',exact:16}),params);
-    gardenProgram=parseGardenProgram(JSON.parse(await _gcmDecrypt(
-      key,envelope.nonce,envelope.ciphertext,'lateletter:garden-program:v1')));
+    const params=envelope.kdf_params||attemptBundle.bundle_auth_kdf_params||kdf;
+    const key=await awaitCurrent(_pbkdf2Key(pp,
+      _b64ToBytes(envelope.salt,{field:'garden_program.salt',exact:16}),params));
+    programCandidate=parseGardenProgram(JSON.parse(await awaitCurrent(_gcmDecrypt(
+      key,envelope.nonce,envelope.ciphertext,'lateletter:garden-program:v1'))),{
+      knownLetterIds:(attemptBundle.messages||[]).map(message=>message.id),
+    });
   }else{
-    gardenProgram=migrateAuthenticatedLegacyGifts(bundle.garden_gifts||[],{
+    programCandidate=migrateAuthenticatedLegacyGifts(attemptBundle.garden_gifts||[],{
       authenticated:true,
-      decrypted_sentiments:Object.fromEntries((bundle.garden_gifts||[]).map(g=>[g.id,g._sentiment||''])),
-      message_ids:(bundle.messages||[]).map(m=>m.id),
+      decrypted_sentiments:sentiments,
+      message_ids:(attemptBundle.messages||[]).map(m=>m.id),
     });
   }
-  await openAuthenticatedBundleGarden();
-  cachedPassphrase=pp; return true;
+  // Load and reconcile the authenticated world without writing it. Program
+  // materialization and memorial activation must succeed before one commit.
+  const receipts=await awaitCurrent(
+    _readAuthenticatedReceipts(candidateBinding,attemptBundle),
+  );
+  const worldCandidate=await awaitCurrent(prepareAuthenticatedBundleGarden(
+    attemptBundle,candidateBinding,{deferPersistence:true},
+  ));
+  await publishAuthenticatedCandidate({
+    epoch:attemptEpoch,bundle:attemptBundle,runtime:worldCandidate.runtime,
+    programState:worldCandidate.programState,visitTotal:worldCandidate.visitTotal,
+    absent:worldCandidate.absent,decodedCandidate,programCandidate,candidateBinding,
+    receipts,sentiments,
+  });
+  assertCurrent();
+  return{epoch:attemptEpoch,runtime:worldCandidate.runtime};
 }
 
 // ── Due / complete ────────────────────────────────────────────────────
 function computeDue(){
   const today=new Date();today.setHours(0,0,0,0);
+  const presented=new Set([
+    ...(Array.isArray(gardenRuntime?.state?.program_state?.presented_letters)
+      ?gardenRuntime.state.program_state.presented_letters:[]),
+    ...(Array.isArray(gardenProgramState?.presented_letters)
+      ?gardenProgramState.presented_letters:[]),
+  ].filter(value=>typeof value==='string'));
   return(bundle.messages||[]).reduce((acc,m,i)=>{
-    try{const d=new Date(m.date+'T00:00:00');if(d<=today&&!readIds.has(m.id))acc.push(i);}catch(_){}
+    try{
+      const d=new Date(m.date+'T00:00:00');
+      if((d<=today||presented.has(m.id))&&!readIds.has(m.id))acc.push(i);
+    }catch(_){}
     return acc;
   },[]);
 }
@@ -804,29 +926,86 @@ function _animalData(){
 }
 
 // ── Canonical Garden owner ───────────────────────────────────────────
-async function openCanonicalGarden(worldId,seed,{persistent=true}={}){
-  gardenRuntime=await new GardenRuntime({
+async function prepareCanonicalGardenRuntime(
+  worldId,seed,{persistent=true,deferPersistence=false}={},
+){
+  const runtime=new GardenRuntime({
     worldId,seed,
     load:persistent?kvGet:async()=>null,
     save:persistent?kvSet:async()=>{},
     now:()=>Math.floor(Date.now()/1000),
-  }).open();
-  gardenSessionStarted=gardenRuntime.state.last_observed_wall_time||0;
-  await renderCanonicalGarden();
+  });
+  pendingGardenRuntimes.add(runtime);
+  try{
+    await runtime.open({persist:persistent&&!deferPersistence});
+    return runtime;
+  }catch(error){
+    runtime.invalidate();
+    throw error;
+  }finally{
+    pendingGardenRuntimes.delete(runtime);
+  }
 }
-async function openAuthenticatedBundleGarden(){
-  await openCanonicalGarden(`bundle:${bundle.bundle_id}`,bundle.garden_seed,{persistent:true});
-  gardenProgramState={...(gardenRuntime.state.program_state||{})};
-  if(!Array.isArray(gardenProgramState.applied_occurrences))gardenProgramState.applied_occurrences=[];
-  visitCount=(parseInt(gardenProgramState.visit_total,10)||0)+1;
-  gardenProgramState.visit_total=visitCount;
-  wasAbsent=(gardenRuntime.absenceReport?.elapsed_seconds||0)>86400;
+async function publishCanonicalGardenRuntime(runtime,expectedEpoch){
+  if(expectedEpoch!==authEpoch){runtime.invalidate();throw new Error('Garden open was cancelled');}
+  const previous=gardenRuntime;
+  if(previous&&previous!==runtime)previous.invalidate();
+  gardenRuntime=runtime;
+  gardenSessionStarted=runtime.state.last_observed_wall_time||0;
+  await renderCanonicalGarden();
+  if(expectedEpoch!==authEpoch||gardenRuntime!==runtime){
+    runtime.invalidate();
+    if(gardenRuntime===runtime)gardenRuntime=null;
+    throw new Error('Garden open was cancelled');
+  }
+  return runtime;
+}
+async function openCanonicalGarden(
+  worldId,seed,{persistent=true,deferPersistence=false,expectedEpoch=authEpoch}={},
+){
+  const runtime=await prepareCanonicalGardenRuntime(
+    worldId,seed,{persistent,deferPersistence},
+  );
+  if(expectedEpoch!==authEpoch){runtime.invalidate();throw new Error('Garden open was cancelled');}
+  return publishCanonicalGardenRuntime(runtime,expectedEpoch);
+}
+async function prepareAuthenticatedBundleGarden(
+  data,binding,{deferPersistence=false}={},
+){
+  if(!binding)throw new Error('authenticated persistence binding is unavailable');
+  const runtime=await prepareCanonicalGardenRuntime(
+    `bundle:${data.bundle_id}:${binding}`,data.garden_seed,{
+    persistent:true,deferPersistence,
+  });
+  const programState={...(runtime.state.program_state||{})};
+  if(!Array.isArray(programState.applied_occurrences))programState.applied_occurrences=[];
+  const visitTotal=(parseInt(programState.visit_total,10)||0)+1;
+  programState.visit_total=visitTotal;
+  return{
+    runtime,programState,visitTotal,
+    absent:(runtime.absenceReport?.elapsed_seconds||0)>86400,
+  };
+}
+async function publishAuthenticatedCandidate(candidate){
+  const isCurrent=()=>candidate.epoch===authEpoch&&bundle===candidate.bundle;
+  if(!isCurrent()){candidate.runtime.invalidate();throw new Error('unlock was cancelled');}
+  await publishCanonicalGardenRuntime(candidate.runtime,candidate.epoch);
+  if(!isCurrent()){candidate.runtime.invalidate();throw new Error('unlock was cancelled');}
+  decoded=candidate.decodedCandidate;gardenProgram=candidate.programCandidate;
+  authenticatedBinding=candidate.candidateBinding;
+  readIds=candidate.receipts.readIds;firstRun=candidate.receipts.firstRun;
+  gardenProgramState=candidate.programState;visitCount=candidate.visitTotal;
+  wasAbsent=candidate.absent;
+  for(const gift of candidate.bundle.garden_gifts||[])
+    gift._sentiment=candidate.sentiments[gift.id]||'';
+  authenticated=true;
 }
 async function dispatchGardenUi(modality,intent,{target_id=null,args={},metadata={}}={}){
   if(!gardenRuntime)return null;
   const result=await gardenRuntime.dispatch(modality,intent,{target_id,args,metadata});
   if(result.accepted){
-    if(result.changed&&gardenProgram&&cachedPassphrase!==null&&!bundleCorrupted)
+    gardenNotice=result.reason||result.summary||'';
+    if(result.changed&&gardenProgram&&authenticated&&!bundleCorrupted)
       await runAuthenticatedGardenProgram();
     await renderCanonicalGarden();
     if(intent==='feed'&&garden)garden.triggerAnimalFeedReaction({
@@ -840,7 +1019,8 @@ function canonicalActionRequest(action,focused){
   if(focused?.kind==='fixture'){
     if(action==='inspect')return{intent:'inspect',args:{}};
     if(action==='move')return{intent:'move_fixture',args:{
-      x:Math.min(gardenRuntime.state.world_width-1,focused.position[0]+1),y:focused.position[1],
+      x:Number(document.getElementById('garden-place-x').value),
+      y:Number(document.getElementById('garden-place-y').value),
       rotation:focused.semantic_state.rotation||0,
     }};
     if(action==='rotate')return{intent:'move_fixture',args:{
@@ -864,12 +1044,15 @@ async function renderCanonicalGarden(){
   if(!panel||!gardenRuntime?.projection)return;
   syncAmbientMotion();
   garden?.render(gardenRuntime.projection);
-  document.getElementById('garden-scene-summary').textContent=gardenRuntime.sceneSummary();
+  document.getElementById('garden-scene-summary').textContent=
+    [gardenNotice,gardenRuntime.sceneSummary()].filter(Boolean).join(' ');
   const focusId=gardenRuntime.state.ui.focus_id;list.innerHTML='';
   for(const object of gardenRuntime.projection.objects){
     const li=document.createElement('li'),button=document.createElement('button');
     button.type='button';button.className='btn';button.dataset.objectId=object.object_id;
-    button.textContent=`${object.semantic_name} — ${object.kind}`;
+    const description=object.semantic_state?.semantic_description||
+      `${object.semantic_name} at ${object.position[0]},${object.position[1]}.`;
+    button.textContent=`${object.semantic_name} — ${object.kind}: ${description}`;
     button.setAttribute('aria-current',String(object.object_id===focusId));
     button.onclick=async event=>{
       const modality=inputModalityFromBrowserEvent(event);
@@ -911,52 +1094,64 @@ async function runAuthenticatedGardenProgram(){
   return pending;
 }
 async function _runAuthenticatedGardenProgramNow(){
-  if(!gardenProgram||cachedPassphrase===null||bundleCorrupted)return;
-  gardenProgramState=gardenRuntime.prepareProgram(gardenProgram);
-  gardenProgramState.visit_total=visitCount;
-  const observed=gardenRuntime.state.last_observed_wall_time||Math.floor(Date.now()/1000);
+  if(!gardenProgram||!authenticated||bundleCorrupted)return;
+  const epoch=authEpoch,runtime=gardenRuntime,program=gardenProgram;
+  const isCurrent=()=>epoch===authEpoch&&authenticated&&gardenRuntime===runtime&&gardenProgram===program;
+  const preparedState=runtime.prepareProgram(program);
+  preparedState.visit_total=visitCount;
+  const observed=runtime.state.last_observed_wall_time||Math.floor(Date.now()/1000);
   const now=new Date(observed*1000),nowIso=now.toISOString();
   const localParts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{
-    timeZone:gardenProgram.author_timezone,year:'numeric',month:'2-digit',day:'2-digit',
+    timeZone:program.author_timezone,year:'numeric',month:'2-digit',day:'2-digit',
     hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23',
   }).formatToParts(now).filter(item=>item.type!=='literal').map(item=>[item.type,item.value]));
   const localIso=`${localParts.year}-${localParts.month}-${localParts.day}T${localParts.hour}:${localParts.minute}:${localParts.second}`;
-  const lastSeconds=Number(gardenRuntime.previousObservedWallTime??Math.max(0,observed-1));
-  const eligible={};
-  for(const event of gardenProgram.events){
+  const lastSeconds=Number(runtime.previousObservedWallTime??Math.max(0,observed-1));
+  const eligible={},missedSummaries=[];
+  for(const event of program.events){
     if(!event.schedule)continue;
     const expanded=expandGardenSchedule(event.schedule,{
       event_id:event.id,last_seen_utc:new Date(lastSeconds*1000).toISOString(),
       now_utc:nowIso,
     });
-    if(expanded.occurrences.length)eligible[event.id]=expanded.occurrences.at(-1).id;
+    if(expanded.occurrences.length){
+      eligible[event.id]=expanded.occurrences.at(-1).id;
+      if(expanded.summarized_missed>0)missedSummaries.push({
+        event_id:event.id,occurrence_id:expanded.occurrences.at(-1).id,
+        missed_count:Math.min(400,expanded.summarized_missed),
+        catch_up_truncated:Boolean(expanded.catch_up_truncated),
+      });
+    }
   }
-  const entities=gardenProgramState.entities||{};
-  const completed=gardenProgramState.completed_events||[];
+  const entities=preparedState.entities||{};
+  const completed=preparedState.completed_events||[];
   const facts={
     'time.utc':nowIso.replace('.000Z','+00:00'),'time.local':localIso,
     'date.range':localIso.slice(0,10),
     'season.current':(()=>{const month=Number(localParts.month);return month>=3&&month<=5?'spring':month>=6&&month<=8?'summer':month>=9&&month<=11?'autumn':'winter';})(),
     'visit.total':visitCount,'visit.nth':visitCount,
-    'absence.days':Math.floor((gardenRuntime.absenceReport?.elapsed_seconds||0)/86400),
+    'absence.days':Math.floor((runtime.absenceReport?.elapsed_seconds||0)/86400),
     'session.duration_seconds':Math.max(0,observed-gardenSessionStarted),
     'letter.due':(bundle.messages||[]).filter((message,index)=>computeDue().includes(index)).map(message=>message.id),
     'letter.read':[...readIds].sort(),
     'gift.revealed':Object.keys(entities).filter(key=>entities[key]?.revealed).sort(),
-    'gift.examined':[...new Set(gardenRuntime.state.journal.filter(item=>item.status==='examined').map(item=>item.object_id))].sort(),
+    'gift.examined':[...new Set(runtime.state.journal.filter(item=>item.status==='examined').map(item=>item.object_id))].sort(),
     'event.completed':completed.map(String).sort(),
-    'animal.arrived':gardenRuntime.state.animals.map(item=>item.animal_id).sort(),
-    'animal.bond_tier':Math.max(0,...gardenRuntime.state.animals.map(item=>item.bond_tier)),
-    'animal.interaction':[...new Set(gardenRuntime.state.animals.flatMap(item=>Object.keys(item.interaction_counts)))].sort(),
-    'animal.memory':[...new Set(gardenRuntime.state.animals.flatMap(item=>item.recent_memories.map(memory=>memory.kind)))].sort(),
-    'plant.growth_stage':Math.max(0,...gardenRuntime.state.plants.map(item=>item.growth_points)),
-    'plant.bloom':gardenRuntime.state.plants.filter(item=>item.topology.some(node=>node.bloom_state==='bloom')).map(item=>item.plant_id).sort(),
-    'fixture.present':gardenRuntime.state.fixtures.map(item=>item.fixture_id).sort(),
+    'animal.arrived':runtime.state.animals.map(item=>item.animal_id).sort(),
+    'animal.bond_tier':Math.max(0,...runtime.state.animals.map(item=>item.bond_tier)),
+    'animal.interaction':[...new Set(runtime.state.animals.flatMap(item=>Object.keys(item.interaction_counts)))].sort(),
+    'animal.memory':[...new Set(runtime.state.animals.flatMap(item=>item.recent_memories.map(memory=>memory.kind)))].sort(),
+    'plant.growth_stage':Math.max(0,...runtime.state.plants.map(item=>item.growth_points)),
+    'plant.bloom':runtime.state.plants.filter(item=>item.topology.some(node=>node.bloom_state==='bloom')).map(item=>item.plant_id).sort(),
+    'fixture.present':runtime.state.fixtures.map(item=>item.fixture_id).sort(),
   };
-  const result=await evaluateGardenProgram(gardenProgram,gardenProgramState,{
-    seed:gardenRuntime.state.seed,facts,eligible_occurrences:eligible,
+  const result=await evaluateGardenProgram(program,preparedState,{
+    seed:runtime.state.seed,facts,eligible_occurrences:eligible,
+    missed_event_summaries:missedSummaries,
   });
-  await gardenRuntime.materializeProgram(gardenProgram,result);
+  if(!isCurrent())return;
+  await runtime.materializeProgram(program,result);
+  if(!isCurrent())return;
   gardenProgramState={...result.state,visit_total:visitCount};
   giftDiscovered={};
   for(const gift of bundle.garden_gifts||[])
@@ -973,6 +1168,7 @@ function showScreen(name){
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
   document.getElementById('garden-controls').classList.toggle('open',name==='garden');
+  updateCanonicalLiveLoop();
 }
 
 // ── Animal helpers ────────────────────────────────────────────────────
@@ -992,7 +1188,7 @@ function devCycleAnimal(){
 }
 function _updateAnimalHud(){
   const el=document.getElementById('hud-animal');if(!el)return;
-  if(cachedPassphrase===null||bundleCorrupted||!animalType||!animalTriggered){el.textContent='';return;}
+  if(!authenticated||bundleCorrupted||!animalType||!animalTriggered){el.textContent='';return;}
   if(animalTier===0)el.textContent=`a stray ${animalType} lingers at the edge…`;
   else if(animalTier<3)el.textContent=`the ${animalType} is beginning to trust you`;
   else el.textContent='';
@@ -1011,7 +1207,7 @@ function startFirstRunBanner(){
 
 // ── Garden / HUD ──────────────────────────────────────────────────────
 function _gardenMemories(){
-  if(!bundle||cachedPassphrase===null||bundleCorrupted)return[];
+  if(!bundle||!authenticated||bundleCorrupted)return[];
   return(bundle.garden_gifts||[]).filter(g=>giftDiscovered[g.id]);
 }
 function _mkHudButton(label,fn,key=null){
@@ -1027,7 +1223,7 @@ function _renderGardenActions(){
   const memories=_gardenMemories();
   if(memories.length)
     actions.appendChild(_mkHudButton(memories.length===1?'examine memory':'examine memories',showGardenMemories,'i'));
-  if(cachedPassphrase!==null&&!bundleCorrupted&&animalType&&animalTriggered&&animalTier<3)
+  if(authenticated&&!bundleCorrupted&&animalType&&animalTriggered&&animalTier<3)
     actions.appendChild(_mkHudButton(`feed ${animalType}`,feedAnimal,'f'));
 }
 function showGardenMemories(){
@@ -1059,7 +1255,7 @@ function showGarden(){
       bundleCorruptionReason||'the garden can still be viewed, but the letters stay sealed.',
       [{label:'back to garden',hi:true,fn:showGarden}],
     )));
-  }else if(cachedPassphrase!==null){
+  }else if(authenticated){
     btns.appendChild(mk('letters',true,showArchive));
   }else{
     btns.appendChild(mk('open letters',true,showPassphrase));
@@ -1070,7 +1266,10 @@ function showGarden(){
   _renderGardenActions();
   renderCanonicalGarden();
 }
-function afterAuth(){ showArchive(); }
+function afterAuth(){
+  garden?.setSeed(bundle?.garden_seed??12345);
+  showArchive();
+}
 function openDue(){
   if(dueIdxs.length===0){
     showStatus('no letters today.','come back anytime — this garden is yours.',
@@ -1102,19 +1301,38 @@ function showPassphrase(){
 }
 async function handleUnlock(){
   if(bundleCorrupted)return;
+  const unlockEpoch=authEpoch,unlockBundle=bundle;
   const inp=document.getElementById('pp-input'),btn=document.getElementById('btn-unlock');
   const errEl=document.getElementById('pp-err'),infoEl=document.getElementById('pp-info');
   errEl.classList.remove('on');
   infoEl.textContent=isDevFixture?'unlocking… (dev fixture)':'unlocking…';
   infoEl.classList.add('on'); inp.disabled=btn.disabled=true;
   try{
-    await verifyPassphrase(inp.value);
+    const attempt=await verifyPassphrase(inp.value);
+    const assertCurrent=()=>{
+      if(attempt.epoch!==authEpoch||!authenticated||gardenRuntime!==attempt.runtime)
+        throw new Error('unlock was cancelled');
+    };
+    assertCurrent();
     postComplete=isPostComplete();
     await runAuthenticatedGardenProgram();
-    if(postComplete)await gardenRuntime.markStoryComplete();
+    assertCurrent();
+    if(postComplete){await attempt.runtime.markStoryComplete();assertCurrent();}
     dueIdxs=computeDue();
+    await attempt.runtime.commitPersistence();
+    assertCurrent();
+    if(firstRun&&authenticatedBinding){
+      await kvSet(kFirst(authenticatedBinding),'1');assertCurrent();
+    }
+    inp.value='';
     afterAuth();
   }catch(err){
+    if(unlockEpoch!==authEpoch||bundle!==unlockBundle)return;
+    purgeDecryptedState({showPreview:false});
+    const previewEpoch=authEpoch;
+    await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
+      persistent:false,expectedEpoch:previewEpoch,
+    });
     errEl.textContent=isDevFixture?`error: ${err.message}`:'incorrect passphrase, or file modified';
     errEl.classList.add('on'); infoEl.classList.remove('on');
     inp.disabled=btn.disabled=false; inp.focus();
@@ -1145,65 +1363,82 @@ function showLetterSelect(){
 }
 
 // ── Animal delivery animation (FL-G21) ───────────────────────────────
-let _deliveryIv=null,_deliveryOv=null;
+let _deliveryIv=null,_deliveryOv=null,_deliveryTimeout=null,_deliveryResolve=null;
 function _cancelDelivery(){
   if(_deliveryIv){clearInterval(_deliveryIv);_deliveryIv=null;}
+  if(_deliveryTimeout){clearTimeout(_deliveryTimeout);_deliveryTimeout=null;}
   if(_deliveryOv){_deliveryOv.remove();_deliveryOv=null;}
+  if(_deliveryResolve){const resolve=_deliveryResolve;_deliveryResolve=null;resolve();}
 }
-function _playDelivery(cb){
+function _playDelivery(){
   _cancelDelivery();
-  // SPEC §6.3: a bonded (tier 3) animal delivers; otherwise the letter-bird.
-  const bonded=animalType&&animalTriggered&&animalTier>=3&&_ANIMAL_DELIVERY_FRAMES[animalType];
-  const frames=bonded?_ANIMAL_DELIVERY_FRAMES[animalType]:_LETTERBIRD_FRAMES;
-  const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:12;pointer-events:none;opacity:0;transition:opacity .4s;';
-  const pre=document.createElement('pre');
-  pre.style.cssText='font:13px/15px "Courier New",monospace;color:var(--text);opacity:.8;text-align:center;';
-  ov.appendChild(pre);document.body.appendChild(ov);
-  _deliveryOv=ov;
-  // Three phases: approach (slide in, flapping) → settle (small dip) →
-  // present (hold pose, envelope glints). Sub-cell approach motion comes
-  // from a CSS transform so the char frames stay clean.
-  pre.style.transform=`translateX(${bonded?'-24vw':'-38vw'}) translateY(${bonded?'0':'-6vh'})`;
-  pre.style.transition='transform 1.5s cubic-bezier(.25,.8,.35,1)';
-  let fi=0,tick=0;
-  pre.textContent=frames[0].join('\n');
-  requestAnimationFrame(()=>{ov.style.opacity='1';pre.style.transform='translate(0,0)';});
-  _deliveryIv=setInterval(()=>{
+  return new Promise(resolve=>{
+    _deliveryResolve=resolve;
     try{
-      tick++;
-      if(tick===11){pre.style.transition='transform .22s ease-out';pre.style.transform='translateY(4px)';}
-      if(tick===13)pre.style.transform='translateY(0)';
-      if(tick<11)fi=(fi+1)%frames.length;else fi=0;
-      let txt=frames[fi].join('\n');
-      if(tick>=13&&tick%4>=2)txt=txt.replace('[✉]','{✉}');
-      pre.textContent=txt;
-      if(tick>=22){_cancelDelivery();ov.style.opacity='0';setTimeout(()=>{ov.remove();cb();},400);}
+      // SPEC §6.3: a bonded (tier 3) animal delivers; otherwise the letter-bird.
+      const bonded=Boolean(animalType&&animalTriggered&&animalTier>=3);
+      const frames=deliveryFramesFor(bonded?animalType:null,bonded?animalTier:0);
+      if(!Array.isArray(frames)||frames.length===0)throw new Error('delivery atlas is empty');
+      const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:12;pointer-events:none;opacity:0;transition:opacity .4s;';
+      const pre=document.createElement('pre');
+      pre.setAttribute('role','img');pre.setAttribute('aria-label',bonded?'A bonded animal delivers the letter.':'A letter-bird delivers the letter.');
+      pre.style.cssText='font:13px/15px "Courier New",monospace;color:var(--text);opacity:.8;text-align:center;';
+      ov.appendChild(pre);document.body.appendChild(ov);_deliveryOv=ov;
+      const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+      pre.style.transform=reduced?'translate(0,0)':`translateX(${bonded?'-24vw':'-38vw'}) translateY(${bonded?'0':'-6vh'})`;
+      pre.style.transition=reduced?'none':'transform 1.5s cubic-bezier(.25,.8,.35,1)';
+      let fi=0,tick=reduced?21:0;
+      pre.textContent=frames[0].join('\n');
+      requestAnimationFrame(()=>{ov.style.opacity='1';pre.style.transform='translate(0,0)';});
+      _deliveryIv=setInterval(()=>{
+        try{
+          tick++;
+          if(tick===11){pre.style.transition='transform .22s ease-out';pre.style.transform='translateY(4px)';}
+          if(tick===13)pre.style.transform='translateY(0)';
+          if(tick<11)fi=(fi+1)%frames.length;else fi=0;
+          let txt=frames[fi].join('\n');
+          if(tick>=13&&tick%4>=2)txt=txt.replace('[✉]','{✉}');
+          pre.textContent=txt;
+          if(tick>=22){
+            clearInterval(_deliveryIv);_deliveryIv=null;ov.style.opacity='0';
+            _deliveryTimeout=setTimeout(()=>{
+              _deliveryTimeout=null;if(_deliveryOv===ov)_deliveryOv=null;ov.remove();
+              if(_deliveryResolve){const done=_deliveryResolve;_deliveryResolve=null;done();}
+            },reduced?0:400);
+          }
+        }catch(_){_cancelDelivery();}
+      },reduced?1:150);
     }catch(_){_cancelDelivery();}
-  },150);
+  });
 }
 
 // ── Open letter ───────────────────────────────────────────────────────
 let _deliveryPlayed=false;
+let _letterOpenInFlight=false;
 async function openLetter(msgIdx){
+  if(_letterOpenInFlight)return;
+  _letterOpenInFlight=true;
+  try{
   const msg=bundle.messages[msgIdx],dec=decoded[msg.id]||{label:'',body:''};
   curMsg={msg,...dec};
   _firstReadGuide=firstRun&&readIds.size===0;
   const isFirstRead=!readIds.has(msg.id);
+  if(isFirstRead&&!_deliveryPlayed){
+    await _playDelivery();
+    _deliveryPlayed=true;
+  }
+  showReading(curMsg);
   if(isFirstRead){
     readIds.add(msg.id);
-    dueIdxs=dueIdxs.filter(i=>bundle.messages[i].id!==msg.id);
-    await kvSet(kRead(bundle.bundle_id,msg.id),'1');
+    if(!authenticatedBinding)throw new Error('authenticated receipt binding is unavailable');
+    await kvSet(kRead(authenticatedBinding,msg.id),'1');
   }
-  postComplete=isPostComplete();
   await runAuthenticatedGardenProgram();
+  dueIdxs=computeDue();
+  postComplete=isPostComplete();
   if(postComplete)await gardenRuntime.markStoryComplete();
-  if(isFirstRead&&!_deliveryPlayed){
-    _deliveryPlayed=true;
-    _playDelivery(()=>showReading(curMsg));
-  }else{
-    showReading(curMsg);
-  }
+  }finally{_letterOpenInFlight=false;}
 }
 
 // ── Reading ───────────────────────────────────────────────────────────
@@ -1233,7 +1468,9 @@ function buildArchive(){
   const today=new Date();today.setHours(0,0,0,0);
   let html='';
   for(const msg of msgs){
-    const isRead=readIds.has(msg.id),due=new Date(msg.date+'T00:00:00')<=today;
+    const presented=new Set(Array.isArray(gardenRuntime?.state?.program_state?.presented_letters)
+      ?gardenRuntime.state.program_state.presented_letters:[]);
+    const isRead=readIds.has(msg.id),due=new Date(msg.date+'T00:00:00')<=today||presented.has(msg.id);
     let cls,lbl,canOpen;
     if(isRead){cls='read';canOpen=true;lbl=decoded[msg.id]?.label||fmtDate(msg.date);}
     else if(due){cls='unread';canOpen=true;lbl=fmtDate(msg.date);}
@@ -1438,15 +1675,15 @@ function htmlEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 // ── Arc seeding (?arc= URL param — browser demo harness §24 step 11a Part B) ──
 async function _arcSeed(arc){
-  if(!arc||!bundle)return;
-  const bid=bundle.bundle_id;
+  if(!arc||!bundle||!isDevFixture)return;
+  const binding=`dev-fixture:${bundle.bundle_id}`;
   const msgs=bundle.messages||[];
   if(arc==='postcomplete'){
     // Fixture harness may seed letter history; Garden state still uses commands.
-    for(const m of msgs){readIds.add(m.id);await kvSet(kRead(bid,m.id),'1');}
+    for(const m of msgs){readIds.add(m.id);await kvSet(kRead(binding,m.id),'1');}
   }else if(arc==='waiting'){
     // Clear letter history only; canonical Garden persistence is not bypassed.
-    for(const m of msgs){readIds.delete(m.id);await kvSet(kRead(bid,m.id),'');}
+    for(const m of msgs){readIds.delete(m.id);await kvSet(kRead(binding,m.id),'');}
     visitCount=1;gardenProgramState.visit_total=1;
   }
 }
@@ -1457,8 +1694,8 @@ async function handleFile(file,options={}){
   try{
     await loadBundle(file,options);
     const arc=new URLSearchParams(location.search).get('arc');
-    if(arc)await _arcSeed(arc);
-    garden.setSeed(bundle.garden_seed||12345);
+    if(arc&&isDevFixture)await _arcSeed(arc);
+    garden.setSeed(PREVIEW_SEED);
     garden.setAnimalData(_animalData());
     showGarden();
   }catch(err){
@@ -1482,6 +1719,34 @@ function _devToggleGrid(){
 function getSeason(){return gardenRuntime?.projection?.scene?.season||'spring';}
 function getTimeOfDay(){return gardenRuntime?.projection?.scene?.time_of_day||'day';}
 
+function purgeDecryptedState({showPreview=true}={}){
+  authEpoch++;
+  for(const runtime of pendingGardenRuntimes)runtime.invalidate?.();
+  pendingGardenRuntimes.clear();
+  if(gardenRuntime)gardenRuntime.invalidate?.();
+  authenticated=false;authenticatedBinding=null;
+  decoded={};gardenProgram=null;gardenProgramState={applied_occurrences:[]};
+  gardenRuntime=null;readIds=new Set();giftDiscovered={};dueIdxs=[];curMsg=null;
+  visitCount=0;firstRun=true;postComplete=false;animalTriggered=false;animalTier=0;
+  for(const gift of bundle?.garden_gifts||[])delete gift._sentiment;
+  _cancelDelivery();teardownResize();closeMemory();
+  document.getElementById('mem-type')?.replaceChildren();
+  document.getElementById('mem-text')?.replaceChildren();
+  garden?.clear?.();clearCanonicalGardenUi();
+  const secretIds=['lm-from','lm-label','lm-date','letter-body','arc-title','arc-content'];
+  for(const id of secretIds){const node=document.getElementById(id);if(node)node.replaceChildren();}
+  const input=document.getElementById('pp-input');if(input){input.value='';input.disabled=false;}
+  const unlock=document.getElementById('btn-unlock');if(unlock)unlock.disabled=false;
+  if(showPreview&&bundle&&!standaloneMode){
+    garden?.setSeed(PREVIEW_SEED);garden?.setAnimalData(_animalData());showGarden();
+  }
+}
+async function restoreGenericPreview(){
+  if(!bundle||standaloneMode)return;
+  await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{persistent:false});
+  garden?.setSeed(PREVIEW_SEED);garden?.setAnimalData(_animalData());showGarden();
+}
+
 // ── Event wiring ──────────────────────────────────────────────────────
 function wire(){
   const dz=document.getElementById('drop-zone'),fi=document.getElementById('file-input');
@@ -1493,7 +1758,7 @@ function wire(){
   document.getElementById('btn-browse').onclick=e=>{e.stopPropagation();fi.click();};
   fi.onchange=e=>handleFile(e.target.files[0]);
   document.getElementById('btn-standalone').onclick=async e=>{
-    e.stopPropagation();standaloneMode=true;bundle=null;cachedPassphrase='';
+    e.stopPropagation();standaloneMode=true;bundle=null;authenticated=true;
     await openCanonicalGarden('standalone:local','lateletter-standalone-v1');
     showGarden();
   };
@@ -1504,8 +1769,19 @@ function wire(){
       const focus=gardenRuntime?.focusedObject();let args={};let target_id=null;
       if(action==='pan')args={dx:Number(button.dataset.dx||0),dy:Number(button.dataset.dy||0)};
       else if(action==='pause_motion')args={paused:!gardenRuntime?.state.ui.motion_paused};
+      else if(action==='dwell'){
+        const changed=await gardenRuntime.tickLive(30);
+        gardenNotice=`Dwelled for 30 Garden seconds. ${changed?'The living world changed.':'The paused world stayed still.'}`;
+        await renderCanonicalGarden();
+        return;
+      }
       else if(action==='place'){
-        args={object_kind:'plant',catalog_id:'lavender',x:10,y:10};
+        args={
+          object_kind:document.getElementById('garden-place-kind').value,
+          catalog_id:document.getElementById('garden-place-catalog').value.trim(),
+          x:Number(document.getElementById('garden-place-x').value),
+          y:Number(document.getElementById('garden-place-y').value),
+        };
       }else if(['inspect','tend','feed','play','collect','move_fixture'].includes(action))target_id=focus?.object_id||null;
       await dispatchGardenUi(inputModalityFromBrowserEvent(event),action,{
         target_id,args,metadata:{control:'global-actions'},
@@ -1695,7 +1971,10 @@ function wire(){
     }
   });
   reducedMotionQuery.addEventListener('change',syncAmbientMotion);
-  window.addEventListener('pagehide',()=>{cachedPassphrase=null;});
+  window.addEventListener('pagehide',()=>{purgeDecryptedState();});
+  window.addEventListener('pageshow',event=>{
+    if(event.persisted){purgeDecryptedState();restoreGenericPreview().catch(console.error);}
+  });
   window.addEventListener('resize',()=>{if(garden)garden.onResize();_refreshDevGridBg();});
 }
 

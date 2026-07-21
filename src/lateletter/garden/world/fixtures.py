@@ -88,6 +88,38 @@ def fixture_cells(fixture: FixtureState) -> frozenset[Vec2]:
     )
 
 
+def fixture_presentation_state(fixture: FixtureState) -> str:
+    """Return the renderer-neutral visual state selected by canonical data."""
+    values = fixture.authored_state
+    if fixture.catalog_id in {"fence", "gate", "fence_gate", "mailbox", "memory_shrine", "shed_edge"}:
+        return "open" if bool(values.get("open", False)) else "closed"
+    if fixture.catalog_id == "lantern":
+        return "on" if bool(values.get("lit", False)) else "off"
+    if fixture.catalog_id == "birdbath":
+        return "full" if int(values.get("water_level", 0)) > 0 else "empty"
+    if fixture.catalog_id == "watering_can":
+        return "full" if int(values.get("water_level", 0)) > 0 else "empty"
+    if fixture.catalog_id == "compost":
+        return "turned" if int(values.get("turned_count", 0)) > 0 else "idle"
+    return "active" if fixture.interaction_count else "idle"
+
+
+def fixture_active_affordances(fixture: FixtureState) -> tuple[str, ...]:
+    """Expose only affordances currently enabled by the fixture state machine."""
+    definition = FIXTURE_CATALOG[fixture.catalog_id]
+    values = fixture.authored_state
+    enabled = set(definition.affordances)
+    if fixture.catalog_id in {"gate", "fence_gate"} and not bool(values.get("open", False)):
+        enabled.discard("route")
+    if fixture.catalog_id == "birdbath" and int(values.get("water_level", 0)) <= 0:
+        enabled.difference_update({"drink", "bathe"})
+    if fixture.catalog_id == "lantern" and not bool(values.get("lit", False)):
+        enabled.discard("moth-visit")
+    if fixture.catalog_id == "watering_can" and int(values.get("water_level", 0)) <= 0:
+        enabled.discard("water")
+    return tuple(sorted(enabled))
+
+
 def _all_fixture_cells(state: WorldState, *, except_id: str | None = None) -> set[Vec2]:
     cells: set[Vec2] = set()
     for fixture in state.fixtures:

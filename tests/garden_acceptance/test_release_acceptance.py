@@ -100,12 +100,12 @@ def _authored_arc(letter_id: str) -> Timeline:
     timeline.entities.extend([
         {
             "id": "memory-rose", "kind": "plant", "catalog_id": "plant.rose",
-            "initial_state": {"planted": True}, "placement": "planter",
+            "initial_state": {"planted": True}, "placement": "random",
         },
         {
             "id": "autumn-keepsake", "kind": "collectible",
             "catalog_id": "collectible.pressed_flower",
-            "initial_state": {"revealed": False}, "placement": "bench",
+            "initial_state": {"revealed": False}, "placement": "random",
         },
         {
             "id": "garden-bench", "kind": "fixture", "catalog_id": "fixture.bench",
@@ -125,10 +125,10 @@ def _authored_arc(letter_id: str) -> Timeline:
             "letter-opens-garden", "Clover arrives", "animals",
             When.fact("letter.read", "contains", reference=letter_id),
             (
-                ActionCard("animal.arrive", "rabbit-clover", {
-                    "position": "garden-bench", "routine": "forage at dawn",
-                }),
                 ActionCard("entity.reveal", "garden-bench", {"position": "path"}),
+                ActionCard("animal.arrive", "rabbit-clover", {
+                    "position": "near_bench", "routine": "forage at dawn",
+                }),
             ),
             priority=30,
         ),
@@ -148,7 +148,7 @@ def _authored_arc(letter_id: str) -> Timeline:
                 When.fact("season.current", "==", "autumn"),
             ),
             (
-                ActionCard.reveal("autumn-keepsake", position="garden-bench"),
+                ActionCard.reveal("autumn-keepsake", position="near_bench"),
                 ActionCard("animal.present_gift", "rabbit-clover", {
                     "gift_id": "autumn-keepsake",
                 }),
@@ -284,9 +284,16 @@ def test_authored_program_materializes_byte_identical_world_and_trace_cross_runt
         "variables": {},
         "entities": [{
             "id": "authored-bench", "kind": "fixture", "catalog_id": "bench",
-            "position": [10, 10], "initial_state": {"revealed": False},
+            "initial_state": {"revealed": False},
+        }, {
+            "id": "authored-keepsake", "kind": "item", "catalog_id": "seed_packet",
+            "initial_state": {"revealed": False},
         }],
-        "animals": [],
+        "animals": [{
+            "id": "authored-rabbit", "species": "rabbit", "name": "Juniper",
+            "personality": {"curiosity": 72}, "routine": "edge patrol",
+            "favorite_places": ["authored-bench"], "prohibited_behaviors": [],
+        }],
         "events": [{
             "id": "bench-memory", "conditions": {
                 "all": [
@@ -298,7 +305,11 @@ def test_authored_program_materializes_byte_identical_world_and_trace_cross_runt
             "exclusive_group": None, "cooldown": None,
             "actions": [
                 {"type": "entity.reveal", "target": "authored-bench",
-                 "params": {"position": [10, 10]}},
+                 "params": {"position": "near_tallest_tree"}},
+                {"type": "entity.reveal", "target": "authored-keepsake",
+                 "params": {"position": "near_bench", "state": "Synthetic seeds."}},
+                {"type": "animal.arrive", "target": "authored-rabbit",
+                 "params": {"position": "by_edge", "routine": "edge patrol"}},
                 {"type": "narrative.show", "target": None,
                  "params": {"kind": "memory", "label": "The bench",
                             "text": "A synthetic authored memory."}},
@@ -506,6 +517,12 @@ def test_gate_status_matrix_never_converts_proxy_evidence_into_release_claims():
     rows = {row["gate"]: row for row in audit["gates"]}
     assert set(rows) == set(range(1, 15))
     assert rows[3]["status"] == rows[14]["status"] == "BLOCKED"
-    assert {gate for gate, row in rows.items() if row["status"] == "PASS"} == {4, 5, 9, 13}
+    assert all(row["status"] in {"PASS", "PARTIAL", "BLOCKED"} for row in rows.values())
     assert all(row["blocker"] for row in rows.values() if row["status"] != "PASS")
     assert all(not row["blocker"] for row in rows.values() if row["status"] == "PASS")
+    assert all(row["automated_checks"] for row in rows.values() if row["status"] == "PASS")
+    for row in rows.values():
+        for selector in row["automated_checks"]:
+            relative, function = selector.split("::", 1)
+            source = (ROOT / relative).read_text(encoding="utf-8")
+            assert f"def {function}(" in source

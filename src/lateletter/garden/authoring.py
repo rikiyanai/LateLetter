@@ -272,6 +272,7 @@ def build_letter_rabbit_autumn_arc(
     letter_id: str,
     author_timezone: str = "UTC",
     rabbit_name: str = "Clover",
+    author_region: Mapping[str, int] | None = None,
 ) -> Timeline:
     """Build the complete §7.8.13 author-control acceptance arc.
 
@@ -307,21 +308,26 @@ def build_letter_rabbit_autumn_arc(
         "milestones": ["arrived", "bonded", "autumn gift delivered"],
         "initial_state": {"present": False},
     })
+    arrival_actions: list[ActionCard] = [
+        ActionCard("animal.arrive", "arc.rabbit", {
+            "position": [20, 12], "routine": "gentle greeting",
+        }),
+        ActionCard.show_memory(
+            f"{rabbit_name} has come to keep {safe_recipient} company.",
+            label=f"{rabbit_name} arrives",
+        ),
+    ]
+    if author_region is not None:
+        arrival_actions.append(ActionCard("scene.set", None, {
+            "sky_mode": "author_fixed", "author_region": dict(author_region),
+        }))
+    arrival_actions.append(ActionCard.complete("arc.rabbit-arrives"))
     timeline.beats.extend((
         BeatCard(
             id="arc.rabbit-arrives", title=f"{rabbit_name} arrives after the letter",
             track="animals",
             when=When.fact("letter.read", "contains", reference=letter_id),
-            actions=(
-                ActionCard("animal.arrive", "arc.rabbit", {
-                    "position": [20, 12], "routine": "gentle greeting",
-                }),
-                ActionCard.show_memory(
-                    f"{rabbit_name} has come to keep {safe_recipient} company.",
-                    label=f"{rabbit_name} arrives",
-                ),
-                ActionCard.complete("arc.rabbit-arrives"),
-            ),
+            actions=tuple(arrival_actions),
             priority=300,
         ),
         BeatCard(

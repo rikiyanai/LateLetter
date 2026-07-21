@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +13,22 @@ from lateletter.garden.input_adapters import semantic_payload
 from lateletter.garden.world.commands import command
 from lateletter.garden.world.clock import reconcile_offline
 from lateletter.garden.world.engine import CommandResult, dispatch
-from lateletter.garden.world.model import WorldState, canonical_json_bytes
+from lateletter.garden.world.animals import (
+    ANIMAL_SPECIES,
+    TIER_REPERTOIRES,
+    AnimalContext,
+    step_animals,
+)
+from lateletter.garden.world.fixtures import FIXTURE_CATALOG, fixture_active_affordances
+from lateletter.garden.world.generation import generate_initial_world
+from lateletter.garden.world.model import (
+    EpisodicMemory,
+    OrganNode,
+    Vec2,
+    WorldState,
+    canonical_json_bytes,
+)
+from lateletter.garden.world.model import FixtureState, MILESTONE_RECEIPT_LIMIT
 from lateletter.garden.world.projection import project_scene
 
 
@@ -182,3 +198,262 @@ def test_advanced_python_and_browser_reducers_are_byte_identical():
         cwd=ROOT, check=True, capture_output=True, text=True,
     )
     assert json.loads(result.stdout) == _run_python_advanced_scenario()
+
+
+def _run_python_stress_scenario() -> dict[str, Any]:
+    state = WorldState.from_dict(_scenario()["initial_state"])
+    for sequence in range(1, 701):
+        value = command(
+            state.world_id, sequence, "move_fixture", target_id="fixture:bench",
+            args={"x": 7 if sequence % 2 else 8, "y": 5},
+        )
+        state, result = dispatch(state, value)
+        assert result.accepted, result.reason
+    final_json = canonical_json_bytes(state.to_dict()).decode("utf-8")
+    restored = WorldState.from_dict(json.loads(final_json))
+    return {
+        "final_json": final_json,
+        "restored_json": canonical_json_bytes(restored.to_dict()).decode("utf-8"),
+        "processed_count": len(state.processed_commands),
+        "trace_count": len(state.event_trace),
+        "undo_count": len(state.undo_stack),
+    }
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_stress_compaction_matches_browser_bytes_and_survives_restart():
+    result = subprocess.run(
+        [shutil.which("node") or "node", str(NODE_RUNNER), "--stress-emit"],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    )
+    browser = json.loads(result.stdout)
+    python = _run_python_stress_scenario()
+    assert browser == python
+    assert python["final_json"] == python["restored_json"]
+    assert (python["processed_count"], python["trace_count"], python["undo_count"]) == (
+        512, 512, 128,
+    )
+
+
+def _animal_plant_conformance_payload_and_result():
+    plant_world = generate_initial_world(
+        "stage-conformance", 77, world_width=64, world_height=40,
+    )
+    source_plant = plant_world.plants[0]
+    root = OrganNode(
+        "organ:root", None, "root", 0, 0, Vec2(0, -1), 1, "root",
+    )
+    organ = OrganNode(
+        "organ:branch", root.node_id, "branch", 0, 1_000,
+        Vec2(1, -1), 7, "branch",
+    )
+    plant_world = replace(
+        plant_world,
+        plants=(replace(source_plant, topology=(root, organ)),),
+        fixtures=(), animals=(), collectibles=(),
+    )
+    stage_times = (0, 167, 334, 500, 667, 834, 1_000)
+
+    animal_world = generate_initial_world(
+        "animal-conformance", 91, world_width=64, world_height=40,
+    )
+    animals = []
+    for animal in animal_world.animals:
+        candidates = set(ANIMAL_SPECIES[animal.species_id].repertoire)
+        for tier in TIER_REPERTOIRES[animal.species_id]:
+            candidates.update(tier)
+        if animal.species_id == "bird":
+            animal = replace(animal, energy=10, choreography_lock="scene:arrival")
+        elif animal.species_id == "cat":
+            animal = replace(
+                animal,
+                authored_prohibitions=tuple(sorted(candidates.difference({"patrol"}))),
+            )
+        elif animal.species_id == "rabbit":
+            animal = replace(
+                animal,
+                authored_prohibitions=tuple(sorted(candidates.difference({"forage", "play"}))),
+                recent_memories=tuple(
+                    EpisodicMemory(f"feed:{index}", "feed", None, index, 50, 100)
+                    for index in range(20)
+                ),
+            )
+        animals.append(animal)
+    animal_world = replace(
+        animal_world,
+        effective_time=43_200,
+        animals=tuple(animals),
+        program_state={"scene": {"season": "autumn", "weather": "calm"}},
+    )
+    nearby = tuple(sorted({
+        value
+        for fixture in animal_world.fixtures
+        for value in (fixture.catalog_id, *fixture_active_affordances(fixture))
+    }))
+    stepped, _ = step_animals(animal_world, AnimalContext(
+        effective_time=animal_world.effective_time,
+        time_of_day="day",
+        season="autumn",
+        weather="calm",
+        nearby_affordances=nearby,
+    ))
+    interrupted_bird = replace(
+        next(animal for animal in animal_world.animals if animal.species_id == "bird"),
+        energy=100,
+        choreography_lock="scene:interrupted",
+    )
+    interrupted_world = replace(animal_world, animals=(interrupted_bird,))
+    interrupted_stepped, interrupted_result = dispatch(
+        interrupted_world,
+        command(
+            interrupted_world.world_id,
+            interrupted_world.command_sequence + 1,
+            "inspect",
+            target_id=interrupted_bird.animal_id,
+        ),
+    )
+    assert interrupted_result.accepted
+    projections = []
+    for effective_time in stage_times:
+        projected = project_scene(replace(plant_world, effective_time=effective_time))
+        plant = next(item for item in projected.objects if item.object_id == source_plant.plant_id)
+        projections.append(next(
+            item for item in plant.semantic_state["visible_organs"]
+            if item["node_id"] == organ.node_id
+        ))
+    projection = project_scene(stepped).to_dict()
+    restarted = WorldState.from_dict(json.loads(canonical_json_bytes(stepped.to_dict())))
+    payload = {
+        "plant_state": plant_world.to_dict(),
+        "plant_id": source_plant.plant_id,
+        "organ_id": organ.node_id,
+        "stage_times": list(stage_times),
+        "animal_state": animal_world.to_dict(),
+        "interrupted_animal_state": interrupted_world.to_dict(),
+    }
+    expected = {
+        "stages": projections,
+        "animal_state": stepped.to_dict(),
+        "animal_projection": projection,
+        "restarted_projection": project_scene(restarted).to_dict(),
+        "interrupted_animal_state": interrupted_stepped.to_dict(),
+        "interrupted_animal_projection": project_scene(interrupted_stepped).to_dict(),
+        "interrupted_restarted_projection": project_scene(WorldState.from_dict(
+            json.loads(canonical_json_bytes(interrupted_stepped.to_dict())),
+        )).to_dict(),
+    }
+    return payload, expected
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_animal_decisions_locomotion_and_all_plant_stages_match_browser_restart_exactly():
+    payload, expected = _animal_plant_conformance_payload_and_result()
+    result = subprocess.run(
+        [shutil.which("node") or "node", str(NODE_RUNNER), "--animal-plant-emit"],
+        cwd=ROOT,
+        input=json.dumps(payload),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert json.loads(result.stdout) == expected
+    records = expected["animal_state"]["program_state"]["animal_decisions"]
+    assert records[next(
+        animal["animal_id"] for animal in expected["animal_state"]["animals"]
+        if animal["species_id"] == "bird"
+    )]["priority_reason"] == "safety_or_interruption"
+    interrupted = expected["interrupted_animal_state"]
+    interrupted_id = interrupted["animals"][0]["animal_id"]
+    assert interrupted["animals"][0]["current_intent"] == "rest"
+    assert interrupted["animals"][0]["choreography_lock"] is None
+    assert interrupted["program_state"]["animal_decisions"][interrupted_id][
+        "priority_reason"
+    ] == "safety_or_interruption"
+    interrupted_projection = next(
+        item for item in expected["interrupted_animal_projection"]["objects"]
+        if item["object_id"] == interrupted_id
+    )
+    assert interrupted_projection["semantic_state"]["choreography_locked"] is False
+    assert interrupted_projection["semantic_state"]["choreography_phase"] == "orient"
+
+
+def _run_python_fixture_scenario() -> dict[str, str]:
+    output: dict[str, str] = {}
+    for catalog_id, definition in FIXTURE_CATALOG.items():
+        for verb in definition.interaction_verbs:
+            state = WorldState.from_dict(_scenario()["initial_state"])
+            authored_state = {"water_level": 3} if verb == "water" else {}
+            state = __import__("dataclasses").replace(
+                state,
+                fixtures=(FixtureState(
+                    "fixture:test", catalog_id, Vec2(8, 5),
+                    authored_state=authored_state,
+                ),),
+            )
+            if verb == "arrange":
+                found = __import__("dataclasses").replace(
+                    state.collectibles[0], collected=True,
+                )
+                state = __import__("dataclasses").replace(
+                    state, collectibles=(found,), inventory=(found.collectible_id,),
+                )
+            value = command(
+                state.world_id, 1, "primary_interact",
+                target_id="fixture:test", args={"fixture_action": verb},
+            )
+            updated, result = dispatch(state, value)
+            assert result.accepted, f"{catalog_id}:{verb}:{result.reason}"
+            output[f"{catalog_id}:{verb}"] = canonical_json_bytes(
+                updated.to_dict(),
+            ).decode("utf-8")
+    return output
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_every_fixture_verb_has_exact_browser_python_linked_world_effects():
+    result = subprocess.run(
+        [shutil.which("node") or "node", str(NODE_RUNNER), "--fixture-emit"],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    )
+    browser = json.loads(result.stdout)
+    python = _run_python_fixture_scenario()
+    assert browser == python
+    for encoded in python.values():
+        state = json.loads(encoded)
+        # Every verb changes canonical state outside the fixture counter and
+        # journal: linked UI focus/camera plus plant/animal/resource/inventory.
+        assert state["ui"]["focus_id"] == "fixture:test"
+        assert state["ui"]["camera"] == [8, 5]
+        assert state["animals"][0]["recent_memories"]
+
+
+def _run_python_ledger_stress() -> dict[str, Any]:
+    state = WorldState.from_dict(_scenario()["initial_state"])
+    state = __import__("dataclasses").replace(state, last_observed_wall_time=0)
+    for day in range(1, 701):
+        state, _ = reconcile_offline(state, day * 86_400)
+    restored = WorldState.from_dict(json.loads(canonical_json_bytes(
+        state.to_dict(),
+    ).decode("utf-8")))
+    return {
+        "final_json": canonical_json_bytes(state.to_dict()).decode("utf-8"),
+        "restored_json": canonical_json_bytes(restored.to_dict()).decode("utf-8"),
+        "receipt_count": len(state.milestone_receipts),
+        "receipt_total": state.program_state["milestone_receipt_total"],
+        "offline_total": state.program_state["offline_reconciliation_total"],
+    }
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_multi_year_offline_receipts_are_bounded_byte_exact_and_restart_stable():
+    result = subprocess.run(
+        [shutil.which("node") or "node", str(NODE_RUNNER), "--ledger-stress-emit"],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    )
+    browser = json.loads(result.stdout)
+    python = _run_python_ledger_stress()
+    assert browser == python
+    assert python["final_json"] == python["restored_json"]
+    assert python["receipt_count"] == MILESTONE_RECEIPT_LIMIT
+    assert python["receipt_total"] > python["receipt_count"]
+    assert python["offline_total"] == 700

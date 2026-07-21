@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -23,30 +23,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install release package
+        run: python3 -m pip install .
+
+      - name: Verify installed resources and public bundle
+        run: python3 scripts/verify_release_install.py
+
       - name: Prepare static site
-        run: |
-          mkdir _site
-          cp viewer-bnw.html _site/index.html
-          mkdir -p _site/web
-          cp web/*.mjs _site/web/
-          cp test_fixture.lateletter _site/test_fixture.lateletter
-          cp sealed_demo.lateletter _site/sealed_demo.lateletter
-          # Published sealed letters: /lateletter/?l=<name> plus a pretty
-          # path /lateletter/<name>/ that redirects to it.
-          if compgen -G "public_letters/*.lateletter" > /dev/null; then
-            mkdir -p _site/public_letters
-            cp public_letters/*.lateletter _site/public_letters/
-            for f in public_letters/*.lateletter; do
-              name=$(basename "$f" .lateletter)
-              mkdir -p "_site/$name"
-              printf '%s\n' \
-                '<!doctype html><meta charset="utf-8">' \
-                "<meta http-equiv=\"refresh\" content=\"0;url=../?l=$name\">" \
-                '<title>a letter</title>' \
-                "<a href=\"../?l=$name\">open your letter</a>" \
-                > "_site/$name/index.html"
-            done
-          fi
+        run: python3 scripts/prepare_pages_site.py _site
 
       - uses: actions/configure-pages@v5
 

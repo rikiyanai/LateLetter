@@ -52,6 +52,7 @@ _SALT_LEN = 16
 _NONCE_LEN = 12
 _KEY_LEN = 32
 _GARDEN_PROGRAM_AAD = b"lateletter:garden-program:v1"
+_PERSISTENCE_BINDING_CONTEXT = b"lateletter:persistence:v1\0"
 
 
 def _b64e(raw: bytes) -> str:
@@ -229,6 +230,30 @@ def compute_bundle_hmac(bundle: Bundle, passphrase: str) -> str:
     )
     payload = canonical_json(bundle.visible_payload())
     return hmac_mod.new(key, payload, hashlib.sha256).hexdigest()
+
+
+def bundle_persistence_binding(bundle: Bundle, passphrase: str) -> str:
+    """Return a non-secret namespace bound to the authenticated bundle key.
+
+    The public ``bundle_id`` is intentionally not sufficient to select saved
+    recipient state: two independently sealed files may reuse it.  This digest
+    is stable for one sealed bundle and passphrase without retaining either the
+    derived key or the passphrase.
+    """
+    params = (
+        bundle.bundle_auth_kdf_params
+        if bundle.version >= BUNDLE_VERSION_WITH_GARDEN_PROGRAM else None
+    )
+    key = derive_key(
+        passphrase,
+        _b64d(
+            bundle.bundle_auth_salt,
+            field_name="bundle_auth_salt",
+            expected_length=_SALT_LEN,
+        ),
+        params,
+    )
+    return hashlib.sha256(_PERSISTENCE_BINDING_CONTEXT + key).hexdigest()
 
 
 def seal_bundle(bundle: Bundle, passphrase: str) -> None:

@@ -7,12 +7,14 @@
 
 ## 1. Vision
 
-LateLetter is a local-first, terminal-native application with two distinct modes:
+LateLetter is a local-first application with two distinct modes and two equal presentation targets (terminal and browser):
 
 - **Author mode** — a guided, intimate interview process. The author answers curated questions (offline) or LLM-driven questions (with API key) over many sessions. Completed messages are encrypted and exported as a `.lateletter` bundle file.
 - **Recipient mode** — the normal garden experience. When opened with a `.lateletter` file, the garden runs as usual. On days when a message is waiting, a small bird appears carrying a letter. The recipient presses `e` to unlock and read.
 
-The garden is the delivery mechanism — alive, ambient, unhurried. The message arrives as naturally as a bird landing on a branch.
+The garden is both the delivery mechanism and a complete cozy idle garden in its own right. Without a bundle, it must sustain observation, tending, collecting, decorating, plant growth, and animal relationships. With a bundle, author-directed letters and world events join that same simulation rather than replacing it with a reader backdrop. The message arrives as naturally as a bird landing on a branch.
+
+**Product bar:** “The renderer contains garden code” is not completion. A production recipient must be able to discover and operate the feature through touch, pointer, keyboard, and the terminal path; standalone mode must remain worthwhile when no letter is due; and authored events must be previewable and deterministic. §7.8 is the controlling contract.
 
 ---
 
@@ -67,6 +69,13 @@ A single portable file the author gives to the recipient. Format: **encrypted JS
       "animal_collar_color": null
     }
   ],
+  "garden_program": {
+    "version": 1,
+    "ciphertext": "...",
+    "salt": "...",
+    "nonce": "...",
+    "kdf_params": null
+  },
   "notification": {
     "email": "maya@example.com",
     "method": "self-hosted"
@@ -92,10 +101,13 @@ The `checksum` and `hmac` are computed over the **canonical JSON** of the visibl
 - `bundle_auth_salt` — 16-byte random salt generated once per bundle; used only to derive the bundle-wide HMAC key from the passphrase.
 - `date` — ISO 8601. The message becomes available on or after this date.
 - `garden_seed` — the garden seed embedded in the file; the recipient's garden is deterministic and personal.
+- `garden_gifts` — legacy v1 compatibility surface for simple single-trigger gifts. New authoring must compile into `garden_program`; readers migrate legacy gifts into equivalent one-shot program events in memory.
+- `garden_program` — optional encrypted author-directed world program defined in §7.8.10. The outer envelope exposes only its format version and cryptographic fields. Animal names, inscriptions, event labels, authored choreography, and other narrative-bearing garden content remain inside its ciphertext.
+- **Format-version gate:** Do not emit `garden_program` in a `version: 1` bundle until both readers explicitly support that authenticated field. The implementation must either introduce bundle `version: 2` or document/test a backward-compatible v1 extension rule. Existing v1 `garden_gifts` bundles remain readable in either case.
 - `kdf_params` — optional per-message KDF parameter override. When `null`, the v1 defaults apply (time_cost=3, memory_cost=65536, parallelism=1, hash_len=32). Future appended messages may use updated parameters without re-encrypting existing messages. This field is cheap to add now and expensive to introduce later (would require a format version bump).
 - `ciphertext` — the message body **and label**, encrypted per-message with a unique salt derived from the shared passphrase. The label (e.g., "Her 30th birthday") is inside the ciphertext, not exposed in the outer structure.
 - `notification` — optional. Contains `email` (recipient delivery email address) and `method` (`"self-hosted"` or `null`). This field is plaintext — anyone with the file can see the email address. The author is warned about this during the export flow (§5.4). Can be `null` if the author declines email notifications. **Privacy note:** the recipient's email address is PII. Unlike names and dates (cosmetic metadata), an email address is a contact channel. The export flow warns: *"The recipient's email address will be visible to anyone who has this file."*
-- `checksum` — SHA-256 hash over the canonical JSON of the visible bundle payload (`version`, `bundle_id`, `author_name`, `passphrase_hint`, `bundle_auth_salt`, `garden_seed`, `messages`, `garden_gifts`, `notification`). Computed without any secret key. Used at launch for structural integrity checking (detects corruption only — not tamper-resistant, since an attacker can recompute it).
+- `checksum` — SHA-256 hash over the canonical JSON of the visible bundle payload (`version`, `bundle_id`, `author_name`, `passphrase_hint`, `bundle_auth_salt`, `garden_seed`, `messages`, `garden_gifts`, `garden_program`, `notification`). Computed without any secret key. Used at launch for structural integrity checking (detects corruption only — not tamper-resistant, since an attacker can recompute it).
 - `hmac` — HMAC-SHA256 over the same canonical visible bundle payload using a key derived from the passphrase and `bundle_auth_salt`. Verified only after passphrase entry. Detects authenticated tampering by an adversary who knows the file format but not the passphrase.
 
 ### What is NOT in the file
@@ -112,29 +124,51 @@ The `date` field is plaintext (required for date-lock checking). Anyone with the
 
 ## 4. Encryption Model
 
-> **Architecture status (2026-04-20):** The *conceptual model* is settled — passphrase-based symmetric encryption, local-first, no server dependency, tamper-evident. The *specific implementation primitive* (Argon2id+AES-256-GCM custom stack vs. `age` library vs. another well-audited tool) is under review and will be finalised during the Phase 3 research memo (§24 step 13). The dev-fixture system (base64 plaintext, `hmac=""`) provides a working MVP for all other phases in the meantime. See §4 "Encryption primitive options" below for the current decision frame.
+> **Architecture status (2026-07-21):** The shipped interoperable primitive is
+> bounded PBKDF2-HMAC-SHA256 key derivation plus AES-256-GCM, with HMAC-SHA256
+> authenticating the canonical visible bundle before plaintext promotion.
+> Python and native WebCrypto use the recorded versioned profiles. Explicit
+> development fixtures are capability-gated and are not accepted as normal
+> sealed bundles.
 
 **Conceptual model (settled):** Passphrase-based symmetric encryption. Author seals; recipient unlocks. Local file only — no server, no account, no network dependency. Tamper-evident (HMAC over metadata). File must remain readable 20–30 years from now without infrastructure.
 
-**Current spec (subject to Phase 3 review):** Argon2id key derivation + AES-256-GCM per message.
+**Current spec:** PBKDF2-HMAC-SHA256 key derivation + AES-256-GCM per encrypted
+message, gift sentiment, and Garden program.
 
 ### Author side (write phase)
 1. Author sets a **passphrase** during intake — a phrase the recipient already knows or will be told privately (e.g., "the name of our first dog").
 2. A bundle-wide 16-byte `bundle_auth_salt` is generated once when the bundle is created.
 3. For each message, a unique 16-byte message salt is generated.
-4. Message key = `Argon2id(passphrase, message_salt, time_cost=3, memory_cost=65536, parallelism=1, hash_len=32)` → 32-byte key. These parameters are fixed for v1; any future change would require re-encryption (likely infeasible in this context), so the initial choice matters. **Per-session key caching:** Derived per-message keys are cached in memory alongside the passphrase for the session duration. This avoids re-deriving when the recipient re-reads a letter or when the archive (§6.6) decrypts multiple labels. Without caching, opening the archive with 12 read messages would require 12 sequential Argon2id derivations (12–36 seconds). Labels should be decrypted lazily (on scroll/selection) with a progress indicator ("Decrypting letters… 3/12") if batch decryption is needed.
+4. Message key = `PBKDF2-HMAC-SHA256(passphrase, message_salt,
+   iterations)` → 32 bytes. The exact profile is recorded and validated before
+   derivation; current bounds are 600,000–2,000,000 iterations and the canonical
+   writer emits 600,000. Derived keys and the passphrase are transaction-local,
+   not session caches.
 5. Message body encrypted with AES-256-GCM. Nonce stored alongside ciphertext.
 6. Salt + nonce + ciphertext written into the bundle.
-7. On every bundle rewrite, derive `bundle_hmac_key = Argon2id(passphrase, bundle_auth_salt, time_cost=3, memory_cost=65536, parallelism=1, hash_len=32)` and compute HMAC-SHA256 over the canonical visible bundle payload (everything except `checksum` and `hmac`). All HMAC comparisons must use constant-time comparison (`hmac.compare_digest()` in Python, equivalent in JS) to prevent timing oracles.
+7. On every bundle rewrite, derive `bundle_hmac_key =
+   PBKDF2-HMAC-SHA256(passphrase, bundle_auth_salt, recorded_profile)` and
+   compute HMAC-SHA256 over the canonical visible bundle payload (everything
+   except `checksum` and `hmac`). All HMAC comparisons use constant-time
+   comparison.
 
 ### Recipient side (read phase)
-1. Recipient enters the passphrase **once per session** (the first time they press `e`). The passphrase is stored as a mutable `bytearray` (not a Python `str`) and cached in memory for the session duration. On app exit, the bytearray contents are explicitly overwritten with zeros before the reference is released. (Python strings are immutable and interned — only mutable bytearrays can be reliably zeroed.)
+1. Recipient enters the passphrase at the authentication gate. It is used only
+   for bounded derivation and is then discarded; the browser clears the form
+   immediately and retains no passphrase global. A nonsecret authenticated flag
+   and secret-derived persistence binding may live for the authenticated page or
+   terminal process. Browser history-cache purge requires reauthentication.
 2. The app first derives the bundle HMAC key from `bundle_auth_salt` and verifies the bundle `hmac`. Until this check passes, the app treats the bundle as sealed and does not announce whether any message is due.
 3. If the HMAC passes, the app computes due messages from authenticated dates (`date.today() >= message["date"]` and no read receipt).
-4. When the recipient opens a specific due message, the app re-derives the key from that message's stored salt (each message requires independent key derivation due to unique salts — expect ~1-3 seconds per message on typical hardware), then decrypts with stored nonce + ciphertext.
+4. During the authenticated transaction, the app derives each required message
+   key from that message's salt/profile and decrypts its nonce/ciphertext. No
+   plaintext or persistent state is promoted until the whole transaction
+   validates and materializes successfully.
 5. On authentication failure:
    - The overlay shows "Incorrect passphrase, or this file has been modified." below the input field. The field clears.
-   - Unlimited retries. No lockout (Argon2id's computational cost is the primary brute-force defense).
+   - Unlimited retries. No lockout; the validated PBKDF2 work factor supplies
+     the passphrase-guessing cost without permitting attacker-selected extremes.
    - Pressing `esc` closes the overlay and returns to the garden. Any existing delivery state for the authenticated session remains visible.
 6. If a passphrase hint exists in the bundle, it is always shown below the input field (before any attempt, not only on failure): *"Hint: The name of our first dog"*. A grieving recipient who hasn't thought about the passphrase in years deserves every available cue upfront.
 
@@ -159,27 +193,31 @@ The `date` field is plaintext (required for date-lock checking). Anyone with the
 - The export flow (§5.4) explicitly warns the author about this and strongly encourages setting a passphrase hint and writing the passphrase down for a trusted person.
 - The optional `passphrase_hint` field in the bundle helps the recipient recall the passphrase without storing it.
 
-### Encryption primitive options (Phase 3 decision)
+### Encryption primitive decision record
 
-Three candidates. Decision deferred until after the UX MVP is proven and before Phase 3 implementation begins.
+The following table records the alternatives considered before implementation.
+The current interoperable release profile is PBKDF2-HMAC-SHA256 + AES-256-GCM;
+changing primitives requires a new versioned migration and browser/terminal
+interop evidence.
 
 | Option | Description | Pros | Cons |
 |--------|-------------|------|------|
-| **Custom Argon2id + AES-GCM** *(current spec)* | Roll the key derivation and encryption using `argon2-cffi` + PyCA `cryptography` | Full control over UX (passphrase hints, per-message salts, label layout). Matches spec as written. | More surface area to get wrong. Requires separate JS/WASM port for browser viewer (argon2-browser). Two codebases to keep in parity. |
+| **Custom Argon2id + AES-GCM** *(not selected for the current profile)* | Roll the key derivation and encryption using `argon2-cffi` + PyCA `cryptography` | Full control over UX (passphrase hints, per-message salts, label layout). | More surface area to get wrong. Requires a separate JS/WASM port and new versioned migration. |
+| **PBKDF2-HMAC-SHA256 + AES-GCM** *(implemented)* | Native Python/WebCrypto derivation with recorded, bounded profiles | Offline browser interoperability, explicit versioning, no WASM dependency | Any future work-factor/profile change must remain readable through the versioned compatibility path. |
 | **`age` encryption** | [age-encryption.org](https://age-encryption.org/) — modern, simple, battle-tested. Passphrase-based mode wraps Argon2id (scrypt actually) + AES-256-GCM. Python: `pyage`; JS: `age-encryption` npm package. | Widely reviewed, minimal API, native passphrase support. Same primitive in Python and JS — parity is built-in. | Less control over KDF parameters and layout. Passphrase hint not native to the format (would live in plaintext metadata only). Adds external format dependency. |
 | **Account/database** | Letters stored server-side; recipient authenticates with account credentials | Simpler UX for recipients; no file management | **Rejected for primary storage.** Server lifetime problem — if LateLetter shuts down, letters are permanently lost. Incompatible with the use case (author is often dying; letters must outlast any company). Privacy: server sees metadata. Post-v1 managed service (§21) uses this model as an *optional layer on top*, never as the sole storage. |
 | **Blockchain/distributed** | IPFS, Ethereum, etc. | Decentralised | **Rejected.** Date-lock remains app-enforced regardless. Gas fees, chain longevity risk, terrible UX for grieving non-technical recipients. Does not solve any problem that the file format doesn't already solve with far less complexity. |
 
-**Current preference:** `age` — tentatively, for simplicity and Python/JS parity. Evaluate during Phase 3 research memo.
-
-**Override rule:** If at any point `age`'s constraints create tension with the recipient or author UX (passphrase hint display, per-message key isolation, error messaging, browser performance, or any other experience detail), abandon `age` immediately and use the custom Argon2id + AES-256-GCM stack. The encryption library serves the experience — not the reverse. UX is never sacrificed to preserve a library choice.
+**Decision:** PBKDF2-HMAC-SHA256 + AES-256-GCM is the current release
+profile. `age` and Argon2id remain historical alternatives, not runtime claims.
 
 The file format (`.lateletter` JSON bundle) is not in question — that stays regardless of which crypto primitive is used.
 
 ### Dependencies
 - `cryptography` (PyCA) — for AES-256-GCM via `cryptography.hazmat.primitives.ciphers.aead.AESGCM`. Pin version in `pyproject.toml`. Wrap hazmat usage in a tested encryption module with round-trip integration tests.
-- `argon2-cffi` — for Argon2id key derivation (matching the scheme above; scrypt is not used).
-- *(or: `pyage` — pending Phase 3 decision)*
+- `argon2-cffi` remains declared for compatibility/research but is not the
+  current sealed-bundle KDF. Any activation requires a versioned format and
+  browser/terminal migration evidence.
 
 ---
 
@@ -306,7 +344,7 @@ The Q&A session is the heart of author mode. It works like a gentle interview.
 - The runtime personalization state lives separately from the bank content. User-local state belongs in `session.json` and `questions_asked.json`; the canonical bank remains static.
 
 **Temporary implementation storage before the full bank system exists:**
-- The first end-to-end offline author prototype may use a smaller reviewed **seed bank** stored in a repository data file such as `data/question_bank_seed.v0.json`.
+- The first end-to-end offline author prototype may use a smaller reviewed **seed bank** stored as the packaged resource `src/lateletter/data/question_bank_seed.v0.json`.
 - That temporary seed bank is only for Phase 1 / early Phase 2 implementation and research validation. It must still be separate from source code and still use the canonical entry shape wherever practical.
 - The seed bank is not the release artifact and must not become an ad hoc permanent format. Before v1 ship work proceeds past the prototype stage, it is replaced by the bundled canonical bank file and editorial release workflow described above.
 - During the prototype stage, any derived selector state, asked-question logs, or temporary scoring metadata remain user-local under `~/.lateletter/author/`; no runtime process writes back into the seed bank file.
@@ -315,13 +353,23 @@ The Q&A session is the heart of author mode. It works like a gentle interview.
 
 **Incremental export:** Each message is encrypted and appended to the bundle as soon as the author finalizes it (not batch-all-at-end). The `checksum` and `hmac` are recomputed and the bundle file rewritten after each message finalization, ensuring the on-disk file is always a valid, verifiable bundle. This means that if the author loses capacity unexpectedly, all completed messages are already safe.
 
-**Incremental handoff:** Every time the bundle is rewritten (message finalized), the app also regenerates a minimal handoff folder alongside it — at minimum, the current `.lateletter` file plus `viewer.html` plus a stub `README.txt`. This ensures the delivery artifact (not just the crypto artifact) is always up-to-date. If the author loses capacity before the formal "Export bundle" flow, the steward can find a complete handoff folder at the bundle's location. The formal "Export bundle" action adds email notification setup, backup guidance, and session wipe on top of this already-current handoff folder.
+**Incremental handoff:** Every time the bundle is rewritten (message finalized),
+the target handoff folder contains the current `.lateletter` file, the verified
+static viewer closure rooted at `viewer-bnw.html`, and a stub `README.txt`.
+This ensures the delivery artifact (not just the crypto artifact) stays current.
+If the author loses capacity before the formal "Export bundle" flow, the steward
+can find a complete handoff folder at the bundle's location. The formal action
+adds notification setup, backup guidance, and session wipe.
 
 Export flow:
 1. Author triggers "Export bundle".
 2. Any remaining unencrypted messages are encrypted independently (see §4). The checksum and HMAC are recomputed over the canonical visible bundle payload.
 3. A `.lateletter` file is written to the author's chosen path using temp-file + `fsync` + atomic rename on the same filesystem. If the atomic replace cannot be completed, the previous valid bundle remains untouched and the app shows an export failure.
-4. **Handoff package generation:** The app creates the handoff folder (§15.1) at the author's chosen path. This includes the `.lateletter` file, `viewer.html`, `README.txt` (auto-generated from intake data), and optionally `notify.py` and `LateLetter.app`. The folder is created via temp-dir + atomic rename.
+4. **Handoff package generation:** The app creates the handoff folder (§15.1)
+   at the author's chosen path. This includes the `.lateletter` file, verified
+   static viewer closure, `README.txt` (auto-generated from intake data), and
+   optionally `notify.py` and `LateLetter.app`. The folder is created via a
+   temporary directory plus atomic rename.
 5. **Email notification setup (optional):** If the author wants due-date email notifications (§13.3), the app prompts for the recipient's email address and SMTP configuration. This metadata is stored in the bundle's plaintext `notification` field. The `notify.py` script is configured and included in the handoff folder. The author or steward is instructed to set up a cron job on any always-on machine.
 6. **Passphrase warning screen:** *"Important: If Maya cannot remember the passphrase, these letters are lost forever. There is no recovery. Consider writing the passphrase down and leaving it with someone you trust."*
 7. **Backup guidance screen:** *"This folder contains all of your letters. There is no backup and no recovery. We strongly recommend saving a copy to a second location — a USB drive, cloud storage, or with someone you trust. Note: your letters are encrypted, but the delivery dates, your name, and any notification email are visible to anyone with the file."*
@@ -418,7 +466,11 @@ Pressing `e`:
    ```
    The author name comes from the plaintext `author_name` field. No date or label is shown yet — delivery state is still locked behind bundle authentication.
 
-2. **First unlock in session:** Recipient enters passphrase. The passphrase field becomes read-only and a derivation indicator appears: *"Verifying…"* with a spinning ASCII indicator (`|`/`-`/`\`/`|`). Argon2id derivation takes 1–5 seconds; without this indicator, the UI appears frozen and a grieving first-time user will think the app has crashed. The passphrase is cached in memory for the rest of the session (see §4). **Subsequent `e` presses:** The cached passphrase is reused automatically — no re-prompting.
+2. **Authentication:** Recipient enters the passphrase and sees a neutral
+   *"Verifying…"* indicator while bounded PBKDF2 derivation runs. The input and
+   passphrase string are cleared after derivation. The authenticated process may
+   reuse already decrypted transaction output, but it does not retain the
+   passphrase; a browser purge/history restore requires a fresh authentication.
 
 3. The app verifies the bundle `hmac` before announcing any delivery state. If HMAC verification fails, the overlay shows: *"Incorrect passphrase, or this file has been modified."* The app returns to the garden without showing a bird, message count, or dated message list.
 
@@ -515,7 +567,7 @@ Derived from prior art analysis of passive care games (Neko Atsume, Viridi, Star
 2. **Gentle entropy, immediate recovery.** Plants droop if unwatered for weeks; the cat stops visiting if unfed for a long time. But recovery is instant on return — water the plant once, it perks up. No guilt, no shaming, no "where have you been?" commentary.
 3. **Evidence of absence, not punishment.** When the recipient returns after a gap, they find traces: footprints where the cat checked for them, an empty food bowl, a wilted-but-alive plant. The garden noticed they were gone. It waited. (Tsuki Adventure model: "you witness what happened while you were away.")
 4. **Automatic nudges, not menus.** Interactions surface via status bar callouts ("a stray cat lingers at the edge…") rather than action menus. The recipient presses a single key to respond. One action at a time — grief reduces decision-making capacity.
-5. **The progression layer must not overshadow the letters.** If tending the garden becomes the primary experience and letters feel like interruptions, the design has failed. The garden serves the letters, not the reverse. (Viridi developer insight: scrapped unlock progression because "people would play just to unlock the next plant, which was antithetical to the spirit of the game.")
+5. **The garden and letters must reinforce one another.** In standalone mode the garden is the primary experience. In authored-bundle mode the letters remain emotionally first-class, but tending, collecting, animal behavior, and authored world changes continue between deliveries. Neither side may reduce the other to an interruption or a decorative backdrop.
 6. **No unsolicited notifications tied to the deceased.** The garden never pushes notifications referencing the author by name in a guilt context. All engagement is pull-based.
 7. **Natural ceiling.** The progression system has a finite depth — the garden reaches a state of fullness, not an infinite treadmill.
 
@@ -540,7 +592,9 @@ Animals are the primary relationship mechanic. The v1 starter set is **four anim
   (\ /)
   . .
   ```
-  Unicode variants welcome in the browser viewer (pretext handles full Unicode); terminal renderer uses 1-column-width characters only (safe for curses width tracking).
+  Unicode variants are welcome in the browser atlas profile; the terminal atlas
+  profile admits only validated one-column grapheme clusters for safe curses
+  width tracking.
 - **Turtle:** Slow, reliable, always eventually arrives. Deliberate ground movement. Never startles. Stays longer than any other animal at each tier — the tortoise of the garden. At trust tier 3 it has a favorite rock it always returns to. ASCII art TBD during implementation (two-line shell silhouette).
 
 **Absence and recovery:** Trust does not decrease on absence. But evidence of the animal's visits appears: footprints in the ground row, feathers near the perch, claw marks on a tree trunk, an empty food bowl. The animal returns within 1–2 visits of resumed care — it was waiting.
@@ -595,6 +649,8 @@ Post-letter triggers tie the garden's evolution to the emotional arc of the lett
 
 #### 6.8.5 Author garden direction (Phase 2 authoring)
 
+> **Scope correction (2026-07-21):** The catalog picker below is the minimum approachable surface, not the full author contract. §7.8.10 additionally requires a fatigue-aware timeline with compound conditions, recurrence/missed-event behavior, plant and fixture transformations, animal personality/routines/choreography, sky/scene direction, deterministic preview, trace explanations, conflict handling, and export-blocking validation. Authors must be able to control narrative and temporal world events without editing JSON.
+
 After letter writing (Phase 1 authoring — intake, Q&A, drafts, encryption), the author may optionally enter a **garden direction** session. This session is entirely skippable — the garden runs a complete, beautiful experience without any authored garden elements. The progression layer's animal relationships and recipient-initiated interactions work regardless.
 
 **Catalog (v1 — finite starter set):**
@@ -612,6 +668,8 @@ After letter writing (Phase 1 authoring — intake, Q&A, drafts, encryption), th
 **Task nudges:** Author-written prompts that appear as gentle status bar messages on their trigger date or visit count. They are suggestions, not obligations: *"Plant something new today."* *"Watch the sunset."* *"Look up — count the birds."* The recipient can ignore them. They are the author reaching forward in time to share a moment, not assign homework.
 
 #### 6.8.6 Bundle schema addition
+
+The `garden_gifts` shape below is the **legacy v1 compatibility representation**, not the target authoring model. It can express only one entity and one scalar trigger at a time. The release authoring model is the encrypted, versioned `garden_program` in §7.8.10, which supports compound conditions, schedules, recurrence, missed-event policy, deterministic effects, plants, fixtures, animal choreography, and previewable narrative arcs. Existing readers must continue to migrate `garden_gifts` into equivalent one-shot program events.
 
 Garden direction data is stored in the `.lateletter` bundle as a new top-level field:
 
@@ -818,9 +876,10 @@ The `dy ≥ 3` threshold excludes trunk rows (the bottom 1–2 rows above base) 
 
 ### 7.3 Procedural generation philosophy
 
-All visual elements in the garden are **procedurally generated from the `garden_seed`**, not selected from a fixed library of pre-drawn ASCII art. This means:
+The garden uses a **hybrid authored/procedural scene model**. Procedural systems provide variation and growth; a versioned atlas provides recognizable fixtures, collectibles, animal key poses, and narrative landmarks. Both resolve into the same authoritative world objects before rendering. This means:
 
 - **Plants** are assembled from parameterized templates: trunk height, canopy shape, branch structure, flower pattern. The seed determines which parameters are chosen for each plant in the garden, making each recipient's garden unique but deterministic.
+- **Fixtures, collectibles, and animal key poses** are pre-authored atlas assets with stable anchors, collision masks, interaction hotspots, semantic labels, animation states, and ASCII fallbacks. Procedural placement may select and compose these assets but may not redraw their authoritative geometry at render time.
 - **Creatures** have procedurally varied behavior: flight paths, speeds, flash patterns, spawn timing. The seed initializes the RNG that drives these variations.
 - **Weather** intensity and particle density are season-driven with seed-based variation in timing and placement.
 - The prototypes in `ascii-animations/` establish the **visual vocabulary** (what a butterfly looks like, how rain falls). The integration work translates these into parameterized generators that produce variety from the seed.
@@ -901,12 +960,12 @@ Moments of true calm (sin ≈ 0) are intentional pleasant pauses in the garden's
 
 Additional planned plant types: cactus (evergreen), bamboo (evergreen), lily (flowering), sunflower (flowering). `CANOPY` (pine, oak) gates snow accumulation via `topSurfaces`; `LEAF_CANOPY` (oak, willow) gates leaf spawn via `canopyCells`. The two sets serve different physical purposes and must not be conflated.
 
-### 7.5 Time of day (optional)
+### 7.5 Time of day and sky
 
 Derived from system time or `--time day/dusk/night`:
 - **Day**: Default palette, full color.
 - **Dusk/Evening**: Palette warms (amber sky gradient), fireflies spawn, moon not yet visible.
-- **Night**: Dark sky gradient, stars, moon phase glyph, no fireflies, ambient birds cease.
+- **Night**: Dark sky gradient, location/time-aware bright stars and moon when a real sky mode is active, no fireflies, ambient birds cease. A clearly labeled storybook fallback is available without location permission. See §7.8.9.
 
 ---
 
@@ -985,10 +1044,10 @@ day ──────► evening ──────► night ──────
 |-------|-------------|-------|------|-----------|---------------|
 | day | C.sky / C.dim_green (cream) | No | No | No | Yes |
 | evening | Amber shift (warm gradient) | No | No | Yes (summer) | Fewer |
-| night | #0b0e16 / #13181e (near-black) | Yes (seeded scatter) | Yes (phase glyph) | No | No |
+| night | #0b0e16 / #13181e (near-black) | Catalog projection or labeled fallback | Yes, from selected sky clock | No | No |
 
 **Moon phases (night only):**
-Moon phase index = `Math.floor(Date.now() / 86400000 / 3.69) % 8` — one phase step every ~3.7 days through 8 phases:
+The current eight-glyph vocabulary remains available, but phase and horizon placement come from the selected `reader_live`, `author_fixed`, `author_clock`, or `story_event` sky clock (§7.8.9), using the same trusted astronomy implementation as star projection. A date-division shortcut is prototype evidence only and cannot ship as the accuracy owner.
 ```
 0: (absent — new moon)    4: O   (full)
 1: )   (waxing crescent)  5: C   (waning gibbous)
@@ -1000,7 +1059,7 @@ Moon is rendered as a 2–3 row ASCII glyph in the upper-right sky quadrant. It 
 **User flow (time-of-day):**
 ```
 [Visit page] → check clock hour → set timeOfDay state
-    → if night: set dark sky gradient, scatter stars, place moon glyph
+    → if night: set dark sky gradient, project selected sky, place moon glyph
     → if evening: warm sky gradient, enable firefly spawn (summer only)
     → if day: default sky gradient, no stars/moon
     [Creatures] → fireflies only spawn if evening && season===summer
@@ -1041,6 +1100,8 @@ Weather is not a discrete state machine — it is a **probabilistic spawn layer*
 ---
 
 #### 7.7.4 Animal trust subsystem
+
+> **Prototype-only note:** The feed-count system below documents the current implementation and is not the final bonding contract. The deterministic hybrid animal AI, varied interactions, personality, memory, routines, and non-punitive bonding rules in §7.8.7 supersede it for release acceptance.
 
 **States:** `absent` | tier 0 (stranger) | tier 1 (familiar) | tier 2 (bonded) | tier 3 (full bond)
 
@@ -1184,6 +1245,392 @@ Current ambient bird (`v`/`~` single char) is visually underdeveloped. New desig
 - Frame cycle every 8 ticks; direction randomized at spawn
 - Occasional 2–3 bird flocks: stagger spawn position and speed slightly
 - Distinct from letter-bird (multi-line, carries envelope, event-driven)
+
+---
+
+### 7.8 Standalone Cozy Garden and Author-Directed World Contract
+
+This section is the canonical release contract created from the 2026-07-21 research pass. It supersedes narrower prototype claims elsewhere in §6–§7 when they conflict. The research sources establish interaction, representation, scheduling, accessibility, simulation, and privacy constraints; the concrete counts and feature minimums below are LateLetter product decisions.
+
+#### 7.8.1 One world model, two renderers
+
+The garden has one authoritative, deterministic world model:
+
+```text
+author program + garden clock + recipient actions + stable seeds
+    → event evaluator
+    → world state / scene graph
+    → browser renderer + browser input adapter
+    → terminal renderer + terminal input adapter
+```
+
+- Every plant, organ, animal, fixture, collectible, authored event, sky object, hotspot, and camera layer has a stable ID and canonical state.
+- World coordinates, anchors, depth, collision, occlusion, affordances, and interaction hotspots live in the world model or versioned atlas, never only in browser DOM nodes or terminal render cells.
+- Renderers may interpolate, substitute glyphs, quantize positions, and select a supported atlas profile. They may not own growth, rewards, bonding, event eligibility, or object placement.
+- Input adapters dispatch semantic commands into the same command handler. They may not maintain modality-specific gameplay state.
+- An authored animal scene acquires an explicit choreography lock from the animal controller, completes idempotently, and releases it back to normal AI. The old AI path must yield; dual ownership is forbidden.
+- Given the same schema versions, seeds, elapsed effective time, prior state, and command sequence, browser and terminal produce the same semantic state and event trace even when the displayed glyphs differ.
+
+#### 7.8.2 Standalone play loops and humane idle progression
+
+Standalone mode must provide three useful session depths without a bundle or due letter:
+
+| Session | Target duration | Required agency |
+|---|---:|---|
+| Glance | 10–20 seconds | Notice weather/sky, a plant change, animal behavior, or a new discovery; inspect at least one thing |
+| Tend | About 2 minutes | Perform one care action, interact with an animal, and collect or journal one observation |
+| Dwell | 10+ minutes | Arrange fixtures, tend multiple plants, follow an animal routine, review collections, or pan through the garden |
+
+The core loop is `notice → choose a gentle action → see a persistent response → collect/arrange/remember → leave freely`.
+
+Required systems:
+
+- **Plant care:** observe, water, prune/train, transplant/place, and allow seasonal rest. Tending changes growth topology, bloom timing, visitor attraction, collectible yield, or authored-event eligibility; it cannot be a particle-only button.
+- **Spatial expression:** place, move, rotate where supported, and undo fixtures and recipient plants. Dragging is optional convenience, never the sole placement method.
+- **Collections:** at least four families—plant species/phenotypes, seasonal natural finds, animal traces/mementos, and authored keepsakes. First discovery automatically enters the journal with semantic name, source, date/season, and accessible description.
+- **Observation:** benches, clocks, sky, weather, ponds, and animal routines create non-resource interactions such as sit, watch, listen/read description, or wait for a short vignette.
+- **Bounded offline progress:** return processing computes aggregate deterministic milestones instead of replaying missed ticks. A welcome-back summary shows at most three notable changes and never blocks immediate play.
+
+Humane-progression rules are non-negotiable:
+
+- Plants do not die, animals do not become sick or permanently leave, bond does not decay, authored gifts do not expire, and absence cannot erase inventory or progress.
+- There are no streaks, missed-day counts, countdown pressure, guilt copy, paid random rewards, hidden narrative odds, or punitive resource decay.
+- Repetition has diminishing *bonding* value within a session so feeding cannot brute-force attachment, but the repeated action remains available for play.
+- Random narrative-required discoveries have a declared deterministic pity/fallback threshold.
+- Clock rollback clamps elapsed time to zero; it never reverses growth, duplicates rewards, or locks the player out.
+- A recipient may leave after one action without losing an opportunity.
+
+#### 7.8.3 Semantic input parity
+
+The canonical action vocabulary is:
+
+`move_focus`, `pan`, `inspect`, `primary_interact`, `open_actions`, `tend`, `feed`, `play`, `collect`, `place`, `move_fixture`, `undo`, `open_journal`, `pause_motion`, and `back`.
+
+| Action surface | Touch / pen | Mouse | Browser keyboard | Terminal |
+|---|---|---|---|---|
+| Select object | Single tap | Click | Arrow/tab focus | Grid cursor or object list |
+| Primary action | Tap visible action | Click visible action | Enter/Space | Enter or numbered command |
+| More actions | Action sheet | Action sheet/right click as optional shortcut | Menu key/button | Numbered menu or typed command |
+| Pan | One-finger drag or visible arrows | Drag/wheel or arrows | Arrow keys with camera focus | Arrow keys / pan command |
+| Place/move | Tap-to-place; drag optional | Click-to-place; drag optional | Grid movement + confirm | Coordinates/grid cursor + confirm |
+| Exit | Visible back/close | Visible back/close | Escape | Escape/`back` |
+
+- No production feature may exist only behind a physical key, hover, long press, multi-touch, timed input, or developer fixture.
+- Every interactive browser object has a focusable semantic control or one-to-one object-list control with name, state, and available actions.
+- Visual glyph bounds do not define hit size. Targets are 44×44 CSS px where possible and never below WCAG 2.2's 24×24 minimum/spacing rule.
+- Focus order is logical and visible. Opening an object uses the same action sheet regardless of the selection modality.
+- Touch, mouse, keyboard, and terminal tests must dispatch the same semantic commands and serialize identical results.
+
+#### 7.8.4 Hybrid world composition and content inventory
+
+The world combines procedural vegetation with authored atlas fixtures in one scene graph. The ship-blocking minimum is:
+
+- **Terrain:** soil, grass, long grass, paths, water, mud, snow, fallen leaves, and shadows.
+- **Procedural vegetation:** at least 12 distinct grammars across trees, shrubs, vines, grasses, herbs, flowers, and aquatic plants.
+- **Functional fixtures:** bench, connected fence/gate, clock or sundial, trellis, birdbath, lantern, pond, mailbox or memory shrine, stepping-stone/path set, bridge, planter, and table/chair set.
+- **Supporting fixtures:** well, arbor/pergola, wind chime, shed edge, tool rack, watering can, compost, basket, sign, and memorial stone may be included in the same atlas and are required before calling the catalog complete.
+- **Connected tiles:** all 16 orthogonal adjacency cases for fences, hedges, paths, pond edges, and walls; gate/bridge overlays preserve collision and connectivity.
+- **Ambience:** water ripples, smoke, lamp glow, cloud shadows, petals, leaves, snow, rain impacts, fireflies, moths, and birds.
+
+Each required fixture has at least one direct interaction and one systemic or narrative affordance:
+
+| Fixture | Direct interaction | Affordance examples |
+|---|---|---|
+| Bench | Sit / observe | Calm vignette; animal may rest nearby; author socket under/beside seat |
+| Fence / gate | Open, close, inspect | Route/habitat boundary; animal perch/patrol; vine support |
+| Clock / sundial | Inspect time | Shows garden/story time; may anchor an authored beat |
+| Trellis | Train plant | Changes vine topology and bloom surface |
+| Birdbath | Refill / observe | Drink/bathe affordance; raises bird behavior eligibility |
+| Lantern | Light / extinguish | Evening behavior and moth affordance; never changes real celestial positions |
+| Pond | Observe / tend | Ripples, aquatic plants, water visitors, seasonal freeze |
+| Mailbox / shrine | Open / examine | Authored keepsakes, inscriptions, and memory discovery |
+
+Fixture placement cannot trap animals, hide required actions, break connected paths, or make collectibles unreachable. Undo and reset-to-safe-layout are mandatory.
+
+#### 7.8.5 Stable procedural plant growth
+
+Each plant is generated once into a persistent rooted topology graph. Every organ stores `node_id`, `parent_id`, kind, birth time, maturity time, final direction/length, glyph/style family, and optional bloom/fruit state.
+
+- Growth reveals and interpolates the same topology. It does not rerun a random grammar at each stage; existing branches cannot teleport, change parents, or change root cells.
+- Use parametric/stochastic L-systems for flowers, vines, grasses, and herbs; space-colonization skeletons for shrubs and trees; and hand-authored blueprints for narratively important plants. All implement the same age/growth interface.
+- Every species has at least: `seed`, `germination`, `sprout`, `juvenile`, `mature`, `flowering_or_fruiting`, and `dormant` representations. Reduced-motion/static mode must communicate every stage.
+- Stable seed derivation is versioned: `hash(bundle_id, plant_id, species_id, generator_version)`. Topology, leaves, flowering, ambient sway, and collectible drops use separate PRNG streams.
+- `Math.random()` or any platform-selected RNG is forbidden for canonical simulation. A specified cross-language PRNG and seed derivation are part of the bundle/runtime version contract.
+- Growth respects fixture exclusion masks, walkable paths, plant spacing, authored visibility reservations, and placement regions.
+- Author controls include species/blueprint, seed override, planting time, growth curve, bloom/fruit windows, dormancy, exact placement or region, fixture affinity, pruning/revival beats, and topology lock.
+- Recipient actions may shape a plant within author-declared bounds. For example, training a vine to a trellis changes later topology while preserving the plant's identity.
+
+#### 7.8.6 Collectibles and journal
+
+Every collectible has a stable ID, family, provenance (`procedural`, `recipient-grown`, `animal-given`, or `author-authored`), eligibility rule, world asset, inventory asset, semantic label, accessible description, and ASCII fallback.
+
+- Standard seasonal finds recur on a declared cycle or have a catch-up route; changing the system clock is never required for completion.
+- Authored keepsakes wait indefinitely after eligibility and can never be consumed, replaced, or overwritten by procedural duplicates.
+- Duplicate standard finds may unlock art variants, decoration, or observations but may not gate core narrative behind high-volume grinding.
+- The journal distinguishes observed, collected, authored, and still-hinted entries without exposing encrypted content before authentication.
+- Animal traces include species-specific footprints, feathers/fur, favorite-place marks, gifts, and unlocked behavior observations—not generic currency drops.
+
+#### 7.8.7 Animal AI and bonding
+
+Release animals use a deterministic hybrid controller, not generative runtime AI and not feed-count-only progression:
+
+1. High-level state machine: `absent`, `arriving`, `awake`, `resting`, `sleeping`, `authored_scene`.
+2. Behavior-tree priority: safety/interruption → authored choreography → relationship response → routine → free roam.
+3. A utility scorer chooses among valid routine/free-roam behaviors.
+4. The animation controller communicates `orient/anticipate → perform → recover` for every action.
+
+Persistent blackboard fields:
+
+- bond points and tier; familiarity per interaction type; recent episodic memories (`kind`, target, timestamp, valence, salience);
+- learned favorite fixtures, plants, foods, places, and play styles;
+- personality: boldness, sociability, curiosity, playfulness, patience, routine strength, food motivation, and day/night preference;
+- last visit/interaction, absence duration, interaction variety, authored preferences/prohibitions, routine windows, and milestone receipts.
+
+Session blackboard fields:
+
+- energy, curiosity, social/play/rest appetite, current intent/target/path/pose, cooldowns, interruptions, nearby affordances, weather, season, time, and recipient focus.
+
+Utility combines need pressure, personality, bond, environmental affordance, novelty, cooldown, authored bias, and small seeded noise. Hysteresis and minimum dwell times prevent rapid behavior oscillation. Fixtures advertise affordances; for example, a bench offers rest-near-recipient, a birdbath offers drink/bathe, a fence offers perch/patrol, and tall plants offer hide/sniff.
+
+Bonding rules:
+
+- Bond grows through varied, spaced interactions: feed, play, observe, sit nearby, tend a favored plant/fixture, respond to an initiated behavior, and participate in authored scenes.
+- Repeating one action has diminishing bond value per session. Feeding alone cannot reach full bond.
+- Bond never decreases because of absence. Offline needs reconcile to a safe baseline.
+- Animals never die, become sick, shame the recipient, permanently leave, or remove gifts because of neglect.
+- An animal may decline or delay interaction but visibly communicates intent; `inspect animal` explains the readable state without exposing numeric meters.
+- Return greetings are positive and species/personality-specific.
+
+| Bond tier | Minimum observable behavior contract |
+|---|---|
+| Stranger | Watches from safety, startles, explores edges, avoids direct approach |
+| Familiar | Approaches after a pause, accepts care, and uses at least one nearby fixture |
+| Bonded | Initiates play, follows briefly, rests nearby, and recalls preferred interactions |
+| Full bond | Greets on return, brings authored/earned discoveries, seeks shared spaces, and performs a species-specific settled/delivery behavior |
+
+Each of bird, cat, rabbit, and turtle requires species-specific locomotion, resting, play/care response, weather response, fixture affinities, gift behavior, and all four tier signatures. Relabeling shared art does not count.
+
+#### 7.8.8 Parallax, camera, and scene continuity
+
+The browser and terminal share a continuous canonical camera in world space. Presentation layers declare stable depth factors; recommended starting values are stars `0.02`, distant clouds/hills `0.10–0.25`, far fence/buildings `0.45–0.65`, interactive world `1.0`, and foreground foliage `1.10–1.25`.
+
+- Browser rendering uses one timestamp-driven `requestAnimationFrame` loop and batched layer transforms. Refresh rate must not alter simulation speed.
+- Terminal rendering quantizes camera offsets to cells, may use block/Braille phases for apparent subcell movement, damage-tracks changed cells, and must not clear/redraw the full screen every frame.
+- Scenery wraps or has authored continuation; panning may not reveal blank/uninitialized columns.
+- Hit testing uses world coordinates and remains correct under pan, zoom/reflow, and different parallax offsets.
+- Background-tab suspension pauses presentation only. On resume, canonical elapsed-time processing runs once without duplicating rewards or authored events.
+- Reduced-motion mode freezes parallax, camera easing, weather travel, idle sway, and nonessential position animation while retaining immediate state changes, interactions, and discoveries.
+
+#### 7.8.9 Astronomically plausible sky
+
+The star layer uses a curated bright-star catalog with right ascension, declination, visual magnitude, optional color/name, catalog version, and license/provenance. A small naked-eye catalog such as the Bright Star Catalogue is appropriate; Gaia is an upstream authority, not a client payload.
+
+Sky modes:
+
+- `reader_live`: current reader time and opt-in rough location;
+- `author_fixed`: authored date/time/location;
+- `author_clock`: authored epoch and progression rate;
+- `story_event`: sky changes only at authored beats;
+- `storybook_fallback`: documented artistic sky when no real location is available.
+
+Location modes are `reader_opt_in`, `reader_manual_region`, `author_location`, and `fictional`.
+
+- Never request browser geolocation on load. Offer an explicit “use my rough location for the sky” action and explain the purpose.
+- Request low accuracy with finite timeout/caching. Immediately quantize to a documented coarse grid (initial target: 1° latitude/longitude) and discard the raw result.
+- Raw coordinates never enter a bundle, URL, analytics, logs, crash reports, or persistent storage. Persist the coarse region only after opt-in, with visible update/delete controls.
+- Denial/offline fallback order: reader-selected city/region → author-specified location → storybook sky. Core play remains available in every case.
+- At a low cadence (about once per minute), transform catalog RA/Dec to topocentric altitude/azimuth for the selected time/location, cull stars below the horizon, project visible stars to the sky layer, and map magnitude to tested glyph density/brightness.
+- Celestial positions are not random parallax. Only clouds, haze, fireflies, and artistic twinkle are cosmetic.
+- Non-live authored skies are labeled as authored/story time so they are not represented as the recipient's actual sky.
+- Reduced motion stops twinkle/parallax but does not alter which stars are visible.
+
+#### 7.8.10 Author narrative and temporal control
+
+The simple `garden_gifts` list is migrated into the encrypted `garden_program` envelope shown in §3. After unlock, `garden_program.ciphertext` decrypts to this canonical inner payload:
+
+```json
+{
+  "version": 1,
+  "author_timezone": "America/New_York",
+  "variables": {},
+  "entities": [],
+  "animals": [],
+  "events": [
+    {
+      "id": "stable-uuid",
+      "conditions": {
+        "all": [
+          {"fact": "letter.read", "op": "contains", "ref": "letter-id"},
+          {"fact": "visit.total", "op": ">=", "value": 3}
+        ]
+      },
+      "schedule": {
+        "start": "2028-06-15T19:00:00",
+        "timezone": "America/New_York",
+        "recurrence": null,
+        "exceptions": [],
+        "missed": "deliver_on_next_visit"
+      },
+      "occurrence": "once",
+      "priority": 100,
+      "exclusive_group": null,
+      "cooldown": null,
+      "actions": []
+    }
+  ]
+}
+```
+
+Supported condition facts include absolute/local time, date range, season, recurrence, visit count/nth visit, return after absence, session duration, letter due/read, gift revealed/examined, prior event completion, animal arrival/bond/interaction/memory, plant growth/bloom, fixture presence, and seeded bounded probability. Conditions support `all`, `any`, and `not`.
+
+Supported actions include:
+
+- unlock/present a letter;
+- reveal, place, move, transform, or retire a gift, plant, fixture, or collectible;
+- direct animal arrival/departure, authored behavior, routine, destination, delivery, or gift presentation;
+- plant/grow/bloom/dormancy/prune/revive within declared bounds;
+- apply bounded scene direction for weather, palette, story time, sky mode, ambience, and population;
+- show an authored nudge, inscription, memory, caption, or observation;
+- set/increment a variable and complete an event.
+
+Execution semantics:
+
+- Stable event/occurrence IDs and idempotent actions.
+- Deterministic run-to-completion evaluation for identical state/time/input.
+- Explicit priority and exclusive groups resolve simultaneous eligibility.
+- Missed policy is `skip`, `deliver_on_next_visit`, or `summarize_then_current`.
+- Recurrence declares `count`, `until`, or an intentional unbounded flag.
+- Offline catch-up is bounded and summarized; it never replays every missed minute.
+- No arbitrary JavaScript, Python, HTML, ANSI controls, remote URLs, or unknown commands in authored data.
+- All narrative-bearing fields—including animal names, inscriptions, captions, event labels, and private choreography—remain encrypted. Plaintext exposes only the minimum unlock envelope.
+
+The authoring experience is a fatigue-aware timeline/sequence editor, not raw JSON:
+
+- beat cards pair plain-language “when/if” conditions with “what happens” actions;
+- separate tracks for letters, animals, plants, fixtures, gifts, sky/season, and revisit beats;
+- calendar, visit-count, and dependency views; reorder/priority controls; autosave and resumability;
+- direct animal personality, routine, favorite-place, prohibited-behavior, gift, and milestone controls;
+- scene preview at arbitrary date/time, visit count, read state, bond tier, season, location mode, and absence duration;
+- a scrubbable trace explains why each event is eligible/blocked and shows before/after state;
+- fast-forward covers days, years, seasons, daylight-saving changes, clock rollback, and long absence;
+- preview and recipient runtime use the same evaluator.
+
+Validation blocks export for missing references/catalog IDs, unreachable events, cycles, contradictory conditions, invalid ranges, unresolved equal-priority exclusivity, unbounded accidental recurrence, impossible letter dependencies, placement collisions, private strings in plaintext, unreachable animal/gift interactions, or branches that permanently block later authored content.
+
+#### 7.8.11 Versioned Unicode/ASCII atlas
+
+“Full Unicode atlas” means a complete manifest of every supported semantic tile and frame—not arbitrary Unicode assumed to be a stable terminal cell.
+
+Rendering profiles:
+
+- `ascii-safe`: printable ASCII only; mandatory universal fallback;
+- `unicode-cell-safe`: curated grapheme clusters proven to occupy declared columns in the supported terminal matrix;
+- `browser-font-locked`: broader curated Unicode rendered with a bundled/tested font;
+- `browser-rich`: emoji/ZWJ/color-font decoration only, never collision-bearing geometry.
+
+The atlas compiler normalizes NFC, segments extended grapheme clusters, measures declared cell width per profile, rejects illegal controls/bidi/private-use/malformed clusters and inconsistent frame boxes, pins its Unicode data version, and emits grapheme-cell arrays instead of indexing strings by code unit.
+
+Default geometry excludes standalone combining marks, default-ignorable characters, unpaired surrogates, controls/ESC/bidi controls, emoji flags/skin tones/ZWJ sequences/VS16 color emoji, and East-Asian-Ambiguous characters in terminal-safe assets unless separate width-1/width-2 layouts exist.
+
+Every asset manifest includes:
+
+```json
+{
+  "id": "fixture.bench.oak.v1",
+  "kind": "fixture",
+  "profiles": {"browser": "browser-font-locked", "terminal": "unicode-cell-safe"},
+  "cell_box": [7, 3],
+  "anchor": [3, 2],
+  "layers": ["shadow", "body", "effects", "interaction"],
+  "states": ["idle", "occupied", "gift_present", "snow"],
+  "animations": {"idle": [{"frame": 0, "ticks": 12}]},
+  "collision_mask": [],
+  "occlusion_mask": [],
+  "hotspots": [{"id": "sit", "label": "Sit on the bench", "action": "sit"}],
+  "reduced_motion_frame": "idle:0",
+  "ascii_fallback": "fixture.bench.ascii.v1",
+  "author_sockets": ["seat", "under_bench", "beside_left"],
+  "tags": ["bench", "author_placeable"]
+}
+```
+
+Art, collision, occlusion, and interaction are separate authoritative data. Cosmetic animation cannot silently move collision/hotspots. State-changing animation updates masks at one declared transition tick.
+
+Approved creative techniques:
+
+- glyph substitution for sway, growth, clock hands, animal poses, gates, flowers, and water;
+- Box Drawing for connected stems/fences/trellises/fixtures;
+- Block Elements, quadrants, Braille, and tested Symbols for Legacy Computing for subcell growth, stars, pollen, insects, rain, fireflies, and particles;
+- `░▒▓` density cycles for glow, fog, shadow, rain, and water;
+- palette-role cycles for dawn/dusk/seasons/lantern warmth;
+- ordered dithering, alternating subcell masks, and layer-local animation;
+- seeded assembly of authored stem, branch, leaf, blossom, scar, fruit, pot, and soil modules.
+
+All frames have fixed tick durations and stable footprints. The same semantic state selects the same named frame in both runtimes, while each renderer may choose its supported profile/fallback.
+
+#### 7.8.12 Accessibility, motion, privacy, and safety
+
+- Honor `prefers-reduced-motion` and provide an explicit persistent pause/reduced-motion toggle. All automatic motion lasting over five seconds can be paused/stopped/hidden.
+- Reduced motion freezes parallax, weather drift, idle sway, camera easing, and particle travel; it preserves immediate state changes and readable static poses.
+- Every sprite has an accessible name and plain-text state description. A scene summary/object list can say, for example, “Evening garden: rabbit near the pond; parcel under the bench.”
+- No state relies on color, animation, or glyph shape alone. At 200% zoom and 320 CSS-pixel width, all actions remain reachable; the browser may switch to a focused-object/list view.
+- No essential action requires reaction timing. Pointer gestures and drag operations have single-pointer/button alternatives.
+- Author data cannot inject executable content or terminal escapes. Unknown atlas assets/actions resolve to safe placeholders/errors without corrupting state.
+- Geolocation is optional, purpose-limited, coarse, local-only, revocable, and unnecessary for core play.
+- Authored content and relationships are not monetized. No mechanic may exploit grief, imply the deceased is disappointed, or make access contingent on compulsive engagement.
+
+#### 7.8.13 Release acceptance gates
+
+The garden is not “full,” “parity,” or “production-ready” until all gates pass against a normal sealed production bundle—not only a dev fixture:
+
+1. **Production reachability:** Published synthetic bundle contains at least one animal arc, authored plant change, fixture reveal, collectible/keepsake, and multi-condition event. A recipient completes them from the visible production UI.
+2. **Input parity:** Plant/tend, animal/feed/play, inspect, collect, place/move/undo, journal, pan, and pause pass through touch, mouse, keyboard, and terminal with identical state transitions.
+3. **Standalone value:** Human observation confirms useful glance, tend, and dwell sessions with no bundle and no letter due.
+4. **Plant stability:** For 100 fixed seeds, browser/terminal topology hashes and stable IDs match; visible nodes at earlier age are a subset of later age except explicit authored prune/death/revival beats.
+5. **Layout safety:** Across 1,000 generated gardens, plants respect fixture masks/paths and every interactable remains reachable. All 16 connected-tile masks render correctly.
+6. **Atlas portability:** Compiler rejects unsafe clusters/width drift; every enhanced asset has dimension-compatible ASCII and reduced-motion fallbacks; supported browser/terminal screenshot matrix has no tofu, overlap, or frame jitter.
+7. **Animal behavior:** Four species show distinct four-tier repertoires; personality/needs/memory measurably affect choices; no rapid oscillation; seven-day and one-year absence cause no loss or shame.
+8. **Author control:** The author tool expresses and previews “letter read → rabbit arrives → third revisit grows plant → bonded rabbit brings autumn gift” without editing JSON. Preview and runtime event traces match.
+9. **Temporal correctness:** Simultaneous events, once-only idempotency, recurrence/DST, missed-event policy, year-long catch-up, and clock rollback pass deterministic tests.
+10. **Parallax/performance:** Equal elapsed time yields equal positions at 60/120 Hz; ten-minute pans reveal no blank cells or broken hit tests; reference browser stays under 16.7 ms p95 desktop / 33 ms p95 target mobile; terminal uses partial diffs after initial paint.
+11. **Sky accuracy/privacy:** No geolocation call precedes user activation; raw coordinates never persist or leave the device; denial paths work; 12 hemisphere/latitude/date fixtures agree with a trusted Alt/Az implementation within 0.25° before screen quantization.
+12. **Accessibility:** Full play works with keyboard, VoiceOver/NVDA object controls, reduced motion, no color, 200% zoom, and narrow mobile layout. All target-size and pause-motion checks pass.
+13. **Absence/ethics:** Simulated 1/7/30/365-day absences lose nothing; no prohibited urgency/guilt language or expiring authored content appears.
+14. **Human acceptance:** Direct observation signs off the standalone cozy loop, touch discoverability, all animal bond tiers, authored world arc, item discovery, letter delivery, and post-completion memorial. Proxy code/fixture evidence cannot substitute.
+
+#### 7.8.14 Research basis
+
+Mechanics and humane engagement:
+
+- [Official Neko Atsume — How to Play](https://www.nekoatsume.com/sp/en/about.html)
+- [Official Tamagotchi Uni instruction manual](https://tamagotchi-official.com/manual/toy/uni/manual_02/Uni_WEB_IS_EN.pdf)
+- [Garden Life: A Cozy Simulator](https://www.nintendo.com/en-ca/store/products/garden-life-a-cozy-simulator-switch/)
+- [Animal Crossing: New Horizons — Explore](https://animalcrossing.nintendo.com/new-horizons/explore/)
+- [Cozy Grove calendar/campaign-time model](https://support.spryfox.com/hc/en-us/articles/1500005307201-How-do-campaign-days-and-time-in-general-work-Cozy-Grove)
+- [Cozy Grove control mappings](https://support.spryfox.com/hc/en-us/articles/1500003989661-What-are-the-controls-Cozy-Grove)
+- [GDC — Designing for Presence Without Intrusion](https://gdcvault.com/play/1035099/Thriving-Players-Summit-Designing-for)
+- [FTC — Bringing Dark Patterns to Light](https://www.ftc.gov/news-events/news/press-releases/2022/09/ftc-report-shows-rise-sophisticated-dark-patterns-designed-trick-trap-consumers)
+
+Authoring, time, and animal behavior:
+
+- [Failbetter — Echo Bazaar Narrative Structures](https://www.failbettergames.com/news/echo-bazaar-narrative-structures-part-two)
+- [ink writing guide](https://github.com/inkle/ink/blob/master/Documentation/WritingWithInk.md) and [Inky editor](https://github.com/inkle/inky)
+- [W3C SCXML](https://www.w3.org/TR/scxml/) and [RFC 5545 calendar recurrence](https://www.ietf.org/rfc/rfc5545)
+- [CMU — Believable Agents and Interactive Drama](https://www.cs.cmu.edu/Groups/oz/papers/CMU-CS-97-156.html)
+- [Sony aibo FAQ](https://direct.sony.com/aibo-faq/)
+- [Nintendo Nintendogs](https://www.nintendo.com/en-gb/Games/Nintendo-DS/Nintendogs-Labrador-Friends-272057.html)
+- [Unreal Engine Behavior Trees](https://dev.epicgames.com/documentation/en-us/unreal-engine/behavior-trees-in-unreal-engine)
+- [Game AI Pro — Utility Theory](https://www.gameaipro.com/)
+
+Procedural growth, Unicode, rendering, and sky:
+
+- [Algorithmic Botany — Modeling plant development with L-systems](https://algorithmicbotany.org/papers/modeling-plant-development-with-l-systems.html), [Animation of Plant Development](https://www.algorithmicbotany.org/papers/animdev.sig93.pdf), and [Space Colonization](https://algorithmicbotany.org/papers/colonization.egwnp2007.html)
+- [Unicode UAX #29 — Grapheme Clusters](https://unicode.org/reports/tr29/), [UAX #11 — East Asian Width](https://www.unicode.org/reports/tr11/), [UTS #51 — Emoji](https://www.unicode.org/reports/tr51/), and [Unicode charts](https://www.unicode.org/charts/)
+- [W3C CSS Fonts 4](https://www.w3.org/TR/css-fonts-4/) and [Pointer Events](https://www.w3.org/TR/pointerevents/)
+- [MDN requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) and [prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/%40media/prefers-reduced-motion)
+- [W3C Geolocation](https://www.w3.org/TR/geolocation/)
+- [VizieR Bright Star Catalogue](https://vizier.cfa.harvard.edu/viz-bin/VizieR?-source=V%2F50%2Fcatalog), [ESA Gaia DR3](https://www.cosmos.esa.int/web/gaia/dr3), and [Astronomy Engine](https://github.com/cosinekitty/astronomy)
+- [WCAG 2.2](https://www.w3.org/TR/WCAG22/), including keyboard access, pointer gestures, target size, animation-from-interactions, and pause/stop/hide requirements
 
 ---
 
@@ -1379,7 +1826,7 @@ Keyed by `bundle_id` then `message_id`. `read_at` records when the message was f
 
 ## 10. Phases and Milestones
 
-Phases are ordered by the **irreplaceable capability first** principle: the author is terminally ill and time is the scarcest resource. The garden already exists and works — authoring, encryption, and delivery are the product's reason to exist.
+Phases are ordered by the **irreplaceable capability first** principle: the author is terminally ill and time is the scarcest resource. Authoring, encryption, and delivery remain the first capability path, but the production garden is not complete merely because its renderer boots. §7.8 is now a ship gate because the released product must also work as a standalone cozy garden and expose authored world events through normal controls.
 
 Every research-heavy phase begins with a short **research sub-phase** whose deliverable is a written decision memo, concrete acceptance criteria, and testable examples before implementation starts.
 
@@ -1441,7 +1888,7 @@ ASCII animation and motion language are therefore **not** one of the first few i
 - Create `pyproject.toml` with dependencies
 - Consent and wishes form (living will-inspired — §5.1)
 - TUI intake form (curses) with validation, steward field, passphrase hint
-- Temporary reviewed seed bank file for the first offline vertical slice (`data/question_bank_seed.v0.json`) using the canonical question-entry shape where practical
+- Temporary reviewed seed bank file for the first offline vertical slice (`src/lateletter/data/question_bank_seed.v0.json`) using the canonical question-entry shape where practical
 - Offline question selector: universal base set + personalization layer + pacing/gating rules
 - Reviewed question bank (80–120 questions covering all 16 domains, categorized, versioned, shipped read-only in app resources) — the primary question engine. The 500+ bank target is a post-v1 content milestone; 80–120 well-reviewed questions fully serve a 10-exchange session and the existing selector infrastructure.
 - Q&A session loop (offline — questions drawn from the selector/bank system) with session resumption
@@ -1460,13 +1907,13 @@ ASCII animation and motion language are therefore **not** one of the first few i
 - Bundle reopen flow for author (§5.5)
 
 ### Phase 3 — Encryption and sealing
-- **Research sub-phase (security and standard industry practices):**
-- Evaluate `age` vs custom Argon2id+AES-GCM (see §4 "Encryption primitive options") — benchmark KDF timing on target hardware, validate Python/JS parity path, write decision memo
-- Review standard industry practices for local encrypted archives, passphrase-based key derivation, authenticated metadata, passphrase caching, and secure-deletion caveats
-- Confirm chosen primitive's parameters, bundle-HMAC derivation, plaintext metadata boundaries, and recipient/authentication UX against that research
-- Produce implementation notes and negative test cases for tampering, wrong-passphrase handling, bundle updates, and data-lifecycle edge cases
-- Chosen crypto primitive encryption module with round-trip integration tests
-- Passphrase setup, per-session caching, wrong-passphrase states
+- **Implemented profile:** bounded PBKDF2-HMAC-SHA256 + AES-256-GCM, with
+  Python/WebCrypto interoperability and versioned compatibility.
+- Bundle-HMAC derivation, authenticated metadata boundaries, secret-derived
+  persistence isolation, passphrase disposal, and generic wrong-passphrase
+  behavior are covered by adversarial tests.
+- The historical `age`/Argon2id alternatives remain recorded in §4; neither is
+  a current runtime path.
 - Label encryption (moved inside ciphertext)
 - HMAC integrity (passphrase-keyed, verified post-entry)
 - Incremental export with checksum + HMAC recomputation
@@ -1484,6 +1931,7 @@ ASCII animation and motion language are therefore **not** one of the first few i
 - Seamless toggle between LLM and offline mode
 
 ### Phase 5 — Garden animation system
+- **Release-gate correction (2026-07-21):** Earlier completed checkmarks establish prototype renderer components only. They do not establish production reachability, standalone-game value, input parity, author program control, atlas portability, animal AI, parallax, or accurate sky behavior. All §7.8 acceptance gates are ship-blocking.
 - **Research sub-phase (ASCII animation and motion language) — first pass done 2026-04-18, more animations needed later:**
   - ~~Prototype ASCII animation patterns for the ambient bird, letter-bird, butterfly, rain, snow, clouds, and seasonal effects~~ ✓ — prototypes in `ascii-animations/`, all approved
   - ~~Research terminal-animation constraints: redraw budgets, layering, flicker avoidance, glyph readability, color usage~~ ✓ — documented in `ANIMATION-RESEARCH.txt`
@@ -1517,10 +1965,7 @@ Expanded detail for all ship-blocking work lives in §24 steps 12–15. Summary:
 - `--wipe-session` CLI flag for non-interactive secure deletion
 - Release acceptance matrix (§18, §19) — ship only after all criteria pass
 
-**Non-ship-blocking polish** (may ship with v1 or after):
-- Time-of-day palette (day/dusk/night)
-- Expanded plant types, additional creatures, bloom animations
-- Wind system upgrade (Perlin-noise gusts)
+**Required garden release bar:** §7.8 replaces the former “non-ship-blocking polish” classification. Time/sky presentation, stable plant growth, functional fixtures, animal AI, interaction parity, author-directed events, collection/journal, parallax/reduced-motion behavior, and a production sealed demo are required before the garden can be described as standalone or full parity.
 
 ---
 
@@ -1554,32 +1999,49 @@ This channel requires macOS 14+. See §15 for packaging details.
 
 ### 13.2 Browser viewer (cross-platform)
 
-A self-contained `viewer-bnw.html` file that runs in any modern browser. No server, no account, no installation. The recipient opens it, drops or selects their `.lateletter` file, enters the passphrase, and reads their letters. Decryption happens entirely client-side.
+A closed static artifact rooted at `viewer-bnw.html` and its versioned local
+JavaScript/JSON dependency graph. `scripts/prepare_pages_site.py` copies and
+verifies that transitive graph for Pages; it executes no third-party runtime
+code and requires no account or installation. The recipient opens the deployed
+page (or a locally served copy), drops or selects their `.lateletter` file,
+enters the passphrase, and reads their letters. Decryption happens entirely
+client-side.
 
 **Scope (updated 2026-04-20):** The original plan was a letter reader with static garden illustration. The live 5-layer animated garden (§7.2) was ported to JS ahead of schedule and is now the browser viewer's backdrop — DOM text rendering (not canvas), full particle physics, seasonal weather, and creature layer. The rendering architecture below reflects what was built.
 
-**Rendering architecture — pure HTML/CSS/JS + pretext:**
+**Rendering architecture — local HTML/CSS/JavaScript modules:**
 
 The browser viewer is built on **four rendering layers**:
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| Letter text | **pretext** (`@chenglou/pretext@0.0.4`) + DOM | Responsive proportional line breaking; `prepareWithSegments` + `layoutWithLines`; renders to standard DOM elements. Selectable, printable, accessible. |
-| Garden | **DOM text renderer (GardenDOM)** | 5-layer composited garden (background, plants, particles, creatures, special) rendered as `<div>` rows of `<span style="color:...">` elements. Scales with browser zoom without blur. ~20 FPS via `requestAnimationFrame`. Full parity with TUI: rain gravity+wind, snow accumulation, leaf detachment, butterflies, birds, fireflies. |
+| Letter text | **Built-in DOM fallback layout** | Proportional text wraps into standard DOM elements without remote layout code. It remains selectable, printable, and accessible. |
+| Garden | **Canonical DOM text projection** | `web/garden-renderer.mjs` consumes the shared semantic world projection and renders DOM rows plus an accessible object summary. This is renderer parity evidence only; §7.8.13 remains the authority for any full-parity claim. |
 | UI chrome | **Pure HTML/CSS** | Passphrase overlay, inbox, navigation, status — standard web forms. No framework. All screens are translucent scrims over the live garden. |
-| Crypto | **WebCrypto (main thread, async)** — PBKDF2-SHA256 + AES-256-GCM | **v0 sealed path shipped 2026-07-19:** bundles whose messages carry `kdf_params: {name: "PBKDF2", hash: "SHA-256", iterations: 600000}` are verified (bundle HMAC gate first, per §4) and decrypted natively in the browser with zero dependencies. Python parity in `src/lateletter/sealed.py`; authoring via `make_letter.py`. Argon2id (`kdf_params: null`) remains the Phase 3 decision — it requires a WASM port and is not yet openable in the viewer. Dev fixtures (empty `hmac`) keep the base64 passthrough in a Web Worker. |
+| Crypto | **WebCrypto (main thread, async)** — PBKDF2-SHA256 + AES-256-GCM | Versioned bundles use bounded, profile-specific bundle HMAC verification before decryption. Python parity lives in `src/lateletter/sealed.py`; authoring uses the canonical bundle writer. Explicit trusted development fixtures are capability-gated and do not weaken the normal sealed path. |
 
 **Why DOM (not canvas):** Canvas is invisible to screen readers and produces blurry output on browser zoom. DOM text renders at native resolution at any zoom level, is selectable, printable, and fully accessible. The garden uses fixed-width Courier New; the UI and letter text use Times New Roman — they coexist in the same page without conflict.
 
-**Why pretext for letter bodies:** Letter text needs proportional line breaking across devices without layout thrashing. pretext separates text measurement from layout; rendering is standard DOM. Garden grid uses fixed-width monospace and does not need pretext.
+**Why built-in DOM layout for letter bodies:** Letter text uses ordinary DOM
+wrapping, so the release artifact needs no remote layout dependency. The Garden
+grid remains fixed-width monospace and uses its own measured-cell projection.
 
-**Why not WASM for the garden:** The 64 MiB KDF OOM risk on mobile devices (§17) already pushes the limit of acceptable WASM usage. A compiled garden renderer would add binary size, memory pressure, and device compatibility risk — DOM text rendering achieves full parity without WASM.
+**Why not WASM for the garden:** A compiled renderer would add binary size,
+memory pressure, and device compatibility risk. DOM text rendering provides the
+current portable renderer surface; only the §7.8.13 gates can establish full
+Garden parity.
 
 **Viewer contents:**
 - File input via drag-and-drop or `<input type="file">` for the `.lateletter` bundle.
-- Argon2id in a Web Worker with progress indicator ("Unlocking…" with elapsed time). On devices with `navigator.deviceMemory < 2`, warn before attempting derivation. If derivation exceeds 30 seconds, show a timeout message with guidance.
-- Per-session passphrase and per-message key caching (in-memory JS variables, cleared on page close).
-- Read receipts via `IndexedDB` (fallback to `localStorage`), keyed by a `lateletter_v1_` namespace prefix plus `bundle_id` and message ID. Receipt state is per-browser/per-device. Clearing browser storage causes already-read messages to reappear; this is disclosed in the viewer UX.
+- Bounded PBKDF2-SHA256 derivation and AES-256-GCM decryption through native
+  WebCrypto after checksum and bundle-HMAC validation.
+- The passphrase input and passphrase string are discarded immediately after
+  derivation; later logic retains only nonsecret authenticated state.
+- Read receipts via `IndexedDB` (fallback to `localStorage`), namespaced by a
+  stable secret-derived bundle identity and message ID. Same-public-ID bundles
+  with different authentication keys cannot share receipt or world state.
+  Clearing browser storage causes already-read messages to reappear; this is
+  disclosed in the viewer UX.
 - If browser storage is unavailable, the viewer runs statelessly and warns.
 - The full recipient flow: first-run welcome (§6.5, adapted for browser — see below), letter reading with scroll, letter archive (§6.6), post-completion state (§6.7), save-to-text.
 
@@ -1657,17 +2119,19 @@ A lightweight mechanism that emails the recipient when a letter is due. **The em
 
 ### 13.4 Channel parity principle
 
-All three channels deliver the same **letter experience** — the letters are the content, the garden is the delivery mechanism:
+All interactive channels deliver the same **semantic letter and garden experience**. Email remains notification-only:
 - Same passphrase, same date-lock logic, same read-receipt semantics (per-device, no sync).
 - Same letter archive (§6.6) — read letters can always be re-read.
 - Same post-completion acknowledgment (§6.7) — "all letters delivered."
 - Same first-run emotional sequence — warmth first, then recognition ("planted for you by [name]"), then passphrase.
 
-Both the macOS app and the browser viewer have the full animated garden — particles, creatures, weather, the living space. The browser viewer gained full garden parity ahead of schedule (DOM text renderer, 5-layer compositor, ~20 FPS). Both channels treat the recipient with the same care. Email notification doesn't render anything — it tells the recipient to go look.
+Browser and terminal may use different atlas profiles and motion techniques, but must expose the same world objects, actions, progression, authored events, animal decisions, and event trace through §7.8's shared world model. Rendering components, dev shortcuts, or dormant code paths do not establish parity. Parity is open until the sealed-production input, persistence, determinism, accessibility, and human-observation gates in §7.8.13 pass. Email notification does not render the garden; it tells the recipient to open an interactive channel.
 
 ### 13.5 Dev tool fixture — garden QA harness
 
 The dev fixture (a `.lateletter` file with `hmac=""` and base64 plaintext bodies) doubles as the primary garden QA tool. The following design principles govern what dev fixture mode must be able to show:
+
+**Evidence boundary:** Dev controls are diagnostic conveniences only. A feature exercised only by `Shift+...`, a fixture-only shortcut, URL seeding, console mutation, or an empty-HMAC bundle is not recipient-reachable and cannot satisfy §7.8.13. Every ship claim requires the matching visible control and normal sealed production flow.
 
 **Everything a recipient could ever see, exercisable in one session:**
 
@@ -1717,15 +2181,15 @@ These are NOT in v1 scope but should inform architecture:
 | Question | Status | Notes |
 |----------|--------|-------|
 | Should `garden_seed` in the bundle be fixed (deterministic) or change per-day? | Decided: fixed | Fixed seed = always the same garden (personal). §3 describes this as the intended behavior. |
-| Should the passphrase be per-file or per-message? | Decided: per-file | Simpler UX; author sets one passphrase for the whole bundle. Cached in memory per-session (§4). |
+| Should the passphrase be per-file or per-message? | Decided: per-file | Simpler UX; author sets one passphrase for the whole bundle. The authenticated process may retain nonsecret session state, but the passphrase is discarded after derivation (§4). |
 | What happens if the author dies before finishing all messages? | Decided: §5.6 | Incremental export + steward role. See §5.6 for full design. |
 | Should the app support "ongoing" message type (no fixed date, appears after a set # of days)? | Future | Would require a counter stored in the receipt file. Not in v1 UI. |
 | Offline mode: should question bank be embedded in the script or a separate data file? | Decided: separate bundled data file | Editorial updates and question review should not require code edits. The app bundle can still ship as a single recipient artifact while containing versioned internal data files. |
 | How should the app handle timezone differences between author and recipient? | Decided: v1 accepts ±1 day drift | `date.today()` uses recipient's local system date. Consider storing dates in UTC internally for future web/email portability (§13). |
-| What is the recipient software distribution strategy? | Decided: handoff package | v1.0 ships a handoff folder containing the macOS .app, `viewer.html`, the `.lateletter` file, a notification script, and a README. See §15.1. |
+| What is the recipient software distribution strategy? | Decided: handoff package | v1.0 ships a handoff folder containing the macOS app, verified static viewer closure, `.lateletter` file, notification script, and README. See §15.1. |
 | Should there be a maximum message count per bundle? | Decided: soft limit | No hard limit. Warn author above 100 messages (absurdly large threshold). |
 | How should externally-edited files be handled? | Decided: drafts-only, never canonical | External editing is allowed only for unsealed drafts under `~/.lateletter/author/drafts/`. The encrypted `.lateletter` bundle is always the canonical artifact. External editor swap/backup files are warned about but not managed by the app. |
-| What are the platform requirements? | Decided: macOS app + cross-platform browser viewer | v1.0 ships the macOS .app as the primary channel and a self-contained `viewer.html` as the cross-platform channel. The browser viewer ensures recipients on Windows, Linux, and mobile can read letters. See §13. |
+| What are the platform requirements? | Decided: macOS app + cross-platform browser viewer | v1.0 ships the macOS .app as the primary channel and a closed static browser artifact as the cross-platform channel. The browser viewer ensures recipients on Windows, Linux, and mobile can read letters. See §13. |
 | LLM synthesis quality gate? | Decided: non-ship-blocking and human-reviewed | v1.0 can ship without LLM mode. If enabled, every LLM-generated draft must be manually reviewed and explicitly confirmed by the author before encryption/export. |
 
 ## 15. Release Profile
@@ -1733,7 +2197,9 @@ These are NOT in v1 scope but should inform architecture:
 **Canonical v1.0 ship target:** macOS app + cross-platform browser viewer + self-hosted email notification.
 
 - The **macOS app** is a signed and notarized `LateLetter.app` with a bundled Python runtime and bundled question-bank data.
-- The **browser viewer** is a self-contained `viewer.html` (single file, no dependencies) that opens `.lateletter` bundles in any modern browser with client-side decryption.
+- The **browser viewer** is a closed, versioned static artifact rooted at
+  `viewer-bnw.html`; its local module/data closure is verified before Pages
+  deployment and opens `.lateletter` bundles with client-side decryption.
 - The **email notification script** is a standalone `notify.py` that the author/steward runs via cron to send due-date email prompts.
 - The recipient is not expected to install Python, use `pip`, edit shell config, or invoke CLI commands manually.
 - Author mode runs on macOS (primary) and Linux (development target, not release-blocking). Windows author support is out of scope for v1.0.
@@ -1745,7 +2211,9 @@ The export flow (§5.4) produces a **handoff folder** — this is what the autho
 ```
 LateLetter-for-Maya/
   LateLetter.app              macOS garden app (if author is on macOS)
-  viewer.html                 browser viewer (works on any platform)
+  viewer-bnw.html             browser entrypoint (works on any platform)
+  web/                        versioned local browser modules
+  src/lateletter/garden/data/ canonical atlas/sky JSON used by the browser
   maya.lateletter             the encrypted letter bundle
   notify.py                   email notification script (optional)
   README.txt                  plain-text instructions for the recipient
@@ -1758,7 +2226,8 @@ This folder contains letters from [author_name] for [recipient_name].
 
 To read them:
   • On a Mac: Open LateLetter.app, then open maya.lateletter
-  • On any computer: Open viewer.html in your browser
+  • On any computer: Open the hosted viewer URL, or serve this folder locally
+    and open viewer-bnw.html
 
 You will need the passphrase that [author_name] set.
 The app will show you a hint when you enter the passphrase.
@@ -1816,7 +2285,10 @@ The author can customize the handoff folder path during export. The folder is cr
 - **Unsupported terminal features or screen-reader conflict:** Offer or automatically switch to `--accessible` line-mode author flow.
 - **Unexpected crash during reading:** No read receipt is written until the message overlay is successfully opened and the message is marked read on clean exit from that read flow.
 - **Lost `.lateletter` file:** Irrecoverable — all letters are permanently lost. The export flow (§5.4) warns the author and recommends copies. The handoff README (§15.1) does not address this (avoid alarming the recipient); the backup responsibility is the author's.
-- **Browser viewer: Argon2id timeout or OOM:** On constrained devices, the 64MB Argon2id derivation may fail or take >15 seconds. The viewer shows a progress indicator and a timeout message if derivation exceeds 30 seconds. It does not reduce security parameters — the user can retry or use a more capable device.
+- **Browser viewer: invalid or excessive KDF profile:** Reject unsupported or
+  out-of-bound PBKDF2 parameters before derivation. During valid derivation the
+  viewer shows a neutral progress state; it never silently reduces the recorded
+  work factor.
 - **Browser viewer: storage denied or cleared:** Read receipts are lost; previously read messages reappear as new. The viewer warns that read state will not persist. Letters are still readable.
 
 ## 18. Release Acceptance Criteria
@@ -1825,11 +2297,15 @@ The product is not shippable until all of the following are true:
 
 - A first-time author can complete intake, write at least one message offline, export a handoff package, reopen later, and append another message without data loss.
 - A first-time recipient on a clean macOS machine can open `LateLetter.app`, experience the first-run sequence (§6.5), unlock the bundle, read a due message, re-read it via the archive (§6.6), quit, relaunch, and see the read receipt honored.
-- A first-time recipient on a non-macOS machine can open `viewer.html` in a modern browser, complete the same flow (first-run, unlock, read, archive, re-read, receipt), with equivalent emotional pacing.
+- A first-time recipient on a non-macOS machine can open the deployed
+  `viewer-bnw.html` artifact in a modern browser and complete the same flow
+  (first-run, unlock, read, archive, re-read, receipt), with equivalent
+  emotional pacing.
 - After all letters are read, the post-completion state (§6.7) activates correctly in both the macOS app and the browser viewer.
 - A tampered bundle, corrupted bundle, and wrong-passphrase attempt all fail safely without false delivery claims — in both channels.
 - The secure-default export path deletes finalized plaintext drafts while preserving unfinished notes when the author chooses to keep them.
-- The export flow generates a complete handoff package (§15.1) with README, viewer.html, and optional notification script.
+- The export flow generates a complete handoff package (§15.1) with README, the
+  verified browser dependency closure, and optional notification script.
 - The `--accessible` author path can complete the full author workflow without requiring full-screen curses.
 - The macOS release artifact installs and runs on a clean macOS 14+ machine with no developer tooling preinstalled.
 - The browser viewer works in current versions of Safari, Chrome, and Firefox without plugins or extensions.
@@ -1850,15 +2326,24 @@ Minimum pre-release coverage:
 - **Terminal constraints test:** Exactly 80x24, below 80x24, no-color/limited-color terminal, and resize while overlay is open.
 - **Crash-safety test:** Kill the app during session save and during bundle export; confirm the previous canonical file remains valid.
 - **Performance sanity test:** Startup, unlock, and long-letter scrolling remain acceptable with a realistically sized bundle.
-- **Browser viewer test:** Open `viewer.html` in Safari, Chrome, and Firefox. Load `.lateletter` file via drag-and-drop. Complete full recipient flow: first-run, passphrase entry, read letter, re-read via archive, verify read receipt persists across page reload.
-- **Browser viewer mobile test:** Open `viewer.html` on an iOS and Android browser. Verify layout is usable, passphrase entry works, Argon2id completes within 30 seconds, and letters are readable.
+- **Browser viewer test:** Open the deployed `viewer-bnw.html` artifact in
+  Safari, Chrome, and Firefox. Load a `.lateletter` file via drag-and-drop.
+  Complete the recipient flow: first-run, passphrase entry, read letter, re-read
+  via archive, and verify the secret-derived receipt namespace persists across
+  page reload while history-cache restore requires reauthentication.
+- **Browser viewer mobile test:** Open the deployed artifact on iOS and Android.
+  Verify usable layout, passphrase disposal after bounded PBKDF2 derivation, and
+  readable letters.
 - **Email notification test:** Run `notify.py` with a test bundle containing a due-date message. Verify email is sent, content contains no letter text, and duplicate sends are suppressed on re-run.
-- **Handoff package test:** Export a handoff folder and verify it contains all expected files, README is correctly populated from intake data, and `viewer.html` works from the exported folder without modification.
+- **Handoff package test:** Export a handoff folder and verify it contains the
+  expected files, README is correctly populated from intake data, and the
+  viewer dependency closure passes offline verification without modification.
 
 ## 20. Security Review Checklist
 
 - Dependency versions for crypto-related packages are pinned and reviewed before release.
-- AES-GCM and Argon2id code paths have round-trip tests and negative tests using tampered ciphertext, wrong nonce, wrong salt, and wrong passphrase.
+- AES-GCM and PBKDF2 code paths have round-trip and negative tests using
+  tampered ciphertext, wrong nonce, wrong salt/profile, and wrong passphrase.
 - Bundle-HMAC derivation uses `bundle_auth_salt` exactly as specified and is covered by tests.
 - Canonical-file writes use temp-file + `fsync` + atomic rename semantics where supported.
 - Plaintext draft paths, permissions, and cleanup behavior are tested on the release platform.
@@ -1884,9 +2369,9 @@ v1 ships self-contained delivery channels (§13): a local macOS app, a local bro
 
 ## 24. Unified Sequence of Tasks
 
-This is the canonical execution order for the project. The critical path runs through steps 1→17→ship. Items marked **[parallel]** may run alongside the current critical-path step. Items in the **Garden Polish** track (step 4P) are explicitly **non-ship-blocking** per §15.
+This is the canonical execution order for the project. The critical path runs through steps 1→17→ship. Items marked **[parallel]** may run alongside the current critical-path step. The former **Garden Polish** classification is superseded: the standalone/author-directed contract in §7.8 is ship-blocking.
 
-*Last updated: 2026-07-21 — step 6 end-to-end offline author integration and step 11a Part C canonical sealed demo are complete; step 10's checksum gate is implemented with valid-bundle automated browser evidence, while corrupt-file negative-path and cross-browser human QA remain open; Part D still awaits human observation.*
+*Last updated: 2026-07-21 — four research lanes established the §7.8 standalone garden, input parity, author program, animal AI, Unicode atlas, procedural growth, parallax, and astronomical-sky contract. Existing renderer and fixture checkmarks are prototype evidence only until §7.8.13 passes.*
 
 ---
 
@@ -1911,9 +2396,9 @@ This is the canonical execution order for the project. The critical path runs th
    - ~~4f. Implement season detection + seasonal weights, colors, and animation activation (§7.4).~~ ✓ — system-date detection, per-season weights, season→weather/creature activation.
    - ~~4g. Rain and wind refinement.~~ ✓ — denser rain (60 drops), gravity 0.08, diagonal `\` rendering, 3-fragment plant collision with reflection+damping (0.32), multi-particle ground splashes (3–5 fan, char aging `'`→`.`→`·`), wind modulates drop drift. Awaiting human verification.
 
-**4P. [parallel, NON-SHIP-BLOCKING] Garden polish track.**
+**4P. [SHIP-BLOCKING, REOPENED 2026-07-21] Standalone garden and authored-world track.**
 
-These subphases improve the garden's visual richness but are not required for v1.0 ship (per §15: "Expanded seasonal animation set beyond the minimal garden needed for recipient mode" is non-ship-blocking). They can proceed in parallel with the critical path at any time. Each follows the same research→implement→verify process rule as steps 4a–4g.
+The earlier 4h–4l items remain useful visual work, but no longer define the release bar by themselves. They can proceed in parallel, and each follows the same research→implement→verify rule as steps 4a–4g.
 
    - 4h. Time-of-day system.
      - **Research:** Review §7.5 spec. Study night-mode palette constraints for terminal (dim attrs, limited color pairs). Prototype dusk→night palette transition.
@@ -1936,6 +2421,14 @@ These subphases improve the garden's visual richness but are not required for v1
      - **Implement:** Multi-frame growth from stem→bud→bloom on initial garden render or season transition.
      - **Verify:** Author confirms bloom animation is visible and adds life to the garden.
 
+   - **4m. Shared world model and semantic command layer (§7.8.1–§7.8.3).** Move canonical objects, interactions, camera, state transitions, and persistence out of renderer-local owners. Expose every core action through touch, mouse, keyboard, and terminal adapters.
+   - **4n. Versioned atlas and hybrid scene content (§7.8.4, §7.8.11).** Build the atlas compiler, portability profiles, stable fixture manifests, connected tiles, ASCII fallbacks, and the minimum fixture/collectible inventory.
+   - **4o. Stable plant growth and standalone loops (§7.8.2, §7.8.5–§7.8.6).** Implement persistent plant topology, tending consequences, journal/collections, placement/undo, bounded offline progress, and glance/tend/dwell play.
+   - **4p. Deterministic animal AI (§7.8.7).** Replace feed-count-only ownership with the FSM/behavior-tree/utility/animation pipeline, persistent memory/personality, varied bonding actions, fixture affordances, and species-specific repertoires.
+   - **4q. Encrypted author program and timeline (§7.8.10).** Implement compound conditions, scheduling/recurrence/missed policy, idempotent effects, privacy migration, timeline authoring, preview trace, validation, and runtime parity.
+   - **4r. Parallax and astronomical sky (§7.8.8–§7.8.9).** Implement continuous world camera, renderer-specific parallax, pause/reduced motion, opt-in coarse location, bright-star projection, and privacy fallbacks.
+   - **4s. Production acceptance (§7.8.13).** Publish a synthetic sealed bundle exercising the whole loop and pass the deterministic, modality, accessibility, performance, sky, absence, and human-observation gates. Dev-fixture-only evidence cannot close this step.
+
 ### Author mode
 
 5. ~~Build the author-mode foundation~~ ✓
@@ -1948,7 +2441,7 @@ These subphases improve the garden's visual richness but are not required for v1
    - ~~External-editor path via LATELETTER_EDITOR env var~~ ✓
    - ~~CLI entry point (`lateletter --write`, `--accessible`, `--garden`, `--wipe-session`)~~ ✓
 6. **[DONE — 2026-07-21]** Build the offline author workflow
-   - ~~Temporary reviewed seed bank (`data/question_bank_seed.v0.json`)~~ ✓
+   - ~~Temporary reviewed seed bank (`src/lateletter/data/question_bank_seed.v0.json`)~~ ✓
    - ~~Offline question selector (universal base set + personalization + gating)~~ ✓
    - ~~Q&A session loop with autosave~~ ✓
    - ~~Session resumption with split-state healing~~ ✓
@@ -1957,9 +2450,9 @@ These subphases improve the garden's visual richness but are not required for v1
 
 ### Recipient experience and delivery
 
-7. **[DONE — 2026-04-20] Design the recipient's daily experience.** Design captured in §6.8 (Garden Progression Layer).
+7. **[REOPENED — 2026-07-21] Design and verify the recipient's daily experience.** §6.8 is the first-pass progression concept; §7.8 is the controlling researched contract.
 
-   **All design decisions finalized:**
+   **Prototype decisions retained for migration, but not sufficient for release:**
    - ✓ Normal-day experience: the garden is a place the recipient *tends*, not just watches. Progression layer with cumulative-investment animal relationships, author-programmed memory capsules (items), and gentle entropy with evidence-of-absence.
    - ✓ Post-completion memorial: bonded animals perch permanently + memorial flower + all unreleased garden gifts unlocked (§6.8.8).
    - ✓ Progression mechanics: cumulative actions (not streaks) — research-informed from Neko Atsume, Stardew Valley, Tsuki Adventure, grief-tech UX (§6.8.1).
@@ -1992,8 +2485,8 @@ These subphases improve the garden's visual richness but are not required for v1
    - ~~Post-completion state (§6.7, §6.8.8): `_is_post_complete()`, memorial flower `✿` (magenta), permanent perched bird, all gifts unlocked, archive footer "All letters delivered. This garden is yours."~~ ✓
    - ~~Animal relationship system (§6.8.2): trust tiers (0–3, thresholds 3/7/14), `f` feed key, bonded-animal delivery, footprints-on-absence, `RecipientStore.feed_animal()` / `get_animal_state()` / `was_absent`~~ ✓
 
-10. **[IN PROGRESS — 10a/10c/10d done; 10b QA pending; browser checksum/corruption parity still open]** Build the browser viewer (`viewer-bnw.html`) — B&W Times New Roman aesthetic with live animated garden (§13.6 accelerated — full garden ported ahead of schedule):
-    - ~~Pure HTML/CSS/JS + `pretext` (pretextjs.dev) for letter body layout~~ ✓ — `layoutWithLines` + `prepareWithSegments`, proportional TNR rendering, ResizeObserver reflow
+10. **[IN PROGRESS — core viewer and checksum/auth parity done; cross-browser human QA pending]** Build the browser viewer (`viewer-bnw.html`) — B&W Times New Roman aesthetic with a canonical semantic Garden projection; §7.8.13 controls full-parity status:
+    - ~~Pure local HTML/CSS/JavaScript with built-in DOM fallback letter layout~~ ✓ — no remote runtime layout dependency; proportional TNR wrapping and responsive reflow
     - ~~DOM-based 5-layer garden renderer (GardenDOM) replacing canvas — scales with browser zoom, no blur artifact; BackgroundLayer, PlantLayer (7 types, rustle on hover), ParticleLayer (rain gravity+wind, snow accumulation, leaves, fragments, splashes), CreatureLayer (butterfly, ambient bird, firefly), SpecialLayer~~ ✓
     - ~~Seasonal weather: spring rain, autumn rain+leaves, winter snow, summer calm; wind-based rain char (`\`/`|`/`/`); plant collision → fragments; ground hit → splashes; char aging `'`→`.`→`·`~~ ✓
     - ~~File input: drag-and-drop or `<input type="file">` for `.lateletter` bundle~~ ✓
@@ -2003,12 +2496,12 @@ These subphases improve the garden's visual richness but are not required for v1
     - ~~B&W palette: cream paper sky, earthy plant colors, monochrome UI at opacity hierarchy~~ ✓
     - ~~**TODO 10a — Garden always visible:**~~ ✓ `#g.dim` CSS class removed; `classList.toggle('dim')` removed from `showScreen()`; scrim opacity .76, blur 10px; stale `class="dim"` attr cleaned. Needs browser QA across seasonal backgrounds.
     - **TODO 10b — Cursor interaction:** Rustle effect on hover (char substitution near cursor, radius 5 cells — implemented, needs browser QA) and leaf-burst particle spawn on click (implemented, needs browser QA). Confirm both work on touch (mobile tap = click event).
-    - ~~**TODO 10c — Animal dev fixture:**~~ ✓ `_ANIMAL_ART` (4 animals × 4 tiers), `_ANIMAL_DELIVERY_FRAMES`, `_ANIMAL_FOOTPRINTS` ported to JS. Animal renders in CreatureLayer at home position (tiers 1–3) or peeks from right edge (tier 0); footprints when absent; bonded perch in SpecialLayer post-complete. `f` key feeds (authenticated, triggered, tier < 3). `Shift+A` dev shortcut cycles all 16 animal states. Animal state persisted in IndexedDB per bundle. Eager trigger eval on bundle load (date + cumulative_visits fire without auth).
-    - ~~**TODO 10d — First-run sequence:**~~ ✓ `#frb` banner fades in at 3s, auto-hides at 12s, shown once per session via `_frbDone` flag. Text: "This garden was planted for you by [author_name]." Tracked via existing `kFirst()` storage key.
+    - ~~**TODO 10c — Animal presentation and delivery:**~~ ✓ Four species and four bond tiers use canonical atlas delivery/presentation assets. Animal state, authenticated triggers, and visible feed/play actions run only after successful bundle authentication and persist in the secret-derived bundle namespace; development shortcuts remain fixture-only evidence.
+    - ~~**TODO 10d — First-run sequence:**~~ ✓ The first-run banner is read and written only after authenticated commit, using the same secret-derived bundle namespace. Wrong, corrupt, and pre-auth loads perform no onboarding writes.
     - ~~**TODO 10e — HTML grid-fidelity gap:**~~ ✓ `_measure()` now appends test span/div inside `#g` (not `document.body`) for exact font-rendering context; CH measured from real `div` inheriting `height:15px` from CSS rule. `getSeason()` checks `?season=` URL param first. `_arcSeed()` added for `?arc=` browser demo seeding. **Pending:** browser QA pass (Safari/Chrome/Firefox at 100% + 150% zoom) — human verification needed.
-    - **Audit update (2026-07-21):** The browser recomputes the canonical visible-payload checksum before unlock. A valid real sealed demo passed the automated interactive load/unlock/read path; corrupted-file negative-path and Safari/Chrome/Firefox human QA remain open.
-    - Crypto in a **Web Worker** using chosen Phase 3 primitive (`age-encryption` or `argon2-browser`) — wired in step 13
-    - Package as a single self-contained HTML file (inline JS/CSS, no external WASM until step 13)
+    - **Audit update (2026-07-21):** The browser recomputes the canonical visible-payload checksum before unlock, validates bounded versioned authentication profiles, and passed valid/tampered automated paths plus the real interactive sealed-demo flow. Safari/Chrome/Firefox human QA remains open.
+    - ~~Native WebCrypto PBKDF2-SHA256 + AES-256-GCM, with bundle HMAC before plaintext promotion~~ ✓
+    - ~~Package and verify one closed static HTML/module/JSON dependency graph with no remote runtime code~~ ✓ — `scripts/prepare_pages_site.py`
     - Test in Safari, Chrome, Firefox (desktop and mobile)
 
 11. **[DONE — 2026-04-20]** Build the email notification script (`notify.py`):
@@ -2047,15 +2540,18 @@ These subphases improve the garden's visual richness but are not required for v1
 ### Security and sealing
 
 13. Build the encryption/sealing layer:
-    - **Phase 3 research memo first:** Evaluate `age` vs custom Argon2id+AES-GCM (see §4 "Encryption primitive options"). Benchmark KDF on target hardware. Validate Python/JS parity path. Write memo, decide, then implement.
-    - Chosen crypto primitive: key derivation + AES-256-GCM (or age equivalent) with round-trip tests
-    - Per-session passphrase caching (mutable bytearray, zeroed on exit — §4)
+    - ~~Choose and version the interoperable primitive~~ ✓ — bounded
+      PBKDF2-HMAC-SHA256 + AES-256-GCM in Python and native WebCrypto
+    - ~~Round-trip and adversarial cross-renderer crypto vectors~~ ✓
+    - ~~Discard passphrase/form state after derivation; retain only nonsecret
+      authenticated state and a secret-derived persistence binding~~ ✓
     - Bundle HMAC derivation and verification using `bundle_auth_salt`
     - Label encryption (label inside ciphertext, not exposed in outer structure)
     - Replace dev fixture stubs from step 8 with real encrypted bundles
     - Wire crypto into browser viewer (step 10) — same parameters Python and JS, verified interop
     - Incremental export with checksum + HMAC recomputation (§5.4)
-    - Handoff package generation (§15.1) including viewer.html, README.txt, and optional notify.py
+    - Handoff package generation (§15.1) including the verified static viewer
+      closure, README.txt, and optional notify.py
     - Append-later flow: reopen bundle, verify passphrase, add messages (§5.5)
     - Session wipe flow and `--wipe-session` CLI flag (§5.4)
 
@@ -2066,9 +2562,12 @@ These subphases improve the garden's visual richness but are not required for v1
     - Crash-safety: kill during session save and bundle export; verify prior valid file survives
     - Canonical-file durability: temp-file + fsync + atomic rename verification
     - Terminal constraints: 80×24, below 80×24, no-color, resize during overlay
-    - Browser constraints: mobile viewport, slow Argon2id, storage denied, cross-browser compat
+    - Browser constraints: mobile viewport, bounded PBKDF2, storage denied,
+      history-cache purge, and cross-browser compatibility
     - Email notification: duplicate suppression, SMTP failure handling, sent-log integrity
-    - Performance sanity with realistic bundle — targets: app startup < 3s, passphrase unlock < 5s (Argon2id cost), letter scroll < 50ms/frame, garden render stays within 50ms frame budget, browser Argon2id < 30s
+    - Performance sanity with realistic bundle — targets: app startup < 3s,
+      bounded-profile passphrase unlock, letter scroll < 50ms/frame, and Garden
+      render within the measured frame budget
     - §20 security review checklist
 
 ### Packaging and ship

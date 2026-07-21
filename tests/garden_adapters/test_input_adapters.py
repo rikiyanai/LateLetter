@@ -15,6 +15,7 @@ from lateletter.garden.input_adapters import (
     semantic_bytes,
 )
 from lateletter.garden.world.commands import CommandKind
+from lateletter.garden.world.model import canonical_json_bytes, stable_id
 
 
 ROOT = Path(__file__).parents[2]
@@ -103,3 +104,20 @@ def test_python_and_browser_modules_emit_identical_canonical_bytes():
         for vector in _vectors()["vectors"]
     ]
     assert browser_payloads == python_payloads
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_nested_unicode_keys_use_python_scalar_order_for_canonical_ids():
+    value = {"\ue000": {"\U00010000": 2}, "\U00010000": {"\ue000": 1}}
+    script = """
+import { canonicalJson, stableId } from './web/garden-input.mjs';
+const value = {'\\uE000': {'\\u{10000}': 2}, '\\u{10000}': {'\\uE000': 1}};
+process.stdout.write(JSON.stringify([canonicalJson(value), await stableId('x', value)]));
+"""
+    result = subprocess.run(
+        [shutil.which("node") or "node", "--input-type=module", "-e", script],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    )
+    browser_json, browser_id = json.loads(result.stdout)
+    assert browser_json == canonical_json_bytes(value).decode("utf-8")
+    assert browser_id == stable_id("x", value)

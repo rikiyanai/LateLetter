@@ -15,11 +15,14 @@ from lateletter.garden.world.animals import (
     decide_animal,
     release_choreography,
     step_animal,
+    step_animals,
 )
 from lateletter.garden.world.clock import reconcile_offline
 from lateletter.garden.world.commands import command
 from lateletter.garden.world.engine import dispatch
-from lateletter.garden.world.model import Vec2
+from lateletter.garden.world.fixtures import layout_is_safe
+from lateletter.garden.world.model import EpisodicMemory, Vec2
+from lateletter.garden.world.projection import project_scene
 
 
 def test_four_species_have_distinct_repertoires_and_affinities():
@@ -79,13 +82,108 @@ def test_choreography_lock_is_exclusive_idempotent_and_released_to_recovery():
     assert acquire_choreography(locked, "scene:arrival", 101) == locked
     with pytest.raises(ChoreographyLockError):
         acquire_choreography(locked, "scene:other", 101)
-    decision = decide_animal(locked, AnimalContext(102, interrupted=True), "seed")
-    assert decision.priority_reason == "authored_choreography"
+    interrupted, decision = step_animal(
+        locked,
+        AnimalContext(102, interrupted_animal_id=locked.animal_id),
+        "seed",
+    )
+    assert decision.priority_reason == "safety_or_interruption"
+    assert decision.intent == "rest"
+    assert interrupted.choreography_lock is None
     released = release_choreography(locked, "scene:arrival", 110)
     assert released.choreography_lock is None
     assert released.current_intent == "recover"
     with pytest.raises(ChoreographyLockError):
         release_choreography(released, "scene:arrival", 111)
+
+
+def test_inspect_command_interrupts_choreography_and_projects_rest(world):
+    animal = replace(
+        world.animals[0], energy=100, choreography_lock="scene:arrival",
+        high_level_state="authored_scene", current_intent="choreography:scene:arrival",
+    )
+    state = replace(world, animals=(animal,))
+    updated, result = dispatch(
+        state,
+        command(state.world_id, 1, "inspect", target_id=animal.animal_id),
+    )
+    assert result.accepted
+    interrupted = updated.animals[0]
+    assert interrupted.current_intent == "rest"
+    assert interrupted.choreography_lock is None
+    projected = next(
+        item for item in project_scene(updated).objects
+        if item.object_id == animal.animal_id
+    )
+    assert projected.semantic_state["choreography_locked"] is False
+    assert projected.semantic_state["choreography_phase"] == "orient"
+
+
+def _only_intents(animal, *allowed):
+    candidates = set(ANIMAL_SPECIES[animal.species_id].repertoire)
+    for tier in TIER_REPERTOIRES[animal.species_id]:
+        candidates.update(tier)
+    return replace(
+        animal,
+        authored_prohibitions=tuple(sorted(candidates.difference(allowed))),
+    )
+
+
+def test_recent_memory_and_season_weather_condition_utility_choice():
+    bird = _only_intents(
+        create_animal("seed", "animal:bird", "bird", Vec2(4, 4)),
+        "forage", "sing",
+    )
+    feed_memories = tuple(
+        EpisodicMemory(f"feed:{index}", "feed", None, index, 50, 100)
+        for index in range(20)
+    )
+    play_memories = tuple(
+        EpisodicMemory(f"play:{index}", "play", None, index, 50, 100)
+        for index in range(20)
+    )
+    feed_choice = decide_animal(
+        replace(bird, recent_memories=feed_memories),
+        AnimalContext(100, season="spring"), "seed",
+    )
+    play_choice = decide_animal(
+        replace(bird, recent_memories=play_memories),
+        AnimalContext(100, season="spring"), "seed",
+    )
+    assert (feed_choice.intent, play_choice.intent) == ("forage", "sing")
+
+    turtle = _only_intents(
+        replace(
+            create_animal("seed", "animal:turtle", "turtle", Vec2(4, 4)),
+            energy=100, rest_appetite=0,
+        ),
+        "sunbathe", "rest",
+    )
+    assert decide_animal(
+        turtle, AnimalContext(100, season="summer", weather="clear"), "seed",
+    ).intent == "sunbathe"
+    assert decide_animal(
+        turtle, AnimalContext(100, season="winter", weather="calm"), "seed",
+    ).intent == "rest"
+
+
+def test_routine_locomotion_is_deterministic_safe_and_visible(world):
+    rabbit = _only_intents(replace(world.animals[0], current_intent="idle"), "hop")
+    source = replace(
+        world,
+        animals=(rabbit,),
+        program_state={"scene": {"season": "autumn", "weather": "calm"}},
+    )
+    first, decisions = step_animals(source, AnimalContext(source.effective_time))
+    second, _ = step_animals(source, AnimalContext(source.effective_time))
+    assert first.canonical_bytes() == second.canonical_bytes()
+    assert first.animals[0].position != rabbit.position
+    assert layout_is_safe(first)
+    record = first.program_state["animal_decisions"][rabbit.animal_id]
+    assert record["intent"] == decisions[0].intent == "hop"
+    assert record["moved"] is True
+    assert record["from_position"] == rabbit.position.to_list()
+    assert record["to_position"] == first.animals[0].position.to_list()
 
 
 def test_humane_absence_preserves_bond_memories_and_personality(world):

@@ -1,5 +1,7 @@
 /** Privacy-safe sky selection. Geolocation is called only by explicit opt-in. */
 
+import BRIGHT_STAR_DATA from '../src/lateletter/garden/data/bright-stars.v1.json' with { type: 'json' };
+
 export function quantizeRoughLocation(latitude, longitude) {
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || latitude < -90 || latitude > 90) {
     throw new Error('invalid sky location');
@@ -12,13 +14,14 @@ export function quantizeRoughLocation(latitude, longitude) {
   });
 }
 
-export function resolveBrowserSky({ scene = {}, readerRegion = null } = {}) {
+export function resolveBrowserSky({ scene = {}, readerRegion = null, authorRegion = null } = {}) {
   const requested = scene.sky_mode ?? 'storybook_fallback';
-  if (requested === 'reader_live' && readerRegion) {
+  if (readerRegion) {
     return { mode: 'reader_live', label: 'your local sky', region: readerRegion, astronomical: true };
   }
-  if (['author_fixed', 'author_clock', 'story_event'].includes(requested) && scene.author_region) {
-    return { mode: requested, label: 'authored story sky', region: scene.author_region, astronomical: true };
+  const authored = authorRegion ?? scene.author_region ?? scene.author_location ?? null;
+  if (['author_fixed', 'author_clock', 'story_event'].includes(requested) && authored) {
+    return { mode: requested, label: 'authored story sky', region: authored, astronomical: true };
   }
   return { mode: 'storybook_fallback', label: 'storybook sky', region: null, astronomical: false };
 }
@@ -47,21 +50,21 @@ export function altAz({ gastHours, raHours, decDegrees, latitude, longitude }) {
   return [altitude, azimuth];
 }
 
-const BRIGHT_STARS = Object.freeze([
-  ['sirius', 6.75247222, -16.71611111, -1.46], ['canopus', 6.3992, -52.6957, -0.74],
-  ['arcturus', 14.261, 19.1825, -0.05], ['vega', 18.61563889, 38.78361111, 0.03],
-  ['capella', 5.2782, 45.998, 0.08], ['rigel', 5.2423, -8.2016, 0.13],
-  ['procyon', 7.655033, 5.225, 0.34], ['achernar', 1.6286, -57.2368, 0.46],
-  ['betelgeuse', 5.919529, 7.4071, 0.50], ['hadar', 14.0637, -60.373, 0.61],
-  ['altair', 19.846389, 8.868322, 0.76], ['acrux', 12.4433, -63.099, 0.76],
-]);
+if (BRIGHT_STAR_DATA?.version !== 1 || BRIGHT_STAR_DATA?.id !== 'bright-stars-1'
+    || !Array.isArray(BRIGHT_STAR_DATA.stars) || !BRIGHT_STAR_DATA.stars.length) {
+  throw new Error('unsupported bright-star catalog');
+}
+
+export const BRIGHT_STAR_CATALOG = Object.freeze(BRIGHT_STAR_DATA.stars.map(star => Object.freeze([
+  star.id, star.ra_hours, star.dec_degrees, star.visual_magnitude,
+])));
 
 export function projectSkyPoints(sky, unixSeconds, viewport) {
   if (!sky.astronomical || !sky.region) {
     return [[Math.floor(viewport[0] * 0.18), 1, '.'], [Math.floor(viewport[0] * 0.52), 2, '*'], [Math.floor(viewport[0] * 0.82), 1, '.']];
   }
   const gast = greenwichApparentSiderealTime(unixSeconds);
-  return BRIGHT_STARS.map(([id, raHours, decDegrees, magnitude]) => {
+  return BRIGHT_STAR_CATALOG.map(([id, raHours, decDegrees, magnitude]) => {
     const [altitude, azimuth] = altAz({ gastHours: gast, raHours, decDegrees,
       latitude: sky.region.latitude_cell, longitude: sky.region.longitude_cell });
     return { id, altitude, azimuth, magnitude };

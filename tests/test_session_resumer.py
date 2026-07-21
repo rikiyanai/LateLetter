@@ -14,7 +14,7 @@ from src.lateletter.question_selector import QuestionSelector, SelectorSession
 from src.lateletter.session_resumer import SessionResumer
 from src.lateletter.session_store import SessionStore
 
-DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR = Path(__file__).parent.parent / "src" / "lateletter" / "data"
 BASE_BANK = DATA_DIR / "question_bank_seed.v0.json"
 DOMAIN_POOLS = DATA_DIR / "question_bank_domain_pools.v0.json"
 

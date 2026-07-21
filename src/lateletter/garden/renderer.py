@@ -5,11 +5,12 @@ from __future__ import annotations
 import curses
 from datetime import datetime, timezone
 from pathlib import Path
+import time
 from typing import Any, Mapping
 
-from .atlas import load_atlas
+from .atlas import animal_glyph, atlas_asset_frame, load_atlas, organ_glyph
 from .astronomy import CoarseLocation, resolve_sky_mode, visible_stars
-from .camera import Camera, Point, WORLD_DEPTH, cells
+from .camera import Camera, DepthFactor, Point, cells, whole_cells
 from .state import TerminalViewport
 from .terminal import (
     TERMINAL_HELP_LINES,
@@ -23,7 +24,6 @@ from .world.projection import SceneObjectProjection, project_scene
 _FALLBACKS = {
     "plant": "*", "animal": "a", "fixture": "F", "collectible": "$",
 }
-_ANIMAL_FALLBACKS = {"cat": "c", "bird": "v", "rabbit": "r", "turtle": "t"}
 _FIXTURE_ASSET = {
     "bench": "fixture.bench", "fence": "fixture.fence_gate",
     "gate": "fixture.fence_gate", "fence_gate": "fixture.fence_gate",
@@ -34,47 +34,12 @@ _FIXTURE_ASSET = {
     "stepping_stones": "fixture.stepping_stones", "bridge": "fixture.bridge",
     "planter": "fixture.planter", "table": "fixture.table_chairs",
     "chair": "fixture.table_chairs", "table_chairs": "fixture.table_chairs",
+    "well": "fixture.well", "arbor": "fixture.arbor",
+    "wind_chime": "fixture.wind_chime", "shed_edge": "fixture.shed_edge",
+    "tool_rack": "fixture.tool_rack", "watering_can": "fixture.watering_can",
+    "compost": "fixture.compost", "basket": "fixture.basket",
+    "sign": "fixture.sign", "memorial_stone": "fixture.memorial_stone",
 }
-_CONNECTED_GROUPS = {
-    "fence": "fence", "gate": "fence", "fence_gate": "fence",
-    "stepping_stone": "path", "stepping_stones": "path", "pond": "pond_edge",
-}
-
-
-def _connected_masks(items: tuple[SceneObjectProjection, ...]) -> dict[str, int]:
-    groups: dict[str, set[tuple[int, int]]] = {}
-    for item in items:
-        catalog = str(item.semantic_state.get("catalog_id", ""))
-        group = _CONNECTED_GROUPS.get(catalog)
-        if item.kind == "fixture" and group:
-            groups.setdefault(group, set()).add((item.position.x, item.position.y))
-    result: dict[str, int] = {}
-    for item in items:
-        catalog = str(item.semantic_state.get("catalog_id", ""))
-        group = _CONNECTED_GROUPS.get(catalog)
-        if item.kind != "fixture" or not group:
-            continue
-        authoritative = item.semantic_state.get("connected_mask")
-        if isinstance(authoritative, int) and not isinstance(authoritative, bool):
-            result[item.object_id] = authoritative & 15
-            continue
-        x, y = item.position.x, item.position.y
-        cells_in_group = groups[group]
-        result[item.object_id] = (
-            (1 if (x, y - 1) in cells_in_group else 0)
-            | (2 if (x + 1, y) in cells_in_group else 0)
-            | (4 if (x, y + 1) in cells_in_group else 0)
-            | (8 if (x - 1, y) in cells_in_group else 0)
-        )
-    return result
-
-
-def _atlas_cell(asset: Mapping[str, Any], state: str = "idle") -> str:
-    states = asset["profiles"]["ascii-safe"]
-    chosen = states.get(state) or states.get("idle") or states[sorted(states)[0]]
-    return str(chosen[0]["cells"][0][0])
-
-
 class GardenRenderer:
     """Quantize a read-only scene projection into a terminal viewport."""
 
@@ -89,7 +54,17 @@ class GardenRenderer:
         self.viewport.resize(width, height)
         self._last_lines = ()
 
-    def render_lines(self, world: WorldState) -> list[str]:
+    def invalidate(self) -> None:
+        """Forget the prior frame after an external owner clears the screen."""
+        self._last_lines = ()
+
+    def connected_glyph(self, group: str, mask: int) -> str:
+        """Resolve any atlas-declared connected family through the paint owner."""
+        if group not in self._connected:
+            raise ValueError(f"unsupported connected group {group}")
+        return str(self._connected[group][str(int(mask) & 15)])
+
+    def render_lines(self, world: WorldState, *, journal_offset: int = 0) -> list[str]:
         width = self.viewport.width
         height = self.viewport.height
         canvas_height = max(1, height - 4)
@@ -129,12 +104,12 @@ class GardenRenderer:
             Point(cells(projection.camera.x), cells(projection.camera.y)),
             cells(width), cells(canvas_height),
         )
-        connected_masks = _connected_masks(projection.objects)
         for item in projection.objects:
             screen = camera.world_to_screen(
-                Point(cells(item.position.x), cells(item.position.y)), WORLD_DEPTH,
+                Point(cells(item.position.x), cells(item.position.y)),
+                DepthFactor(item.depth, 100),
             )
-            x, y = screen.x // 256, screen.y // 256
+            x, y = whole_cells(screen.x), whole_cells(screen.y)
             symbols: list[tuple[int, int, str]] = []
             visible_organs = item.semantic_state.get("visible_organs", ())
             if item.kind == "plant" and isinstance(visible_organs, (list, tuple)):
@@ -145,25 +120,40 @@ class GardenRenderer:
                     if not isinstance(offset, (list, tuple)) or len(offset) != 2:
                         continue
                     kind = str(organ.get("kind", "stem"))
-                    glyph = {"root": "+", "stem": "|", "branch": "/", "leaf": "*",
-                             "bloom": "@", "fruit": "o"}.get(kind, "*")
+                    glyph = organ_glyph(kind, str(organ.get("glyph_family", "")))
                     symbols.append((int(offset[0]), -int(offset[1]), glyph))
             if not symbols:
                 if item.kind == "fixture":
                     catalog = str(item.semantic_state.get("catalog_id", ""))
-                    group = _CONNECTED_GROUPS.get(catalog)
-                    if group:
-                        symbol = str(self._connected[group][str(connected_masks[item.object_id])])
-                    else:
-                        asset = self._assets.get(_FIXTURE_ASSET.get(catalog, f"fixture.{catalog}"))
-                        symbol = _atlas_cell(asset) if asset else "F"
+                    group = item.semantic_state.get("connected_group")
+                    group = str(group) if group is not None else None
+                    asset = self._assets.get(_FIXTURE_ASSET.get(catalog, f"fixture.{catalog}"))
+                    frame = atlas_asset_frame(
+                        asset, str(item.semantic_state.get("presentation_state", "idle")),
+                    ) if asset else (("F",),)
+                    render_cells = item.semantic_state.get("render_cells", ())
+                    if isinstance(render_cells, (list, tuple)) and render_cells:
+                        for cell in render_cells:
+                            if not isinstance(cell, Mapping):
+                                continue
+                            dx, dy = int(cell.get("dx", 0)), int(cell.get("dy", 0))
+                            if group and item.semantic_state.get("presentation_state") != "open":
+                                mask = int(cell.get("connected_mask", 0)) & 15
+                                glyph = self.connected_glyph(group, mask)
+                            else:
+                                glyph = frame[dy % len(frame)][dx % len(frame[0])]
+                            symbols.append((dx, dy, glyph))
+                    symbol = frame[0][0]
                 elif item.kind == "animal":
-                    symbol = _ANIMAL_FALLBACKS.get(
-                        str(item.semantic_state.get("species_id", "")), "a",
+                    symbol = animal_glyph(
+                        str(item.semantic_state.get("species_id", "")),
+                        int(item.semantic_state.get("bond_tier", 0)),
+                        choreography=bool(item.semantic_state.get("choreography_locked", False)),
                     )
                 else:
                     symbol = _FALLBACKS.get(item.kind, "?")
-                symbols.append((0, 0, symbol))
+                if not symbols:
+                    symbols.append((0, 0, symbol))
             for dx, dy, symbol in symbols:
                 if item.object_id == world.ui.focus_id:
                     symbol = symbol.upper()
@@ -173,9 +163,11 @@ class GardenRenderer:
                     if 0 <= x + dx + offset < width:
                         canvas[y + dy][x + dx + offset] = char
 
+        weather = str(scene.get("weather", "calm"))
+        palette = str(scene.get("palette", "natural"))
         title = (
             f"Garden {world.world_id} · camera {projection.camera.x},{projection.camera.y} · "
-            f"trace {len(world.event_trace)}"
+            f"{weather}/{palette} · trace {len(world.event_trace)}"
         )
         if canvas:
             canvas[0][:min(width, len(title))] = list(title[:width])
@@ -188,19 +180,51 @@ class GardenRenderer:
             focused = objects[0]
             detail = f"> {focused.semantic_name}: {', '.join(focused.actions)}"
             canvas[1][:min(width, len(detail))] = list(detail[:width])
-        if world.ui.journal_open and canvas_height > 3:
-            journal = f"Journal: {len(world.journal)} entries"
-            canvas[2][:min(width, len(journal))] = list(journal[:width])
         lines = ["".join(row) for row in canvas]
         absence = world.program_state.get("absence_summary", ())
         if isinstance(absence, (list, tuple)) and absence and canvas_height > 3:
             summary = "Welcome back: " + " · ".join(str(item) for item in absence[:3])
             lines[3] = summary[:width].ljust(width)
+        missed = scene.get("missed_event_summaries", ())
+        if isinstance(missed, (list, tuple)) and missed and canvas_height > 5:
+            summary = "While away: " + " · ".join(str(item) for item in missed[:3])
+            lines[5] = summary[:width].ljust(width)
+        memorial = world.program_state.get("memorial", {})
+        if isinstance(memorial, Mapping) and memorial.get("active") and canvas_height > 4:
+            gifts = memorial.get("examined_gifts", ())
+            summary = f"Memorial lasting · {len(gifts) if isinstance(gifts, (list, tuple)) else 0} gifts remembered"
+            lines[4] = summary[:width].ljust(width)
+        if world.ui.journal_open and canvas_height > 2:
+            journal_rows = ["Inventory"]
+            journal_rows.extend(
+                f"  {index}. {item}" for index, item in enumerate(world.inventory, start=1)
+            )
+            if not world.inventory:
+                journal_rows.append("  empty")
+            journal_rows.append("Journal")
+            journal_rows.extend(
+                f"  {entry.label}: {entry.description}" for entry in world.journal
+            )
+            if not world.journal:
+                journal_rows.append("  waiting")
+            missed = scene.get("missed_event_summaries", ())
+            if isinstance(missed, (list, tuple)) and missed:
+                journal_rows.append("While you were away")
+                journal_rows.extend(f"  {item}" for item in missed[:3])
+            page_size = max(1, canvas_height - 2)
+            offset = min(max(0, int(journal_offset)), max(0, len(journal_rows) - page_size))
+            for row in range(1, canvas_height):
+                lines[row] = " " * width
+            for row, value in enumerate(journal_rows[offset:offset + page_size], start=1):
+                lines[row] = value[:width].ljust(width)
+            end = min(len(journal_rows), offset + page_size)
+            footer = f"Journal {offset + 1}-{end}/{len(journal_rows)} · ↑↓ scroll · j/esc close"
+            lines[-1] = footer[:width].ljust(width)
         return lines
 
-    def render_diff(self, world: WorldState) -> tuple[tuple[int, int, str], ...]:
+    def render_diff(self, world: WorldState, *, journal_offset: int = 0) -> tuple[tuple[int, int, str], ...]:
         """Return only changed cells after the initial canonical paint."""
-        lines = tuple(self.render_lines(world))
+        lines = tuple(self.render_lines(world, journal_offset=journal_offset))
         changes: list[tuple[int, int, str]] = []
         for row, line in enumerate(lines):
             previous = self._last_lines[row] if row < len(self._last_lines) else ""
@@ -210,8 +234,8 @@ class GardenRenderer:
         self._last_lines = lines
         return tuple(changes)
 
-    def blit_curses(self, screen: curses.window, world: WorldState) -> None:
-        for row, col, char in self.render_diff(world):
+    def blit_curses(self, screen: curses.window, world: WorldState, *, journal_offset: int = 0) -> None:
+        for row, col, char in self.render_diff(world, journal_offset=journal_offset):
             try:
                 screen.addstr(row, col, char)
             except curses.error:
@@ -231,7 +255,10 @@ def run_curses(
 ) -> None:
     """Run standalone canonical Garden mode with discoverable commands."""
     del season  # Presentation override is not allowed to own canonical season.
-    curses.curs_set(0)
+    try:
+        curses.curs_set(0)
+    except curses.error:
+        pass
     stdscr.timeout(100)
     height, width = stdscr.getmaxyx()
     session = TerminalWorldSession.open(
@@ -245,13 +272,14 @@ def run_curses(
     renderer = GardenRenderer(width, height)
     stdscr.erase()
     message = "Use o to select an object; a opens its semantic actions."
+    last_live_tick = time.monotonic()
     while True:
         new_height, new_width = stdscr.getmaxyx()
         if (new_height, new_width) != (height, width):
             height, width = new_height, new_width
             session.resize(width, height)
             renderer.resize(width, height)
-        renderer.blit_curses(stdscr, session.world)
+        renderer.blit_curses(stdscr, session.world, journal_offset=session.journal_offset)
         status_rows = [message, *TERMINAL_HELP_LINES]
         for offset, line in enumerate(status_rows):
             row = height - len(status_rows) + offset
@@ -266,8 +294,17 @@ def run_curses(
         if key == ord("q"):
             break
         if key == -1:
+            now = time.monotonic()
+            elapsed = int(now - last_live_tick)
+            if elapsed > 0:
+                result = session.dwell(elapsed)
+                message = result.summary if result.accepted else result.reason
+                last_live_tick += elapsed
             continue
+        was_paused = session.world.ui.motion_paused
         result = handle_terminal_key(session, key)
+        if was_paused and not session.world.ui.motion_paused:
+            last_live_tick = time.monotonic()
         if result is not None:
             message = result.summary if result.accepted else result.reason
 

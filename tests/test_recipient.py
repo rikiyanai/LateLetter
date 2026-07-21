@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import curses
+from dataclasses import replace
 from datetime import date, timedelta
 
 import pytest
@@ -15,7 +17,9 @@ from lateletter.bundle import (
     create_dev_fixture,
     write_bundle,
 )
-from lateletter.garden.renderer import GardenRenderer
+from lateletter.garden.renderer import GardenRenderer, run_curses
+from lateletter.garden.world.clock import reconcile_offline
+from lateletter.garden.world.model import MILESTONE_RECEIPT_LIMIT, Vec2, WorldState
 from lateletter.garden.program import parse_program
 from lateletter.garden.terminal import (
     FULL_GARDEN_PARITY,
@@ -25,6 +29,7 @@ from lateletter.garden.terminal import (
     handle_terminal_key,
 )
 from lateletter.recipient import (
+    _compute_due,
     RecipientStore,
     _apply_legacy_gifts,
     _apply_open_program,
@@ -35,9 +40,16 @@ from lateletter.recipient import (
     _sync_story_completion,
     _verify_passphrase,
     gift_catalog_entry,
+    run_recipient,
     run_recipient_file,
 )
-from lateletter.sealed import seal_bundle, seal_garden_program, seal_gift_sentiment, seal_message
+from lateletter.sealed import (
+    bundle_persistence_binding,
+    seal_bundle,
+    seal_garden_program,
+    seal_gift_sentiment,
+    seal_message,
+)
 
 
 @pytest.fixture()
@@ -60,6 +72,51 @@ def _session(tmp_path, *, visits: int = 0) -> TerminalWorldSession:
     for _ in range(visits):
         session.record_visit()
     return session
+
+
+class _ScriptedScreen:
+    """Minimal curses surface for recipient authentication regressions."""
+
+    def __init__(self, keys: list[int]) -> None:
+        self._keys = iter(keys)
+
+    def timeout(self, _milliseconds: int) -> None:
+        pass
+
+    def getmaxyx(self) -> tuple[int, int]:
+        return 24, 80
+
+    def erase(self) -> None:
+        pass
+
+    def addstr(self, *_args) -> None:
+        pass
+
+    def refresh(self) -> None:
+        pass
+
+    def getch(self) -> int:
+        return next(self._keys)
+
+
+class _CountingScreen(_ScriptedScreen):
+    def __init__(self, keys: list[int]) -> None:
+        super().__init__(keys)
+        self.current_adds = 0
+        self.frame_adds: list[int] = []
+
+    def erase(self) -> None:
+        self.current_adds = 0
+
+    def addstr(self, *_args) -> None:
+        self.current_adds += 1
+
+    def refresh(self) -> None:
+        self.frame_adds.append(self.current_adds)
+
+
+def _auth_keys(passphrase: str) -> list[int]:
+    return [ord("e"), *(ord(char) for char in passphrase), 10]
 
 
 def _gift(gift_id: str, gift_type: str, catalog_id: str, trigger_type: str, value: str):
@@ -109,12 +166,341 @@ def test_unsigned_fixture_requires_explicit_trusted_fixture_path(tmp_path, capsy
     assert gifts == {}
 
 
+def test_terminal_preview_is_generic_and_never_persists(tmp_path):
+    protected = tmp_path / "authenticated-world.json"
+    protected.write_bytes(b"existing authenticated world bytes")
+
+    preview = TerminalWorldSession.preview(
+        width=80,
+        height=24,
+        observed_wall_time=1_000,
+    )
+    assert preview.world.world_id == "recipient-preview"
+    assert preview.store is None
+    assert handle_terminal_key(preview, ord("o")).accepted
+    assert protected.read_bytes() == b"existing authenticated world bytes"
+
+
+def test_recipient_tolerates_terminal_without_cursor_visibility_control(
+    monkeypatch, receipt_store,
+):
+    bundle = Bundle(bundle_id="bundle-under-test", garden_seed=41)
+    seal_bundle(bundle, "correct")
+    monkeypatch.setattr(
+        "lateletter.recipient.curses.curs_set",
+        lambda _value: (_ for _ in ()).throw(curses.error("unsupported")),
+    )
+    run_recipient(_ScriptedScreen([ord("q")]), bundle, receipt_store)
+
+
+def test_standalone_tolerates_terminal_without_cursor_visibility_control(
+    monkeypatch, tmp_path,
+):
+    monkeypatch.setattr(
+        "lateletter.garden.renderer.curses.curs_set",
+        lambda _value: (_ for _ in ()).throw(curses.error("unsupported")),
+    )
+    run_curses(
+        _ScriptedScreen([ord("q")]),
+        world_path=tmp_path / "standalone-world.json",
+        observed_wall_time=1_000,
+    )
+
+
+def test_recipient_full_repaints_identical_garden_after_external_erase(receipt_store):
+    bundle = Bundle(bundle_id="bundle-under-test", garden_seed=41)
+    screen = _CountingScreen([ord("z"), ord("q")])
+    run_recipient(screen, bundle, receipt_store, observed_wall_time=1_000)
+    assert len(screen.frame_adds) == 2
+    assert screen.frame_adds[0] == screen.frame_adds[1]
+    assert screen.frame_adds[0] > 3  # More than the three status rows.
+
+
+def test_terminal_resume_discards_paused_wall_interval_during_continuous_input(
+    monkeypatch,
+):
+    session = TerminalWorldSession.preview(
+        width=80, height=24, observed_wall_time=1_000,
+    )
+    assert session.dispatch("pause_motion", args={"paused": True}).accepted
+    paused_effective = session.world.effective_time
+    monkeypatch.setattr("lateletter.garden.terminal.time.time", lambda: 9_000)
+    assert session.dispatch("pause_motion", args={"paused": False}).accepted
+    assert session.world.effective_time == paused_effective
+    assert session.world.last_observed_wall_time == 9_000
+    reopened, report = reconcile_offline(session.world, 9_000)
+    assert report.elapsed_seconds == 0
+    assert reopened.effective_time == paused_effective
+
+
+def test_recipient_resume_resets_monotonic_live_baseline_under_continuous_keys(
+    monkeypatch, receipt_store,
+):
+    session = TerminalWorldSession.preview(
+        width=80, height=24, observed_wall_time=1_000,
+    )
+    monotonic_values = iter((100.0, 1_000.0, 1_001.0))
+    monkeypatch.setattr(
+        "lateletter.recipient.TerminalWorldSession.preview",
+        lambda **_kwargs: session,
+    )
+    monkeypatch.setattr(
+        "lateletter.recipient.time.monotonic",
+        lambda: next(monotonic_values),
+    )
+    monkeypatch.setattr("lateletter.garden.terminal.time.time", lambda: 9_000)
+    run_recipient(
+        _ScriptedScreen([ord(" "), ord("z"), ord(" "), -1, ord("q")]),
+        Bundle(bundle_id="bundle-under-test", garden_seed=41),
+        receipt_store,
+        observed_wall_time=1_000,
+    )
+    assert session.world.effective_time == 1
+    assert session.world.last_observed_wall_time == 9_001
+
+
+def test_terminal_visit_receipts_are_bounded_with_restart_stable_total():
+    session = TerminalWorldSession.preview(
+        width=80, height=24, observed_wall_time=1_000,
+    )
+    for _ in range(700):
+        session.record_visit()
+    assert session.total_visits == 700
+    assert len(session.world.milestone_receipts) == MILESTONE_RECEIPT_LIMIT
+    assert session.world.milestone_receipts[0] == "terminal-visit:189"
+    assert session.world.milestone_receipts[-1] == "terminal-visit:700"
+    restarted = WorldState.from_dict(session.world.to_dict())
+    session.world = restarted
+    assert session.total_visits == 700
+
+
+def test_same_public_bundle_id_cannot_share_receipts_or_default_world_path(
+    tmp_path, monkeypatch,
+):
+    first = Bundle(bundle_id="same-public-id", garden_seed=41)
+    second = Bundle(bundle_id="same-public-id", garden_seed=41)
+    seal_bundle(first, "first secret")
+    seal_bundle(second, "second secret")
+    first_binding = bundle_persistence_binding(first, "first secret")
+    second_binding = bundle_persistence_binding(second, "second secret")
+    assert first_binding != second_binding
+
+    monkeypatch.setattr("lateletter.recipient._RECIPIENT_DIR", tmp_path / "receipts")
+    monkeypatch.setattr(
+        "lateletter.recipient._RECEIPTS_FILE", tmp_path / "receipts" / "receipts.json",
+    )
+    first_store = RecipientStore(f"bundle:{first.bundle_id}:{first_binding}")
+    second_store = RecipientStore(f"bundle:{second.bundle_id}:{second_binding}")
+    first_store.mark_read("message-1")
+    assert first_store.is_read("message-1")
+    assert not second_store.is_read("message-1")
+
+    world_dir = tmp_path / "worlds"
+    monkeypatch.setattr("lateletter.garden.terminal._DEFAULT_WORLD_DIR", world_dir)
+    first_session = TerminalWorldSession.open(
+        world_id=f"bundle:{first.bundle_id}:{first_binding}", seed=41,
+        width=80, height=24, observed_wall_time=1_000, record_visit=False,
+    )
+    second_session = TerminalWorldSession.open(
+        world_id=f"bundle:{second.bundle_id}:{second_binding}", seed=41,
+        width=80, height=24, observed_wall_time=1_000, record_visit=False,
+    )
+    assert first_session.store is not None and second_session.store is not None
+    assert first_session.store.path.parent == world_dir
+    assert second_session.store.path.parent == world_dir
+    assert first_session.store.path != second_session.store.path
+    assert first_session.store.path.name.endswith(".json")
+    assert "/" not in first_session.store.path.name
+
+
+def test_wrong_passphrase_does_not_read_write_or_visit_persistent_world(
+    tmp_path, monkeypatch, receipt_store,
+):
+    passphrase = "correct"
+    bundle = Bundle(bundle_id="bundle-under-test", garden_seed=41)
+    seal_bundle(bundle, passphrase)
+    world_path = tmp_path / "authenticated-world.json"
+    original = b"not even valid world JSON; pre-auth must not read it"
+    world_path.write_bytes(original)
+    screen = _ScriptedScreen([
+        *_auth_keys("wrong"),
+        27,
+        ord("q"),
+    ])
+    monkeypatch.setattr("lateletter.recipient.curses.curs_set", lambda _value: None)
+
+    run_recipient(
+        screen,
+        bundle,
+        receipt_store,
+        world_path=world_path,
+        observed_wall_time=1_000,
+    )
+
+    assert world_path.read_bytes() == original
+
+
+def test_corrupted_launch_does_not_read_or_write_persistent_world(
+    tmp_path, monkeypatch, receipt_store,
+):
+    bundle = Bundle(bundle_id="bundle-under-test", garden_seed=41)
+    seal_bundle(bundle, "correct")
+    world_path = tmp_path / "authenticated-world.json"
+    original = b"corrupted launch must not parse this authenticated state"
+    world_path.write_bytes(original)
+    monkeypatch.setattr("lateletter.recipient.curses.curs_set", lambda _value: None)
+
+    run_recipient(
+        _ScriptedScreen([ord("q")]),
+        bundle,
+        receipt_store,
+        corrupted=True,
+        world_path=world_path,
+        observed_wall_time=1_000,
+    )
+
+    assert world_path.read_bytes() == original
+
+
+def test_correct_passphrase_atomically_restores_persistent_world(
+    tmp_path, monkeypatch, receipt_store,
+):
+    passphrase = "correct"
+    bundle = Bundle(bundle_id="bundle-under-test", garden_seed=41)
+    seal_bundle(bundle, passphrase)
+    persistence_id = (
+        f"bundle:{bundle.bundle_id}:"
+        f"{bundle_persistence_binding(bundle, passphrase)}"
+    )
+    world_path = tmp_path / "authenticated-world.json"
+    existing = TerminalWorldSession.open(
+        world_id=persistence_id,
+        seed=bundle.garden_seed,
+        width=80,
+        height=24,
+        path=world_path,
+        observed_wall_time=1_000,
+        record_visit=False,
+    )
+    prior = existing.dispatch("pan", args={"dx": 1})
+    assert prior.accepted and prior.changed
+    prior_trace_ids = {entry.trace_id for entry in existing.world.event_trace}
+    screen = _ScriptedScreen([*_auth_keys(passphrase), ord("q")])
+    monkeypatch.setattr("lateletter.recipient.curses.curs_set", lambda _value: None)
+
+    run_recipient(
+        screen,
+        bundle,
+        receipt_store,
+        world_path=world_path,
+        observed_wall_time=1_000,
+    )
+
+    reopened = TerminalWorldSession.open(
+        world_id=persistence_id,
+        seed=bundle.garden_seed,
+        width=80,
+        height=24,
+        path=world_path,
+        observed_wall_time=1_000,
+        record_visit=False,
+    )
+    assert prior_trace_ids <= {entry.trace_id for entry in reopened.world.event_trace}
+    assert reopened.total_visits == 1
+
+
+def test_correct_passphrase_with_runtime_invalid_program_leaves_world_byte_identical(
+    tmp_path, monkeypatch, receipt_store,
+):
+    passphrase = "correct"
+    raw_program = {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1", "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {},
+        "entities": [{
+            "id": "fixture.unsafe", "kind": "fixture", "catalog_id": "bench",
+            "position": [999, 999], "initial_state": {"revealed": True},
+        }],
+        "animals": [], "events": [],
+    }
+    bundle = Bundle(
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+        bundle_id="bundle-under-test", garden_seed=41,
+        garden_program=seal_garden_program(passphrase, raw_program),
+    )
+    seal_bundle(bundle, passphrase)
+    world_path = tmp_path / "authenticated-world.json"
+    existing = TerminalWorldSession.open(
+        world_id=bundle.bundle_id, seed=bundle.garden_seed, width=80, height=24,
+        path=world_path, observed_wall_time=1_000, record_visit=False,
+    )
+    existing.dispatch("pan", args={"dx": 1})
+    before = world_path.read_bytes()
+    monkeypatch.setattr("lateletter.recipient.curses.curs_set", lambda _value: None)
+
+    run_recipient(
+        _ScriptedScreen([*_auth_keys(passphrase), 27, ord("q")]),
+        bundle,
+        receipt_store,
+        world_path=world_path,
+        observed_wall_time=1_001,
+    )
+
+    assert world_path.read_bytes() == before
+
+
+def test_recipient_binds_authenticated_program_letter_references_to_bundle():
+    passphrase = "correct"
+    raw_program = {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1", "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {}, "entities": [], "animals": [],
+        "events": [{
+            "id": "present.missing",
+            "conditions": {"fact": "visit.total", "op": ">=", "value": 0},
+            "schedule": None,
+            "occurrence": "once", "priority": 0, "exclusive_group": None,
+            "cooldown": None,
+            "actions": [{
+                "type": "letter.present", "target": None,
+                "params": {"letter_id": "letter.missing"},
+            }],
+        }],
+    }
+    bundle = Bundle(
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+        messages=[Message(id="letter.real", date=date.today().isoformat())],
+        garden_program=seal_garden_program(passphrase, raw_program),
+    )
+
+    with pytest.raises(ValueError, match="unknown bundle letter"):
+        _open_authenticated_program(passphrase, bundle, {})
+
+
 def test_recipient_store_owns_only_read_receipts(receipt_store):
     receipt_store.mark_read("letter.one")
     assert receipt_store.is_read("letter.one")
     assert receipt_store.read_set() == {"letter.one"}
     for stale_owner in ("record_visit", "feed_animal", "discover", "total_visits"):
         assert not hasattr(receipt_store, stale_owner)
+
+
+def test_presented_future_letter_is_due_from_canonical_program_state():
+    bundle = Bundle(messages=[Message(id="future", date="2099-01-01")])
+
+    assert _compute_due(bundle, date(2026, 7, 21), set()) == []
+    assert _compute_due(
+        bundle,
+        date(2026, 7, 21),
+        set(),
+        {"presented_letters": ["future"]},
+    ) == [0]
+    assert _compute_due(
+        bundle,
+        date(2026, 7, 21),
+        {"future"},
+        {"presented_letters": ["future"]},
+    ) == []
 
 
 def test_terminal_all_letters_read_persists_lasting_canonical_memorial(tmp_path):
@@ -231,11 +617,34 @@ def test_terminal_rejects_missing_target_and_has_no_random_reset(tmp_path):
     assert handle_terminal_key(session, ord("r")) is None
 
 
+def test_terminal_camera_center_and_dwell_use_canonical_living_world(tmp_path):
+    session = _session(tmp_path)
+    session.world = replace(
+        session.world,
+        ui=replace(session.world.ui, camera=Vec2(7, 9)),
+    )
+    assert session.center_world_position() == (7, 9)
+    before = session.world.effective_time
+    result = handle_terminal_key(session, ord("d"))
+    assert result is not None and result.accepted and result.changed
+    assert result.summary == "Dwelled for 30 Garden seconds."
+    assert session.world.effective_time == before + 30
+    assert any(entry.kind == "live_tick" for entry in session.world.event_trace)
+
+    session.dispatch("pause_motion", args={"paused": True})
+    paused = session.world.effective_time
+    result = handle_terminal_key(session, ord("d"))
+    assert result is not None and result.accepted and not result.changed
+    assert result.summary == "The paused Garden stayed still."
+    assert session.world.effective_time == paused
+
+
 def test_terminal_controls_are_discoverable_and_flags_are_honest():
     help_text = " ".join(TERMINAL_HELP_LINES)
     for action in (
         "objects", "actions", "primary", "inspect", "tend", "feed", "play",
         "collect", "place", "move", "undo", "journal", "pan", "pause", "back",
+        "dwell",
     ):
         assert action in help_text
     assert TERMINAL_WORLD_WIRED is True

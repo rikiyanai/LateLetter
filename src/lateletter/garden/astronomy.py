@@ -40,6 +40,11 @@ class CoarseLocation:
     grid_degrees: int = 1
 
     def __post_init__(self) -> None:
+        if any(
+            isinstance(value, bool) or not isinstance(value, int)
+            for value in (self.latitude_cell, self.longitude_cell, self.grid_degrees)
+        ):
+            raise ValueError("coarse location cells and grid must be integers")
         if self.grid_degrees != 1:
             raise ValueError("garden sky v1 uses a fixed one-degree grid")
         if not -90 <= self.latitude_cell <= 90:
@@ -65,8 +70,12 @@ class CoarseLocation:
     def from_mapping(cls, raw: Mapping[str, Any]) -> "CoarseLocation":
         if set(raw) != {"latitude_cell", "longitude_cell", "grid_degrees"}:
             raise ValueError("coarse location contains unknown or raw coordinate fields")
-        return cls(int(raw["latitude_cell"]), int(raw["longitude_cell"]),
-                   int(raw["grid_degrees"]))
+        values = (
+            raw["latitude_cell"], raw["longitude_cell"], raw["grid_degrees"],
+        )
+        if any(isinstance(value, bool) or not isinstance(value, int) for value in values):
+            raise ValueError("coarse location cells and grid must be integers")
+        return cls(*values)
 
     def to_mapping(self) -> dict[str, int]:
         return {

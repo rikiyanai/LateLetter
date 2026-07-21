@@ -1,25 +1,30 @@
 """End-to-end tests for the integrated offline author workflow."""
 
 from pathlib import Path
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 import pytest
 
 from lateletter.author import (
-    _NOTES_MARKER, _REPOSITORY_ROOT, _confirm_export_passphrase,
-    _install_timeline_program, _run_garden_timeline_editor,
-    _timeline_to_mapping, _validate_export_destination,
+    AuthorFlowError, _NOTES_MARKER, _REPOSITORY_ROOT, _confirm_export_passphrase,
+    garden_program_to_mapping,
+    _install_timeline_program, _merge_programs, _run_garden_timeline_editor,
+    _resolve_preview_local, _timeline_to_mapping, _validate_export_destination,
     _validate_private_author_path, run_author_workflow,
 )
 from lateletter.bundle import (
     BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, read_bundle, verify_checksum,
     write_bundle,
 )
-from lateletter.garden.authoring import ActionCard, BeatCard, Timeline, When
-from lateletter.garden.program import parse_program
+from lateletter.garden.authoring import (
+    ActionCard, BeatCard, Timeline, When, compile_timeline,
+)
+from lateletter.garden.program import ProgramValidationError, parse_program
 from lateletter.intake import IntakeData
 from lateletter.sealed import (
-    open_garden_program, open_message, seal_bundle, verify_bundle_hmac,
+    open_garden_program, open_message, seal_bundle, seal_garden_program,
+    seal_message, verify_bundle_hmac,
 )
 from lateletter.session_store import SessionStore
 
@@ -303,7 +308,7 @@ def test_existing_v1_requires_explicit_upgrade_and_is_preserved(tmp_path: Path):
 
 def test_no_json_editor_builds_chloe_acceptance_arc(tmp_path: Path):
     store = SessionStore(base_dir=tmp_path / "author")
-    answers = iter(["y", "UTC", "arc", "1", "Clover", "done"])
+    answers = iter(["y", "UTC", "arc", "1", "Clover", "36,140", "done"])
     timeline = _run_garden_timeline_editor(
         store, _intake(), ["letter.chloe"],
         input_fn=lambda _prompt: next(answers), output_fn=lambda _line: None,
@@ -313,8 +318,123 @@ def test_no_json_editor_builds_chloe_acceptance_arc(tmp_path: Path):
         "arc.rabbit-arrives", "arc.third-visit-rose", "arc.bonded-autumn-gift",
     ]
     assert timeline.animals[0]["name"] == "Clover"
+    sky_action = next(
+        action for action in timeline.beats[0].actions if action.type == "scene.set"
+    )
+    assert sky_action.params == {
+        "sky_mode": "author_fixed",
+        "author_region": {
+            "latitude_cell": 36, "longitude_cell": 140, "grid_degrees": 1,
+        },
+    }
+    compile_timeline(
+        timeline, known_letter_ids={"letter.chloe"},
+        known_asset_ids={"collectible.seed_packet"},
+    )
     saved = store.load_garden_timeline()
     assert saved is not None
     assert [beat["id"] for beat in saved["beats"]] == [
         "arc.rabbit-arrives", "arc.third-visit-rose", "arc.bonded-autumn-gift",
     ]
+
+
+def test_existing_v2_program_is_semantically_merged_without_data_loss(tmp_path: Path):
+    existing = _timeline()
+    added = Timeline(author_timezone="UTC", variables={"welcomed": False, "later": 0})
+    added.beats.extend(existing.beats)
+    added.beats.append(BeatCard(
+        id="later", title="Later", track="revisit",
+        when=When.fact("visit.total", ">=", 2),
+        actions=(ActionCard.set_variable("later", 1),),
+    ))
+    existing_program = compile_timeline(existing)
+    added_program = compile_timeline(added)
+    bundle = Bundle(
+        bundle_id="v2-append",
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+        garden_program=seal_garden_program(
+            FRESH_PASSPHRASE, garden_program_to_mapping(existing_program),
+        ),
+    )
+
+    assert _install_timeline_program(
+        bundle, path=tmp_path / "existing.lateletter", existed=True,
+        timeline_program=added_program, passphrase=FRESH_PASSPHRASE,
+        input_fn=lambda _prompt: "", output_fn=lambda _line: None,
+    )
+    merged = parse_program(open_garden_program(
+        FRESH_PASSPHRASE, bundle.garden_program,
+    ))
+    assert [event.id for event in merged.events] == ["welcome", "later"]
+    assert merged.variables == {"welcomed": False, "later": 0}
+
+
+def test_existing_v2_program_rejects_changed_id_collision():
+    existing = _timeline()
+    conflicting = Timeline(author_timezone="UTC", variables={"welcomed": False})
+    conflicting.beats.append(BeatCard(
+        id="welcome", title="Changed", track="revisit",
+        when=When.fact("visit.total", ">=", 1),
+        actions=(ActionCard.set_variable("welcomed", False),),
+    ))
+    with pytest.raises(AuthorFlowError, match="event ID 'welcome'"):
+        _merge_programs(
+            compile_timeline(existing), compile_timeline(conflicting),
+        )
+
+
+def test_existing_v2_merge_rejects_collision_and_dangling_letter_atomically(
+    tmp_path: Path,
+):
+    existing_program = compile_timeline(_timeline())
+    bundle = Bundle(
+        bundle_id="v2-collision",
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+        messages=[seal_message(
+            FRESH_PASSPHRASE, message_id="letter.present",
+            date="2030-01-01", label="Present", body="Body",
+        )],
+        garden_program=seal_garden_program(
+            FRESH_PASSPHRASE, garden_program_to_mapping(existing_program),
+        ),
+    )
+    original_envelope = bundle.garden_program
+    dangling = parse_program({
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1",
+        "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {}, "entities": [],
+        "animals": [], "events": [{
+            "id": "dangling", "conditions": {
+                "fact": "visit.total", "op": ">=", "value": 1,
+            }, "schedule": None, "occurrence": "once", "priority": 0,
+            "exclusive_group": None, "cooldown": None,
+            "actions": [{
+                "type": "letter.present", "target": None,
+                "params": {"letter_id": "letter.missing"},
+            }],
+        }],
+    })
+    with pytest.raises(ProgramValidationError, match="unknown bundle letter"):
+        _install_timeline_program(
+            bundle, path=tmp_path / "existing.lateletter", existed=True,
+            timeline_program=dangling, passphrase=FRESH_PASSPHRASE,
+            input_fn=lambda _prompt: "", output_fn=lambda _line: None,
+        )
+    assert bundle.garden_program == original_envelope
+
+
+def test_author_preview_resolves_dst_gap_and_fold_in_author_timezone():
+    gap = _resolve_preview_local(
+        datetime(2026, 3, 8, 2, 30), "America/New_York",
+    )
+    fold = _resolve_preview_local(
+        datetime(2026, 11, 1, 1, 30), "America/New_York",
+    )
+    assert gap.replace(tzinfo=None) == datetime(2026, 3, 8, 3, 0)
+    assert gap.astimezone(timezone.utc) == datetime(
+        2026, 3, 8, 7, 0, tzinfo=timezone.utc,
+    )
+    assert fold.astimezone(timezone.utc) == datetime(
+        2026, 11, 1, 5, 30, tzinfo=timezone.utc,
+    )

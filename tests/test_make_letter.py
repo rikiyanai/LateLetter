@@ -12,11 +12,14 @@ from lateletter.bundle import (
     BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
     read_bundle,
     verify_checksum,
+    write_bundle,
 )
 from lateletter.garden.program import parse_program
 from lateletter.sealed import (
     open_garden_program,
     open_message,
+    seal_bundle,
+    seal_garden_program,
     verify_bundle_hmac,
 )
 from make_letter import (
@@ -24,6 +27,7 @@ from make_letter import (
     _fresh_passphrase,
     _validate_private_paths,
     build,
+    verify,
 )
 
 
@@ -165,6 +169,43 @@ def test_build_round_trips_full_encrypted_v2_program(tmp_path, capsys):
     presented = next(event for event in program.events if event.id == "present-letter")
     assert presented.actions[0].params["letter_id"] == bundle.messages[0].id
     assert "garden program: yes" in capsys.readouterr().out
+
+
+def test_builder_rejects_letter_reference_absent_from_final_bundle(tmp_path):
+    source = tmp_path / "private-source.json"
+    output = tmp_path / "chloe.lateletter"
+    value = _full_source()
+    value["garden_program"]["events"][2]["actions"][0]["params"][
+        "letter_id"
+    ] = "letter.missing"
+    _write_source(source, value)
+
+    with pytest.raises(SystemExit, match="unknown bundle letter 'letter.missing'"):
+        build(source, output, passphrase=FRESH_PASSPHRASE)
+    assert not output.exists()
+
+
+def test_verify_binds_program_references_to_authenticated_final_bundle(tmp_path):
+    source = tmp_path / "private-source.json"
+    output = tmp_path / "chloe.lateletter"
+    _write_source(source)
+    build(source, output, passphrase=FRESH_PASSPHRASE)
+    bundle = read_bundle(output)
+    raw = open_garden_program(FRESH_PASSPHRASE, bundle.garden_program)
+    raw["events"][2]["actions"][0]["params"]["letter_id"] = "letter.missing"
+    raw["events"][0]["actions"].append({
+        "type": "event.complete", "target": None,
+        "params": {"event_id": "event.missing"},
+    })
+    bundle.garden_program = seal_garden_program(FRESH_PASSPHRASE, raw)
+    seal_bundle(bundle, FRESH_PASSPHRASE)
+    write_bundle(bundle, output)
+
+    with patch("make_letter.getpass.getpass", return_value=FRESH_PASSPHRASE):
+        with pytest.raises(SystemExit) as exc_info:
+            verify(output)
+    assert "unknown bundle letter" in str(exc_info.value)
+    assert "unknown program event" in str(exc_info.value)
 
 
 def test_builder_rejects_passphrase_in_plaintext_source(tmp_path):
