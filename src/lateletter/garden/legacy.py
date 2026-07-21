@@ -21,6 +21,24 @@ class LegacyMigrationError(ValueError):
     pass
 
 
+_LEGACY_CATALOG_ALIASES: Mapping[str, Mapping[str, str]] = {
+    "plant": {
+        "rosebush": "rose",
+        "sapling": "oak",
+    },
+}
+
+
+def _legacy_catalog_id(gift_type: str, value: str) -> str:
+    """Return the canonical runtime ID for one authenticated v1 gift.
+
+    Catalog aliases intentionally live only at this legacy ingress.  Authored
+    programs therefore continue to be validated against the current catalog.
+    """
+    leaf = value.rsplit(".", 1)[-1]
+    return _LEGACY_CATALOG_ALIASES.get(gift_type, {}).get(leaf, leaf)
+
+
 def _field(value: Any, name: str, default: Any = None) -> Any:
     if isinstance(value, Mapping):
         return value.get(name, default)
@@ -95,6 +113,7 @@ def migrate_legacy_gifts(
             raise LegacyMigrationError(f"legacy gift {gift_id} has unsupported type {gift_type!r}")
         if not isinstance(catalog_id, str) or not catalog_id:
             raise LegacyMigrationError(f"legacy gift {gift_id} has no catalog id")
+        catalog_id = _legacy_catalog_id(gift_type, catalog_id)
 
         original, schedule = _legacy_condition(gift)
         condition: Mapping[str, Any]

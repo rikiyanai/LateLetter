@@ -174,6 +174,22 @@ test('program evaluator and authenticated v1 migration match fixtures', async ()
   assert.equal(parallelValues.get(parallel.storageKey), canonicalWorldJson(parallel.state));
 });
 
+test('authenticated v1 plant aliases canonicalize without weakening authored programs', () => {
+  const migrated = migrateAuthenticatedLegacyGifts([{
+    id: 'gift.rose', type: 'plant', catalog_id: 'rosebush',
+    placement_hint: 'random', trigger: { type: 'cumulative_visits', value: '1' },
+  }], { authenticated: true });
+  assert.equal(migrated.entities[0].catalog_id, 'rose');
+  assert.equal(migrated.events[0].actions[0].params.species_id, 'rose');
+  assert.throws(() => parseGardenProgram({
+    version: 1, evaluator_version: 1, world_state_version: 1,
+    atlas_version: 'garden-atlas-1', astronomy_catalog_version: 'bright-stars-1',
+    author_timezone: 'UTC', variables: {}, animals: [], events: [],
+    entities: [{ id: 'authored.rose', kind: 'plant', catalog_id: 'rosebush',
+      initial_state: { planted: false } }],
+  }), /unknown runtime plant asset/);
+});
+
 test('program cooldown state survives visits and blocks until every bound clears', async () => {
   const program = {
     version: 1, evaluator_version: 1, world_state_version: 1,

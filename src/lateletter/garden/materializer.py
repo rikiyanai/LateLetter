@@ -113,8 +113,7 @@ def build_runtime_facts(
 
 def _catalog(value: Any) -> str:
     raw = str(value or "")
-    normalized = raw.rsplit(".", 1)[-1]
-    return {"rosebush": "rose", "sapling": "oak"}.get(normalized, normalized)
+    return raw.rsplit(".", 1)[-1]
 
 
 def _position(value: Any) -> Vec2 | None:

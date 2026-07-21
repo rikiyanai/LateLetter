@@ -298,6 +298,15 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
   return { state, effects, trace };
 }
 
+const LEGACY_CATALOG_ALIASES = Object.freeze({
+  plant: Object.freeze({ rosebush: 'rose', sapling: 'oak' }),
+});
+
+function legacyCatalogId(type, value) {
+  const leaf = String(value ?? '').split('.').at(-1);
+  return LEGACY_CATALOG_ALIASES[type]?.[leaf] ?? leaf;
+}
+
 export function migrateAuthenticatedLegacyGifts(gifts, options = {}) {
   if (!options.authenticated) throw new Error('legacy gifts cannot influence world state before bundle authentication');
   const messageIds = [...new Set(options.message_ids ?? [])].sort();
@@ -306,6 +315,7 @@ export function migrateAuthenticatedLegacyGifts(gifts, options = {}) {
   for (const [index, gift] of gifts.entries()) {
     if (!gift?.id) throw new Error(`legacy gift ${index} has no stable id`);
     const eventId = `legacy.${gift.id}`; const target = `legacy-entity.${gift.id}`;
+    const catalogId = legacyCatalogId(gift.type, gift.catalog_id);
     let original;
     if (gift.trigger?.type === 'date') original = { fact: 'time.local', op: '>=', value: `${gift.trigger.value}T00:00:00` };
     else if (gift.trigger?.type === 'cumulative_visits') original = { fact: 'visit.total', op: '>=', value: Number.parseInt(gift.trigger.value, 10) };
@@ -313,21 +323,21 @@ export function migrateAuthenticatedLegacyGifts(gifts, options = {}) {
     else throw new Error(`unsupported legacy trigger ${gift.trigger?.type}`);
     const actions = [];
     if (gift.type === 'animal') {
-      animals.push({ id: target, species: gift.catalog_id, catalog_id: gift.catalog_id,
-        name: gift.animal_name || gift.catalog_id, initial_state: { present: false } });
+      animals.push({ id: target, species: catalogId, catalog_id: catalogId,
+        name: gift.animal_name || catalogId, initial_state: { present: false } });
       actions.push({ type: 'animal.arrive', target, params: { position: gift.placement_hint || 'random' } });
     } else if (gift.type === 'plant') {
-      entities.push({ id: target, kind: 'plant', catalog_id: gift.catalog_id,
+      entities.push({ id: target, kind: 'plant', catalog_id: catalogId,
         initial_state: { planted: false }, placement: gift.placement_hint || 'random' });
-      actions.push({ type: 'plant.plant', target, params: { species_id: gift.catalog_id, position: gift.placement_hint || 'random' } });
+      actions.push({ type: 'plant.plant', target, params: { species_id: catalogId, position: gift.placement_hint || 'random' } });
     } else {
-      entities.push({ id: target, kind: gift.type, catalog_id: gift.catalog_id,
+      entities.push({ id: target, kind: gift.type, catalog_id: catalogId,
         initial_state: { revealed: false }, placement: gift.placement_hint || 'random' });
       actions.push({ type: 'entity.reveal', target, params: { position: gift.placement_hint || 'random' } });
     }
     const sentiment = options.decrypted_sentiments?.[gift.id] ?? '';
     if (sentiment) actions.push({ type: 'narrative.show', target: null,
-      params: { kind: 'memory', text: sentiment, label: gift.animal_name || gift.catalog_id } });
+      params: { kind: 'memory', text: sentiment, label: gift.animal_name || catalogId } });
     actions.push({ type: 'event.complete', target: null, params: { event_id: eventId } });
     events.push({ id: eventId, conditions: completion ? { any: [original, completion] } : original,
       schedule: null, occurrence: 'once', priority: 0, exclusive_group: null,

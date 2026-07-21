@@ -7,6 +7,7 @@ import pytest
 
 from lateletter.garden.evaluator import evaluate_program
 from lateletter.garden.legacy import LegacyAuthenticationRequired, migrate_legacy_gifts
+from lateletter.garden.program import ProgramValidationError, parse_program
 
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -19,6 +20,41 @@ def _legacy():
 def test_legacy_gifts_cannot_migrate_before_bundle_authentication():
     with pytest.raises(LegacyAuthenticationRequired):
         migrate_legacy_gifts(_legacy()["gifts"], authenticated=False)
+
+
+@pytest.mark.parametrize(("legacy_id", "canonical_id"), [
+    ("rosebush", "rose"),
+    ("sapling", "oak"),
+])
+def test_authenticated_v1_plant_aliases_migrate_to_strict_catalog_ids(
+    legacy_id, canonical_id,
+):
+    program = migrate_legacy_gifts([{
+        "id": f"gift.{legacy_id}",
+        "type": "plant",
+        "catalog_id": legacy_id,
+        "placement_hint": "random",
+        "trigger": {"type": "cumulative_visits", "value": "1"},
+    }], authenticated=True)
+
+    assert program.entities[0]["catalog_id"] == canonical_id
+    assert program.events[0].actions[0].params["species_id"] == canonical_id
+
+
+def test_authored_program_cannot_use_a_legacy_catalog_alias():
+    raw = {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1",
+        "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {},
+        "entities": [{
+            "id": "authored.rose", "kind": "plant", "catalog_id": "rosebush",
+            "initial_state": {"planted": False},
+        }],
+        "animals": [], "events": [],
+    }
+    with pytest.raises(ProgramValidationError, match="unknown runtime plant asset"):
+        parse_program(raw)
 
 
 def test_every_legacy_trigger_becomes_an_authenticated_one_shot_event():

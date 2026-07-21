@@ -1398,8 +1398,7 @@ function programDefinitions(program) {
 }
 
 const catalogLeaf = value => {
-  const leaf = String(value ?? '').split('.').at(-1);
-  return ({ rosebush: 'rose', sapling: 'oak' })[leaf] ?? leaf;
+  return String(value ?? '').split('.').at(-1);
 };
 
 function programKind(definition) {
