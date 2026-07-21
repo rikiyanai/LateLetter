@@ -229,16 +229,28 @@ def run_demo(out_path: Path, quiet: bool) -> None:
         "astronomy_catalog_version": "bright-stars-1",
         "author_timezone": "UTC",
         "variables": {},
-        "entities": [{
-            "id": "plate-of-food", "kind": "collectible",
-            "catalog_id": "collectible.seed_packet",
-            "initial_state": {"revealed": False}, "placement": "random",
-        }],
+        "entities": [
+            {
+                "id": "plate-of-food", "kind": "collectible",
+                "catalog_id": "collectible.seed_packet",
+                "initial_state": {"revealed": False}, "placement": "random",
+            },
+            {
+                "id": "demo-hedge", "kind": "fixture",
+                "catalog_id": "fixture.fence",
+                "initial_state": {"revealed": True}, "placement": "garden_edge",
+            },
+            {
+                "id": "demo-bench", "kind": "fixture",
+                "catalog_id": "fixture.bench",
+                "initial_state": {"revealed": True}, "placement": "near_tallest_tree",
+            },
+        ],
         "animals": [{
             "id": "demo-rabbit", "species": "rabbit", "catalog_id": "animal.rabbit",
             "name": "Clover", "personality": "cautious, patient, and curious",
             "routine": "forage at dawn, nap by the hedge, approach after quiet visits",
-            "favorite_places": ["hedge", "bench"],
+            "favorite_places": ["demo-hedge", "demo-bench"],
             "prohibited_behaviors": ["startle the recipient", "leave the garden"],
             "initial_state": {"present": False},
         }],
