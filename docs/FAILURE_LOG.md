@@ -5,11 +5,11 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 ## 2026-07-21
 
 ### Final `main` push workflows were rejected before any steps ran
-- Symptom: The exact `main` commit's Pages job had zero steps because the `github-pages` environment allowed only `master`; the attribution job had zero steps because GitHub reports failed account payments or an exhausted spending limit.
+- Symptom: The first exact-`main` Pages job had zero steps because the `github-pages` environment allowed only `master`; after correcting that policy, both the Pages and attribution jobs still had zero steps because GitHub reports failed account payments or an exhausted spending limit.
 - Impact: The locally fixed `/to-chloe` route cannot deploy, and required policy verification cannot run.
-- Required fix: Add `main` to the Pages environment before removing `master`, rerun the exact commit, and resolve the GitHub account billing/spending limit if runner allocation remains blocked.
-- Acceptance: Pages and attribution workflows succeed on the final `main` SHA, the live route resolves, and only then is remote `master` deleted.
-- Status: Open — failure annotations retrieved and logged before environment remediation.
+- Required fix: Resolve the GitHub account billing/spending limit, then rerun Pages and attribution on the exact final `main` SHA.
+- Acceptance: Pages and attribution workflows succeed on the final `main` SHA and the live route resolves.
+- Status: Externally blocked — `main` is the default and sole local/remote branch, the Pages source and environment policy both name `main`, and the attribution ruleset is active. Remote `master` was deleted only after proving it had zero unique commits and `main` was two commits ahead. Runs `29815419476` and `29815419577` for `9ac1827` were both rejected before their first step with GitHub's billing/spending-limit annotation; consequently the safe route remains locally built but live deployment is still 404.
 
 ### Public `/to-chloe` route disappeared with the quarantined personal bundle
 - Symptom: `https://rikiworld.com/lateletter/to-chloe` returns 404 while the safe synthetic `/to-a-friend` route succeeds.
