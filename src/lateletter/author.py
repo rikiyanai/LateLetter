@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import random
 import shutil
+import subprocess
 import uuid
+import getpass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Callable
@@ -40,6 +42,7 @@ from .garden.legacy import migrate_legacy_gifts
 from .garden.program import Condition, GardenProgram, parse_program
 from .garden.schedule import ScheduleValidationError, expand_schedule, parse_schedule
 from .intake import IntakeData
+from .intake import passphrase_strength_warning
 from .question_selector import QuestionSelector
 from .sealed import (
     open_garden_program,
@@ -55,6 +58,7 @@ from .steward import compact_session
 
 
 _DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 _NOTES_MARKER = "--- Q&A NOTES (remove this section before sealing) ---"
 
 
@@ -64,6 +68,72 @@ class AuthorFlowError(RuntimeError):
 
 class GardenAuthoringPaused(RuntimeError):
     """The author saved a Garden timeline to resume in a later session."""
+
+
+def _repo_relative(path: Path) -> str | None:
+    try:
+        return path.expanduser().resolve().relative_to(_REPOSITORY_ROOT).as_posix()
+    except ValueError:
+        return None
+
+
+def _git_path_status(path: Path) -> tuple[bool, bool]:
+    relative = _repo_relative(path)
+    if relative is None or not (_REPOSITORY_ROOT / ".git").exists():
+        return False, False
+    tracked = subprocess.run(
+        ["git", "-C", str(_REPOSITORY_ROOT), "ls-files", "--error-unmatch", "--", relative],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    ).returncode == 0
+    ignored = subprocess.run(
+        ["git", "-C", str(_REPOSITORY_ROOT), "check-ignore", "--quiet", "--", relative],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+    ).returncode == 0
+    return tracked, ignored
+
+
+def _validate_private_author_path(path: Path, *, label: str) -> Path:
+    resolved = path.expanduser().resolve()
+    tracked, ignored = _git_path_status(resolved)
+    if tracked:
+        raise AuthorFlowError(f"Refusing to use a Git-tracked {label} path.")
+    if _repo_relative(resolved) is not None and not ignored:
+        raise AuthorFlowError(
+            f"The {label} path is inside the repository and is not ignored by Git."
+        )
+    return resolved
+
+
+def _validate_export_destination(path: Path) -> Path:
+    resolved = _validate_private_author_path(path, label="recipient output")
+    if resolved.suffix.lower() != ".lateletter":
+        raise AuthorFlowError("Recipient output must end in .lateletter.")
+    if not resolved.parent.is_dir():
+        raise AuthorFlowError(f"The export folder does not exist: {resolved.parent}")
+    return resolved
+
+
+def _confirm_export_passphrase(
+    passphrase: str,
+    *,
+    existing: bool,
+    password_fn: Callable[[str], str],
+) -> None:
+    if not existing:
+        warning = passphrase_strength_warning(passphrase)
+        if len(passphrase) < 12 or warning is not None:
+            raise AuthorFlowError(
+                warning or "A fresh export passphrase needs at least 12 characters."
+            )
+    try:
+        confirmation = password_fn(
+            "  Confirm the existing bundle passphrase: " if existing
+            else "  Confirm the fresh export passphrase: "
+        )
+    except (EOFError, KeyboardInterrupt) as exc:
+        raise AuthorFlowError("Passphrase confirmation was cancelled.") from exc
+    if confirmation != passphrase:
+        raise AuthorFlowError("Passphrase confirmation did not match; nothing was exported.")
 
 
 def _ask(
@@ -307,6 +377,7 @@ def _prompt_condition(*, input_fn: Callable[[str], str],
                       message_ids: list[str], output_fn: Callable[[str], None]) -> When | None:
     output_fn("  When should this beat happen?")
     output_fn("  1 visits · 2 letter read · 3 date/time · 4 bond · 5 season · 6 absence")
+    output_fn("  7 all of several conditions · 8 any condition · 9 not a condition")
     choice = _ask("  Condition [1]: ", input_fn=input_fn)
     if choice is None:
         return None
@@ -345,6 +416,24 @@ def _prompt_condition(*, input_fn: Callable[[str], str],
     if choice == "6":
         value = _ask("  Minimum days away [1]: ", input_fn=input_fn)
         return When.fact("absence.days", ">=", int((value or "1").strip() or "1"))
+    if choice in {"7", "8"}:
+        count_raw = _ask("  Number of child conditions [2]: ", input_fn=input_fn)
+        count = max(2, min(8, int((count_raw or "2").strip() or "2")))
+        children = []
+        for index in range(count):
+            output_fn(f"  Condition {index + 1} of {count}")
+            child = _prompt_condition(
+                input_fn=input_fn, message_ids=message_ids, output_fn=output_fn,
+            )
+            if child is None:
+                return None
+            children.append(child)
+        return When("all" if choice == "7" else "any", children=tuple(children))
+    if choice == "9":
+        child = _prompt_condition(
+            input_fn=input_fn, message_ids=message_ids, output_fn=output_fn,
+        )
+        return When.never(child) if child is not None else None
     output_fn("  That condition was not recognized.")
     return None
 
@@ -376,6 +465,14 @@ def _prompt_schedule(*, author_timezone: str,
             "dst_gap": "shift_forward",
             "dst_fold": "first",
         }
+        if frequency == "weekly":
+            weekdays = _ask(
+                "  Weekdays (MO,TU,WE,TH,FR,SA,SU) [start weekday only]: ",
+                input_fn=input_fn,
+            )
+            selected = [value.strip().upper() for value in (weekdays or "").split(",") if value.strip()]
+            if selected:
+                recurrence["by_weekday"] = selected
         bound = _ask("  End after a count, on a date, or never? [count/date/never]: ",
                      input_fn=input_fn)
         bound = (bound or "count").strip().lower()
@@ -396,6 +493,10 @@ def _prompt_schedule(*, author_timezone: str,
         else:
             count = _ask("  Number of occurrences [1]: ", input_fn=input_fn)
             recurrence["count"] = int((count or "1").strip() or "1")
+        gap = _ask("  DST spring gap: shift forward or skip [shift]: ", input_fn=input_fn)
+        recurrence["dst_gap"] = "skip" if (gap or "").strip().lower().startswith("s") and (gap or "").strip().lower() == "skip" else "shift_forward"
+        fold = _ask("  DST repeated hour: first or second [first]: ", input_fn=input_fn)
+        recurrence["dst_fold"] = "second" if (fold or "").strip().lower().startswith("s") else "first"
     missed_choice = _ask(
         "  If visits are missed: 1 skip · 2 deliver latest · 3 summarize [2]: ",
         input_fn=input_fn,
@@ -404,11 +505,14 @@ def _prompt_schedule(*, author_timezone: str,
         "1": "skip", "2": "deliver_on_next_visit",
         "3": "summarize_then_current",
     }.get((missed_choice or "2").strip() or "2", "deliver_on_next_visit")
+    exceptions_raw = _ask(
+        "  Dates to skip, comma-separated ISO dates/times [none]: ", input_fn=input_fn,
+    )
     raw = {
         "start": start_text,
         "timezone": author_timezone,
         "recurrence": recurrence,
-        "exceptions": [],
+        "exceptions": [value.strip() for value in (exceptions_raw or "").split(",") if value.strip()],
         "missed": missed,
     }
     parse_schedule(raw)
@@ -418,7 +522,8 @@ def _prompt_schedule(*, author_timezone: str,
 def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
                    output_fn: Callable[[str], None]) -> ActionCard | None:
     output_fn("  What should happen?")
-    output_fn("  1 reveal gift/fixture · 2 animal arrives · 3 plant · 4 memory · 5 scene · 6 variable")
+    output_fn("  1 reveal gift/fixture · 2 animal arrives · 3 plant · 4 memory · 5 scene")
+    output_fn("  6 variable · 7 animal direction · 8 plant change · 9 move/retire object · 10 letter/event")
     choice = _ask("  Action [1]: ", input_fn=input_fn)
     if choice is None:
         return None
@@ -495,6 +600,97 @@ def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
             return None
         timeline.variables.setdefault(_slug(name, "value"), None)
         return ActionCard.set_variable(_slug(name, "value"), value or "")
+    if choice == "7":
+        if not timeline.animals:
+            output_fn("  Add an animal before directing it.")
+            return None
+        for index, animal in enumerate(timeline.animals, 1):
+            output_fn(f"  {index}. {animal.get('name', animal.get('id'))} ({animal.get('id')})")
+        selected = _ask("  Animal [1]: ", input_fn=input_fn)
+        try:
+            target = str(timeline.animals[int((selected or "1").strip() or "1") - 1]["id"])
+        except (ValueError, IndexError):
+            return None
+        operation = _ask(
+            "  Direction: 1 behavior · 2 routine · 3 destination · 4 depart · 5 present gift [1]: ",
+            input_fn=input_fn,
+        )
+        operation = (operation or "1").strip() or "1"
+        if operation == "1":
+            behavior = _ask("  Behavior: ", input_fn=input_fn)
+            duration = _ask("  Minimum duration ticks [12]: ", input_fn=input_fn)
+            return ActionCard("animal.behave", target, {
+                "behavior": (behavior or "greet").strip() or "greet",
+                "duration_ticks": int((duration or "12").strip() or "12"),
+            })
+        if operation == "2":
+            routine = _ask("  New routine: ", input_fn=input_fn)
+            return ActionCard("animal.routine", target, {"routine": (routine or "wander").strip()})
+        if operation == "3":
+            fixture = _ask("  Destination fixture/object stable name: ", input_fn=input_fn)
+            return ActionCard("animal.set_destination", target, {"fixture_id": (fixture or "").strip()})
+        if operation == "4":
+            return ActionCard("animal.depart", target, {})
+        gift = _ask("  Gift stable name: ", input_fn=input_fn)
+        return ActionCard("animal.present_gift", target, {"gift_id": (gift or "").strip()})
+    if choice == "8":
+        plants = [entity for entity in timeline.entities if entity.get("kind") == "plant"]
+        if not plants:
+            output_fn("  Add a plant before changing it.")
+            return None
+        for index, plant in enumerate(plants, 1):
+            output_fn(f"  {index}. {plant.get('id')}")
+        selected = _ask("  Plant [1]: ", input_fn=input_fn)
+        try:
+            target = str(plants[int((selected or "1").strip() or "1") - 1]["id"])
+        except (ValueError, IndexError):
+            return None
+        operation = _ask("  Change: 1 grow · 2 bloom · 3 dormancy · 4 prune · 5 revive [1]: ", input_fn=input_fn)
+        operation = (operation or "1").strip() or "1"
+        if operation == "1":
+            amount = _ask("  Growth amount [1]: ", input_fn=input_fn)
+            return ActionCard("plant.grow", target, {"amount": int((amount or "1").strip() or "1")})
+        if operation == "2":
+            return ActionCard("plant.bloom", target, {})
+        if operation == "3":
+            dormant = _ask("  Make dormant? [Y/n]: ", input_fn=input_fn)
+            return ActionCard("plant.dormancy", target, {"dormant": (dormant or "y").strip().lower() not in {"n", "no"}})
+        if operation == "4":
+            nodes = _ask("  Stable node IDs, comma-separated: ", input_fn=input_fn)
+            return ActionCard("plant.prune", target, {"node_ids": [v.strip() for v in (nodes or "").split(",") if v.strip()]})
+        return ActionCard("plant.revive", target, {})
+    if choice == "9":
+        if not timeline.entities:
+            output_fn("  Add an object before moving or retiring it.")
+            return None
+        for index, entity in enumerate(timeline.entities, 1):
+            output_fn(f"  {index}. {entity.get('id')}")
+        selected = _ask("  Object [1]: ", input_fn=input_fn)
+        try:
+            target = str(timeline.entities[int((selected or "1").strip() or "1") - 1]["id"])
+        except (ValueError, IndexError):
+            return None
+        operation = _ask("  1 move · 2 transform · 3 retire [1]: ", input_fn=input_fn)
+        operation = (operation or "1").strip() or "1"
+        if operation == "1":
+            position = _ask("  New position as x,y: ", input_fn=input_fn)
+            values = [int(value.strip()) for value in (position or "").split(",")]
+            if len(values) != 2:
+                return None
+            return ActionCard("entity.move", target, {"position": values})
+        if operation == "2":
+            state = _ask("  New semantic state: ", input_fn=input_fn)
+            return ActionCard("entity.transform", target, {"state": state or "changed"})
+        return ActionCard("entity.retire", target, {})
+    if choice == "10":
+        operation = _ask("  1 present letter · 2 complete event [1]: ", input_fn=input_fn)
+        if (operation or "1").strip() == "2":
+            event_id = _ask("  Event stable name [this beat]: ", input_fn=input_fn)
+            return ActionCard("event.complete", None, {
+                **({"event_id": event_id.strip()} if event_id and event_id.strip() else {}),
+            })
+        letter_id = _ask("  Letter stable ID: ", input_fn=input_fn)
+        return ActionCard("letter.present", None, {"letter_id": (letter_id or "").strip()})
     output_fn("  That action was not recognized.")
     return None
 
@@ -534,6 +730,19 @@ def _prompt_beat(timeline: Timeline, *, message_ids: list[str],
     schedule = _prompt_schedule(
         author_timezone=timeline.author_timezone, input_fn=input_fn, output_fn=output_fn,
     )
+    cooldown = None
+    cooldown_answer = _ask("  Add a cooldown between repeats? [y/N]: ", input_fn=input_fn)
+    if cooldown_answer is not None and cooldown_answer.strip().lower() in {"y", "yes"}:
+        seconds = _ask("  Minimum seconds between repeats [none]: ", input_fn=input_fn)
+        visits = _ask("  Minimum visits between repeats [none]: ", input_fn=input_fn)
+        cooldown = {}
+        if seconds and seconds.strip():
+            cooldown["duration_seconds"] = int(seconds.strip())
+        if visits and visits.strip():
+            cooldown["visits"] = int(visits.strip())
+        if not cooldown:
+            output_fn("  Empty cooldown ignored.")
+            cooldown = None
     priority_raw = _ask("  Priority [0]: ", input_fn=input_fn)
     group = _ask("  Exclusive group (optional): ", input_fn=input_fn)
     return BeatCard(
@@ -541,6 +750,7 @@ def _prompt_beat(timeline: Timeline, *, message_ids: list[str],
         actions=tuple(actions), schedule=schedule,
         priority=int((priority_raw or "0").strip() or "0"),
         exclusive_group=(group.strip() if group and group.strip() else None),
+        cooldown=cooldown,
     )
 
 
@@ -707,6 +917,18 @@ def _backup_v1_bundle(path: Path) -> Path:
     return candidate
 
 
+def _backup_append_bundle(path: Path) -> Path:
+    candidate = path.with_name(f"{path.stem}.append.backup{path.suffix}")
+    counter = 2
+    while candidate.exists():
+        candidate = path.with_name(
+            f"{path.stem}.append.backup-{counter}{path.suffix}"
+        )
+        counter += 1
+    shutil.copy2(path, candidate)
+    return candidate
+
+
 def _merge_programs(first: GardenProgram, second: GardenProgram) -> GardenProgram:
     first_raw = garden_program_to_mapping(first)
     second_raw = garden_program_to_mapping(second)
@@ -775,7 +997,7 @@ def _prompt_export_path(
     path = Path(answer.strip() or default).expanduser().resolve()
     if path.suffix != ".lateletter":
         path = path.with_suffix(".lateletter")
-    return path
+    return _validate_export_destination(path)
 
 
 def _load_export_bundle(path: Path, data: IntakeData, passphrase: str) -> Bundle:
@@ -804,9 +1026,15 @@ def run_author_workflow(
     *,
     accessible: bool = False,
     input_fn: Callable[[str], str] = input,
+    password_fn: Callable[[str], str] = getpass.getpass,
     output_fn: Callable[[str], None] = print,
 ) -> int:
     """Run questions → drafting → sealing → canonical export for one message."""
+    try:
+        _validate_private_author_path(store.author_dir, label="plaintext author storage")
+    except AuthorFlowError as exc:
+        output_fn(f"  Author storage is unsafe: {exc}")
+        return 1
     message = _choose_or_create_message(
         store, input_fn=input_fn, output_fn=output_fn,
     )
@@ -890,7 +1118,20 @@ def run_author_workflow(
         return 0
 
     try:
+        export_path = _validate_export_destination(export_path)
         existed = export_path.exists()
+        if existed:
+            confirm = _ask(
+                "  This private bundle already exists. Type APPEND to authenticate, back it up, and add this message: ",
+                input_fn=input_fn,
+            )
+            if confirm != "APPEND":
+                raise AuthorFlowError(
+                    "Existing output was not changed because APPEND was not confirmed."
+                )
+        _confirm_export_passphrase(
+            passphrase, existing=existed, password_fn=password_fn,
+        )
         bundle = _load_export_bundle(export_path, data, passphrase)
         bundle.author_name = data.author_name
         bundle.passphrase_hint = data.passphrase_hint
@@ -909,6 +1150,7 @@ def run_author_workflow(
                 input_fn=input_fn, output_fn=output_fn,
             )
         seal_bundle(bundle, passphrase)
+        append_backup = _backup_append_bundle(export_path) if existed else None
         write_bundle(bundle, export_path)
     except (OSError, ValueError, BundleValidationError, AuthorFlowError) as exc:
         output_fn(f"  Export failed: {exc}")
@@ -922,6 +1164,8 @@ def run_author_workflow(
 
     output_fn("")
     output_fn(f"  Sealed and exported: {export_path}")
+    if append_backup is not None:
+        output_fn(f"  Previous private bundle backed up at: {append_backup}")
     output_fn(
         f"  Important: if {data.recipient_name} forgets the passphrase, "
         "the letter cannot be recovered."

@@ -108,6 +108,7 @@ class PlantState:
     tended_count: int = 0
     last_tended_at: int | None = None
     growth_period_seconds: int = 86_400
+    dormant: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -119,6 +120,7 @@ class PlantState:
             "tended_count": self.tended_count,
             "last_tended_at": self.last_tended_at,
             "growth_period_seconds": self.growth_period_seconds,
+            "dormant": self.dormant,
         }
 
     @classmethod
@@ -132,6 +134,7 @@ class PlantState:
             tended_count=int(data.get("tended_count", 0)),
             last_tended_at=(int(data["last_tended_at"]) if data.get("last_tended_at") is not None else None),
             growth_period_seconds=max(1, int(data.get("growth_period_seconds", 86_400))),
+            dormant=bool(data.get("dormant", False)),
         )
 
 
@@ -142,6 +145,9 @@ class FixtureState:
     position: Vec2
     rotation: int = 0
     authored: bool = False
+    interaction_count: int = 0
+    last_interaction: str | None = None
+    authored_state: Mapping[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -150,6 +156,9 @@ class FixtureState:
             "position": self.position.to_list(),
             "rotation": self.rotation,
             "authored": self.authored,
+            "interaction_count": self.interaction_count,
+            "last_interaction": self.last_interaction,
+            "authored_state": _canonical_value(self.authored_state),
         }
 
     @classmethod
@@ -160,6 +169,9 @@ class FixtureState:
             position=Vec2.from_value(data["position"]),
             rotation=int(data.get("rotation", 0)) % 360,
             authored=bool(data.get("authored", False)),
+            interaction_count=max(0, int(data.get("interaction_count", 0))),
+            last_interaction=(str(data["last_interaction"]) if data.get("last_interaction") else None),
+            authored_state=deepcopy(dict(data.get("authored_state", {}))),
         )
 
 
@@ -244,6 +256,8 @@ class AnimalState:
     favorite_fixture_ids: tuple[str, ...] = ()
     authored_preferences: tuple[str, ...] = ()
     authored_prohibitions: tuple[str, ...] = ()
+    display_name: str | None = None
+    personality_note: str | None = None
 
     def interaction_count(self, kind: str) -> int:
         return dict(self.interaction_counts).get(kind, 0)
@@ -273,6 +287,8 @@ class AnimalState:
             "favorite_fixture_ids": sorted(set(self.favorite_fixture_ids)),
             "authored_preferences": sorted(set(self.authored_preferences)),
             "authored_prohibitions": sorted(set(self.authored_prohibitions)),
+            "display_name": self.display_name,
+            "personality_note": self.personality_note,
         }
 
     @classmethod
@@ -303,6 +319,8 @@ class AnimalState:
             favorite_fixture_ids=tuple(str(item) for item in data.get("favorite_fixture_ids", [])),
             authored_preferences=tuple(str(item) for item in data.get("authored_preferences", [])),
             authored_prohibitions=tuple(str(item) for item in data.get("authored_prohibitions", [])),
+            display_name=(str(data["display_name"]) if data.get("display_name") else None),
+            personality_note=(str(data["personality_note"]) if data.get("personality_note") else None),
         )
 
 

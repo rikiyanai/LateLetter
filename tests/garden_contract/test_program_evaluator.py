@@ -88,3 +88,66 @@ def test_scheduled_events_require_clock_owner_occurrence():
     }}
     applied = evaluate_program(program, raw["state"], context)
     assert applied.trace[0]["status"] == "applied"
+
+
+def test_visit_and_time_cooldowns_are_persisted_and_enforced_together():
+    raw = {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1",
+        "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {}, "entities": [], "animals": [],
+        "events": [{
+            "id": "return.memory",
+            "conditions": {"fact": "visit.total", "op": ">=", "value": 1},
+            "schedule": None, "occurrence": "recurring", "priority": 0,
+            "exclusive_group": None,
+            "cooldown": {"duration_seconds": 3600, "visits": 2},
+            "actions": [{"type": "narrative.show", "target": None,
+                         "params": {"text": "Welcome back."}}],
+        }],
+    }
+    program = parse_program(raw)
+    first = evaluate_program(program, {}, {"facts": {
+        "visit.total": 1, "time.utc": "2026-07-21T00:00:00Z",
+    }})
+    assert first.trace[0]["status"] == "applied"
+    assert first.state["event_cooldowns"]["return.memory"] == {
+        "time_utc_seconds": 1784592000, "visit_total": 1,
+    }
+    too_soon = evaluate_program(program, first.state, {"facts": {
+        "visit.total": 2, "time.utc": "2026-07-21T02:00:00Z",
+    }})
+    assert too_soon.trace[0]["reason"] == "cooldown_active"
+    ready = evaluate_program(program, too_soon.state, {"facts": {
+        "visit.total": 3, "time.utc": "2026-07-21T02:00:00Z",
+    }})
+    assert ready.trace[0]["status"] == "applied"
+
+
+@pytest.mark.parametrize("mutation", [
+    lambda raw: raw["events"][0].update({"schedule": {
+        "start": "2026-02-30T09:00:00", "timezone": "UTC",
+        "recurrence": None, "exceptions": [], "missed": "skip",
+    }}),
+    lambda raw: raw["events"][0]["actions"][0].update({"params": {}}),
+    lambda raw: raw.update({"animals": [{
+        "id": "animal.unknown", "species": "dragon", "initial_state": {},
+    }]}),
+])
+def test_runtime_unsafe_programs_fail_during_parse(mutation):
+    raw = {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1",
+        "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {}, "entities": [], "animals": [],
+        "events": [{
+            "id": "safe", "conditions": {"fact": "visit.total", "op": ">=", "value": 0},
+            "schedule": None, "occurrence": "once", "priority": 0,
+            "exclusive_group": None, "cooldown": None,
+            "actions": [{"type": "narrative.show", "target": None,
+                         "params": {"text": "Safe."}}],
+        }],
+    }
+    mutation(raw)
+    with pytest.raises(ProgramValidationError):
+        parse_program(raw)

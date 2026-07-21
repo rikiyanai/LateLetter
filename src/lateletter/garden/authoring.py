@@ -337,7 +337,9 @@ def compile_timeline(timeline: Timeline, **validation_context: Any) -> GardenPro
             {
                 "id": beat.id, "conditions": beat.when.compile(),
                 "schedule": dict(beat.schedule) if beat.schedule is not None else None,
-                "occurrence": "recurring" if beat.schedule and beat.schedule.get("recurrence") else "once",
+                "occurrence": "recurring" if (
+                    (beat.schedule and beat.schedule.get("recurrence")) or beat.cooldown
+                ) else "once",
                 "priority": beat.priority, "exclusive_group": beat.exclusive_group,
                 "cooldown": dict(beat.cooldown) if beat.cooldown is not None else None,
                 "actions": [action.compile() for action in beat.actions],

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from .animals import AnimalContext, step_animals
 from .model import AnimalState, PlantState, TraceEntry, WorldState, stable_id
+from .plants import advance_topology
 
 
 @dataclass(frozen=True)
@@ -16,11 +18,14 @@ class OfflineReport:
 
 
 def _grow_plant(plant: PlantState, start: int, end: int) -> tuple[PlantState, int]:
+    if plant.dormant:
+        return plant, 0
     period = max(1, plant.growth_period_seconds)
     milestones = max(0, end // period - start // period)
     if milestones == 0:
         return plant, 0
-    return replace(plant, growth_points=plant.growth_points + milestones), milestones
+    grown = advance_topology(plant, end, milestones)
+    return replace(grown, growth_points=plant.growth_points + milestones), milestones
 
 
 def _safe_animal_baseline(animal: AnimalState) -> AnimalState:
@@ -112,4 +117,14 @@ def reconcile_offline(
         milestone_receipts=new_receipts,
         event_trace=state.event_trace + (trace,),
     )
+    if updated_state.animals:
+        scene = updated_state.program_state.get("scene", {})
+        weather = str(scene.get("weather", "calm")) if isinstance(scene, dict) else "calm"
+        hour = (end // 3_600) % 24
+        updated_state, _ = step_animals(updated_state, AnimalContext(
+            effective_time=end,
+            time_of_day="night" if hour < 6 or hour >= 20 else "day",
+            weather=weather,
+            recipient_focus_id=updated_state.ui.focus_id,
+        ))
     return updated_state, OfflineReport(elapsed, False, summaries, tuple(receipts))

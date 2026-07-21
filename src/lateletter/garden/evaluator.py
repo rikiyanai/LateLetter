@@ -11,6 +11,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 import hashlib
 import json
+from datetime import datetime, timezone
 from typing import Any, Mapping
 
 from .program import Condition, GardenProgram, ProgramAction, ProgramEvent
@@ -208,6 +209,15 @@ def _apply_action(action: ProgramAction, state: dict[str, Any], event_id: str,
 def _occurrence_for(event: ProgramEvent, context: Mapping[str, Any]) -> str | None:
     eligibility = context.get("eligible_occurrences", {})
     if event.schedule is None:
+        if event.occurrence == "recurring":
+            facts = context.get("facts", {})
+            if isinstance(facts, Mapping):
+                visit = facts.get("visit.total")
+                if isinstance(visit, int) and not isinstance(visit, bool):
+                    return f"{event.id}:visit:{visit}"
+                stamp = facts.get("time.utc")
+                if isinstance(stamp, str) and stamp:
+                    return f"{event.id}:time:{stamp}"
         return f"{event.id}:once"
     if not isinstance(eligibility, Mapping):
         raise ValueError("context.eligible_occurrences must be an object")
@@ -217,6 +227,45 @@ def _occurrence_for(event: ProgramEvent, context: Mapping[str, Any]) -> str | No
     if isinstance(value, str) and value:
         return value
     return None
+
+
+def _cooldown_values(facts: Mapping[str, Any]) -> tuple[int | None, int | None]:
+    raw_time = facts.get("time.utc")
+    now_seconds: int | None = None
+    if isinstance(raw_time, str):
+        try:
+            parsed = datetime.fromisoformat(raw_time.replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                now_seconds = int(parsed.astimezone(timezone.utc).timestamp())
+        except ValueError:
+            pass
+    raw_visits = facts.get("visit.total")
+    visits = raw_visits if isinstance(raw_visits, int) and not isinstance(raw_visits, bool) else None
+    return now_seconds, visits
+
+
+def _cooldown_blocked(
+    event: ProgramEvent,
+    cooldowns: Mapping[str, Any],
+    facts: Mapping[str, Any],
+) -> bool:
+    if not event.cooldown:
+        return False
+    prior = cooldowns.get(event.id)
+    if not isinstance(prior, Mapping):
+        return False
+    now_seconds, visits = _cooldown_values(facts)
+    duration = event.cooldown.get("duration_seconds")
+    if isinstance(duration, int) and now_seconds is not None:
+        last_time = prior.get("time_utc_seconds")
+        if isinstance(last_time, int) and now_seconds - last_time < duration:
+            return True
+    visit_gap = event.cooldown.get("visits")
+    if isinstance(visit_gap, int) and visits is not None:
+        last_visit = prior.get("visit_total")
+        if isinstance(last_visit, int) and visits - last_visit < visit_gap:
+            return True
+    return False
 
 
 def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
@@ -240,6 +289,9 @@ def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
     ):
         raise ValueError("state.exclusive_claims must be an object of string claims")
     claimed_groups: set[str] = set(exclusive_claims)
+    cooldowns = next_state.setdefault("event_cooldowns", {})
+    if not isinstance(cooldowns, dict):
+        raise ValueError("state.event_cooldowns must be an object")
     effects: list[dict[str, Any]] = []
     trace: list[dict[str, Any]] = []
 
@@ -263,6 +315,10 @@ def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
             row.update(status="blocked", reason="exclusive_group_claimed")
             trace.append(row)
             continue
+        if _cooldown_blocked(event, cooldowns, facts):
+            row.update(status="blocked", reason="cooldown_active")
+            trace.append(row)
+            continue
 
         eligible, condition_trace = evaluate_condition(
             event.conditions, facts, seed=seed, event_id=event.id,
@@ -282,6 +338,12 @@ def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
         if event.exclusive_group:
             claimed_groups.add(event.exclusive_group)
             exclusive_claims[event.exclusive_group] = ledger_id
+        if event.cooldown:
+            now_seconds, visits = _cooldown_values(facts)
+            cooldowns[event.id] = {
+                **({"time_utc_seconds": now_seconds} if now_seconds is not None else {}),
+                **({"visit_total": visits} if visits is not None else {}),
+            }
         row.update(status="applied", effect_count=len(event.actions))
         trace.append(row)
 

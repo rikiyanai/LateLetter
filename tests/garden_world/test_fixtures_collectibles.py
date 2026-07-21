@@ -23,9 +23,11 @@ from lateletter.garden.world.model import FixtureState, Vec2
 
 def test_required_fixture_catalog_has_actions_and_systemic_affordances():
     assert set(REQUIRED_FUNCTIONAL_FIXTURES) == {
-        "bench", "fence", "gate", "sundial", "trellis", "birdbath",
-        "lantern", "pond", "memory_shrine", "stepping_stone", "bridge",
-        "planter", "table", "chair",
+        "bench", "fence_gate", "sundial", "trellis", "birdbath", "lantern",
+        "pond", "mailbox", "stepping_stones", "bridge", "planter",
+        "table_chairs", "well", "arbor", "wind_chime", "shed_edge",
+        "tool_rack", "watering_can", "compost", "basket", "sign",
+        "memorial_stone",
     }
     for fixture in FIXTURE_CATALOG.values():
         assert fixture.direct_actions

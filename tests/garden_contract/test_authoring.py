@@ -101,3 +101,24 @@ def test_validation_blocks_contradictions_and_private_plaintext_leaks():
         plaintext_envelope={"debug_label": "The blue cup was always yours."},
     )
     assert {issue.code for issue in issues} == {"unreachable", "private_string_exposed"}
+
+
+def test_compile_blocks_unknown_species_and_missing_action_parameters_before_seal():
+    timeline = Timeline("UTC")
+    timeline.animals.append({
+        "id": "animal.chloe", "species": "dragon", "name": "Impossible",
+        "personality": "mysterious", "initial_state": {"present": False},
+    })
+    timeline.add_beat(BeatCard(
+        id="beat.invalid", title="Invalid runtime beat", track="animals",
+        when=When.fact("visit.total", ">=", 1),
+        actions=(
+            ActionCard("animal.arrive", "animal.chloe", {}),
+            ActionCard("animal.behave", "animal.chloe", {}),
+        ),
+    ))
+    with pytest.raises(AuthoringValidationError) as exc:
+        compile_timeline(timeline)
+    messages = " ".join(issue.message for issue in exc.value.issues)
+    assert "unknown runtime animal species" in messages
+    assert "requires behavior" in messages

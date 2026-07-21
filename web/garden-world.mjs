@@ -31,7 +31,28 @@ const FIXTURE_CATALOG = Object.freeze({
   planter: { name: 'Planter', footprint: [2, 1], blocks_movement: true, affordances: ['plant-container', 'transplant'], actions: ['inspect', 'tend'] },
   table: { name: 'Garden table', footprint: [2, 2], blocks_movement: true, affordances: ['place-keepsake', 'animal-sniff'], actions: ['inspect', 'primary_interact'] },
   chair: { name: 'Garden chair', footprint: [1, 1], blocks_movement: true, affordances: ['sit', 'observe'], actions: ['inspect', 'primary_interact'] },
+  fence_gate: { name: 'Fence and gate', footprint: [1, 1], blocks_movement: false, affordances: ['open-close', 'route'], actions: ['inspect', 'primary_interact'] },
+  mailbox: { name: 'Memory mailbox', footprint: [1, 1], blocks_movement: true, affordances: ['keepsake', 'memory-discovery'], actions: ['inspect', 'open_journal'] },
+  stepping_stones: { name: 'Stepping stones', footprint: [1, 1], blocks_movement: false, affordances: ['path'], actions: ['inspect'] },
+  table_chairs: { name: 'Garden table and chairs', footprint: [2, 2], blocks_movement: true, affordances: ['sit', 'shared-space', 'animal-sniff'], actions: ['inspect', 'primary_interact'] },
+  well: { name: 'Garden well', footprint: [1, 1], blocks_movement: true, affordances: ['water-source', 'draw-water'], actions: ['inspect', 'tend'] },
+  arbor: { name: 'Garden arbor', footprint: [2, 1], blocks_movement: true, affordances: ['plant-support', 'shade', 'animal-rest'], actions: ['inspect', 'primary_interact'] },
+  wind_chime: { name: 'Wind chime', footprint: [1, 1], blocks_movement: false, affordances: ['ambience', 'listen'], actions: ['inspect', 'primary_interact'] },
+  shed_edge: { name: 'Tool shed', footprint: [2, 1], blocks_movement: true, affordances: ['storage', 'shelter'], actions: ['inspect', 'primary_interact'] },
+  tool_rack: { name: 'Tool rack', footprint: [1, 1], blocks_movement: true, affordances: ['storage', 'tending'], actions: ['inspect', 'primary_interact'] },
+  watering_can: { name: 'Watering can', footprint: [1, 1], blocks_movement: false, affordances: ['water', 'tending'], actions: ['inspect', 'tend'] },
+  compost: { name: 'Compost', footprint: [1, 1], blocks_movement: true, affordances: ['soil', 'tending'], actions: ['inspect', 'tend'] },
+  basket: { name: 'Garden basket', footprint: [1, 1], blocks_movement: false, affordances: ['inventory', 'gather'], actions: ['inspect', 'primary_interact'] },
+  sign: { name: 'Garden sign', footprint: [1, 1], blocks_movement: true, affordances: ['narrative', 'read'], actions: ['inspect', 'primary_interact'] },
+  memorial_stone: { name: 'Memorial stone', footprint: [1, 1], blocks_movement: true, affordances: ['inscription', 'memory-discovery'], actions: ['inspect', 'open_journal'] },
 });
+
+const REQUIRED_FUNCTIONAL_FIXTURES = Object.freeze([
+  'bench', 'fence_gate', 'sundial', 'trellis', 'birdbath', 'lantern', 'pond',
+  'mailbox', 'stepping_stones', 'bridge', 'planter', 'table_chairs', 'well',
+  'arbor', 'wind_chime', 'shed_edge', 'tool_rack', 'watering_can', 'compost',
+  'basket', 'sign', 'memorial_stone',
+]);
 
 export const MINIMUM_WORLD_WIDTH = 64;
 export const MINIMUM_WORLD_HEIGHT = 40;
@@ -53,11 +74,27 @@ const SPECIES_CATALOG = Object.freeze({
 });
 
 const ANIMAL_SPECIES = Object.freeze({
-  bird: { affinities: ['fence', 'birdbath', 'trellis'] },
-  cat: { affinities: ['bench', 'table', 'memory_shrine'] },
-  rabbit: { affinities: ['trellis', 'planter', 'bench'] },
-  turtle: { affinities: ['pond', 'bridge', 'stepping_stone'] },
+  bird: { affinities: ['fence', 'birdbath', 'trellis'],
+    repertoire: ['perch', 'hop', 'sing', 'bathe', 'forage', 'greet'],
+    dwell: { perch: 18, sing: 12, bathe: 15, hop: 8 } },
+  cat: { affinities: ['bench', 'table', 'memory_shrine'],
+    repertoire: ['patrol', 'sniff', 'nap', 'knead', 'play', 'greet'],
+    dwell: { nap: 45, patrol: 20, knead: 14, play: 12 } },
+  rabbit: { affinities: ['trellis', 'planter', 'bench'],
+    repertoire: ['hop', 'forage', 'hide', 'groom', 'play', 'greet'],
+    dwell: { groom: 20, hide: 30, hop: 10, play: 12 } },
+  turtle: { affinities: ['pond', 'bridge', 'stepping_stone'],
+    repertoire: ['walk', 'sunbathe', 'paddle', 'rest', 'forage', 'greet'],
+    dwell: { sunbathe: 60, walk: 30, paddle: 35, rest: 45 } },
 });
+
+export function gardenCatalogHas(kind, value) {
+  const catalogId = String(value ?? '').split('.').at(-1);
+  if (kind === 'animal') return Object.hasOwn(ANIMAL_SPECIES, catalogId);
+  if (kind === 'plant') return Object.hasOwn(SPECIES_CATALOG, catalogId);
+  if (kind === 'fixture') return Object.hasOwn(FIXTURE_CATALOG, catalogId);
+  return false;
+}
 
 const COLLECTIBLE_CATALOG = Object.freeze({
   oak_leaf: ['plant_species', 'recipient-grown', 'Oak leaf', "A leaf showing the oak's branching veins."],
@@ -110,6 +147,7 @@ function normalizePlant(data) {
     last_tended_at: data.last_tended_at === null || data.last_tended_at === undefined
       ? null : integer(data.last_tended_at),
     growth_period_seconds: Math.max(1, integer(data.growth_period_seconds, 86400)),
+    dormant: Boolean(data.dormant ?? false),
   };
 }
 
@@ -120,6 +158,9 @@ function normalizeFixture(data) {
     position: vec2(data.position),
     rotation: rotation(data.rotation ?? 0),
     authored: Boolean(data.authored ?? false),
+    interaction_count: Math.max(0, integer(data.interaction_count, 0)),
+    last_interaction: optionalString(data.last_interaction),
+    authored_state: clone(data.authored_state ?? {}),
   };
 }
 
@@ -171,6 +212,8 @@ function normalizeAnimal(data) {
     favorite_fixture_ids: uniqueSorted(data.favorite_fixture_ids ?? []),
     authored_preferences: uniqueSorted(data.authored_preferences ?? []),
     authored_prohibitions: uniqueSorted(data.authored_prohibitions ?? []),
+    display_name: optionalString(data.display_name),
+    personality_note: optionalString(data.personality_note),
   };
 }
 
@@ -417,6 +460,22 @@ async function generateTopology(worldSeed, plantId, speciesId, plantedAt = 0) {
   return nodes;
 }
 
+function advanceTopology(plant, effectiveTime, milestones) {
+  const count = Math.max(0, integer(milestones));
+  if (!count) return plant;
+  const selected = new Set([...plant.topology]
+    .filter(node => node.birth_time > effectiveTime)
+    .sort((left, right) => left.birth_time - right.birth_time ||
+      left.node_id.localeCompare(right.node_id))
+    .slice(0, count).map(node => node.node_id));
+  plant.topology = plant.topology.map(node => selected.has(node.node_id) ? {
+    ...node,
+    birth_time: effectiveTime,
+    maturity_time: Math.max(effectiveTime, Math.min(node.maturity_time, effectiveTime + 3600)),
+  } : node);
+  return plant;
+}
+
 async function freePosition(state, domain, occupied, margin = 2) {
   const rng = new DeterministicRng(await deriveSeed(state.seed, 'layout', ...domain));
   for (let attempt = 0; attempt < 512; attempt += 1) {
@@ -443,10 +502,11 @@ export async function generateInitialWorld(
   const fixtureRng = new DeterministicRng(await deriveSeed(
     state.seed, 'layout', 'fixtures',
   ));
-  const fixtureIds = await shuffled(Object.keys(FIXTURE_CATALOG), fixtureRng);
+  const fixtureIds = await shuffled(REQUIRED_FUNCTIONAL_FIXTURES, fixtureRng);
   const columns = 5;
   const spacingX = Math.max(8, Math.floor((state.world_width - 8) / columns));
-  const startY = state.world_height - 18;
+  const rows = Math.ceil(fixtureIds.length / columns);
+  const startY = Math.max(2, state.world_height - (rows * 5 + 3));
   state.fixtures = [];
   for (let index = 0; index < fixtureIds.length; index += 1) {
     const catalogId = fixtureIds[index];
@@ -533,6 +593,72 @@ function reject(reason) {
   };
 }
 
+async function animalUtility(state, animal, intent, context) {
+  let score = 20;
+  const personality = animal.personality;
+  if (['play', 'hop', 'knead'].includes(intent)) score += personality.playfulness + animal.play_appetite;
+  if (['patrol', 'sniff', 'forage', 'walk', 'paddle'].includes(intent)) score += personality.curiosity;
+  if (['greet', 'sing'].includes(intent)) score += personality.sociability + animal.bond_tier * 12;
+  if (['rest', 'nap', 'sunbathe', 'perch', 'groom', 'hide'].includes(intent)) score += animal.rest_appetite + Math.max(0, 60 - animal.energy);
+  if (intent === 'forage') score += personality.food_motivation;
+  if (animal.authored_preferences.includes(intent)) score += 60;
+  if (ANIMAL_SPECIES[animal.species_id].affinities.some(value =>
+    context.nearby_affordances.includes(value))) score += 20;
+  if ((animal.cooldowns[intent] ?? 0) > context.effective_time) score -= 1000;
+  const noise = new DeterministicRng(await deriveSeed(
+    state.seed, 'animal', animal.animal_id, 'utility', animal.decision_index, intent,
+  )).randint(0, 9);
+  return score + noise;
+}
+
+async function stepGardenAnimals(state) {
+  if (!state.animals.length) return state;
+  const scene = state.program_state?.scene ?? {};
+  const hour = Math.floor(state.effective_time / 3600) % 24;
+  const context = {
+    effective_time: state.effective_time,
+    time_of_day: hour < 6 || hour >= 20 ? 'night' : 'day',
+    weather: String(scene.weather ?? 'calm'),
+    recipient_focus_id: state.ui.focus_id,
+    nearby_affordances: uniqueSorted(state.fixtures.flatMap(fixture => [
+      fixture.catalog_id, ...FIXTURE_CATALOG[fixture.catalog_id].affordances,
+    ])),
+  };
+  for (const animal of state.animals) {
+    let intent; let highLevel;
+    if (animal.choreography_lock) {
+      intent = `choreography:${animal.choreography_lock}`; highLevel = 'authored_scene';
+    } else if (animal.energy <= 15) {
+      intent = 'rest'; highLevel = 'resting';
+    } else if (!['idle', 'recover'].includes(animal.current_intent) &&
+      context.effective_time < animal.minimum_dwell_until) continue;
+    else if (context.recipient_focus_id === animal.animal_id && animal.bond_tier >= 1) {
+      intent = 'greet'; highLevel = 'awake';
+    } else if (context.time_of_day === 'night' && animal.personality.day_preference >= 65) {
+      intent = 'rest'; highLevel = 'sleeping';
+    } else {
+      const candidates = ANIMAL_SPECIES[animal.species_id].repertoire
+        .filter(value => !animal.authored_prohibitions.includes(value));
+      const scored = [];
+      for (const candidate of candidates) scored.push([
+        await animalUtility(state, animal, candidate, context), candidate,
+      ]);
+      scored.sort((left, right) => right[0] - left[0] || right[1].localeCompare(left[1]));
+      [, intent] = scored[0];
+      highLevel = ['rest', 'nap', 'sunbathe', 'perch', 'groom', 'hide'].includes(intent)
+        ? 'resting' : 'awake';
+    }
+    const dwell = ANIMAL_SPECIES[animal.species_id].dwell[intent] ?? 12;
+    animal.high_level_state = highLevel;
+    animal.current_intent = intent;
+    animal.intent_started_at = context.effective_time;
+    animal.minimum_dwell_until = context.effective_time + dwell;
+    animal.decision_index += 1;
+    animal.cooldowns[intent] = context.effective_time + dwell;
+  }
+  return state;
+}
+
 async function finish(prior, updated, command, summary, {
   actions = [], details = null,
 } = {}) {
@@ -547,6 +673,7 @@ async function finish(prior, updated, command, summary, {
     effective_time: prior.effective_time,
     summary,
   });
+  await stepGardenAnimals(final);
   return [final, {
     accepted: true,
     changed: true,
@@ -860,10 +987,25 @@ export async function dispatchGardenCommand(sourceState, command) {
   if (kind === 'tend') {
     const updated = clone(state);
     const plant = updated.plants.find(item => item.plant_id === target);
-    if (!plant) return [state, reject('tend target is not a plant')];
+    const fixture = updated.fixtures.find(item => item.fixture_id === target);
+    if (!plant && !fixture) return [state, reject('tend target is not a plant or tending fixture')];
     const care = String(command.args.care_action ?? 'water');
     const gains = { observe: 0, water: 2, prune: 1, train: 2, transplant: 1 };
-    if (!(care in gains)) return [state, reject('unsupported care action')];
+    if (plant && !(care in gains)) return [state, reject('unsupported care action')];
+    if (fixture) {
+      const definition = FIXTURE_CATALOG[fixture.catalog_id];
+      if (!definition.actions.includes('tend')) return [state, reject('fixture does not support tending')];
+      fixture.interaction_count += 1;
+      fixture.last_interaction = care;
+      updated.journal = await journalEntry(
+        state, fixture.fixture_id, 'tended', definition.name,
+        `${definition.name} was tended with ${care}.`,
+      );
+      return finish(state, updated, command, `Used ${care} on ${definition.name}.`, {
+        details: normalizeFixture(fixture),
+      });
+    }
+    advanceTopology(plant, state.effective_time, gains[care]);
     plant.growth_points += gains[care];
     plant.tended_count += 1;
     plant.last_tended_at = state.effective_time;
@@ -1077,6 +1219,7 @@ export async function projectGardenScene(sourceState) {
         species_id: plant.species_id, visible_organ_count: visible.length,
         topology_hash: await topologyVisibilityHash(plant, state.effective_time),
         growth_points: plant.growth_points,
+        dormant: plant.dormant,
       },
     });
   }
@@ -1091,12 +1234,16 @@ export async function projectGardenScene(sourceState) {
         x: fixture.position[0], y: fixture.position[1],
         width: definition.footprint[0], height: definition.footprint[1],
       },
-      semantic_state: { catalog_id: fixture.catalog_id, rotation: fixture.rotation },
+      semantic_state: { catalog_id: fixture.catalog_id, rotation: fixture.rotation,
+        interaction_count: fixture.interaction_count,
+        last_interaction: fixture.last_interaction,
+        authored_state: clone(fixture.authored_state) },
     });
   }
   for (const animal of state.animals) {
     objects.push({
-      object_id: animal.animal_id, kind: 'animal', semantic_name: animal.species_id,
+      object_id: animal.animal_id, kind: 'animal',
+      semantic_name: animal.display_name ?? animal.species_id,
       position: [...animal.position], depth: 110, collision: false, occlusion: true,
       affordances: [...ANIMAL_SPECIES[animal.species_id].affinities],
       actions: ['inspect', 'feed', 'play'],
@@ -1105,6 +1252,8 @@ export async function projectGardenScene(sourceState) {
         species_id: animal.species_id, high_level_state: animal.high_level_state,
         intent: animal.current_intent, bond_tier: animal.bond_tier,
         choreography_locked: animal.choreography_lock !== null,
+        display_name: animal.display_name,
+        personality_note: animal.personality_note,
       },
     });
   }
@@ -1123,7 +1272,8 @@ export async function projectGardenScene(sourceState) {
     left.object_id.localeCompare(right.object_id));
   return {
     world_id: state.world_id, effective_time: state.effective_time,
-    camera: [...state.ui.camera], motion_paused: state.ui.motion_paused, objects,
+    camera: [...state.ui.camera], motion_paused: state.ui.motion_paused,
+    scene: clone(state.program_state?.scene ?? {}), objects,
   };
 }
 
@@ -1148,10 +1298,12 @@ export async function reconcileGardenOffline(sourceState, observedWallTime, maxS
   const changes = [];
   const receipts = [];
   for (const plant of state.plants) {
+    if (plant.dormant) continue;
     const milestones = Math.max(0,
       Math.floor(end / Math.max(1, plant.growth_period_seconds)) -
       Math.floor(start / Math.max(1, plant.growth_period_seconds)));
     if (milestones) {
+      advanceTopology(plant, end, milestones);
       plant.growth_points += milestones;
       changes.push([plant.plant_id, milestones]);
       receipts.push(await stableId(
@@ -1191,6 +1343,7 @@ export async function reconcileGardenOffline(sourceState, observedWallTime, maxS
     sequence: state.command_sequence, kind: 'offline_reconcile', target_id: null,
     effective_time: end, summary: `Reconciled ${elapsed} seconds in aggregate.`,
   });
+  await stepGardenAnimals(state);
   return [state, {
     elapsed_seconds: elapsed, rollback_clamped: false, summaries,
     receipt_ids: receipts,
@@ -1315,6 +1468,8 @@ function animalWithAuthoredData(animal, definition, routine = undefined) {
   const output = clone(animal);
   if (definition.personality && typeof definition.personality === 'object' &&
     !Array.isArray(definition.personality)) output.personality = normalizePersonality(definition.personality);
+  else if (typeof definition.personality === 'string') output.personality_note = definition.personality;
+  if (typeof definition.name === 'string' && definition.name) output.display_name = definition.name;
   output.favorite_fixture_ids = uniqueSorted(definition.favorite_places ?? []);
   output.authored_prohibitions = uniqueSorted(definition.prohibited_behaviors ?? []);
   const value = routine !== undefined ? routine : definition.routine;
@@ -1368,7 +1523,9 @@ export async function materializeGardenProgramEffects(
       ? null : String(effect.target);
     const params = clone(effect.params ?? {});
     const definition = programDefinition(program, target);
-    const [kind, catalogId] = programKind(definition);
+    const [kind, definitionCatalogId] = programKind(definition);
+    const catalogId = effect.type === 'entity.transform' && params.asset_id
+      ? catalogLeaf(params.asset_id) : definitionCatalogId;
     const requested = params.position ?? definition.position ?? definition.placement;
 
     if (effect.type === 'animal.arrive') {
@@ -1426,10 +1583,15 @@ export async function materializeGardenProgramEffects(
       if (plant && effect.type === 'plant.grow') {
         const value = params.amount ?? params.stage ?? 1;
         const amount = typeof value === 'number' && !Number.isNaN(value) ? integer(value) : 1;
+        advanceTopology(plant, state.effective_time, Math.max(0, amount));
         plant.growth_points = Math.max(0, plant.growth_points + amount);
       } else if (plant && effect.type === 'plant.bloom') {
         plant.topology = plant.topology.map(node =>
           node.kind === 'bloom' ? { ...node, bloom_state: 'bloom' } : node);
+      } else if (plant && effect.type === 'plant.dormancy') {
+        plant.dormant = Boolean(params.dormant ?? true);
+      } else if (plant && effect.type === 'plant.revive') {
+        plant.dormant = false;
       } else if (plant && effect.type === 'plant.prune') {
         const removed = new Set((params.node_ids ?? []).map(String));
         let changed = true;
@@ -1448,7 +1610,9 @@ export async function materializeGardenProgramEffects(
       } else if (kind === 'fixture' && Object.hasOwn(FIXTURE_CATALOG, catalogId)) {
         const position = await authoredPosition(state, target, kind, catalogId, requested);
         state.fixtures = [...state.fixtures.filter(item => item.fixture_id !== target),
-          normalizeFixture({ fixture_id: target, catalog_id: catalogId, position, authored: true })];
+          normalizeFixture({ fixture_id: target, catalog_id: catalogId, position, authored: true,
+            authored_state: params.state && typeof params.state === 'object'
+              ? params.state : params.state === undefined ? {} : { value: params.state } })];
       } else if (kind === 'plant' && Object.hasOwn(SPECIES_CATALOG, catalogId)) {
         const position = await authoredPosition(state, target, kind, catalogId, requested);
         state.plants = [...state.plants.filter(item => item.plant_id !== target), normalizePlant({
@@ -1468,6 +1632,12 @@ export async function materializeGardenProgramEffects(
             provenance: 'author-authored', label, description, position, authored: true })];
       }
     } else if (['narrative.show', 'scene.set', 'letter.present'].includes(effect.type)) {
+      if (effect.type === 'scene.set') {
+        const scene = state.program_state.scene ??= {};
+        for (const key of ['weather', 'palette', 'story_time', 'sky_mode', 'ambience', 'population']) {
+          if (Object.hasOwn(params, key)) scene[key] = clone(params[key]);
+        }
+      }
       const labels = { 'scene.set': 'The Garden changed', 'letter.present': 'A letter is ready' };
       const label = String(params.label ?? labels[effect.type] ?? 'Garden memory');
       const description = String(params.text ?? pythonJson(params));

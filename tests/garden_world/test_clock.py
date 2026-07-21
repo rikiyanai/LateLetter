@@ -64,3 +64,12 @@ def test_same_wall_time_cannot_duplicate_offline_rewards(world):
     assert first.elapsed_seconds == DAY
     assert second.elapsed_seconds == 0
     assert twice == once
+
+
+def test_dormant_plants_do_not_grow_offline_until_revived(world):
+    dormant = replace(world.plants[0], dormant=True)
+    started = replace(
+        world, plants=(dormant,), last_observed_wall_time=100, effective_time=0,
+    )
+    state, _ = reconcile_offline(started, 100 + 30 * DAY)
+    assert state.plants[0].growth_points == 0

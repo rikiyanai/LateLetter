@@ -63,6 +63,7 @@ class SceneProjection:
     effective_time: int
     camera: Vec2
     motion_paused: bool
+    scene: Mapping[str, Any]
     objects: tuple[SceneObjectProjection, ...]
 
     def to_dict(self) -> dict[str, Any]:
@@ -71,6 +72,7 @@ class SceneProjection:
             "effective_time": self.effective_time,
             "camera": self.camera.to_list(),
             "motion_paused": self.motion_paused,
+            "scene": dict(self.scene),
             "objects": [item.to_dict() for item in self.objects],
         }
 
@@ -95,6 +97,7 @@ def project_scene(state: WorldState) -> SceneProjection:
                 "visible_organ_count": len(visible),
                 "topology_hash": age_visibility_hash(plant, state.effective_time),
                 "growth_points": plant.growth_points,
+                "dormant": plant.dormant,
             },
         ))
     for fixture in state.fixtures:
@@ -110,14 +113,17 @@ def project_scene(state: WorldState) -> SceneProjection:
             definition.affordances,
             definition.direct_actions,
             Hotspot(fixture.position.x, fixture.position.y, definition.footprint.x, definition.footprint.y),
-            {"catalog_id": fixture.catalog_id, "rotation": fixture.rotation},
+            {"catalog_id": fixture.catalog_id, "rotation": fixture.rotation,
+             "interaction_count": fixture.interaction_count,
+             "last_interaction": fixture.last_interaction,
+             "authored_state": dict(fixture.authored_state)},
         ))
     for animal in state.animals:
         definition = ANIMAL_SPECIES[animal.species_id]
         objects.append(SceneObjectProjection(
             animal.animal_id,
             "animal",
-            animal.species_id,
+            animal.display_name or animal.species_id,
             animal.position,
             110,
             False,
@@ -131,6 +137,8 @@ def project_scene(state: WorldState) -> SceneProjection:
                 "intent": animal.current_intent,
                 "bond_tier": animal.bond_tier,
                 "choreography_locked": animal.choreography_lock is not None,
+                "display_name": animal.display_name,
+                "personality_note": animal.personality_note,
             },
         ))
     for item in state.collectibles:
@@ -158,5 +166,8 @@ def project_scene(state: WorldState) -> SceneProjection:
         state.effective_time,
         state.ui.camera,
         state.ui.motion_paused,
+        dict(state.program_state.get("scene", {})) if isinstance(
+            state.program_state.get("scene", {}), Mapping
+        ) else {},
         tuple(sorted(objects, key=lambda item: (item.depth, item.object_id))),
     )

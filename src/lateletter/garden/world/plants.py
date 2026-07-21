@@ -147,6 +147,52 @@ def visible_organs(plant: PlantState, effective_time: int) -> tuple[OrganNode, .
     return tuple(node for node in plant.topology if node.birth_time <= effective_time)
 
 
+def advance_topology(
+    plant: PlantState,
+    effective_time: int,
+    milestones: int,
+) -> PlantState:
+    """Persistently reveal a bounded number of the next authored organs.
+
+    Topology is generated once, but care and absence must change more than a
+    counter.  Advancing the next unborn nodes preserves the rooted graph and
+    deterministic IDs while making growth visible in both renderers.
+    """
+    remaining = max(0, int(milestones))
+    if remaining == 0:
+        return plant
+    candidates = sorted(
+        (node for node in plant.topology if node.birth_time > effective_time),
+        key=lambda node: (node.birth_time, node.node_id),
+    )[:remaining]
+    selected = {node.node_id for node in candidates}
+    topology = tuple(
+        node if node.node_id not in selected else OrganNode(
+            node_id=node.node_id,
+            parent_id=node.parent_id,
+            kind=node.kind,
+            birth_time=effective_time,
+            maturity_time=max(effective_time, min(node.maturity_time, effective_time + 3_600)),
+            final_direction=node.final_direction,
+            final_length=node.final_length,
+            glyph_family=node.glyph_family,
+            bloom_state=node.bloom_state,
+        )
+        for node in plant.topology
+    )
+    return PlantState(
+        plant_id=plant.plant_id,
+        species_id=plant.species_id,
+        position=plant.position,
+        topology=topology,
+        growth_points=plant.growth_points,
+        tended_count=plant.tended_count,
+        last_tended_at=plant.last_tended_at,
+        growth_period_seconds=plant.growth_period_seconds,
+        dormant=plant.dormant,
+    )
+
+
 def age_visibility_hash(plant: PlantState, effective_time: int) -> str:
     """Hash semantic visibility and quantized maturation, not rendered glyphs."""
     visible = []

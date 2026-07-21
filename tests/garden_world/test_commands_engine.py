@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from lateletter.garden.world.commands import CommandKind, command
 from lateletter.garden.world.engine import dispatch
+from lateletter.garden.world.plants import create_plant, visible_organs
 
 
 def apply(state, kind, *, target=None, args=None):
@@ -167,3 +168,25 @@ def test_back_unwinds_actions_then_focus(world):
     assert state.ui.focus_id == "plant:rose"
     state, _, _ = apply(state, "back")
     assert state.ui.focus_id is None
+
+
+def test_tending_advances_persistent_topology_and_fixture_tend_is_meaningful(world):
+    plant = create_plant(world.seed, "plant:rose", "rose", world.plants[0].position)
+    state = replace(world, plants=(plant,))
+    before_topology = state.plants[0].topology
+    before_visible = len(visible_organs(state.plants[0], state.effective_time))
+    state, _, _ = apply(
+        state, "tend", target="plant:rose", args={"care_action": "water"},
+    )
+    assert state.plants[0].topology != before_topology
+    assert len(visible_organs(state.plants[0], state.effective_time)) > before_visible
+
+    tending_fixture = replace(
+        state.fixtures[0], fixture_id="fixture:trellis", catalog_id="trellis",
+    )
+    state = replace(state, fixtures=(tending_fixture,))
+    state, _, _ = apply(
+        state, "tend", target="fixture:trellis", args={"care_action": "train"},
+    )
+    assert state.fixtures[0].interaction_count == 1
+    assert state.fixtures[0].last_interaction == "train"

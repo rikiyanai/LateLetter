@@ -28,6 +28,7 @@ from .world.model import (
     stable_id,
 )
 from .world.plants import SPECIES_CATALOG, create_plant
+from .world.plants import advance_topology
 from .world.rng import DeterministicRNG, derive_seed
 
 
@@ -247,8 +248,11 @@ def _animal_with_authored_data(
     routine: Any = None,
 ) -> AnimalState:
     personality = definition.get("personality")
+    personality_note = None
     if isinstance(personality, Mapping):
         animal = replace(animal, personality=Personality.from_dict(personality))
+    elif isinstance(personality, str):
+        personality_note = personality
     favorite_places = definition.get("favorite_places", [])
     prohibited = definition.get("prohibited_behaviors", [])
     routine_value = routine if routine is not None else definition.get("routine", [])
@@ -260,6 +264,8 @@ def _animal_with_authored_data(
         favorite_fixture_ids=tuple(sorted(str(item) for item in favorite_places)),
         authored_preferences=preferences,
         authored_prohibitions=tuple(sorted(str(item) for item in prohibited)),
+        display_name=(str(definition["name"]) if definition.get("name") else animal.display_name),
+        personality_note=personality_note or animal.personality_note,
     )
 
 
@@ -298,6 +304,8 @@ def _materialize_effect(
     definitions = _definitions(program)
     definition = definitions.get(target, {})
     kind, catalog_id = _kind(definition)
+    if effect_type == "entity.transform" and params.get("asset_id"):
+        catalog_id = _catalog(params["asset_id"])
     requested = params.get("position", definition.get("position", definition.get("placement")))
 
     if effect_type == "animal.arrive":
@@ -366,12 +374,17 @@ def _materialize_effect(
             if effect_type == "plant.grow":
                 amount = params.get("amount", params.get("stage", 1))
                 amount = int(amount) if isinstance(amount, (int, float)) and not isinstance(amount, bool) else 1
+                plant = advance_topology(plant, world.effective_time, max(0, amount))
                 plant = replace(plant, growth_points=max(0, plant.growth_points + amount))
             elif effect_type == "plant.bloom":
                 plant = replace(plant, topology=tuple(
                     replace(node, bloom_state="bloom") if node.kind == "bloom" else node
                     for node in plant.topology
                 ))
+            elif effect_type == "plant.dormancy":
+                plant = replace(plant, dormant=bool(params.get("dormant", True)))
+            elif effect_type == "plant.revive":
+                plant = replace(plant, dormant=False)
             elif effect_type == "plant.prune":
                 pruned = {str(item) for item in params.get("node_ids", [])}
                 changed = True
@@ -399,7 +412,13 @@ def _materialize_effect(
         elif kind == "fixture" and catalog_id in FIXTURE_CATALOG:
             position = _resolve_position(world, target, kind, catalog_id, requested)
             fixtures = [item for item in world.fixtures if item.fixture_id != target]
-            fixtures.append(FixtureState(target, catalog_id, position, authored=True))
+            authored_state = params.get("state", {})
+            if not isinstance(authored_state, Mapping):
+                authored_state = {"value": deepcopy(authored_state)}
+            fixtures.append(FixtureState(
+                target, catalog_id, position, authored=True,
+                authored_state=deepcopy(dict(authored_state)),
+            ))
             world = replace(world, fixtures=tuple(fixtures))
         elif kind == "plant" and catalog_id in SPECIES_CATALOG:
             position = _resolve_position(world, target, kind, catalog_id, requested)
@@ -421,6 +440,16 @@ def _materialize_effect(
             ))
             world = replace(world, collectibles=tuple(collectibles))
     elif effect_type in {"narrative.show", "scene.set", "letter.present"}:
+        if effect_type == "scene.set":
+            program_state = deepcopy(dict(world.program_state))
+            scene = program_state.setdefault("scene", {})
+            if not isinstance(scene, dict):
+                scene = {}
+                program_state["scene"] = scene
+            for key in ("weather", "palette", "story_time", "sky_mode", "ambience", "population"):
+                if key in params:
+                    scene[key] = deepcopy(params[key])
+            world = replace(world, program_state=program_state)
         label = str(params.get("label") or {
             "scene.set": "The Garden changed",
             "letter.present": "A letter is ready",

@@ -33,7 +33,8 @@ def _fixture_layout(state: WorldState) -> tuple[FixtureState, ...]:
     catalog_ids = _shuffle(REQUIRED_FUNCTIONAL_FIXTURES, rng)
     columns = 5
     spacing_x = max(8, (state.world_width - 8) // columns)
-    start_y = state.world_height - 18
+    rows = (len(catalog_ids) + columns - 1) // columns
+    start_y = max(2, state.world_height - (rows * 5 + 3))
     fixtures: list[FixtureState] = []
     for index, catalog_id in enumerate(catalog_ids):
         column = index % columns

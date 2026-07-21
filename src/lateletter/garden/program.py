@@ -12,6 +12,11 @@ import math
 import re
 from typing import Any, Mapping, Sequence
 
+from .schedule import ScheduleValidationError, parse_schedule
+from .world.animals import ANIMAL_SPECIES
+from .world.fixtures import FIXTURE_CATALOG
+from .world.plants import SPECIES_CATALOG
+
 
 PROGRAM_VERSION = 1
 MAX_EVENTS = 1_000
@@ -102,6 +107,22 @@ _ACTION_PARAMS: dict[str, frozenset[str]] = {
     "variable.set": frozenset({"name", "value"}),
     "variable.increment": frozenset({"name", "amount"}),
     "event.complete": frozenset({"event_id"}),
+}
+
+_REQUIRED_ACTION_PARAMS: dict[str, tuple[frozenset[str], ...]] = {
+    "letter.present": (frozenset({"letter_id"}),),
+    "entity.place": (frozenset({"position"}),),
+    "entity.move": (frozenset({"position"}),),
+    "animal.behave": (frozenset({"behavior"}),),
+    "animal.routine": (frozenset({"routine"}),),
+    "animal.set_destination": (frozenset({"position"}), frozenset({"fixture_id"})),
+    "animal.deliver": (frozenset({"entity_id"}),),
+    "animal.present_gift": (frozenset({"gift_id"}),),
+    "plant.plant": (frozenset({"species_id"}),),
+    "plant.grow": (frozenset({"stage"}), frozenset({"amount"})),
+    "plant.prune": (frozenset({"node_ids"}),),
+    "narrative.show": (frozenset({"text"}),),
+    "variable.set": (frozenset({"name", "value"}),),
 }
 
 
@@ -204,6 +225,10 @@ def _valid_id(value: Any) -> bool:
     return isinstance(value, str) and bool(_ID_RE.fullmatch(value))
 
 
+def _catalog_leaf(value: Any) -> str:
+    return str(value or "").rsplit(".", 1)[-1]
+
+
 def _parse_condition(raw: Any, path: str, errors: list[str], depth: int = 0) -> Condition:
     if depth > MAX_CONDITION_DEPTH:
         errors.append(f"{path}: condition depth exceeds {MAX_CONDITION_DEPTH}")
@@ -271,6 +296,10 @@ def _parse_action(raw: Any, path: str, errors: list[str]) -> ProgramAction:
         if unknown:
             errors.append(f"{path}.params: unknown fields {', '.join(unknown)}")
         _safe_json(params, f"{path}.params", errors)
+        choices = _REQUIRED_ACTION_PARAMS.get(action_type)
+        if choices and not any(required <= set(params) for required in choices):
+            rendered = " or ".join("+".join(sorted(required)) for required in choices)
+            errors.append(f"{path}.params: requires {rendered}")
 
     if action_type in {"variable.set", "variable.increment"}:
         if not _valid_id(params.get("name")):
@@ -279,6 +308,17 @@ def _parse_action(raw: Any, path: str, errors: list[str]) -> ProgramAction:
         amount = params.get("amount", 1)
         if isinstance(amount, bool) or not isinstance(amount, (int, float)):
             errors.append(f"{path}.params.amount: must be numeric")
+    if action_type == "scene.set" and not params:
+        errors.append(f"{path}.params: scene.set requires at least one scene field")
+    if action_type == "animal.behave" and (
+        not isinstance(params.get("behavior"), str) or not params.get("behavior")
+    ):
+        errors.append(f"{path}.params.behavior: must be non-empty text")
+    if action_type == "plant.prune" and not isinstance(params.get("node_ids"), list):
+        errors.append(f"{path}.params.node_ids: must be a list")
+    for name in ("letter_id", "event_id", "fixture_id", "entity_id", "gift_id"):
+        if name in params and not _valid_id(params[name]):
+            errors.append(f"{path}.params.{name}: invalid stable reference")
     if action_type.startswith(("entity.", "animal.", "plant.")) and target is None:
         errors.append(f"{path}.target: required for {action_type}")
 
@@ -323,6 +363,8 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
         if not _valid_id(name):
             errors.append(f"$.variables: invalid variable name {name!r}")
 
+    all_object_ids: set[str] = set()
+
     def parse_entity_list(field: str) -> tuple[Mapping[str, Any], ...]:
         values = raw.get(field, [])
         if not isinstance(values, list):
@@ -344,6 +386,28 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
                 errors.append(f"{path}.id: duplicate identifier {item_id}")
             else:
                 seen.add(item_id)
+                if item_id in all_object_ids:
+                    errors.append(f"{path}.id: duplicate world identifier {item_id}")
+                all_object_ids.add(item_id)
+            catalog = _catalog_leaf(
+                item.get("species") or item.get("catalog_id") or item.get("asset_id")
+            )
+            if field == "animals":
+                if catalog not in ANIMAL_SPECIES:
+                    errors.append(f"{path}.species: unknown runtime animal species {catalog!r}")
+                if item.get("name") is not None and (
+                    not isinstance(item.get("name"), str) or not item.get("name")
+                ):
+                    errors.append(f"{path}.name: must be non-empty text")
+                personality = item.get("personality")
+                if personality is not None and not isinstance(personality, (str, Mapping)):
+                    errors.append(f"{path}.personality: expected prose or a trait object")
+            else:
+                kind = str(item.get("kind", ""))
+                if kind == "fixture" and catalog not in FIXTURE_CATALOG:
+                    errors.append(f"{path}: unknown runtime fixture asset {catalog!r}")
+                if kind == "plant" and catalog not in SPECIES_CATALOG:
+                    errors.append(f"{path}: unknown runtime plant asset {catalog!r}")
             parsed.append(dict(item))
         return tuple(parsed)
 
@@ -396,6 +460,11 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
             recurrence = schedule.get("recurrence")
             if recurrence is not None and not isinstance(recurrence, Mapping):
                 errors.append(f"{path}.schedule.recurrence: must be an object or null")
+            try:
+                parse_schedule(schedule)
+            except ScheduleValidationError as exc:
+                errors.extend(f"{path}.schedule{error[1:]}" if error.startswith("$")
+                              else f"{path}.schedule: {error}" for error in exc.errors)
         cooldown = item.get("cooldown")
         if cooldown is not None and not isinstance(cooldown, Mapping):
             errors.append(f"{path}.cooldown: must be an object or null")
@@ -404,6 +473,13 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
             _check_keys(cooldown, _COOLDOWN_KEYS, f"{path}.cooldown", errors)
             if not cooldown:
                 errors.append(f"{path}.cooldown: empty cooldown is ambiguous")
+            for name in ("duration_seconds", "visits"):
+                value = cooldown.get(name)
+                if value is not None and (
+                    isinstance(value, bool) or not isinstance(value, int)
+                    or not 1 <= value <= 31_536_000
+                ):
+                    errors.append(f"{path}.cooldown.{name}: expected integer from 1 to 31536000")
         occurrence = item.get("occurrence", "once")
         if occurrence not in {"once", "recurring"}:
             errors.append(f"{path}.occurrence: expected once or recurring")
@@ -430,6 +506,16 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
             errors.append(f"{path}.actions: exceeds maximum of {MAX_ACTIONS_PER_EVENT}")
         actions = tuple(_parse_action(action, f"{path}.actions[{action_index}]", errors)
                         for action_index, action in enumerate(actions_raw))
+        for action_index, action in enumerate(actions):
+            action_path = f"{path}.actions[{action_index}]"
+            if action.type.startswith(("entity.", "animal.", "plant.")) and (
+                action.target not in all_object_ids
+            ):
+                errors.append(f"{action_path}.target: unknown world object {action.target!r}")
+            for param_name in ("fixture_id", "entity_id", "gift_id"):
+                referenced = action.params.get(param_name)
+                if referenced is not None and referenced not in all_object_ids:
+                    errors.append(f"{action_path}.params.{param_name}: unknown world object {referenced!r}")
         events.append(ProgramEvent(
             id=event_id, conditions=condition,
             schedule=dict(schedule) if isinstance(schedule, Mapping) else None,

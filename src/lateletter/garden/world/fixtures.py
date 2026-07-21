@@ -34,9 +34,34 @@ FIXTURE_CATALOG: dict[str, FixtureDefinition] = {
     "planter": FixtureDefinition("planter", "Planter", ("inspect", "tend"), ("plant-container", "transplant"), Vec2(2, 1)),
     "table": FixtureDefinition("table", "Garden table", ("inspect", "primary_interact"), ("place-keepsake", "animal-sniff"), Vec2(2, 2)),
     "chair": FixtureDefinition("chair", "Garden chair", ("inspect", "primary_interact"), ("sit", "observe")),
+    # Atlas-backed author fixtures.  These IDs are the prefix-stripped form of
+    # ``atlas.v1.json`` assets and are therefore valid runtime catalog IDs, not
+    # renderer aliases that silently degrade to collectibles.
+    "fence_gate": FixtureDefinition("fence_gate", "Fence and gate", ("inspect", "primary_interact"), ("open-close", "route"), blocks_movement=False, connected_group="fence"),
+    "mailbox": FixtureDefinition("mailbox", "Memory mailbox", ("inspect", "open_journal"), ("keepsake", "memory-discovery")),
+    "stepping_stones": FixtureDefinition("stepping_stones", "Stepping stones", ("inspect",), ("path",), blocks_movement=False, connected_group="path"),
+    "table_chairs": FixtureDefinition("table_chairs", "Garden table and chairs", ("inspect", "primary_interact"), ("sit", "shared-space", "animal-sniff"), Vec2(2, 2)),
+    "well": FixtureDefinition("well", "Garden well", ("inspect", "tend"), ("water-source", "draw-water")),
+    "arbor": FixtureDefinition("arbor", "Garden arbor", ("inspect", "primary_interact"), ("plant-support", "shade", "animal-rest"), Vec2(2, 1)),
+    "wind_chime": FixtureDefinition("wind_chime", "Wind chime", ("inspect", "primary_interact"), ("ambience", "listen"), blocks_movement=False),
+    "shed_edge": FixtureDefinition("shed_edge", "Tool shed", ("inspect", "primary_interact"), ("storage", "shelter"), Vec2(2, 1)),
+    "tool_rack": FixtureDefinition("tool_rack", "Tool rack", ("inspect", "primary_interact"), ("storage", "tending")),
+    "watering_can": FixtureDefinition("watering_can", "Watering can", ("inspect", "tend"), ("water", "tending"), blocks_movement=False),
+    "compost": FixtureDefinition("compost", "Compost", ("inspect", "tend"), ("soil", "tending")),
+    "basket": FixtureDefinition("basket", "Garden basket", ("inspect", "primary_interact"), ("inventory", "gather"), blocks_movement=False),
+    "sign": FixtureDefinition("sign", "Garden sign", ("inspect", "primary_interact"), ("narrative", "read")),
+    "memorial_stone": FixtureDefinition("memorial_stone", "Memorial stone", ("inspect", "open_journal"), ("inscription", "memory-discovery")),
 }
 
-REQUIRED_FUNCTIONAL_FIXTURES = tuple(FIXTURE_CATALOG)
+# The generated-world minimum follows the versioned atlas.  Older internal IDs
+# remain readable for persisted v1 worlds, but are not a second content owner.
+REQUIRED_FUNCTIONAL_FIXTURES = (
+    "bench", "fence_gate", "sundial", "trellis", "birdbath", "lantern",
+    "pond", "mailbox", "stepping_stones", "bridge", "planter",
+    "table_chairs", "well", "arbor", "wind_chime", "shed_edge",
+    "tool_rack", "watering_can", "compost", "basket", "sign",
+    "memorial_stone",
+)
 CONNECTED_GROUPS = ("fence", "hedge", "path", "pond_edge", "wall")
 CONNECTED_TILE_MASKS: dict[str, tuple[int, ...]] = {
     group: tuple(range(16)) for group in CONNECTED_GROUPS

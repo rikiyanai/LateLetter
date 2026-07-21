@@ -1,6 +1,7 @@
 /** Authenticated Garden program parsing, migration, schedules, and evaluation. */
 
 import { canonicalJson, sha256Hex } from './garden-input.mjs';
+import { gardenCatalogHas } from './garden-world.mjs';
 
 const FACTS = new Set([
   'time.utc', 'time.local', 'date.range', 'season.current', 'visit.total',
@@ -21,6 +22,21 @@ const ACTIONS = new Set([
 ]);
 const ID = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$/;
 const clone = value => JSON.parse(canonicalJson(value));
+const REQUIRED_PARAMS = Object.freeze({
+  'letter.present': [['letter_id']],
+  'entity.place': [['position']],
+  'entity.move': [['position']],
+  'animal.behave': [['behavior']],
+  'animal.routine': [['routine']],
+  'animal.set_destination': [['position'], ['fixture_id']],
+  'animal.deliver': [['entity_id']],
+  'animal.present_gift': [['gift_id']],
+  'plant.plant': [['species_id']],
+  'plant.grow': [['stage'], ['amount']],
+  'plant.prune': [['node_ids']],
+  'narrative.show': [['text']],
+  'variable.set': [['name', 'value']],
+});
 
 export function parseGardenProgram(raw) {
   const errors = [];
@@ -35,6 +51,25 @@ export function parseGardenProgram(raw) {
   if ((raw.evaluator_version ?? 1) !== 1) errors.push('$.evaluator_version: expected 1');
   if ((raw.world_state_version ?? 1) !== 1) errors.push('$.world_state_version: expected 1');
   if (typeof raw.author_timezone !== 'string') errors.push('$.author_timezone: expected timezone');
+  const objectIds = new Set();
+  for (const [field, values] of [['entities', raw.entities], ['animals', raw.animals]]) {
+    if (!Array.isArray(values)) { errors.push(`$.${field}: must be a list`); continue; }
+    values.forEach((item, index) => {
+      const path = `$.${field}[${index}]`;
+      if (!item || typeof item !== 'object' || Array.isArray(item)) { errors.push(`${path}: must be an object`); return; }
+      if (!ID.test(item.id ?? '')) errors.push(`${path}.id: invalid stable identifier`);
+      else if (objectIds.has(item.id)) errors.push(`${path}.id: duplicate world identifier ${item.id}`);
+      else objectIds.add(item.id);
+      const catalog = item.species ?? item.catalog_id ?? item.asset_id;
+      if (field === 'animals') {
+        if (!gardenCatalogHas('animal', catalog)) errors.push(`${path}.species: unknown runtime animal species`);
+        if (item.name != null && (typeof item.name !== 'string' || !item.name)) errors.push(`${path}.name: must be non-empty text`);
+        if (item.personality != null && typeof item.personality !== 'string' &&
+          (!item.personality || typeof item.personality !== 'object' || Array.isArray(item.personality))) errors.push(`${path}.personality: expected prose or a trait object`);
+      } else if (item.kind === 'fixture' && !gardenCatalogHas('fixture', catalog)) errors.push(`${path}: unknown runtime fixture asset`);
+      else if (item.kind === 'plant' && !gardenCatalogHas('plant', catalog)) errors.push(`${path}: unknown runtime plant asset`);
+    });
+  }
   const eventIds = new Set();
   const events = Array.isArray(raw.events) ? raw.events.map((event, index) => {
     const path = `$.events[${index}]`;
@@ -49,10 +84,36 @@ export function parseGardenProgram(raw) {
       if (/^(entity|animal|plant)\./.test(action?.type ?? '') && !ID.test(action?.target ?? '')) {
         errors.push(`${path}.actions[${actionIndex}].target: required`);
       }
+      if (/^(entity|animal|plant)\./.test(action?.type ?? '') &&
+        ID.test(action?.target ?? '') && !objectIds.has(action.target)) {
+        errors.push(`${path}.actions[${actionIndex}].target: unknown world object`);
+      }
+      const requiredChoices = REQUIRED_PARAMS[action?.type] ?? [];
+      const params = action?.params ?? {};
+      if (requiredChoices.length && !requiredChoices.some(choice => choice.every(key => Object.hasOwn(params, key)))) {
+        errors.push(`${path}.actions[${actionIndex}].params: missing required parameters`);
+      }
+      if (action?.type === 'scene.set' && Object.keys(params).length === 0) errors.push(`${path}.actions[${actionIndex}].params: scene.set requires at least one scene field`);
+      if (action?.type === 'plant.prune' && !Array.isArray(params.node_ids)) errors.push(`${path}.actions[${actionIndex}].params.node_ids: must be a list`);
+      for (const key of ['letter_id', 'event_id', 'fixture_id', 'entity_id', 'gift_id']) {
+        if (Object.hasOwn(params, key) && !ID.test(params[key] ?? '')) errors.push(`${path}.actions[${actionIndex}].params.${key}: invalid stable reference`);
+      }
+      for (const key of ['fixture_id', 'entity_id', 'gift_id']) {
+        if (params[key] != null && !objectIds.has(params[key])) errors.push(`${path}.actions[${actionIndex}].params.${key}: unknown world object`);
+      }
       rejectUnsafe(action?.params ?? {}, `${path}.actions[${actionIndex}].params`, errors);
     }
     if (!['once', 'recurring'].includes(event.occurrence ?? 'once')) errors.push(`${path}.occurrence: expected once or recurring`);
-    if (event.schedule !== null && event.schedule !== undefined) parseGardenSchedule(event.schedule);
+    if (event.schedule !== null && event.schedule !== undefined) {
+      try { parseGardenSchedule(event.schedule); } catch (error) { errors.push(`${path}.schedule: ${error.message}`); }
+    }
+    if (event.cooldown != null) {
+      if (!event.cooldown || typeof event.cooldown !== 'object' || Array.isArray(event.cooldown) || !Object.keys(event.cooldown).length) errors.push(`${path}.cooldown: expected a non-empty object`);
+      else for (const [key, value] of Object.entries(event.cooldown)) {
+        if (!['duration_seconds', 'visits'].includes(key)) errors.push(`${path}.cooldown: unknown field ${key}`);
+        if (!Number.isInteger(value) || value < 1 || value > 31536000) errors.push(`${path}.cooldown.${key}: expected integer from 1 to 31536000`);
+      }
+    }
     return clone({ ...event, actions });
   }) : [];
   if (!Array.isArray(raw.events)) errors.push('$.events: must be a list');
@@ -188,11 +249,18 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
   const ledger = state.applied_occurrences ??= [];
   const applied = new Set(ledger);
   const claims = state.exclusive_claims ??= {};
+  const cooldowns = state.event_cooldowns ??= {};
   const effects = []; const trace = [];
   const events = [...program.events].sort((left, right) =>
     (right.priority ?? 0) - (left.priority ?? 0) || left.id.localeCompare(right.id));
   for (const event of events) {
-    let occurrenceId = event.schedule == null ? `${event.id}:once` : context.eligible_occurrences?.[event.id];
+    let occurrenceId = event.schedule == null
+      ? event.occurrence === 'recurring'
+        ? Number.isInteger(context.facts?.['visit.total'])
+          ? `${event.id}:visit:${context.facts['visit.total']}`
+          : `${event.id}:time:${context.facts?.['time.utc'] ?? 'unknown'}`
+        : `${event.id}:once`
+      : context.eligible_occurrences?.[event.id];
     if (occurrenceId === true) occurrenceId = `${event.id}:scheduled`;
     const row = { event_id: event.id, priority: event.priority ?? 0,
       exclusive_group: event.exclusive_group ?? null, occurrence_id: occurrenceId ?? null };
@@ -200,6 +268,16 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
     const ledgerId = `${event.id}@${occurrenceId}`;
     if (applied.has(ledgerId)) { trace.push({ ...row, status: 'skipped', reason: 'already_applied' }); continue; }
     if (event.exclusive_group && Object.hasOwn(claims, event.exclusive_group)) { trace.push({ ...row, status: 'blocked', reason: 'exclusive_group_claimed' }); continue; }
+    const priorCooldown = cooldowns[event.id];
+    if (event.cooldown && priorCooldown) {
+      const nowMs = Date.parse(context.facts?.['time.utc'] ?? '');
+      const visit = context.facts?.['visit.total'];
+      const blockedByTime = Number.isFinite(nowMs) && Number.isInteger(priorCooldown.time_utc_seconds) &&
+        event.cooldown.duration_seconds != null && Math.floor(nowMs / 1000) - priorCooldown.time_utc_seconds < event.cooldown.duration_seconds;
+      const blockedByVisit = Number.isInteger(visit) && Number.isInteger(priorCooldown.visit_total) &&
+        event.cooldown.visits != null && visit - priorCooldown.visit_total < event.cooldown.visits;
+      if (blockedByTime || blockedByVisit) { trace.push({ ...row, status: 'blocked', reason: 'cooldown_active' }); continue; }
+    }
     const [eligible, conditions] = await evaluateGardenCondition(event.conditions, context.facts ?? {}, {
       seed: context.seed ?? 0, event_id: event.id, occurrence_id: occurrenceId,
     });
@@ -207,6 +285,14 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
     for (const action of event.actions) applyAction(action, state, event.id, effects);
     applied.add(ledgerId); ledger.push(ledgerId); ledger.sort();
     if (event.exclusive_group) claims[event.exclusive_group] = ledgerId;
+    if (event.cooldown) {
+      const nowMs = Date.parse(context.facts?.['time.utc'] ?? '');
+      const visit = context.facts?.['visit.total'];
+      cooldowns[event.id] = {
+        ...(Number.isFinite(nowMs) ? { time_utc_seconds: Math.floor(nowMs / 1000) } : {}),
+        ...(Number.isInteger(visit) ? { visit_total: visit } : {}),
+      };
+    }
     trace.push({ ...row, conditions, status: 'applied', effect_count: event.actions.length });
   }
   return { state, effects, trace };
@@ -256,24 +342,57 @@ export function migrateAuthenticatedLegacyGifts(gifts, options = {}) {
 export function parseGardenSchedule(raw) {
   const errors = [];
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Invalid garden schedule: $: schedule must be an object');
+  const allowed = new Set(['start', 'timezone', 'recurrence', 'exceptions', 'missed']);
+  for (const key of Object.keys(raw)) if (!allowed.has(key)) errors.push(`$: unknown fields ${key}`);
   const start = parseLocal(raw.start);
   if (!start) errors.push('$.start: invalid ISO date/time');
   try { new Intl.DateTimeFormat('en-US', { timeZone: raw.timezone }).format(0); }
   catch { errors.push(`$.timezone: unknown IANA timezone ${raw.timezone}`); }
   if (!['skip', 'deliver_on_next_visit', 'summarize_then_current'].includes(raw.missed)) errors.push('$.missed: unsupported missed-event policy');
+  if (!Array.isArray(raw.exceptions) || raw.exceptions.some(value => typeof value !== 'string' || !parseException(value))) {
+    errors.push('$.exceptions: expected valid ISO local dates or date/times');
+  }
   const recurrence = raw.recurrence == null ? null : { interval: 1, ...clone(raw.recurrence) };
   if (recurrence) {
+    const recurrenceAllowed = new Set(['frequency', 'interval', 'count', 'until', 'by_weekday',
+      'intentional_unbounded', 'dst_gap', 'dst_fold']);
+    for (const key of Object.keys(recurrence)) if (!recurrenceAllowed.has(key)) errors.push(`$.recurrence: unknown fields ${key}`);
     if (!['daily', 'weekly', 'monthly', 'yearly'].includes(recurrence.frequency)) errors.push('$.recurrence.frequency: unsupported frequency');
-    if (!recurrence.count && !recurrence.until && !recurrence.intentional_unbounded) errors.push('$.recurrence: count, until, or intentional_unbounded is required');
+    if (!Number.isInteger(recurrence.interval) || recurrence.interval < 1 || recurrence.interval > 10000) errors.push('$.recurrence.interval: expected integer from 1 to 10000');
+    if (recurrence.count != null && (!Number.isInteger(recurrence.count) || recurrence.count < 1 || recurrence.count > 1000000)) errors.push('$.recurrence.count: expected positive bounded integer');
+    if (recurrence.until != null && !parseLocal(recurrence.until)) errors.push('$.recurrence.until: invalid ISO date/time');
+    if (recurrence.count == null && recurrence.until == null && recurrence.intentional_unbounded !== true) errors.push('$.recurrence: count, until, or intentional_unbounded is required');
+    if (recurrence.intentional_unbounded != null && typeof recurrence.intentional_unbounded !== 'boolean') errors.push('$.recurrence.intentional_unbounded: expected boolean');
+    const weekdays = recurrence.by_weekday ?? [];
+    if (!Array.isArray(weekdays) || weekdays.some(day => !['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].includes(day))) errors.push('$.recurrence.by_weekday: use MO through SU');
+    if (weekdays.length && recurrence.frequency !== 'weekly') errors.push('$.recurrence.by_weekday: only valid for weekly recurrence');
+    if (!['shift_forward', 'skip'].includes(recurrence.dst_gap ?? 'shift_forward')) errors.push('$.recurrence.dst_gap: expected shift_forward or skip');
+    if (!['first', 'second'].includes(recurrence.dst_fold ?? 'first')) errors.push('$.recurrence.dst_fold: expected first or second');
   }
   if (errors.length) throw new Error(`Invalid garden schedule: ${errors.join('; ')}`);
-  return { start, timezone: raw.timezone, recurrence,
-    exceptions: raw.exceptions ?? [], missed: raw.missed };
+  return { start, timezone: raw.timezone, recurrence: recurrence ? {
+    ...recurrence,
+    interval: recurrence.interval ?? 1,
+    by_weekday: [...new Set(recurrence.by_weekday ?? [])].sort(),
+    intentional_unbounded: recurrence.intentional_unbounded ?? false,
+    dst_gap: recurrence.dst_gap ?? 'shift_forward',
+    dst_fold: recurrence.dst_fold ?? 'first',
+  } : null, exceptions: raw.exceptions ?? [], missed: raw.missed };
 }
 
 function parseLocal(value) {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value ?? '');
-  return match ? match.slice(1).map(Number) : null;
+  if (!match) return null;
+  const parts = match.slice(1).map(Number);
+  const date = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5] ?? 0));
+  return localStamp([date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(),
+    date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()]) === localStamp(parts)
+    ? parts : null;
+}
+
+function parseException(value) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return parseLocal(`${value}T00:00:00`) !== null;
+  return parseLocal(value) !== null;
 }
 
 function localStamp(parts) {
@@ -314,6 +433,23 @@ function addDays(parts, days) {
   return [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()];
 }
 
+function daysBetween(start, candidate) {
+  return Math.floor((Date.UTC(candidate[0], candidate[1] - 1, candidate[2]) -
+    Date.UTC(start[0], start[1] - 1, start[2])) / 86400000);
+}
+
+function addMonthsExact(parts, months) {
+  const monthIndex = parts[0] * 12 + parts[1] - 1 + months;
+  const year = Math.floor(monthIndex / 12); const month = monthIndex % 12 + 1;
+  const candidate = [year, month, parts[2], parts[3], parts[4], parts[5] ?? 0];
+  return parseLocal(localStamp(candidate)) ? candidate : null;
+}
+
+function addYearsExact(parts, years) {
+  const candidate = [parts[0] + years, parts[1], parts[2], parts[3], parts[4], parts[5] ?? 0];
+  return parseLocal(localStamp(candidate)) ? candidate : null;
+}
+
 function occurrenceId(eventId, ms) { return `${eventId}@${new Date(ms).toISOString().replace('.000Z', 'Z')}`; }
 
 export function expandGardenSchedule(ruleInput, options) {
@@ -323,30 +459,47 @@ export function expandGardenSchedule(ruleInput, options) {
   const catchupStart = Math.max(last, now - 366 * 86400000);
   let truncated = last < catchupStart;
   const recurrence = rule.recurrence;
-  const candidates = [];
-  const maximum = recurrence?.count ?? (recurrence?.intentional_unbounded ? 200000 : 1);
-  for (let index = 0; index < maximum && index < 200000; index += 1) {
-    let local;
+  const candidates = []; let emitted = 0;
+  const weekdayNumbers = new Set((recurrence?.by_weekday ?? []).map(day =>
+    ({ MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6, SU: 0 })[day]));
+  for (let index = 0; index < 200000; index += 1) {
+    let local; let matches = true;
     if (!recurrence) local = rule.start;
-    else if (recurrence.frequency === 'daily') local = addDays(rule.start, index * recurrence.interval);
-    else if (recurrence.frequency === 'weekly') local = addDays(rule.start, index * 7 * recurrence.interval);
-    else {
-      const date = new Date(Date.UTC(...[rule.start[0], rule.start[1] - 1, rule.start[2], rule.start[3], rule.start[4], rule.start[5] ?? 0]));
-      if (recurrence.frequency === 'monthly') date.setUTCMonth(date.getUTCMonth() + index * recurrence.interval);
-      else date.setUTCFullYear(date.getUTCFullYear() + index * recurrence.interval);
-      local = [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate(), date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()];
-    }
+    else if (['daily', 'weekly'].includes(recurrence.frequency)) {
+      local = addDays(rule.start, index);
+      const days = daysBetween(rule.start, local);
+      matches = recurrence.frequency === 'daily'
+        ? days % recurrence.interval === 0
+        : weekdayNumbers.size
+          ? Math.floor(days / 7) % recurrence.interval === 0 &&
+            weekdayNumbers.has(new Date(Date.UTC(local[0], local[1] - 1, local[2])).getUTCDay())
+          : days % (7 * recurrence.interval) === 0;
+    } else if (recurrence.frequency === 'monthly') {
+      local = addMonthsExact(rule.start, index * recurrence.interval);
+    } else local = addYearsExact(rule.start, index * recurrence.interval);
+    if (!matches || local === null) continue;
     if (recurrence?.until && localStamp(local) > `${recurrence.until}${recurrence.until.length === 16 ? ':00' : ''}`) break;
+    emitted += 1;
     const localDate = localStamp(local); const dateOnly = localDate.slice(0, 10);
-    if (rule.exceptions.includes(localDate) || rule.exceptions.includes(dateOnly)) continue;
+    const exception = rule.exceptions.some(value => value === dateOnly ||
+      (value.length === 16 ? `${value}:00` : value) === localDate);
+    if (exception) {
+      if (recurrence?.count != null && emitted >= recurrence.count) break;
+      continue;
+    }
     const scheduled = resolveLocal(local, rule.timezone, recurrence?.dst_gap ?? 'shift_forward', recurrence?.dst_fold ?? 'first');
-    if (scheduled === null) continue;
+    if (scheduled === null) {
+      if (recurrence?.count != null && emitted >= recurrence.count) break;
+      continue;
+    }
     if (scheduled > now) break;
-    if (scheduled <= catchupStart) continue;
-    candidates.push({ id: occurrenceId(options.event_id, scheduled),
-      scheduled_utc: new Date(scheduled).toISOString(), scheduled_local: localDate });
-    if (candidates.length > 400) { candidates.splice(0, candidates.length - 400); truncated = true; }
+    if (scheduled > catchupStart) {
+      candidates.push({ id: occurrenceId(options.event_id, scheduled),
+        scheduled_utc: new Date(scheduled).toISOString(), scheduled_local: localDate });
+      if (candidates.length > 400) { candidates.splice(0, candidates.length - 400); truncated = true; }
+    }
     if (!recurrence) break;
+    if (recurrence.count != null && emitted >= recurrence.count) break;
   }
   const base = { summarized_missed: 0, skipped_missed: 0,
     catch_up_truncated: truncated, rollback_detected: false };

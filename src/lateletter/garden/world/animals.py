@@ -255,6 +255,10 @@ def step_animal(
         intent_started_at=context.effective_time,
         minimum_dwell_until=context.effective_time + dwell,
         decision_index=animal.decision_index + 1,
+        cooldowns=tuple(sorted({
+            **dict(animal.cooldowns),
+            decision.intent: context.effective_time + dwell,
+        }.items())),
     )
     return updated, decision
 

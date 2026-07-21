@@ -7,6 +7,9 @@ from typing import Any, Mapping
 
 from .commands import CommandKind, GardenCommand, validate_command
 from .fixtures import validate_fixture_placement
+from .animals import AnimalContext, step_animals
+from .fixtures import FIXTURE_CATALOG
+from .plants import advance_topology
 from .model import (
     AnimalState,
     CollectibleState,
@@ -210,6 +213,22 @@ def _finish(
         processed_commands=prior.processed_commands + (value.command_id,),
         event_trace=updated.event_trace + (trace,),
     )
+    if final.animals:
+        scene = final.program_state.get("scene", {})
+        scene = scene if isinstance(scene, Mapping) else {}
+        hour = (final.effective_time // 3_600) % 24
+        affordances = tuple(sorted({
+            value
+            for fixture in final.fixtures
+            for value in (fixture.catalog_id, *FIXTURE_CATALOG[fixture.catalog_id].affordances)
+        }))
+        final, _ = step_animals(final, AnimalContext(
+            effective_time=final.effective_time,
+            time_of_day="night" if hour < 6 or hour >= 20 else "day",
+            weather=str(scene.get("weather", "calm")),
+            recipient_focus_id=final.ui.focus_id,
+            nearby_affordances=affordances,
+        ))
     return final, CommandResult(True, final != prior, "", summary, actions, details)
 
 
@@ -276,14 +295,39 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
 
     if kind is CommandKind.TEND:
         plant = next((item for item in state.plants if item.plant_id == target), None)
-        if plant is None:
-            return state, _reject("tend target is not a plant")
+        fixture = next((item for item in state.fixtures if item.fixture_id == target), None)
+        if plant is None and fixture is None:
+            return state, _reject("tend target is not a plant or tending fixture")
         care = str(value.args.get("care_action", "water"))
         gains = {"observe": 0, "water": 2, "prune": 1, "train": 2, "transplant": 1}
-        if care not in gains:
+        if plant is not None and care not in gains:
             return state, _reject("unsupported care action")
+        if fixture is not None:
+            definition = FIXTURE_CATALOG[fixture.catalog_id]
+            if "tend" not in definition.direct_actions:
+                return state, _reject("fixture does not support tending")
+            tended_fixture = replace(
+                fixture,
+                interaction_count=fixture.interaction_count + 1,
+                last_interaction=care,
+            )
+            fixtures = tuple(
+                tended_fixture if item.fixture_id == target else item
+                for item in state.fixtures
+            )
+            journal = _journal_entry(
+                state, fixture.fixture_id, "tended", definition.semantic_name,
+                f"{definition.semantic_name} was tended with {care}.",
+            )
+            return _finish(
+                state, replace(state, fixtures=fixtures, journal=journal), value,
+                f"Used {care} on {definition.semantic_name}.",
+                details=tended_fixture.to_dict(),
+            )
+        assert plant is not None
+        grown = advance_topology(plant, state.effective_time, gains[care])
         tended = replace(
-            plant,
+            grown,
             growth_points=plant.growth_points + gains[care],
             tended_count=plant.tended_count + 1,
             last_tended_at=state.effective_time,

@@ -3,9 +3,13 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from lateletter.author import (
-    _NOTES_MARKER, _install_timeline_program, _run_garden_timeline_editor,
-    _timeline_to_mapping, run_author_workflow,
+    _NOTES_MARKER, _REPOSITORY_ROOT, _confirm_export_passphrase,
+    _install_timeline_program, _run_garden_timeline_editor,
+    _timeline_to_mapping, _validate_export_destination,
+    _validate_private_author_path, run_author_workflow,
 )
 from lateletter.bundle import (
     BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, read_bundle, verify_checksum,
@@ -18,6 +22,9 @@ from lateletter.sealed import (
     open_garden_program, open_message, seal_bundle, verify_bundle_hmac,
 )
 from lateletter.session_store import SessionStore
+
+
+FRESH_PASSPHRASE = "synthetic private phrase 2026!"
 
 
 def _intake() -> IntakeData:
@@ -51,17 +58,18 @@ def test_written_draft_is_sealed_and_exported(tmp_path: Path):
         result = run_author_workflow(
             store,
             _intake(),
-            "biscuit",
+            FRESH_PASSPHRASE,
             accessible=True,
             input_fn=lambda _prompt: next(answers),
+            password_fn=lambda _prompt: FRESH_PASSPHRASE,
             output_fn=lambda _line: None,
         )
 
     assert result == 0
     bundle = read_bundle(output_path)
     assert verify_checksum(bundle)
-    assert verify_bundle_hmac(bundle, "biscuit")
-    assert open_message("biscuit", bundle.messages[0]) == {
+    assert verify_bundle_hmac(bundle, FRESH_PASSPHRASE)
+    assert open_message(FRESH_PASSPHRASE, bundle.messages[0]) == {
         "label": "Her birthday",
         "body": "Dear Maya,\n\nI love you.\n\nDad",
     }
@@ -84,7 +92,7 @@ def test_second_written_message_appends_to_existing_bundle(tmp_path: Path):
             "occasion": "general",
             "status": "written",
         })
-        answers = iter(["", "n", "n"])
+        answers = iter(["", "n", *( ["APPEND"] if output_path.exists() else [] ), "n"])
         with patch(
             "lateletter.author.edit_draft",
             return_value=(body, True),
@@ -95,20 +103,48 @@ def test_second_written_message_appends_to_existing_bundle(tmp_path: Path):
             assert run_author_workflow(
                 store,
                 data,
-                "biscuit",
+                FRESH_PASSPHRASE,
                 accessible=True,
                 input_fn=lambda _prompt: next(answers),
+                password_fn=lambda _prompt: FRESH_PASSPHRASE,
                 output_fn=lambda _line: None,
             ) == 0
 
     bundle = read_bundle(output_path)
     assert verify_checksum(bundle)
-    assert verify_bundle_hmac(bundle, "biscuit")
+    assert verify_bundle_hmac(bundle, FRESH_PASSPHRASE)
     assert [message.id for message in bundle.messages] == ["m1", "m2"]
     assert [
-        open_message("biscuit", message)["body"]
+        open_message(FRESH_PASSPHRASE, message)["body"]
         for message in bundle.messages
     ] == ["First body", "Second body"]
+    backups = list(tmp_path.glob("maya.append.backup*.lateletter"))
+    assert len(backups) == 1
+    assert [message.id for message in read_bundle(backups[0]).messages] == ["m1"]
+
+
+def test_author_paths_reject_tracked_and_unignored_repository_destinations():
+    with pytest.raises(Exception, match="Git-tracked"):
+        _validate_export_destination(_REPOSITORY_ROOT / "sealed_demo.lateletter")
+    unsafe = _REPOSITORY_ROOT / "unsafe-author-output.lateletter"
+    assert not unsafe.exists()
+    with pytest.raises(Exception, match="not ignored by Git"):
+        _validate_export_destination(unsafe)
+    with pytest.raises(Exception, match="not ignored by Git"):
+        _validate_private_author_path(
+            _REPOSITORY_ROOT / "unsafe-author-storage", label="plaintext author storage",
+        )
+
+
+def test_fresh_export_passphrase_must_be_strong_and_confirmed():
+    with pytest.raises(Exception, match="short|at least 12"):
+        _confirm_export_passphrase(
+            "biscuit", existing=False, password_fn=lambda _prompt: "biscuit",
+        )
+    with pytest.raises(Exception, match="did not match"):
+        _confirm_export_passphrase(
+            FRESH_PASSPHRASE, existing=False, password_fn=lambda _prompt: "wrong",
+        )
 
 
 def test_qa_notes_marker_blocks_accidental_sealing(tmp_path: Path):
@@ -128,7 +164,7 @@ def test_qa_notes_marker_blocks_accidental_sealing(tmp_path: Path):
         result = run_author_workflow(
             store,
             _intake(),
-            "biscuit",
+            FRESH_PASSPHRASE,
             accessible=True,
             input_fn=lambda _prompt: "",
             output_fn=lambda _line: None,
@@ -153,7 +189,7 @@ def test_fresh_message_reaches_questions_then_drafting(tmp_path: Path):
         result = run_author_workflow(
             store,
             _intake(),
-            "biscuit",
+            FRESH_PASSPHRASE,
             accessible=True,
             input_fn=lambda _prompt: next(answers),
             output_fn=lambda _line: None,
@@ -189,15 +225,17 @@ def test_write_exports_valid_encrypted_garden_v2(tmp_path: Path):
         "lateletter.author._run_garden_timeline_editor", return_value=_timeline(),
     ), patch("lateletter.author._prompt_export_path", return_value=output_path):
         assert run_author_workflow(
-            store, _intake(), "biscuit", accessible=True,
-            input_fn=lambda _prompt: next(answers), output_fn=lambda _line: None,
+            store, _intake(), FRESH_PASSPHRASE, accessible=True,
+            input_fn=lambda _prompt: next(answers),
+            password_fn=lambda _prompt: FRESH_PASSPHRASE,
+            output_fn=lambda _line: None,
         ) == 0
 
     bundle = read_bundle(output_path)
     assert bundle.version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM
     assert bundle.garden_gifts == []
     assert bundle.garden_program is not None
-    assert parse_program(open_garden_program("biscuit", bundle.garden_program)).events[0].id == "welcome"
+    assert parse_program(open_garden_program(FRESH_PASSPHRASE, bundle.garden_program)).events[0].id == "welcome"
 
 
 def test_write_blocks_invalid_garden_before_export(tmp_path: Path):
@@ -217,7 +255,7 @@ def test_write_blocks_invalid_garden_before_export(tmp_path: Path):
         "lateletter.author._run_garden_timeline_editor", return_value=invalid,
     ), patch("lateletter.author._prompt_export_path", return_value=output_path):
         result = run_author_workflow(
-            store, _intake(), "biscuit", accessible=True,
+            store, _intake(), FRESH_PASSPHRASE, accessible=True,
             input_fn=lambda _prompt: "", output_fn=lambda _line: None,
         )
     assert result == 1

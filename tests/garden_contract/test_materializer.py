@@ -78,6 +78,7 @@ def test_program_effects_materialize_with_receipts_trace_and_runtime_state():
 
     animal = next(item for item in updated.animals if item.animal_id == "animal.miso")
     assert animal.personality.boldness == 91
+    assert animal.display_name == "Miso"
     assert animal.current_intent == "greet"
     assert animal.authored_preferences == ("morning_rounds",)
     assert animal.favorite_fixture_ids == ("fixture.authored",)
@@ -87,6 +88,9 @@ def test_program_effects_materialize_with_receipts_trace_and_runtime_state():
     assert {entry.label for entry in updated.journal} >= {"Welcome", "The Garden changed"}
     assert updated.program_state["variables"]["visits"] == 1
     assert updated.program_state["completed_events"] == ["welcome"]
+    assert updated.program_state["scene"] == {
+        "palette": "gold", "sky_mode": "privacy-preserving", "weather": "clear",
+    }
     assert result.effect_receipts
     assert all(receipt.startswith("program-receipt:") for receipt in result.effect_receipts)
     assert len(updated.event_trace) - len(world.event_trace) == len(result.effect_receipts)
