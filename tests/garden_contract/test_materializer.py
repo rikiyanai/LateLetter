@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from lateletter.garden.materializer import (
     apply_program,
     build_runtime_facts,
@@ -191,3 +193,64 @@ def test_true_initial_definition_state_materializes_once():
     second = apply_program(first.world, program, facts={})
     assert second.effect_receipts == ()
     assert second.world.canonical_bytes() == first.world.canonical_bytes()
+
+
+def test_runtime_fact_contract_accepts_real_duration_examined_and_canonical_overrides():
+    world = generate_initial_world("fact-hooks", 15)
+    program = _program()
+    now = datetime(2030, 6, 2, 12, tzinfo=timezone.utc)
+    facts = build_runtime_facts(
+        world, program, now_utc=now, total_visits=4,
+        absence_seconds=8 * 86_400, read_ids={"letter.one"},
+        due_letter_ids=("letter.two",), session_duration_seconds=127,
+        examined_ids={"keepsake.authored"},
+        interaction_facts={"animal.memory": ["author-greeting"]},
+    )
+    assert facts["session.duration_seconds"] == 127
+    assert facts["gift.examined"] == ["keepsake.authored"]
+    assert facts["animal.memory"] == ["author-greeting"]
+    with pytest.raises(ValueError, match="unsupported fact"):
+        build_runtime_facts(
+            world, program, now_utc=now, total_visits=1,
+            absence_seconds=0, read_ids=set(),
+            interaction_facts={"renderer.secret": True},
+        )
+
+
+def test_animal_delivery_materializes_revealed_collectible_and_completes_choreography():
+    raw = {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1", "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {},
+        "entities": [{
+            "id": "gift", "kind": "collectible", "catalog_id": "collectible.seed_packet",
+            "position": [18, 10], "properties": {"label": "For Chloe"},
+        }],
+        "animals": [{
+            "id": "rabbit", "species": "rabbit", "name": "Clover",
+            "initial_state": {"present": True},
+        }],
+        "events": [{
+            "id": "delivery", "conditions": {"fact": "visit.total", "op": ">=", "value": 1},
+            "schedule": None, "occurrence": "once", "priority": 0,
+            "exclusive_group": None, "cooldown": None,
+            "actions": [{"type": "animal.present_gift", "target": "rabbit",
+                         "params": {"gift_id": "gift"}}],
+        }],
+    }
+    program = parse_program(raw)
+    world = generate_initial_world("delivery", 16)
+    now = datetime(2030, 9, 2, 12, tzinfo=timezone.utc)
+    updated = apply_program(
+        world, program, facts=build_runtime_facts(
+            world, program, now_utc=now, total_visits=1,
+            absence_seconds=0, read_ids=set(),
+        ),
+    ).world
+    gift = next(item for item in updated.collectibles if item.collectible_id == "gift")
+    rabbit = next(item for item in updated.animals if item.animal_id == "rabbit")
+    assert gift.label == "For Chloe"
+    assert rabbit.display_name == "Clover"
+    assert rabbit.current_intent == "animal.present_gift"
+    assert rabbit.choreography_lock is None
+    assert any(entry.label == "Gift delivered" for entry in updated.journal)

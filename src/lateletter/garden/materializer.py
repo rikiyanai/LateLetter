@@ -10,7 +10,7 @@ from typing import Any, Mapping
 from zoneinfo import ZoneInfo
 
 from .evaluator import EvaluationResult, evaluate_program
-from .program import GardenProgram
+from .program import GardenProgram, SUPPORTED_FACTS
 from .schedule import expand_schedule, parse_schedule
 from .seasons import season_for_month
 from .world.animals import ANIMAL_SPECIES, create_animal
@@ -71,13 +71,33 @@ def build_runtime_facts(
     absence_seconds: int,
     read_ids: set[str],
     due_letter_ids: tuple[str, ...] = (),
+    session_duration_seconds: int = 0,
+    examined_ids: set[str] | None = None,
+    interaction_facts: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Build the evaluator contract at a runtime transaction boundary.
+
+    ``session_duration_seconds`` must come from the monotonic session owner,
+    while ``examined_ids`` comes from the renderer-neutral examine receipt
+    owner. ``interaction_facts`` is a narrow integration hook for canonical
+    world adapters; unknown program facts are rejected instead of silently
+    inventing renderer-local conditions.
+    """
     local = now_utc.astimezone(ZoneInfo(program.author_timezone))
     program_state = world.program_state
     entities = program_state.get("entities", {})
     completed = program_state.get("completed_events", [])
-    examined = [entry.object_id for entry in world.journal if entry.status == "examined"]
-    return {
+    examined = {
+        entry.object_id for entry in world.journal if entry.status == "examined"
+    }
+    examined.update(examined_ids or set())
+    if (
+        isinstance(session_duration_seconds, bool)
+        or not isinstance(session_duration_seconds, int)
+        or session_duration_seconds < 0
+    ):
+        raise ValueError("session_duration_seconds must be a non-negative integer")
+    facts = {
         "time.utc": now_utc.astimezone(timezone.utc).isoformat(timespec="seconds"),
         "time.local": local.replace(tzinfo=None).isoformat(timespec="seconds"),
         "date.range": local.date().isoformat(),
@@ -85,14 +105,14 @@ def build_runtime_facts(
         "visit.total": total_visits,
         "visit.nth": total_visits,
         "absence.days": max(0, absence_seconds // 86_400),
-        "session.duration_seconds": 0,
+        "session.duration_seconds": int(session_duration_seconds),
         "letter.due": list(due_letter_ids),
         "letter.read": sorted(read_ids),
         "gift.revealed": sorted(
             key for key, value in entities.items()
             if isinstance(value, Mapping) and value.get("revealed")
         ) if isinstance(entities, Mapping) else [],
-        "gift.examined": sorted(set(examined)),
+        "gift.examined": sorted(examined),
         "event.completed": sorted(str(item) for item in completed),
         "animal.arrived": sorted(animal.animal_id for animal in world.animals),
         "animal.bond_tier": max((animal.bond_tier for animal in world.animals), default=0),
@@ -109,6 +129,14 @@ def build_runtime_facts(
         ),
         "fixture.present": sorted(fixture.fixture_id for fixture in world.fixtures),
     }
+    if interaction_facts:
+        unknown = sorted(set(interaction_facts) - SUPPORTED_FACTS)
+        if unknown:
+            raise ValueError(
+                "interaction_facts contains unsupported fact(s): " + ", ".join(unknown)
+            )
+        facts.update(deepcopy(dict(interaction_facts)))
+    return facts
 
 
 def _catalog(value: Any) -> str:
@@ -191,7 +219,8 @@ def _seed_program_state(world: WorldState, program: GardenProgram) -> WorldState
             for name, value in initial.items():
                 slot.setdefault(str(name), deepcopy(value))
     state.setdefault("applied_occurrences", [])
-    state.setdefault("exclusive_claims", {})
+    state.pop("exclusive_claims", None)
+    state.setdefault("exclusive_occurrences", [])
     return replace(world, program_state=state)
 
 
@@ -345,14 +374,34 @@ def _materialize_effect(
                 if destination is not None:
                     animal = replace(animal, position=destination)
             elif effect_type in {"animal.deliver", "animal.present_gift"}:
-                animal = replace(animal, choreography_lock=effect_type)
+                animal = replace(
+                    animal,
+                    choreography_lock=None,
+                    current_intent=effect_type,
+                    intent_started_at=world.effective_time,
+                    minimum_dwell_until=world.effective_time,
+                )
             animals.append(animal)
         world = replace(world, animals=tuple(animals))
         if effect_type in {"animal.deliver", "animal.present_gift"}:
+            reference_key = "entity_id" if effect_type == "animal.deliver" else "gift_id"
+            delivered_id = params.get(reference_key)
+            if isinstance(delivered_id, str) and delivered_id:
+                world = _materialize_effect(
+                    world,
+                    program,
+                    {
+                        "type": "entity.reveal",
+                        "event_id": effect.get("event_id", "animal.delivery"),
+                        "target": delivered_id,
+                        "params": {},
+                    },
+                    f"{receipt}:delivered-object",
+                )
             world = _journal(
                 world, receipt=receipt, object_id=target,
-                label="Authored animal moment",
-                description=json.dumps(dict(params), sort_keys=True, ensure_ascii=False),
+                label="Gift delivered" if effect_type == "animal.present_gift" else "Delivery complete",
+                description="An authored animal delivery was completed.",
             )
     elif effect_type == "plant.plant":
         species = _catalog(params.get("species_id") or catalog_id)

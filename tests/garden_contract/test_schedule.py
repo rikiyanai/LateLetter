@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import json
 from pathlib import Path
+import shutil
+import subprocess
 
 import pytest
 
@@ -106,3 +108,46 @@ def test_clock_rollback_emits_no_duplicate_occurrence():
     )
     assert result.rollback_detected is True
     assert result.occurrences == ()
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+@pytest.mark.parametrize("schedule,last_seen,now", [
+    ({
+        "start": "2026-01-05T09:00:00", "timezone": "UTC",
+        "recurrence": {"frequency": "weekly", "interval": 2, "count": 8,
+                       "by_weekday": ["MO", "WE"]},
+        "exceptions": [], "missed": "summarize_then_current",
+    }, "2026-01-04T00:00:00+00:00", "2026-02-20T00:00:00+00:00"),
+    ({
+        "start": "2026-01-31T09:00:00", "timezone": "UTC",
+        "recurrence": {"frequency": "monthly", "interval": 1, "count": 4},
+        "exceptions": [], "missed": "summarize_then_current",
+    }, "2026-01-01T00:00:00+00:00", "2026-06-01T00:00:00+00:00"),
+])
+def test_python_and_browser_weekly_month_end_schedules_conform(
+    schedule, last_seen, now,
+):
+    result = expand_schedule(
+        parse_schedule(schedule), event_id="event.conformance",
+        last_seen_utc=datetime.fromisoformat(last_seen),
+        now_utc=datetime.fromisoformat(now),
+    )
+    script = """
+import { expandGardenSchedule } from './web/garden-program.mjs';
+const [schedule, lastSeen, now] = JSON.parse(process.argv[1]);
+const result = expandGardenSchedule(schedule, {
+  event_id: 'event.conformance', last_seen_utc: lastSeen, now_utc: now,
+});
+process.stdout.write(JSON.stringify(result));
+"""
+    completed = subprocess.run(
+        [shutil.which("node") or "node", "--input-type=module", "-e", script,
+         json.dumps([schedule, last_seen, now])],
+        cwd=Path(__file__).parents[2], check=True, capture_output=True, text=True,
+    )
+    browser = json.loads(completed.stdout)
+    assert [item["id"] for item in browser["occurrences"]] == [
+        item.id for item in result.occurrences
+    ]
+    assert browser["summarized_missed"] == result.summarized_missed
+    assert browser["skipped_missed"] == result.skipped_missed

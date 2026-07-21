@@ -5,7 +5,7 @@ import pytest
 from lateletter.garden.authoring import (
     ActionCard, AuthoringValidationError, BeatCard, FatigueLimitReached,
     Timeline, When, compile_timeline, explain_trace, preview_timeline,
-    validate_timeline,
+    validate_timeline, build_letter_rabbit_autumn_arc,
 )
 
 
@@ -122,3 +122,56 @@ def test_compile_blocks_unknown_species_and_missing_action_parameters_before_sea
     messages = " ".join(issue.message for issue in exc.value.issues)
     assert "unknown runtime animal species" in messages
     assert "requires behavior" in messages
+
+
+def test_narrative_ethics_blocks_coercion_but_allows_compassionate_prose():
+    unsafe = Timeline("UTC")
+    unsafe.beats.append(BeatCard(
+        id="guilt", title="If you really love me", track="revisit",
+        when=When.fact("visit.total", ">=", 1),
+        actions=(ActionCard.show_memory("Act now; this expires today."),),
+    ))
+    issues = validate_timeline(unsafe)
+    assert [issue.code for issue in issues].count("prohibited_narrative") == 2
+    with pytest.raises(AuthoringValidationError, match="dark-pattern"):
+        compile_timeline(unsafe)
+
+    gentle = Timeline("UTC")
+    gentle.beats.append(BeatCard(
+        id="gentle", title="A place that waits", track="revisit",
+        when=When.fact("visit.total", ">=", 1),
+        actions=(ActionCard.show_memory(
+            "I miss you. Take all the time you need; there is no need to hurry.",
+        ),),
+    ))
+    assert not [issue for issue in validate_timeline(gentle)
+                if issue.code == "prohibited_narrative"]
+    assert compile_timeline(gentle).events[0].id == "gentle"
+
+
+def test_guided_arc_compiles_and_preview_reaches_exact_acceptance_story():
+    timeline = build_letter_rabbit_autumn_arc(
+        recipient_name="Chloe", letter_id="letter.chloe", rabbit_name="Clover",
+    )
+    program = compile_timeline(
+        timeline,
+        known_letter_ids={"letter.chloe"},
+        known_asset_ids={"collectible.seed_packet"},
+    )
+    result = preview_timeline(
+        timeline, {}, {"facts": {
+            "letter.read": ["letter.chloe"], "visit.total": 3,
+            "animal.bond_tier": 3, "season.current": "autumn",
+        }},
+        known_letter_ids={"letter.chloe"},
+        known_asset_ids={"collectible.seed_packet"},
+    )
+    assert [event.id for event in program.events] == [
+        "arc.rabbit-arrives", "arc.third-visit-rose", "arc.bonded-autumn-gift",
+    ]
+    assert [row["event_id"] for row in result.trace if row["status"] == "applied"] == [
+        "arc.rabbit-arrives", "arc.third-visit-rose", "arc.bonded-autumn-gift",
+    ]
+    assert result.state["entities"]["arc.rabbit"]["present"] is True
+    assert result.state["entities"]["arc.autumn-rose"]["planted"] is True
+    assert result.state["entities"]["arc.autumn-gift"]["revealed"] is True

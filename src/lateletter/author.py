@@ -34,6 +34,7 @@ from .garden.authoring import (
     FatigueLimitReached,
     Timeline,
     When,
+    build_letter_rabbit_autumn_arc,
     compile_timeline,
     explain_trace,
     preview_timeline,
@@ -283,6 +284,7 @@ def _timeline_to_mapping(timeline: Timeline) -> dict:
                 "priority": beat.priority,
                 "exclusive_group": beat.exclusive_group,
                 "cooldown": dict(beat.cooldown) if beat.cooldown is not None else None,
+                "occurrence": beat.occurrence,
             }
             for beat in timeline.beats
         ],
@@ -316,6 +318,7 @@ def _timeline_from_mapping(raw: dict) -> Timeline:
             priority=int(beat.get("priority", 0)),
             exclusive_group=beat.get("exclusive_group"),
             cooldown=(dict(beat["cooldown"]) if beat.get("cooldown") is not None else None),
+            occurrence=str(beat.get("occurrence", "auto")),
         ))
     timeline.begin_session()
     return timeline
@@ -373,11 +376,105 @@ def _slug(value: str, fallback: str) -> str:
     return result[:64] or fallback
 
 
+def _prompt_plain_value(*, input_fn: Callable[[str], str]) -> object:
+    """Collect a typed variable value without asking the author for JSON."""
+    kind = _ask("  Value type: 1 text · 2 whole number · 3 decimal · 4 yes/no · 5 empty [1]: ",
+                input_fn=input_fn)
+    choice = (kind or "1").strip() or "1"
+    if choice == "5":
+        return None
+    raw = _ask("  Value: ", input_fn=input_fn)
+    if choice == "2":
+        return int((raw or "0").strip() or "0")
+    if choice == "3":
+        return float((raw or "0").strip() or "0")
+    if choice == "4":
+        return (raw or "no").strip().lower() in {"y", "yes", "true", "1"}
+    return raw or ""
+
+
+def _prompt_advanced_condition(*, input_fn: Callable[[str], str],
+                               message_ids: list[str],
+                               output_fn: Callable[[str], None]) -> When | None:
+    """Offer every canonical fact without exposing JSON."""
+    facts = [
+        "time.utc", "time.local", "date.range", "season.current",
+        "visit.total", "visit.nth", "absence.days", "session.duration_seconds",
+        "letter.due", "letter.read", "gift.revealed", "gift.examined",
+        "event.completed", "animal.arrived", "animal.bond_tier",
+        "animal.interaction", "animal.memory", "plant.growth_stage",
+        "plant.bloom", "fixture.present", "probability.seeded",
+    ]
+    for offset in range(0, len(facts), 5):
+        output_fn("  " + " · ".join(
+            f"{index + 1} {facts[index]}"
+            for index in range(offset, min(offset + 5, len(facts)))
+        ))
+    selected = _ask("  Fact number: ", input_fn=input_fn)
+    try:
+        fact = facts[int((selected or "0").strip()) - 1]
+    except (ValueError, IndexError):
+        output_fn("  That fact selection was not recognized.")
+        return None
+    operators = ["==", "!=", ">", ">=", "<", "<=", "contains", "not_contains", "in", "not_in", "exists"]
+    output_fn("  Operators: " + " · ".join(f"{i + 1} {op}" for i, op in enumerate(operators)))
+    operator_raw = _ask("  Operator [contains for lists, >= otherwise]: ", input_fn=input_fn)
+    default_operator = "contains" if fact in {
+        "letter.due", "letter.read", "gift.revealed", "gift.examined",
+        "event.completed", "animal.arrived", "animal.interaction", "animal.memory",
+        "plant.bloom", "fixture.present",
+    } else ">=" if fact in {
+        "time.utc", "time.local", "visit.total", "visit.nth", "absence.days",
+        "session.duration_seconds", "animal.bond_tier", "plant.growth_stage",
+    } else "=="
+    try:
+        operator = (
+            operators[int(operator_raw.strip()) - 1]
+            if operator_raw and operator_raw.strip().isdigit()
+            else (operator_raw or default_operator).strip() or default_operator
+        )
+    except (ValueError, IndexError):
+        return None
+    if operator not in operators:
+        output_fn("  That operator was not recognized.")
+        return None
+    if operator == "exists":
+        return When.fact(fact, operator)
+    if fact in {"letter.due", "letter.read"} and message_ids:
+        for index, message_id in enumerate(message_ids, 1):
+            output_fn(f"  {index}. {message_id}")
+        raw = _ask("  Letter number or stable ID: ", input_fn=input_fn)
+        try:
+            value = message_ids[int((raw or "0").strip()) - 1]
+        except (ValueError, IndexError):
+            value = (raw or "").strip()
+        return When.fact(fact, operator, reference=value)
+    raw = _ask("  Comparison value or stable object/event name: ", input_fn=input_fn)
+    value: object = (raw or "").strip()
+    if fact in {
+        "visit.total", "visit.nth", "absence.days", "session.duration_seconds",
+        "animal.bond_tier", "plant.growth_stage",
+    }:
+        value = int(str(value))
+    elif fact == "probability.seeded":
+        value = float(str(value))
+        if not 0 <= value <= 1:
+            raise ValueError("seeded probability must be between 0 and 1")
+    reference_facts = {
+        "gift.revealed", "gift.examined", "event.completed", "animal.arrived",
+        "animal.interaction", "animal.memory", "plant.bloom", "fixture.present",
+    }
+    return When.fact(
+        fact, operator, value,
+        reference=str(value) if fact in reference_facts and operator in {"contains", "not_contains"} else None,
+    )
+
+
 def _prompt_condition(*, input_fn: Callable[[str], str],
                       message_ids: list[str], output_fn: Callable[[str], None]) -> When | None:
     output_fn("  When should this beat happen?")
     output_fn("  1 visits · 2 letter read · 3 date/time · 4 bond · 5 season · 6 absence")
-    output_fn("  7 all of several conditions · 8 any condition · 9 not a condition")
+    output_fn("  7 all of several conditions · 8 any condition · 9 not a condition · 10 every fact")
     choice = _ask("  Condition [1]: ", input_fn=input_fn)
     if choice is None:
         return None
@@ -434,6 +531,10 @@ def _prompt_condition(*, input_fn: Callable[[str], str],
             input_fn=input_fn, message_ids=message_ids, output_fn=output_fn,
         )
         return When.never(child) if child is not None else None
+    if choice == "10":
+        return _prompt_advanced_condition(
+            input_fn=input_fn, message_ids=message_ids, output_fn=output_fn,
+        )
     output_fn("  That condition was not recognized.")
     return None
 
@@ -535,12 +636,24 @@ def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
         object_id = _slug(name, f"object-{len(timeline.entities) + 1}")
         catalog = _ask("  Portable atlas/catalog ID: ", input_fn=input_fn)
         kind = _ask("  Kind (gift/fixture/collectible) [gift]: ", input_fn=input_fn)
+        kind_value = (kind or "gift").strip() or "gift"
         timeline.entities.append({
-            "id": object_id, "kind": (kind or "gift").strip() or "gift",
+            "id": object_id, "kind": kind_value,
             "catalog_id": (catalog or object_id).strip() or object_id,
             "initial_state": {"revealed": False}, "placement": "authored",
         })
-        return ActionCard.reveal(object_id)
+        operation = _ask("  1 reveal at an authored place · 2 place at x,y [1]: ", input_fn=input_fn)
+        if (operation or "1").strip() == "2":
+            position = _ask("  Position as x,y: ", input_fn=input_fn)
+            values = [int(value.strip()) for value in (position or "").split(",")]
+            if len(values) != 2:
+                return None
+            return ActionCard("entity.place", object_id, {"position": values})
+        state = _ask("  Initial semantic state [unchanged]: ", input_fn=input_fn)
+        return ActionCard("entity.reveal", object_id, {
+            "position": "authored",
+            **({"state": state.strip()} if state and state.strip() else {}),
+        })
     if choice == "2":
         name = _ask("  Animal name: ", input_fn=input_fn)
         species = _ask("  Species/catalog ID: ", input_fn=input_fn)
@@ -574,32 +687,53 @@ def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
             "initial_state": {"planted": False},
             "placement": (position or "authored").strip() or "authored",
         })
+        seed = _ask("  Optional deterministic plant seed [derived]: ", input_fn=input_fn)
         return ActionCard("plant.plant", plant_id, {
             "species_id": species.strip(),
             "position": (position or "authored").strip() or "authored",
+            **({"seed": int(seed.strip())} if seed and seed.strip() else {}),
         })
     if choice == "4":
         text = _ask("  Memory text (encrypted in the bundle): ", input_fn=input_fn)
         label = _ask("  Short label [memory]: ", input_fn=input_fn)
+        kind = _ask("  Kind: nudge, inscription, memory, caption, or observation [memory]: ", input_fn=input_fn)
         if text is None or not text.strip():
             return None
-        return ActionCard.show_memory(text.strip(), label=(label or "memory").strip() or "memory")
+        return ActionCard("narrative.show", None, {
+            "kind": (kind or "memory").strip() or "memory",
+            "text": text.strip(), "label": (label or "memory").strip() or "memory",
+        })
     if choice == "5":
         palette = _ask("  Palette/season mood [natural]: ", input_fn=input_fn)
         weather = _ask("  Weather [clear]: ", input_fn=input_fn)
-        sky = _ask("  Sky mode [privacy-preserving]: ", input_fn=input_fn)
-        return ActionCard("scene.set", None, {
+        story_time = _ask("  Story date/time or clock direction [unchanged]: ", input_fn=input_fn)
+        sky = _ask("  Sky mode [storybook_fallback]: ", input_fn=input_fn)
+        ambience = _ask("  Ambience description [unchanged]: ", input_fn=input_fn)
+        population = _ask("  Population direction [unchanged]: ", input_fn=input_fn)
+        params = {
             "palette": (palette or "natural").strip() or "natural",
             "weather": (weather or "clear").strip() or "clear",
-            "sky_mode": (sky or "privacy-preserving").strip() or "privacy-preserving",
-        })
+            "sky_mode": (sky or "storybook_fallback").strip() or "storybook_fallback",
+        }
+        for key, value in (("story_time", story_time), ("ambience", ambience), ("population", population)):
+            if value and value.strip():
+                params[key] = value.strip()
+        return ActionCard("scene.set", None, params)
     if choice == "6":
         name = _ask("  Variable name: ", input_fn=input_fn)
-        value = _ask("  Value (plain text): ", input_fn=input_fn)
         if name is None or not name.strip():
             return None
         timeline.variables.setdefault(_slug(name, "value"), None)
-        return ActionCard.set_variable(_slug(name, "value"), value or "")
+        operation = _ask("  1 set a value · 2 increment a number [1]: ", input_fn=input_fn)
+        if (operation or "1").strip() == "2":
+            amount = _ask("  Amount to add [1]: ", input_fn=input_fn)
+            number = float((amount or "1").strip() or "1")
+            return ActionCard.increment(
+                _slug(name, "value"), int(number) if number.is_integer() else number,
+            )
+        return ActionCard.set_variable(
+            _slug(name, "value"), _prompt_plain_value(input_fn=input_fn),
+        )
     if choice == "7":
         if not timeline.animals:
             output_fn("  Add an animal before directing it.")
@@ -612,7 +746,7 @@ def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
         except (ValueError, IndexError):
             return None
         operation = _ask(
-            "  Direction: 1 behavior · 2 routine · 3 destination · 4 depart · 5 present gift [1]: ",
+            "  Direction: 1 behavior · 2 routine · 3 destination · 4 depart · 5 present gift · 6 deliver object [1]: ",
             input_fn=input_fn,
         )
         operation = (operation or "1").strip() or "1"
@@ -627,10 +761,20 @@ def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
             routine = _ask("  New routine: ", input_fn=input_fn)
             return ActionCard("animal.routine", target, {"routine": (routine or "wander").strip()})
         if operation == "3":
+            mode = _ask("  Destination: 1 fixture/object · 2 x,y position [1]: ", input_fn=input_fn)
+            if (mode or "1").strip() == "2":
+                position = _ask("  Position as x,y: ", input_fn=input_fn)
+                values = [int(value.strip()) for value in (position or "").split(",")]
+                if len(values) != 2:
+                    return None
+                return ActionCard("animal.set_destination", target, {"position": values})
             fixture = _ask("  Destination fixture/object stable name: ", input_fn=input_fn)
             return ActionCard("animal.set_destination", target, {"fixture_id": (fixture or "").strip()})
         if operation == "4":
             return ActionCard("animal.depart", target, {})
+        if operation == "6":
+            delivered = _ask("  Object stable name to deliver: ", input_fn=input_fn)
+            return ActionCard("animal.deliver", target, {"entity_id": (delivered or "").strip()})
         gift = _ask("  Gift stable name: ", input_fn=input_fn)
         return ActionCard("animal.present_gift", target, {"gift_id": (gift or "").strip()})
     if choice == "8":
@@ -648,10 +792,20 @@ def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
         operation = _ask("  Change: 1 grow · 2 bloom · 3 dormancy · 4 prune · 5 revive [1]: ", input_fn=input_fn)
         operation = (operation or "1").strip() or "1"
         if operation == "1":
+            mode = _ask("  Growth by: 1 amount · 2 named/numeric stage [1]: ", input_fn=input_fn)
+            if (mode or "1").strip() == "2":
+                stage = _ask("  Growth stage: ", input_fn=input_fn)
+                value: object = (stage or "1").strip() or "1"
+                if str(value).lstrip("-").isdigit():
+                    value = int(str(value))
+                return ActionCard("plant.grow", target, {"stage": value})
             amount = _ask("  Growth amount [1]: ", input_fn=input_fn)
             return ActionCard("plant.grow", target, {"amount": int((amount or "1").strip() or "1")})
         if operation == "2":
-            return ActionCard("plant.bloom", target, {})
+            bloom_id = _ask("  Optional bloom style/catalog ID [default]: ", input_fn=input_fn)
+            return ActionCard("plant.bloom", target, {
+                **({"bloom_id": bloom_id.strip()} if bloom_id and bloom_id.strip() else {}),
+            })
         if operation == "3":
             dormant = _ask("  Make dormant? [Y/n]: ", input_fn=input_fn)
             return ActionCard("plant.dormancy", target, {"dormant": (dormant or "y").strip().lower() not in {"n", "no"}})
@@ -680,7 +834,11 @@ def _prompt_action(timeline: Timeline, *, input_fn: Callable[[str], str],
             return ActionCard("entity.move", target, {"position": values})
         if operation == "2":
             state = _ask("  New semantic state: ", input_fn=input_fn)
-            return ActionCard("entity.transform", target, {"state": state or "changed"})
+            asset = _ask("  Replacement atlas/catalog ID [keep current]: ", input_fn=input_fn)
+            params = {"state": state or "changed"}
+            if asset and asset.strip():
+                params["asset_id"] = asset.strip()
+            return ActionCard("entity.transform", target, params)
         return ActionCard("entity.retire", target, {})
     if choice == "10":
         operation = _ask("  1 present letter · 2 complete event [1]: ", input_fn=input_fn)
@@ -745,12 +903,23 @@ def _prompt_beat(timeline: Timeline, *, message_ids: list[str],
             cooldown = None
     priority_raw = _ask("  Priority [0]: ", input_fn=input_fn)
     group = _ask("  Exclusive group (optional): ", input_fn=input_fn)
+    default_occurrence = "recurring" if (
+        (schedule and schedule.get("recurrence")) or cooldown
+    ) else "once"
+    occurrence_raw = _ask(
+        f"  Apply once or on every eligible occurrence [{default_occurrence}]: ",
+        input_fn=input_fn,
+    )
+    occurrence = (occurrence_raw or default_occurrence).strip().lower() or default_occurrence
+    if occurrence not in {"once", "recurring"}:
+        raise ValueError("occurrence must be once or recurring")
     return BeatCard(
         id=beat_id, title=title.strip(), track=track, when=when,
         actions=tuple(actions), schedule=schedule,
         priority=int((priority_raw or "0").strip() or "0"),
         exclusive_group=(group.strip() if group and group.strip() else None),
         cooldown=cooldown,
+        occurrence=occurrence,
     )
 
 
@@ -796,6 +965,28 @@ def _preview_author_timeline(timeline: Timeline, *, data: IntakeData,
     bond_raw = _ask("  Bond tier 0–3 [0]: ", input_fn=input_fn)
     season = _ask("  Season [spring]: ", input_fn=input_fn)
     absence_raw = _ask("  Days absent [0]: ", input_fn=input_fn)
+    duration_raw = _ask("  Session duration seconds [0]: ", input_fn=input_fn)
+    due_raw = _ask("  Due letter numbers, comma-separated [none]: ", input_fn=input_fn)
+    revealed_raw = _ask("  Revealed gift IDs, comma-separated [none]: ", input_fn=input_fn)
+    examined_raw = _ask("  Examined gift IDs, comma-separated [none]: ", input_fn=input_fn)
+    completed_raw = _ask("  Completed beat IDs, comma-separated [none]: ", input_fn=input_fn)
+    arrived_raw = _ask("  Arrived animal IDs, comma-separated [none]: ", input_fn=input_fn)
+    interaction_raw = _ask("  Animal interactions, comma-separated [none]: ", input_fn=input_fn)
+    memory_raw = _ask("  Animal memory kinds, comma-separated [none]: ", input_fn=input_fn)
+    plant_growth_raw = _ask("  Plant growth stage [0]: ", input_fn=input_fn)
+    bloom_raw = _ask("  Blooming plant IDs, comma-separated [none]: ", input_fn=input_fn)
+    fixtures_raw = _ask("  Present fixture IDs, comma-separated [none]: ", input_fn=input_fn)
+
+    def csv(raw: str | None) -> list[str]:
+        return [value.strip() for value in (raw or "").split(",") if value.strip()]
+
+    due_ids: list[str] = []
+    for value in csv(due_raw):
+        try:
+            due_ids.append(message_ids[int(value) - 1])
+        except (ValueError, IndexError):
+            if value in message_ids:
+                due_ids.append(value)
     eligible: dict[str, str] = {}
     for beat in timeline.beats:
         if beat.schedule is None:
@@ -810,12 +1001,26 @@ def _preview_author_timeline(timeline: Timeline, *, data: IntakeData,
         "seed": 0,
         "eligible_occurrences": eligible,
         "facts": {
+            "time.utc": preview_utc.isoformat(timespec="seconds"),
             "time.local": preview_text,
+            "date.range": preview_local.date().isoformat(),
             "visit.total": int((visits_raw or "1").strip() or "1"),
+            "visit.nth": int((visits_raw or "1").strip() or "1"),
+            "letter.due": due_ids,
             "letter.read": read_ids,
+            "gift.revealed": csv(revealed_raw),
+            "gift.examined": csv(examined_raw),
+            "event.completed": csv(completed_raw),
+            "animal.arrived": csv(arrived_raw),
             "animal.bond_tier": int((bond_raw or "0").strip() or "0"),
+            "animal.interaction": csv(interaction_raw),
+            "animal.memory": csv(memory_raw),
             "season.current": (season or "spring").strip().lower() or "spring",
             "absence.days": int((absence_raw or "0").strip() or "0"),
+            "session.duration_seconds": int((duration_raw or "0").strip() or "0"),
+            "plant.growth_stage": int((plant_growth_raw or "0").strip() or "0"),
+            "plant.bloom": csv(bloom_raw),
+            "fixture.present": csv(fixtures_raw),
         },
     }
     result = preview_timeline(
@@ -849,11 +1054,37 @@ def _run_garden_timeline_editor(store: SessionStore, data: IntakeData,
         output_fn("")
         for index, beat in enumerate(timeline.beats, 1):
             output_fn(f"  {index}. {beat.title} [{beat.track}] ({beat.id})")
-        choice = _ask("  Garden: add, edit, reorder, preview, validate, done, save [done]: ",
+        choice = _ask("  Garden: arc, add, edit, reorder, preview, validate, done, save [done]: ",
                       input_fn=input_fn)
         command = (choice or "done").strip().lower()
         try:
-            if command in {"a", "add"}:
+            if command == "arc":
+                if timeline.beats or timeline.entities or timeline.animals:
+                    output_fn("  The guided arc starts a new empty timeline; save or finish this one first.")
+                    continue
+                if not message_ids:
+                    output_fn("  Add a letter before building the guided recipient arc.")
+                    continue
+                for index, message_id in enumerate(message_ids, 1):
+                    output_fn(f"  {index}. {message_id}")
+                selected = _ask("  Letter that welcomes the rabbit [1]: ", input_fn=input_fn)
+                try:
+                    letter_id = message_ids[int((selected or "1").strip() or "1") - 1]
+                except (ValueError, IndexError):
+                    output_fn("  That letter selection was not recognized.")
+                    continue
+                rabbit = _ask("  Rabbit's name [Clover]: ", input_fn=input_fn)
+                timeline = build_letter_rabbit_autumn_arc(
+                    recipient_name=data.recipient_name,
+                    letter_id=letter_id,
+                    author_timezone=timeline.author_timezone,
+                    rabbit_name=(rabbit or "Clover").strip() or "Clover",
+                )
+                store.save_garden_timeline(_timeline_to_mapping(timeline))
+                output_fn(
+                    "  Added the editable letter → rabbit → third-visit rose → bonded autumn gift arc."
+                )
+            elif command in {"a", "add"}:
                 beat = _prompt_beat(
                     timeline, message_ids=message_ids,
                     input_fn=input_fn, output_fn=output_fn,
@@ -898,7 +1129,7 @@ def _run_garden_timeline_editor(store: SessionStore, data: IntakeData,
                 store.save_garden_timeline(_timeline_to_mapping(timeline))
                 return timeline
             else:
-                output_fn("  Choose add, edit, reorder, preview, validate, done, or save.")
+                output_fn("  Choose arc, add, edit, reorder, preview, validate, done, or save.")
         except FatigueLimitReached as exc:
             store.save_garden_timeline(_timeline_to_mapping(timeline))
             output_fn(f"  {exc}")

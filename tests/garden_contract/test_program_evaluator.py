@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shutil
+import subprocess
 
 import pytest
 
@@ -150,4 +152,137 @@ def test_runtime_unsafe_programs_fail_during_parse(mutation):
     }
     mutation(raw)
     with pytest.raises(ProgramValidationError):
+        parse_program(raw)
+
+
+def _minimal_program(events, *, entities=None, animals=None):
+    return {
+        "version": 1, "evaluator_version": 1, "world_state_version": 1,
+        "atlas_version": "garden-atlas-1",
+        "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC", "variables": {},
+        "entities": entities or [], "animals": animals or [], "events": events,
+    }
+
+
+def test_exclusivity_is_idempotent_per_occurrence_but_reopens_next_visit():
+    def event(event_id, priority, condition):
+        return {
+            "id": event_id, "conditions": condition, "schedule": None,
+            "occurrence": "recurring", "priority": priority,
+            "exclusive_group": "return-choice", "cooldown": None,
+            "actions": [{"type": "event.complete", "target": None,
+                         "params": {"event_id": event_id}}],
+        }
+    program = parse_program(_minimal_program([
+        event("first-visit", 10, {"fact": "visit.total", "op": "==", "value": 1}),
+        event("later-visit", 0, {"fact": "visit.total", "op": ">=", "value": 1}),
+    ]))
+    first = evaluate_program(program, {}, {"facts": {"visit.total": 1}})
+    assert [row["event_id"] for row in first.trace if row["status"] == "applied"] == ["first-visit"]
+    repeated = evaluate_program(program, first.state, {"facts": {"visit.total": 1}})
+    assert not [row for row in repeated.trace if row["status"] == "applied"]
+    later = evaluate_program(program, repeated.state, {"facts": {"visit.total": 2}})
+    assert [row["event_id"] for row in later.trace if row["status"] == "applied"] == ["later-visit"]
+    assert later.state["exclusive_occurrences"] == [
+        "return-choice@visit:1", "return-choice@visit:2",
+    ]
+
+
+def test_evaluator_runs_dependent_events_to_a_bounded_fixed_point():
+    program = parse_program(_minimal_program([
+        {
+            "id": "dependent", "priority": 20, "schedule": None,
+            "occurrence": "once", "exclusive_group": None, "cooldown": None,
+            "conditions": {"fact": "event.completed", "op": "contains", "ref": "producer"},
+            "actions": [{"type": "variable.set", "target": None,
+                         "params": {"name": "finished", "value": True}}],
+        },
+        {
+            "id": "producer", "priority": 10, "schedule": None,
+            "occurrence": "once", "exclusive_group": None, "cooldown": None,
+            "conditions": {"fact": "visit.total", "op": ">=", "value": 1},
+            "actions": [{"type": "event.complete", "target": None,
+                         "params": {"event_id": "producer"}}],
+        },
+    ]))
+    result = evaluate_program(program, {}, {"facts": {"visit.total": 1}})
+    assert result.state["variables"]["finished"] is True
+    attempts = [row for row in result.trace if row["event_id"] == "dependent"]
+    assert [(row["evaluation_pass"], row["status"]) for row in attempts] == [
+        (1, "blocked"), (2, "applied"),
+    ]
+
+
+def test_delivery_completes_semantically_and_reveals_gift_in_same_transaction():
+    program = parse_program(_minimal_program([
+        {
+            "id": "deliver", "priority": 0, "schedule": None,
+            "occurrence": "once", "exclusive_group": None, "cooldown": None,
+            "conditions": {"fact": "visit.total", "op": ">=", "value": 1},
+            "actions": [{"type": "animal.present_gift", "target": "rabbit",
+                         "params": {"gift_id": "gift"}}],
+        },
+    ], entities=[{"id": "gift", "kind": "collectible", "catalog_id": "collectible.seed_packet"}],
+       animals=[{"id": "rabbit", "species": "rabbit", "initial_state": {"present": True}}]))
+    result = evaluate_program(program, {}, {"facts": {"visit.total": 1}})
+    assert result.state["entities"]["gift"] == {
+        "id": "gift", "revealed": True, "delivered": True, "delivered_by": "rabbit",
+    }
+    assert result.state["entities"]["rabbit"]["directive"]["status"] == "completed"
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_python_and_browser_evaluator_match_fixed_point_and_exclusivity():
+    raw = _minimal_program([
+        {
+            "id": "dependent", "priority": 20, "schedule": None,
+            "occurrence": "recurring", "exclusive_group": None, "cooldown": None,
+            "conditions": {"fact": "event.completed", "op": "contains", "ref": "producer"},
+            "actions": [{"type": "variable.set", "target": None,
+                         "params": {"name": "finished", "value": True}}],
+        },
+        {
+            "id": "producer", "priority": 10, "schedule": None,
+            "occurrence": "recurring", "exclusive_group": "choice", "cooldown": None,
+            "conditions": {"fact": "visit.total", "op": ">=", "value": 2},
+            "actions": [{"type": "event.complete", "target": None,
+                         "params": {"event_id": "producer"}}],
+        },
+    ])
+    context = {"seed": 4, "facts": {"visit.total": 2, "time.utc": "2030-01-01T00:00:00Z"}}
+    python_result = evaluate_program(parse_program(raw), {}, context)
+    script = """
+import { evaluateGardenProgram } from './web/garden-program.mjs';
+const [program, context] = JSON.parse(process.argv[1]);
+const result = await evaluateGardenProgram(program, {}, context);
+process.stdout.write(JSON.stringify(result));
+"""
+    completed = subprocess.run(
+        [shutil.which("node") or "node", "--input-type=module", "-e", script,
+         json.dumps([raw, context])],
+        cwd=Path(__file__).parents[2], check=True, capture_output=True, text=True,
+    )
+    browser = json.loads(completed.stdout)
+    assert browser == {
+        "state": python_result.state,
+        "effects": list(python_result.effects),
+        "trace": list(python_result.trace),
+    }
+
+
+@pytest.mark.parametrize("text", [
+    "If you really love me, come back every day.",
+    "This is your last chance before it disappears.",
+    "I'll be disappointed if you do not visit.",
+])
+def test_program_parser_rejects_manipulative_authored_copy(text):
+    raw = _minimal_program([{
+        "id": "unsafe", "priority": 0, "schedule": None, "occurrence": "once",
+        "exclusive_group": None, "cooldown": None,
+        "conditions": {"fact": "visit.total", "op": ">=", "value": 0},
+        "actions": [{"type": "narrative.show", "target": None,
+                     "params": {"text": text}}],
+    }])
+    with pytest.raises(ProgramValidationError, match="dark-pattern"):
         parse_program(raw)

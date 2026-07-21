@@ -28,6 +28,21 @@ MAX_SAFE_INTEGER = 9_007_199_254_740_991
 _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$")
 _TZ_RE = re.compile(r"^(?:UTC|[A-Za-z_+-]+(?:/[A-Za-z0-9_+.-]+)+)$")
 _REMOTE_URL_RE = re.compile(r"(?:https?|ftp|data|javascript):", re.IGNORECASE)
+_MANIPULATIVE_COPY: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("guilt", re.compile(
+        r"\b(?:if you (?:really )?love me|prove (?:that )?you love me|"
+        r"you owe me|you(?:'ve| have) let me down|don't disappoint me|"
+        r"i(?:'ll| will| would| am|'m) be disappointed|"
+        r"you should feel (?:guilty|ashamed))\b", re.IGNORECASE,
+    )),
+    ("urgency", re.compile(
+        r"\b(?:act now|last chance|before it(?:'s| is) too late|"
+        r"don't miss out|come back (?:now|today|every day)|"
+        r"you must (?:return|visit)|expires?(?:\s+(?:today|soon|on\b))?|"
+        r"will (?:vanish|disappear)|(?<!not )(?<!never )urgent(?:ly|cy)?|"
+        r"(?<!no need to )(?<!without )(?<!don't )(?<!no )hurry)\b", re.IGNORECASE,
+    )),
+)
 
 SUPPORTED_FACTS = frozenset({
     "time.utc", "time.local", "date.range", "season.current",
@@ -132,6 +147,61 @@ class ProgramValidationError(ValueError):
     def __init__(self, errors: Sequence[str]) -> None:
         self.errors = tuple(errors)
         super().__init__("Invalid garden program: " + "; ".join(self.errors))
+
+
+def narrative_ethics_violation(text: str) -> str | None:
+    """Return the prohibited dark-pattern category, if any.
+
+    The phrases are intentionally narrow.  Compassionate language such as
+    "I miss you", "take all the time you need", and "no need to hurry" is
+    allowed; coercion, threatened disappointment, and expiring access are not.
+    """
+    for category, pattern in _MANIPULATIVE_COPY:
+        if pattern.search(text):
+            return category
+    return None
+
+
+def _narrative_values(raw: Mapping[str, Any]) -> list[tuple[str, str]]:
+    values: list[tuple[str, str]] = []
+
+    def add(path: str, value: Any) -> None:
+        if isinstance(value, str) and value:
+            values.append((path, value))
+        elif isinstance(value, Mapping):
+            for key, child in value.items():
+                add(f"{path}.{key}", child)
+        elif isinstance(value, (list, tuple)):
+            for index, child in enumerate(value):
+                add(f"{path}[{index}]", child)
+
+    entities = raw.get("entities", [])
+    for index, item in enumerate(entities if isinstance(entities, list) else []):
+        if isinstance(item, Mapping):
+            add(f"$.entities[{index}].properties", item.get("properties"))
+    animals = raw.get("animals", [])
+    for index, item in enumerate(animals if isinstance(animals, list) else []):
+        if not isinstance(item, Mapping):
+            continue
+        for field in ("name", "personality", "routine", "gifts", "milestones"):
+            add(f"$.animals[{index}].{field}", item.get(field))
+    events = raw.get("events", [])
+    for event_index, event in enumerate(events if isinstance(events, list) else []):
+        if not isinstance(event, Mapping):
+            continue
+        actions = event.get("actions", [])
+        for action_index, action in enumerate(actions if isinstance(actions, list) else []):
+            if not isinstance(action, Mapping):
+                continue
+            if action.get("type") in {
+                "narrative.show", "scene.set", "entity.transform",
+                "animal.behave", "animal.routine",
+            }:
+                add(
+                    f"$.events[{event_index}].actions[{action_index}].params",
+                    action.get("params"),
+                )
+    return values
 
 
 @dataclass(frozen=True)
@@ -332,6 +402,12 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
         raise ProgramValidationError(("$: program must be an object",))
     _check_keys(raw, _TOP_LEVEL_KEYS, "$", errors)
     _safe_json(raw, "$", errors)
+    for path, text in _narrative_values(raw):
+        category = narrative_ethics_violation(text)
+        if category is not None:
+            errors.append(
+                f"{path}: prohibited {category}/dark-pattern narrative copy"
+            )
 
     version = raw.get("version")
     if version != PROGRAM_VERSION:
@@ -413,6 +489,20 @@ def parse_program(raw: Mapping[str, Any]) -> GardenProgram:
 
     entities = parse_entity_list("entities")
     animals = parse_entity_list("animals")
+    for index, animal in enumerate(animals):
+        path = f"$.animals[{index}]"
+        for field in ("favorite_places", "prohibited_behaviors", "gifts", "milestones"):
+            value = animal.get(field, [])
+            if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+                errors.append(f"{path}.{field}: must be a list of text values")
+                continue
+            if field in {"favorite_places", "gifts"}:
+                for reference in value:
+                    if reference not in all_object_ids:
+                        errors.append(f"{path}.{field}: unknown world object {reference!r}")
+        routine = animal.get("routine")
+        if routine is not None and not isinstance(routine, (str, list)):
+            errors.append(f"{path}.routine: expected prose or a routine list")
 
     events_raw = raw.get("events", [])
     if not isinstance(events_raw, list):

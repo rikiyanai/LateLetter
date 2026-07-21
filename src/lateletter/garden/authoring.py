@@ -11,7 +11,12 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Sequence
 
 from .evaluator import EvaluationResult, evaluate_program
-from .program import GardenProgram, ProgramValidationError, parse_program
+from .program import (
+    GardenProgram,
+    ProgramValidationError,
+    narrative_ethics_violation,
+    parse_program,
+)
 from .schedule import ScheduleValidationError, parse_schedule
 
 
@@ -125,6 +130,7 @@ class BeatCard:
     priority: int = 0
     exclusive_group: str | None = None
     cooldown: Mapping[str, Any] | None = None
+    occurrence: str = "auto"
 
 
 @dataclass
@@ -240,6 +246,125 @@ def _strings(value: Any) -> Iterable[str]:
             yield from _strings(child)
 
 
+def _narrative_surfaces(timeline: Timeline) -> Iterable[tuple[str, str]]:
+    """Yield every author-facing string that can become recipient narrative."""
+    for index, beat in enumerate(timeline.beats):
+        yield f"beats[{index}].title", beat.title
+        for action_index, action in enumerate(beat.actions):
+            if action.type in {
+                "narrative.show", "scene.set", "entity.transform",
+                "animal.behave", "animal.routine",
+            }:
+                for value in _strings(action.params):
+                    yield f"beats[{index}].actions[{action_index}]", value
+    for index, entity in enumerate(timeline.entities):
+        for value in _strings(entity.get("properties", {})):
+            yield f"entities[{index}].properties", value
+    for index, animal in enumerate(timeline.animals):
+        for field in ("name", "personality", "routine", "gifts", "milestones"):
+            for value in _strings(animal.get(field)):
+                yield f"animals[{index}].{field}", value
+
+
+def build_letter_rabbit_autumn_arc(
+    *,
+    recipient_name: str,
+    letter_id: str,
+    author_timezone: str = "UTC",
+    rabbit_name: str = "Clover",
+) -> Timeline:
+    """Build the complete §7.8.13 author-control acceptance arc.
+
+    This guided template is ordinary beat-card data, not a privileged runtime
+    path.  Authors can edit every condition/action in the no-JSON timeline UI,
+    and preview/export uses the same evaluator as recipients.
+    """
+    safe_recipient = recipient_name.strip() or "you"
+    timeline = Timeline(author_timezone=author_timezone, session_beat_limit=10)
+    timeline.entities.extend((
+        {
+            "id": "arc.autumn-rose", "kind": "plant", "catalog_id": "rose",
+            "position": [24, 12], "initial_state": {"planted": False},
+            "properties": {"label": f"{safe_recipient}'s rose"},
+        },
+        {
+            "id": "arc.autumn-gift", "kind": "collectible",
+            "catalog_id": "collectible.seed_packet", "position": [28, 12],
+            "initial_state": {"revealed": False},
+            "properties": {
+                "label": "an autumn keepsake",
+                "description": "A small gift carried here with care.",
+            },
+        },
+    ))
+    timeline.animals.append({
+        "id": "arc.rabbit", "species": "rabbit", "catalog_id": "rabbit",
+        "name": rabbit_name, "personality": "gentle, curious, and patient",
+        "routine": "visit the rose, rest nearby, and greet without demanding attention",
+        "favorite_places": ["arc.autumn-rose"],
+        "prohibited_behaviors": ["guilt", "urgency", "resource guarding"],
+        "gifts": ["arc.autumn-gift"],
+        "milestones": ["arrived", "bonded", "autumn gift delivered"],
+        "initial_state": {"present": False},
+    })
+    timeline.beats.extend((
+        BeatCard(
+            id="arc.rabbit-arrives", title=f"{rabbit_name} arrives after the letter",
+            track="animals",
+            when=When.fact("letter.read", "contains", reference=letter_id),
+            actions=(
+                ActionCard("animal.arrive", "arc.rabbit", {
+                    "position": [20, 12], "routine": "gentle greeting",
+                }),
+                ActionCard.show_memory(
+                    f"{rabbit_name} has come to keep {safe_recipient} company.",
+                    label=f"{rabbit_name} arrives",
+                ),
+                ActionCard.complete("arc.rabbit-arrives"),
+            ),
+            priority=300,
+        ),
+        BeatCard(
+            id="arc.third-visit-rose", title="The rose grows on the third visit",
+            track="plants",
+            when=When.every(
+                When.fact("event.completed", "contains", reference="arc.rabbit-arrives"),
+                When.fact("visit.total", ">=", 3),
+            ),
+            actions=(
+                ActionCard("plant.plant", "arc.autumn-rose", {
+                    "species_id": "rose", "position": [24, 12],
+                }),
+                ActionCard("plant.grow", "arc.autumn-rose", {"amount": 3}),
+                ActionCard.complete("arc.third-visit-rose"),
+            ),
+            priority=200,
+        ),
+        BeatCard(
+            id="arc.bonded-autumn-gift", title="A bonded autumn gift",
+            track="gifts",
+            when=When.every(
+                When.fact("event.completed", "contains", reference="arc.third-visit-rose"),
+                When.fact("animal.bond_tier", ">=", 3),
+                When.fact("season.current", "==", "autumn"),
+            ),
+            actions=(
+                ActionCard("animal.present_gift", "arc.rabbit", {
+                    "gift_id": "arc.autumn-gift",
+                }),
+                ActionCard.reveal("arc.autumn-gift", position=[28, 12]),
+                ActionCard.show_memory(
+                    f"{rabbit_name} brought this for {safe_recipient}, with no hurry and no obligation.",
+                    label="Autumn gift",
+                ),
+                ActionCard.complete("arc.bonded-autumn-gift"),
+            ),
+            priority=100,
+        ),
+    ))
+    return timeline
+
+
 def validate_timeline(
     timeline: Timeline, *, known_letter_ids: set[str] | None = None,
     known_asset_ids: set[str] | None = None,
@@ -253,10 +378,23 @@ def validate_timeline(
     dependency_graph: dict[str, set[str]] = {}
     exclusive: set[tuple[str, int]] = set()
 
+    for path, text in _narrative_surfaces(timeline):
+        violation = narrative_ethics_violation(text)
+        if violation is not None:
+            issues.append(AuthoringIssue(
+                "prohibited_narrative", path,
+                f"This {violation}/dark-pattern wording is not allowed.",
+            ))
+
     for index, beat in enumerate(timeline.beats):
         path = f"beats[{index}]"
         if not beat.actions:
             issues.append(AuthoringIssue("no_actions", path, "This beat does not do anything."))
+        if beat.occurrence not in {"auto", "once", "recurring"}:
+            issues.append(AuthoringIssue(
+                "invalid_occurrence", f"{path}.occurrence",
+                "Choose once or recurring.",
+            ))
         if _contradiction(beat.when):
             issues.append(AuthoringIssue("unreachable", f"{path}.when",
                                          "The conditions contradict one another."))
@@ -270,12 +408,31 @@ def validate_timeline(
                 if known_letter_ids is not None and leaf.reference not in known_letter_ids:
                     issues.append(AuthoringIssue("missing_letter_ref", f"{path}.when",
                                                  f"Unknown letter {leaf.reference}."))
+            if (
+                leaf.fact_name in {
+                    "gift.revealed", "gift.examined", "animal.arrived",
+                    "plant.bloom", "fixture.present",
+                }
+                and leaf.reference is not None
+                and leaf.reference not in targets
+            ):
+                issues.append(AuthoringIssue(
+                    "missing_object_ref", f"{path}.when",
+                    f"Unknown world object {leaf.reference}.",
+                ))
         for action_index, action in enumerate(beat.actions):
             action_path = f"{path}.actions[{action_index}]"
             if action.type.startswith(("entity.", "animal.", "plant.")):
                 if action.target not in targets:
                     issues.append(AuthoringIssue("missing_target", action_path,
                                                  f"Unknown world object {action.target}."))
+            if action.type == "letter.present" and known_letter_ids is not None:
+                letter_id = action.params.get("letter_id")
+                if letter_id not in known_letter_ids:
+                    issues.append(AuthoringIssue(
+                        "missing_letter_ref", action_path,
+                        f"Unknown letter {letter_id}.",
+                    ))
         if beat.exclusive_group is not None:
             key = (beat.exclusive_group, beat.priority)
             if key in exclusive:
@@ -298,7 +455,10 @@ def validate_timeline(
     if known_asset_ids is not None:
         for index, entity in enumerate(timeline.entities):
             asset = entity.get("asset_id") or entity.get("catalog_id")
-            if asset is not None and asset not in known_asset_ids:
+            if (
+                entity.get("kind") not in {"plant"}
+                and asset is not None and asset not in known_asset_ids
+            ):
                 issues.append(AuthoringIssue("missing_asset", f"entities[{index}]",
                                              f"Unknown atlas asset {asset}."))
 
@@ -337,9 +497,12 @@ def compile_timeline(timeline: Timeline, **validation_context: Any) -> GardenPro
             {
                 "id": beat.id, "conditions": beat.when.compile(),
                 "schedule": dict(beat.schedule) if beat.schedule is not None else None,
-                "occurrence": "recurring" if (
-                    (beat.schedule and beat.schedule.get("recurrence")) or beat.cooldown
-                ) else "once",
+                "occurrence": (
+                    beat.occurrence if beat.occurrence in {"once", "recurring"}
+                    else "recurring" if (
+                        (beat.schedule and beat.schedule.get("recurrence")) or beat.cooldown
+                    ) else "once"
+                ),
                 "priority": beat.priority, "exclusive_group": beat.exclusive_group,
                 "cooldown": dict(beat.cooldown) if beat.cooldown is not None else None,
                 "actions": [action.compile() for action in beat.actions],

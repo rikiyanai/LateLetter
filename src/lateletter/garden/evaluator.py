@@ -198,10 +198,33 @@ def _apply_action(action: ProgramAction, state: dict[str, Any], event_id: str,
         elif action.type == "plant.revive":
             entity["dormant"] = False
             entity["revived"] = True
+        elif action.type in {"animal.deliver", "animal.present_gift"}:
+            # Delivery is an immediate semantic transaction.  Renderers may
+            # animate it, but the authoritative state records both completion
+            # and the revealed object so a later event can depend on it in the
+            # same run-to-completion evaluation.
+            reference_key = "entity_id" if action.type == "animal.deliver" else "gift_id"
+            delivered_id = str(params[reference_key])
+            delivered = _entity_slot(state, delivered_id)
+            delivered.update({
+                "revealed": True,
+                "delivered": True,
+                "delivered_by": action.target,
+            })
+            entity["directive"] = {
+                "type": action.type,
+                **params,
+                "status": "completed",
+            }
         else:
             # Authored animal choreography is emitted for the world owner to
-            # consume; the evaluator never invents renderer-local movement.
-            entity["directive"] = {"type": action.type, **params}
+            # consume.  The semantic directive completes immediately; a
+            # renderer-local animation cannot hold authored progression open.
+            entity["directive"] = {
+                "type": action.type,
+                **params,
+                "status": "completed",
+            }
 
     effects.append(effect)
 
@@ -227,6 +250,24 @@ def _occurrence_for(event: ProgramEvent, context: Mapping[str, Any]) -> str | No
     if isinstance(value, str) and value:
         return value
     return None
+
+
+def _exclusive_scope(
+    event: ProgramEvent,
+    occurrence_id: str,
+    context: Mapping[str, Any],
+) -> str:
+    """Return the shared visit/schedule scope for an exclusive occurrence."""
+    transaction_id = context.get("transaction_id")
+    if isinstance(transaction_id, str) and transaction_id:
+        return transaction_id
+    prefix = f"{event.id}:"
+    scheduled_prefix = f"{event.id}@"
+    if occurrence_id.startswith(prefix):
+        return occurrence_id[len(prefix):]
+    if occurrence_id.startswith(scheduled_prefix):
+        return occurrence_id[len(scheduled_prefix):]
+    return occurrence_id
 
 
 def _cooldown_values(facts: Mapping[str, Any]) -> tuple[int | None, int | None]:
@@ -268,13 +309,61 @@ def _cooldown_blocked(
     return False
 
 
+def _derived_facts(state: Mapping[str, Any], base: Mapping[str, Any]) -> dict[str, Any]:
+    """Refresh facts that authored actions can change during this transaction.
+
+    The clock/session owner remains responsible for external facts.  This
+    function only projects evaluator-owned semantic state, which is what makes
+    dependent beats deterministic without renderer callbacks.
+    """
+    facts = deepcopy(dict(base))
+    completed = state.get("completed_events", [])
+    if isinstance(completed, list):
+        prior_completed = facts.get("event.completed", [])
+        prior_completed = prior_completed if isinstance(prior_completed, list) else []
+        facts["event.completed"] = sorted({
+            *(str(item) for item in prior_completed),
+            *(str(item) for item in completed),
+        })
+    entities = state.get("entities", {})
+    if isinstance(entities, Mapping):
+        for fact_name, state_key in (
+            ("gift.revealed", "revealed"),
+            ("animal.arrived", "present"),
+            ("plant.bloom", "blooming"),
+        ):
+            prior = facts.get(fact_name, [])
+            facts[fact_name] = sorted({
+                *(str(item) for item in prior if isinstance(prior, list)),
+                *(str(target) for target, value in entities.items()
+                  if isinstance(value, Mapping) and value.get(state_key) is True),
+            })
+        growth = [
+            value.get("stage", value.get("amount", 0))
+            for value in entities.values()
+            if isinstance(value, Mapping) and value.get("planted") is True
+        ]
+        numeric_growth = [
+            value for value in growth
+            if isinstance(value, (int, float)) and not isinstance(value, bool)
+        ]
+        if numeric_growth:
+            prior_growth = facts.get("plant.growth_stage", 0)
+            facts["plant.growth_stage"] = max(
+                max(numeric_growth),
+                prior_growth if isinstance(prior_growth, (int, float))
+                and not isinstance(prior_growth, bool) else 0,
+            )
+    return facts
+
+
 def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
                      context: Mapping[str, Any]) -> EvaluationResult:
     """Run eligible events to completion in one deterministic transaction."""
     next_state = _canonical_clone(state)
     context_copy = _canonical_clone(context)
-    facts = context_copy.get("facts", {})
-    if not isinstance(facts, Mapping):
+    base_facts = context_copy.get("facts", {})
+    if not isinstance(base_facts, Mapping):
         raise ValueError("context.facts must be an object")
     seed = context_copy.get("seed", 0)
 
@@ -282,69 +371,103 @@ def evaluate_program(program: GardenProgram, state: Mapping[str, Any],
     if not isinstance(ledger, list) or any(not isinstance(item, str) for item in ledger):
         raise ValueError("state.applied_occurrences must be a list of strings")
     applied = set(ledger)
-    exclusive_claims = next_state.setdefault("exclusive_claims", {})
-    if not isinstance(exclusive_claims, dict) or any(
-        not isinstance(key, str) or not isinstance(value, str)
-        for key, value in exclusive_claims.items()
+    # v1 persisted a single claim per group, which permanently suppressed later
+    # visits.  Claims now include the shared visit/schedule occurrence scope.
+    next_state.pop("exclusive_claims", None)
+    exclusive_occurrences = next_state.setdefault("exclusive_occurrences", [])
+    if not isinstance(exclusive_occurrences, list) or any(
+        not isinstance(item, str) for item in exclusive_occurrences
     ):
-        raise ValueError("state.exclusive_claims must be an object of string claims")
-    claimed_groups: set[str] = set(exclusive_claims)
+        raise ValueError("state.exclusive_occurrences must be a list of strings")
+    persisted_exclusive = set(exclusive_occurrences)
+    claimed_groups: set[str] = set()
     cooldowns = next_state.setdefault("event_cooldowns", {})
     if not isinstance(cooldowns, dict):
         raise ValueError("state.event_cooldowns must be an object")
     effects: list[dict[str, Any]] = []
     trace: list[dict[str, Any]] = []
 
-    for event in sorted(program.events, key=lambda item: (-item.priority, item.id)):
-        occurrence_id = _occurrence_for(event, context_copy)
-        row: dict[str, Any] = {
-            "event_id": event.id, "priority": event.priority,
-            "exclusive_group": event.exclusive_group,
-            "occurrence_id": occurrence_id,
-        }
-        if occurrence_id is None:
-            row.update(status="blocked", reason="schedule_not_eligible")
-            trace.append(row)
-            continue
-        ledger_id = f"{event.id}@{occurrence_id}"
-        if ledger_id in applied:
-            row.update(status="skipped", reason="already_applied")
-            trace.append(row)
-            continue
-        if event.exclusive_group and event.exclusive_group in claimed_groups:
-            row.update(status="blocked", reason="exclusive_group_claimed")
-            trace.append(row)
-            continue
-        if _cooldown_blocked(event, cooldowns, facts):
-            row.update(status="blocked", reason="cooldown_active")
-            trace.append(row)
-            continue
-
-        eligible, condition_trace = evaluate_condition(
-            event.conditions, facts, seed=seed, event_id=event.id,
-            occurrence_id=occurrence_id,
-        )
-        row["conditions"] = condition_trace
-        if not eligible:
-            row.update(status="blocked", reason="conditions_false")
-            trace.append(row)
-            continue
-
-        for action in event.actions:
-            _apply_action(action, next_state, event.id, effects)
-        applied.add(ledger_id)
-        ledger.append(ledger_id)
-        ledger.sort()
-        if event.exclusive_group:
-            claimed_groups.add(event.exclusive_group)
-            exclusive_claims[event.exclusive_group] = ledger_id
-        if event.cooldown:
-            now_seconds, visits = _cooldown_values(facts)
-            cooldowns[event.id] = {
-                **({"time_utc_seconds": now_seconds} if now_seconds is not None else {}),
-                **({"visit_total": visits} if visits is not None else {}),
+    ordered = sorted(program.events, key=lambda item: (-item.priority, item.id))
+    pending = list(ordered)
+    evaluation_pass = 0
+    # At least one occurrence is consumed on every productive pass, so this
+    # bound is both deterministic and sufficient for every acyclic program.
+    while pending and evaluation_pass <= len(ordered):
+        evaluation_pass += 1
+        progressed = False
+        retry: list[ProgramEvent] = []
+        facts = _derived_facts(next_state, base_facts)
+        for event in pending:
+            occurrence_id = _occurrence_for(event, context_copy)
+            row: dict[str, Any] = {
+                "event_id": event.id, "priority": event.priority,
+                "exclusive_group": event.exclusive_group,
+                "occurrence_id": occurrence_id,
+                "evaluation_pass": evaluation_pass,
             }
-        row.update(status="applied", effect_count=len(event.actions))
-        trace.append(row)
+            if occurrence_id is None:
+                row.update(status="blocked", reason="schedule_not_eligible")
+                trace.append(row)
+                continue
+            ledger_id = f"{event.id}@{occurrence_id}"
+            exclusive_key = None
+            if event.exclusive_group:
+                exclusive_key = (
+                    f"{event.exclusive_group}@"
+                    f"{_exclusive_scope(event, occurrence_id, context_copy)}"
+                )
+            if ledger_id in applied:
+                row.update(status="skipped", reason="already_applied")
+                trace.append(row)
+                continue
+            if event.exclusive_group and (
+                event.exclusive_group in claimed_groups
+                or exclusive_key in persisted_exclusive
+            ):
+                row.update(status="blocked", reason="exclusive_group_claimed")
+                trace.append(row)
+                continue
+            if _cooldown_blocked(event, cooldowns, facts):
+                row.update(status="blocked", reason="cooldown_active")
+                trace.append(row)
+                continue
+
+            eligible, condition_trace = evaluate_condition(
+                event.conditions, facts, seed=seed, event_id=event.id,
+                occurrence_id=occurrence_id,
+            )
+            row["conditions"] = condition_trace
+            if not eligible:
+                row.update(status="blocked", reason="conditions_false")
+                trace.append(row)
+                retry.append(event)
+                continue
+
+            for action in event.actions:
+                _apply_action(action, next_state, event.id, effects)
+            applied.add(ledger_id)
+            ledger.append(ledger_id)
+            ledger.sort()
+            if event.exclusive_group:
+                claimed_groups.add(event.exclusive_group)
+                assert exclusive_key is not None
+                persisted_exclusive.add(exclusive_key)
+                exclusive_occurrences.append(exclusive_key)
+                exclusive_occurrences.sort()
+            if event.cooldown:
+                now_seconds, visits = _cooldown_values(facts)
+                cooldowns[event.id] = {
+                    **({"time_utc_seconds": now_seconds} if now_seconds is not None else {}),
+                    **({"visit_total": visits} if visits is not None else {}),
+                }
+            row.update(status="applied", effect_count=len(event.actions))
+            trace.append(row)
+            progressed = True
+            # Lower-priority events in this same pass must see completed event,
+            # reveal, arrival, and plant facts produced above.
+            facts = _derived_facts(next_state, base_facts)
+        if not progressed:
+            break
+        pending = retry
 
     return EvaluationResult(state=next_state, effects=tuple(effects), trace=tuple(trace))

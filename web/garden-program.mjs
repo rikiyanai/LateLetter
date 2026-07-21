@@ -37,6 +37,35 @@ const REQUIRED_PARAMS = Object.freeze({
   'narrative.show': [['text']],
   'variable.set': [['name', 'value']],
 });
+const ACTION_PARAMS = Object.freeze({
+  'letter.present': ['letter_id'], 'entity.reveal': ['position', 'state'],
+  'entity.place': ['position'], 'entity.move': ['position'],
+  'entity.transform': ['state', 'asset_id'], 'entity.retire': [],
+  'animal.arrive': ['position', 'routine'], 'animal.depart': [],
+  'animal.behave': ['behavior', 'duration_ticks'], 'animal.routine': ['routine'],
+  'animal.set_destination': ['position', 'fixture_id'], 'animal.deliver': ['entity_id'],
+  'animal.present_gift': ['gift_id'], 'plant.plant': ['species_id', 'position', 'seed'],
+  'plant.grow': ['stage', 'amount'], 'plant.bloom': ['bloom_id'],
+  'plant.dormancy': ['dormant'], 'plant.prune': ['node_ids'], 'plant.revive': [],
+  'scene.set': ['weather', 'palette', 'story_time', 'sky_mode', 'ambience', 'population'],
+  'narrative.show': ['kind', 'text', 'label'], 'variable.set': ['name', 'value'],
+  'variable.increment': ['name', 'amount'], 'event.complete': ['event_id'],
+});
+const MANIPULATIVE_COPY = Object.freeze([
+  ['guilt', /\b(?:if you (?:really )?love me|prove (?:that )?you love me|you owe me|you(?:'ve| have) let me down|don't disappoint me|i(?:'ll| will| would| am|'m) be disappointed|you should feel (?:guilty|ashamed))\b/i],
+  ['urgency', /\b(?:act now|last chance|before it(?:'s| is) too late|don't miss out|come back (?:now|today|every day)|you must (?:return|visit)|expires?(?:\s+(?:today|soon|on\b))?|will (?:vanish|disappear)|(?<!not )(?<!never )urgent(?:ly|cy)?|(?<!no need to )(?<!without )(?<!don't )(?<!no )hurry)\b/i],
+]);
+
+function rejectManipulativeNarrative(value, path, errors) {
+  if (typeof value === 'string') {
+    const violation = MANIPULATIVE_COPY.find(([, pattern]) => pattern.test(value));
+    if (violation) errors.push(`${path}: prohibited ${violation[0]}/dark-pattern narrative copy`);
+  } else if (Array.isArray(value)) {
+    value.forEach((item, index) => rejectManipulativeNarrative(item, `${path}[${index}]`, errors));
+  } else if (value && typeof value === 'object') {
+    Object.entries(value).forEach(([key, item]) => rejectManipulativeNarrative(item, `${path}.${key}`, errors));
+  }
+}
 
 export function parseGardenProgram(raw) {
   const errors = [];
@@ -47,16 +76,26 @@ export function parseGardenProgram(raw) {
     'atlas_version', 'astronomy_catalog_version', 'author_timezone', 'variables',
     'entities', 'animals', 'events']);
   for (const key of Object.keys(raw)) if (!allowedTop.has(key)) errors.push(`$: unknown fields ${key}`);
+  rejectUnsafe(raw, '$', errors);
   if (raw.version !== 1) errors.push('$.version: expected 1');
   if ((raw.evaluator_version ?? 1) !== 1) errors.push('$.evaluator_version: expected 1');
   if ((raw.world_state_version ?? 1) !== 1) errors.push('$.world_state_version: expected 1');
   if (typeof raw.author_timezone !== 'string') errors.push('$.author_timezone: expected timezone');
+  const variables = raw.variables ?? {};
+  if (!variables || typeof variables !== 'object' || Array.isArray(variables)) errors.push('$.variables: must be an object');
+  else for (const name of Object.keys(variables)) if (!ID.test(name)) errors.push(`$.variables: invalid variable name ${name}`);
   const objectIds = new Set();
+  const entityKeys = new Set(['id', 'kind', 'catalog_id', 'asset_id', 'initial_state',
+    'position', 'placement', 'properties', 'tags']);
+  const animalKeys = new Set(['id', 'species', 'catalog_id', 'name', 'personality',
+    'routine', 'favorite_places', 'prohibited_behaviors', 'gifts', 'milestones', 'initial_state']);
   for (const [field, values] of [['entities', raw.entities], ['animals', raw.animals]]) {
     if (!Array.isArray(values)) { errors.push(`$.${field}: must be a list`); continue; }
     values.forEach((item, index) => {
       const path = `$.${field}[${index}]`;
       if (!item || typeof item !== 'object' || Array.isArray(item)) { errors.push(`${path}: must be an object`); return; }
+      const allowed = field === 'animals' ? animalKeys : entityKeys;
+      for (const key of Object.keys(item)) if (!allowed.has(key)) errors.push(`${path}: unknown field ${key}`);
       if (!ID.test(item.id ?? '')) errors.push(`${path}.id: invalid stable identifier`);
       else if (objectIds.has(item.id)) errors.push(`${path}.id: duplicate world identifier ${item.id}`);
       else objectIds.add(item.id);
@@ -66,20 +105,55 @@ export function parseGardenProgram(raw) {
         if (item.name != null && (typeof item.name !== 'string' || !item.name)) errors.push(`${path}.name: must be non-empty text`);
         if (item.personality != null && typeof item.personality !== 'string' &&
           (!item.personality || typeof item.personality !== 'object' || Array.isArray(item.personality))) errors.push(`${path}.personality: expected prose or a trait object`);
+        for (const key of ['name', 'personality', 'routine', 'gifts', 'milestones']) {
+          rejectManipulativeNarrative(item[key], `${path}.${key}`, errors);
+        }
       } else if (item.kind === 'fixture' && !gardenCatalogHas('fixture', catalog)) errors.push(`${path}: unknown runtime fixture asset`);
       else if (item.kind === 'plant' && !gardenCatalogHas('plant', catalog)) errors.push(`${path}: unknown runtime plant asset`);
+      if (field === 'entities') rejectManipulativeNarrative(item.properties, `${path}.properties`, errors);
     });
   }
+  if (Array.isArray(raw.animals)) raw.animals.forEach((animal, index) => {
+    if (!animal || typeof animal !== 'object' || Array.isArray(animal)) return;
+    const path = `$.animals[${index}]`;
+    for (const field of ['favorite_places', 'prohibited_behaviors', 'gifts', 'milestones']) {
+      const value = animal[field] ?? [];
+      if (!Array.isArray(value) || value.some(item => typeof item !== 'string')) {
+        errors.push(`${path}.${field}: must be a list of text values`);
+      } else if (['favorite_places', 'gifts'].includes(field)) {
+        for (const reference of value) if (!objectIds.has(reference)) {
+          errors.push(`${path}.${field}: unknown world object ${reference}`);
+        }
+      }
+    }
+    if (animal.routine != null && typeof animal.routine !== 'string' && !Array.isArray(animal.routine)) {
+      errors.push(`${path}.routine: expected prose or a routine list`);
+    }
+  });
   const eventIds = new Set();
+  const exclusivePriorities = new Set();
+  if (Array.isArray(raw.events) && raw.events.length > 1000) errors.push('$.events: exceeds maximum of 1000');
   const events = Array.isArray(raw.events) ? raw.events.map((event, index) => {
     const path = `$.events[${index}]`;
     if (!event || typeof event !== 'object' || !ID.test(event.id ?? '')) errors.push(`${path}.id: invalid stable identifier`);
+    const eventKeys = new Set(['id', 'conditions', 'schedule', 'occurrence', 'priority',
+      'exclusive_group', 'cooldown', 'actions']);
+    for (const key of Object.keys(event ?? {})) if (!eventKeys.has(key)) errors.push(`${path}: unknown field ${key}`);
     if (eventIds.has(event.id)) errors.push(`${path}.id: duplicate identifier ${event.id}`);
     eventIds.add(event.id);
     validateCondition(event.conditions, `${path}.conditions`, errors, 0);
     const actions = Array.isArray(event.actions) ? event.actions : [];
+    if (!Array.isArray(event.actions)) errors.push(`${path}.actions: must be a list`);
+    if (actions.length > 100) errors.push(`${path}.actions: exceeds maximum of 100`);
     for (let actionIndex = 0; actionIndex < actions.length; actionIndex += 1) {
       const action = actions[actionIndex];
+      if (!action || typeof action !== 'object' || Array.isArray(action)) {
+        errors.push(`${path}.actions[${actionIndex}]: action must be an object`);
+        continue;
+      }
+      for (const key of Object.keys(action)) {
+        if (!['type', 'target', 'params'].includes(key)) errors.push(`${path}.actions[${actionIndex}]: unknown field ${key}`);
+      }
       if (!ACTIONS.has(action?.type)) errors.push(`${path}.actions[${actionIndex}].type: unsupported action`);
       if (/^(entity|animal|plant)\./.test(action?.type ?? '') && !ID.test(action?.target ?? '')) {
         errors.push(`${path}.actions[${actionIndex}].target: required`);
@@ -90,20 +164,47 @@ export function parseGardenProgram(raw) {
       }
       const requiredChoices = REQUIRED_PARAMS[action?.type] ?? [];
       const params = action?.params ?? {};
+      if (!params || typeof params !== 'object' || Array.isArray(params)) {
+        errors.push(`${path}.actions[${actionIndex}].params: must be an object`);
+        continue;
+      }
+      const allowedParams = new Set(ACTION_PARAMS[action?.type] ?? []);
+      for (const key of Object.keys(params)) if (!allowedParams.has(key)) {
+        errors.push(`${path}.actions[${actionIndex}].params: unknown field ${key}`);
+      }
       if (requiredChoices.length && !requiredChoices.some(choice => choice.every(key => Object.hasOwn(params, key)))) {
         errors.push(`${path}.actions[${actionIndex}].params: missing required parameters`);
       }
       if (action?.type === 'scene.set' && Object.keys(params).length === 0) errors.push(`${path}.actions[${actionIndex}].params: scene.set requires at least one scene field`);
       if (action?.type === 'plant.prune' && !Array.isArray(params.node_ids)) errors.push(`${path}.actions[${actionIndex}].params.node_ids: must be a list`);
+      if (action?.type === 'variable.increment' && params.amount != null &&
+        (typeof params.amount !== 'number' || !Number.isFinite(params.amount))) {
+        errors.push(`${path}.actions[${actionIndex}].params.amount: must be numeric`);
+      }
+      if (action?.type === 'animal.behave' &&
+        (typeof params.behavior !== 'string' || !params.behavior)) {
+        errors.push(`${path}.actions[${actionIndex}].params.behavior: must be non-empty text`);
+      }
       for (const key of ['letter_id', 'event_id', 'fixture_id', 'entity_id', 'gift_id']) {
         if (Object.hasOwn(params, key) && !ID.test(params[key] ?? '')) errors.push(`${path}.actions[${actionIndex}].params.${key}: invalid stable reference`);
       }
       for (const key of ['fixture_id', 'entity_id', 'gift_id']) {
         if (params[key] != null && !objectIds.has(params[key])) errors.push(`${path}.actions[${actionIndex}].params.${key}: unknown world object`);
       }
-      rejectUnsafe(action?.params ?? {}, `${path}.actions[${actionIndex}].params`, errors);
+      if (['narrative.show', 'scene.set', 'entity.transform', 'animal.behave', 'animal.routine'].includes(action?.type)) {
+        rejectManipulativeNarrative(params, `${path}.actions[${actionIndex}].params`, errors);
+      }
     }
     if (!['once', 'recurring'].includes(event.occurrence ?? 'once')) errors.push(`${path}.occurrence: expected once or recurring`);
+    if (!Number.isInteger(event.priority ?? 0) || (event.priority ?? 0) < -1000000 || (event.priority ?? 0) > 1000000) {
+      errors.push(`${path}.priority: expected integer between -1000000 and 1000000`);
+    }
+    if (event.exclusive_group != null) {
+      if (!ID.test(event.exclusive_group)) errors.push(`${path}.exclusive_group: invalid identifier`);
+      const key = `${event.exclusive_group}\0${event.priority ?? 0}`;
+      if (exclusivePriorities.has(key)) errors.push(`${path}: unresolved equal-priority exclusivity in ${event.exclusive_group}`);
+      exclusivePriorities.add(key);
+    }
     if (event.schedule !== null && event.schedule !== undefined) {
       try { parseGardenSchedule(event.schedule); } catch (error) { errors.push(`${path}.schedule: ${error.message}`); }
     }
@@ -150,9 +251,12 @@ function validateCondition(value, path, errors, depth) {
     children.forEach((child, index) => validateCondition(child, `${path}.${kind}[${index}]`, errors, depth + 1));
     return;
   }
+  const leafKeys = new Set(['fact', 'op', 'value', 'ref']);
+  for (const key of Object.keys(value)) if (!leafKeys.has(key)) errors.push(`${path}: unknown field ${key}`);
   if (!FACTS.has(value.fact)) errors.push(`${path}.fact: unsupported fact`);
   if (!OPS.has(value.op)) errors.push(`${path}.op: unsupported operator`);
   if (value.op !== 'exists' && !('value' in value) && !('ref' in value)) errors.push(`${path}: comparison needs value or ref`);
+  if ('ref' in value && !ID.test(value.ref ?? '')) errors.push(`${path}.ref: invalid stable reference`);
 }
 
 function lookup(mapping, dotted) {
@@ -238,7 +342,12 @@ function applyAction(action, state, eventId, effects) {
     else if (action.type === 'plant.dormancy') entity.dormant = Boolean(params.dormant ?? true);
     else if (action.type === 'plant.prune') entity.pruned_node_ids = clone(params.node_ids ?? []);
     else if (action.type === 'plant.revive') Object.assign(entity, { dormant: false, revived: true });
-    else entity.directive = { type: action.type, ...params };
+    else if (['animal.deliver', 'animal.present_gift'].includes(action.type)) {
+      const key = action.type === 'animal.deliver' ? 'entity_id' : 'gift_id';
+      const delivered = (state.entities ??= {})[params[key]] ??= { id: params[key] };
+      Object.assign(delivered, { revealed: true, delivered: true, delivered_by: action.target });
+      entity.directive = { type: action.type, ...params, status: 'completed' };
+    } else entity.directive = { type: action.type, ...params, status: 'completed' };
   }
   effects.push(effect);
 }
@@ -248,12 +357,15 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
   const state = clone(stateInput); const context = clone(contextInput);
   const ledger = state.applied_occurrences ??= [];
   const applied = new Set(ledger);
-  const claims = state.exclusive_claims ??= {};
+  delete state.exclusive_claims;
+  const exclusiveOccurrences = state.exclusive_occurrences ??= [];
+  const persistedExclusive = new Set(exclusiveOccurrences);
+  const claimedGroups = new Set();
   const cooldowns = state.event_cooldowns ??= {};
   const effects = []; const trace = [];
   const events = [...program.events].sort((left, right) =>
     (right.priority ?? 0) - (left.priority ?? 0) || left.id.localeCompare(right.id));
-  for (const event of events) {
+  const occurrenceFor = event => {
     let occurrenceId = event.schedule == null
       ? event.occurrence === 'recurring'
         ? Number.isInteger(context.facts?.['visit.total'])
@@ -262,38 +374,83 @@ export async function evaluateGardenProgram(programInput, stateInput, contextInp
         : `${event.id}:once`
       : context.eligible_occurrences?.[event.id];
     if (occurrenceId === true) occurrenceId = `${event.id}:scheduled`;
-    const row = { event_id: event.id, priority: event.priority ?? 0,
-      exclusive_group: event.exclusive_group ?? null, occurrence_id: occurrenceId ?? null };
-    if (!occurrenceId) { trace.push({ ...row, status: 'blocked', reason: 'schedule_not_eligible' }); continue; }
-    const ledgerId = `${event.id}@${occurrenceId}`;
-    if (applied.has(ledgerId)) { trace.push({ ...row, status: 'skipped', reason: 'already_applied' }); continue; }
-    if (event.exclusive_group && Object.hasOwn(claims, event.exclusive_group)) { trace.push({ ...row, status: 'blocked', reason: 'exclusive_group_claimed' }); continue; }
-    const priorCooldown = cooldowns[event.id];
-    if (event.cooldown && priorCooldown) {
-      const nowMs = Date.parse(context.facts?.['time.utc'] ?? '');
-      const visit = context.facts?.['visit.total'];
-      const blockedByTime = Number.isFinite(nowMs) && Number.isInteger(priorCooldown.time_utc_seconds) &&
-        event.cooldown.duration_seconds != null && Math.floor(nowMs / 1000) - priorCooldown.time_utc_seconds < event.cooldown.duration_seconds;
-      const blockedByVisit = Number.isInteger(visit) && Number.isInteger(priorCooldown.visit_total) &&
-        event.cooldown.visits != null && visit - priorCooldown.visit_total < event.cooldown.visits;
-      if (blockedByTime || blockedByVisit) { trace.push({ ...row, status: 'blocked', reason: 'cooldown_active' }); continue; }
+    return occurrenceId;
+  };
+  const exclusiveScope = (event, occurrenceId) => {
+    if (typeof context.transaction_id === 'string' && context.transaction_id) return context.transaction_id;
+    for (const prefix of [`${event.id}:`, `${event.id}@`]) {
+      if (occurrenceId.startsWith(prefix)) return occurrenceId.slice(prefix.length);
     }
-    const [eligible, conditions] = await evaluateGardenCondition(event.conditions, context.facts ?? {}, {
-      seed: context.seed ?? 0, event_id: event.id, occurrence_id: occurrenceId,
-    });
-    if (!eligible) { trace.push({ ...row, conditions, status: 'blocked', reason: 'conditions_false' }); continue; }
-    for (const action of event.actions) applyAction(action, state, event.id, effects);
-    applied.add(ledgerId); ledger.push(ledgerId); ledger.sort();
-    if (event.exclusive_group) claims[event.exclusive_group] = ledgerId;
-    if (event.cooldown) {
-      const nowMs = Date.parse(context.facts?.['time.utc'] ?? '');
-      const visit = context.facts?.['visit.total'];
-      cooldowns[event.id] = {
-        ...(Number.isFinite(nowMs) ? { time_utc_seconds: Math.floor(nowMs / 1000) } : {}),
-        ...(Number.isInteger(visit) ? { visit_total: visit } : {}),
-      };
+    return occurrenceId;
+  };
+  const derivedFacts = () => {
+    const facts = clone(context.facts ?? {}); const entities = state.entities ?? {};
+    facts['event.completed'] = [...new Set([
+      ...(Array.isArray(facts['event.completed']) ? facts['event.completed'] : []),
+      ...(state.completed_events ?? []),
+    ].map(String))].sort();
+    for (const [fact, key] of [['gift.revealed', 'revealed'], ['animal.arrived', 'present'], ['plant.bloom', 'blooming']]) {
+      facts[fact] = [...new Set([
+        ...(Array.isArray(facts[fact]) ? facts[fact] : []),
+        ...Object.entries(entities).filter(([, value]) => value?.[key] === true).map(([id]) => id),
+      ].map(String))].sort();
     }
-    trace.push({ ...row, conditions, status: 'applied', effect_count: event.actions.length });
+    const growth = Object.values(entities).filter(value => value?.planted === true)
+      .map(value => value.stage ?? value.amount ?? 0).filter(value => typeof value === 'number' && Number.isFinite(value));
+    if (growth.length) facts['plant.growth_stage'] = Math.max(
+      ...growth, typeof facts['plant.growth_stage'] === 'number' ? facts['plant.growth_stage'] : 0,
+    );
+    return facts;
+  };
+  let pending = [...events]; let evaluationPass = 0;
+  while (pending.length && evaluationPass <= events.length) {
+    evaluationPass += 1; let progressed = false; const retry = []; let facts = derivedFacts();
+    for (const event of pending) {
+      const occurrenceId = occurrenceFor(event);
+      const row = { event_id: event.id, priority: event.priority ?? 0,
+        exclusive_group: event.exclusive_group ?? null, occurrence_id: occurrenceId ?? null,
+        evaluation_pass: evaluationPass };
+      if (!occurrenceId) { trace.push({ ...row, status: 'blocked', reason: 'schedule_not_eligible' }); continue; }
+      const ledgerId = `${event.id}@${occurrenceId}`;
+      const exclusiveKey = event.exclusive_group
+        ? `${event.exclusive_group}@${exclusiveScope(event, occurrenceId)}` : null;
+      if (applied.has(ledgerId)) { trace.push({ ...row, status: 'skipped', reason: 'already_applied' }); continue; }
+      if (event.exclusive_group && (claimedGroups.has(event.exclusive_group) || persistedExclusive.has(exclusiveKey))) {
+        trace.push({ ...row, status: 'blocked', reason: 'exclusive_group_claimed' }); continue;
+      }
+      const priorCooldown = cooldowns[event.id];
+      if (event.cooldown && priorCooldown) {
+        const nowMs = Date.parse(facts['time.utc'] ?? ''); const visit = facts['visit.total'];
+        const blockedByTime = Number.isFinite(nowMs) && Number.isInteger(priorCooldown.time_utc_seconds) &&
+          event.cooldown.duration_seconds != null && Math.floor(nowMs / 1000) - priorCooldown.time_utc_seconds < event.cooldown.duration_seconds;
+        const blockedByVisit = Number.isInteger(visit) && Number.isInteger(priorCooldown.visit_total) &&
+          event.cooldown.visits != null && visit - priorCooldown.visit_total < event.cooldown.visits;
+        if (blockedByTime || blockedByVisit) { trace.push({ ...row, status: 'blocked', reason: 'cooldown_active' }); continue; }
+      }
+      const [eligible, conditions] = await evaluateGardenCondition(event.conditions, facts, {
+        seed: context.seed ?? 0, event_id: event.id, occurrence_id: occurrenceId,
+      });
+      if (!eligible) {
+        trace.push({ ...row, conditions, status: 'blocked', reason: 'conditions_false' }); retry.push(event); continue;
+      }
+      for (const action of event.actions) applyAction(action, state, event.id, effects);
+      applied.add(ledgerId); ledger.push(ledgerId); ledger.sort();
+      if (event.exclusive_group) {
+        claimedGroups.add(event.exclusive_group); persistedExclusive.add(exclusiveKey);
+        exclusiveOccurrences.push(exclusiveKey); exclusiveOccurrences.sort();
+      }
+      if (event.cooldown) {
+        const nowMs = Date.parse(facts['time.utc'] ?? ''); const visit = facts['visit.total'];
+        cooldowns[event.id] = {
+          ...(Number.isFinite(nowMs) ? { time_utc_seconds: Math.floor(nowMs / 1000) } : {}),
+          ...(Number.isInteger(visit) ? { visit_total: visit } : {}),
+        };
+      }
+      trace.push({ ...row, conditions, status: 'applied', effect_count: event.actions.length });
+      progressed = true; facts = derivedFacts();
+    }
+    if (!progressed) break;
+    pending = retry;
   }
   return { state, effects, trace };
 }

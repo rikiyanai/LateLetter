@@ -299,3 +299,22 @@ def test_existing_v1_requires_explicit_upgrade_and_is_preserved(tmp_path: Path):
     assert loaded.garden_program is None
     assert read_bundle(path).version == 1
     assert not list(tmp_path.glob("*.backup*.lateletter"))
+
+
+def test_no_json_editor_builds_chloe_acceptance_arc(tmp_path: Path):
+    store = SessionStore(base_dir=tmp_path / "author")
+    answers = iter(["y", "UTC", "arc", "1", "Clover", "done"])
+    timeline = _run_garden_timeline_editor(
+        store, _intake(), ["letter.chloe"],
+        input_fn=lambda _prompt: next(answers), output_fn=lambda _line: None,
+    )
+    assert timeline is not None
+    assert [beat.id for beat in timeline.beats] == [
+        "arc.rabbit-arrives", "arc.third-visit-rose", "arc.bonded-autumn-gift",
+    ]
+    assert timeline.animals[0]["name"] == "Clover"
+    saved = store.load_garden_timeline()
+    assert saved is not None
+    assert [beat["id"] for beat in saved["beats"]] == [
+        "arc.rabbit-arrives", "arc.third-visit-rose", "arc.bonded-autumn-gift",
+    ]
