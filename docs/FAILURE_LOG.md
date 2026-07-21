@@ -4,6 +4,13 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 
 ## 2026-07-21
 
+### Final `main` push workflows were rejected before any steps ran
+- Symptom: The exact `main` commit's Pages job had zero steps because the `github-pages` environment allowed only `master`; the attribution job had zero steps because GitHub reports failed account payments or an exhausted spending limit.
+- Impact: The locally fixed `/to-chloe` route cannot deploy, and required policy verification cannot run.
+- Required fix: Add `main` to the Pages environment before removing `master`, rerun the exact commit, and resolve the GitHub account billing/spending limit if runner allocation remains blocked.
+- Acceptance: Pages and attribution workflows succeed on the final `main` SHA, the live route resolves, and only then is remote `master` deleted.
+- Status: Open — failure annotations retrieved and logged before environment remediation.
+
 ### Public `/to-chloe` route disappeared with the quarantined personal bundle
 - Symptom: `https://rikiworld.com/lateletter/to-chloe` returns 404 while the safe synthetic `/to-a-friend` route succeeds.
 - Impact: The recipient-facing URL is broken even though removing the compromised personal ciphertext was the correct safety action.
