@@ -32,10 +32,13 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from .bundle import (
     BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
     Bundle,
+    BundleValidationError,
     GardenGift,
     GardenProgramEnvelope,
     Message,
     canonical_json,
+    validate_bundle_dict,
+    validate_pbkdf2_params,
 )
 
 # Recorded in every sealed message so the viewer knows how to derive keys.
@@ -55,18 +58,43 @@ def _b64e(raw: bytes) -> str:
     return base64.b64encode(raw).decode("ascii")
 
 
-def _b64d(text: str) -> bytes:
-    return base64.b64decode(text)
+def _b64d(
+    text: str,
+    *,
+    field_name: str,
+    expected_length: int | None = None,
+    minimum_length: int | None = None,
+) -> bytes:
+    if not isinstance(text, str) or not text:
+        raise ValueError(f"{field_name} must be a non-empty base64 string.")
+    try:
+        decoded = base64.b64decode(text, validate=True)
+    except (ValueError, TypeError) as exc:
+        raise ValueError(f"{field_name} must be valid padded base64.") from exc
+    if expected_length is not None and len(decoded) != expected_length:
+        raise ValueError(
+            f"{field_name} must decode to exactly {expected_length} bytes."
+        )
+    if minimum_length is not None and len(decoded) < minimum_length:
+        raise ValueError(
+            f"{field_name} must decode to at least {minimum_length} bytes."
+        )
+    return decoded
 
 
 def derive_key(passphrase: str, salt: bytes,
                params: dict[str, Any] | None = None) -> bytes:
-    params = params or KDF_PARAMS_V0
-    if params.get("name") != "PBKDF2" or params.get("hash") != "SHA-256":
-        raise ValueError(f"Unsupported kdf_params: {params!r}")
+    if not isinstance(passphrase, str):
+        raise TypeError("passphrase must be a string.")
+    if not isinstance(salt, bytes) or len(salt) != _SALT_LEN:
+        raise ValueError(f"PBKDF2 salt must be exactly {_SALT_LEN} bytes.")
+    params = KDF_PARAMS_V0 if params is None else params
+    errors = validate_pbkdf2_params(params)
+    if errors:
+        raise ValueError("; ".join(errors))
     return hashlib.pbkdf2_hmac(
         "sha256", passphrase.encode("utf-8"), salt,
-        int(params["iterations"]), dklen=_KEY_LEN,
+        params["iterations"], dklen=_KEY_LEN,
     )
 
 
@@ -87,9 +115,15 @@ def seal_message(passphrase: str, *, message_id: str, date: str,
 
 
 def open_message(passphrase: str, message: Message) -> dict[str, str]:
-    key = derive_key(passphrase, _b64d(message.salt), message.kdf_params)
+    key = derive_key(
+        passphrase,
+        _b64d(message.salt, field_name="message.salt", expected_length=_SALT_LEN),
+        message.kdf_params,
+    )
     plaintext = AESGCM(key).decrypt(
-        _b64d(message.nonce), _b64d(message.ciphertext), None,
+        _b64d(message.nonce, field_name="message.nonce", expected_length=_NONCE_LEN),
+        _b64d(message.ciphertext, field_name="message.ciphertext", minimum_length=16),
+        None,
     )
     return json.loads(plaintext.decode("utf-8"))
 
@@ -107,9 +141,18 @@ def seal_gift_sentiment(passphrase: str, gift: GardenGift,
 
 
 def open_gift_sentiment(passphrase: str, gift: GardenGift) -> str:
-    key = derive_key(passphrase, _b64d(gift.salt))
+    key = derive_key(
+        passphrase,
+        _b64d(gift.salt, field_name="gift.salt", expected_length=_SALT_LEN),
+    )
     plaintext = AESGCM(key).decrypt(
-        _b64d(gift.nonce), _b64d(gift.sentiment_ciphertext), None,
+        _b64d(gift.nonce, field_name="gift.nonce", expected_length=_NONCE_LEN),
+        _b64d(
+            gift.sentiment_ciphertext,
+            field_name="gift.sentiment_ciphertext",
+            minimum_length=16,
+        ),
+        None,
     )
     return plaintext.decode("utf-8")
 
@@ -142,9 +185,27 @@ def open_garden_program(
     """Authenticate and decrypt a version 2 Garden program envelope."""
     if envelope.version != 1:
         raise ValueError(f"Unsupported garden program version: {envelope.version}")
-    key = derive_key(passphrase, _b64d(envelope.salt), envelope.kdf_params)
+    key = derive_key(
+        passphrase,
+        _b64d(
+            envelope.salt,
+            field_name="garden_program.salt",
+            expected_length=_SALT_LEN,
+        ),
+        envelope.kdf_params,
+    )
     plaintext = AESGCM(key).decrypt(
-        _b64d(envelope.nonce), _b64d(envelope.ciphertext), _GARDEN_PROGRAM_AAD,
+        _b64d(
+            envelope.nonce,
+            field_name="garden_program.nonce",
+            expected_length=_NONCE_LEN,
+        ),
+        _b64d(
+            envelope.ciphertext,
+            field_name="garden_program.ciphertext",
+            minimum_length=16,
+        ),
+        _GARDEN_PROGRAM_AAD,
     )
     program = json.loads(plaintext.decode("utf-8"))
     if not isinstance(program, dict):
@@ -157,7 +218,15 @@ def compute_bundle_hmac(bundle: Bundle, passphrase: str) -> str:
         bundle.bundle_auth_kdf_params
         if bundle.version >= BUNDLE_VERSION_WITH_GARDEN_PROGRAM else None
     )
-    key = derive_key(passphrase, _b64d(bundle.bundle_auth_salt), params)
+    key = derive_key(
+        passphrase,
+        _b64d(
+            bundle.bundle_auth_salt,
+            field_name="bundle_auth_salt",
+            expected_length=_SALT_LEN,
+        ),
+        params,
+    )
     payload = canonical_json(bundle.visible_payload())
     return hmac_mod.new(key, payload, hashlib.sha256).hexdigest()
 
@@ -173,6 +242,14 @@ def seal_bundle(bundle: Bundle, passphrase: str) -> None:
             raise ValueError("Version 2 bundles cannot carry legacy garden gifts.")
         if bundle.bundle_auth_kdf_params is None:
             bundle.bundle_auth_kdf_params = dict(KDF_PARAMS_V0)
+    validation_data = bundle.to_dict()
+    # Sealing is the transition from an explicitly trusted plaintext fixture
+    # shape to production ciphertext.  Validate the production requirements
+    # before spending work on the bundle-authentication KDF.
+    validation_data["hmac"] = "pending"
+    errors = validate_bundle_dict(validation_data)
+    if errors:
+        raise BundleValidationError(errors)
     bundle.hmac = compute_bundle_hmac(bundle, passphrase)
     bundle.checksum = bundle.compute_checksum()
 

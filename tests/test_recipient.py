@@ -6,7 +6,14 @@ from datetime import date, timedelta
 
 import pytest
 
-from lateletter.bundle import BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, GardenGift, Trigger
+from lateletter.bundle import (
+    BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+    Bundle,
+    GardenGift,
+    Trigger,
+    create_dev_fixture,
+    write_bundle,
+)
 from lateletter.garden.renderer import GardenRenderer
 from lateletter.garden.program import parse_program
 from lateletter.garden.terminal import (
@@ -26,6 +33,7 @@ from lateletter.recipient import (
     _reapply_after_semantic_change,
     _verify_passphrase,
     gift_catalog_entry,
+    run_recipient_file,
 )
 from lateletter.sealed import seal_bundle, seal_garden_program, seal_gift_sentiment, seal_message
 
@@ -81,6 +89,22 @@ def test_real_sealed_bundle_unlocks_exact_message_and_gift():
         [("Open today", "The real terminal letter.")],
         {"g1": "Two sugars, always."},
     )
+
+
+def test_unsigned_fixture_requires_explicit_trusted_fixture_path(tmp_path, capsys):
+    bundle = create_dev_fixture(include_gifts=False)
+    path = tmp_path / "unsigned.lateletter"
+    write_bundle(bundle, path)
+
+    with pytest.raises(SystemExit) as exc:
+        run_recipient_file(path)
+    assert exc.value.code == 1
+    assert "explicit trusted development-fixture harness" in capsys.readouterr().out
+
+    assert _verify_passphrase("anything", bundle, True)
+    messages, gifts = _unlock_content("anything", bundle, True)
+    assert messages[0][1].startswith("Dear Maya,")
+    assert gifts == {}
 
 
 def test_recipient_store_owns_only_read_receipts(receipt_store):

@@ -666,14 +666,19 @@ def run_recipient_file(path: str | Path, season: str | None = None) -> None:
     except Exception as exc:
         print(f"  Error: could not read bundle: {exc}")
         raise SystemExit(1) from exc
+    if not bundle.hmac:
+        print(
+            "  Error: unsigned bundles are accepted only through the "
+            "explicit trusted development-fixture harness."
+        )
+        raise SystemExit(1)
     checksum_ok = verify_checksum(bundle)
-    is_dev_fixture = not bundle.hmac
     store = RecipientStore(bundle.bundle_id)
     curses.wrapper(
         run_recipient,
         bundle,
         store,
         season,
-        is_dev_fixture,
+        False,
         not checksum_ok,
     )

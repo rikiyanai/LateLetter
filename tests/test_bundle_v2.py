@@ -12,6 +12,7 @@ from lateletter.bundle import (
     BundleValidationError,
     GardenGift,
     Trigger,
+    write_bundle,
 )
 from lateletter.sealed import (
     KDF_PARAMS_V0,
@@ -130,3 +131,32 @@ def test_seal_v2_refuses_missing_program():
 
     with pytest.raises(ValueError, match="garden program"):
         seal_bundle(bundle, PASS)
+
+
+def test_v2_parser_rejects_huge_auth_kdf_without_derivation():
+    data = _bundle().to_dict()
+    data["bundle_auth_kdf_params"] = {
+        "name": "PBKDF2", "hash": "SHA-256", "iterations": 10**12,
+    }
+
+    with pytest.raises(BundleValidationError, match="iterations"):
+        Bundle.from_dict(data)
+
+
+def test_canonical_writer_refuses_weak_kdf_params(tmp_path):
+    bundle = _bundle()
+    bundle.bundle_auth_kdf_params = {
+        "name": "PBKDF2", "hash": "SHA-256", "iterations": 1,
+    }
+
+    with pytest.raises(BundleValidationError, match="iterations"):
+        write_bundle(bundle, tmp_path / "weak.lateletter")
+    assert not (tmp_path / "weak.lateletter").exists()
+
+
+def test_v2_parser_rejects_invalid_envelope_binary_shapes():
+    data = _bundle().to_dict()
+    data["garden_program"]["nonce"] = "c2hvcnQ="
+
+    with pytest.raises(BundleValidationError, match="12 bytes"):
+        Bundle.from_dict(data)

@@ -37,6 +37,10 @@ BUNDLE_VERSION_WITH_GARDEN_PROGRAM = 2
 SUPPORTED_BUNDLE_VERSIONS = (BUNDLE_VERSION, BUNDLE_VERSION_WITH_GARDEN_PROGRAM)
 _FILE_MODE = 0o600
 
+PBKDF2_MIN_ITERATIONS = 600_000
+PBKDF2_MAX_ITERATIONS = 2_000_000
+PBKDF2_PARAM_FIELDS = frozenset({"name", "hash", "iterations"})
+
 # Fields included in the checksum/HMAC visible payload (SPEC §3).
 _VISIBLE_PAYLOAD_FIELDS = (
     "version",
@@ -337,6 +341,62 @@ class BundleValidationError(Exception):
         super().__init__(f"Bundle validation failed: {'; '.join(errors)}")
 
 
+def validate_pbkdf2_params(
+    params: Any,
+    *,
+    field_name: str = "kdf_params",
+) -> list[str]:
+    """Return validation errors for the one supported KDF profile.
+
+    Keeping this validation beside bundle parsing gives every reader a cheap
+    rejection point before untrusted work factors can reach PBKDF2.
+    """
+    if not isinstance(params, dict):
+        return [f"{field_name} must be an object."]
+    fields = set(params)
+    if fields != PBKDF2_PARAM_FIELDS:
+        return [
+            f"{field_name} must contain exactly "
+            f"{sorted(PBKDF2_PARAM_FIELDS)!r}."
+        ]
+    if params.get("name") != "PBKDF2":
+        return [f"{field_name}.name must be 'PBKDF2'."]
+    if params.get("hash") != "SHA-256":
+        return [f"{field_name}.hash must be 'SHA-256'."]
+    iterations = params.get("iterations")
+    if isinstance(iterations, bool) or not isinstance(iterations, int):
+        return [f"{field_name}.iterations must be an integer, not a boolean."]
+    if not PBKDF2_MIN_ITERATIONS <= iterations <= PBKDF2_MAX_ITERATIONS:
+        return [
+            f"{field_name}.iterations must be between "
+            f"{PBKDF2_MIN_ITERATIONS} and {PBKDF2_MAX_ITERATIONS}."
+        ]
+    return []
+
+
+def _validate_base64_field(
+    value: Any,
+    *,
+    field_name: str,
+    expected_length: int | None = None,
+    minimum_length: int | None = None,
+    required: bool = False,
+) -> list[str]:
+    if value in (None, ""):
+        return [f"{field_name} must not be empty."] if required else []
+    if not isinstance(value, str):
+        return [f"{field_name} must be a base64 string."]
+    try:
+        decoded = base64.b64decode(value, validate=True)
+    except (ValueError, TypeError):
+        return [f"{field_name} must be valid padded base64."]
+    if expected_length is not None and len(decoded) != expected_length:
+        return [f"{field_name} must decode to exactly {expected_length} bytes."]
+    if minimum_length is not None and len(decoded) < minimum_length:
+        return [f"{field_name} must decode to at least {minimum_length} bytes."]
+    return []
+
+
 def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
     """Validate the raw bundle dict structure.  Returns list of error strings."""
     errors: list[str] = []
@@ -348,7 +408,11 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
     version = data.get("version")
     if version is None:
         errors.append("Missing required field: version.")
-    elif version not in SUPPORTED_BUNDLE_VERSIONS:
+    elif (
+        isinstance(version, bool)
+        or not isinstance(version, int)
+        or version not in SUPPORTED_BUNDLE_VERSIONS
+    ):
         errors.append(
             f"Unsupported bundle version {version} "
             f"(expected one of {SUPPORTED_BUNDLE_VERSIONS})."
@@ -360,6 +424,9 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
 
     # Messages
     messages = data.get("messages")
+    encrypted_messages_required = bool(data.get("hmac")) or (
+        version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM
+    )
     if messages is not None:
         if not isinstance(messages, list):
             errors.append("Field 'messages' must be a list.")
@@ -369,6 +436,29 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
                     errors.append(f"messages[{i}] must be an object.")
                 elif not m.get("id") or not m.get("date"):
                     errors.append(f"messages[{i}] missing required field 'id' or 'date'.")
+                else:
+                    if m.get("kdf_params") is not None:
+                        errors.extend(validate_pbkdf2_params(
+                            m.get("kdf_params"),
+                            field_name=f"messages[{i}].kdf_params",
+                        ))
+                    elif encrypted_messages_required:
+                        errors.append(
+                            f"messages[{i}].kdf_params must contain the supported "
+                            "PBKDF2 profile."
+                        )
+                    errors.extend(_validate_base64_field(
+                        m.get("salt"), field_name=f"messages[{i}].salt",
+                        expected_length=16, required=True,
+                    ))
+                    errors.extend(_validate_base64_field(
+                        m.get("nonce"), field_name=f"messages[{i}].nonce",
+                        expected_length=12, required=True,
+                    ))
+                    errors.extend(_validate_base64_field(
+                        m.get("ciphertext"), field_name=f"messages[{i}].ciphertext",
+                        minimum_length=16, required=True,
+                    ))
 
     # Garden gifts
     gifts = data.get("garden_gifts")
@@ -384,11 +474,31 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
                         f"garden_gifts[{i}] missing required field "
                         "'id', 'type', or 'trigger'."
                     )
+                else:
+                    errors.extend(_validate_base64_field(
+                        g.get("salt"), field_name=f"garden_gifts[{i}].salt",
+                        expected_length=16,
+                    ))
+                    errors.extend(_validate_base64_field(
+                        g.get("nonce"), field_name=f"garden_gifts[{i}].nonce",
+                        expected_length=12,
+                    ))
+                    errors.extend(_validate_base64_field(
+                        g.get("sentiment_ciphertext"),
+                        field_name=f"garden_gifts[{i}].sentiment_ciphertext",
+                        minimum_length=16,
+                    ))
 
     # Garden seed
     seed = data.get("garden_seed")
-    if seed is not None and not isinstance(seed, int):
+    if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
         errors.append("Field 'garden_seed' must be an integer.")
+
+    errors.extend(_validate_base64_field(
+        data.get("bundle_auth_salt"), field_name="bundle_auth_salt",
+        expected_length=16,
+        required=bool(data.get("hmac")) or version == BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+    ))
 
     # Version 2 moves author-directed world ownership into one encrypted
     # program.  It must never run beside plaintext legacy gift triggers.
@@ -403,6 +513,10 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
             errors.append(
                 "Version 2 bundles require 'bundle_auth_kdf_params'."
             )
+        else:
+            errors.extend(validate_pbkdf2_params(
+                auth_params, field_name="bundle_auth_kdf_params",
+            ))
         program = data.get("garden_program")
         if not isinstance(program, dict):
             errors.append("Version 2 bundles require an encrypted 'garden_program'.")
@@ -412,11 +526,31 @@ def validate_bundle_dict(data: dict[str, Any]) -> list[str]:
                     errors.append(
                         f"garden_program missing required field '{field_name}'."
                     )
-            if program.get("version") != 1:
+            if (
+                isinstance(program.get("version"), bool)
+                or not isinstance(program.get("version"), int)
+                or program.get("version") != 1
+            ):
                 errors.append("Unsupported garden_program version.")
             for field_name in ("ciphertext", "salt", "nonce"):
                 if not program.get(field_name):
                     errors.append(f"garden_program field '{field_name}' must not be empty.")
+            errors.extend(validate_pbkdf2_params(
+                program.get("kdf_params"),
+                field_name="garden_program.kdf_params",
+            ))
+            errors.extend(_validate_base64_field(
+                program.get("salt"), field_name="garden_program.salt",
+                expected_length=16, required=True,
+            ))
+            errors.extend(_validate_base64_field(
+                program.get("nonce"), field_name="garden_program.nonce",
+                expected_length=12, required=True,
+            ))
+            errors.extend(_validate_base64_field(
+                program.get("ciphertext"), field_name="garden_program.ciphertext",
+                minimum_length=16, required=True,
+            ))
     elif version == BUNDLE_VERSION and "garden_program" in data:
         errors.append(
             "Version 1 bundles cannot contain 'garden_program'; use version 2."
@@ -443,6 +577,9 @@ def write_bundle(bundle: Bundle, path: Path) -> None:
     HMAC is set by the encryption layer (step 13) — this module
     computes and writes the checksum only.
     """
+    errors = validate_bundle_dict(bundle.to_dict())
+    if errors:
+        raise BundleValidationError(errors)
     bundle.checksum = bundle.compute_checksum()
     data = bundle.to_dict()
     json_bytes = json.dumps(data, indent=2, ensure_ascii=False).encode("utf-8")
