@@ -116,6 +116,11 @@ def reconcile_offline(
         animals=animals,
         milestone_receipts=new_receipts,
         event_trace=state.event_trace + (trace,),
+        program_state={
+            **dict(state.program_state),
+            "absence_summary": list(summaries),
+            "absence_elapsed_seconds": elapsed,
+        },
     )
     if updated_state.animals:
         scene = updated_state.program_state.get("scene", {})
@@ -126,5 +131,6 @@ def reconcile_offline(
             time_of_day="night" if hour < 6 or hour >= 20 else "day",
             weather=weather,
             recipient_focus_id=updated_state.ui.focus_id,
+            returning=True,
         ))
     return updated_state, OfflineReport(elapsed, False, summaries, tuple(receipts))

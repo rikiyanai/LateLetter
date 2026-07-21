@@ -64,6 +64,15 @@ def test_scene_projection_is_renderer_neutral_and_stably_ordered():
         assert item["actions"]
         assert item["hotspot"]["width"] >= 1
         assert item["hotspot"]["height"] >= 1
+    plants = [item for item in serialized["objects"] if item["kind"] == "plant"]
+    assert plants
+    for plant in plants:
+        for organ in plant["semantic_state"]["visible_organs"]:
+            assert set(organ) == {
+                "node_id", "parent_id", "kind", "offset", "glyph_family", "bloom_state",
+            }
+    fixtures = [item for item in serialized["objects"] if item["kind"] == "fixture"]
+    assert all("connected_mask" in item["semantic_state"] for item in fixtures)
 
 
 def test_projection_age_changes_semantics_without_changing_object_identity():
@@ -78,3 +87,17 @@ def test_projection_age_changes_semantics_without_changing_object_identity():
         != late_plants[key].semantic_state["topology_hash"]
         for key in early_plants
     )
+
+
+def test_projection_surfaces_bounded_absence_inventory_and_lasting_memorial():
+    world = generate_initial_world("world", 42, world_width=64, world_height=40)
+    world = replace(world, program_state={
+        "absence_summary": ["One", "Two", "Three"],
+        "absence_elapsed_seconds": 99,
+        "story_complete": True,
+        "memorial": {"active": True, "completed_at": 88, "examined_gifts": [], "lasting": True},
+    })
+    scene = project_scene(world).scene
+    assert scene["absence_summary"] == ["One", "Two", "Three"]
+    assert scene["absence_elapsed_seconds"] == 99
+    assert scene["memorial"]["active"] is True

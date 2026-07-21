@@ -6,10 +6,10 @@ from dataclasses import dataclass, replace
 from typing import Any, Mapping
 
 from .commands import CommandKind, GardenCommand, validate_command
-from .fixtures import validate_fixture_placement
-from .animals import AnimalContext, step_animals
+from .fixtures import layout_is_safe, validate_fixture_placement
+from .animals import ANIMAL_GIFT_CATALOG, AnimalContext, step_animals
 from .fixtures import FIXTURE_CATALOG
-from .plants import advance_topology
+from .plants import SPECIES_CATALOG, care_for_plant, create_plant
 from .model import (
     AnimalState,
     CollectibleState,
@@ -65,7 +65,7 @@ def _object_kind(state: WorldState, object_id: str) -> str | None:
         return "fixture"
     if any(item.animal_id == object_id for item in state.animals):
         return "animal"
-    if any(item.collectible_id == object_id and not item.collected for item in state.collectibles):
+    if any(item.collectible_id == object_id for item in state.collectibles):
         return "collectible"
     return None
 
@@ -73,13 +73,16 @@ def _object_kind(state: WorldState, object_id: str) -> str | None:
 def _available_actions(state: WorldState, object_id: str) -> tuple[str, ...]:
     kind = _object_kind(state, object_id)
     if kind == "plant":
-        return ("inspect", "tend")
+        return ("inspect", "observe", "water", "prune", "train", "transplant", "rest")
     if kind == "fixture":
-        return ("inspect", "move_fixture")
+        fixture = next(item for item in state.fixtures if item.fixture_id == object_id)
+        definition = FIXTURE_CATALOG[fixture.catalog_id]
+        return ("inspect", *definition.interaction_verbs, "move", "rotate")
     if kind == "animal":
         return ("inspect", "feed", "play")
     if kind == "collectible":
-        return ("inspect", "collect")
+        item = next(item for item in state.collectibles if item.collectible_id == object_id)
+        return ("inspect",) if item.collected else ("inspect", "collect")
     return ()
 
 
@@ -155,6 +158,32 @@ def _animal_interaction(
     )
 
 
+def _with_bond_gift(
+    state: WorldState,
+    prior: AnimalState,
+    updated: AnimalState,
+) -> WorldState:
+    if updated.bond_tier < 3 or prior.bond_tier >= 3:
+        return state
+    catalog_id, label, description = ANIMAL_GIFT_CATALOG[updated.species_id]
+    collectible_id = stable_id("collectible", state.world_id, updated.animal_id, catalog_id)
+    if any(item.collectible_id == collectible_id for item in state.collectibles):
+        return state
+    gift = CollectibleState(
+        collectible_id=collectible_id,
+        family="animal_trace",
+        provenance="animal-given",
+        label=label,
+        description=description,
+        position=updated.position,
+    )
+    journal = _journal_entry(
+        state, collectible_id, "hinted", label,
+        f"{updated.display_name or updated.species_id} brought something to notice.",
+    )
+    return replace(state, collectibles=state.collectibles + (gift,), journal=journal)
+
+
 def _inspect(state: WorldState, target_id: str) -> tuple[WorldState, str, Mapping[str, Any]] | None:
     for plant in state.plants:
         if plant.plant_id == target_id:
@@ -169,12 +198,90 @@ def _inspect(state: WorldState, target_id: str) -> tuple[WorldState, str, Mappin
             updated = _animal_interaction(state, animal, "observe")
             animals = tuple(updated if item.animal_id == target_id else item for item in state.animals)
             journal = _journal_entry(state, target_id, "observed", animal.species_id, f"A {animal.species_id} sharing the garden.")
-            return replace(state, animals=animals, journal=journal), f"Observed {animal.species_id}.", updated.to_dict()
+            next_state = replace(state, animals=animals, journal=journal)
+            next_state = _with_bond_gift(next_state, animal, updated)
+            return next_state, f"Observed {animal.species_id}.", updated.to_dict()
     for collectible in state.collectibles:
-        if collectible.collectible_id == target_id and not collectible.collected:
-            journal = _journal_entry(state, target_id, "observed", collectible.label, collectible.description)
-            return replace(state, journal=journal), f"Observed {collectible.label}.", collectible.to_dict()
+        if collectible.collectible_id == target_id:
+            journal = _journal_entry(state, target_id, "examined", collectible.label, collectible.description)
+            return replace(state, journal=journal), f"Examined {collectible.label}.", collectible.to_dict()
     return None
+
+
+def activate_memorial(state: WorldState) -> WorldState:
+    """Persist the canonical later-launch memorial after story completion."""
+    program_state = dict(state.program_state)
+    completion = program_state.get("completion", {})
+    completion = completion if isinstance(completion, Mapping) else {}
+    complete = bool(program_state.get("story_complete") or completion.get("story_complete"))
+    if not complete:
+        return state
+    existing = program_state.get("memorial", {})
+    existing = existing if isinstance(existing, Mapping) else {}
+    program_state["memorial"] = {
+        "active": True,
+        "completed_at": int(existing.get("completed_at", state.effective_time)),
+        "examined_gifts": sorted(
+            entry.object_id for entry in state.journal if entry.status == "examined"
+        ),
+        "lasting": True,
+    }
+    return replace(state, program_state=program_state)
+
+
+def _fixture_interaction(
+    state: WorldState,
+    fixture: FixtureState,
+    requested: str | None,
+) -> tuple[WorldState, str, Mapping[str, Any]] | None:
+    definition = FIXTURE_CATALOG[fixture.catalog_id]
+    verb = str(requested or definition.interaction_verbs[0])
+    if verb not in definition.interaction_verbs:
+        return None
+    values = dict(fixture.authored_state)
+    toggles = {"open": ("open", True), "close": ("open", False),
+               "light": ("lit", True), "extinguish": ("lit", False)}
+    if verb in toggles:
+        key, value = toggles[verb]
+        values[key] = value
+    elif verb == "refill":
+        values["water_level"] = 3
+    elif verb == "draw_water":
+        values["draw_count"] = int(values.get("draw_count", 0)) + 1
+    elif verb == "turn":
+        values["turned_count"] = int(values.get("turned_count", 0)) + 1
+    elif verb in {"organize", "arrange", "gather", "fill", "water", "tend", "train", "transplant"}:
+        values[f"{verb}_count"] = int(values.get(f"{verb}_count", 0)) + 1
+    elif verb == "read_time":
+        values["last_read_hour"] = (state.effective_time // 3_600) % 24
+    elif verb == "review_inventory":
+        values["last_inventory_count"] = len(state.inventory)
+    elif verb in {"sit", "rest", "observe", "listen", "walk", "cross", "open", "remember", "read"}:
+        values[f"{verb}_count"] = int(values.get(f"{verb}_count", 0)) + 1
+    updated_fixture = replace(
+        fixture,
+        interaction_count=fixture.interaction_count + 1,
+        last_interaction=verb,
+        authored_state=values,
+    )
+    fixtures = tuple(
+        updated_fixture if item.fixture_id == fixture.fixture_id else item
+        for item in state.fixtures
+    )
+    journal = _journal_entry(
+        state,
+        fixture.fixture_id,
+        "observed",
+        definition.semantic_name,
+        f"{definition.semantic_name}: {verb.replace('_', ' ')}.",
+    )
+    details = updated_fixture.to_dict()
+    details["inventory"] = list(state.inventory)
+    return (
+        replace(state, fixtures=fixtures, journal=journal),
+        f"Used {verb.replace('_', ' ')} at {definition.semantic_name}.",
+        details,
+    )
 
 
 def _collect(state: WorldState, target_id: str) -> tuple[WorldState, str, Mapping[str, Any]] | None:
@@ -229,6 +336,7 @@ def _finish(
             recipient_focus_id=final.ui.focus_id,
             nearby_affordances=affordances,
         ))
+    final = activate_memorial(final)
     return final, CommandResult(True, final != prior, "", summary, actions, details)
 
 
@@ -276,8 +384,14 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         chosen = target or state.ui.focus_id
         if not chosen:
             return state, _reject("no interaction target")
-        if kind is CommandKind.PRIMARY_INTERACT and _object_kind(state, chosen) == "collectible":
+        chosen_kind = _object_kind(state, chosen)
+        if kind is CommandKind.PRIMARY_INTERACT and chosen_kind == "collectible":
             outcome = _collect(state, chosen)
+        elif kind is CommandKind.PRIMARY_INTERACT and chosen_kind == "fixture":
+            fixture = next(item for item in state.fixtures if item.fixture_id == chosen)
+            outcome = _fixture_interaction(
+                state, fixture, value.args.get("fixture_action") or value.args.get("action"),
+            )
         else:
             outcome = _inspect(state, chosen)
         if outcome is None:
@@ -299,42 +413,37 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         if plant is None and fixture is None:
             return state, _reject("tend target is not a plant or tending fixture")
         care = str(value.args.get("care_action", "water"))
-        gains = {"observe": 0, "water": 2, "prune": 1, "train": 2, "transplant": 1}
-        if plant is not None and care not in gains:
+        supported = {"observe", "water", "prune", "train", "transplant", "rest"}
+        if plant is not None and care not in supported:
             return state, _reject("unsupported care action")
         if fixture is not None:
             definition = FIXTURE_CATALOG[fixture.catalog_id]
-            if "tend" not in definition.direct_actions:
-                return state, _reject("fixture does not support tending")
-            tended_fixture = replace(
-                fixture,
-                interaction_count=fixture.interaction_count + 1,
-                last_interaction=care,
-            )
-            fixtures = tuple(
-                tended_fixture if item.fixture_id == target else item
-                for item in state.fixtures
-            )
-            journal = _journal_entry(
-                state, fixture.fixture_id, "tended", definition.semantic_name,
-                f"{definition.semantic_name} was tended with {care}.",
-            )
-            return _finish(
-                state, replace(state, fixtures=fixtures, journal=journal), value,
-                f"Used {care} on {definition.semantic_name}.",
-                details=tended_fixture.to_dict(),
-            )
+            outcome = _fixture_interaction(state, fixture, care)
+            if outcome is None:
+                return state, _reject("fixture does not support that action")
+            updated, summary, details = outcome
+            return _finish(state, updated, value, summary, details=details)
         assert plant is not None
-        grown = advance_topology(plant, state.effective_time, gains[care])
-        tended = replace(
-            grown,
-            growth_points=plant.growth_points + gains[care],
-            tended_count=plant.tended_count + 1,
-            last_tended_at=state.effective_time,
-        )
+        if care == "transplant":
+            if "x" not in value.args or "y" not in value.args:
+                return state, _reject("transplant requires x and y")
+            position = _position(value.args)
+            if not _inside_world(state, position) or _occupied(state, position, except_id=plant.plant_id):
+                return state, _reject("transplant position is unavailable")
+            tended = replace(plant, position=position, tended_count=plant.tended_count + 1,
+                             last_tended_at=state.effective_time, dormant=False)
+            candidate_plants = tuple(
+                tended if item.plant_id == target else item for item in state.plants
+            )
+            if not layout_is_safe(replace(state, plants=candidate_plants)):
+                return state, _reject("transplant makes the world unsafe or unreachable")
+            undo_stack = state.undo_stack + (UndoRecord("plant", plant.plant_id, plant.position, None),)
+        else:
+            tended = care_for_plant(plant, state.effective_time, care)
+            undo_stack = state.undo_stack
         plants = tuple(tended if item.plant_id == target else item for item in state.plants)
         journal = _journal_entry(state, plant.plant_id, "observed", plant.species_id, f"A {plant.species_id} tended with care.")
-        return _finish(state, replace(state, plants=plants, journal=journal), value, f"Used {care} on {plant.species_id}.", details=tended.to_dict())
+        return _finish(state, replace(state, plants=plants, journal=journal, undo_stack=undo_stack), value, f"Used {care} on {plant.species_id}.", details=tended.to_dict())
 
     if kind in (CommandKind.FEED, CommandKind.PLAY):
         animal = next((item for item in state.animals if item.animal_id == target), None)
@@ -343,7 +452,8 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         interaction = "feed" if kind is CommandKind.FEED else "play"
         updated_animal = _animal_interaction(state, animal, interaction)
         animals = tuple(updated_animal if item.animal_id == target else item for item in state.animals)
-        return _finish(state, replace(state, animals=animals), value, f"Shared {interaction} with {animal.species_id}.", details=updated_animal.to_dict())
+        updated_state = _with_bond_gift(replace(state, animals=animals), animal, updated_animal)
+        return _finish(state, updated_state, value, f"Shared {interaction} with {animal.species_id}.", details=updated_animal.to_dict())
 
     if kind is CommandKind.COLLECT:
         outcome = _collect(state, str(target))
@@ -372,30 +482,39 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
             updated = replace(state, fixtures=state.fixtures + (fixture,), undo_stack=state.undo_stack + (undo,))
             details = fixture.to_dict()
         else:
+            if catalog not in SPECIES_CATALOG:
+                return state, _reject("unknown plant catalog ID")
             if _occupied(state, position):
                 return state, _reject("placement cell is occupied")
-            root = OrganNode(
-                node_id=stable_id("organ", object_id, "root"),
-                parent_id=None,
-                kind="root",
-                birth_time=state.effective_time,
-                maturity_time=state.effective_time,
-                final_direction=Vec2(0, -1),
-                final_length=1,
-                glyph_family="root",
+            plant = create_plant(
+                state.seed, object_id, catalog, position, planted_at=state.effective_time,
             )
-            plant = PlantState(object_id, catalog, position, topology=(root,))
+            candidate_state = replace(state, plants=state.plants + (plant,))
+            if not layout_is_safe(candidate_state):
+                return state, _reject("plant placement makes the world unsafe or unreachable")
             updated = replace(state, plants=state.plants + (plant,), undo_stack=state.undo_stack + (undo,))
             details = plant.to_dict()
         return _finish(state, updated, value, f"Placed {catalog} at {position.x},{position.y}.", details=details)
 
     if kind is CommandKind.MOVE_FIXTURE:
         fixture = next((item for item in state.fixtures if item.fixture_id == target), None)
-        if fixture is None:
-            return state, _reject("move target is not a fixture")
+        plant = next((item for item in state.plants if item.plant_id == target), None)
+        if fixture is None and plant is None:
+            return state, _reject("move target is not a fixture or plant")
         position = _position(value.args)
         if not _inside_world(state, position):
             return state, _reject("move is outside the world")
+        if plant is not None:
+            if _occupied(state, position, except_id=plant.plant_id):
+                return state, _reject("move position is occupied")
+            moved_plant = replace(plant, position=position, dormant=False)
+            plants = tuple(moved_plant if item.plant_id == target else item for item in state.plants)
+            if not layout_is_safe(replace(state, plants=plants)):
+                return state, _reject("plant move makes the world unsafe or unreachable")
+            undo = UndoRecord("plant", plant.plant_id, plant.position, None)
+            updated = replace(state, plants=plants, undo_stack=state.undo_stack + (undo,))
+            return _finish(state, updated, value, f"Transplanted {plant.species_id} to {position.x},{position.y}.", details=moved_plant.to_dict())
+        assert fixture is not None
         placement_errors = validate_fixture_placement(
             state,
             fixture.catalog_id,
@@ -427,6 +546,13 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
                 for item in state.fixtures
             )
             updated = replace(state, fixtures=fixtures)
+        elif undo.kind == "plant" and undo.previous_position is not None:
+            plants = tuple(
+                replace(item, position=undo.previous_position)
+                if item.plant_id == undo.object_id else item
+                for item in state.plants
+            )
+            updated = replace(state, plants=plants)
         else:
             return state, _reject("undo record is invalid")
         updated = replace(updated, undo_stack=state.undo_stack[:-1])
@@ -434,7 +560,12 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
 
     if kind is CommandKind.OPEN_JOURNAL:
         updated = replace(state, ui=replace(state.ui, journal_open=True, actions_open_for=None))
-        return _finish(state, updated, value, f"Opened journal with {len(state.journal)} entries.", details={"entries": [item.to_dict() for item in state.journal]})
+        return _finish(state, updated, value, f"Opened journal with {len(state.journal)} entries.", details={
+            "entries": [item.to_dict() for item in state.journal],
+            "inventory": list(state.inventory),
+            "absence_summary": list(state.program_state.get("absence_summary", [])),
+            "memorial": dict(state.program_state.get("memorial", {})),
+        })
 
     if kind is CommandKind.PAUSE_MOTION:
         paused = bool(value.args.get("paused", not state.ui.motion_paused))

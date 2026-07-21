@@ -55,6 +55,40 @@ ANIMAL_SPECIES: dict[str, AnimalSpeciesDefinition] = {
     ),
 }
 
+TIER_REPERTOIRES: dict[str, tuple[tuple[str, ...], ...]] = {
+    "bird": (
+        ("watch_from_branch", "startle_flutter", "explore_edge"),
+        ("pause_approach", "perch_nearby", "bathe"),
+        ("initiate_song_play", "follow_overhead", "rest_near", "recall_perch"),
+        ("return_greet", "bring_feather", "share_perch", "deliver_song"),
+    ),
+    "cat": (
+        ("watch_from_cover", "startle_retreat", "explore_edge"),
+        ("pause_approach", "sniff_nearby", "use_bench"),
+        ("initiate_string_play", "follow_path", "rest_near", "recall_knead"),
+        ("return_greet", "bring_whisker", "share_bench", "settled_knead"),
+    ),
+    "rabbit": (
+        ("watch_from_hide", "startle_hop", "explore_edge"),
+        ("pause_approach", "forage_nearby", "use_trellis"),
+        ("initiate_hop_play", "follow_briefly", "rest_near", "recall_treat"),
+        ("return_greet", "bring_track", "share_planter", "settled_flop"),
+    ),
+    "turtle": (
+        ("watch_from_water", "withdraw_gently", "explore_edge"),
+        ("pause_approach", "walk_nearby", "use_pond"),
+        ("initiate_follow", "follow_briefly", "rest_near", "recall_sunspot"),
+        ("return_greet", "bring_scute", "share_bridge", "settled_sunbathe"),
+    ),
+}
+
+ANIMAL_GIFT_CATALOG: dict[str, tuple[str, str, str]] = {
+    "bird": ("bird_feather", "Bird feather", "A feather offered from a favorite perch."),
+    "cat": ("cat_whisker", "Cat whisker", "A whisker found where a trusted cat settled nearby."),
+    "rabbit": ("rabbit_track", "Rabbit track", "A soft print left beside a shared garden path."),
+    "turtle": ("turtle_scute", "Turtle scute", "A naturally shed scute left by a familiar turtle."),
+}
+
 
 @dataclass(frozen=True)
 class AnimalContext:
@@ -65,6 +99,7 @@ class AnimalContext:
     recipient_focus_id: str | None = None
     nearby_affordances: tuple[str, ...] = ()
     interrupted: bool = False
+    returning: bool = False
 
 
 @dataclass(frozen=True)
@@ -146,13 +181,13 @@ def _utility_score(
 ) -> int:
     personality = animal.personality
     score = 20
-    if intent in ("play", "hop", "knead"):
+    if any(token in intent for token in ("play", "hop", "knead", "flop")):
         score += personality.playfulness + animal.play_appetite
-    if intent in ("patrol", "sniff", "forage", "walk", "paddle"):
+    if any(token in intent for token in ("patrol", "sniff", "forage", "walk", "paddle", "explore")):
         score += personality.curiosity
-    if intent in ("greet", "sing"):
+    if any(token in intent for token in ("greet", "song", "sing", "approach")):
         score += personality.sociability + animal.bond_tier * 12
-    if intent in ("rest", "nap", "sunbathe", "perch", "groom", "hide"):
+    if any(token in intent for token in ("rest", "nap", "sunbathe", "perch", "groom", "hide", "settled")):
         score += animal.rest_appetite + max(0, 60 - animal.energy)
     if intent == "forage":
         score += personality.food_motivation
@@ -217,6 +252,15 @@ def decide_animal(
             8_000,
             priority_reason="relationship_response",
         )
+    tier_repertoire = TIER_REPERTOIRES[animal.species_id][animal.bond_tier]
+    if context.returning:
+        return AnimalDecision(
+            animal.animal_id,
+            "awake",
+            tier_repertoire[0],
+            7_500,
+            priority_reason="positive_return_greeting",
+        )
     if context.time_of_day == "night" and animal.personality.day_preference >= 65:
         return AnimalDecision(
             animal.animal_id,
@@ -228,13 +272,15 @@ def decide_animal(
     candidates = tuple(
         intent for intent in definition.repertoire
         if intent not in animal.authored_prohibitions
-    )
+    ) + tuple(intent for intent in tier_repertoire if intent not in animal.authored_prohibitions)
     scored = [
         (_utility_score(animal, intent, context, world_seed), intent)
         for intent in candidates
     ]
     score, intent = max(scored, key=lambda item: (item[0], item[1]))
-    high_level = "resting" if intent in ("rest", "nap", "sunbathe", "perch", "groom", "hide") else "awake"
+    high_level = "resting" if any(
+        token in intent for token in ("rest", "nap", "sunbathe", "perch", "groom", "hide", "settled")
+    ) else "awake"
     return AnimalDecision(animal.animal_id, high_level, intent, score)
 
 

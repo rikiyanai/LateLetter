@@ -11,6 +11,55 @@ from .model import Vec2, WorldState
 from .plants import age_visibility_hash, visible_organs
 
 
+def _visible_organ_geometry(plant, effective_time: int) -> list[dict[str, Any]]:
+    visible = {node.node_id for node in visible_organs(plant, effective_time)}
+    offsets: dict[str, Vec2] = {}
+    records: list[dict[str, Any]] = []
+    for node in plant.topology:
+        if node.node_id not in visible:
+            continue
+        parent = offsets.get(node.parent_id, Vec2(0, 0))
+        offset = Vec2(
+            parent.x + node.final_direction.x * node.final_length,
+            parent.y + node.final_direction.y * node.final_length,
+        ) if node.parent_id is not None else Vec2(0, 0)
+        offsets[node.node_id] = offset
+        records.append({
+            "node_id": node.node_id,
+            "parent_id": node.parent_id,
+            "kind": node.kind,
+            "offset": offset.to_list(),
+            "glyph_family": node.glyph_family,
+            "bloom_state": node.bloom_state,
+        })
+    return sorted(records, key=lambda item: item["node_id"])
+
+
+def _connected_mask(state: WorldState, fixture) -> int:
+    definition = FIXTURE_CATALOG[fixture.catalog_id]
+    group = definition.connected_group
+    if group is None:
+        return 0
+    cells = {
+        (other.position.x + dx, other.position.y + dy)
+        for other in state.fixtures
+        if other.fixture_id != fixture.fixture_id
+        and FIXTURE_CATALOG[other.catalog_id].connected_group == group
+        for dy in range(FIXTURE_CATALOG[other.catalog_id].footprint.y)
+        for dx in range(FIXTURE_CATALOG[other.catalog_id].footprint.x)
+    }
+    own = {
+        (fixture.position.x + dx, fixture.position.y + dy)
+        for dy in range(definition.footprint.y)
+        for dx in range(definition.footprint.x)
+    }
+    mask = 0
+    for bit, (dx, dy) in enumerate(((0, -1), (1, 0), (0, 1), (-1, 0))):
+        if any((x + dx, y + dy) in cells for x, y in own):
+            mask |= 1 << bit
+    return mask
+
+
 @dataclass(frozen=True)
 class Hotspot:
     x: int
@@ -90,7 +139,7 @@ def project_scene(state: WorldState) -> SceneProjection:
             True,
             True,
             ("observe", "water", "prune", "train", "transplant"),
-            ("inspect", "tend"),
+            ("inspect", "observe", "water", "prune", "train", "transplant", "rest"),
             Hotspot(plant.position.x, plant.position.y, 1, 1),
             {
                 "species_id": plant.species_id,
@@ -98,6 +147,8 @@ def project_scene(state: WorldState) -> SceneProjection:
                 "topology_hash": age_visibility_hash(plant, state.effective_time),
                 "growth_points": plant.growth_points,
                 "dormant": plant.dormant,
+                "care_state": "resting" if plant.dormant else "growing",
+                "visible_organs": _visible_organ_geometry(plant, state.effective_time),
             },
         ))
     for fixture in state.fixtures:
@@ -111,11 +162,14 @@ def project_scene(state: WorldState) -> SceneProjection:
             definition.blocks_movement,
             definition.blocks_movement,
             definition.affordances,
-            definition.direct_actions,
+            ("inspect", *definition.interaction_verbs, "move", "rotate"),
             Hotspot(fixture.position.x, fixture.position.y, definition.footprint.x, definition.footprint.y),
             {"catalog_id": fixture.catalog_id, "rotation": fixture.rotation,
              "interaction_count": fixture.interaction_count,
              "last_interaction": fixture.last_interaction,
+             "interaction_verbs": list(definition.interaction_verbs),
+             "connected_group": definition.connected_group,
+             "connected_mask": _connected_mask(state, fixture),
              "authored_state": dict(fixture.authored_state)},
         ))
     for animal in state.animals:
@@ -139,6 +193,13 @@ def project_scene(state: WorldState) -> SceneProjection:
                 "choreography_locked": animal.choreography_lock is not None,
                 "display_name": animal.display_name,
                 "personality_note": animal.personality_note,
+                "personality": animal.personality.to_dict(),
+                "recent_memories": [memory.to_dict() for memory in animal.recent_memories],
+                "routine": animal.current_intent,
+                "choreography_phase": (
+                    "perform" if animal.choreography_lock else
+                    "recover" if animal.current_intent == "recover" else "orient"
+                ),
             },
         ))
     for item in state.collectibles:
@@ -166,8 +227,17 @@ def project_scene(state: WorldState) -> SceneProjection:
         state.effective_time,
         state.ui.camera,
         state.ui.motion_paused,
-        dict(state.program_state.get("scene", {})) if isinstance(
-            state.program_state.get("scene", {}), Mapping
-        ) else {},
+        {
+            **(
+                dict(state.program_state.get("scene", {})) if isinstance(
+                    state.program_state.get("scene", {}), Mapping
+                ) else {}
+            ),
+            "absence_summary": list(state.program_state.get("absence_summary", [])),
+            "absence_elapsed_seconds": int(state.program_state.get("absence_elapsed_seconds", 0)),
+            "memorial": dict(state.program_state.get("memorial", {})),
+            "inventory": list(state.inventory),
+            "journal_entry_count": len(state.journal),
+        },
         tuple(sorted(objects, key=lambda item: (item.depth, item.object_id))),
     )

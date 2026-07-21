@@ -109,7 +109,7 @@ def test_primary_interact_collects_a_collectible(world):
     assert "collectible:feather" in state.inventory
 
 
-def test_place_plant_creates_stable_root_topology_and_undo_removes_it(world):
+def test_place_plant_creates_full_stable_topology_and_undo_removes_it(world):
     state, result, _ = apply(
         world,
         "place",
@@ -117,7 +117,7 @@ def test_place_plant_creates_stable_root_topology_and_undo_removes_it(world):
     )
     plant_id = str(result.details["plant_id"])
     plant = next(item for item in state.plants if item.plant_id == plant_id)
-    assert len(plant.topology) == 1
+    assert len(plant.topology) > 1
     assert plant.topology[0].parent_id is None
     state, _, _ = apply(state, "undo")
     assert all(item.plant_id != plant_id for item in state.plants)
@@ -190,3 +190,31 @@ def test_tending_advances_persistent_topology_and_fixture_tend_is_meaningful(wor
     )
     assert state.fixtures[0].interaction_count == 1
     assert state.fixtures[0].last_interaction == "train"
+
+
+def test_every_plant_care_action_is_persistent_and_transplant_is_undoable(world):
+    plant = create_plant(world.seed, "plant:rose", "rose", world.plants[0].position)
+    state = replace(world, plants=(plant,))
+    original = plant
+    for care in ("observe", "water", "prune", "train", "rest"):
+        state, _, _ = apply(state, "tend", target="plant:rose", args={"care_action": care})
+    shaped = state.plants[0]
+    assert shaped.topology != original.topology
+    assert shaped.dormant
+    state, _, _ = apply(state, "tend", target="plant:rose", args={
+        "care_action": "transplant", "x": 22, "y": 22,
+    })
+    assert state.plants[0].position.x == 22
+    state, _, _ = apply(state, "undo")
+    assert state.plants[0].position == original.position
+
+
+def test_fixture_catalog_verbs_change_fixture_state(world):
+    state = world
+    state, result, _ = apply(
+        state, "primary_interact", target="fixture:bench", args={"fixture_action": "sit"},
+    )
+    fixture = state.fixtures[0]
+    assert fixture.last_interaction == "sit"
+    assert fixture.authored_state["sit_count"] == 1
+    assert "sit" in result.summary.lower()

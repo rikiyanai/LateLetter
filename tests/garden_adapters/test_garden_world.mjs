@@ -7,6 +7,8 @@ import {
   canonicalWorldJson,
   deserializeWorldState,
   dispatchGardenCommand,
+  projectGardenScene,
+  reconcileGardenOffline,
   serializeWorldState,
 } from '../../web/garden-world.mjs';
 
@@ -79,6 +81,39 @@ async function runScenario() {
   };
 }
 
+async function runAdvancedScenario() {
+  let state = deserializeWorldState(scenario.initial_state);
+  state.program_state.story_complete = true;
+  const steps = [
+    ['primary_interact', 'fixture:bench', { fixture_action: 'sit' }],
+    ['tend', 'plant:rose', { care_action: 'prune' }],
+    ['tend', 'plant:rose', { care_action: 'train' }],
+    ['tend', 'plant:rose', { care_action: 'rest' }],
+    ['tend', 'plant:rose', { care_action: 'transplant', x: 20, y: 20 }],
+    ['undo', null, {}],
+    ['place', null, { object_kind: 'plant', catalog_id: 'willow', object_id: 'plant:placed', x: 22, y: 20 }],
+    ['move_fixture', 'plant:placed', { x: 23, y: 20 }],
+    ['collect', 'collectible:feather', {}],
+    ['inspect', 'collectible:feather', {}],
+    ['open_journal', null, {}],
+  ];
+  const checkpoints = [];
+  for (let index = 0; index < steps.length; index += 1) {
+    const [kind, targetId, args] = steps[index];
+    const command = await normalizeGardenInput({ modality: 'terminal', world_id: state.world_id,
+      sequence: index + 1, command: kind, target_id: targetId, args, metadata: {} });
+    const [updated, result] = await dispatchGardenCommand(state, command);
+    assert.equal(result.accepted, true, result.reason);
+    state = updated;
+    checkpoints.push({ result, state: serializeWorldState(state) });
+  }
+  const offlineSource = deserializeWorldState(serializeWorldState(state));
+  offlineSource.last_observed_wall_time = 100;
+  const [offlineState, offlineReport] = await reconcileGardenOffline(offlineSource, 200);
+  return { checkpoints, projection: await projectGardenScene(state), final_json: canonicalWorldJson(state),
+    offline: { state: serializeWorldState(offlineState), report: offlineReport } };
+}
+
 function assertFinalExpectations(state) {
   const expected = scenario.final_expectations;
   const plant = state.plants.find(item => item.plant_id === 'plant:rose');
@@ -102,6 +137,10 @@ function assertFinalExpectations(state) {
 
 if (process.argv.includes('--emit')) {
   process.stdout.write(JSON.stringify(await runScenario()));
+} else if (process.argv.includes('--projection-emit')) {
+  process.stdout.write(JSON.stringify(await projectGardenScene(deserializeWorldState(scenario.initial_state))));
+} else if (process.argv.includes('--advanced-emit')) {
+  process.stdout.write(JSON.stringify(await runAdvancedScenario()));
 } else {
   test('golden scenario applies every canonical command', async () => {
     assert.equal(new Set(scenario.commands.map(item => item.kind)).size, 15);
@@ -133,5 +172,20 @@ if (process.argv.includes('--emit')) {
     assert.equal('document' in globalThis, false);
     const output = await runScenario();
     assert.equal(JSON.parse(canonicalJson(output.final_state)).command_sequence, 15);
+  });
+
+  test('projection exposes canonical topology, connected masks, and semantic actions', async () => {
+    const projection = await projectGardenScene(deserializeWorldState(scenario.initial_state));
+    const plant = projection.objects.find(item => item.kind === 'plant');
+    assert.ok(Array.isArray(plant.semantic_state.visible_organs));
+    assert.ok(plant.actions.includes('prune'));
+    const fixture = projection.objects.find(item => item.kind === 'fixture');
+    assert.ok(fixture.actions.includes('sit'));
+    assert.equal(typeof fixture.semantic_state.connected_mask, 'number');
+  });
+  test('advanced care, fixture, inventory, memorial, and placement scenario is accepted', async () => {
+    const output = await runAdvancedScenario();
+    assert.equal(output.checkpoints.length, 11);
+    assert.equal(output.projection.scene.memorial.active, true);
   });
 }

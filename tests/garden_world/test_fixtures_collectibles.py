@@ -19,6 +19,7 @@ from lateletter.garden.world.fixtures import (
     validate_fixture_placement,
 )
 from lateletter.garden.world.model import FixtureState, Vec2
+from lateletter.garden.world.generation import generate_initial_world
 
 
 def test_required_fixture_catalog_has_actions_and_systemic_affordances():
@@ -32,6 +33,25 @@ def test_required_fixture_catalog_has_actions_and_systemic_affordances():
     for fixture in FIXTURE_CATALOG.values():
         assert fixture.direct_actions
         assert fixture.affordances
+        assert fixture.interaction_verbs
+
+
+def test_every_required_fixture_verb_has_direct_persistent_state():
+    state = generate_initial_world("fixture-verbs", 99, world_width=64, world_height=40)
+    sequence = 0
+    for fixture in tuple(state.fixtures):
+        definition = FIXTURE_CATALOG[fixture.catalog_id]
+        for verb in definition.interaction_verbs:
+            sequence += 1
+            value = command(
+                state.world_id, sequence, "primary_interact",
+                target_id=fixture.fixture_id, args={"fixture_action": verb},
+            )
+            state, result = dispatch(state, value)
+            assert result.accepted, (fixture.catalog_id, verb, result.reason)
+            current = next(item for item in state.fixtures if item.fixture_id == fixture.fixture_id)
+            assert current.last_interaction == verb
+            assert current.interaction_count >= 1
 
 
 def test_all_five_connected_groups_define_all_sixteen_masks():
@@ -65,6 +85,28 @@ def test_layout_safety_rejects_unreachable_animal(world):
     assert not layout_is_safe(state)
 
 
+def test_layout_safety_rejects_trapped_plant_fixture_and_collectible(world):
+    ring = tuple(
+        FixtureState(f"wall:{index}", "fence", position)
+        for index, position in enumerate((
+            Vec2(9, 9), Vec2(10, 9), Vec2(11, 9), Vec2(9, 10),
+            Vec2(11, 10), Vec2(9, 11), Vec2(10, 11), Vec2(11, 11),
+        ))
+    )
+    trapped_plant = replace(world.plants[0], position=Vec2(10, 10))
+    assert not layout_is_safe(replace(
+        world, plants=(trapped_plant,), fixtures=ring, animals=(), collectibles=(),
+    ))
+    trapped_fixture = FixtureState("fixture:trapped", "sundial", Vec2(10, 10))
+    assert not layout_is_safe(replace(
+        world, plants=(), fixtures=ring + (trapped_fixture,), animals=(), collectibles=(),
+    ))
+    trapped_find = replace(world.collectibles[0], position=Vec2(10, 10))
+    assert not layout_is_safe(replace(
+        world, plants=(), fixtures=ring, animals=(), collectibles=(trapped_find,),
+    ))
+
+
 def test_collectible_catalog_has_four_families_and_accessible_copy():
     assert {item.family for item in COLLECTIBLE_CATALOG.values()} == set(COLLECTIBLE_FAMILIES)
     for item in COLLECTIBLE_CATALOG.values():
@@ -79,9 +121,13 @@ def test_inspect_and_collect_automatically_create_journal_paths(world):
     inspect = command(world.world_id, 1, "inspect", target_id="collectible:feather")
     state, result = dispatch(world, inspect)
     assert result.accepted
-    assert next(item for item in state.journal if item.object_id == "collectible:feather").status == "observed"
+    assert next(item for item in state.journal if item.object_id == "collectible:feather").status == "examined"
     collect = command(state.world_id, 2, "collect", target_id="collectible:feather")
     state, result = dispatch(state, collect)
     assert result.accepted
     assert next(item for item in state.journal if item.object_id == "collectible:feather").status == "collected"
     assert "collectible:feather" in state.inventory
+    examine = command(state.world_id, 3, "inspect", target_id="collectible:feather")
+    state, result = dispatch(state, examine)
+    assert result.accepted
+    assert next(item for item in state.journal if item.object_id == "collectible:feather").status == "examined"

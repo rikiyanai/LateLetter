@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .model import OrganNode, PlantState, Vec2, canonical_json_bytes, stable_id
 from .rng import DeterministicRNG, derive_seed
@@ -190,6 +190,73 @@ def advance_topology(
         last_tended_at=plant.last_tended_at,
         growth_period_seconds=plant.growth_period_seconds,
         dormant=plant.dormant,
+    )
+
+
+def care_for_plant(
+    plant: PlantState,
+    effective_time: int,
+    care_action: str,
+) -> PlantState:
+    """Apply one humane, persistent shaping action to an existing topology.
+
+    Care never destroys an organ or changes its identity/parent. Pruning marks a
+    mature terminal organ as shaped, training changes one future organ's final
+    direction, watering reveals bounded growth, and rest only pauses automatic
+    growth until the next active care action.
+    """
+    care = str(care_action)
+    if care not in {"observe", "water", "prune", "train", "rest"}:
+        raise ValueError(f"unsupported care action {care}")
+    if care == "observe":
+        return plant
+    topology = plant.topology
+    dormant = care == "rest"
+    growth_gain = 0
+    if care == "water":
+        growth_gain = 2
+        dormant = False
+        topology = advance_topology(plant, effective_time, growth_gain).topology
+    elif care == "prune":
+        candidates = sorted(
+            (
+                node for node in topology
+                if node.birth_time <= effective_time and node.kind in {"leaf", "bloom", "branch", "vine"}
+            ),
+            key=lambda node: (node.birth_time, node.node_id),
+        )
+        if candidates:
+            chosen = candidates[-1]
+            topology = tuple(
+                replace(node, glyph_family=f"shaped-{node.glyph_family}")
+                if node.node_id == chosen.node_id and not node.glyph_family.startswith("shaped-")
+                else node
+                for node in topology
+            )
+        growth_gain = 1
+        dormant = False
+    elif care == "train":
+        candidates = sorted(
+            (node for node in topology if node.parent_id is not None),
+            key=lambda node: (node.birth_time, node.node_id),
+        )
+        if candidates:
+            chosen = candidates[min(len(candidates) - 1, plant.tended_count % len(candidates))]
+            direction_x = 1 if plant.tended_count % 2 == 0 else -1
+            topology = tuple(
+                replace(node, final_direction=Vec2(direction_x, -1))
+                if node.node_id == chosen.node_id else node
+                for node in topology
+            )
+        growth_gain = 2
+        dormant = False
+    return replace(
+        plant,
+        topology=topology,
+        growth_points=plant.growth_points + growth_gain,
+        tended_count=plant.tended_count + 1,
+        last_tended_at=effective_time,
+        dormant=dormant,
     )
 
 

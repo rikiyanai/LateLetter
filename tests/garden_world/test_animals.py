@@ -6,6 +6,8 @@ import pytest
 
 from lateletter.garden.world.animals import (
     ANIMAL_SPECIES,
+    ANIMAL_GIFT_CATALOG,
+    TIER_REPERTOIRES,
     AnimalContext,
     ChoreographyLockError,
     acquire_choreography,
@@ -27,6 +29,11 @@ def test_four_species_have_distinct_repertoires_and_affinities():
         assert len(definition.repertoire) >= 6
         assert definition.fixture_affinities
         assert definition.weather_response
+    assert set(TIER_REPERTOIRES) == set(ANIMAL_SPECIES)
+    assert set(ANIMAL_GIFT_CATALOG) == set(ANIMAL_SPECIES)
+    for tiers in TIER_REPERTOIRES.values():
+        assert len(tiers) == 4
+        assert all(len(tier) >= 3 for tier in tiers)
 
 
 @pytest.mark.parametrize("species_id", sorted(ANIMAL_SPECIES))
@@ -113,3 +120,21 @@ def test_varied_interactions_create_bounded_episodic_memories(world):
     assert [memory.kind for memory in memories] == ["feed", "play", "feed"]
     assert all(memory.timestamp == state.effective_time for memory in memories)
     assert len({memory.memory_id for memory in memories}) == 3
+
+
+def test_full_bond_creates_one_species_specific_humane_gift(world):
+    rabbit = replace(
+        world.animals[0], bond_points=39, bond_tier=2,
+        interaction_counts=(("feed", 1), ("observe", 1)), session_interactions=(),
+    )
+    state = replace(world, animals=(rabbit,))
+    value = command(state.world_id, 1, "play", target_id=rabbit.animal_id)
+    state, result = dispatch(state, value)
+    assert result.accepted
+    assert state.animals[0].bond_tier == 3
+    gifts = [item for item in state.collectibles if item.provenance == "animal-given"]
+    assert any(item.label == "Rabbit track" for item in gifts)
+    value = command(state.world_id, 2, "play", target_id=rabbit.animal_id)
+    state, result = dispatch(state, value)
+    assert result.accepted
+    assert len([item for item in state.collectibles if item.label == "Rabbit track"]) == 1
