@@ -19,6 +19,7 @@ Usage:
 """
 
 import argparse
+import subprocess
 import sys
 import time
 import uuid
@@ -43,6 +44,7 @@ PASSPHRASE     = "biscuit"
 PASSPHRASE_HINT = "The name of our first dog"
 
 TODAY = date.today()
+_REPOSITORY_ROOT = Path(__file__).resolve().parent
 
 # Three messages at meaningful dates (demonstrating past-due, near, and far delivery)
 MESSAGES = [
@@ -152,7 +154,31 @@ def _step(quiet: bool, msg: str, delay: float = 0.3) -> None:
         time.sleep(delay)
 
 
+def _validate_demo_output(out_path: Path) -> Path:
+    output = out_path.expanduser().resolve()
+    if output.suffix.lower() != ".lateletter":
+        raise ValueError("demo output path must end in .lateletter")
+    if not output.parent.is_dir():
+        raise ValueError(f"demo output folder does not exist: {output.parent}")
+    try:
+        relative = output.relative_to(_REPOSITORY_ROOT).as_posix()
+    except ValueError:
+        return output
+    if (_REPOSITORY_ROOT / ".git").exists() and subprocess.run(
+        [
+            "git", "-C", str(_REPOSITORY_ROOT), "ls-files",
+            "--error-unmatch", "--", relative,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode == 0:
+        raise ValueError("refusing to overwrite a tracked demo or recipient bundle")
+    return output
+
+
 def run_demo(out_path: Path, quiet: bool) -> None:
+    out_path = _validate_demo_output(out_path)
     t_start = time.monotonic()
 
     if not quiet:

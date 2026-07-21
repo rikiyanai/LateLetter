@@ -3,49 +3,147 @@
 make_letter.py — seal a real, passcode-gated .lateletter bundle.
 
 Usage:
-    python3 make_letter.py letters/letter_source.example.json out.lateletter
+    python3 make_letter.py /safe/private/source.json /safe/private/out.lateletter
     python3 make_letter.py --verify out.lateletter        # prompts for passcode
 
 The source file is plain JSON you edit by hand:
 
     {
       "author_name": "Riki",
-      "passphrase": "our-word",          <- the passcode (never stored in output)
       "passphrase_hint": "the word we always say instead of goodbye",
       "garden_seed": 20260719,
       "messages": [
         {"date": "2026-07-20", "label": "Open me", "body": "Dear ...\n..."}
       ],
-      "garden_gifts": [
-        {"type": "animal", "catalog_id": "cat", "animal_name": "Mochi",
-         "trigger": {"type": "cumulative_visits", "value": "3"},
-         "sentiment": "She showed up because you kept coming back."}
-      ]
+      "garden_program": {
+        "version": 1,
+        "evaluator_version": 1,
+        "world_state_version": 1,
+        "atlas_version": "garden-atlas-1",
+        "astronomy_catalog_version": "bright-stars-1",
+        "author_timezone": "UTC",
+        "variables": {}, "entities": [], "animals": [], "events": []
+      }
     }
 
-Keep your real source file out of git (letters/*.json is gitignored except
-the example) — it holds the plaintext letter AND the passcode.
+The passphrase is requested twice at runtime and is never accepted in the
+source JSON.  The builder refuses tracked/unignored repository paths and
+existing output files.  Keep real plaintext and recipient bundles in ignored
+private storage; never use the tracked example or public output paths.
 """
 
 from __future__ import annotations
 
 import getpass
 import json
+import subprocess
 import sys
 import uuid
+from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from lateletter.bundle import (  # noqa: E402
-    BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, GardenGift, Notification,
-    Trigger, read_bundle, write_bundle,
+    BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, Notification, read_bundle,
+    write_bundle,
 )
 from lateletter.garden.program import GardenProgram, parse_program  # noqa: E402
+from lateletter.intake import passphrase_strength_warning  # noqa: E402
 from lateletter.sealed import (  # noqa: E402
-    open_garden_program, open_gift_sentiment, open_message, seal_bundle,
-    seal_garden_program, seal_gift_sentiment, seal_message, verify_bundle_hmac,
+    open_garden_program, open_message, seal_bundle, seal_garden_program,
+    seal_message, verify_bundle_hmac,
 )
+
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parent
+
+
+def _repo_relative(path: Path) -> str | None:
+    try:
+        return path.resolve().relative_to(_REPOSITORY_ROOT).as_posix()
+    except ValueError:
+        return None
+
+
+def _git_path_status(path: Path) -> tuple[bool, bool]:
+    """Return ``(tracked, ignored)`` without opening the target file."""
+    relative = _repo_relative(path)
+    if relative is None or not (_REPOSITORY_ROOT / ".git").exists():
+        return False, False
+    tracked = subprocess.run(
+        [
+            "git", "-C", str(_REPOSITORY_ROOT), "ls-files",
+            "--error-unmatch", "--", relative,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode == 0
+    ignored = subprocess.run(
+        [
+            "git", "-C", str(_REPOSITORY_ROOT), "check-ignore",
+            "--quiet", "--", relative,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    ).returncode == 0
+    return tracked, ignored
+
+
+def _validate_private_paths(source_path: Path, out_path: Path) -> tuple[Path, Path]:
+    """Reject paths likely to expose personal plaintext or recipient output."""
+    source = source_path.expanduser().resolve()
+    output = out_path.expanduser().resolve()
+    if source == output:
+        raise ValueError("source and output paths must be different")
+    if source.suffix.lower() != ".json":
+        raise ValueError("source path must end in .json")
+    if output.suffix.lower() != ".lateletter":
+        raise ValueError("output path must end in .lateletter")
+    if not source.is_file():
+        raise ValueError(f"source file does not exist: {source}")
+    if output.exists():
+        raise ValueError(
+            "output already exists; choose a new path for this fresh bundle"
+        )
+    if not output.parent.is_dir():
+        raise ValueError(f"output folder does not exist: {output.parent}")
+
+    source_tracked, source_ignored = _git_path_status(source)
+    output_tracked, output_ignored = _git_path_status(output)
+    if source_tracked:
+        raise ValueError("refusing to read a Git-tracked plaintext letter source")
+    if output_tracked:
+        raise ValueError("refusing to overwrite a Git-tracked recipient bundle")
+    if _repo_relative(source) is not None and not source_ignored:
+        raise ValueError(
+            "plaintext source is inside the repository and is not ignored by Git"
+        )
+    if _repo_relative(output) is not None and not output_ignored:
+        raise ValueError(
+            "recipient output is inside the repository and is not ignored by Git"
+        )
+    return source, output
+
+
+def _fresh_passphrase(password_fn=getpass.getpass) -> str:
+    try:
+        passphrase = password_fn(
+            "fresh passphrase (never committed or used for a compromised bundle): "
+        )
+        confirmation = password_fn("confirm fresh passphrase: ")
+    except (EOFError, KeyboardInterrupt) as exc:
+        raise ValueError("passphrase entry cancelled") from exc
+    if passphrase != confirmation:
+        raise ValueError("passphrases do not match")
+    if len(passphrase) < 12:
+        raise ValueError("fresh passphrase must contain at least 12 characters")
+    warning = passphrase_strength_warning(passphrase)
+    if warning is not None:
+        raise ValueError(warning)
+    return passphrase
 
 
 def _program_to_mapping(program: GardenProgram) -> dict:
@@ -87,27 +185,27 @@ def _program_to_mapping(program: GardenProgram) -> dict:
     }
 
 
-def _replace_message_references(value, messages):
+def _replace_message_references(value, message_ids: list[str]):
     if isinstance(value, str):
         if value == "FIRST_MESSAGE":
-            return messages[0].id
+            return message_ids[0]
         if value.startswith("MESSAGE_") and value[8:].isdigit():
             index = int(value[8:])
-            if index >= len(messages):
+            if index >= len(message_ids):
                 raise ValueError(f"message reference {value} is out of range")
-            return messages[index].id
+            return message_ids[index]
         return value
     if isinstance(value, list):
-        return [_replace_message_references(child, messages) for child in value]
+        return [_replace_message_references(child, message_ids) for child in value]
     if isinstance(value, dict):
         return {
-            key: _replace_message_references(child, messages)
+            key: _replace_message_references(child, message_ids)
             for key, child in value.items()
         }
     return value
 
 
-def _garden_program_from_source(src: dict, messages) -> dict | None:
+def _garden_program_from_source(src: dict, message_ids: list[str]) -> dict | None:
     if "garden_program" in src and "garden_beats" in src:
         raise ValueError("use either 'garden_program' or 'garden_beats', not both")
     raw = src.get("garden_program")
@@ -132,8 +230,11 @@ def _garden_program_from_source(src: dict, messages) -> dict | None:
                 "conditions": beat.get("when", beat.get("conditions")),
                 "schedule": beat.get("schedule"),
                 "occurrence": beat.get(
-                    "occurrence", "recurring" if beat.get("schedule", {}).get("recurrence") else "once",
-                ) if isinstance(beat.get("schedule", {}), dict) else beat.get("occurrence", "once"),
+                    "occurrence",
+                    "recurring" if beat.get("schedule", {}).get("recurrence") else "once",
+                ) if isinstance(beat.get("schedule", {}), dict) else beat.get(
+                    "occurrence", "once",
+                ),
                 "priority": beat.get("priority", 0),
                 "exclusive_group": beat.get("exclusive_group"),
                 "cooldown": beat.get("cooldown"),
@@ -143,7 +244,9 @@ def _garden_program_from_source(src: dict, messages) -> dict | None:
             "version": 1,
             "evaluator_version": 1,
             "world_state_version": 1,
-            "atlas_version": garden.get("atlas_version", src.get("atlas_version", "garden-atlas-1")),
+            "atlas_version": garden.get(
+                "atlas_version", src.get("atlas_version", "garden-atlas-1"),
+            ),
             "astronomy_catalog_version": garden.get(
                 "astronomy_catalog_version",
                 src.get("astronomy_catalog_version", "bright-stars-1"),
@@ -160,68 +263,115 @@ def _garden_program_from_source(src: dict, messages) -> dict | None:
         return None
     if not isinstance(raw, dict):
         raise ValueError("'garden_program' must be an object")
-    resolved = _replace_message_references(raw, messages)
+    resolved = _replace_message_references(raw, message_ids)
     return _program_to_mapping(parse_program(resolved))
 
 
-def build(source_path: Path, out_path: Path) -> None:
-    src = json.loads(source_path.read_text(encoding="utf-8"))
-    passphrase = src["passphrase"]
-    if not passphrase:
-        sys.exit("error: source file needs a non-empty 'passphrase'")
+def _message_specs(src: dict) -> list[tuple[str, dict]]:
+    raw_messages = src.get("messages")
+    if not isinstance(raw_messages, list) or not raw_messages:
+        raise ValueError("source file needs at least one message")
+    specs: list[tuple[str, dict]] = []
+    for index, message in enumerate(raw_messages):
+        if not isinstance(message, dict):
+            raise ValueError(f"messages[{index}] must be an object")
+        raw_date = message.get("date")
+        label = message.get("label", "")
+        body = message.get("body")
+        if not isinstance(raw_date, str):
+            raise ValueError(f"messages[{index}].date must be an ISO date")
+        try:
+            date.fromisoformat(raw_date)
+        except ValueError as exc:
+            raise ValueError(f"messages[{index}].date must be a real ISO date") from exc
+        if not isinstance(label, str):
+            raise ValueError(f"messages[{index}].label must be text")
+        if not isinstance(body, str) or not body.strip():
+            raise ValueError(f"messages[{index}].body must be non-empty text")
+        specs.append((str(uuid.uuid4()), message))
+    return specs
+
+
+def _bundle_metadata(src: dict) -> tuple[str, str | None, int, dict]:
+    author_name = src.get("author_name", "")
+    hint = src.get("passphrase_hint")
+    seed = src.get("garden_seed", 0)
+    notification = src.get("notification") or {}
+    if not isinstance(author_name, str):
+        raise ValueError("author_name must be text")
+    if hint is not None and not isinstance(hint, str):
+        raise ValueError("passphrase_hint must be text or null")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValueError("garden_seed must be an integer")
+    if not isinstance(notification, dict):
+        raise ValueError("notification must be an object or null")
+    unknown = set(notification) - {"email", "method"}
+    if unknown:
+        raise ValueError(
+            f"notification has unknown fields: {', '.join(sorted(unknown))}"
+        )
+    return author_name, hint, seed, notification
+
+
+def build(
+    source_path: Path,
+    out_path: Path,
+    *,
+    passphrase: str | None = None,
+    password_fn=getpass.getpass,
+) -> None:
+    try:
+        source_path, out_path = _validate_private_paths(source_path, out_path)
+        src = json.loads(source_path.read_text(encoding="utf-8"))
+        if not isinstance(src, dict):
+            raise ValueError("source JSON must be an object")
+        if "passphrase" in src:
+            raise ValueError(
+                "remove 'passphrase' from the plaintext source; it is requested privately"
+            )
+        passphrase = _fresh_passphrase(password_fn) if passphrase is None else passphrase
+        if len(passphrase) < 12 or passphrase_strength_warning(passphrase) is not None:
+            raise ValueError("provide a strong fresh passphrase of at least 12 characters")
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        sys.exit(f"error: {exc}")
+
+    try:
+        author_name, hint, garden_seed, notification = _bundle_metadata(src)
+        specs = _message_specs(src)
+        garden_program = _garden_program_from_source(
+            src, [message_id for message_id, _message in specs],
+        )
+    except ValueError as exc:
+        sys.exit(f"error: invalid source or garden program: {exc}")
+    if src.get("garden_gifts"):
+        sys.exit(
+            "error: legacy garden_gifts are not accepted; use the encrypted v2 garden_program"
+        )
+    if garden_program is None:
+        sys.exit("error: a full encrypted garden_program or garden_beats timeline is required")
 
     messages = [
         seal_message(
             passphrase,
-            message_id=str(uuid.uuid4()),
-            date=m["date"], label=m.get("label", ""), body=m["body"],
+            message_id=message_id,
+            date=message["date"],
+            label=message.get("label", ""),
+            body=message["body"],
         )
-        for m in src.get("messages", [])
+        for message_id, message in specs
     ]
-    if not messages:
-        sys.exit("error: source file needs at least one message")
-
-    try:
-        garden_program = _garden_program_from_source(src, messages)
-    except ValueError as exc:
-        sys.exit(f"error: invalid garden program: {exc}")
-    if garden_program is not None and src.get("garden_gifts"):
-        sys.exit("error: garden_program/garden_beats cannot be mixed with legacy garden_gifts")
-
-    gifts = []
-    for g in src.get("garden_gifts", []) if garden_program is None else []:
-        trigger = Trigger.from_dict(g["trigger"])
-        # post_letter triggers may reference "FIRST_MESSAGE" or "MESSAGE_<n>"
-        # since real message IDs only exist after sealing.
-        if trigger.type == "post_letter":
-            if trigger.value == "FIRST_MESSAGE":
-                trigger.value = messages[0].id
-            elif trigger.value.startswith("MESSAGE_"):
-                trigger.value = messages[int(trigger.value[8:])].id
-        gift = GardenGift(
-            id=str(uuid.uuid4()),
-            type=g["type"],
-            catalog_id=g["catalog_id"],
-            trigger=trigger,
-            placement_hint=g.get("placement_hint", "random"),
-            animal_name=g.get("animal_name"),
-            animal_collar_color=g.get("animal_collar_color"),
-        )
-        seal_gift_sentiment(passphrase, gift, g.get("sentiment", ""))
-        gifts.append(gift)
 
     bundle = Bundle(
-        version=(BUNDLE_VERSION_WITH_GARDEN_PROGRAM if garden_program is not None else 1),
-        author_name=src.get("author_name", ""),
-        passphrase_hint=src.get("passphrase_hint"),
-        garden_seed=int(src.get("garden_seed", 0)),
+        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
+        author_name=author_name,
+        passphrase_hint=hint,
+        garden_seed=garden_seed,
         messages=messages,
-        garden_gifts=gifts,
-        garden_program=(seal_garden_program(passphrase, garden_program)
-                        if garden_program is not None else None),
+        garden_gifts=[],
+        garden_program=seal_garden_program(passphrase, garden_program),
         notification=Notification(
-            email=(src.get("notification") or {}).get("email"),
-            method=(src.get("notification") or {}).get("method"),
+            email=notification.get("email"),
+            method=notification.get("method"),
         ),
     )
     seal_bundle(bundle, passphrase)
@@ -232,16 +382,12 @@ def build(source_path: Path, out_path: Path) -> None:
     assert verify_bundle_hmac(reread, passphrase), "HMAC round-trip failed"
     for msg in reread.messages:
         open_message(passphrase, msg)
-    for gift in reread.garden_gifts:
-        open_gift_sentiment(passphrase, gift)
-    if reread.garden_program is not None:
-        parse_program(open_garden_program(passphrase, reread.garden_program))
+    parse_program(open_garden_program(passphrase, reread.garden_program))
 
     print(f"sealed  {out_path}")
     print(f"  author: {bundle.author_name}   seed: {bundle.garden_seed}")
     print(
-        f"  messages: {len(messages)}   gifts: {len(gifts)}   "
-        f"garden program: {'yes' if garden_program is not None else 'no'}"
+        f"  messages: {len(messages)}   legacy gifts: 0   garden program: yes"
     )
     print(f"  hint shown to recipient: {bundle.passphrase_hint!r}")
     print("  passcode is NOT stored in the file — share it in person.")

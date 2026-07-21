@@ -18,7 +18,9 @@ from __future__ import annotations
 
 import argparse
 import curses
+import getpass
 import sys
+from typing import Callable
 
 from .intake import check_session_corruption, load_intake
 from .session_store import SessionStore
@@ -65,23 +67,35 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _author_mode(accessible: bool = False) -> int:
+def _author_mode(
+    accessible: bool = False,
+    *,
+    input_fn: Callable[[str], str] = input,
+    password_fn: Callable[[str], str] = getpass.getpass,
+    output_fn: Callable[[str], None] = print,
+) -> int:
     """Run the author mode flow."""
     store = SessionStore()
 
     if check_session_corruption(store):
-        print()
-        print("  WARNING: Your session file was corrupted and could not be read.")
-        print("  A backup was saved with a .corrupt extension.")
-        print("  Starting with a fresh intake form. Your prior data may be")
-        print("  recoverable from the backup file.")
-        print()
+        output_fn("")
+        output_fn("  WARNING: Your session file was corrupted and could not be read.")
+        output_fn("  A backup was saved with a .corrupt extension.")
+        output_fn("  Starting with a fresh intake form. Your prior data may be")
+        output_fn("  recoverable from the backup file.")
+        output_fn("")
 
     existing = load_intake(store)
 
     if accessible:
         from .intake_accessible import run_intake_accessible
-        result = run_intake_accessible(store, existing)
+        result = run_intake_accessible(
+            store,
+            existing,
+            input_fn=input_fn,
+            password_fn=password_fn,
+            output_fn=output_fn,
+        )
     else:
         try:
             from .intake_tui import run_intake_tui
@@ -89,19 +103,31 @@ def _author_mode(accessible: bool = False) -> int:
         except (ImportError, curses.error):
             # Curses unavailable — fall back to accessible mode
             from .intake_accessible import run_intake_accessible
-            result = run_intake_accessible(store, existing)
+            result = run_intake_accessible(
+                store,
+                existing,
+                input_fn=input_fn,
+                password_fn=password_fn,
+                output_fn=output_fn,
+            )
 
     if result is None:
-        print("  Exited without saving.")
+        output_fn("  Exited without saving.")
         return 0
 
     data, passphrase = result
-    print(f"  Welcome, {data.author_name}.")
-    print(f"  Writing letters for {data.recipient_name}.")
-    print()
+    output_fn(f"  Welcome, {data.author_name}.")
+    output_fn(f"  Writing letters for {data.recipient_name}.")
+    output_fn("")
     from .author import run_author_workflow
     return run_author_workflow(
-        store, data, passphrase, accessible=accessible,
+        store,
+        data,
+        passphrase,
+        accessible=accessible,
+        input_fn=input_fn,
+        password_fn=password_fn,
+        output_fn=output_fn,
     )
 
 
