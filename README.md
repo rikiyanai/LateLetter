@@ -24,27 +24,30 @@ Demo passphrase: `biscuit`
 
 ```bash
 cp letters/letter_source.example.json letters/my_letter.json
-# edit letters/my_letter.json — your words, dates, passcode, hint
-python3 make_letter.py letters/my_letter.json for_them.lateletter
-python3 make_letter.py --verify for_them.lateletter   # round-trip check
+# edit letters/my_letter.json — your words, dates, hint, and Garden program
+python3 make_letter.py letters/my_letter.json letters/for_them.lateletter
+python3 make_letter.py --verify letters/for_them.lateletter   # round-trip check
 ```
 
-Send `for_them.lateletter` to your friend with a link to the viewer
+Send `letters/for_them.lateletter` to your friend with a link to the viewer
 (https://rikiworld.com/lateletter/). Tell them the passcode in person.
-The passcode is never stored in the output bundle. Keep the editable source
-under an ignored `letters/` filename because it holds your readable letter and
-passcode. The tracked `letter_source.example.json` contains synthetic demo text only.
+The builder asks for a fresh passphrase twice; it is never stored in the source
+JSON or output bundle. Keep the editable source and first sealed output under
+ignored `letters/` filenames. The tracked example contains synthetic text only.
 
 ### Or send just a link
 
-Lock the letter into `public_letters/` instead and commit only the resulting
-bundle. A standard GitHub Pages site is public even when its source repository
+Build and verify in ignored private storage first. After final copy approval,
+copy only the sealed output into `public_letters/` and commit that bundle. A
+standard GitHub Pages site is public even when its source repository
 is private, so anyone with the URL can download the bundle; only someone with
 the passcode can open its private content:
 
 ```bash
-python3 make_letter.py letters/my_letter.json public_letters/to-personx.lateletter
-git add public_letters && git commit -m "letter" && git push
+python3 make_letter.py letters/my_letter.json letters/to-personx.lateletter
+python3 make_letter.py --verify letters/to-personx.lateletter
+cp letters/to-personx.lateletter public_letters/to-personx.lateletter
+git add public_letters/to-personx.lateletter && git commit -m "letter" && git push
 ```
 
 After the Pages deploy, share `https://rikiworld.com/lateletter/to-personx/`
