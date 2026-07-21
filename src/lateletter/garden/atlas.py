@@ -8,8 +8,12 @@ from pathlib import Path
 import unicodedata
 from typing import Any, Mapping
 
+import regex
+from wcwidth import wcswidth
+
 
 ATLAS_VERSION = "garden-atlas-1"
+UNICODE_DATA_VERSION = "15.1.0"
 REQUIRED_CONNECTED_FAMILIES = frozenset({"fence", "hedge", "path", "pond_edge", "wall"})
 REQUIRED_FIXTURES = frozenset({
     "fixture.bench", "fixture.fence_gate", "fixture.sundial", "fixture.trellis",
@@ -27,6 +31,14 @@ REQUIRED_COLLECTIBLES = frozenset({
 
 _UNSAFE_CATEGORIES = frozenset({"Cc", "Cf", "Cs", "Co", "Cn"})
 _BIDI_UNSAFE = frozenset({"RLE", "LRE", "RLO", "LRO", "PDF", "RLI", "LRI", "FSI", "PDI"})
+_TERMINAL_PROFILES = frozenset({"ascii-safe", "unicode-cell-safe"})
+
+
+def grapheme_cells(value: str) -> tuple[str, ...]:
+    """Segment text into Unicode extended grapheme clusters."""
+    if not isinstance(value, str):
+        raise TypeError("grapheme source must be text")
+    return tuple(regex.findall(r"\X", value))
 
 
 class AtlasValidationError(ValueError):
@@ -41,6 +53,9 @@ def _validate_cell(cell: Any, profile: str, path: str, errors: list[str]) -> Non
         return
     if unicodedata.normalize("NFC", cell) != cell:
         errors.append(f"{path}: cell must be NFC-normalized")
+    clusters = grapheme_cells(cell)
+    if len(clusters) != 1 or clusters[0] != cell:
+        errors.append(f"{path}: cell must contain exactly one grapheme cluster")
     if profile == "ascii-safe":
         if len(cell) != 1 or not 32 <= ord(cell) <= 126:
             errors.append(f"{path}: ascii-safe cells must be one printable ASCII character")
@@ -54,6 +69,13 @@ def _validate_cell(cell: Any, profile: str, path: str, errors: list[str]) -> Non
         if unicodedata.bidirectional(char) in _BIDI_UNSAFE:
             errors.append(f"{path}: bidirectional controls are forbidden")
             break
+    if profile in _TERMINAL_PROFILES:
+        width = wcswidth(cell)
+        if width != 1:
+            errors.append(f"{path}: {profile} cells must occupy exactly one column")
+        if profile == "unicode-cell-safe" and any(
+                unicodedata.east_asian_width(char) == "A" for char in cell):
+            errors.append(f"{path}: ambiguous-width characters need a separate profile")
 
 
 def validate_atlas(raw: Mapping[str, Any]) -> dict[str, Any]:
@@ -68,6 +90,8 @@ def validate_atlas(raw: Mapping[str, Any]) -> dict[str, Any]:
         errors.append(f"$: unknown fields {', '.join(unknown)}")
     if raw.get("version") != 1 or raw.get("id") != ATLAS_VERSION:
         errors.append(f"$: expected version 1 and id {ATLAS_VERSION}")
+    if raw.get("unicode_version") != UNICODE_DATA_VERSION:
+        errors.append(f"$.unicode_version: expected pinned {UNICODE_DATA_VERSION}")
     profiles = raw.get("profiles")
     if not isinstance(profiles, list) or "ascii-safe" not in profiles:
         errors.append("$.profiles: ascii-safe is mandatory")

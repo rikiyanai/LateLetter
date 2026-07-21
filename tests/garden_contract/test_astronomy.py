@@ -55,6 +55,8 @@ def test_usno_cardinal_horizon_cases():
 
 def test_usno_datetime_conformance_vectors():
     payload = json.loads((FIXTURES / "astronomy_vectors.v1.json").read_text())
+    assert len(payload["vectors"]) == 12
+    assert {int(vector["latitude"]) >= 0 for vector in payload["vectors"]} == {True, False}
     for vector in payload["vectors"]:
         when = datetime.fromisoformat(vector["timestamp"])
         gast = greenwich_apparent_sidereal_time(when)

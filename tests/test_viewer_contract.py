@@ -100,7 +100,10 @@ def test_viewer_derives_modality_and_implements_reduced_motion_and_modal_contrac
 def test_resize_cannot_regenerate_canonical_topology():
     source = _viewer_source()
 
-    assert "onResize(){ this.dom.resize(); }" in source
+    assert "new CanonicalGardenRenderer" in source
+    assert "GardenVisualState" not in source
+    assert "class PlantLayer" not in source
+    assert "collisionMap" not in source
     assert "window.addEventListener('resize',()=>{if(garden)garden.onResize()" in source
 
 
@@ -117,6 +120,7 @@ def test_behavioral_browser_modules_pass_node_contracts():
             "tests/garden_adapters/test_garden_input.mjs",
             "tests/garden_adapters/test_garden_world.mjs",
             "tests/garden_adapters/test_garden_live_runtime.mjs",
+            "tests/garden_adapters/test_garden_renderer.mjs",
         ],
         cwd=ROOT,
         check=False,

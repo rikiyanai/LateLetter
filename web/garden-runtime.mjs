@@ -157,6 +157,24 @@ export class GardenRuntime {
     });
   }
 
+  async markStoryComplete(completedAt = null) {
+    return this.enqueueMutation(async () => {
+      if (!this.state) throw new Error('Garden runtime is not open');
+      if (this.state.program_state.story_complete === true) return false;
+      this.state.program_state.story_complete = true;
+      this.state.program_state.memorial = {
+        active: true,
+        completed_at: Number.isInteger(completedAt) ? completedAt : this.state.effective_time,
+        examined_gifts: this.state.journal.filter(item => item.status === 'examined')
+          .map(item => item.object_id).sort(),
+        lasting: true,
+      };
+      await this.persist();
+      await this.refreshProjection();
+      return true;
+    });
+  }
+
   prepareProgram(program) {
     if (!this.state) throw new Error('Garden runtime is not open');
     return seedGardenProgramState(this.state, program).program_state;

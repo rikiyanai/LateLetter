@@ -4,7 +4,8 @@ import pytest
 
 from lateletter.garden.atlas import (
     AtlasValidationError, REQUIRED_COLLECTIBLES, REQUIRED_CONNECTED_FAMILIES,
-    REQUIRED_FIXTURES, load_atlas, validate_atlas,
+    REQUIRED_FIXTURES, UNICODE_DATA_VERSION, grapheme_cells, load_atlas,
+    validate_atlas,
 )
 
 
@@ -17,6 +18,25 @@ def test_bundled_atlas_has_required_assets_fallbacks_and_all_connected_masks():
     assert all(set(masks) == {str(index) for index in range(16)}
                for masks in atlas["connected_tiles"].values())
     assert all("ascii-safe" in asset["profiles"] for asset in atlas["assets"])
+    assert atlas["unicode_version"] == UNICODE_DATA_VERSION
+
+
+def test_grapheme_segmentation_and_terminal_width_are_validated():
+    assert grapheme_cells("e\u0301") == ("e\u0301",)
+    atlas = load_atlas()
+    multiple = deepcopy(atlas)
+    multiple["assets"][0]["profiles"]["unicode-cell-safe"] = {
+        "idle": [{"ticks": 1, "cells": [["ab"]]}],
+    }
+    with pytest.raises(AtlasValidationError, match="exactly one grapheme"):
+        validate_atlas(multiple)
+
+    wide = deepcopy(atlas)
+    wide["assets"][0]["profiles"]["unicode-cell-safe"] = {
+        "idle": [{"ticks": 1, "cells": [["界"]]}],
+    }
+    with pytest.raises(AtlasValidationError, match="exactly one column"):
+        validate_atlas(wide)
 
 
 def test_atlas_rejects_unsafe_control_private_use_and_width_drift():

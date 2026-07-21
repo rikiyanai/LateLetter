@@ -476,7 +476,7 @@ def test_accessibility_static_contract_has_semantics_targets_and_motion_pause():
     assert not missing
 
 
-def test_sky_audit_is_explicitly_limited_to_available_trusted_vectors():
+def test_sky_audit_covers_twelve_trusted_privacy_safe_vectors():
     coarse = CoarseLocation.from_raw(35.681236, 139.767125)
     assert coarse.to_mapping() == {
         "latitude_cell": 36, "longitude_cell": 140, "grid_degrees": 1,
@@ -489,7 +489,7 @@ def test_sky_audit_is_explicitly_limited_to_available_trusted_vectors():
 
     payload = json.loads(ASTRONOMY_FIXTURES.read_text(encoding="utf-8"))
     assert payload["authority"]
-    assert len(payload["vectors"]) == 2
+    assert len(payload["vectors"]) == 12
     for vector in payload["vectors"]:
         altitude, azimuth = ra_dec_to_alt_az(
             when=datetime.fromisoformat(vector["timestamp"]),

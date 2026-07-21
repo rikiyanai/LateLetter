@@ -127,6 +127,7 @@
     #garden-object-list button, #garden-action-sheet button, .garden-global-actions button {
       min-width: 44px; min-height: 44px; padding: .55rem .7rem;
     }
+    .garden-global-actions select { min-height: 44px; padding: .55rem .7rem; }
     #garden-object-list button { width: 100%; text-align: left; }
     #garden-object-list button[aria-current="true"] { opacity: 1; text-decoration: underline; }
     #garden-action-sheet, .garden-global-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
@@ -409,6 +410,20 @@
     <button class="btn" type="button" data-garden-action="pause_motion">pause motion</button>
     <button class="btn" type="button" data-garden-action="back">back</button>
   </div>
+  <fieldset class="garden-global-actions">
+    <legend class="t3">optional sky</legend>
+    <button class="btn" type="button" id="sky-opt-in">use my rough location</button>
+    <label class="t3" for="sky-region">manual region</label>
+    <select id="sky-region">
+      <option value="">choose region</option>
+      <option value="36,140">Tokyo region</option>
+      <option value="51,0">London region</option>
+      <option value="41,-74">New York region</option>
+      <option value="-34,151">Sydney region</option>
+    </select>
+    <button class="btn" type="button" id="sky-use-region">use selected region</button>
+    <button class="btn" type="button" id="sky-forget">forget sky location</button>
+  </fieldset>
   <ul id="garden-object-list" aria-label="Garden objects"></ul>
   <div id="garden-action-sheet" role="group" aria-label="Actions for focused object"></div>
 </aside>
@@ -428,6 +443,8 @@ import {
   migrateAuthenticatedLegacyGifts,
   parseGardenProgram,
 } from './web/garden-program.mjs';
+import { CanonicalGardenRenderer } from './web/garden-renderer.mjs';
+import { requestRoughSkyLocation } from './web/garden-sky.mjs';
 
 let prepareWithSegments = null;
 let layoutWithLines = null;
@@ -435,1385 +452,18 @@ let clearCache = () => {};
 let _textLayoutMode = 'fallback';
 
 // ═══════════════════════════════════════════════════════════════════
-//  PALETTE — sky/ground monochrome, plants colored
-// ═══════════════════════════════════════════════════════════════════
-
-const C = {
-  sky:           '#f9f8f5',
-  ground:        '#c8c2b6',
-  dim_green:     '#ddd8ce',
-  deep_green:    '#33511e',
-  green:         '#4a7030',
-  bright_green:  '#62923e',
-  brown:         '#7a5830',
-  orange:        '#b07020',
-  bright_white:  '#555555',
-  white:         '#777777',
-  yellow:        '#8a6418',
-  bright_yellow: '#c09428',
-  red:           '#883830',
-  bright_red:    '#b85038',
-  cyan:          '#246858',
-  bright_cyan:   '#329878',
-  rain:          '#4a6888',
-  magenta:       '#702468',
-  bright_magenta:'#a03888',
-  gray:          '#888880',
-  dim:           '#b0a898',
-  flash:         '#000000',
-  // Night palette
-  star:          '#8a8878',
-  moon:          '#d0ccb8',
-};
-
-// Night palette overrides — brighter variants for dark background
-const NIGHT_PALETTE = {
-  sky:           '#0b0e16',
-  ground:        '#28302a',
-  dim_green:     '#13181e',
-  deep_green:    '#41703e',
-  green:         '#5a9858',
-  bright_green:  '#78b870',
-  brown:         '#a08868',
-  orange:        '#c89848',
-  bright_white:  '#cccccc',
-  white:         '#b0b0a8',
-  yellow:        '#c09838',
-  bright_yellow: '#e0b848',
-  red:           '#c06858',
-  bright_red:    '#e87868',
-  cyan:          '#48a888',
-  bright_cyan:   '#68c8a0',
-  rain:          '#7898b8',
-  magenta:       '#a85898',
-  bright_magenta:'#d068b8',
-  gray:          '#a0a098',
-  dim:           '#606058',
-  flash:         '#ffffff',
-  star:          '#b8b8a8',
-  moon:          '#e8e4d0',
-};
-let _dayPalette = null; // stashed original C values when night is active
-
-function _applyNightPalette(on) {
-  if (on && !_dayPalette) {
-    _dayPalette = {};
-    for (const k of Object.keys(NIGHT_PALETTE)) { _dayPalette[k] = C[k]; C[k] = NIGHT_PALETTE[k]; }
-    document.documentElement.style.setProperty('--text', '#d0ccc0');
-    document.documentElement.style.setProperty('--bg', '#0b0e16');
-    document.documentElement.style.setProperty('--scrim-bg', 'rgba(11, 14, 22, .76)');
-  } else if (!on && _dayPalette) {
-    for (const k of Object.keys(_dayPalette)) C[k] = _dayPalette[k];
-    _dayPalette = null;
-    document.documentElement.style.setProperty('--text', '#000000');
-    document.documentElement.style.setProperty('--bg', '#f9f8f5');
-    document.documentElement.style.setProperty('--scrim-bg', 'rgba(249, 248, 245, .76)');
-  }
-}
+// Canonical Garden presentation is owned by web/garden-renderer.mjs.
+// Legacy renderer-local generation, collision, stars, animation, and hit-testing were deleted.
 
 async function initTextLayout(){
-  // Secret-bearing pages execute only same-origin bundled code. Native wrapping
-  // is deterministic enough for letters and remains available fully offline.
   prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
   _textLayoutMode='fallback';
 }
 
-// ── Moon phase art (FL-G20) ──────────────────────────────────────────
-const MOON_ART = [
-  [],                                  // 0: new moon (invisible)
-  ['  _',' ) ',' \u203e '],            // 1: waxing crescent
-  [' _ ','|) ',' \u203e '],            // 2: first quarter
-  [' __ ','(O) ',' \u203e\u203e '],    // 3: waxing gibbous
-  [' __ ','(  )',' \u203e\u203e '],    // 4: full
-  [' __ ',' (O)',' \u203e\u203e '],    // 5: waning gibbous
-  [' _ ',' (|',' \u203e '],            // 6: last quarter
-  [' _ ',' ( ',' \u203e '],            // 7: waning crescent
-];
-function _moonPhase(){
-  // Synodic month ~ 29.53 days. Known new moon: 2000-01-06 18:14 UTC
-  const ref=Date.UTC(2000,0,6,18,14);
-  const observed=(gardenRuntime?.state?.last_observed_wall_time??946684800)*1000;
-  const days=(observed-ref)/86400000;
-  const cyc=((days%29.53)+29.53)%29.53; // double-modulo for pre-2000 clocks
-  return(cyc/29.53*8)|0;
-}
-let _visualEntropy=0x91e10da5;
-function _visualRandom(){
-  _visualEntropy=(_visualEntropy+0x6d2b79f5)|0;
-  let value=_visualEntropy;
-  value=Math.imul(value^(value>>>15),value|1);
-  value^=value+Math.imul(value^(value>>>7),value|61);
-  return((value^(value>>>14))>>>0)/4294967296;
-}
-
-// Character cell size — measured once from DOM
-let CW = 8, CH = 15;
-
-// ── Animal relationship system (§6.8.2) ──────────────────────────────────
-const _ANIMAL_TYPES = ['cat', 'bird', 'rabbit', 'turtle'];
-const _ANIMAL_ART = {
-  cat: {
-    0: ['/\\_ ','o.  '],
-    1: ['/\\_/\\','(o.o)',' >^< '],
-    2: ['/\\_/\\','(-.-)',' = = '],
-    3: ['/\\_/\\','(zzz)',' ~_~ '],
-  },
-  bird: {
-    0: ['>-'],
-    1: ['>o<',' | '],
-    2: ['>o<','/|\\'],
-    3: ['(o)','/|\\'],
-  },
-  rabbit: {
-    0: ['(\\ '],
-    1: ['(\\ /)','.    '],
-    2: ['(\\ /)',' . . '],
-    3: ['(\\./)','  z  '],
-  },
-  turtle: {
-    0: [' (~) '],
-    1: [' (~) ','{__} '],
-    2: [' (~) ','{__} '],
-    3: ['(~o~)','{__}'],
-  },
-};
-const _ANIMAL_DELIVERY_FRAMES = {
-  cat:    [['/\\_/\\  ','(>[✉])  '],['/\\_/\\  ','(=[✉])  ']],
-  bird:   [['  >o<   ',' /|\\    ',' [✉]    '],['  >o<   ','  |\\    ',' [✉]    ']],
-  rabbit: [['(\\ /)  ','.[✉].   '],['(\\ /)  ',' [✉]    ']],
-  turtle: [[' (~)    ','{[✉]}   '],[' (~)    ','{[✉]}   ']],
-};
-// Default delivery creature (SPEC §6.3) — used unless an animal is bonded.
-const _LETTERBIRD_FRAMES = [
-  ['  \\      ',' >o<-[✉] ','  /      '],
-  ['  /      ',' >o<-[✉] ','  \\      '],
-];
-const _ANIMAL_FOOTPRINTS = {cat:'. .',bird:'v v',rabbit:'. .',turtle:'---'};
-const _ANIMAL_POSE_ART = {
-  cat: {
-    peek: ['/\\_ ','o.  '],
-    blink: ['/\\_/\\','(-.-)',' >^< '],
-    tail: ['/\\_/\\','(o.o)',' ~~^ '],
-    stretch: ['/\\_/\\\\','(o.o )',' _^_  '],
-    nap: ['/\\_/\\','(zzz)',' ~_~ '],
-    feed: ['/\\_/\\','(o.o)',' [_]  '],
-  },
-  bird: {
-    peek: ['>-'],
-    perch: ['>o<',' | '],
-    turn: ['<o>',' | '],
-    ruffle: ['\\o/',' | '],
-    dip: [' v ','/|\\'],
-    settled: ['(o)','/|\\'],
-  },
-  rabbit: {
-    peek: ['(\\ '],
-    twitch: ['(\\ /)',' . . '],
-    hop: ['(\\ /)','  .  '],
-    groom: ['(\\./)','  u  '],
-    rest: ['(\\./)','  z  '],
-    feed: ['(\\ /)',' \\/  '],
-  },
-  turtle: {
-    peek: [' (~) '],
-    step: [' (~)_','{__} '],
-    turn: [' (o~) ',' {__} '],
-    bob: ['(~o~)','{__}'],
-    rest: ['(~-~)','{__}'],
-    feed: [' (~) ','{_~} '],
-  },
-};
-const _ANIMAL_FEED_GLYPHS = {
-  cat: {lines:['[_]'],color:'bright_yellow',dx:3,dy:1},
-  bird: {lines:["'.'"],color:'bright_yellow',dx:0,dy:2},
-  rabbit: {lines:['"','\\/'],color:'bright_yellow',dx:1,dy:2},
-  turtle: {lines:['(_)'],color:'bright_green',dx:3,dy:1},
-};
-const _AMBIENT_BIRD_FRAMES = ['\\v/','_v_','/v\\','_v_'];
-const _AMBIENT_BIRD_COMPACT_FRAMES = ['>-','~>'];
-
-function _strHash(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h>>>0;}
-function animalTrustTier(n){return n>=14?3:n>=7?2:n>=3?1:0;}
-function animalHomePos(type,seed,cols,rows){
-  const rng=new RNG((_strHash(type)^seed)>>>0);
-  const groundRow=rows-4;
-  const baseCol=Math.min(cols-10,Math.max(4,Math.floor(cols*.25)+rng.randint(-6,6)));
-  if(type==='bird') return{row:Math.max(3,groundRow-6),col:Math.min(cols-8,Math.max(4,baseCol+2))};
-  if(type==='turtle') return{row:groundRow,col:Math.min(cols-8,Math.max(4,baseCol-1))};
-  return{row:groundRow,col:baseCol};
-}
-function animalFrame(type,tier,pose='base'){
-  return(_ANIMAL_POSE_ART[type]&&_ANIMAL_POSE_ART[type][pose])||((_ANIMAL_ART[type]||{})[tier]||[]);
-}
-function artWidth(lines){
-  return lines.reduce((m,ln)=>Math.max(m,ln.length),0);
-}
-function clamp(n,min,max){
-  return Math.max(min,Math.min(max,n));
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  CORE: RNG, ScreenBuffer, GardenState
-// ═══════════════════════════════════════════════════════════════════
-
-class RNG {
-  constructor(seed) {
-    seed = seed >>> 0;
-    const h = x => { x ^= x>>16; x = Math.imul(x,0x45d9f3b)>>>0; x ^= x>>16; return x>>>0; };
-    this._a=h(seed); this._b=h(seed+1); this._c=h(seed+2); this._d=h(seed+3);
-    for (let i=0;i<20;i++) this.random();
-  }
-  random() {
-    let a=this._a,b=this._b,c=this._c,d=this._d;
-    const t=(a+b|0)+d|0; this._d=d+1|0; this._a=b^(b>>>9);
-    this._b=(c+(c<<3))|0; this._c=(c<<21|c>>>11); this._c=this._c+t|0;
-    return (t>>>0)/4294967296;
-  }
-  randint(a,b)  { return a+Math.floor(this.random()*(b-a+1)); }
-  choice(arr)   { return arr[Math.floor(this.random()*arr.length)]; }
-  choices(arr,w){ let r=this.random()*w.reduce((s,x)=>s+x,0);
-    for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i];}
-    return arr[arr.length-1]; }
-  uniform(a,b)  { return a+this.random()*(b-a); }
-}
-
-class ScreenBuffer {
-  constructor(rows,cols){
-    this.rows=rows; this.cols=cols;
-    const n=rows*cols;
-    this._ch=new Array(n).fill(' ');
-    this._col=new Array(n).fill('sky');
-    this._anim=new Uint8Array(n); // 1 = animated cell (keeps color in mode 3)
-  }
-  clear(){ this._ch.fill(' '); this._col.fill('sky'); this._anim.fill(0); }
-  put(r,c,ch,col){
-    if(r<0||r>=this.rows||c<0||c>=this.cols)return;
-    const i=r*this.cols+c; this._ch[i]=ch; this._col[i]=col;
-  }
-  putStr(r,c,text,col){ for(let i=0;i<text.length;i++) this.put(r,c+i,text[i],col); }
-  // Animated variants — tagged for color-mode 3 (B&W except anim)
-  putAnim(r,c,ch,col){
-    if(r<0||r>=this.rows||c<0||c>=this.cols)return;
-    const i=r*this.cols+c; this._ch[i]=ch; this._col[i]=col; this._anim[i]=1;
-  }
-  putStrAnim(r,c,text,col){ for(let i=0;i<text.length;i++) this.putAnim(r,c+i,text[i],col); }
-}
-
-// Decorative raster state only. Canonical gameplay state lives in GardenRuntime.
-class GardenVisualState {
-  constructor(cols,rows,seed,season){
-    this.cols=cols; this.rows=rows; this.seed=seed; this.season=season;
-    this.groundY=rows-3; this.frame=0; this.wind=0;
-    this.postComplete=false; this.animalData=null; this.night=false; this.timeOfDay='day';
-    this.collisionMap=new Set(); this.topSurfaces={}; this.canopyCells=new Set();
-    this.mouseRow=-1; this.mouseCol=-1;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  PLANT GENERATORS
-// ═══════════════════════════════════════════════════════════════════
-
-function pPine(rng){
-  const h=rng.randint(8,16),lvls=h-2;
-  const rows=[[1,0,'|','brown'],[2,0,'|','brown']];
-  for(let lv=0;lv<lvls;lv++){
-    const dy=3+lv,w=lv;
-    if(lv===lvls-1){rows.push([dy,0,'^','bright_green']);}
-    else{const tip=lv%2?'*':'^',s='/'.repeat(w+1)+tip+'\\'.repeat(w+1);
-      rows.push([dy,-(w+1),s,lv>=lvls/2?'bright_green':'green']);}
-  }
-  return{type:'pine',rows,width:lvls*2+2,height:h+1};
-}
-function pOak(rng){
-  const h=rng.randint(8,14),th=Math.max(2,h/3|0);
-  const ch=rng.choice(['@','o','0','&']),rows=[];
-  for(let i=1;i<=th;i++) rows.push([i,0,'|','brown']);
-  const cr=h-th,rad=(cr/2|0)+1;
-  for(let lv=0;lv<=cr+1;lv++){
-    const dy=th+lv+1,t=(lv/(cr+1))*2-1;
-    const w=Math.max(0,Math.round(rad*Math.sqrt(Math.max(0,1-t*t))));
-    if(!w)continue;
-    rows.push([dy,-w,ch.repeat(w*2+1),(lv>0&&lv<=cr)?'bright_green':'green']);
-  }
-  return{type:'oak',rows,width:rad*2+3,height:h+3};
-}
-function pBush(rng){
-  const w=rng.randint(2,4),ch=rng.choice(['~','u','w','v']);
-  return{type:'bush',rows:[
-    [2,-(w+1),'('+ch.repeat(w*2+1)+')','bright_green'],
-    [1,-w,'{'+ch.repeat(w*2-1)+'}','green']],width:w*2+4,height:2};
-}
-function pFlower(rng){
-  const sp=rng.choice(['daisy','tulip','sunflower','wildflower','rose']);
-  const sh=rng.randint(2,5),rows=[];
-  for(let i=1;i<=sh;i++) rows.push([i,0,'|','green']);
-  if(sh>=2){
-    const ly=rng.randint(1,sh-1),sd=rng.choice(['left','right','both','none','none']);
-    if(sd==='left'||sd==='both') rows.push([ly,-1,'\\','green']);
-    if(sd==='right'||sd==='both') rows.push([ly,1,'/','green']);
-  }
-  const bh=sh+1; let w=3;
-  if(sp==='daisy'){const c=rng.choice(['white','bright_white','cyan','bright_cyan']);
-    rows.push([bh+1,-1,'\\*/',c],[bh,-1,'-O-','bright_yellow']);}
-  else if(sp==='tulip'){const c=rng.choice(['red','magenta','bright_magenta','bright_red']);
-    rows.push([bh+1,-1,'(")',c],[bh,-1,'|"|',c]);}
-  else if(sp==='sunflower'){rows.push([bh+1,-2,'\\{O}/','bright_yellow'],[bh,-1,'{#}','yellow']);w=5;}
-  else if(sp==='wildflower'){const c=rng.choice(['magenta','bright_magenta','cyan','bright_cyan','bright_white']);
-    rows.push([bh+1,0,'*',c],[bh,-1,'>*<',c]);}
-  else{const c=rng.choice(['red','bright_magenta','bright_red']);
-    rows.push([bh+1,-1,'@@@',c],[bh,-1,'(@)',c]);}
-  return{type:'flower',species:sp,rows,width:w,height:bh+2};
-}
-// Grass wind model ported from asciicker-y9-2 (FL-4482 "saved static cycle"):
-// a blade never leaves its cell — its tip glyph cycles through a fixed family,
-// phase = (per-clump seed + time step) % family size. Lean geometry from
-// glyph_fx_preview.py: upper cells lean more, world lean + slow ~0.1Hz sway.
-const GRASS_FAMS=[["'","`",','],['/','|','\\'],['v','y','w'],['"',';',"'"]];
-const GRASS_FLOWER_FAM=['*','+','*'];
-function grassCyclePhase(seed,frame,n){
-  return (seed+Math.floor(frame*0.12))%n;
-}
-function pGrass(rng){
-  const nb=rng.randint(1,3);
-  const dxs=nb===1?[0]:nb===2?[-1,1]:[-1,0,1];
-  const blades=[];let maxH=0;
-  for(const dx of dxs){
-    const h=rng.randint(2,5);if(h>maxH)maxH=h;
-    blades.push({dx,h,seed:rng.randint(0,1023),
-      fam:rng.randint(0,GRASS_FAMS.length-1),flower:rng.random()<0.09});
-  }
-  // Static upright rows kept for collision/top-surface; live sway is rendered
-  // separately in PlantLayer so rain/snow still land sensibly.
-  const rows=[];
-  for(const b of blades){
-    rows.push([b.h,b.dx,b.flower?'*':"'",'bright_green']);
-    for(let i=1;i<b.h;i++) rows.push([i,b.dx,'|','green']);
-  }
-  return{type:'grass',rows,blades,width:nb===1?1:3,height:maxH};
-}
-function pMushroom(rng){
-  const w=rng.randint(1,2),c=rng.choice(['red','bright_red','yellow','bright_white','magenta']);
-  return{type:'mushroom',rows:[[2,-w,'('+'~'.repeat(w*2)+')',c],[1,0,'|','white']],width:w*2+2,height:2};
-}
-function pFern(rng){
-  const h=rng.randint(2,4),rows=[[h+1,0,'*','bright_green']];
-  for(let i=1;i<=h;i++){
-    rows.push([i,0,'|','green']);
-    const lc=i%2?'bright_green':'green';
-    rows.push([i,-1,i%2?'*':',',lc],[i,1,i%2?'*':',',lc]);
-  }
-  return{type:'fern',rows,width:3,height:h+1};
-}
-
-const AUTUMN_COLS=['yellow','bright_yellow','orange','red','brown'];
-const DECIDUOUS=new Set(['oak','bush','willow']);
-function applyAutumn(plant,rng){
-  if(!DECIDUOUS.has(plant.type))return;
-  plant.rows=plant.rows.map(([dy,dx,t,c])=>[dy,dx,t,
-    (c==='bright_green'||c==='green')?rng.choice(AUTUMN_COLS):c]);
-}
-const SEASON_W={
-  spring:{pine:6,oak:6,bush:8,flower:30,grass:15,mushroom:2,fern:5},
-  summer:{pine:8,oak:8,bush:8,flower:18,grass:12,mushroom:3,fern:7},
-  autumn:{pine:10,oak:10,bush:6,flower:4,grass:8,mushroom:5,fern:6},
-  winter:{pine:15,oak:4,bush:4,flower:0,grass:4,mushroom:2,fern:3},
-};
-const DEFAULT_W={pine:8,oak:8,bush:8,flower:18,grass:12,mushroom:3,fern:7};
-const MAKERS={pine:pPine,oak:pOak,bush:pBush,flower:pFlower,grass:pGrass,mushroom:pMushroom,fern:pFern};
-
-function makePlant(rng,ptype,weights,season){
-  if(!ptype){const w=weights||DEFAULT_W;ptype=rng.choices(Object.keys(w),Object.values(w));}
-  const p=MAKERS[ptype](rng);
-  if(season==='autumn')applyAutumn(p,rng);
-  if(p.blades){
-    if(season==='spring')for(const b of p.blades)if(b.seed%5===0)b.flower=true;
-    else if(season==='winter')for(const b of p.blades)b.flower=false;
-  }
-  return p;
-}
-function genLayout(cols,rows,seed,weights,season){
-  const rng=new RNG(seed),gy=rows-3,placed=[],occ=[];
-  for(let _=0;_<cols*3;_++){
-    const p=makePlant(rng,null,weights,season);
-    const half=(p.width>>1)+2;
-    if(cols<half*2+4)continue;
-    const x=rng.randint(half+1,cols-half-2);
-    const xmin=x-half-1,xmax=x+half+1;
-    if(occ.some(([mn,mx])=>xmin<mx&&xmax>mn))continue;
-    occ.push([xmin,xmax]);
-    placed.push({plant:p,x,gy});
-  }
-  return placed;
-}
-const CANOPY=new Set(['pine','oak']);
-const CANOPY_SHIMMER=new Set(['oak','bush','pine']);
-const LEAF_CANOPY=new Set(['oak','willow']);
-function buildCollision(placed){
-  const col=new Set(),top={},can=new Set(),pine=new Set();
-  for(const{plant,x,gy}of placed){
-    const isLeafC=LEAF_CANOPY.has(plant.type);
-    const isPine=plant.type==='pine';
-    for(const[dy,dx,text]of plant.rows){
-      const row=gy-dy;
-      for(let i=0;i<text.length;i++){
-        if(text[i]===' ')continue;
-        const c=x+dx+i,key=`${row},${c}`;
-        col.add(key);
-        if(top[c]===undefined||row<top[c])top[c]=row;
-        if(isLeafC&&dy>=3)can.add(key);
-        if(isPine&&dy>=3)pine.add(key);
-      }
-    }
-  }
-  return{col,top,can,pine};
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  LAYERS
-// ═══════════════════════════════════════════════════════════════════
-
-const GND=',~.^,.,~^,.,~,.^,~.,';
-class BackgroundLayer{
-  render(buf,state){
-    const{cols,groundY:gy}=state;
-    for(let c=0;c<cols;c++){
-      buf.put(gy,  c,GND[c%GND.length],'ground');
-      buf.put(gy+1,c,GND[(c+5)%GND.length],'dim_green');
-    }
-    if(state.night){
-      // Scatter stars — deterministic from seed so they don't flicker every reset
-      const rng=new RNG(state.seed^0xc0ffee01);
-      const nStars=Math.floor(cols*(gy-3)*0.025);
-      for(let i=0;i<nStars;i++){
-        const sr=rng.randint(0,Math.max(0,gy-4));
-        const sc=rng.randint(0,cols-1);
-        const bright=rng.random()<0.18;
-        buf.put(sr,sc,bright?'*':'.', bright?'moon':'star');
-      }
-      // Moon — phase-aware, upper-right quadrant
-      const phase=_moonPhase();
-      const art=MOON_ART[phase];
-      if(art.length){
-        const mc=Math.floor(cols*0.78);
-        const mw=Math.max(...art.map(l=>l.length));
-        const mx=Math.max(0,Math.min(mc,cols-mw-1));
-        for(let i=0;i<art.length;i++) buf.putStr(1+i,mx,art[i],'moon');
-      }
-    }
-  }
-}
-
-// Rustle on cursor hover
-const RUSTLE_A={'@':'o','o':'0','0':'@','&':'@','*':'.', '^':'*','~':'`','u':'v','v':'u','w':'~','(':'<',')':'>'};
-const RUSTLE_B={'@':'0','o':'@','0':'o','&':'o','*':',', '^':'`','~':'v','u':'~','v':'w','w':'u'};
-const RUSTLE_EL=new Set('@o0&*^~uvw');
-function rustleChar(ch,intensity,seed){
-  if(!RUSTLE_EL.has(ch))return ch;
-  const n=Math.sin(seed)*intensity;
-  if(n>0.45)return RUSTLE_A[ch]||ch;
-  if(n<-0.45)return RUSTLE_B[ch]||ch;
-  return ch;
-}
-
-class PlantLayer{
-  constructor(){this.placed=[];}
-  regenerate(state){
-    const w=SEASON_W[state.season]||DEFAULT_W;
-    this.placed=genLayout(state.cols,state.rows,state.seed,w,state.season);
-    const{col,top,can,pine}=buildCollision(this.placed);
-    state.collisionMap=col; state.topSurfaces=top; state.canopyCells=can; state.pineCells=pine;
-  }
-  // Live grass: tri-stop color ramp (deep→green→bright, root→tip) and
-  // blade lean = wind*1.6 + sin(0.1Hz + seed)*0.6, scaled by height fraction.
-  _renderGrass(buf,state,plant,x,gy){
-    const t=state.frame,season=state.season;
-    // Seasonal ramps: summer/spring green, autumn straw, winter dull gray.
-    const ramp=season==='autumn'?['brown','yellow','bright_yellow']
-      :season==='winter'?['gray','gray','dim']
-      :['deep_green','green','bright_green'];
-    const tipCol=season==='autumn'?'bright_yellow':season==='winter'?'dim':'bright_green';
-    for(const b of plant.blades){
-      const lean=state.wind*1.6+Math.sin((t/200+b.seed*0.37)*6.2832)*0.6;
-      for(let i=1;i<=b.h;i++){
-        const frac=i/b.h,xoff=Math.round(lean*frac*1.2);
-        const row=gy-i,col=x+b.dx+xoff;
-        const l=lean*frac;
-        if(i===b.h){
-          const fam=b.flower?GRASS_FLOWER_FAM:GRASS_FAMS[b.fam];
-          const ch=fam[grassCyclePhase(b.seed,t,fam.length)];
-          buf.putAnim(row,col,ch,b.flower?'bright_yellow':tipCol);
-        }else{
-          const ch=l>0.3?'/':l<-0.3?'\\':'|';
-          buf.put(row,col,ch,ramp[frac<0.4?0:frac<0.75?1:2]);
-        }
-      }
-    }
-  }
-  // Ground cover: density-bucketed filler glyphs on the row above the ground
-  // line (sparse/medium/dense char sets), deterministic per column; a few
-  // cells shimmer via the same static-cycle trick.
-  _renderGroundCover(buf,state){
-    const gy=state.groundY,seed=state.seed;
-    const winter=state.season==='winter';
-    for(let c=0;c<state.cols;c++){
-      const h=(Math.imul(c+13,0x9e3779b1)^seed)>>>0;
-      const v=(h%1000)/1000;
-      if(v<(winter?0.82:0.48))continue;
-      let ch,colr;
-      if(v>0.92){ch='"';colr='green';}
-      else if(v>0.72){ch=';';colr='deep_green';}
-      else{ch=(h&1)?'.':',';colr='dim_green';}
-      if(h%11===0){
-        const fam=GRASS_FAMS[3];
-        ch=fam[grassCyclePhase(h&255,state.frame,fam.length)];
-      }
-      if(winter){ch=(h&1)?'.':'*';colr=(h&2)?'white':'dim';}          // snow-dusted
-      else if(state.season==='autumn'&&v>0.85)colr='yellow';          // strewn straw
-      buf.put(gy-1,c,ch,colr);
-    }
-  }
-  render(buf,state){
-    const mr=state.mouseRow,mc=state.mouseCol;
-    const R=5,R2=R*R;
-    this._renderGroundCover(buf,state);
-    const shimmerI=0.55+Math.abs(state.wind)*1.1;
-    for(const{plant,x,gy}of this.placed){
-      if(plant.blades){this._renderGrass(buf,state,plant,x,gy);continue;}
-      const canShimmer=CANOPY_SHIMMER.has(plant.type);
-      for(const[dy,dx,text,color]of plant.rows){
-        const row=gy-dy,baseCol=x+dx;
-        for(let i=0;i<text.length;i++){
-          let ch=text[i],anim=false;
-          const col=baseCol+i;
-          // Ambient canopy shimmer: a sparse fixed subset of foliage cells
-          // rustles with the wind (same static-cycle idea as grass tips) —
-          // the trees breathe without needing the cursor.
-          if(canShimmer&&dy>=2&&ch!==' '){
-            const h=(Math.imul(row*73+col*151+7,0x9e3779b1)>>>0);
-            if(h%8===0){
-              const ch2=rustleChar(ch,shimmerI,state.frame*0.06+(h%97)*0.7);
-              if(ch2!==ch){ch=ch2;anim=true;}
-            }
-          }
-          if(mr>=0&&ch!==' '){
-            const dr=row-mr,dc=col-mc,d2=dr*dr+dc*dc;
-            if(d2<R2){
-              const intensity=(1-Math.sqrt(d2)/R)*1.2;
-              ch=rustleChar(ch,intensity,state.frame*0.4+col*1.9+row*2.7);
-            }
-          }
-          if(anim)buf.putAnim(row,col,ch,color);
-          else buf.put(row,col,ch,color);
-        }
-      }
-    }
-  }
-}
-
-class Particle{
-  constructor(kind,x,y,vx,vy,ch,color,maxAge){
-    this.kind=kind;this.x=x;this.y=y;this.vx=vx;this.vy=vy;
-    this.ch=ch;this.color=color;this.age=0;this.maxAge=maxAge;
-    this.phase=_visualRandom()*6.28;this.amp=0.3+_visualRandom()*0.7;
-    this.rotPhase=Math.floor(_visualRandom()*3);
-  }
-}
-
-class ParticleLayer{
-  constructor(){this._p=[];this._rng=new RNG(0x4c4c5031);this._t=0;this._snow={};}
-  reset(){this._p=[];this._snow={};}
-
-  update(state){
-    this._t++;
-    if(this._t%2===0)this._spawn(state);
-    const alive=[];
-    for(const p of this._p){
-      p.age++;
-      if(p.kind==='rain'){
-        p.vy=Math.min(p.vy+0.08,2.2);               // gravity
-        p.x+=p.vx+state.wind*0.3; p.y+=p.vy;
-        const r=p.y|0,c=p.x|0,key=`${r},${c}`;
-        if(state.collisionMap.has(key)){
-          this._fragments(c,r,state.wind);            // plant hit → fragments
-        }else if(r>=state.groundY){
-          this._splashes(c,state.groundY);            // ground hit → splashes
-        }else if(p.age<=p.maxAge&&p.x>=0&&p.x<state.cols){
-          alive.push(p);
-        }
-        continue;
-      }
-      if(p.kind==='snow'){
-        p.x+=p.amp*Math.sin(p.phase+p.age*0.04)*0.25; p.y+=p.vy;
-        const ic=Math.round(p.x);
-        const surf=state.topSurfaces[ic]!==undefined?state.topSurfaces[ic]:state.groundY;
-        const dep=this._snow[ic]||0;
-        if((p.y|0)>=surf-dep){
-          if(dep<3)this._snow[ic]=(dep+1);            // accumulate
-          continue;
-        }
-        if(p.age<=p.maxAge&&p.x>=0&&p.x<state.cols&&p.y>=0)alive.push(p);
-        continue;
-      }
-      if(p.kind==='leaf'){
-        p.vx+=state.wind*0.04;
-        p.vx=Math.max(-0.8,Math.min(0.8,p.vx));
-        p.vy=Math.min(p.vy+0.04,1.5);
-        p.x+=p.vx; p.y+=p.vy*0.4;
-        if(p.age%8===0){p.rotPhase=(p.rotPhase+1)%3;}
-        p.ch=['\\','-','/'][p.rotPhase];
-        if((p.y|0)>=state.groundY){
-          p.kind='leaf-rest';p.vx=0;p.vy=0;p.ch='-';p.age=0;p.maxAge=41;
-          alive.push(p);
-        }else if(p.age<=p.maxAge&&p.x>=0&&p.x<state.cols){
-          alive.push(p);
-        }
-        continue;
-      }
-      if(p.kind==='leaf-rest'){
-        if(p.age<p.maxAge){alive.push(p);}
-        continue;
-      }
-      if(p.kind==='frag'||p.kind==='splash'){
-        // Age char: ' → . → ·
-        const f=p.age/p.maxAge;
-        p.ch=f<0.4?"'":f<0.75?'.':'\u00b7';
-        if(p.kind==='frag'){p.vx*=0.82;p.vy+=0.05;}
-        else{p.vx*=0.88;}
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.age<p.maxAge&&p.x>=0&&p.x<state.cols&&p.y<state.groundY+2)alive.push(p);
-        continue;
-      }
-    }
-    this._p=alive;
-  }
-
-  _fragments(cx,cy,wind){
-    const rng=this._rng,n=rng.randint(2,4);
-    for(let i=0;i<n;i++)
-      this._p.push(new Particle('frag',cx,cy,
-        (wind>0?-1:1)*rng.uniform(0.1,0.4),rng.uniform(-0.3,0),
-        "'","rain",rng.randint(3,8)));
-  }
-  _splashes(cx,gy){
-    const rng=this._rng,n=rng.randint(3,5);
-    for(let i=0;i<n;i++)
-      this._p.push(new Particle('splash',
-        cx+rng.randint(-1,1),gy,rng.uniform(-0.35,0.35),0,
-        "'","white",rng.randint(3,8)));
-  }
-
-  _spawn(state){
-    const rng=this._rng,s=state.season;
-    const rainN=this._p.filter(p=>p.kind==='rain').length;
-    // Rain char leans with wind
-    const rc=state.wind>0.2?'\\':state.wind<-0.2?'/':'|';
-    if(s==='spring'&&rainN<60&&rng.random()<0.35)
-      this._p.push(new Particle('rain',rng.random()*state.cols,0,
-        state.wind*0.3,rng.uniform(0.5,1.0),rc,'rain',60));
-    if(s==='autumn'&&rainN<120){
-      const n=rng.randint(2,5);
-      for(let i=0;i<n;i++)
-        this._p.push(new Particle('rain',rng.random()*state.cols,0,
-          state.wind*0.3,rng.uniform(0.7,1.4),rc,'rain',35));
-    }
-    if(s==='winter'&&this._p.filter(p=>p.kind==='snow').length<80)
-      this._p.push(new Particle('snow',rng.random()*state.cols,0,0,
-        rng.uniform(0.08,0.25),rng.choice(['.','*']),'bright_white',300));
-    if(s==='autumn'){
-      const leafCap=Math.max(0,Math.min(60,Math.floor(state.canopyCells.size/3)));
-      const leafCount=this._p.filter(p=>p.kind==='leaf'||p.kind==='leaf-rest').length;
-      if(leafCount<leafCap){
-        let x,y,vx,vy;
-        if(rng.random()<0.3){
-          x=rng.random()*state.cols;y=rng.randint(0,2);
-          vx=rng.uniform(-0.3,0.3);vy=rng.uniform(0.1,0.25);
-        }else{
-          const arr=Array.from(state.canopyCells);
-          const[r,c]=arr[Math.floor(rng.random()*arr.length)].split(',').map(Number);
-          x=c;y=r;vx=rng.uniform(-0.2,0.2);vy=rng.uniform(0.05,0.2);
-        }
-        this._p.push(new Particle('leaf',x,y,vx,vy,
-          rng.choice([',','\'','~','*']),rng.choice(AUTUMN_COLS),150));
-      }
-    }
-  }
-
-  spawnAt(mr,mc,state){
-    const rng=new RNG((state.seed^state.frame^0x4c4c5032)>>>0);
-    let n=0;
-    // Leaf burst from deciduous canopy
-    for(let dr=-4;dr<=4&&n<10;dr++)
-      for(let dc=-6;dc<=6&&n<10;dc++){
-        if(!state.canopyCells.has(`${mr+dr},${mc+dc}`))continue;
-        this._p.push(new Particle('leaf',mc+dc,mr+dr,
-          rng.uniform(-0.5,0.5),rng.uniform(-0.3,0.1),
-          rng.choice([',','\'','~','*','.']),
-          rng.choice(state.season==='autumn'?AUTUMN_COLS:['bright_green','green','bright_yellow','yellow','bright_magenta']),100));
-        n++;
-      }
-    // Pine needle rustle (FL-G22/G26) — use dedicated pineCells set
-    if(n===0){
-      for(let dr=-3;dr<=3&&n<6;dr++)
-        for(let dc=-4;dc<=4&&n<6;dc++){
-          const key=`${mr+dr},${mc+dc}`;
-          if(!state.pineCells.has(key))continue;
-          this._p.push(new Particle('frag',mc+dc,mr+dr,
-            rng.uniform(-0.3,0.3),rng.uniform(0.05,0.2),
-            rng.choice(["'",'.','`']),
-            rng.choice(['bright_green','green']),rng.randint(8,16)));
-          n++;
-        }
-    }
-  }
-
-  render(buf,state){
-    for(const p of this._p) buf.putAnim(p.y|0,p.x|0,p.ch,p.color);
-    // Snow accumulation piles
-    for(const[col,dep]of Object.entries(this._snow)){
-      const c=+col;
-      if(c<0||c>=state.cols)continue;
-      for(let d=0;d<dep;d++){
-        const r=state.groundY-d;
-        if(r>=0)buf.putAnim(r,c,(c+d)%3===0?'*':'.','bright_white');
-      }
-    }
-  }
-}
-
-class CreatureLayer{
-  constructor(){
-    this._cr=[];this._birdT=0;this._init=false;
-    this._animal=null;this._feedEvent=null;this._feedSeq=0;
-  }
-  reset(){
-    this._cr=[];this._init=false;this._birdT=0;
-    this._animal=null;this._feedEvent=null;
-  }
-  queueFeedReaction(data){
-    if(!data||!data.type)return;
-    this._feedEvent={type:data.type,seq:++this._feedSeq};
-  }
-  spawnAmbientBirdBurst(state){
-    if(!state)return;
-    this._spawnAmbientBirds(state,3+Math.floor(_visualRandom()*3),true);
-    this._birdT=0;
-  }
-  debugAnimalState(){
-    return this._animal?`${this._animal.mode}/${this._animal.pose}`:'none';
-  }
-  _initCreatures(state){
-    this._init=true;
-    const rng=new RNG(state.seed^0x12ab34cd),s=state.season;
-    if(s==='spring'||s==='summer'){
-      const n=rng.randint(1,2);
-      for(let i=0;i<n;i++){
-        const x=rng.randint(5,state.cols-5),y=rng.randint(3,state.groundY-8);
-        this._cr.push({kind:'butterfly',x,y,vx:rng.random()>.5?.3:-.3,
-          phase:rng.random()*6.28,
-          color:rng.choice(['bright_magenta','magenta','bright_cyan','cyan']),
-          frames:['><','||','><','\\/'],fi:0,active:true});
-      }
-    }
-    if(s==='summer'&&state.timeOfDay==='evening'){
-      const n=rng.randint(3,5);
-      for(let i=0;i<n;i++){
-        const x=rng.randint(3,state.cols-3),y=rng.randint(state.groundY-12,state.groundY-3);
-        this._cr.push({kind:'firefly',x,y,vx:(i%3-1)*0.04,
-          vy:i%2?0.02:-0.02,phase:i*0.7,on:3+(i%5),off:10+(i%15),active:true});
-      }
-    }
-  }
-  _spawnAmbientBirds(state,count,forceFlock=false){
-    const frames=state.cols<60?_AMBIENT_BIRD_COMPACT_FRAMES:_AMBIENT_BIRD_FRAMES;
-    const width=artWidth(frames);
-    const fromL=_visualRandom()>.5;
-    const flock=forceFlock?count:(_visualRandom()<0.28?3+Math.floor(_visualRandom()*3):1);
-    const baseY=Math.floor(_visualRandom()*Math.max(4,state.groundY-12))+2;
-    for(let i=0;i<flock;i++){
-      const trail=i*5;
-      const offsetY=(i%2===0?0:1)+(i===2?-1:0);
-      this._cr.push({
-        kind:'bird',
-        x:fromL?-width-2-trail:state.cols+2+trail,
-        y:clamp(baseY+offsetY,1,Math.max(2,state.groundY-8)),
-        vx:fromL?0.42:-0.42,
-        frames,
-        fi:i%frames.length,
-        frameStep:5+(i%3),
-        active:true
-      });
-    }
-  }
-  _ensureAnimal(state){
-    const ad=state.animalData;
-    if(!ad||!ad.triggered){this._animal=null;return null;}
-    const home=animalHomePos(ad.type,state.seed,state.cols,state.rows);
-    if(!this._animal||this._animal.type!==ad.type){
-      this._animal=this._newAnimal(ad,home,state);
-      return this._animal;
-    }
-    const a=this._animal;
-    const tierChanged=a.tier!==ad.tier;
-    a.tier=ad.tier;
-    a.wasAbsent=ad.wasAbsent;
-    a.homeRow=home.row;
-    a.homeCol=home.col;
-    this._syncAnimalAnchors(a,state);
-    if(tierChanged)this._resetAnimalTier(a,state);
-    return a;
-  }
-  _newAnimal(ad,home,state){
-    const a={
-      type:ad.type,tier:ad.tier,wasAbsent:ad.wasAbsent,
-      homeRow:home.row,homeCol:home.col,row:home.row,col:home.col,
-      targetRow:home.row,targetCol:home.col,
-      edgeRow:home.row,edgeCol:home.col,spotA:home.col,spotB:home.col,
-      mode:'idle',pose:'base',timer:0,visible:true,feedGlyph:null
-    };
-    this._syncAnimalAnchors(a,state);
-    this._resetAnimalTier(a,state);
-    return a;
-  }
-  _syncAnimalAnchors(a,state){
-    const width=Math.max(2,artWidth(animalFrame(a.type,Math.max(1,a.tier),'base')));
-    a.edgeCol=clamp(state.cols-width-2,0,Math.max(0,state.cols-width));
-    a.edgeRow=a.type==='bird'?Math.max(2,a.homeRow-1):state.rows-4;
-    a.spotA=clamp(a.homeCol,0,Math.max(0,state.cols-width-1));
-    const delta=a.type==='cat'?4:a.type==='bird'?4:a.type==='rabbit'?3:2;
-    a.spotB=clamp(a.homeCol+delta,0,Math.max(0,state.cols-width-1));
-  }
-  _resetAnimalTier(a,state){
-    a.feedGlyph=null;
-    if(a.tier===0){
-      a.row=a.edgeRow;
-      a.col=a.edgeCol+1.2;
-      a.targetCol=a.edgeCol;
-      a.targetRow=a.edgeRow;
-      a.mode='edge';
-      a.pose='peek';
-      a.timer=55;
-      a.visible=false;
-      return;
-    }
-    a.visible=true;
-    if(a.tier===1){
-      a.row=a.type==='bird'?a.homeRow+1:state.rows-4;
-      a.col=a.edgeCol+1;
-      a.targetCol=a.spotB;
-      a.targetRow=a.type==='bird'?a.homeRow:a.row;
-      a.mode='approach';
-      a.pose=this._idlePose(a,false);
-      a.timer=0;
-      return;
-    }
-    a.row=a.homeRow;
-    a.col=a.spotA;
-    a.targetCol=a.spotB;
-    a.targetRow=a.homeRow;
-    a.mode=a.tier>=3?'settled':'patrol';
-    a.pose=this._idlePose(a,false);
-    a.timer=40;
-  }
-  _idlePose(a,hover){
-    if(a.type==='cat')return hover?'blink':(a.tier>=3?'nap':'tail');
-    if(a.type==='bird')return hover?'turn':(a.tier>=3?'settled':'perch');
-    if(a.type==='rabbit')return hover?'twitch':(a.tier>=3?'groom':'twitch');
-    return hover?(a.tier>=2?'turn':'step'):(a.tier>=3?'rest':'bob');
-  }
-  _runEdgePeek(a,state,peekPose,altPose,blinkPose=peekPose){
-    if(--a.timer<=0){
-      a.visible=!a.visible;
-      a.timer=a.visible?42:96;
-    }
-    a.mode='edge';
-    a.row=a.edgeRow;
-    a.col=a.visible?a.edgeCol-0.8:a.edgeCol+1.2;
-    const flap=state.frame%48;
-    a.pose=!a.visible?peekPose:(flap<12?altPose:(flap<18?blinkPose:peekPose));
-  }
-  _move(a,colSpeed,rowSpeed=colSpeed){
-    if(Math.abs(a.targetCol-a.col)<=colSpeed)a.col=a.targetCol;
-    else a.col+=Math.sign(a.targetCol-a.col)*colSpeed;
-    if(Math.abs(a.targetRow-a.row)<=rowSpeed)a.row=a.targetRow;
-    else a.row+=Math.sign(a.targetRow-a.row)*rowSpeed;
-  }
-  _hoveringAnimal(a,state){
-    const art=animalFrame(a.type,a.tier,a.pose);
-    const h=art.length,w=Math.max(2,artWidth(art));
-    return state.mouseRow>=0&&
-      Math.abs(state.mouseRow-Math.round(a.row))<=h+1&&
-      Math.abs(state.mouseCol-Math.round(a.col))<=w+2;
-  }
-  _consumeFeedEvent(a,state){
-    if(!this._feedEvent||this._feedEvent.type!==a.type)return false;
-    const glyph=_ANIMAL_FEED_GLYPHS[a.type];
-    const width=glyph?artWidth(glyph.lines):0;
-    a.mode='feed-react';
-    a.pose='feed';
-    a.timer=28;
-    a.visible=true;
-    a.targetRow=a.type==='bird'?a.homeRow+0.9:a.homeRow;
-    a.targetCol=a.tier===0?Math.max(0,a.edgeCol-1):clamp(a.spotA+(a.type==='cat'?1:0),0,Math.max(0,state.cols-4));
-    if(glyph){
-      const homeCol=a.tier===0?Math.max(0,a.edgeCol-1):a.homeCol;
-      a.feedGlyph={
-        lines:glyph.lines,
-        color:glyph.color,
-        row:clamp(a.homeRow+(glyph.dy||0),0,Math.max(0,state.rows-glyph.lines.length-1)),
-        col:clamp(homeCol+(glyph.dx||0),0,Math.max(0,state.cols-width-1)),
-        timer:28
-      };
-    }
-    this._feedEvent=null;
-    return true;
-  }
-  _runFeedReaction(a){
-    if(a.feedGlyph&&--a.feedGlyph.timer<=0)a.feedGlyph=null;
-    if(a.mode!=='feed-react')return false;
-    a.pose='feed';
-    if(a.type==='bird'&&a.timer<12)a.targetRow=a.homeRow;
-    if(a.tier>0&&a.timer<12)a.targetCol=a.spotA;
-    this._move(a,a.type==='turtle'?0.12:0.34,a.type==='bird'?0.25:0.2);
-    if(--a.timer<=0){
-      a.mode=a.tier>=3?'settled':a.tier===2?'patrol':a.tier===1?'approach':'edge';
-      a.pose=this._idlePose(a,false);
-    }
-    return true;
-  }
-  _updateCat(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','tail','blink');return;}
-    if(a.tier===1){
-      if(a.mode==='hide'){
-        a.visible=false;
-        if(--a.timer<=0){
-          a.visible=true;
-          a.col=a.edgeCol+1;
-          a.targetCol=a.spotB;
-          a.mode='approach';
-        }
-        return;
-      }
-      if(a.mode==='approach'){
-        a.pose='tail';
-        this._move(a,0.34);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='pause';a.timer=38;}
-        return;
-      }
-      if(a.mode==='retreat'){
-        a.pose='tail';
-        a.targetCol=a.edgeCol+1;
-        this._move(a,0.34);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='hide';a.timer=72;}
-        return;
-      }
-      a.pose=hover?'blink':'tail';
-      if(--a.timer<=0)a.mode='retreat';
-      return;
-    }
-    if(--a.timer<=0){
-      a.targetCol=a.targetCol===a.spotA?a.spotB:a.spotA;
-      a.timer=a.tier>=3?70:42;
-    }
-    a.pose=hover?'blink':(a.tier>=3?(state.frame%90<18?'stretch':'nap'):(state.frame%42<10?'tail':'base'));
-    this._move(a,a.tier>=3?0.08:0.18);
-  }
-  _updateBird(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','ruffle','turn');return;}
-    if(a.tier===1){
-      if(a.mode==='approach'){
-        a.pose='dip';
-        this._move(a,0.4,0.25);
-        if(Math.abs(a.col-a.targetCol)<0.2&&Math.abs(a.row-a.targetRow)<0.2){a.mode='perch';a.timer=24;}
-        return;
-      }
-      if(a.mode==='shift'){
-        a.pose='perch';
-        this._move(a,0.36,0.25);
-        if(Math.abs(a.col-a.targetCol)<0.2&&Math.abs(a.row-a.targetRow)<0.2){a.mode='perch';a.timer=24;}
-        return;
-      }
-      a.pose=hover?'turn':'perch';
-      if(--a.timer<=0){
-        a.mode='shift';
-        const toAlt=Math.abs(a.targetCol-a.spotA)<0.2;
-        a.targetCol=toAlt?a.spotB:a.spotA;
-        a.targetRow=toAlt?a.homeRow+1:a.homeRow;
-      }
-      return;
-    }
-    if(--a.timer<=0){
-      const roam=a.tier===2&&_visualRandom()<0.45;
-      a.targetCol=roam&&Math.abs(a.targetCol-a.spotA)<0.2?a.spotB:a.spotA;
-      a.targetRow=a.targetCol===a.spotA?a.homeRow:a.homeRow+1;
-      a.timer=a.tier>=3?78:46;
-    }
-    a.pose=hover?'turn':(a.tier>=3?(state.frame%84<16?'ruffle':'settled'):(state.frame%56<12?'ruffle':'perch'));
-    this._move(a,a.tier>=3?0.1:0.22,0.16);
-  }
-  _updateRabbit(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','twitch');return;}
-    if(a.tier===1){
-      if(a.mode==='hide'){
-        a.visible=false;
-        if(--a.timer<=0){
-          a.visible=true;
-          a.col=a.edgeCol+1;
-          a.targetCol=a.spotB;
-          a.mode='approach';
-        }
-        return;
-      }
-      if(a.mode==='approach'){
-        a.pose='hop';
-        this._move(a,0.4);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='pause';a.timer=32;}
-        return;
-      }
-      if(a.mode==='retreat'){
-        a.pose='hop';
-        a.targetCol=a.edgeCol+1;
-        this._move(a,0.42);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='hide';a.timer=68;}
-        return;
-      }
-      a.pose=hover?'twitch':'base';
-      if(--a.timer<=0)a.mode='retreat';
-      return;
-    }
-    if(--a.timer<=0){
-      a.targetCol=a.targetCol===a.spotA?a.spotB:a.spotA;
-      a.timer=a.tier>=3?76:40;
-    }
-    a.pose=hover?'twitch':(a.tier>=3?(state.frame%92<24?'groom':'rest'):(state.frame%36<12?'hop':'twitch'));
-    this._move(a,a.tier>=3?0.08:0.2);
-  }
-  _updateTurtle(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','step','turn');return;}
-    if(a.tier===1){
-      if(a.mode==='approach'){
-        a.pose='step';
-        this._move(a,0.1);
-        if(Math.abs(a.col-a.targetCol)<0.15){a.mode='pause';a.timer=46;}
-        return;
-      }
-      if(a.mode==='retreat'){
-        a.pose='turn';
-        a.targetCol=a.spotA;
-        this._move(a,0.08);
-        if(Math.abs(a.col-a.targetCol)<0.15){a.mode='pause';a.timer=40;}
-        return;
-      }
-      a.pose=hover?'turn':'bob';
-      if(--a.timer<=0){
-        a.mode=a.mode==='pause'&&Math.abs(a.col-a.spotA)<0.15?'approach':'retreat';
-        a.targetCol=a.mode==='approach'?a.spotB:a.spotA;
-      }
-      return;
-    }
-    if(--a.timer<=0){
-      a.targetCol=a.targetCol===a.spotA?a.spotB:a.spotA;
-      a.timer=a.tier>=3?90:54;
-    }
-    a.pose=hover?'turn':(a.tier>=3?(state.frame%100<24?'bob':'rest'):(state.frame%50<18?'step':'turn'));
-    this._move(a,a.tier>=3?0.05:0.08);
-  }
-  _updateAnimalActor(a,state){
-    const hover=this._hoveringAnimal(a,state);
-    this._consumeFeedEvent(a,state);
-    if(this._runFeedReaction(a))return;
-    if(a.feedGlyph&&--a.feedGlyph.timer<=0)a.feedGlyph=null;
-    if(a.type==='cat')this._updateCat(a,state,hover);
-    else if(a.type==='bird')this._updateBird(a,state,hover);
-    else if(a.type==='rabbit')this._updateRabbit(a,state,hover);
-    else this._updateTurtle(a,state,hover);
-  }
-  update(state){
-    if(!this._init)this._initCreatures(state);
-    const gy=state.groundY;
-    for(const c of this._cr){
-      if(!c.active)continue;
-      if(c.kind==='butterfly'){
-        c.fi=Math.floor(state.frame/6)%c.frames.length;
-        c.x+=c.vx;c.y+=0.15*Math.sin(state.frame*0.05+c.phase);
-        c.y=Math.max(2,Math.min(gy-5,c.y));
-        if(c.x<1){c.x=1;c.vx=Math.abs(c.vx);}
-        if(c.x>state.cols-3){c.x=state.cols-3;c.vx=-Math.abs(c.vx);}
-      }else if(c.kind==='bird'){
-        c.fi=Math.floor(state.frame/c.frameStep)%c.frames.length;c.x+=c.vx;
-        const w=artWidth(c.frames);
-        if(c.x<-w-2||c.x>state.cols+w+2)c.active=false;
-      }else if(c.kind==='firefly'){
-        c.x+=c.vx;c.y+=c.vy+0.05*Math.sin(state.frame*0.02+c.phase);
-        c.y=Math.max(1,Math.min(gy-2,c.y));
-      }
-    }
-    this._cr=this._cr.filter(c=>c.active!==false);
-    this._birdT++;
-    if(this._birdT>250+Math.floor(_visualRandom()*350)&&state.season!=='winter'){
-      this._birdT=0;
-      this._spawnAmbientBirds(state,1,false);
-    }
-    const animal=this._ensureAnimal(state);
-    if(animal)this._updateAnimalActor(animal,state);
-  }
-  render(buf,state){
-    for(const c of this._cr){
-      if(!c.active)continue;
-      const r=Math.round(c.y),col=Math.round(c.x);
-      if(c.kind==='butterfly') buf.putStrAnim(r,col,c.frames[c.fi],c.color);
-      else if(c.kind==='bird') buf.putStrAnim(r,col,c.frames[c.fi],'gray');
-      else if(c.kind==='firefly')
-        if(state.frame%(c.on+c.off)<c.on) buf.putAnim(r,col,'*','bright_yellow');
-    }
-    const a=this._animal;
-    if(!a)return;
-    const artLines=animalFrame(a.type,a.tier,a.pose);
-    if(a.feedGlyph){
-      a.feedGlyph.lines.forEach((ln,i)=>buf.putStrAnim(a.feedGlyph.row+i,a.feedGlyph.col,ln,a.feedGlyph.color||'bright_yellow'));
-    }
-    if(a.wasAbsent&&a.tier>0){
-      const fp=_ANIMAL_FOOTPRINTS[a.type]||'...';
-      buf.putStrAnim(Math.round(a.homeRow)+artLines.length,Math.max(0,Math.round(a.homeCol)),fp,'dim');
-    }
-    if(!a.visible)return;
-    const baseCol=clamp(Math.round(a.col),0,Math.max(0,state.cols-artWidth(artLines)-1));
-    artLines.forEach((ln,i)=>buf.putStrAnim(Math.round(a.row)+i,baseCol,ln,'brown'));
-  }
-}
-
-class SpecialLayer{
-  render(buf,state){
-    if(!state.postComplete)return;
-    const cx=state.cols>>1,gy=state.groundY;
-    buf.put(gy-1,cx,'|','green');
-    buf.putStr(gy-2,cx-1,'(@)','bright_red');
-    buf.putStr(gy-3,cx-1,'@@@','red');
-    // Generic perch bird unless bonded animal is present (rendered by CreatureLayer)
-    const ad=state.animalData;
-    if(!ad||ad.tier<3||!ad.triggered) buf.put(gy-9,cx+6,'v','bright_white');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  DOM RENDERER — replaces canvas entirely
-// ═══════════════════════════════════════════════════════════════════
-
-// Pre-build HTML escape map for speed
-const ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;'};
-function esc1(ch){ return ESC_MAP[ch]||ch; }
-
-class GardenDOM {
-  constructor(el){
-    this.el=el;
-    this._rowEls=[];
-    this._lastGy=-1; this._lastNight=false; this._lastTimeOfDay='day';
-    this._cw=CW; this._ch=CH;
-    this._measure();
-  }
-
-  _measure(){
-    // Measure from inside #g so font-rendering context is identical to garden rows
-    const s=document.createElement('span');
-    s.textContent='WWWWWWWWWW';
-    s.style.cssText='position:absolute;top:-9999px;left:0;visibility:hidden;white-space:pre;pointer-events:none';
-    this.el.appendChild(s);
-    const cw=s.getBoundingClientRect().width/10;
-    this.el.removeChild(s);
-    // CH: measure a real div — inherits height:15px from #g>div CSS rule
-    const d=document.createElement('div');
-    d.style.cssText='position:absolute;top:-9999px;left:0;visibility:hidden;pointer-events:none';
-    d.textContent=' ';
-    this.el.appendChild(d);
-    const ch=d.getBoundingClientRect().height||15;
-    this.el.removeChild(d);
-    this._cw=cw;this._ch=ch;
-    CW=cw;CH=ch;
-  }
-
-  get cols(){ return Math.floor(this.el.clientWidth/this._cw); }
-  get rows(){ return Math.floor(this.el.clientHeight/this._ch); }
-
-  resize(){ this._measure(); }
-
-  setGroundBg(gy,rows,timeOfDay='day'){
-    if(gy===this._lastGy&&_devNight===this._lastNight&&timeOfDay===this._lastTimeOfDay)return;
-    this._lastGy=gy; this._lastNight=_devNight; this._lastTimeOfDay=timeOfDay;
-    const sky=timeOfDay==='evening'?'#ecd6b6':C.sky;
-    const ground=timeOfDay==='evening'?'#d8bea2':C.dim_green;
-    const pct=((gy+1)/rows*100).toFixed(2);
-    this.el.style.background=
-      `linear-gradient(to bottom,${sky} ${pct}%,${ground} ${pct}%)`;
-  }
-
-  blit(buf,gy){
-    this.setGroundBg(gy,buf.rows,getTimeOfDay());
-
-    // Sync row element count
-    while(this._rowEls.length<buf.rows){
-      const d=document.createElement('div');
-      this.el.appendChild(d);
-      this._rowEls.push(d);
-    }
-    while(this._rowEls.length>buf.rows){
-      this.el.removeChild(this._rowEls.pop());
-    }
-
-    // Render each row as colored spans
-    for(let r=0;r<buf.rows;r++){
-      let html='';
-      let curCol=null,curText='';
-
-      for(let c=0;c<buf.cols;c++){
-        const i=r*buf.cols+c;
-        const ch=buf._ch[i];
-
-        if(ch===' '){
-          if(curText){html+=`<span style="color:${curCol}">${curText}</span>`;curText='';curCol=null;}
-          html+=' ';
-          continue;
-        }
-
-        // Mode 3: non-animated cells go B&W; animated cells keep palette color
-        const rawCol=buf._col[i];
-        const col=(_colorMode===3&&!buf._anim[i])?'var(--text)':(C[rawCol]||'#404040');
-        if(col!==curCol){
-          if(curText){html+=`<span style="color:${curCol}">${curText}</span>`;curText='';}
-          curCol=col;
-        }
-        curText+=esc1(ch);
-      }
-      if(curText)html+=`<span style="color:${curCol}">${curText}</span>`;
-      this._rowEls[r].innerHTML=html;
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  GARDEN ENGINE
-// ═══════════════════════════════════════════════════════════════════
-
-function getSeason(){
-  // Dev override (< / > keys) takes precedence
-  if(_devSeason)return _devSeason.replace(/-(evening|night)$/,'');
-  // ?season= URL param lets QA force a season without editing JS or clock
-  const p=new URLSearchParams(location.search).get('season');
-  if(p&&['spring','summer','autumn','winter'].includes(p))return p;
-  const m=new Date((gardenRuntime?.state?.last_observed_wall_time??946684800)*1000).getMonth()+1;
-  if(m>=3&&m<=5)return'spring';if(m>=6&&m<=8)return'summer';
-  if(m>=9&&m<=11)return'autumn';return'winter';
-}
-function getTimeOfDay(){
-  if(_devSeason){
-    if(_devSeason.endsWith('-night'))return'night';
-    if(_devSeason.endsWith('-evening'))return'evening';
-    return'day';
-  }
-  const p=new URLSearchParams(location.search).get('time');
-  if(p&&['day','evening','night'].includes(p))return p;
-  const hour=new Date((gardenRuntime?.state?.last_observed_wall_time??946684800)*1000).getHours();
-  if(hour>=19&&hour<21)return'evening';
-  if(hour>=21||hour<5)return'night';
-  return'day';
-}
-
-class GardenEngine{
-  constructor(el){
-    this.dom=new GardenDOM(el);
-    this.el=el;
-    this.buf=null; this.state=null;
-    this.bg=new BackgroundLayer();
-    this.plants=new PlantLayer();
-    this.particles=new ParticleLayer();
-    this.creatures=new CreatureLayer();
-    this.special=new SpecialLayer();
-    this._raf=null; this._last=0; this._seed=12345;
-    this._postComplete=false; this._animalData=null;
-    this._bindMouse();
-  }
-
-  _bindMouse(){
-    this.el.addEventListener('mousemove',e=>{
-      if(!this.state)return;
-      const rect=this.el.getBoundingClientRect();
-      this.state.mouseRow=Math.floor((e.clientY-rect.top)/CH);
-      this.state.mouseCol=Math.floor((e.clientX-rect.left)/CW);
-      const key=`${this.state.mouseRow},${this.state.mouseCol}`;
-      this.el.style.cursor=this.state.collisionMap.has(key)?'pointer':'crosshair';
-    });
-    this.el.addEventListener('mouseleave',()=>{
-      if(this.state){this.state.mouseRow=-1;this.state.mouseCol=-1;}
-      this.el.style.cursor='crosshair';
-    });
-    this.el.addEventListener('click',e=>{
-      if(!this.state)return;
-      const rect=this.el.getBoundingClientRect();
-      const mr=Math.floor((e.clientY-rect.top)/CH);
-      const mc=Math.floor((e.clientX-rect.left)/CW);
-      this.particles.spawnAt(mr,mc,this.state);
-    });
-  }
-
-  setSeed(seed){ this._seed=seed; this._reset(); }
-
-  _reset(){
-    this.dom.resize();
-    const season=getSeason();
-    const timeOfDay=getTimeOfDay();
-    this.state=new GardenVisualState(this.dom.cols,this.dom.rows,this._seed,season);
-    _applyNightPalette(timeOfDay==='night');
-    this.state.night=timeOfDay==='night';
-    this.state.timeOfDay=timeOfDay;
-    this.state.postComplete=this._postComplete;
-    this.state.animalData=this._animalData;
-    this.buf=new ScreenBuffer(this.dom.rows,this.dom.cols);
-    this.plants.regenerate(this.state);
-    this.particles.reset(); this.creatures.reset();
-  }
-
-  start(){
-    if(this._raf)return;
-    const tick=now=>{
-      this._raf=requestAnimationFrame(tick);
-      if(now-this._last<50)return; // ~20fps
-      this._last=now; this._tick();
-    };
-    this._raf=requestAnimationFrame(tick);
-  }
-
-  stop(){ if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;} }
-
-  _tick(){
-    const s=this.state; s.frame++;
-    // Gusty wind: product of two slow oscillators (asciicker foliage_wind_state
-    // uses n0*n1 with a positive offset for a prevailing direction).
-    const n0=Math.sin(s.frame*0.008)+0.35*Math.sin(s.frame*0.0173+1.3);
-    const n1=Math.sin(s.frame*0.0052+4.1)+0.35*Math.sin(s.frame*0.0117+2.2);
-    s.wind=clamp(n0*n1*0.45+0.08,-0.65,0.65);
-    this.particles.update(s); this.creatures.update(s);
-    this.buf.clear();
-    this.bg.render(this.buf,s);
-    this.plants.render(this.buf,s);
-    this.particles.render(this.buf,s);
-    this.creatures.render(this.buf,s);
-    this.special.render(this.buf,s);
-    this.dom.blit(this.buf,s.groundY);
-  }
-
-  // Resize only remeasures the projection surface; canonical topology is invariant.
-  onResize(){ this.dom.resize(); }
-  setPostComplete(v){ this._postComplete=v; if(this.state) this.state.postComplete=v; }
-  setAnimalData(data){ this._animalData=data; if(this.state) this.state.animalData=data; }
-  triggerAnimalFeedReaction(data){ this.creatures.queueFeedReaction(data); }
-  spawnAmbientBirdBurst(){ if(this.state) this.creatures.spawnAmbientBirdBurst(this.state); }
-  animalDebugState(){ return this.creatures.debugAnimalState(); }
-}
-
-// ═══════════════════════════════════════════════════════════════════
 //  VIEWER LOGIC
-// ═══════════════════════════════════════════════════════════════════
 
 const NS='lateletter_v1_';
+const SKY_REGION_KEY='lateletter_garden_sky_region_v1';
 const SIDS=['s-welcome','s-passphrase','s-status','s-select','s-reading','s-archive','s-error'];
 
 let bundle=null,isDevFixture=false,decoded={};
@@ -1843,6 +493,7 @@ let _memoryInvoker=null,_memoryBackground=[];
 
 function syncAmbientMotion(){
   const motionPaused=Boolean(gardenRuntime?.state?.ui?.motion_paused);
+  garden?.setReducedMotion?.(reducedMotionQuery.matches);
   if(effectiveAmbientMotion({prefersReducedMotion:reducedMotionQuery.matches,motionPaused}))
     garden?.start();
   else garden?.stop();
@@ -2002,7 +653,6 @@ async function loadBundle(file,{trustedDevFixture=false}={}){
   // Animal state
   animalType=null;animalTier=0;animalTriggered=false;wasAbsent=false;
   _devAnimal=null;_frbDone=false;_devSeason=null;_devNight=false;_deliveryPlayed=false;
-  _applyNightPalette(false);
   const _ag=(bundle.garden_gifts||[]).find(g=>g.type==='animal');
   if(_ag){
     animalType=_ag.catalog_id||null;
@@ -2186,12 +836,34 @@ async function dispatchGardenUi(modality,intent,{target_id=null,args={},metadata
   }
   return result;
 }
+function canonicalActionRequest(action,focused){
+  if(focused?.kind==='fixture'){
+    if(action==='inspect')return{intent:'inspect',args:{}};
+    if(action==='move')return{intent:'move_fixture',args:{
+      x:Math.min(gardenRuntime.state.world_width-1,focused.position[0]+1),y:focused.position[1],
+      rotation:focused.semantic_state.rotation||0,
+    }};
+    if(action==='rotate')return{intent:'move_fixture',args:{
+      x:focused.position[0],y:focused.position[1],rotation:((focused.semantic_state.rotation||0)+90)%360,
+    }};
+    if(action==='tend')return{intent:'tend',args:{care_action:'tend'}};
+    return{intent:'primary_interact',args:{fixture_action:action}};
+  }
+  if(action==='observe')return{intent:'inspect',args:{}};
+  if(['water','prune','train','rest'].includes(action))
+    return{intent:'tend',args:{care_action:action}};
+  if(action==='transplant')return{intent:'tend',args:{care_action:'transplant',
+    x:Math.min(gardenRuntime.state.world_width-1,focused.position[0]+1),y:focused.position[1]}};
+  if(action==='tend')return{intent:'tend',args:{care_action:'water'}};
+  return{intent:action,args:{}};
+}
 async function renderCanonicalGarden(){
   const panel=document.getElementById('garden-controls');
   const list=document.getElementById('garden-object-list');
   const sheet=document.getElementById('garden-action-sheet');
   if(!panel||!gardenRuntime?.projection)return;
   syncAmbientMotion();
+  garden?.render(gardenRuntime.projection);
   document.getElementById('garden-scene-summary').textContent=gardenRuntime.sceneSummary();
   const focusId=gardenRuntime.state.ui.focus_id;list.innerHTML='';
   for(const object of gardenRuntime.projection.objects){
@@ -2220,20 +892,14 @@ async function renderCanonicalGarden(){
     for(const action of focused.actions){
       const button=document.createElement('button');button.type='button';button.className='btn';
       button.textContent=action==='inspect'?'glance':action.replaceAll('_',' ');
-      button.onclick=event=>dispatchGardenUi(inputModalityFromBrowserEvent(event),action,{
-        target_id:focused.object_id,args:action==='tend'?{care_action:'water'}:{},
+      button.setAttribute('aria-label',`${button.textContent} ${focused.semantic_name}`);
+      button.onclick=event=>{
+        const request=canonicalActionRequest(action,focused);
+        return dispatchGardenUi(inputModalityFromBrowserEvent(event),request.intent,{
+        target_id:focused.object_id,args:request.args,
         metadata:{control:'action-sheet'},
-      });
+      });};
       sheet.appendChild(button);
-    }
-    if(focused.kind==='fixture'){
-      const move=document.createElement('button');move.type='button';move.className='btn';move.textContent='move';
-      move.onclick=event=>dispatchGardenUi(inputModalityFromBrowserEvent(event),'move_fixture',{
-        target_id:focused.object_id,
-        args:{x:Math.min(gardenRuntime.state.world_width-1,focused.position[0]+1),y:focused.position[1]},
-        metadata:{control:'action-sheet'},
-      });
-      sheet.appendChild(move);
     }
   }
 }
@@ -2445,6 +1111,7 @@ async function handleUnlock(){
     await verifyPassphrase(inp.value);
     postComplete=isPostComplete();
     await runAuthenticatedGardenProgram();
+    if(postComplete)await gardenRuntime.markStoryComplete();
     dueIdxs=computeDue();
     afterAuth();
   }catch(err){
@@ -2530,6 +1197,7 @@ async function openLetter(msgIdx){
   }
   postComplete=isPostComplete();
   await runAuthenticatedGardenProgram();
+  if(postComplete)await gardenRuntime.markStoryComplete();
   if(isFirstRead&&!_deliveryPlayed){
     _deliveryPlayed=true;
     _playDelivery(()=>showReading(curMsg));
@@ -2803,86 +1471,16 @@ async function handleFile(file,options={}){
 // ── Dev tools (isDevFixture only) ────────────────────────────────────
 function _devCycleColorMode(){
   const g=document.getElementById('g');
-  if(_colorMode===0){
-    // → mode 1: white background (stash day values, not night-overwritten C)
-    _savedPalette={sky:_dayPalette?_dayPalette.sky:C.sky,dim_green:_dayPalette?_dayPalette.dim_green:C.dim_green};
-    C.sky='#ffffff';C.dim_green='#f0f0f0';
-    if(_dayPalette){_dayPalette.sky='#ffffff';_dayPalette.dim_green='#f0f0f0';}
-    g.style.filter='';
-    if(garden){garden.dom._lastGy=-1;garden._reset();}
-    _colorMode=1;console.log('[dev] color: white-bg');
-  }else if(_colorMode===1){
-    // → mode 2: full grayscale CSS filter — restore sky/ground then apply night if active
-    if(_savedPalette){
-      if(_dayPalette){_dayPalette.sky=_savedPalette.sky;_dayPalette.dim_green=_savedPalette.dim_green;C.sky=NIGHT_PALETTE.sky;C.dim_green=NIGHT_PALETTE.dim_green;}
-      else{C.sky=_savedPalette.sky;C.dim_green=_savedPalette.dim_green;}
-      _savedPalette=null;
-    }
-    if(garden){garden.dom._lastGy=-1;garden._reset();}
-    g.style.filter='grayscale(1) contrast(1.2)';
-    _colorMode=2;console.log('[dev] color: full-grayscale');
-  }else if(_colorMode===2){
-    // → mode 3: B&W except animated cells
-    g.style.filter='';
-    _colorMode=3;console.log('[dev] color: bw-anim');
-  }else{
-    // mode 3 → 0: restore default
-    g.style.filter='';_colorMode=0;
-    if(_savedPalette){
-      if(_dayPalette){_dayPalette.sky=_savedPalette.sky;_dayPalette.dim_green=_savedPalette.dim_green;C.sky=NIGHT_PALETTE.sky;C.dim_green=NIGHT_PALETTE.dim_green;}
-      else{C.sky=_savedPalette.sky;C.dim_green=_savedPalette.dim_green;}
-      _savedPalette=null;
-    }
-    if(garden){garden.dom._lastGy=-1;garden._reset();}
-    console.log('[dev] color: default');
-  }
+  _colorMode=(_colorMode+1)%3;
+  g.style.filter=_colorMode===1?'grayscale(1) contrast(1.2)':_colorMode===2?'contrast(1.25)':'';
 }
-function _refreshDevGridBg(){
-  if(!_devGridActive)return;
-  const ov=document.getElementById('dev-overlay');
-  if(!ov)return;
-  ov.style.backgroundImage=
-    `repeating-linear-gradient(to right,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CW*10}px),`+
-    `repeating-linear-gradient(to bottom,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CH*10}px)`;
-}
+function _refreshDevGridBg(){}
 function _devToggleGrid(){
-  let ov=document.getElementById('dev-overlay');
-  if(_devGridActive){
-    _devGridActive=false;
-    if(ov)ov.remove();
-    if(_devGridRaf){cancelAnimationFrame(_devGridRaf);_devGridRaf=null;}
-    return;
-  }
-  if(!ov){
-    ov=document.createElement('div');ov.id='dev-overlay';
-    ov.style.backgroundImage=
-      `repeating-linear-gradient(to right,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CW*10}px),`+
-      `repeating-linear-gradient(to bottom,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CH*10}px)`;
-    document.getElementById('g').appendChild(ov);
-  }
-  _devGridActive=true;
-  let lastFps=0,_lastT=0,_frames=0;
-  const modes=['default','white-bg','grayscale','bw-anim'];
-  const tick=t=>{
-    if(!_devGridActive)return;
-    _devGridRaf=requestAnimationFrame(tick);
-    _frames++;
-    if(t-_lastT>=1000){lastFps=Math.round(_frames*1000/(t-_lastT));_frames=0;_lastT=t;}
-    const s=garden?.state;
-    const mr=s?.mouseRow??-1,mc=s?.mouseCol??-1;
-    const cur=_devSeason||(getTimeOfDay()==='day'?getSeason():`${getSeason()}-${getTimeOfDay()}`);
-    const ad=s?.animalData;
-    const anStr=ad?`${ad.type}/${ad.tier}`:'none';
-    const anDbg=garden?.animalDebugState?.()||'none';
-    ov.textContent=
-      `${s?.cols||0}x${s?.rows||0} | CW=${CW.toFixed(2)} CH=${CH.toFixed(1)} | mouse(${mc},${mr}) | FPS:${lastFps}\n`+
-      `season: ${cur}  color: ${modes[_colorMode]||_colorMode}  animal: ${anStr}  behavior: ${anDbg}\n`+
-      `  ,/. season+time   Shift+A animal   Shift+B color\n`+
-      `  Shift+D dump   Shift+G grid (this)   f feed   Shift+R react\n`+
-      `  Shift+P post-cmp   Shift+F first-run   Shift+I gift   Shift+V visit   Shift+N birds`;
-  };
-  _devGridRaf=requestAnimationFrame(tick);
+  _devGridActive=!_devGridActive;
+  document.getElementById('g').classList.toggle('debug-grid',_devGridActive);
 }
+function getSeason(){return gardenRuntime?.projection?.scene?.season||'spring';}
+function getTimeOfDay(){return gardenRuntime?.projection?.scene?.time_of_day||'day';}
 
 // ── Event wiring ──────────────────────────────────────────────────────
 function wire(){
@@ -2920,6 +1518,27 @@ function wire(){
       }
     };
   });
+  document.getElementById('sky-opt-in').onclick=async event=>{
+    event.currentTarget.disabled=true;
+    try{
+      const region=await requestRoughSkyLocation();
+      localStorage.setItem(SKY_REGION_KEY,JSON.stringify(region));
+      garden?.setReaderRegion(region);
+    }catch(error){
+      document.getElementById('garden-scene-summary').textContent=`${gardenRuntime?.sceneSummary()||'Garden ready.'} ${error.message}; storybook sky kept.`;
+    }finally{event.currentTarget.disabled=false;}
+  };
+  document.getElementById('sky-use-region').onclick=()=>{
+    const raw=document.getElementById('sky-region').value;
+    if(!raw)return;
+    const [latitude_cell,longitude_cell]=raw.split(',').map(Number);
+    const region={latitude_cell,longitude_cell,grid_degrees:1};
+    localStorage.setItem(SKY_REGION_KEY,JSON.stringify(region));
+    garden?.setReaderRegion(region);
+  };
+  document.getElementById('sky-forget').onclick=()=>{
+    localStorage.removeItem(SKY_REGION_KEY);garden?.setReaderRegion(null);
+  };
 
   // Demo letter download + auto-load
   document.getElementById('btn-demo').onclick=async e=>{
@@ -3034,14 +1653,14 @@ function wire(){
       const idx=(states.indexOf(cur)+(e.key==='.'?1:states.length-1))%states.length;
       _devSeason=states[idx];
       _devNight=_devSeason.endsWith('-night');
-      if(garden){garden.dom._lastGy=-1;garden._reset();_refreshDevGridBg();}
+      if(gardenRuntime?.projection)garden?.render(gardenRuntime.projection);
       console.log('[dev] season →',_devSeason);
     }
     // Shift+D : dump state to console
     if(e.key==='D'){
       e.preventDefault();
       console.log('[dev] state',{
-        season:getSeason(),CW,CH,
+        season:getSeason(),cellWidth:garden?.cellWidth,cellHeight:garden?.cellHeight,
         cols:garden?.state?.cols,rows:garden?.state?.rows,
         visitCount,animalType,animalTier,animalTriggered,
         giftDiscovered:Object.keys(giftDiscovered).filter(k=>giftDiscovered[k]),
@@ -3104,8 +1723,18 @@ async function loadUrlLetter(){
 async function init(){
   await initTextLayout();
   try{
-    garden=new GardenEngine(document.getElementById('g'));
-    garden._reset();
+    let readerRegion=null;
+    try{readerRegion=JSON.parse(localStorage.getItem(SKY_REGION_KEY)||'null');}catch(_){localStorage.removeItem(SKY_REGION_KEY);}
+    garden=new CanonicalGardenRenderer(document.getElementById('g'),{
+      prefersReducedMotion:reducedMotionQuery.matches,
+      readerRegion,
+      onSelect:async (object,event)=>{
+        const modality=inputModalityFromBrowserEvent(event);
+        await dispatchGardenUi(modality,'move_focus',{args:{target_id:object.object_id},metadata:{source:'canonical-raster'}});
+        await dispatchGardenUi(modality,'open_actions',{target_id:object.object_id});
+        document.querySelector('#garden-action-sheet button')?.focus();
+      },
+    });
     syncAmbientMotion();
   }catch(e){console.error('[init] garden failed:',e);}
   try{await storageInit();}catch(e){console.error('[init] storage failed:',e);}
