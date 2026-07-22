@@ -181,7 +181,7 @@ def test_pages_deploy_builds_and_verifies_transitive_browser_asset_closure(tmp_p
     assert expected <= {
         str(path.relative_to(site)) for path in site.rglob("*") if path.is_file()
     }
-    assert "?l=to-a-friend" in (site / "to-chloe/index.html").read_text(encoding="utf-8")
+    assert "?l=to-chloe" in (site / "to-chloe/index.html").read_text(encoding="utf-8")
 
     (site / "src/lateletter/garden/data/atlas.v1.json").unlink()
     verified = subprocess.run(

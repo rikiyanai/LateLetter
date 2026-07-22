@@ -118,6 +118,14 @@ def generate_initial_world(
 
     if not layout_is_safe(state):
         raise ValueError("generated Garden layout failed safety validation")
+    # Frame the populated region on first open: fixtures cluster near the
+    # bottom of the field, so an origin camera shows an almost-empty corner.
+    fixture_ys = [fixture.position.y for fixture in state.fixtures]
+    camera = Vec2(
+        state.world_width // 2,
+        min(state.world_height - 1, sum(fixture_ys) // len(fixture_ys)),
+    )
+    state = replace(state, ui=replace(state.ui, camera=camera))
     return state
 
 

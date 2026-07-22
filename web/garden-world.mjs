@@ -710,6 +710,16 @@ export async function generateInitialWorld(
     }));
   }
   if (!layoutIsSafe(state)) throw new Error('generated Garden layout failed safety validation');
+  // Frame the populated region on first open: fixtures cluster near the
+  // bottom of the field, so an origin camera shows an almost-empty corner.
+  const fixtureYs = state.fixtures.map(fixture => fixture.position[1]);
+  state.ui.camera = [
+    Math.floor(state.world_width / 2),
+    Math.min(
+      state.world_height - 1,
+      Math.floor(fixtureYs.reduce((total, y) => total + y, 0) / fixtureYs.length),
+    ),
+  ];
   return deserializeWorldState(serializeWorldState(state));
 }
 
