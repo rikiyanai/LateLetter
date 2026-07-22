@@ -1,6 +1,6 @@
 # Garden feature-gap and renderer parity
 
-Verified 2026-07-21 against the normal checksummed, HMAC-authenticated,
+Verified 2026-07-22 against the normal checksummed, HMAC-authenticated,
 encrypted v2 synthetic bundle in `sealed_demo.lateletter`, using the public
 demo passphrase `garden-biscuit-2026`.
 
@@ -30,7 +30,8 @@ The controlling finding remains:
 | Collectibles, inventory, and journal | Persistent collect/examine/inventory/journal and authored memories; scrollable inventory/journal/missed-summary panel | Same state plus accessible object list, complete journal, and missed summaries | Yes | Production demo verified locally |
 | Deterministic animal AI | Four species; safety-first priority, personality/needs, bounded episodic memory, weather/season utility, deterministic validated locomotion/routines, hysteresis, four bond tiers, authored choreography | Same decisions/movement/state; reason, score, context, tier, intent, personality, and memory are visible and semantically described | Yes—decision, position, projection, and restart bytes match | Gate 7 PASS |
 | Scene changes and memorial | Weather/palette/story/ambience tokens, bounded absence text, lasting memorial | Same semantic scene, absence, and memorial state | Yes | Gate 13 PASS; emotional sign-off remains Gate 14 |
-| Camera, parallax, responsive hit testing, reduced motion | Canonical camera center, per-object depth, and partial row diffs | Same per-object depth; matching inverse hit tests; measured glyph geometry; saved pause and presentation-only reduced motion | Yes | Gate 10 PARTIAL: reference-device p95 measurements remain |
+| Camera, parallax, responsive hit testing, reduced motion | Canonical content-centered camera, per-object depth, and partial row diffs | Same canonical camera, legacy corner-camera migration through `pan`, per-object depth, matching inverse hit tests, measured glyph geometry, saved pause and presentation-only reduced motion | Yes | Gate 10 PARTIAL: reference-device p95 measurements remain |
+| Rich presentation restored after `520f27b` regression | Portable atlas glyph projection remains deliberately compact | Colored multi-line projection of canonical plants/topology, fixtures/footprints, tiered animals, collectibles, season/time palettes, moon, ambient life, weather, hover/click/feed effects and memorial | Yes—presentation consumes the same scene and never owns gameplay | Not renderer-identical by design; localhost comparison passed machine/browser checks, but operator visual acceptance and supported screenshot matrix remain open |
 | Versioned Unicode/ASCII atlas | Python consumes and validates the canonical atlas manifest, semantic tokens, graphemes, and safe profiles | Browser imports that same manifest directly | Yes—no duplicate glyph owner | Gate 6 PARTIAL: supported screenshot matrix remains |
 | Privacy-preserving sky | Shared 24-star JSON catalog, author-region/storybook projection | Imports the same JSON catalog; explicit coarse reader opt-in, denial/fallback, and forget | Yes—12 trusted Alt/Az fixtures within 0.25° | Gate 11 PASS |
 | Accessibility | Line-readable state, ordinary-text help, journal/inventory/absence/memorial | Semantic per-object descriptions, focusable controls, 44px targets, narrow layout, reduced motion | Same projected facts/actions | Gate 12 PARTIAL: VoiceOver/NVDA, no-color, and 200% human runs remain |
@@ -52,3 +53,10 @@ The direct terminal/browser run is recorded in
 Tracked artifacts contain fictional demo copy only. The prior Chloe message
 and passphrase remain compromised and are intentionally not reused. A real
 Chloe bundle requires newly approved personal wording and a new passphrase.
+
+The table claims **semantic/state parity**, not identical pictures. Terminal is
+the portable cell renderer; HTML may provide richer disposable presentation.
+Neither renderer may invent positions, growth, actions, animal decisions,
+schedules, camera state, persistence, or authored outcomes. The product must
+still not be described as a “full,” “standalone parity,” or production Garden
+until every §7.8.13 human gate passes on a normal sealed production bundle.
