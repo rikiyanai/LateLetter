@@ -1167,7 +1167,9 @@ function showScreen(name){
   for(const id of SIDS)
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
-  document.getElementById('garden-controls').classList.toggle('open',name==='garden');
+  // Authoring surface: standalone gardens only. Sealed-letter recipients get
+  // the quiet garden; object interaction stays available via hotspot clicks.
+  document.getElementById('garden-controls').classList.toggle('open',name==='garden'&&standaloneMode);
   updateCanonicalLiveLoop();
 }
 

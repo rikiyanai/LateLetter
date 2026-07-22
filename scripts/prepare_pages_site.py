@@ -22,7 +22,9 @@ _RUNTIME_ASSET_RE = re.compile(
 )
 _CSS_ASSET_RE = re.compile(r"\burl\(\s*['\"]?([^)'\"\s]+)", re.IGNORECASE)
 _SCANNED_SUFFIXES = frozenset({".html", ".htm", ".mjs", ".js", ".css"})
-PUBLIC_ROUTE_ALIASES = {"to-chloe": "to-a-friend"}
+# Route aliases (route name -> bundle name); empty now that the real
+# to-chloe bundle is restored and serves its own route.
+PUBLIC_ROUTE_ALIASES: dict[str, str] = {}
 
 
 class _HTMLAssetCollector(HTMLParser):
