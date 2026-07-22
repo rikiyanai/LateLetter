@@ -27,6 +27,9 @@ def test_initial_generation_is_deterministic_and_catalog_complete():
     assert coverage["fixtures"] == frozenset(REQUIRED_FUNCTIONAL_FIXTURES)
     assert coverage["animals"] == frozenset(ANIMAL_SPECIES)
     assert coverage["collectibles"] == frozenset(COLLECTIBLE_FAMILIES)
+    assert first.ui.camera.x == first.world_width // 2
+    fixture_rows = [fixture.position.y for fixture in first.fixtures]
+    assert min(fixture_rows) <= first.ui.camera.y <= max(fixture_rows)
 
 
 def test_one_thousand_initial_layouts_are_safe_and_viewport_independent():

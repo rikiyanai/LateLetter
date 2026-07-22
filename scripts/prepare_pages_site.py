@@ -22,9 +22,6 @@ _RUNTIME_ASSET_RE = re.compile(
 )
 _CSS_ASSET_RE = re.compile(r"\burl\(\s*['\"]?([^)'\"\s]+)", re.IGNORECASE)
 _SCANNED_SUFFIXES = frozenset({".html", ".htm", ".mjs", ".js", ".css"})
-# Route aliases (route name -> bundle name); empty now that the real
-# to-chloe bundle is restored and serves its own route.
-PUBLIC_ROUTE_ALIASES: dict[str, str] = {}
 
 
 class _HTMLAssetCollector(HTMLParser):
@@ -141,13 +138,6 @@ def prepare_pages_site(output: Path) -> None:
             shutil.copy2(source, destination)
             name = source.stem
             _write_letter_route(output, name, name)
-
-        for route, bundle_name in PUBLIC_ROUTE_ALIASES.items():
-            if not (public_letters / f"{bundle_name}.lateletter").is_file():
-                raise RuntimeError(
-                    f"public route alias {route!r} targets missing bundle {bundle_name!r}"
-                )
-            _write_letter_route(output, route, bundle_name)
 
     verify_pages_site(output)
 

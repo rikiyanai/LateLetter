@@ -34,8 +34,9 @@
       user-select: none; -webkit-user-select: none;
       /* background set dynamically via setGroundBg() */
       background: var(--bg);
+      text-shadow: 0 0 .01px currentColor;
     }
-    #g > div { white-space: pre; height: 15px; overflow: hidden; }
+    #g > div { white-space: pre; height: 15px; overflow: visible; }
 
     /* ── Screen overlays ── */
     .screen {
@@ -120,9 +121,12 @@
       position: fixed; right: 1rem; top: 1rem; z-index: 7;
       width: min(360px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem);
       overflow: auto; padding: .85rem; background: var(--scrim-bg);
+      border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+      box-shadow: 0 12px 42px rgba(0,0,0,.08);
       backdrop-filter: blur(8px); display: none;
     }
     #garden-controls.open { display: block; }
+    .garden-controls-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     #garden-object-list { list-style: none; margin: .5rem 0; }
     #garden-object-list button, #garden-action-sheet button, .garden-global-actions button {
       min-width: 44px; min-height: 44px; padding: .55rem .7rem;
@@ -398,11 +402,17 @@
 </div>
 
 <aside id="garden-controls" aria-label="Garden object list and actions">
-  <p class="t2">garden controls</p>
+  <div class="garden-controls-heading">
+    <p class="t2">garden controls</p>
+    <button class="btn" type="button" id="garden-controls-close" aria-label="Close Garden controls">close</button>
+  </div>
   <p id="garden-scene-summary" class="t3" role="status" aria-live="polite"></p>
   <div class="garden-global-actions" aria-label="Garden navigation">
     <button class="btn" type="button" data-garden-action="pan" data-dx="-1">pan left</button>
     <button class="btn" type="button" data-garden-action="pan" data-dx="1">pan right</button>
+    <button class="btn" type="button" data-garden-action="pan" data-dy="-1">pan up</button>
+    <button class="btn" type="button" data-garden-action="pan" data-dy="1">pan down</button>
+    <button class="btn" type="button" data-garden-action="frame">frame garden</button>
     <button class="btn" type="button" data-garden-action="open_journal">journal</button>
     <button class="btn" type="button" data-garden-action="undo">undo</button>
     <label class="t3" for="garden-place-kind">place</label>
@@ -938,6 +948,21 @@ async function prepareCanonicalGardenRuntime(
   pendingGardenRuntimes.add(runtime);
   try{
     await runtime.open({persist:persistent&&!deferPersistence});
+    // Worlds persisted before the projection renderer inherited the model's
+    // corner camera even though all generated content lives in positive world
+    // space. Migrate that one known legacy state through the canonical reducer.
+    const camera=runtime.state.ui.camera;
+    if(camera[0]<=1&&camera[1]<=1&&runtime.projection.objects.length){
+      const fixtures=runtime.projection.objects.filter(object=>object.kind==='fixture');
+      const frameObjects=fixtures.length?fixtures:runtime.projection.objects;
+      const target=[
+        Math.floor(runtime.state.world_width/2),
+        Math.round(frameObjects.reduce((total,object)=>total+object.position[1],0)/frameObjects.length),
+      ];
+      await runtime.dispatch('browser_keyboard','pan',{args:{
+        dx:target[0]-camera[0],dy:target[1]-camera[1],
+      },metadata:{migration:'legacy-corner-camera-v1'}});
+    }
     return runtime;
   }catch(error){
     runtime.invalidate();
@@ -1058,6 +1083,10 @@ async function renderCanonicalGarden(){
       const modality=inputModalityFromBrowserEvent(event);
       _gardenFocusReturn=object.object_id;
       await dispatchGardenUi(modality,'move_focus',{args:{target_id:object.object_id},metadata:{source:'object-list'}});
+      const camera=gardenRuntime.state.ui.camera;
+      await dispatchGardenUi(modality,'pan',{args:{
+        dx:object.position[0]-camera[0],dy:object.position[1]-camera[1],
+      },metadata:{source:'object-list-frame'}});
       await dispatchGardenUi(modality,'open_actions',{target_id:object.object_id});
       document.querySelector('#garden-action-sheet button')?.focus();
     };
@@ -1167,9 +1196,7 @@ function showScreen(name){
   for(const id of SIDS)
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
-  // Authoring surface: standalone gardens only. Sealed-letter recipients get
-  // the quiet garden; object interaction stays available via hotspot clicks.
-  document.getElementById('garden-controls').classList.toggle('open',name==='garden'&&standaloneMode);
+  if(name!=='garden')document.getElementById('garden-controls').classList.remove('open');
   updateCanonicalLiveLoop();
 }
 
@@ -1247,10 +1274,7 @@ function showGarden(){
     b.className='btn'+(hi?' hi':'');b.textContent=label;b.onclick=fn;return b;
   };
   if(standaloneMode){
-    btns.appendChild(mk('garden controls',true,()=>{
-      document.getElementById('garden-controls').classList.add('open');
-      document.querySelector('#garden-object-list button')?.focus();
-    }));
+    // Standalone is the Garden itself; it has no synthetic letter archive.
   }else if(bundleCorrupted){
     btns.appendChild(mk('damaged file',true,()=>showStatus(
       'this file appears damaged.',
@@ -1262,6 +1286,10 @@ function showGarden(){
   }else{
     btns.appendChild(mk('open letters',true,showPassphrase));
   }
+  btns.appendChild(mk('garden controls',standaloneMode,()=>{
+    document.getElementById('garden-controls').classList.add('open');
+    document.getElementById('garden-controls-close')?.focus();
+  }));
   showScreen('garden');
   startFirstRunBanner();
   _updateAnimalHud();
@@ -1770,6 +1798,15 @@ function wire(){
       const action=button.dataset.gardenAction;
       const focus=gardenRuntime?.focusedObject();let args={};let target_id=null;
       if(action==='pan')args={dx:Number(button.dataset.dx||0),dy:Number(button.dataset.dy||0)};
+      else if(action==='frame'){
+        const objects=gardenRuntime?.projection?.objects||[];
+        if(!objects.length)return;
+        const fixtures=objects.filter(object=>object.kind==='fixture');
+        const frameObjects=fixtures.length?fixtures:objects;
+        const target=[Math.floor(gardenRuntime.state.world_width/2),
+          Math.round(frameObjects.reduce((total,object)=>total+object.position[1],0)/frameObjects.length)];
+        args={dx:target[0]-gardenRuntime.state.ui.camera[0],dy:target[1]-gardenRuntime.state.ui.camera[1]};
+      }
       else if(action==='pause_motion')args={paused:!gardenRuntime?.state.ui.motion_paused};
       else if(action==='dwell'){
         const changed=await gardenRuntime.tickLive(30);
@@ -1785,7 +1822,7 @@ function wire(){
           y:Number(document.getElementById('garden-place-y').value),
         };
       }else if(['inspect','tend','feed','play','collect','move_fixture'].includes(action))target_id=focus?.object_id||null;
-      await dispatchGardenUi(inputModalityFromBrowserEvent(event),action,{
+      await dispatchGardenUi(inputModalityFromBrowserEvent(event),action==='frame'?'pan':action,{
         target_id,args,metadata:{control:'global-actions'},
       });
       if(action==='back'&&_gardenFocusReturn){
@@ -1796,6 +1833,10 @@ function wire(){
       }
     };
   });
+  document.getElementById('garden-controls-close').onclick=()=>{
+    document.getElementById('garden-controls').classList.remove('open');
+    document.querySelector('#hud-btns button:last-child')?.focus();
+  };
   document.getElementById('sky-opt-in').onclick=async event=>{
     event.currentTarget.disabled=true;
     try{
@@ -2016,6 +2057,7 @@ async function init(){
         document.querySelector('#garden-action-sheet button')?.focus();
       },
     });
+    garden.startPresentation();
     syncAmbientMotion();
   }catch(e){console.error('[init] garden failed:',e);}
   try{await storageInit();}catch(e){console.error('[init] storage failed:',e);}

@@ -19,13 +19,13 @@ import {
 } from '../../web/garden-sky.mjs';
 
 class FakeRow {
-  constructor() { this.textContent = ''; this.attributes = {}; }
+  constructor() { this.textContent = ''; this.innerHTML = ''; this.attributes = {}; }
   setAttribute(key, value) { this.attributes[key] = value; }
   remove() {}
 }
 
 class FakeElement {
-  constructor() { this.clientWidth = 320; this.clientHeight = 150; this.children = []; this.attributes = {}; }
+  constructor() { this.clientWidth = 320; this.clientHeight = 150; this.children = []; this.attributes = {}; this.style = {}; }
   setAttribute(key, value) { this.attributes[key] = value; }
   addEventListener(kind, callback) { this.listener = kind === 'click' ? callback : this.listener; }
   appendChild(child) { this.children.push(child); }
@@ -154,6 +154,28 @@ test('browser renderer covers all connected masks and animal species tiers', () 
   }
 });
 
+test('rich projection restores layered plant animal palette and weather presentation', () => {
+  const data = projection();
+  data.effective_time = Date.UTC(2026, 9, 22, 12) / 1000;
+  data.scene = { sky_mode: 'storybook_fallback', palette: 'autumn', weather: 'rain' };
+  data.objects.push({
+    object_id: 'animal:cat', kind: 'animal', semantic_name: 'cat', position: [14, 5],
+    depth: 110, hotspot: { x: 14, y: 5, width: 1, height: 1 },
+    semantic_state: { species_id: 'cat', bond_tier: 3, intent: 'rest',
+      recent_memories: [{ kind: 'feed' }], choreography_locked: false },
+  });
+  const element = new FakeElement();
+  const frame = new CanonicalGardenRenderer(element, { prefersReducedMotion: true }).render(data);
+  const picture = frame.lines.join('\n');
+  assert.equal(frame.season, 'autumn');
+  assert.equal(frame.timeOfDay, 'day');
+  assert.equal(picture.includes('|'), true);
+  assert.equal(picture.includes('zz'), true);
+  assert.equal(picture.includes('/'), true);
+  assert.match(element.children.map(row => row.innerHTML).join(''), /<span style="color:/);
+  assert.match(element.style.background, /linear-gradient/);
+});
+
 test('browser renderer uses per-object parallax depth and inverse hit testing', () => {
   let selected = null;
   const data = { ...projection(), camera: [0, 0], objects: [{
@@ -269,7 +291,7 @@ test('ten-minute pan simulation keeps initialized scenery and partial row diffs'
   renderer.render(data);
   for (let second = 1; second <= 600; second += 1) {
     const frame = renderer.render({ ...data, camera: [10 + second, 5] });
-    assert.equal(frame.lines[Math.floor(frame.viewport[1] * 0.58)].includes('.'), true);
+    assert.equal(frame.lines[frame.horizon].includes('.'), true);
     assert.ok(frame.changedRows.length < frame.viewport[1]);
   }
 });

@@ -46,6 +46,12 @@ def test_viewer_exposes_focusable_44px_semantic_controls():
         assert f'data-garden-action="{action}"' in source
     for action in ("inspect", "tend", "feed", "play", "collect", "move_fixture"):
         assert action in source
+    assert 'data-garden-action="pan" data-dy="-1"' in source
+    assert 'data-garden-action="pan" data-dy="1"' in source
+    assert 'data-garden-action="frame"' in source
+    assert 'id="garden-controls-close"' in source
+    assert "if(name!=='garden')document.getElementById('garden-controls').classList.remove('open')" in source
+    assert "classList.toggle('open',name==='garden')" not in source
 
 
 def test_v1_and_v2_programs_share_authenticated_materialization_path():
@@ -154,6 +160,15 @@ def test_resize_cannot_regenerate_canonical_topology():
     assert "window.addEventListener('resize',()=>{if(garden)garden.onResize()" in source
 
 
+def test_legacy_corner_camera_is_migrated_through_the_canonical_reducer():
+    source = _viewer_source()
+
+    assert "camera[0]<=1&&camera[1]<=1&&runtime.projection.objects.length" in source
+    assert "metadata:{migration:'legacy-corner-camera-v1'}" in source
+    assert "await runtime.dispatch('browser_keyboard','pan'" in source
+    assert "Standalone is the Garden itself; it has no synthetic letter archive." in source
+
+
 def test_pages_deploy_builds_and_verifies_transitive_browser_asset_closure(tmp_path):
     deploy = DEPLOY.read_text(encoding="utf-8")
     assert "python3 scripts/prepare_pages_site.py _site" in deploy
@@ -172,7 +187,6 @@ def test_pages_deploy_builds_and_verifies_transitive_browser_asset_closure(tmp_p
         "test_fixture.lateletter",
         "public_letters/to-a-friend.lateletter",
         "to-a-friend/index.html",
-        "to-chloe/index.html",
         "web/garden-atlas.mjs",
         "web/garden-sky.mjs",
         "src/lateletter/garden/data/atlas.v1.json",
@@ -181,7 +195,7 @@ def test_pages_deploy_builds_and_verifies_transitive_browser_asset_closure(tmp_p
     assert expected <= {
         str(path.relative_to(site)) for path in site.rglob("*") if path.is_file()
     }
-    assert "?l=to-chloe" in (site / "to-chloe/index.html").read_text(encoding="utf-8")
+    assert not (site / "to-chloe/index.html").exists()
 
     (site / "src/lateletter/garden/data/atlas.v1.json").unlink()
     verified = subprocess.run(
