@@ -1,0 +1,13 @@
+{
+  "archive_kind": "legacy-garden-safe-unique-artifact",
+  "source_commit": "7b9389de21edb67a15b261aae25b2350b53a49a9",
+  "excluded_sensitive_artifacts": [
+    "letters/letter_source.example.json",
+    "public_letters/to-a-friend.lateletter",
+    "sealed_demo.lateletter"
+  ],
+  "production_import_allowed": false,
+  "files": {
+    "viewer-bnw.html": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d"
+  }
+}
