@@ -69,6 +69,7 @@ def test_terminal_renderer_paints_every_canonical_fixture_footprint_cell():
         world,
         plants=(), animals=(), collectibles=(),
         fixtures=(FixtureState("fixture:table", "table_chairs", Vec2(0, 0)),),
+        ui=replace(world.ui, camera=Vec2(0, 0)),
     )
     lines = GardenRenderer(80, 24).render_lines(world)
     assert lines[10][40:42] == "TT"
