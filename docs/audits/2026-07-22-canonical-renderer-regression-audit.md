@@ -127,5 +127,8 @@ remote `main` without a feature branch, worktree, restore, or wholesale orphan
 merge. Conflict resolution retained the bounded content-centered camera,
 removed the obsolete route-alias owner, kept the Garden drawer opt-in and
 closable, and removed the compromised `public_letters/to-chloe.lateletter`.
-No push or deployment occurred; the result remains local pending operator
-localhost review.
+Post-rebase verification passed 593 Python tests, 53 browser adapter tests, the
+release verifier, and the local Pages closure. The local server returns 200 for
+the root, `to-a-friend`, and renderer module and 404 for `to-chloe`. No push or
+deployment occurred; the result remains local pending operator localhost
+review.
