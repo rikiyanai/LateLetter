@@ -22,7 +22,8 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 - Failed attempt 2: Remote PR #2 removed the alias but restored an old v1 `to-chloe.lateletter` while its passphrase was disclosed in the accompanying handoff. The PR had no reviews and only attribution-policy checks; post-merge Pages deployment succeeded without the claimed full-suite or Chromium checks. The resulting ciphertext/passphrase pair is compromised and cannot satisfy copy approval.
 - Required fix: Remove the synthetic alias owner. Generate a named recipient route only when an exact same-named sealed bundle exists, keep browser authoring explicitly out of the current surface inventory, and require local terminal plus localhost browser review and explicit author approval before copying any personal bundle into `public_letters/` or promoting it.
 - Acceptance: A clean local site does not generate `/to-chloe/` without an approved `public_letters/to-chloe.lateletter`; a newly worded bundle with a new passphrase passes canonical checksum/HMAC/decryption and exact-copy review in terminal and localhost HTML; every claimed Garden modality completes its remaining human gates; the author explicitly approves promotion; and the HTTPS enforcement blocker is cleared before a personal bundle is published.
-- Status: Route-alias defect fixed locally on `main` and covered by the Pages contract; the broader entry remains open because the personal Chloe copy is unavailable by design, required human gates have not passed, HTTPS enforcement is still blocked, and no promotion is authorized.
+- Fix attempt 3 (2026-07-22): Rebased the projection-backed Garden repair onto remote `main`, removed the compromised `public_letters/to-chloe.lateletter` restored by PR #2, retained exact-name route generation only, and kept the control drawer opt-in rather than auto-opening it in standalone mode.
+- Status: Corrected on local `main` and covered by the Pages contract; the broader entry remains open because the personal Chloe copy is unavailable by design, required human gates have not passed, HTTPS enforcement is still blocked, and no push or promotion is authorized.
 
 ## 2026-07-21
 
@@ -39,7 +40,7 @@ Check this file before making fixes. Add a short entry for each user-visible bug
 - Root cause: The Pages builder creates routes only from public `.lateletter` filenames; no explicit safe alias replaced the quarantined `to-chloe` artifact.
 - Required fix: Generate `/to-chloe/` as an explicit route alias to the tracked safe synthetic sealed demo, without restoring or inspecting compromised content.
 - Acceptance: Both slash/no-slash live URLs resolve into the safe demo viewer after the final `main` deployment; checksum/HMAC/decryption remain valid.
-- Status: Fixed in the release artifact — Pages preparation now generates `/to-chloe/` as an explicit alias to the checksum/HMAC-verified safe synthetic `to-a-friend` bundle. Live status remains pending the final `main` deployment.
+- Status: Superseded by the 2026-07-22 recipient-route entry. The synthetic alias was removed because a named recipient route must never impersonate a demo, and the later compromised bundle restoration was also removed locally.
 
 ### Post-proof review found in-flight persistence, stale-unlock, and schema parity holes
 - Symptom: Runtime invalidation cannot cancel an already-started browser save; a stale unlock catch can purge a newer attempt; and browser shape validation accepts v2 legacy gifts and Boolean seeds that Python rejects.

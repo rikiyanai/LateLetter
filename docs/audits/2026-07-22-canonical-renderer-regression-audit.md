@@ -119,3 +119,13 @@ camera.
 The implementation regression is repaired locally. Operator visual sign-off,
 supported-device screenshots, assistive-technology observation, and published
 normal-bundle replay remain acceptance gates. Nothing was promoted.
+
+## Remote-main reconciliation
+
+The safe archive, renderer repair, and audit commits were rebased directly onto
+remote `main` without a feature branch, worktree, restore, or wholesale orphan
+merge. Conflict resolution retained the bounded content-centered camera,
+removed the obsolete route-alias owner, kept the Garden drawer opt-in and
+closable, and removed the compromised `public_letters/to-chloe.lateletter`.
+No push or deployment occurred; the result remains local pending operator
+localhost review.
