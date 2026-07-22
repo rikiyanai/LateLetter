@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "bundle_id": "3db18f93-4a6b-4dfb-b529-4f82c4262d1b",
+  "author_name": "Riki",
+  "passphrase_hint": "what all of this grows into (six letters)",
+  "bundle_auth_salt": "GzDC5Lh5PXC1ObQLt1y1dw==",
+  "garden_seed": 20260719,
+  "messages": [
+    {
+      "id": "85fe6530-775b-4326-adfd-eec1437d1e63",
+      "date": "2026-07-19",
+      "ciphertext": "K4yCbtzB0wIn/r7+iabRJN5jHCZPzJHcAxhMN8JCt6SSU/BebOyR3CtWDD1Mv8FpPv3f7ScuoQf61MTH/ve8HCAWjipPLUc16zUylV+dHee3y7Lt/p8JwGrHIQ3aYO7mDHDF08JxXyEQfQ9PRJ2wW0F+xxokfMTqraJSyoqCaoytg72MJX7Dlka+eYmQZ3Cm8LP4/jBGm64B9ofh8QwErn7gHcOA/CBs9T/yuko5phYV184wZFAbPwrl34lic+LeoG3QhOpkczhOUY0zwK9zynWeIqs3FfyoUWS31qML5ggTgx5gUlZTx0lWn1beuEAUodhqU+F+kEt1tJAtHiT2o+8pHfYkkVfhv4bE6rFa0kTYVh5IZpkFpkm25qMMIyPcZ6mJGTvRGuAS7pU5QJu3DqOlVQhA+IGDktGRs+N8gTIJEzCsgx6XtW9TI97/+UwH4ACU1nmaXnFkSsr2OjI0siycA0t/2DhH21WatONoOxkEnPw2kVAa8M32Kd4gxVO+gGGDSx9O2lugDgRK2DOlFlgf18/hTvZIzw7iWaL3Z7YHGRk1PmycUTkK5Oo3+oYPOftx8OdA/u6eyYiGwUdT4DXuNZqxbEktthAqtkr+rcrgftBjfsSEIYKuj7N5B4ktSM8PP+BOeTuD6y5FH+JAYnp9cQuGaIbWp/zXlPWay3FGef5TNrignY9LXJwKvlVASJhbSeCz+qev0ukQkxfzL/w2hCaGVuVRl9NyPQd5qA6Z0Y51754FpQua8fv8IcLS+WIfrJ78LRAgdM5+OIbCd5cWmMQC/Lu59Ntct+A+ccQIGen3kRBjn11Fu+FEMWlHLeK78OaFaSVGkPIZBRArP4DpjlHa+bN+omWs9p9vm/CrXd8V5hQL3Wp0W2kWuus3mX+eUDkKboOEAEP+GYYn4SmgQsQMs5vmwNbaSWejbdFKkruPKhG79ySi8aGOK3hxUQPfoKp6f//6MuISAb/cgjErx/ZPjFhcHJ9fKC1s28pfAajk+ZuM9JLrfZkH9a/uHrf1yU/CXftYrSmai309uu83eLtkKK6EZL3plUpll2WND3TzWSbZ++z0Za6mB8oTXLdYgbfMWWKsWxm4uHbgnuhbYS4wxrW2XiDneU627pVds0x+RcVprsv1N+VZZW3YONu66VmQ303IBGeM5y4GVvBGX3aNmjX0HW3bWfU+VOdJVFxELjviicH+S3CMAfGb",
+      "salt": "tm+PvsFzTnNTlNKA9hA/HA==",
+      "nonce": "H7f3txo258scQAgC",
+      "kdf_params": {
+        "name": "PBKDF2",
+        "hash": "SHA-256",
+        "iterations": 600000
+      }
+    }
+  ],
+  "garden_gifts": [
+    {
+      "id": "52079c5f-9729-4937-bd43-b29025e89188",
+      "type": "animal",
+      "catalog_id": "cat",
+      "sentiment_ciphertext": "DQh+43x8lwuHLfWfUhB/B3dYMzRNOvhdWNiijVFIWegLTgFU58ZYQanQ03qjAyN9sgvw7QcTBIqGVOk=",
+      "salt": "5HxpbkG5IuXMxXDqQEmp3A==",
+      "nonce": "7qnJovG1QUB6A45g",
+      "trigger": {
+        "type": "cumulative_visits",
+        "value": "2"
+      },
+      "placement_hint": "random",
+      "animal_name": "gorrilla",
+      "animal_collar_color": null
+    },
+    {
+      "id": "221f2757-9078-493c-8414-90fecfb5b720",
+      "type": "item",
+      "catalog_id": "coffee_mug",
+      "sentiment_ciphertext": "bWoylAxD4+JPF/SYXWxSuEUj1OGnEFscAQpl91INCLaXGaM=",
+      "salt": "uM1yKBCHjYtcbt/1Y4xI0A==",
+      "nonce": "XS52W47Ak1B/Wg7q",
+      "trigger": {
+        "type": "post_letter",
+        "value": "85fe6530-775b-4326-adfd-eec1437d1e63"
+      },
+      "placement_hint": "near_tallest_tree",
+      "animal_name": null,
+      "animal_collar_color": null
+    }
+  ],
+  "notification": null,
+  "checksum": "48669fdf33abc9f0049851f4f5c3d6a324050a5e5864fc777a04fa846da62301",
+  "hmac": "c5d5401b66c165ad292e557518e2c6efd96746ce9a6c24434abdfd1c26b3c7ab"
+}

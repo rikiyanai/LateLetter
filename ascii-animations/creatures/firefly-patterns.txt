@@ -1,0 +1,91 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Firefly Flash Patterns
+  Based on real Photinus species research
+  Per docs/SPEC.md §7.2: "Small * blinks on/off, lower third, night"
+═══════════════════════════════════════════════════════════════
+
+
+── SPECIES-BASED FLASH PATTERNS ──────────────────────────────
+
+Photinus brimleyi (slow, sporadic):
+  Cycle: 20 seconds
+  Flashes at: 5.0s and 15.0s
+  Random variation: ±3 seconds on cycle reset
+  Character: good for calm, meditative garden
+
+  Timeline (20s):
+  |.....*.....|.....*.....|
+  0    5     10    15    20
+
+Photinus macdermotti (active):
+  Cycle: 14.5 seconds
+  Flashes at: 3.0s, 5.0s, 10.0s, 12.5s
+  Random variation: ±3 seconds on cycle reset
+  Character: more alive, summer evening feel
+
+  Timeline (14.5s):
+  |..*.*.....*.*.|
+  0  3 5    10 12.5
+
+Photinus carolinus (synchronous — dramatic):
+  Cycle: 15 seconds
+  Rapid sequential flashes at 0.5s intervals (0-6.5s)
+  No randomization — all fireflies sync up
+  Character: magical, coordinated display
+
+  Timeline (15s):
+  |***************.......|
+  0              6.5    15
+
+
+── GLOW CHARACTERS ───────────────────────────────────────────
+
+Character progression (ramp up → peak → fade):
+  (space) → . → · → * → * (bold) → * → · → . → (space)
+
+With curses attributes:
+  Off:       ' '   (no attr)
+  Warming:   '.'   (curses.A_DIM)
+  Dim glow:  '·'   (curses.A_NORMAL | yellow)
+  Bright:    '*'   (curses.A_BOLD | yellow)
+  Flash:     'o'   (curses.A_BOLD | bright_yellow)  [rare peak]
+
+
+── PLACEMENT RULES ───────────────────────────────────────────
+
+  - Lower 60% of screen only (ground level, near plants)
+  - Cluster near garden elements (flowers, bushes, fences)
+  - Active only during "night" phase of day/night cycle
+  - 10-30 fireflies depending on screen size
+  - Slight random drift: ±1 char every 5-10 frames
+  - Never overlap with rain/snow particles
+  - Brimleyi pattern for calm scenes, carolinus for special moments
+
+
+── VISUAL EXAMPLE (lower portion of 80x24 screen) ───────────
+
+  Frame 1 (t=5.0s):
+  ....*.........*...........*....
+  .............*................
+  ......*.....................*..
+  ___________________________________
+
+  Frame 2 (t=5.5s):
+  ....·.........·...........·....
+  .............·................
+  ......·.....................·..
+  ___________________________________
+
+  Frame 3 (t=6.0s):
+  .................................
+  .................................
+  .................................
+  ___________________________________
+
+  (dark period — no fireflies visible)
+
+  Frame 40 (t=15.0s):
+  ..........*...........*........
+  .................*............
+  .....*.....................*...
+  ___________________________________
