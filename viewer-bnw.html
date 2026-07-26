@@ -11,6 +11,9 @@
       --text: #000000;
       --bg:   #f9f8f5;
       --scrim-bg: rgba(249, 248, 245, .76);
+      --opacity-strong: .78;
+      --opacity-muted: .7;
+      --opacity-faint: .62;
       --sans: 'Times New Roman', Times, serif;
     }
 
@@ -63,15 +66,15 @@
 
     /* ── Typography — opacity only ── */
     .t1  { color: var(--text); opacity: 1;    font-size: 1rem;   }
-    .t2  { color: var(--text); opacity: .55;  font-size: .85rem; }
-    .t3  { color: var(--text); opacity: .35;  font-size: .75rem; letter-spacing: .06em; }
-    .t4  { color: var(--text); opacity: .2;   font-size: .72rem; }
+    .t2  { color: var(--text); opacity: var(--opacity-strong); font-size: .85rem; }
+    .t3  { color: var(--text); opacity: var(--opacity-muted); font-size: .75rem; letter-spacing: .06em; }
+    .t4  { color: var(--text); opacity: var(--opacity-faint); font-size: .72rem; }
 
     /* ── [bracket] buttons ── */
     .btn {
       background: none; border: none;
       font: inherit; font-size: .85rem;
-      color: var(--text); opacity: .35;
+      color: var(--text); opacity: var(--opacity-muted);
       cursor: pointer; padding: 0;
       transition: opacity .12s; letter-spacing: .02em;
     }
@@ -87,11 +90,11 @@
     /* ── Underline inputs ── */
     .fi {
       width: 100%; background: transparent;
-      border: none; border-bottom: 1px solid rgba(0,0,0,.2);
+      border: none; border-bottom: 1px solid color-mix(in srgb, var(--text) 24%, transparent);
       color: var(--text); font: inherit; font-size: 1rem;
       padding: .35rem 0; margin-bottom: 1.4rem; outline: none;
     }
-    .fi:focus { border-bottom-color: rgba(0,0,0,.5); }
+    .fi:focus { border-bottom-color: color-mix(in srgb, var(--text) 62%, transparent); }
 
     /* ── Welcome ── */
     /* Restore full-viewport pointer events so drag-drop works anywhere on screen */
@@ -105,18 +108,24 @@
 
     /* ── HUD ── */
     #hud {
-      position: fixed; bottom: 40%; left: 50%;
+      position: fixed; top: max(1rem, env(safe-area-inset-top)); left: 50%;
       transform: translateX(-50%);
-      text-align: center; z-index: 5;
-      white-space: nowrap; opacity: 0;
-      transition: opacity 1.4s ease; pointer-events: none;
+      width: min(760px, calc(100% - 2rem)); text-align: center; z-index: 5;
+      white-space: normal; opacity: 0;
+      transition: opacity .25s ease; pointer-events: none;
     }
-    #hud.vis { opacity: 1; pointer-events: auto; }
+    #hud.vis { opacity: 1; pointer-events: none; }
+    #hud button { pointer-events: auto; }
     #hud-author { margin-bottom: .6rem; }
     #hud-btns, #hud-actions {
       display: flex; gap: 1.75rem; justify-content: center; flex-wrap: wrap;
     }
-    #hud-actions { margin-top: .65rem; }
+    #hud-actions {
+      margin: .65rem auto 0; width: fit-content; max-width: 100%;
+      padding: .15rem .55rem;
+      background: color-mix(in srgb, var(--bg) 58%, transparent);
+      backdrop-filter: blur(2px);
+    }
     #garden-controls {
       position: fixed; right: 1rem; top: 1rem; z-index: 7;
       width: min(360px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem);
@@ -126,6 +135,7 @@
       backdrop-filter: blur(8px); display: none;
     }
     #garden-controls.open { display: block; }
+    #garden-controls[hidden] { display: none; }
     .garden-controls-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
     #garden-object-list { list-style: none; margin: .5rem 0; }
     #garden-object-list button, #garden-action-sheet button, .garden-global-actions button {
@@ -143,11 +153,11 @@
     .pp-sub   { margin-bottom: 1.6rem; }
     .pp-label { margin-bottom: .3rem; }
     .pp-hint  { margin-bottom: 1.2rem; }
-    .pp-err   { color: var(--text); opacity: .5; margin-bottom: .8rem; display: none; font-size: .82rem; }
+    .pp-err   { color: var(--text); opacity: var(--opacity-strong); margin-bottom: .8rem; display: none; font-size: .82rem; }
     .pp-err.on { display: block; }
-    .pp-info  { opacity: .3; font-size: .82rem; margin-bottom: .8rem; display: none; }
+    .pp-info  { opacity: var(--opacity-muted); font-size: .82rem; margin-bottom: .8rem; display: none; }
     .pp-info.on { display: block; }
-    .warn-st  { opacity: .25; font-size: .78rem; margin-bottom: 1rem; display: none; }
+    .warn-st  { opacity: var(--opacity-strong); font-size: .78rem; margin-bottom: 1rem; display: none; }
     .warn-st.on { display: block; }
 
     /* ── Status ── */
@@ -162,7 +172,7 @@
     .pick-list li { padding: .5rem 0; }
     .pick-btn {
       background: none; border: none; font: inherit; font-size: .9rem;
-      color: var(--text); opacity: .55; cursor: pointer; padding: 0; text-align: left;
+      color: var(--text); opacity: var(--opacity-strong); cursor: pointer; padding: 0; text-align: left;
     }
     .pick-btn:hover { opacity: 1; }
 
@@ -188,7 +198,7 @@
     #lm-progress { height: 2px; background: var(--text); opacity: 0.15;
       transform: scaleX(0); transform-origin: left; transition: transform 0.1s;
       margin: 0 0 .6rem; }
-    #lm-linect { font-size: .7rem; opacity: .2; }
+    #lm-linect { font-size: .7rem; opacity: var(--opacity-faint); }
 
     /* ── Inbox — transparent, floats over garden ── */
     #s-archive { background: none; }
@@ -204,15 +214,15 @@
       transition: opacity .1s;
     }
     .inbox-btn.unread { opacity: 1; }
-    .inbox-btn.read   { opacity: .28; }
-    .inbox-btn.locked { opacity: .12; cursor: default; pointer-events: none; }
+    .inbox-btn.read   { opacity: var(--opacity-strong); }
+    .inbox-btn.locked { opacity: var(--opacity-faint); cursor: default; pointer-events: none; }
     .inbox-btn:not(.locked):hover { opacity: 1; }
     .inbox-sep  { margin-top: 1.6rem; }
-    .inbox-mem-label { font-size: .7rem; opacity: .2; letter-spacing: .06em; margin-bottom: .4rem; }
+    .inbox-mem-label { font-size: .7rem; opacity: var(--opacity-faint); letter-spacing: .06em; margin-bottom: .4rem; }
     .inbox-mem-btn {
       background: none; border: none; font: inherit; font-size: .85rem;
       color: var(--text); cursor: pointer; padding: .18rem 0;
-      opacity: .45; display: block;
+      opacity: var(--opacity-strong); display: block;
     }
     .inbox-mem-btn:hover { opacity: 1; }
     .inbox-back { margin-top: 2rem; }
@@ -272,7 +282,8 @@
       #drop-zone { padding: 2rem 1.5rem; }
       .btn-row { gap: 1rem; }
       #hud {
-        bottom: 30%; width: calc(100% - 2rem); white-space: normal;
+        top: max(.75rem, env(safe-area-inset-top)); width: calc(100% - 2rem);
+        white-space: normal;
       }
       #hud-btns, #hud-actions { gap: .75rem 1.25rem; }
       #g { font-size: 11px; line-height: 13px; }
@@ -295,7 +306,7 @@
 <div id="hud">
   <p id="hud-author" class="t2"></p>
   <div id="hud-btns"></div>
-  <div id="hud-actions" aria-label="garden actions"></div>
+  <div id="hud-actions" aria-label="garden actions" aria-live="polite"></div>
   <p id="hud-animal" class="t4" style="margin-top:.5rem"></p>
 </div>
 
@@ -401,7 +412,7 @@
   </div>
 </div>
 
-<aside id="garden-controls" aria-label="Garden object list and actions">
+<aside id="garden-controls" aria-label="Garden diagnostic controls" hidden>
   <div class="garden-controls-heading">
     <p class="t2">garden controls</p>
     <button class="btn" type="button" id="garden-controls-close" aria-label="Close Garden controls">close</button>
@@ -410,8 +421,8 @@
   <div class="garden-global-actions" aria-label="Garden navigation">
     <button class="btn" type="button" data-garden-action="pan" data-dx="-1">pan left</button>
     <button class="btn" type="button" data-garden-action="pan" data-dx="1">pan right</button>
-    <button class="btn" type="button" data-garden-action="pan" data-dy="-1">pan up</button>
-    <button class="btn" type="button" data-garden-action="pan" data-dy="1">pan down</button>
+    <button class="btn" type="button" data-garden-action="pan" data-dy="-20">pan up</button>
+    <button class="btn" type="button" data-garden-action="pan" data-dy="20">pan down</button>
     <button class="btn" type="button" data-garden-action="frame">frame garden</button>
     <button class="btn" type="button" data-garden-action="open_journal">journal</button>
     <button class="btn" type="button" data-garden-action="undo">undo</button>
@@ -471,11 +482,21 @@ let _textLayoutMode = 'fallback';
 
 // ═══════════════════════════════════════════════════════════════════
 // Canonical Garden presentation is owned by web/garden-renderer.mjs.
-// Legacy renderer-local generation, collision, stars, animation, and hit-testing were deleted.
+// Legacy renderer-local world generation, gameplay collision, target authority,
+// and persistence were deleted. This renderer owns only disposable art/motion;
+// pointer targets derive from projection-owned hotspots.
 
 async function initTextLayout(){
-  prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
-  _textLayoutMode='fallback';
+  try{
+    ({prepareWithSegments,layoutWithLines,clearCache}=await import(
+      './web/vendor/pretext/layout.js'
+    ));
+    _textLayoutMode='pretext';
+  }catch(error){
+    console.warn('[viewer] bundled PreText unavailable; using browser text fallback',error);
+    prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
+    _textLayoutMode='fallback';
+  }
 }
 
 //  VIEWER LOGIC
@@ -483,6 +504,18 @@ async function initTextLayout(){
 const NS='lateletter_v1_';
 const SKY_REGION_KEY='lateletter_garden_sky_region_v1';
 const SIDS=['s-welcome','s-passphrase','s-status','s-select','s-reading','s-archive','s-error'];
+const GARDEN_DEBUG_REQUESTED=new URLSearchParams(location.search).get('garden_debug')==='1';
+const GARDEN_REVIEW_TIME_TEXT=new URLSearchParams(location.search).get('garden_review_time');
+const GARDEN_REVIEW_TIME_SECONDS=(()=>{
+  if(!GARDEN_REVIEW_TIME_TEXT||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(GARDEN_REVIEW_TIME_TEXT))return null;
+  const milliseconds=Date.parse(GARDEN_REVIEW_TIME_TEXT);
+  return Number.isFinite(milliseconds)?Math.floor(milliseconds/1000):null;
+})();
+const GARDEN_REVIEW_IS_LOCAL=(()=>{
+  const hostname=String(location.hostname||'').toLowerCase();
+  return hostname==='localhost'||hostname==='127.0.0.1'||hostname==='::1';
+})();
 
 let bundle=null,isDevFixture=false,decoded={};
 let readIds=new Set(),giftDiscovered={};
@@ -493,9 +526,10 @@ let _firstReadGuide=false;
 let garden=null;
 let bundleCorrupted=false,bundleCorruptionReason='';
 
-// Animal relationship state (§6.8.2)
-let animalType=null,animalTier=0,animalTriggered=false,wasAbsent=false;
-let _devAnimal=null,_frbDone=false,_frbTimers=[];
+// Live animal identity, species, and bond state are consumed exclusively from
+// the canonical world projection.
+let wasAbsent=false;
+let _frbDone=false,_frbTimers=[];
 // Dev state
 let _devSeason=null,_devNight=false,_colorMode=0,_savedPalette=null;
 let _devGridActive=false,_devGridRaf=null;
@@ -504,6 +538,7 @@ let _lineCount=0,_progressScrollOff=null;
 let gardenRuntime=null,gardenProgram=null,gardenProgramState={applied_occurrences:[]};
 const pendingGardenRuntimes=new Set();
 let standaloneMode=false,_gardenFocusReturn=null;
+let gardenContextObjectId=null;
 let gardenSessionStarted=0;
 let gardenProgramTail=Promise.resolve();
 let gardenNotice='';
@@ -512,9 +547,67 @@ const reducedMotionQuery=window.matchMedia?.('(prefers-reduced-motion: reduce)')
 };
 let _memoryInvoker=null,_memoryBackground=[];
 
+function gardenReviewTime(){
+  return GARDEN_REVIEW_IS_LOCAL&&GARDEN_REVIEW_TIME_SECONDS!==null&&
+    (standaloneMode||isDevFixture)
+    ?GARDEN_REVIEW_TIME_SECONDS:null;
+}
+
+async function _receiptGet(key){
+  return gardenReviewTime()===null?kvGet(key):null;
+}
+async function _receiptSet(key,value){
+  if(gardenReviewTime()===null)await kvSet(key,value);
+}
+
+function applyGardenPageTheme({mode='day'}={}){
+  const root=document.documentElement;
+  const themes={
+    day:{text:'#000000',bg:'#f9f8f5',scrim:'rgba(249,248,245,.82)',strong:'.78',muted:'.7',faint:'.62'},
+    evening:{text:'#24170f',bg:'#ecd6b6',scrim:'rgba(236,214,182,.84)',strong:'.82',muted:'.75',faint:'.7'},
+    night:{text:'#f1ede3',bg:'#0b0e16',scrim:'rgba(11,14,22,.88)',strong:'.84',muted:'.75',faint:'.62'},
+  };
+  const theme=themes[mode]||themes.day;
+  root.style.setProperty('--text',theme.text);
+  root.style.setProperty('--bg',theme.bg);
+  root.style.setProperty('--scrim-bg',theme.scrim);
+  root.style.setProperty('--opacity-strong',theme.strong);
+  root.style.setProperty('--opacity-muted',theme.muted);
+  root.style.setProperty('--opacity-faint',theme.faint);
+  root.dataset.gardenTheme=mode;
+}
+
+function gardenControlsEnabled(){
+  // Diagnostics are explicit even for the trusted fixture. A recipient bundle
+  // can never opt in through the query string.
+  return Boolean(GARDEN_DEBUG_REQUESTED&&(standaloneMode||isDevFixture));
+}
+function syncGardenControlsAvailability(){
+  const panel=document.getElementById('garden-controls');
+  if(!panel)return false;
+  const enabled=gardenControlsEnabled();
+  panel.hidden=!enabled;
+  if(!enabled)panel.classList.remove('open');
+  return enabled;
+}
+function openGardenControls(){
+  if(!syncGardenControlsAvailability())return;
+  document.getElementById('garden-controls').classList.add('open');
+  document.getElementById('garden-controls-close')?.focus();
+}
+function closeGardenControls(){
+  document.getElementById('garden-controls')?.classList.remove('open');
+  document.getElementById('garden-controls-open')?.focus();
+}
+
 function syncAmbientMotion(){
   const motionPaused=Boolean(gardenRuntime?.state?.ui?.motion_paused);
-  garden?.setReducedMotion?.(reducedMotionQuery.matches);
+  // A fixed localhost review clock is also a resettable presentation-frame
+  // boundary. Freeze disposable animation without changing canonical pause
+  // state, elapsed Garden time, or authored schedule semantics.
+  garden?.setReducedMotion?.(
+    reducedMotionQuery.matches||gardenReviewTime()!==null,
+  );
   updateCanonicalLiveLoop();
 }
 function updateCanonicalLiveLoop(){
@@ -594,6 +687,7 @@ const kRead     =(binding,mid)=>`${NS}auth_${binding}_read_${mid}`;
 const kFirst    =binding      =>`${NS}auth_${binding}_first_run`;
 const PREVIEW_WORLD_ID='recipient-preview';
 const PREVIEW_SEED='lateletter-recipient-preview-v1';
+const PREVIEW_PROGRAM=Object.freeze({variables:{},entities:[],animals:[]});
 
 // ── Worker ────────────────────────────────────────────────────────────
 const WORKER_SRC=`
@@ -712,16 +806,12 @@ async function loadBundle(file,{trustedDevFixture=false}={}){
   // Gifts/programs are deliberately inert until bundle authentication succeeds.
   giftDiscovered={};
   // Animal state
-  animalType=null;animalTier=0;animalTriggered=false;wasAbsent=false;
-  _devAnimal=null;_frbDone=false;_devSeason=null;_devNight=false;_deliveryPlayed=false;
-  const _ag=(bundle.garden_gifts||[]).find(g=>g.type==='animal');
-  if(_ag){
-    animalType=_ag.catalog_id||null;
-  }
+  wasAbsent=false;
+  _frbDone=false;_devSeason=null;_devNight=false;_deliveryPlayed=false;
   // Before authentication only an isolated base Garden exists. Persisted state
   // may contain decrypted author prose, so it cannot be loaded or rendered yet.
   await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
-    persistent:false,expectedEpoch:loadEpoch,
+    persistent:false,expectedEpoch:loadEpoch,program:PREVIEW_PROGRAM,
   });
   assertCurrent();
 }
@@ -795,8 +885,8 @@ async function _persistenceBinding(keyBytes){
 async function _readAuthenticatedReceipts(binding,data=bundle){
   const loaded=new Set();
   for(const message of data.messages||[])
-    if(await kvGet(kRead(binding,message.id)))loaded.add(message.id);
-  return{readIds:loaded,firstRun:!await kvGet(kFirst(binding))};
+    if(await _receiptGet(kRead(binding,message.id)))loaded.add(message.id);
+  return{readIds:loaded,firstRun:!await _receiptGet(kFirst(binding))};
 }
 async function verifyPassphrase(pp){
   const attemptEpoch=authEpoch;
@@ -828,7 +918,7 @@ async function verifyPassphrase(pp){
       _readAuthenticatedReceipts(candidateBinding,attemptBundle),
     );
     const worldCandidate=await awaitCurrent(prepareAuthenticatedBundleGarden(
-      attemptBundle,candidateBinding,{deferPersistence:true},
+      attemptBundle,candidateBinding,{deferPersistence:true,program:programCandidate},
     ));
     await publishAuthenticatedCandidate({
       epoch:attemptEpoch,bundle:attemptBundle,runtime:worldCandidate.runtime,
@@ -897,7 +987,7 @@ async function verifyPassphrase(pp){
     _readAuthenticatedReceipts(candidateBinding,attemptBundle),
   );
   const worldCandidate=await awaitCurrent(prepareAuthenticatedBundleGarden(
-    attemptBundle,candidateBinding,{deferPersistence:true},
+    attemptBundle,candidateBinding,{deferPersistence:true,program:programCandidate},
   ));
   await publishAuthenticatedCandidate({
     epoch:attemptEpoch,bundle:attemptBundle,runtime:worldCandidate.runtime,
@@ -911,7 +1001,8 @@ async function verifyPassphrase(pp){
 
 // ── Due / complete ────────────────────────────────────────────────────
 function computeDue(){
-  const today=new Date();today.setHours(0,0,0,0);
+  const reviewTime=gardenReviewTime();
+  const today=new Date(reviewTime===null?Date.now():reviewTime*1000);today.setHours(0,0,0,0);
   const presented=new Set([
     ...(Array.isArray(gardenRuntime?.state?.program_state?.presented_letters)
       ?gardenRuntime.state.program_state.presented_letters:[]),
@@ -930,24 +1021,21 @@ function isPostComplete(){
   const msgs=bundle.messages||[];return msgs.length>0&&msgs.every(m=>readIds.has(m.id));
 }
 
-function _animalData(){
-  if(!animalType)return null;
-  return{type:animalType,tier:animalTier,triggered:animalTriggered,wasAbsent};
-}
-
 // ── Canonical Garden owner ───────────────────────────────────────────
 async function prepareCanonicalGardenRuntime(
-  worldId,seed,{persistent=true,deferPersistence=false}={},
+  worldId,seed,{persistent=true,deferPersistence=false,program=null}={},
 ){
+  const reviewTime=gardenReviewTime();
+  const worldPersistence=persistent&&reviewTime===null;
   const runtime=new GardenRuntime({
-    worldId,seed,
-    load:persistent?kvGet:async()=>null,
-    save:persistent?kvSet:async()=>{},
-    now:()=>Math.floor(Date.now()/1000),
+    worldId,seed,program,
+    load:worldPersistence?kvGet:async()=>null,
+    save:worldPersistence?kvSet:async()=>{},
+    now:()=>reviewTime??Math.floor(Date.now()/1000),
   });
   pendingGardenRuntimes.add(runtime);
   try{
-    await runtime.open({persist:persistent&&!deferPersistence});
+    await runtime.open({persist:worldPersistence&&!deferPersistence});
     // Worlds persisted before the projection renderer inherited the model's
     // corner camera even though all generated content lives in positive world
     // space. Migrate that one known legacy state through the canonical reducer.
@@ -976,6 +1064,7 @@ async function publishCanonicalGardenRuntime(runtime,expectedEpoch){
   const previous=gardenRuntime;
   if(previous&&previous!==runtime)previous.invalidate();
   gardenRuntime=runtime;
+  gardenContextObjectId=null;
   gardenSessionStarted=runtime.state.last_observed_wall_time||0;
   await renderCanonicalGarden();
   if(expectedEpoch!==authEpoch||gardenRuntime!==runtime){
@@ -986,21 +1075,23 @@ async function publishCanonicalGardenRuntime(runtime,expectedEpoch){
   return runtime;
 }
 async function openCanonicalGarden(
-  worldId,seed,{persistent=true,deferPersistence=false,expectedEpoch=authEpoch}={},
+  worldId,seed,{
+    persistent=true,deferPersistence=false,expectedEpoch=authEpoch,program=null,
+  }={},
 ){
   const runtime=await prepareCanonicalGardenRuntime(
-    worldId,seed,{persistent,deferPersistence},
+    worldId,seed,{persistent,deferPersistence,program},
   );
   if(expectedEpoch!==authEpoch){runtime.invalidate();throw new Error('Garden open was cancelled');}
   return publishCanonicalGardenRuntime(runtime,expectedEpoch);
 }
 async function prepareAuthenticatedBundleGarden(
-  data,binding,{deferPersistence=false}={},
+  data,binding,{deferPersistence=false,program=null}={},
 ){
   if(!binding)throw new Error('authenticated persistence binding is unavailable');
   const runtime=await prepareCanonicalGardenRuntime(
     `bundle:${data.bundle_id}:${binding}`,data.garden_seed,{
-    persistent:true,deferPersistence,
+    persistent:true,deferPersistence,program,
   });
   const programState={...(runtime.state.program_state||{})};
   if(!Array.isArray(programState.applied_occurrences))programState.applied_occurrences=[];
@@ -1033,10 +1124,8 @@ async function dispatchGardenUi(modality,intent,{target_id=null,args={},metadata
     if(result.changed&&gardenProgram&&authenticated&&!bundleCorrupted)
       await runAuthenticatedGardenProgram();
     await renderCanonicalGarden();
-    if(intent==='feed'&&garden)garden.triggerAnimalFeedReaction({
-      type:gardenRuntime.focusedObject()?.semantic_state?.species_id||'animal',
-      tier:gardenRuntime.focusedObject()?.semantic_state?.bond_tier||0,
-    });
+    _renderGardenActions();
+    if(intent==='feed'&&garden&&target_id)garden.triggerAnimalFeedReaction({objectId:target_id});
   }
   return result;
 }
@@ -1064,11 +1153,13 @@ function canonicalActionRequest(action,focused){
 }
 async function renderCanonicalGarden(){
   const panel=document.getElementById('garden-controls');
-  const list=document.getElementById('garden-object-list');
-  const sheet=document.getElementById('garden-action-sheet');
   if(!panel||!gardenRuntime?.projection)return;
   syncAmbientMotion();
+  garden?.setFocusedObject?.(gardenRuntime.state.ui.focus_id);
   garden?.render(gardenRuntime.projection);
+  if(!syncGardenControlsAvailability())return;
+  const list=document.getElementById('garden-object-list');
+  const sheet=document.getElementById('garden-action-sheet');
   document.getElementById('garden-scene-summary').textContent=
     [gardenNotice,gardenRuntime.sceneSummary()].filter(Boolean).join(' ');
   const focusId=gardenRuntime.state.ui.focus_id;list.innerHTML='';
@@ -1126,7 +1217,8 @@ async function _runAuthenticatedGardenProgramNow(){
   if(!gardenProgram||!authenticated||bundleCorrupted)return;
   const epoch=authEpoch,runtime=gardenRuntime,program=gardenProgram;
   const isCurrent=()=>epoch===authEpoch&&authenticated&&gardenRuntime===runtime&&gardenProgram===program;
-  const preparedState=runtime.prepareProgram(program);
+  const preparedState=await runtime.adoptProgram(program);
+  if(!isCurrent())return;
   preparedState.visit_total=visitCount;
   const observed=runtime.state.last_observed_wall_time||Math.floor(Date.now()/1000);
   const now=new Date(observed*1000),nowIso=now.toISOString();
@@ -1185,8 +1277,6 @@ async function _runAuthenticatedGardenProgramNow(){
   giftDiscovered={};
   for(const gift of bundle.garden_gifts||[])
     giftDiscovered[gift.id]=(gardenProgramState.completed_events||[]).includes(`legacy.${gift.id}`);
-  const animal=(bundle.garden_gifts||[]).find(g=>g.type==='animal');
-  animalTriggered=Boolean(animal&&giftDiscovered[animal.id]);
 }
 
 // ── Screen management ─────────────────────────────────────────────────
@@ -1196,30 +1286,53 @@ function showScreen(name){
   for(const id of SIDS)
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
-  if(name!=='garden')document.getElementById('garden-controls').classList.remove('open');
+  garden?.setPresentationActive?.(name==='garden');
+  if(name!=='garden')closeGardenControls();
+  syncGardenControlsAvailability();
   updateCanonicalLiveLoop();
 }
 
 // ── Animal helpers ────────────────────────────────────────────────────
-async function feedAnimal(event){
-  const animal=gardenRuntime?.projection?.objects.find(item=>item.kind==='animal');
+function _projectedAnimals(){
+  return(gardenRuntime?.projection?.objects||[]).filter(item=>item.kind==='animal');
+}
+function _legacyAuthoredAnimalId(){
+  const gift=(bundle?.garden_gifts||[]).find(item=>item.type==='animal'&&giftDiscovered[item.id]);
+  return gift?`legacy-entity.${gift.id}`:null;
+}
+function _relationshipAnimal(){
+  const animals=_projectedAnimals();
+  const focusId=gardenRuntime?.state?.ui?.focus_id||gardenContextObjectId;
+  const focused=animals.find(item=>item.object_id===focusId);
+  if(focused)return focused;
+  const legacyId=_legacyAuthoredAnimalId();
+  const authored=legacyId?animals.find(item=>item.object_id===legacyId):null;
+  if(authored)return authored;
+  return animals.length===1?animals[0]:null;
+}
+function _bondedDeliveryAnimal(){
+  const preferred=_relationshipAnimal();
+  if(Number(preferred?.semantic_state?.bond_tier||0)>=3)return preferred;
+  return _projectedAnimals()
+    .filter(item=>Number(item.semantic_state?.bond_tier||0)>=3)
+    .sort((left,right)=>left.object_id.localeCompare(right.object_id))[0]||null;
+}
+async function feedAnimal(event,targetId=null){
+  const animal=targetId
+    ? _projectedAnimals().find(item=>item.object_id===targetId)
+    : _relationshipAnimal();
   if(animal)await dispatchGardenUi(inputModalityFromBrowserEvent(event),'feed',{
     target_id:animal.object_id,metadata:{control:'hud'},
   });
 }
-function devCycleAnimal(){
-  if(!_devAnimal){_devAnimal={ti:0,tier:0};}
-  else{if(++_devAnimal.tier>3){_devAnimal.tier=0;_devAnimal.ti=(_devAnimal.ti+1)%_ANIMAL_TYPES.length;}}
-  const type=_ANIMAL_TYPES[_devAnimal.ti],tier=_devAnimal.tier;
-  if(garden)garden.setAnimalData({type,tier,triggered:true,wasAbsent:tier>0});
-  const el=document.getElementById('hud-animal');
-  if(el)el.textContent=`[dev] ${type} tier ${tier}`;
-}
 function _updateAnimalHud(){
   const el=document.getElementById('hud-animal');if(!el)return;
-  if(!authenticated||bundleCorrupted||!animalType||!animalTriggered){el.textContent='';return;}
-  if(animalTier===0)el.textContent=`a stray ${animalType} lingers at the edge…`;
-  else if(animalTier<3)el.textContent=`the ${animalType} is beginning to trust you`;
+  const animal=_relationshipAnimal();
+  if(!authenticated||bundleCorrupted||!animal){el.textContent='';return;}
+  const species=animal.semantic_state?.species_id||animal.semantic_name||'animal';
+  const tier=Number(animal.semantic_state?.bond_tier||0);
+  if(tier===0)el.textContent=`a stray ${species} lingers at the edge…`;
+  else if(tier<3)el.textContent=`the ${species} is beginning to trust you`;
   else el.textContent='';
 }
 
@@ -1245,6 +1358,22 @@ function _mkHudButton(label,fn,key=null){
   if(key){b.setAttribute('aria-keyshortcuts',key);b.title=`keyboard: ${key}`;}
   return b;
 }
+async function focusGardenObject(direction,event=null,source='context-navigation'){
+  if(!gardenRuntime)return;
+  const modality=inputModalityFromBrowserEvent(event);
+  await dispatchGardenUi(modality, 'move_focus', {
+    args:{direction},metadata:{control:source},
+  });
+  const focused=gardenRuntime.focusedObject();
+  if(focused){
+    const camera=gardenRuntime.state.ui.camera;
+    await dispatchGardenUi(modality,'pan',{args:{
+      dx:focused.position[0]-camera[0],dy:focused.position[1]-camera[1],
+    },metadata:{control:`${source}-frame`}});
+  }
+  gardenContextObjectId=focused?.object_id||null;
+  _renderGardenActions();
+}
 function _renderGardenActions(){
   const actions=document.getElementById('hud-actions');
   if(!actions)return;
@@ -1252,8 +1381,43 @@ function _renderGardenActions(){
   const memories=_gardenMemories();
   if(memories.length)
     actions.appendChild(_mkHudButton(memories.length===1?'examine memory':'examine memories',showGardenMemories,'i'));
-  if(authenticated&&!bundleCorrupted&&animalType&&animalTriggered&&animalTier<3)
-    actions.appendChild(_mkHudButton(`feed ${animalType}`,feedAnimal,'f'));
+  const relationshipAnimal=_relationshipAnimal();
+  const relationshipTier=Number(relationshipAnimal?.semantic_state?.bond_tier||0);
+  const relationshipSpecies=relationshipAnimal?.semantic_state?.species_id||
+    relationshipAnimal?.semantic_name||'animal';
+  if(authenticated&&!bundleCorrupted&&relationshipAnimal&&relationshipTier<3)
+    actions.appendChild(_mkHudButton(`feed ${relationshipSpecies}`,
+      event=>feedAnimal(event,relationshipAnimal.object_id),'f'));
+  const focused=gardenRuntime?.focusedObject?.();
+  if(!focused||focused.object_id!==gardenContextObjectId){
+    if(gardenRuntime){
+      const guide=document.createElement('span');guide.className='t3';
+      guide.textContent='Choose a detail, or take a slow look around.';
+      actions.appendChild(guide);
+      actions.appendChild(_mkHudButton('take a closer look',
+      event=>focusGardenObject('next',event),']'));
+    }
+    return;
+  }
+  const status=document.createElement('span');status.className='t3';status.role='status';
+  status.textContent=focused.semantic_name;actions.appendChild(status);
+  actions.appendChild(_mkHudButton('previous',
+    event=>focusGardenObject('previous',event),'['));
+  actions.appendChild(_mkHudButton('next',
+    event=>focusGardenObject('next',event),']'));
+  const unavailableWithoutEditor=new Set(['move','rotate','transplant','open_journal']);
+  for(const action of focused.actions.filter(item=>!unavailableWithoutEditor.has(item))){
+    const label=action==='inspect'?'look closer at':action==='primary_interact'?'interact with':action.replaceAll('_',' ');
+    const button=_mkHudButton(`${label} ${focused.semantic_name}`,event=>{
+      const request=canonicalActionRequest(action,focused);
+      return dispatchGardenUi(inputModalityFromBrowserEvent(event),request.intent,{
+        target_id:focused.object_id,args:request.args,
+        metadata:{control:'context-actions'},
+      });
+    });
+    button.dataset.contextAction=action;
+    actions.appendChild(button);
+  }
 }
 function showGardenMemories(){
   const memories=_gardenMemories();
@@ -1264,10 +1428,13 @@ function showGardenMemories(){
   if(first)first.focus();
 }
 function showGarden(){
-  garden.setPostComplete(postComplete);
   const name=bundle?.author_name||'someone who loves you';
   document.getElementById('hud-author').textContent=standaloneMode
     ? 'your quiet standalone garden.' : `planted for you by ${name}.`;
+  const reviewTime=gardenReviewTime();
+  if(reviewTime===null)delete document.documentElement.dataset.gardenReviewTime;
+  else document.documentElement.dataset.gardenReviewTime=
+    new Date(reviewTime*1000).toISOString().replace('.000Z','Z');
   const btns=document.getElementById('hud-btns');btns.innerHTML='';
   const mk=(label,hi,fn)=>{
     const b=document.createElement('button');
@@ -1286,18 +1453,17 @@ function showGarden(){
   }else{
     btns.appendChild(mk('open letters',true,showPassphrase));
   }
-  btns.appendChild(mk('garden controls',standaloneMode,()=>{
-    document.getElementById('garden-controls').classList.add('open');
-    document.getElementById('garden-controls-close')?.focus();
-  }));
+  if(gardenControlsEnabled()){
+    const controls=mk('garden diagnostics',false,openGardenControls);
+    controls.id='garden-controls-open';
+    btns.appendChild(controls);
+  }
   showScreen('garden');
-  startFirstRunBanner();
   _updateAnimalHud();
   _renderGardenActions();
   renderCanonicalGarden();
 }
 function afterAuth(){
-  garden?.setSeed(bundle?.garden_seed??12345);
   showArchive();
 }
 function openDue(){
@@ -1352,7 +1518,7 @@ async function handleUnlock(){
     await attempt.runtime.commitPersistence();
     assertCurrent();
     if(firstRun&&authenticatedBinding){
-      await kvSet(kFirst(authenticatedBinding),'1');assertCurrent();
+      await _receiptSet(kFirst(authenticatedBinding),'1');assertCurrent();
     }
     inp.value='';
     afterAuth();
@@ -1361,7 +1527,7 @@ async function handleUnlock(){
     purgeDecryptedState({showPreview:false});
     const previewEpoch=authEpoch;
     await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
-      persistent:false,expectedEpoch:previewEpoch,
+      persistent:false,expectedEpoch:previewEpoch,program:PREVIEW_PROGRAM,
     });
     errEl.textContent=isDevFixture?`error: ${err.message}`:'incorrect passphrase, or file modified';
     errEl.classList.add('on'); infoEl.classList.remove('on');
@@ -1406,8 +1572,11 @@ function _playDelivery(){
     _deliveryResolve=resolve;
     try{
       // SPEC §6.3: a bonded (tier 3) animal delivers; otherwise the letter-bird.
-      const bonded=Boolean(animalType&&animalTriggered&&animalTier>=3);
-      const frames=deliveryFramesFor(bonded?animalType:null,bonded?animalTier:0);
+      const deliveryAnimal=_bondedDeliveryAnimal();
+      const bonded=deliveryAnimal!==null;
+      const deliverySpecies=deliveryAnimal?.semantic_state?.species_id||null;
+      const deliveryTier=Number(deliveryAnimal?.semantic_state?.bond_tier||0);
+      const frames=deliveryFramesFor(deliverySpecies,deliveryTier);
       if(!Array.isArray(frames)||frames.length===0)throw new Error('delivery atlas is empty');
       const ov=document.createElement('div');
       ov.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:12;pointer-events:none;opacity:0;transition:opacity .4s;';
@@ -1462,7 +1631,7 @@ async function openLetter(msgIdx){
   if(isFirstRead){
     readIds.add(msg.id);
     if(!authenticatedBinding)throw new Error('authenticated receipt binding is unavailable');
-    await kvSet(kRead(authenticatedBinding,msg.id),'1');
+    await _receiptSet(kRead(authenticatedBinding,msg.id),'1');
   }
   await runAuthenticatedGardenProgram();
   dueIdxs=computeDue();
@@ -1495,7 +1664,8 @@ function showArchive(){
 }
 function buildArchive(){
   const msgs=bundle.messages||[],gifts=bundle.garden_gifts||[];
-  const today=new Date();today.setHours(0,0,0,0);
+  const reviewTime=gardenReviewTime();
+  const today=new Date(reviewTime===null?Date.now():reviewTime*1000);today.setHours(0,0,0,0);
   let html='';
   for(const msg of msgs){
     const presented=new Set(Array.isArray(gardenRuntime?.state?.program_state?.presented_letters)
@@ -1574,17 +1744,128 @@ function trapMemoryFocus(event){
 // ── Pretext letter body ───────────────────────────────────────────────
 const LETTER_FONT='13px "Times New Roman", Times, serif', LETTER_LH=21;
 let _resizeObs=null,_prepared=null,_preparedText='';
-function renderBody(text,el){
-  if(!prepareWithSegments||!layoutWithLines){
-    el.classList.add('fallback');
-    el.textContent=text;
-    requestAnimationFrame(()=>{
-      const lh=parseFloat(getComputedStyle(el).lineHeight)||LETTER_LH;
-      _lineCount=Math.max(text.split('\n').length,Math.round(el.scrollHeight/lh));
-      _updateLineCt();
-    });
-    return;
+function renderBodyFallback(text,el){
+  el.classList.add('fallback');
+  el.textContent=text;
+  requestAnimationFrame(()=>{
+    const lh=parseFloat(getComputedStyle(el).lineHeight)||LETTER_LH;
+    _lineCount=Math.max(text.split('\n').length,Math.round(el.scrollHeight/lh));
+    _updateLineCt();
+  });
+}
+function disablePretext(error){
+  console.warn('[viewer] bundled PreText layout failed; using browser text fallback',error);
+  prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
+  _prepared=null;_preparedText='';_textLayoutMode='fallback';
+}
+// Segment kinds that represent a stretchable gap between words.
+//
+// PreText labels an ordinary ' ' differently depending on the whiteSpace
+// profile it was prepared with. Under the default profile a space is 'space';
+// under 'pre-wrap' -- which this viewer uses, so that the author's own line
+// breaks and blank lines survive -- the very same character is classified
+// 'preserved-space' instead (see analysis.js classifySegmentBreakChar).
+// Matching only 'space' therefore matched nothing at all here, which is why
+// every line silently took the plain branch below and the letter never
+// appeared justified.
+const JUSTIFY_GAP_KINDS=new Set(['space','preserved-space']);
+
+// Build one justified line element, or return null if this line must not be
+// justified.
+//
+// prepared  the PreText prepare result (segments / kinds / widths, all indexed
+//           identically and absolute across the whole text)
+// line      one entry from layoutWithLines(), carrying {start,end} positions
+// width     the container width in CSS pixels that the line must fill
+// isLast    true for the final line of the body, which stays ragged
+//
+// Returns an HTMLDivElement, or null when the caller should fall back to a
+// plain left-aligned line.
+function buildJustifiedLine(prepared,line,width,isLast){
+  // The final line of a body is never justified -- stretching it would leave a
+  // short closing line spread edge to edge.
+  if(isLast)return null;
+
+  const startSeg=line.start.segmentIndex,endSeg=line.end.segmentIndex;
+
+  // A line's segment range is HALF-OPEN: buildLineTextFromRange iterates
+  // [startSeg, endSeg) over whole segments and then appends only a partial
+  // prefix of segments[endSeg] when endGraphemeIndex > 0. Slicing endSeg+1
+  // would therefore pull in text belonging to the *next* line.
+  //
+  // A nonzero start/end grapheme index means the line begins or ends midway
+  // through a segment (an over-long word split across lines). Per-segment
+  // widths describe whole segments, so they cannot measure those partial
+  // pieces. Rather than justify from wrong measurements, decline the line and
+  // let the caller render it plainly.
+  if(line.start.graphemeIndex>0||line.end.graphemeIndex>0)return null;
+
+  const kinds=prepared.kinds.slice(startSeg,endSeg);
+  const segs=prepared.segments.slice(startSeg,endSeg);
+  const widths=prepared.widths.slice(startSeg,endSeg);
+  if(!kinds.length)return null;
+
+  // A hard break inside the range means the author ended the line themselves.
+  // That line is the last line of its paragraph, so it stays ragged for the
+  // same reason the final line does.
+  if(kinds.includes('hard-break'))return null;
+
+  // Locate the first and last real word. Whitespace outside that span is
+  // leading indentation or a trailing space; neither may be stretched, or the
+  // text would be pushed away from the margin.
+  const firstWord=kinds.findIndex(k=>k==='text');
+  const lastWord=kinds.lastIndexOf('text');
+  if(firstWord<0||lastWord<=firstWord)return null;   // needs 2+ words to justify
+
+  // Only gaps strictly between the first and last word are stretchable.
+  const gaps=[];
+  for(let j=firstWord+1;j<lastWord;j++){
+    if(JUSTIFY_GAP_KINDS.has(kinds[j]))gaps.push(j);
   }
+  if(!gaps.length)return null;
+
+  // Leading indentation renders at its natural width and reduces the space the
+  // justified span has to fill.
+  let leadWidth=0;
+  for(let j=0;j<firstWord;j++)leadWidth+=widths[j];
+
+  // Everything from the first to the last word, split into the parts that keep
+  // their natural width and the gaps that absorb the slack.
+  let gapNatural=0,nonGap=0;
+  for(let j=firstWord;j<=lastWord;j++){
+    if(gaps.includes(j))gapNatural+=widths[j];
+    else nonGap+=widths[j];
+  }
+
+  // Solve for the per-gap addition that makes the rendered row exactly fill the
+  // container:  leadWidth + nonGap + gapNatural + gaps.length*extra == width
+  const extra=(width-leadWidth-nonGap-gapNatural)/gaps.length;
+
+  // Negative slack means the line already overflows, so stretching is wrong.
+  // A very large addition means a nearly empty line would be blown apart; cap
+  // it at three times a natural gap and decline beyond that, which keeps the
+  // ragged look where justification would look broken.
+  if(!(extra>=0))return null;
+  const naturalGap=gapNatural/gaps.length;
+  if(naturalGap>0&&extra>naturalGap*3)return null;
+
+  const d=document.createElement('div');
+  d.className='ll ll-j';
+  const gapSet=new Set(gaps);
+  for(let j=0;j<=lastWord;j++){
+    const sp=document.createElement('span');
+    if(gapSet.has(j)){
+      sp.className='sp';
+      sp.style.width=(widths[j]+extra)+'px';
+      sp.textContent=' ';
+    }else{
+      sp.textContent=segs[j];
+    }
+    d.appendChild(sp);
+  }
+  return d;
+}
+function renderBodyWithPretext(text,el){
   el.classList.remove('fallback');
   const w=el.clientWidth;if(!w)return;
   if(text!==_preparedText){
@@ -1598,41 +1879,24 @@ function renderBody(text,el){
   for(let i=0;i<lines.length;i++){
     const line=lines[i];
     const isLast=i===lines.length-1;
-    try{
-      const startSeg=line.start.segmentIndex,endSeg=line.end.segmentIndex;
-      const segs=_prepared.segments.slice(startSeg,endSeg+1);
-      const kinds=_prepared.kinds.slice(startSeg,endSeg+1);
-      const widths=_prepared.widths.slice(startSeg,endSeg+1);
-      const wordCount=kinds.filter(k=>k==='text').length;
-      const spaceCount=kinds.filter(k=>k==='space').length;
-      if(!isLast&&wordCount>1&&spaceCount>0){
-        // Justified line: distribute extra space across inter-word gaps
-        const wordWidthSum=widths.reduce((s,ww,j)=>kinds[j]==='text'?s+ww:s,0);
-        const extraPerSpace=(w-wordWidthSum)/spaceCount;
-        if(extraPerSpace>=0){
-          const d=document.createElement('div');d.className='ll ll-j';
-          for(let j=0;j<segs.length;j++){
-            const sp=document.createElement('span');
-            if(kinds[j]==='space'){
-              sp.className='sp';
-              sp.style.width=(widths[j]+extraPerSpace)+'px';
-              sp.textContent=' ';
-            }else{
-              sp.textContent=segs[j];
-            }
-            d.appendChild(sp);
-          }
-          frag.appendChild(d);
-          continue;
-        }
-      }
-    }catch(_){}
-    // Fallback: plain left-aligned line
+    let justified=null;
+    // A measurement fault must never cost the reader the letter itself, so a
+    // failure here degrades this one line to plain text rather than throwing.
+    try{justified=buildJustifiedLine(_prepared,line,w,isLast);}
+    catch(_){justified=null;}
+    if(justified){frag.appendChild(justified);continue;}
+    // Plain left-aligned line: last lines, paragraph ends, single-word lines,
+    // and anything justification declined.
     const d=document.createElement('div');d.className='ll';d.textContent=line.text;
     frag.appendChild(d);
   }
   el.replaceChildren(frag);
   _updateLineCt();
+}
+function renderBody(text,el){
+  if(!prepareWithSegments||!layoutWithLines){renderBodyFallback(text,el);return;}
+  try{renderBodyWithPretext(text,el);}
+  catch(error){disablePretext(error);renderBodyFallback(text,el);}
 }
 function _updateLineCt(){
   const lc=document.getElementById('lm-linect');
@@ -1710,10 +1974,10 @@ async function _arcSeed(arc){
   const msgs=bundle.messages||[];
   if(arc==='postcomplete'){
     // Fixture harness may seed letter history; Garden state still uses commands.
-    for(const m of msgs){readIds.add(m.id);await kvSet(kRead(binding,m.id),'1');}
+    for(const m of msgs){readIds.add(m.id);await _receiptSet(kRead(binding,m.id),'1');}
   }else if(arc==='waiting'){
     // Clear letter history only; canonical Garden persistence is not bypassed.
-    for(const m of msgs){readIds.delete(m.id);await kvSet(kRead(binding,m.id),'');}
+    for(const m of msgs){readIds.delete(m.id);await _receiptSet(kRead(binding,m.id),'');}
     visitCount=1;gardenProgramState.visit_total=1;
   }
 }
@@ -1725,8 +1989,6 @@ async function handleFile(file,options={}){
     await loadBundle(file,options);
     const arc=new URLSearchParams(location.search).get('arc');
     if(arc&&isDevFixture)await _arcSeed(arc);
-    garden.setSeed(PREVIEW_SEED);
-    garden.setAnimalData(_animalData());
     showGarden();
   }catch(err){
     document.getElementById('err-h').textContent='could not open this file';
@@ -1757,7 +2019,7 @@ function purgeDecryptedState({showPreview=true}={}){
   authenticated=false;authenticatedBinding=null;
   decoded={};gardenProgram=null;gardenProgramState={applied_occurrences:[]};
   gardenRuntime=null;readIds=new Set();giftDiscovered={};dueIdxs=[];curMsg=null;
-  visitCount=0;firstRun=true;postComplete=false;animalTriggered=false;animalTier=0;
+  visitCount=0;firstRun=true;postComplete=false;
   for(const gift of bundle?.garden_gifts||[])delete gift._sentiment;
   _cancelDelivery();teardownResize();closeMemory();
   document.getElementById('mem-type')?.replaceChildren();
@@ -1768,13 +2030,15 @@ function purgeDecryptedState({showPreview=true}={}){
   const input=document.getElementById('pp-input');if(input){input.value='';input.disabled=false;}
   const unlock=document.getElementById('btn-unlock');if(unlock)unlock.disabled=false;
   if(showPreview&&bundle&&!standaloneMode){
-    garden?.setSeed(PREVIEW_SEED);garden?.setAnimalData(_animalData());showGarden();
+    showGarden();
   }
 }
 async function restoreGenericPreview(){
   if(!bundle||standaloneMode)return;
-  await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{persistent:false});
-  garden?.setSeed(PREVIEW_SEED);garden?.setAnimalData(_animalData());showGarden();
+  await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
+    persistent:false,program:PREVIEW_PROGRAM,
+  });
+  showGarden();
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────
@@ -1833,10 +2097,7 @@ function wire(){
       }
     };
   });
-  document.getElementById('garden-controls-close').onclick=()=>{
-    document.getElementById('garden-controls').classList.remove('open');
-    document.querySelector('#hud-btns button:last-child')?.focus();
-  };
+  document.getElementById('garden-controls-close').onclick=closeGardenControls;
   document.getElementById('sky-opt-in').onclick=async event=>{
     event.currentTarget.disabled=true;
     try{
@@ -1924,13 +2185,23 @@ function wire(){
     const nativeButtonActivation=e.target?.tagName==='BUTTON'&&(e.key==='Enter'||e.key===' ');
     if(gardenReady&&!typing&&!nativeButtonActivation&&gardenRuntime){
       const focus=gardenRuntime.focusedObject();
+      if(e.key==='['||e.key===']'){
+        e.preventDefault();
+        await focusGardenObject(e.key==='['?'previous':'next',e,'keyboard-navigation');
+        return;
+      }
+      if(e.key==='Enter'&&focus){
+        e.preventDefault();gardenContextObjectId=focus.object_id;
+        await dispatchGardenUi('browser_keyboard','open_actions',{
+          target_id:focus.object_id,metadata:{key:e.key,code:e.code,repeat:e.repeat},
+        });
+        _renderGardenActions();
+        return;
+      }
       const bindings={
-        '[':['move_focus',{args:{direction:'previous'}}],
-        ']':['move_focus',{args:{direction:'next'}}],
         ArrowLeft:['pan',{args:{dx:-1,dy:0}}],ArrowRight:['pan',{args:{dx:1,dy:0}}],
-        ArrowUp:['pan',{args:{dx:0,dy:-1}}],ArrowDown:['pan',{args:{dx:0,dy:1}}],
+        ArrowUp:['pan',{args:{dx:0,dy:-20}}],ArrowDown:['pan',{args:{dx:0,dy:20}}],
         g:['inspect',{target_id:focus?.object_id||null}],
-        Enter:['open_actions',{target_id:focus?.object_id||null}],
         t:['tend',{target_id:focus?.object_id||null,args:{care_action:'water'}}],
         f:['feed',{target_id:focus?.object_id||null}],p:['play',{target_id:focus?.object_id||null}],
         c:['collect',{target_id:focus?.object_id||null}],j:['open_journal',{}],
@@ -1941,29 +2212,8 @@ function wire(){
       if(binding){e.preventDefault();await dispatchGardenUi('browser_keyboard',binding[0],{
         ...(binding[1]||{}),metadata:{key:e.key,code:e.code,repeat:e.repeat}});}
     }
-    // Shift+A = dev: cycle animal types/tiers (dev fixture only)
-    if(e.key==='A'&&isDevFixture){e.preventDefault();devCycleAnimal();}
     // ── Dev-only keys (all gated) ──────────────────────────────────
     if(!isDevFixture)return;
-    // Shift+R : trigger feed reaction without mutating trust
-    if(e.key==='R'){
-      e.preventDefault();
-      const ad=garden?.state?.animalData;
-      if(ad&&ad.triggered){
-        garden.triggerAnimalFeedReaction({type:ad.type,tier:ad.tier});
-        console.log('[dev] feed reaction →',ad.type,ad.tier);
-      }else{
-        console.log('[dev] no active animal to react');
-      }
-    }
-    // Shift+N : spawn ambient bird burst
-    if(e.key==='N'){
-      e.preventDefault();
-      if(garden){
-        garden.spawnAmbientBirdBurst();
-        console.log('[dev] ambient birds spawned');
-      }
-    }
     // < / > : cycle seasons + time-of-day at runtime
     if(e.key===','||e.key==='.'){
       e.preventDefault();
@@ -1978,10 +2228,15 @@ function wire(){
     // Shift+D : dump state to console
     if(e.key==='D'){
       e.preventDefault();
+      const projectedAnimal=_relationshipAnimal();
       console.log('[dev] state',{
         season:getSeason(),cellWidth:garden?.cellWidth,cellHeight:garden?.cellHeight,
         cols:garden?.state?.cols,rows:garden?.state?.rows,
-        visitCount,animalType,animalTier,animalTriggered,
+        visitCount,animal:projectedAnimal?{
+          object_id:projectedAnimal.object_id,
+          species_id:projectedAnimal.semantic_state?.species_id||null,
+          bond_tier:Number(projectedAnimal.semantic_state?.bond_tier||0),
+        }:null,
         giftDiscovered:Object.keys(giftDiscovered).filter(k=>giftDiscovered[k]),
         postComplete,dueIdxs:dueIdxs.length,_colorMode
       });
@@ -1990,13 +2245,6 @@ function wire(){
     if(e.key==='B'){e.preventDefault();_devCycleColorMode();}
     // Shift+G : toggle grid overlay
     if(e.key==='G'){e.preventDefault();_devToggleGrid();}
-    // Shift+P : toggle post-complete state
-    if(e.key==='P'){
-      e.preventDefault();
-      postComplete=!postComplete;
-      if(garden)garden.setPostComplete(postComplete);
-      console.log('[dev] postComplete →',postComplete);
-    }
     // Shift+F : re-trigger first-run banner
     if(e.key==='F'){
       e.preventDefault();
@@ -2050,11 +2298,16 @@ async function init(){
     garden=new CanonicalGardenRenderer(document.getElementById('g'),{
       prefersReducedMotion:reducedMotionQuery.matches,
       readerRegion,
+      onTheme:applyGardenPageTheme,
       onSelect:async (object,event)=>{
         const modality=inputModalityFromBrowserEvent(event);
+        gardenContextObjectId=object.object_id;
         await dispatchGardenUi(modality,'move_focus',{args:{target_id:object.object_id},metadata:{source:'canonical-raster'}});
-        await dispatchGardenUi(modality,'open_actions',{target_id:object.object_id});
-        document.querySelector('#garden-action-sheet button')?.focus();
+        if(gardenControlsEnabled()){
+          await dispatchGardenUi(modality,'open_actions',{target_id:object.object_id});
+          openGardenControls();
+          document.querySelector('#garden-action-sheet button')?.focus();
+        }
       },
     });
     garden.startPresentation();
