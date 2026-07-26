@@ -16,6 +16,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The policy logic itself lives in scripts/check_attribution.sh so that
+      # this workflow and the local pre-push hook run byte-identical checks and
+      # cannot drift apart. That script is also what makes the policy runnable
+      # for free on a developer machine, instead of only on a metered runner.
       - name: Reject prohibited commit attribution
         shell: bash
         env:
@@ -27,6 +31,11 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Choose the narrowest range that still covers everything new:
+          #  - pull_request: just the commits the PR adds;
+          #  - push onto an existing branch: just what the push added;
+          #  - first push of a branch (BEFORE_SHA is all zeros): the head
+          #    commit and its ancestry, since there is no "before" point.
           if [[ "$EVENT_NAME" == "pull_request" ]]; then
             commit_range="${PR_BASE_SHA}..${PR_HEAD_SHA}"
           elif [[ -n "$BEFORE_SHA" && ! "$BEFORE_SHA" =~ ^0+$ ]] \
@@ -36,23 +45,4 @@ jobs:
             commit_range="$CURRENT_SHA"
           fi
 
-          identity_pattern='(^|[^[:alnum:]_])(claude|codex|agent)([^[:alnum:]_]|$)|@(anthropic|openai)\.com'
-          trailer_pattern='^[[:space:]]*((co-)?authored-by|author|committer)[[:space:]]*:.*(claude|codex|agent)|^[[:space:]]*(claude|codex|agent)(-session)?[[:space:]]*:'
-          failed=0
-
-          while IFS= read -r commit_sha; do
-            identities="$(git show -s --format='%an <%ae>%n%cn <%ce>' "$commit_sha")"
-            message="$(git show -s --format='%B' "$commit_sha")"
-
-            if printf '%s\n' "$identities" | grep -Eiq "$identity_pattern"; then
-              printf 'Blocked commit %s: prohibited author or committer identity.\n' "$commit_sha" >&2
-              failed=1
-            fi
-
-            if printf '%s\n' "$message" | grep -Eiq "$trailer_pattern"; then
-              printf 'Blocked commit %s: prohibited attribution trailer or session metadata.\n' "$commit_sha" >&2
-              failed=1
-            fi
-          done < <(git rev-list "$commit_range")
-
-          exit "$failed"
+          scripts/check_attribution.sh "$commit_range"
