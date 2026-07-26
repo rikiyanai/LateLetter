@@ -13,4 +13,9 @@ This viewer is historical visual evidence only. Production must not import it
 or restore its renderer-local gameplay, collision, persistence, or hit-testing
 ownership.
 
+This directory intentionally contains only the unique viewer blob, so its demo
+buttons cannot load companion files here. The complete sanitized runnable
+repository snapshot is preserved separately at
+`archive/legacy-repo-7b9389d/`.
+
 Source blob: `59dc49a820d07d1b6a1741e17aafe6d075f6c99d`

@@ -75,9 +75,15 @@ the in-lineage pre-removal tree at `526ab9e`; its two question-bank paths and
 all but six differing blobs remain reachable from current `main` history. Of
 the six unique blobs, only the older `viewer-bnw.html` is safe, unique code.
 The unique plaintext source, two related bundles, and passcode-bearing README
-are deliberately excluded. The unique historical failure log is superseded by
-the current log. The safe viewer is preserved with its source blob ID under
-`archive/legacy-garden-7b9389d/`; the orphan branch must never be merged.
+remain excluded. The exact safe viewer is preserved with its source blob ID
+under `archive/legacy-garden-7b9389d/`.
+
+After operator clarification that “legacy” means the complete runnable
+codebase state rather than the unique viewer alone, a sanitized full snapshot
+is also preserved under `archive/legacy-repo-7b9389d/`: 85 paths match the
+orphan commit byte-for-byte, while three explicitly synthetic compatible v1
+artifacts replace the excluded source/bundles and archive-owned provenance
+documents the boundary. The orphan branch is still never merged.
 
 ## Manual reconstruction result
 

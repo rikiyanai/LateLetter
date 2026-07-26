@@ -1,0 +1,1254 @@
+{
+  "bank_version": "v0",
+  "schema_version": 1,
+  "description": "Domain-specific question pools for Phase 1 prototype. Layer 2 of the offline selector. Three pool types: occasion (birthday/wedding/graduation/after-my-death/whenever-you-need-this), relationship (child/partner/friend/sibling), and heavy-gated domains (apology/regret/fear/spiritual/permission/grief). Heavy pools require at least one prior lower-intensity pass this session or explicit author opt-in.",
+  "notes": [
+    "Companion to question_bank_seed.v0.json (universal base set).",
+    "Intensity scale: 1=easy/positive, 2=reflective, 3=heavy (grief/apology/fear) — gated.",
+    "All intensity-3 questions are gated. Never surface them as session openers.",
+    "No question may assume faith, parenthood, happy family structure, or resolved conflict.",
+    "Do not mutate at runtime. User-local state lives in ~/.lateletter/author/ only.",
+    "review_status: draft — not editorially reviewed, prototype only."
+  ],
+  "pools": {
+
+    "occasion": {
+
+      "birthday": {
+        "description": "For messages tied to a specific birthday. Focus: who this person is at this age, what you see in them, memories of who they've been, hopes for where they're going.",
+        "questions": [
+          {
+            "question_id": "occ-bdy-001",
+            "prompt": "What do you see in them now that you didn't know to look for when they were younger?",
+            "domain": "relationship",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-002",
+            "prompt": "What do you hope they feel about themselves at this age?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-003",
+            "prompt": "What's something about who they've become that fills you with pride — not an achievement, just who they are?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-004",
+            "prompt": "What do you remember about them at a much earlier age that still feels vivid to you?",
+            "domain": "memory",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-005",
+            "prompt": "What do you want them to believe about their own future?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-006",
+            "prompt": "Is there something they were once unsure of about themselves that has resolved — something they got right?",
+            "domain": "relationship",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-007",
+            "prompt": "What advice would you give them for the decade ahead?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-008",
+            "prompt": "What would you want to celebrate about them if you could be there?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-009",
+            "prompt": "What has watching them grow — or watching them become who they are — meant to you?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-bdy-010",
+            "prompt": "If they're reading this on a birthday without you, what do you most want them to feel?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["birthday"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Good closer for birthday messages."]
+          }
+        ]
+      },
+
+      "wedding": {
+        "description": "For messages tied to a wedding or commitment ceremony. Focus: what partnership and love mean to you, what you see in this relationship, hopes for their shared life.",
+        "questions": [
+          {
+            "question_id": "occ-wdg-001",
+            "prompt": "What do you hope for their partnership — not the romance, but the daily texture of a shared life?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-002",
+            "prompt": "What do you know about love that took you years to understand?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-003",
+            "prompt": "What do you see in them that makes you believe they're ready for this?",
+            "domain": "relationship",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-004",
+            "prompt": "What do you most want them to remember when things are hard between them?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-005",
+            "prompt": "Is there something you'd want to tell them about choosing a person over and over — not once, but every day?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-006",
+            "prompt": "What have you learned about forgiveness in long relationships?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-007",
+            "prompt": "What do you hope they protect in each other?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-008",
+            "prompt": "What do you think makes a lasting partnership?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wdg-009",
+            "prompt": "If you could give them one piece of advice that took you a long time to earn, what would it be?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["wedding"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          }
+        ]
+      },
+
+      "graduation": {
+        "description": "For messages tied to a graduation or major transition. Focus: becoming, what's ahead, advice from a different vantage point, what you see in them as they step into what's next.",
+        "questions": [
+          {
+            "question_id": "occ-grd-001",
+            "prompt": "What do you see ahead for them that they might not see yet?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-grd-002",
+            "prompt": "What do you hope they know about themselves as they step into what's next?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-grd-003",
+            "prompt": "What do you wish someone had told you at this moment in your own life?",
+            "domain": "wisdom",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-grd-004",
+            "prompt": "What do you want them to remember about how hard they worked to get here?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-grd-005",
+            "prompt": "What do you hope they hold onto, even as everything changes?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-grd-006",
+            "prompt": "Is there something about the world they're entering that you want them to be prepared for?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-grd-007",
+            "prompt": "What do you believe about failure that you'd want them to carry into this next chapter?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-grd-008",
+            "prompt": "What does success mean to you, and how do you hope they define it for themselves?",
+            "domain": "values",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["graduation"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          }
+        ]
+      },
+
+      "after_my_death": {
+        "description": "For messages explicitly intended to arrive after the author has died. The heaviest occasion type. Focus: farewell, permission-giving, what to carry forward, how to grieve. Mix of intensity 2 and 3.",
+        "questions": [
+          {
+            "question_id": "occ-dth-001",
+            "prompt": "What do you most want them to know about how you feel about your life?",
+            "domain": "voice",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Good opener for this occasion type."]
+          },
+          {
+            "question_id": "occ-dth-002",
+            "prompt": "Is there anything you want to say about how you hope they grieve — or when they stop?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-dth-003",
+            "prompt": "What do you want them to carry forward from knowing you?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-dth-004",
+            "prompt": "What do you want them to know about what the time you had with them meant?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-dth-005",
+            "prompt": "What would you want them to tell people they love about you — not a eulogy, just something true?",
+            "domain": "voice",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-dth-006",
+            "prompt": "If they feel your absence most on ordinary days, what do you want them to know then?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-dth-007",
+            "prompt": "Is there anything you'd want them to do — or give themselves permission to do — after you're gone?",
+            "domain": "permission",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": ["occ-dth-001"],
+            "follow_up_hints": ["Gated. Only after at least one lower-intensity exchange in this session."]
+          },
+          {
+            "question_id": "occ-dth-008",
+            "prompt": "What do you hope they don't spend too long on — grief, guilt, or feeling they should have done something differently?",
+            "domain": "permission",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": ["occ-dth-001"],
+            "follow_up_hints": ["Gated. Permission-releasing framing — author absolves, not burdens."]
+          },
+          {
+            "question_id": "occ-dth-009",
+            "prompt": "What do you want them to know about who they are — what they are capable of — without you?",
+            "domain": "hope",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": ["occ-dth-001"],
+            "follow_up_hints": ["Gated. One of the most important things a letter like this can say."]
+          }
+        ]
+      },
+
+      "whenever_you_need_this": {
+        "description": "For messages with no fixed date — delivered whenever the recipient opens it or triggers it. Focus: comfort, presence, reassurance in hard moments.",
+        "questions": [
+          {
+            "question_id": "occ-wnu-001",
+            "prompt": "If they're struggling right now, what do you want them to hear from you?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wnu-002",
+            "prompt": "What do you want them to remember about their own strength?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wnu-003",
+            "prompt": "What do you most want them to know when things feel too hard?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wnu-004",
+            "prompt": "What do you hope they allow themselves when they're hurting — rest, anger, asking for help?",
+            "domain": "permission",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wnu-005",
+            "prompt": "What do you know about hard times that you'd want them to hold onto?",
+            "domain": "wisdom",
+            "intensity": 1,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wnu-006",
+            "prompt": "If they're doubting themselves right now, what truth about them would you want them to come back to?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "occ-wnu-007",
+            "prompt": "Is there something from their past — something they've already survived — that you'd want them to draw on?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          }
+        ]
+      }
+
+    },
+
+    "relationship": {
+
+      "child": {
+        "description": "For messages to the author's child (any age). Focus: parenthood, what watching them grow has meant, what you see in them, hopes for their life. Does not assume a happy family structure — all prompts work for complicated relationships too.",
+        "questions": [
+          {
+            "question_id": "rel-chl-001",
+            "prompt": "What was it like to first know them — to see who they were going to be?",
+            "domain": "memory",
+            "intensity": 1,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-002",
+            "prompt": "What do you hope you gave them — not things, but something they carry?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-003",
+            "prompt": "What do you most want them to understand about how much they are loved?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-004",
+            "prompt": "What do you see in them now that you'd want them to see in themselves?",
+            "domain": "relationship",
+            "intensity": 1,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-005",
+            "prompt": "Is there something parenthood surprised you with — something you didn't expect to learn?",
+            "domain": "voice",
+            "intensity": 2,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-006",
+            "prompt": "What do you hope they know about the kind of person they are?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-007",
+            "prompt": "What do you hope they carry forward from your family — the good parts?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-008",
+            "prompt": "What do you want them to know about mistakes — yours, theirs — and whether they define a person?",
+            "domain": "wisdom",
+            "intensity": 2,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-chl-009",
+            "prompt": "What do you hope for them as a parent someday, if that becomes part of their life?",
+            "domain": "hope",
+            "intensity": 1,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": ["assumes_parenthood"],
+            "prerequisites": null,
+            "follow_up_hints": ["Only use if author has indicated child wants children or hasn't said either way."]
+          },
+          {
+            "question_id": "rel-chl-010",
+            "prompt": "Is there anything about your own childhood — something that shaped you — you'd want them to understand?",
+            "domain": "voice",
+            "intensity": 3,
+            "relationship_tags": ["child"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Gated. Can surface unresolved family history. Only after lower-intensity pass."]
+          }
+        ]
+      },
+
+      "partner": {
+        "description": "For messages to a spouse, partner, or long-term intimate partner. Focus: intimacy, the private texture of a shared life, what being loved by them has meant, what you hope for their future. Does not assume a happy marriage.",
+        "questions": [
+          {
+            "question_id": "rel-prt-001",
+            "prompt": "What does it mean to you to have been loved by them?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-002",
+            "prompt": "What have they taught you about yourself?",
+            "domain": "relationship",
+            "intensity": 2,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-003",
+            "prompt": "What do you most want them to know about what your time together has meant?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-004",
+            "prompt": "What do you love about how they move through the world — the way they are with people, with life?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-005",
+            "prompt": "What do you want them to remember about the two of you at your best?",
+            "domain": "memory",
+            "intensity": 2,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-006",
+            "prompt": "Is there something you've always wanted to say about how they've changed you?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-007",
+            "prompt": "Is there a way they've made you better that they might not even know about?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-008",
+            "prompt": "What do you want them to know about what they've given you — not done for you, but given you?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-prt-009",
+            "prompt": "What do you hope they allow themselves after you — happiness, connection, a life that is fully theirs?",
+            "domain": "permission",
+            "intensity": 3,
+            "relationship_tags": ["partner"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": ["rel-prt-001"],
+            "follow_up_hints": ["Gated. The most important permission a partner can give. Only after lower-intensity pass."]
+          }
+        ]
+      },
+
+      "friend": {
+        "description": "For messages to a close friend. Focus: chosen connection, what their friendship has meant, what you'd want them to carry forward. Works for lifelong friends and newer but important ones.",
+        "questions": [
+          {
+            "question_id": "rel-fnd-001",
+            "prompt": "What has this friendship meant to you?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-fnd-002",
+            "prompt": "What do you appreciate most about who they are as a person — not what they do, just who they are?",
+            "domain": "relationship",
+            "intensity": 1,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-fnd-003",
+            "prompt": "What do you want them to know about how they've shown up for you?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-fnd-004",
+            "prompt": "Is there something about your friendship that you've always hoped they understood?",
+            "domain": "relationship",
+            "intensity": 2,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-fnd-005",
+            "prompt": "What do you hope they know about the kind of friend they are?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-fnd-006",
+            "prompt": "What would you want them to remember about your time together?",
+            "domain": "memory",
+            "intensity": 1,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-fnd-007",
+            "prompt": "What do you most want them to carry forward from knowing you?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-fnd-008",
+            "prompt": "What do you wish you'd said more often?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["friend"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Good closer for friend letters. Opens space for anything unsaid."]
+          }
+        ]
+      },
+
+      "sibling": {
+        "description": "For messages to a sibling. Focus: shared history, what siblinghood has meant, the family you came from, what you hope they carry. Does not assume a close or uncomplicated relationship.",
+        "questions": [
+          {
+            "question_id": "rel-sib-001",
+            "prompt": "What do you remember about growing up together that you want them to know still matters to you?",
+            "domain": "memory",
+            "intensity": 1,
+            "relationship_tags": ["sibling"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-sib-002",
+            "prompt": "What have they always understood about you that others haven't?",
+            "domain": "relationship",
+            "intensity": 2,
+            "relationship_tags": ["sibling"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-sib-003",
+            "prompt": "What do you most appreciate about who they are — as a sibling, as a person?",
+            "domain": "love",
+            "intensity": 1,
+            "relationship_tags": ["sibling"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-sib-004",
+            "prompt": "What do you hope they know about how you've felt about them, even when it was hard to say?",
+            "domain": "love",
+            "intensity": 2,
+            "relationship_tags": ["sibling"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-sib-005",
+            "prompt": "What would you want to tell them about family — what it's meant to you, what you hope it means to them?",
+            "domain": "values",
+            "intensity": 2,
+            "relationship_tags": ["sibling"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-sib-006",
+            "prompt": "What do you want them to carry forward from your time as siblings?",
+            "domain": "hope",
+            "intensity": 2,
+            "relationship_tags": ["sibling"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "rel-sib-007",
+            "prompt": "Is there something from your shared history — something between the two of you — you'd want to name out loud in this letter?",
+            "domain": "relationship",
+            "intensity": 3,
+            "relationship_tags": ["sibling"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": ["rel-sib-001"],
+            "follow_up_hints": ["Gated. Can surface unresolved family dynamics. Use only after lower-intensity pass."]
+          }
+        ]
+      }
+
+    },
+
+    "heavy_gated": {
+
+      "apology": {
+        "description": "Gated pool for authors who want to acknowledge harm or ask forgiveness. All questions intensity 3. Only surfaced after explicit author opt-in or after at least one lower-intensity pass. No question implies the author must apologize — framing is permissive, not directive.",
+        "questions": [
+          {
+            "question_id": "hvy-apl-001",
+            "prompt": "Is there something you've done or said — or failed to do — that you'd want to acknowledge in this letter?",
+            "domain": "apology",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Permissive framing — author may say no. Do not follow with pressure."]
+          },
+          {
+            "question_id": "hvy-apl-002",
+            "prompt": "Is there something between you that you've hoped, over the years, they could forgive?",
+            "domain": "apology",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-apl-003",
+            "prompt": "Is there a moment you'd go back and handle differently, and do you want to say so to them?",
+            "domain": "apology",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-apl-004",
+            "prompt": "What do you want them to know about how you see your own failures — not to excuse them, but to own them?",
+            "domain": "apology",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-apl-005",
+            "prompt": "If this letter holds space for an apology, what would you most want to say?",
+            "domain": "apology",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Most direct apology prompt. Use after author has already opened up in this domain."]
+          }
+        ]
+      },
+
+      "regret": {
+        "description": "Gated pool for authors processing regret — time not given, words not said, choices not made. All questions intensity 3. Framing is honest, not guilt-inducing.",
+        "questions": [
+          {
+            "question_id": "hvy-reg-001",
+            "prompt": "Is there something you didn't do — time you didn't give, words you didn't say — that you want to name?",
+            "domain": "regret",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-reg-002",
+            "prompt": "What do you wish had been different, even if it wasn't anyone's fault?",
+            "domain": "regret",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-reg-003",
+            "prompt": "What do you most regret about the time you had together, and what do you want them to know about that?",
+            "domain": "regret",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Use last in this domain. Author must have already opened up."]
+          }
+        ]
+      },
+
+      "fear": {
+        "description": "Gated pool for addressing the recipient's fears about the future, or the author's fears about leaving. All questions intensity 3 except one. Framing addresses the fear directly rather than avoiding it.",
+        "questions": [
+          {
+            "question_id": "hvy-fer-001",
+            "prompt": "Is there something you're afraid this person will struggle with after you're gone?",
+            "domain": "fear",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-fer-002",
+            "prompt": "Is there a fear you imagine they carry — something you'd want to speak to directly in this letter?",
+            "domain": "fear",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-fer-003",
+            "prompt": "What do you want them to know about facing the things they're most afraid of?",
+            "domain": "fear",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Lowest-intensity entry in this pool. Safe to surface slightly earlier."]
+          }
+        ]
+      },
+
+      "spiritual": {
+        "description": "Gated pool for meaning, legacy, and belief. No faith assumption — questions work for religious, secular, agnostic, and questioning authors. Intensity 2-3.",
+        "questions": [
+          {
+            "question_id": "hvy-spr-001",
+            "prompt": "What do you find yourself returning to when you think about what matters most?",
+            "domain": "spiritual",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Lowest-intensity entry. Safe opener for this pool."]
+          },
+          {
+            "question_id": "hvy-spr-002",
+            "prompt": "What do you want them to know about what has given your life meaning?",
+            "domain": "spiritual",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-spr-003",
+            "prompt": "What do you hope endures from your life — not achievements, but something more essential?",
+            "domain": "spiritual",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-spr-004",
+            "prompt": "What do you believe about what happens after we die — not necessarily as doctrine, just as feeling or hope?",
+            "domain": "spiritual",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": ["hvy-spr-001"],
+            "follow_up_hints": ["Gated. Open-ended — secular and religious answers both valid and honored."]
+          },
+          {
+            "question_id": "hvy-spr-005",
+            "prompt": "Is there anything you believe about the nature of things — however you'd describe it — that you'd want them to carry?",
+            "domain": "spiritual",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": ["hvy-spr-001"],
+            "follow_up_hints": ["Gated. Deliberately vague framing preserves author's own language."]
+          }
+        ]
+      },
+
+      "permission": {
+        "description": "Gated pool for explicit permission-giving — releasing the recipient from grief, guilt, loyalty, or expectation. Intensity 2-3. One of the most important functions a letter like this can serve.",
+        "questions": [
+          {
+            "question_id": "hvy-prm-001",
+            "prompt": "What do you want them to know about your wishes for their happiness — without condition?",
+            "domain": "permission",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Lowest-intensity entry. Safe opener for this pool."]
+          },
+          {
+            "question_id": "hvy-prm-002",
+            "prompt": "Is there anything you want to explicitly give them permission to do — be happy, find love again, build a new life?",
+            "domain": "permission",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": ["hvy-prm-001"],
+            "follow_up_hints": ["Gated. Most direct permission-giving prompt. Use after hvy-prm-001."]
+          },
+          {
+            "question_id": "hvy-prm-003",
+            "prompt": "Is there something they might feel guilty about — something you want to actively release them from?",
+            "domain": "permission",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": ["hvy-prm-001"],
+            "follow_up_hints": ["Gated. Covers guilt from the relationship, not just from death."]
+          },
+          {
+            "question_id": "hvy-prm-004",
+            "prompt": "What would you want them to give themselves permission for that you're afraid they won't?",
+            "domain": "permission",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": ["hvy-prm-001"],
+            "follow_up_hints": ["Gated. Author projects forward — what does this person hold themselves back from?"]
+          }
+        ]
+      },
+
+      "grief": {
+        "description": "Gated pool for what the author wants the recipient to know about grief — their own grief, and grief as a process. Intensity 2-3. Informed by hospice and palliative care framing: honest, not prescriptive.",
+        "questions": [
+          {
+            "question_id": "hvy-grf-001",
+            "prompt": "What do you know about getting through loss — from losing others — that you'd want to pass on?",
+            "domain": "grief",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["universal"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": ["Lowest-intensity entry. Safe opener for this pool."]
+          },
+          {
+            "question_id": "hvy-grf-002",
+            "prompt": "What do you hope they do in the ordinary days when they miss you most?",
+            "domain": "grief",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death", "whenever you need this"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          },
+          {
+            "question_id": "hvy-grf-003",
+            "prompt": "What do you want them to know about how you feel about your own death?",
+            "domain": "grief",
+            "intensity": 3,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": ["hvy-grf-001"],
+            "follow_up_hints": ["Gated. One of the most personal and important things this letter can say — if the author is at peace, this communicates it."]
+          },
+          {
+            "question_id": "hvy-grf-004",
+            "prompt": "What do you want them to know about grief — not a prescription, but what you hope for them as they move through it?",
+            "domain": "grief",
+            "intensity": 2,
+            "relationship_tags": ["general"],
+            "occasion_tags": ["after my death"],
+            "exclusion_flags": [],
+            "prerequisites": null,
+            "follow_up_hints": []
+          }
+        ]
+      }
+
+    }
+
+  },
+
+  "editorial_metadata": {
+    "total_questions": 101,
+    "pool_counts": {
+      "occasion.birthday": 10,
+      "occasion.wedding": 9,
+      "occasion.graduation": 8,
+      "occasion.after_my_death": 9,
+      "occasion.whenever_you_need_this": 7,
+      "relationship.child": 10,
+      "relationship.partner": 9,
+      "relationship.friend": 8,
+      "relationship.sibling": 7,
+      "heavy_gated.apology": 5,
+      "heavy_gated.regret": 3,
+      "heavy_gated.fear": 3,
+      "heavy_gated.spiritual": 5,
+      "heavy_gated.permission": 4,
+      "heavy_gated.grief": 4
+    },
+    "intensity_distribution": {"1": 35, "2": 47, "3": 19},
+    "gated_count": 19,
+    "exclusion_flag_examples": ["assumes_parenthood"],
+    "review_status": "draft — not editorially reviewed, prototype only"
+  }
+}

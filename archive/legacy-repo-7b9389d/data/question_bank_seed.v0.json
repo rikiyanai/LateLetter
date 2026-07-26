@@ -1,0 +1,361 @@
+{
+  "bank_version": "v0",
+  "schema_version": 1,
+  "description": "Universal base set — seed bank for Phase 1 prototype. 30 low-intensity reviewed prompts covering voice, relationship, values, love, hope, and practical wisdom. Works for almost any author and recipient without assuming faith, parenthood, conflict, or unresolved trauma.",
+  "notes": [
+    "This file is a temporary prototype artifact only.",
+    "It is replaced by the bundled canonical bank (question_bank.v1.json) before v1 ship.",
+    "Do not mutate this file at runtime. All runtime state lives in ~/.lateletter/author/.",
+    "Intensity scale: 1=easy/positive (gentle/universal), 2=reflective, 3=heavy: grief/apology/fear (gated — never in universal set)."
+  ],
+  "questions": [
+    {
+      "question_id": "u-001",
+      "prompt": "How would you describe yourself to someone who has never met you?",
+      "domain": "voice",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Ask about what they'd add that a bio usually leaves out."]
+    },
+    {
+      "question_id": "u-002",
+      "prompt": "What do you want this person to understand about who you are — not what you've done, but who you are?",
+      "domain": "voice",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Could follow with a values question if author stalls."]
+    },
+    {
+      "question_id": "u-003",
+      "prompt": "If you had to pick two or three words that describe how you try to live, what would they be?",
+      "domain": "voice",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Good opening question — very low friction, author-reveals naturally."]
+    },
+    {
+      "question_id": "u-004",
+      "prompt": "What has shaped you the most — not what happened exactly, but what it made you into?",
+      "domain": "voice",
+      "intensity": 2,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": ["u-001"],
+      "follow_up_hints": ["Do not follow with trauma-gated questions. Pair with wisdom or values."]
+    },
+    {
+      "question_id": "u-005",
+      "prompt": "What first comes to mind when you think of this person?",
+      "domain": "relationship",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Often opens the door to specific memories or appreciations."]
+    },
+    {
+      "question_id": "u-006",
+      "prompt": "What do you most want them to understand about what they mean to you?",
+      "domain": "relationship",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-007",
+      "prompt": "Is there something about them that you notice and appreciate but rarely say out loud?",
+      "domain": "relationship",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Good for surfacing specific, personal details the author carries."]
+    },
+    {
+      "question_id": "u-008",
+      "prompt": "What do you appreciate most about who they are — not what they do, but the person themselves?",
+      "domain": "relationship",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-009",
+      "prompt": "If they ever doubted that you loved or cared for them, what would you want them to remember?",
+      "domain": "relationship",
+      "intensity": 2,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Important for strained or complicated relationships, but safe universally."]
+    },
+    {
+      "question_id": "u-010",
+      "prompt": "What do you believe about life that most people around you don't seem to?",
+      "domain": "values",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Can reveal worldview and values without forcing a direct statement."]
+    },
+    {
+      "question_id": "u-011",
+      "prompt": "What has life taught you that you wish you'd understood sooner?",
+      "domain": "values",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-012",
+      "prompt": "What do you value more now than you did ten or twenty years ago?",
+      "domain": "values",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Works well as a transition from voice questions into values."]
+    },
+    {
+      "question_id": "u-013",
+      "prompt": "Is there something significant you've changed your mind about? What moved you?",
+      "domain": "values",
+      "intensity": 2,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Shows intellectual honesty and growth without requiring conflict framing."]
+    },
+    {
+      "question_id": "u-014",
+      "prompt": "What does loving someone well look like to you?",
+      "domain": "love",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Author often reveals their own love language or deepest relational belief."]
+    },
+    {
+      "question_id": "u-015",
+      "prompt": "What are you most grateful for in your life?",
+      "domain": "love",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-016",
+      "prompt": "Is there something you've wanted to say to this person but never found the right moment?",
+      "domain": "love",
+      "intensity": 2,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["This is why the letter exists. Keep it gentle — do not gate it behind intensity."]
+    },
+    {
+      "question_id": "u-017",
+      "prompt": "Is there a moment with this person you find yourself returning to?",
+      "domain": "memory",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Concrete memory anchors the letter and makes it personal."]
+    },
+    {
+      "question_id": "u-018",
+      "prompt": "What makes you feel closest to the people you love?",
+      "domain": "love",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-019",
+      "prompt": "What do you hope for them — not achievements or outcomes, but something deeper?",
+      "domain": "hope",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-020",
+      "prompt": "What do you most want for them when things are hard?",
+      "domain": "hope",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Natural precursor to the 'if you're reading this during a hard time' message frame."]
+    },
+    {
+      "question_id": "u-021",
+      "prompt": "If they're reading this during a difficult time in their life, what do you want them to know?",
+      "domain": "hope",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal", "whenever you need this"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Directly relevant to the 'whenever you need this' occasion type."]
+    },
+    {
+      "question_id": "u-022",
+      "prompt": "What do you hope they'll carry forward from having known you?",
+      "domain": "hope",
+      "intensity": 2,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-023",
+      "prompt": "If you could wish one thing for them — not a gift but a quality, or a feeling — what would it be?",
+      "domain": "hope",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-024",
+      "prompt": "What's one thing you'd tell yourself at their age, if you could?",
+      "domain": "wisdom",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Frames wisdom as personal without being prescriptive."]
+    },
+    {
+      "question_id": "u-025",
+      "prompt": "What have you gotten wrong that cost you something — and what did it teach you?",
+      "domain": "wisdom",
+      "intensity": 2,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Do not use as an opener. Follows naturally after voice or values questions."]
+    },
+    {
+      "question_id": "u-026",
+      "prompt": "What do you know about getting through hard times that you wish someone had told you earlier?",
+      "domain": "wisdom",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-027",
+      "prompt": "Is there advice you were given that actually turned out to be true?",
+      "domain": "wisdom",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": []
+    },
+    {
+      "question_id": "u-028",
+      "prompt": "What small things have mattered more than you expected them to?",
+      "domain": "wisdom",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Often produces specific, vivid, surprising answers. Good for late-session use."]
+    },
+    {
+      "question_id": "u-029",
+      "prompt": "What's something about your life together — a moment, a habit, a small thing — that you hope they remember?",
+      "domain": "memory",
+      "intensity": 1,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Grounds the letter in shared experience without requiring a 'best memory' ranking."]
+    },
+    {
+      "question_id": "u-030",
+      "prompt": "Is there anything else you want them to know — something this letter should hold, even if it's hard to say?",
+      "domain": "closing",
+      "intensity": 2,
+      "relationship_tags": ["general"],
+      "occasion_tags": ["universal"],
+      "exclusion_flags": [],
+      "prerequisites": null,
+      "follow_up_hints": ["Session-closing prompt only. Opens space for author to surface anything unsaid. Use last."]
+    }
+  ],
+  "editorial_metadata": {
+    "total_questions": 30,
+    "intensity_distribution": {"1": 23, "2": 7},
+    "domains": {
+      "voice": 4,
+      "relationship": 5,
+      "values": 4,
+      "love": 4,
+      "memory": 2,
+      "hope": 5,
+      "wisdom": 5,
+      "closing": 1
+    },
+    "session_openers": ["u-001", "u-003", "u-005"],
+    "session_closers": ["u-030"],
+    "never_use_first": ["u-004", "u-009", "u-013", "u-022", "u-025"],
+    "review_status": "draft — not editorially reviewed, prototype only"
+  }
+}

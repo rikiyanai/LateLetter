@@ -1,0 +1,21 @@
+{
+  "archive_kind": "runnable-sanitized-full-legacy-repository-snapshot",
+  "source_commit": "7b9389de21edb67a15b261aae25b2350b53a49a9",
+  "production_import_allowed": false,
+  "source_tree_paths": 89,
+  "exact_source_paths_preserved": 85,
+  "excluded_source_blobs": {
+    "README.md": "07a085bf0da8337683c420a9100ce827d1c32b4c",
+    "letters/letter_source.example.json": "b3b1c6b689b7a5f860609579d3681f0609ccb1f3",
+    "public_letters/to-a-friend.lateletter": "27e47b6220cfd6376012aa37eb468bf0d8b824ea",
+    "sealed_demo.lateletter": "8931e166de0dd017cc5fafa7b60a32b432814a4d"
+  },
+  "safe_substitution_commit": "143ed5d",
+  "safe_substitution_blobs": {
+    "letters/letter_source.example.json": "f89ef58d81ee01c0c059a7b481eb8b4d03cecc98",
+    "public_letters/to-a-friend.lateletter": "d2446ac9a32e81431f7bacf98e1e8578b1a97985",
+    "sealed_demo.lateletter": "026cd677e068751df6c1dcb46ad30e40b5d2b63d"
+  },
+  "legacy_viewer_blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+  "safe_v1_fixture_blob": "d4358c57440803dbba437a3b2f04558094be9d58"
+}
