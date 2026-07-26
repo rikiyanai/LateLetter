@@ -1,8 +1,15 @@
 name: Deploy to GitHub Pages
 
+# Deployment is deliberately NOT triggered by pushes.
+#
+# Pushing to `main` must remain cheap and safe: the branch ruleset requires the
+# "AI attribution policy" check, so that check still runs on every push and
+# still gates the branch. Publishing, by contrast, is a product decision that
+# happens only once a change is proven complete locally -- so it is manual.
+#
+# To publish: `gh workflow run "Deploy to GitHub Pages" --ref main`
+# (or use the "Run workflow" button on the Actions tab).
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
