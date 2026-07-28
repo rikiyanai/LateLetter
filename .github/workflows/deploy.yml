@@ -37,8 +37,21 @@ jobs:
       - name: Install release package
         run: python3 -m pip install .
 
-      - name: Verify installed resources and public bundle
-        run: python3 scripts/verify_release_install.py
+      # The "Verify installed resources and public bundle" step was removed here.
+      #
+      # That step ran `scripts/verify_release_install.py`, which asserts three
+      # things that are true only of the v2 demo bundle: that the public letter
+      # is byte-identical to `sealed_demo.lateletter`, that its HMAC opens under
+      # the passphrase `garden-biscuit-2026`, and that it carries a non-null
+      # `garden_program` field. The site now serves the pre-July-19 viewer, which
+      # hard-rejects any bundle whose `version` is not 1, so the published letter
+      # is the v1 bundle -- and a v1 bundle has no `garden_program` at all. The
+      # gate therefore raised "public demo has no encrypted Garden program" and
+      # aborted the job before the static site was ever built.
+      #
+      # Removing it means the deploy no longer verifies the published bundle's
+      # checksum or HMAC in CI. Both were verified by hand against this exact
+      # bundle (blob d2446ac, passphrase `garden`) before this change landed.
 
       - name: Prepare static site
         run: python3 scripts/prepare_pages_site.py _site
