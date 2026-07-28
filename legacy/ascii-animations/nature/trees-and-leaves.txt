@@ -1,0 +1,224 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Trees and Nature ASCII Art
+  Per docs/SPEC.md §7.1 (new plant types)
+  Inspired by: rovira_isabela_leaffalling.gif
+═══════════════════════════════════════════════════════════════
+
+
+── WILLOW TREE (§7.1: "Wide drooping branches, tall") ────────
+   "Curses-only wind causes sway"
+
+Static willow (medium):
+
+        .~~~~~.
+       /  . .  \
+      |  . . .  |
+       \  . .  /
+      ,-'~~~~~'-,
+     / | | | | | \
+    /  | | | | |  \
+   |   | | | | |   |
+   |   | | | | |   |
+    \  | | | | |  /
+     | | | | | | |
+     | | | | | | |
+     | | | | | | |
+        |||||
+        |||||
+       /|||||\
+      =========
+
+Willow wind sway (3 frames):
+
+Frame 1 (still):         Frame 2 (wind R):        Frame 3 (wind L):
+      ,~~~~~,                 ,~~~~~,                  ,~~~~~,
+     /  ...  \               /  ...  \                /  ...  \
+    | | | | | |             | |  \ \ \ \            / / / /  | |
+    | | | | | |             | |   \ \ \ \          / / / /   | |
+    | | | | | |             | |    \ \ \\        // / /    | |
+    | | | | | |             | |     \\ \\      // //     | |
+       |||||                    |||||                  |||||
+
+
+── DEAD TREE (§7.1: "Leafless branching silhouette") ─────────
+   For autumn/winter seasons
+   Inspired by rovira_isabela_leaffalling.gif (dark gnarled tree)
+
+Dead tree (small):
+
+       /\
+      /  \    /\
+     /    \  /  |
+    |      \/   |
+     \     |   /
+      \    |  /
+       |   | |
+       |   | |
+       |   |/
+       |  /
+       | |
+      _|_|_
+
+Dead tree (medium, inspired by the GIF):
+
+            _,--._
+          ,'      `.
+         /  /|   \  \
+        /  / |  \ \  \
+       |  |  |   \ |  |
+        \ |  |  /  |  /
+         \| /|_/   | /
+          |/ | \   |/
+          |  |  \  |
+           \ |   \/
+            \|  /
+             | |
+             | |
+             | |
+            /| |\
+          _/ | | \_
+         /   | |   \
+
+Dead oak (large, gnarled):
+
+         __.--~~--.___
+        /  /\     /\  \
+       /  /  \   /  \  \
+      /  /    \ /    \  \
+     |  |      Y      |  |
+      \ |    /   \    | /
+       \|  _/     \_  |/
+        | /         \ |
+        |/           \|
+        |      |      |
+        |      |      |
+         \     |     /
+          \    |    /
+           |   |   |
+           |   |   |
+           |   |   |
+          /|   |   |\
+        _/ |   |   | \_
+       /   |   |   |   \
+      /____|___|___|____\
+
+
+── CACTUS (§7.1: "3-4 chars wide, desert feel, no sway") ────
+
+Small cactus:          Medium cactus:         Large cactus:
+
+   |~|                    |~|                  /~~~\
+   |~|                   /~~~\                 |   |
+   |~|                   |   |           /~~\__|   |__/~~\
+  /~~~\             /~~\__|   |          |   |         |   |
+                    |   |     |          |   |         |   |
+                    |   |     |          |   |         |   |
+                    |   |_____|          |   |_________|   |
+                   /|   |               /|   |             |\
+                     |_|                   |___|
+
+
+── BAMBOO (§7.1: "Tall, narrow, clustered") ──────────────────
+
+Single bamboo:    Bamboo cluster:        Dense bamboo:
+
+    ||               ||  ||  ||            || || || || ||
+    ||               ||  ||  ||            || || || || ||
+   ~||~             ~||~~||~~||~          ~||~||~||~||~||~
+    ||               ||  ||  ||            || || || || ||
+    ||               ||  ||  ||            || || || || ||
+   ~||~             ~||~~||~~||~          ~||~||~||~||~||~
+    ||               ||  ||  ||            || || || || ||
+    ||               ||  ||  ||            || || || || ||
+    ||               ||  ||  ||            || || || || ||
+
+Bamboo wind sway (subtle, 2 frames):
+
+Frame 1:           Frame 2:
+  ||  ||  ||         \\  \\  \\
+  ||  ||  ||         ||  ||  ||
+ ~||~~||~~||~       ~||~~||~~||~
+  ||  ||  ||         ||  ||  ||
+
+
+── LILY (§7.1: "Short flower with wide head") ───────────────
+
+Small lily:        Medium lily:         Lily pad (water):
+
+  \\ //              \\ | //              .~~~~~.
+   )|(                )(|)(              (  (o)  )
+    |                   |                 '~~~~~'
+   /|\                 /|\
+
+
+── SUNFLOWER - TALL (§7.1) ───────────────────────────────────
+   "Single-stem, distinct from current small sunflower"
+
+         ,~=~.
+        /::: :\
+       /::;u;::\
+      |:::;.;:::|
+       \::;_;::/
+        \:::::/
+         '-=-'
+           |
+           |
+          /|\
+         / | \
+        /  |  \
+           |
+          /|\
+
+
+── CONIFER / PINE (for winter palette) ───────────────────────
+
+Small pine:        Medium pine:         Large pine:
+
+    *                  *                    *
+   /|\                /|\                  /|\
+  / | \              /|||\ \              /|||\
+    |               / |||  \             / ||| \
+   /|\             /  |||   \           / /|||\ \
+                  /   |||    \         /  /||||\  \
+                      |||              / / |||| \ \
+                     /|||\            /  / |||| \  \
+                                          ||||
+                                         /||||\
+
+
+── TREE WITH BIRD PERCH (for letter-bird landing) ────────────
+
+              (o>
+             /| [✉]
+        ~~~~/ \~~~~
+       /    |||    \
+      /     |||     \
+     /      |||      \
+            |||
+           /|||\
+
+
+── FALLING LEAF PATTERNS (from GIF inspiration) ──────────────
+   The rovira_isabela_leaffalling.gif shows dark gnarled tree
+   with delicate leaf particles drifting down
+
+Leaf types for different trees:
+
+  Oak leaf:     , ' (simple comma/apostrophe)
+  Maple leaf:   * ~ (star for shape, tilde for curled)
+  Willow leaf:  . · (tiny, delicate)
+  Pine needle:  - \ / (straight, directional)
+
+Leaf-on-tree to leaf-falling transition:
+
+  Before (tree with leaves):     After (leaves falling):
+        .~~~.                         .~~~.
+       / . . \                       /     \        ,
+      | . . . |                     |       |     '
+       \ . . /                       \     /   *
+        '---'                         '---'       ~
+          |                             |       ,
+          |                             |     '
+        __|__                         __|__
+                                              ,   '
+                                                *

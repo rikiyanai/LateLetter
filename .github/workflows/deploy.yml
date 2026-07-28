@@ -53,8 +53,14 @@ jobs:
       # checksum or HMAC in CI. Both were verified by hand against this exact
       # bundle (blob d2446ac, passphrase `garden`) before this change landed.
 
-      - name: Prepare static site
-        run: python3 scripts/prepare_pages_site.py _site
+      # The public endpoint is served from the frozen `legacy/` snapshot, NOT
+      # from the repository root. Root holds in-progress work on the modular
+      # viewer and the v2 bundle format, which is not ready to face the public;
+      # `legacy/` is a self-contained July-19 clone that is known to render
+      # correctly. Switch this back to `prepare_pages_site.py` once the root
+      # viewer is the one that should be published.
+      - name: Prepare static site from the legacy snapshot
+        run: python3 scripts/prepare_legacy_site.py _site
 
       - uses: actions/configure-pages@v5
 

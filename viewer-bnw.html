@@ -11,6 +11,9 @@
       --text: #000000;
       --bg:   #f9f8f5;
       --scrim-bg: rgba(249, 248, 245, .76);
+      --opacity-strong: .78;
+      --opacity-muted: .7;
+      --opacity-faint: .62;
       --sans: 'Times New Roman', Times, serif;
     }
 
@@ -34,8 +37,9 @@
       user-select: none; -webkit-user-select: none;
       /* background set dynamically via setGroundBg() */
       background: var(--bg);
+      text-shadow: 0 0 .01px currentColor;
     }
-    #g > div { white-space: pre; height: 15px; overflow: hidden; }
+    #g > div { white-space: pre; height: 15px; overflow: visible; }
 
     /* ── Screen overlays ── */
     .screen {
@@ -62,15 +66,15 @@
 
     /* ── Typography — opacity only ── */
     .t1  { color: var(--text); opacity: 1;    font-size: 1rem;   }
-    .t2  { color: var(--text); opacity: .55;  font-size: .85rem; }
-    .t3  { color: var(--text); opacity: .35;  font-size: .75rem; letter-spacing: .06em; }
-    .t4  { color: var(--text); opacity: .2;   font-size: .72rem; }
+    .t2  { color: var(--text); opacity: var(--opacity-strong); font-size: .85rem; }
+    .t3  { color: var(--text); opacity: var(--opacity-muted); font-size: .75rem; letter-spacing: .06em; }
+    .t4  { color: var(--text); opacity: var(--opacity-faint); font-size: .72rem; }
 
     /* ── [bracket] buttons ── */
     .btn {
       background: none; border: none;
       font: inherit; font-size: .85rem;
-      color: var(--text); opacity: .35;
+      color: var(--text); opacity: var(--opacity-muted);
       cursor: pointer; padding: 0;
       transition: opacity .12s; letter-spacing: .02em;
     }
@@ -79,15 +83,18 @@
     .btn:hover   { opacity: 1; }
     .btn.hi      { opacity: .8; }
     .btn-row     { display: flex; gap: 1.75rem; flex-wrap: wrap; }
+    button, [role="button"], .fi {
+      min-width: 44px; min-height: 44px;
+    }
 
     /* ── Underline inputs ── */
     .fi {
       width: 100%; background: transparent;
-      border: none; border-bottom: 1px solid rgba(0,0,0,.2);
+      border: none; border-bottom: 1px solid color-mix(in srgb, var(--text) 24%, transparent);
       color: var(--text); font: inherit; font-size: 1rem;
       padding: .35rem 0; margin-bottom: 1.4rem; outline: none;
     }
-    .fi:focus { border-bottom-color: rgba(0,0,0,.5); }
+    .fi:focus { border-bottom-color: color-mix(in srgb, var(--text) 62%, transparent); }
 
     /* ── Welcome ── */
     /* Restore full-viewport pointer events so drag-drop works anywhere on screen */
@@ -101,15 +108,44 @@
 
     /* ── HUD ── */
     #hud {
-      position: fixed; bottom: 40%; left: 50%;
+      position: fixed; top: max(1rem, env(safe-area-inset-top)); left: 50%;
       transform: translateX(-50%);
-      text-align: center; z-index: 5;
-      white-space: nowrap; opacity: 0;
-      transition: opacity 1.4s ease; pointer-events: none;
+      width: min(760px, calc(100% - 2rem)); text-align: center; z-index: 5;
+      white-space: normal; opacity: 0;
+      transition: opacity .25s ease; pointer-events: none;
     }
-    #hud.vis { opacity: 1; pointer-events: auto; }
+    #hud.vis { opacity: 1; pointer-events: none; }
+    #hud button { pointer-events: auto; }
     #hud-author { margin-bottom: .6rem; }
-    #hud-btns   { display: flex; gap: 1.75rem; justify-content: center; }
+    #hud-btns, #hud-actions {
+      display: flex; gap: 1.75rem; justify-content: center; flex-wrap: wrap;
+    }
+    #hud-actions {
+      margin: .65rem auto 0; width: fit-content; max-width: 100%;
+      padding: .15rem .55rem;
+      background: color-mix(in srgb, var(--bg) 58%, transparent);
+      backdrop-filter: blur(2px);
+    }
+    #garden-controls {
+      position: fixed; right: 1rem; top: 1rem; z-index: 7;
+      width: min(360px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem);
+      overflow: auto; padding: .85rem; background: var(--scrim-bg);
+      border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+      box-shadow: 0 12px 42px rgba(0,0,0,.08);
+      backdrop-filter: blur(8px); display: none;
+    }
+    #garden-controls.open { display: block; }
+    #garden-controls[hidden] { display: none; }
+    .garden-controls-heading { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+    #garden-object-list { list-style: none; margin: .5rem 0; }
+    #garden-object-list button, #garden-action-sheet button, .garden-global-actions button {
+      min-width: 44px; min-height: 44px; padding: .55rem .7rem;
+    }
+    .garden-global-actions select { min-height: 44px; padding: .55rem .7rem; }
+    #garden-object-list button { width: 100%; text-align: left; }
+    #garden-object-list button[aria-current="true"] { opacity: 1; text-decoration: underline; }
+    #garden-action-sheet, .garden-global-actions { display: flex; flex-wrap: wrap; gap: .35rem; }
+    #garden-scene-summary { margin-bottom: .4rem; white-space: normal; }
 
     /* ── Passphrase ── */
     #s-passphrase .scrim { max-width: 440px; }
@@ -117,11 +153,11 @@
     .pp-sub   { margin-bottom: 1.6rem; }
     .pp-label { margin-bottom: .3rem; }
     .pp-hint  { margin-bottom: 1.2rem; }
-    .pp-err   { color: var(--text); opacity: .5; margin-bottom: .8rem; display: none; font-size: .82rem; }
+    .pp-err   { color: var(--text); opacity: var(--opacity-strong); margin-bottom: .8rem; display: none; font-size: .82rem; }
     .pp-err.on { display: block; }
-    .pp-info  { opacity: .3; font-size: .82rem; margin-bottom: .8rem; display: none; }
+    .pp-info  { opacity: var(--opacity-muted); font-size: .82rem; margin-bottom: .8rem; display: none; }
     .pp-info.on { display: block; }
-    .warn-st  { opacity: .25; font-size: .78rem; margin-bottom: 1rem; display: none; }
+    .warn-st  { opacity: var(--opacity-strong); font-size: .78rem; margin-bottom: 1rem; display: none; }
     .warn-st.on { display: block; }
 
     /* ── Status ── */
@@ -136,7 +172,7 @@
     .pick-list li { padding: .5rem 0; }
     .pick-btn {
       background: none; border: none; font: inherit; font-size: .9rem;
-      color: var(--text); opacity: .55; cursor: pointer; padding: 0; text-align: left;
+      color: var(--text); opacity: var(--opacity-strong); cursor: pointer; padding: 0; text-align: left;
     }
     .pick-btn:hover { opacity: 1; }
 
@@ -162,7 +198,7 @@
     #lm-progress { height: 2px; background: var(--text); opacity: 0.15;
       transform: scaleX(0); transform-origin: left; transition: transform 0.1s;
       margin: 0 0 .6rem; }
-    #lm-linect { font-size: .7rem; opacity: .2; }
+    #lm-linect { font-size: .7rem; opacity: var(--opacity-faint); }
 
     /* ── Inbox — transparent, floats over garden ── */
     #s-archive { background: none; }
@@ -178,15 +214,15 @@
       transition: opacity .1s;
     }
     .inbox-btn.unread { opacity: 1; }
-    .inbox-btn.read   { opacity: .28; }
-    .inbox-btn.locked { opacity: .12; cursor: default; pointer-events: none; }
+    .inbox-btn.read   { opacity: var(--opacity-strong); }
+    .inbox-btn.locked { opacity: var(--opacity-faint); cursor: default; pointer-events: none; }
     .inbox-btn:not(.locked):hover { opacity: 1; }
     .inbox-sep  { margin-top: 1.6rem; }
-    .inbox-mem-label { font-size: .7rem; opacity: .2; letter-spacing: .06em; margin-bottom: .4rem; }
+    .inbox-mem-label { font-size: .7rem; opacity: var(--opacity-faint); letter-spacing: .06em; margin-bottom: .4rem; }
     .inbox-mem-btn {
       background: none; border: none; font: inherit; font-size: .85rem;
       color: var(--text); cursor: pointer; padding: .18rem 0;
-      opacity: .45; display: block;
+      opacity: var(--opacity-strong); display: block;
     }
     .inbox-mem-btn:hover { opacity: 1; }
     .inbox-back { margin-top: 2rem; }
@@ -245,7 +281,11 @@
       .welcome-inner p { font-size: .9rem; }
       #drop-zone { padding: 2rem 1.5rem; }
       .btn-row { gap: 1rem; }
-      #hud { bottom: 35%; }
+      #hud {
+        top: max(.75rem, env(safe-area-inset-top)); width: calc(100% - 2rem);
+        white-space: normal;
+      }
+      #hud-btns, #hud-actions { gap: .75rem 1.25rem; }
       #g { font-size: 11px; line-height: 13px; }
       #g > div { height: 13px; }
     }
@@ -253,6 +293,9 @@
       .scrim { padding: 1.25rem 1rem; }
       .t1 { font-size: .9rem; }
       .t2 { font-size: .78rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: .001ms !important; animation-duration: .001ms !important; }
     }
   </style>
 </head>
@@ -263,6 +306,7 @@
 <div id="hud">
   <p id="hud-author" class="t2"></p>
   <div id="hud-btns"></div>
+  <div id="hud-actions" aria-label="garden actions" aria-live="polite"></div>
   <p id="hud-animal" class="t4" style="margin-top:.5rem"></p>
 </div>
 
@@ -280,10 +324,12 @@
           type="button" style="font-size:.75rem">browse files</button></p>
     </div>
     <input type="file" id="file-input" accept=".lateletter,.json">
-    <p style="margin-top:1.2rem"><button class="btn" id="btn-demo"
+      <p style="margin-top:1.2rem"><button class="btn" id="btn-demo"
         type="button" style="font-size:.7rem;opacity:.25">get demo letter</button>
       <button class="btn" id="btn-demo-sealed"
-        type="button" style="font-size:.7rem;opacity:.25">get sealed letter</button></p>
+        type="button" style="font-size:.7rem;opacity:.25">get passcode-locked demo</button></p>
+      <p style="margin-top:.7rem"><button class="btn hi" id="btn-standalone"
+        type="button">enter standalone garden</button></p>
   </div>
 </div>
 
@@ -357,15 +403,77 @@
   </div>
 </div>
 
-<div id="modal-mem" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="mem-inner">
-    <p class="t3 mem-type" id="mem-type"></p>
+<div id="modal-mem" role="dialog" aria-modal="true" aria-hidden="true"
+     aria-labelledby="mem-type" aria-describedby="mem-text">
+  <div class="mem-inner" tabindex="-1">
+    <h2 class="t3 mem-type" id="mem-type"></h2>
     <p class="mem-text" id="mem-text"></p>
     <div class="btn-row"><button class="btn hi" id="btn-close-mem">close</button></div>
   </div>
 </div>
 
+<aside id="garden-controls" aria-label="Garden diagnostic controls" hidden>
+  <div class="garden-controls-heading">
+    <p class="t2">garden controls</p>
+    <button class="btn" type="button" id="garden-controls-close" aria-label="Close Garden controls">close</button>
+  </div>
+  <p id="garden-scene-summary" class="t3" role="status" aria-live="polite"></p>
+  <div class="garden-global-actions" aria-label="Garden navigation">
+    <button class="btn" type="button" data-garden-action="pan" data-dx="-1">pan left</button>
+    <button class="btn" type="button" data-garden-action="pan" data-dx="1">pan right</button>
+    <button class="btn" type="button" data-garden-action="pan" data-dy="-20">pan up</button>
+    <button class="btn" type="button" data-garden-action="pan" data-dy="20">pan down</button>
+    <button class="btn" type="button" data-garden-action="frame">frame garden</button>
+    <button class="btn" type="button" data-garden-action="open_journal">journal</button>
+    <button class="btn" type="button" data-garden-action="undo">undo</button>
+    <label class="t3" for="garden-place-kind">place</label>
+    <select class="btn" id="garden-place-kind"><option value="plant">plant</option><option value="fixture">fixture</option></select>
+    <label class="t3" for="garden-place-catalog">catalog</label>
+    <input class="btn" id="garden-place-catalog" value="lavender" size="12" autocomplete="off">
+    <label class="t3" for="garden-place-x">x</label><input class="btn" id="garden-place-x" type="number" value="10" min="0">
+    <label class="t3" for="garden-place-y">y</label><input class="btn" id="garden-place-y" type="number" value="10" min="0">
+    <button class="btn" type="button" data-garden-action="place">place here</button>
+    <button class="btn" type="button" data-garden-action="dwell">dwell 30 seconds</button>
+    <button class="btn" type="button" data-garden-action="pause_motion">pause motion</button>
+    <button class="btn" type="button" data-garden-action="back">back</button>
+  </div>
+  <fieldset class="garden-global-actions">
+    <legend class="t3">optional sky</legend>
+    <button class="btn" type="button" id="sky-opt-in">use my rough location</button>
+    <label class="t3" for="sky-region">manual region</label>
+    <select id="sky-region">
+      <option value="">choose region</option>
+      <option value="36,140">Tokyo region</option>
+      <option value="51,0">London region</option>
+      <option value="41,-74">New York region</option>
+      <option value="-34,151">Sydney region</option>
+    </select>
+    <button class="btn" type="button" id="sky-use-region">use selected region</button>
+    <button class="btn" type="button" id="sky-forget">forget sky location</button>
+  </fieldset>
+  <ul id="garden-object-list" aria-label="Garden objects"></ul>
+  <div id="garden-action-sheet" role="group" aria-label="Actions for focused object"></div>
+</aside>
+
 <script type="module">
+
+import {
+  GardenRuntime,
+  decodeStrictBase64,
+  effectiveAmbientMotion,
+  inputModalityFromBrowserEvent,
+  validateBrowserPbkdf2Params,
+} from './web/garden-runtime.mjs';
+import {
+  evaluateGardenProgram,
+  expandGardenSchedule,
+  migrateAuthenticatedLegacyGifts,
+  parseGardenProgram,
+  validateBundleIdentityShape,
+} from './web/garden-program.mjs';
+import { CanonicalGardenRenderer } from './web/garden-renderer.mjs';
+import { requestRoughSkyLocation } from './web/garden-sky.mjs';
+import { deliveryFramesFor } from './web/garden-atlas.mjs';
 
 let prepareWithSegments = null;
 let layoutWithLines = null;
@@ -373,1397 +481,162 @@ let clearCache = () => {};
 let _textLayoutMode = 'fallback';
 
 // ═══════════════════════════════════════════════════════════════════
-//  PALETTE — sky/ground monochrome, plants colored
-// ═══════════════════════════════════════════════════════════════════
-
-const C = {
-  sky:           '#f9f8f5',
-  ground:        '#c8c2b6',
-  dim_green:     '#ddd8ce',
-  deep_green:    '#33511e',
-  green:         '#4a7030',
-  bright_green:  '#62923e',
-  brown:         '#7a5830',
-  orange:        '#b07020',
-  bright_white:  '#555555',
-  white:         '#777777',
-  yellow:        '#8a6418',
-  bright_yellow: '#c09428',
-  red:           '#883830',
-  bright_red:    '#b85038',
-  cyan:          '#246858',
-  bright_cyan:   '#329878',
-  rain:          '#4a6888',
-  magenta:       '#702468',
-  bright_magenta:'#a03888',
-  gray:          '#888880',
-  dim:           '#b0a898',
-  flash:         '#000000',
-  // Night palette
-  star:          '#8a8878',
-  moon:          '#d0ccb8',
-};
-
-// Night palette overrides — brighter variants for dark background
-const NIGHT_PALETTE = {
-  sky:           '#0b0e16',
-  ground:        '#28302a',
-  dim_green:     '#13181e',
-  deep_green:    '#41703e',
-  green:         '#5a9858',
-  bright_green:  '#78b870',
-  brown:         '#a08868',
-  orange:        '#c89848',
-  bright_white:  '#cccccc',
-  white:         '#b0b0a8',
-  yellow:        '#c09838',
-  bright_yellow: '#e0b848',
-  red:           '#c06858',
-  bright_red:    '#e87868',
-  cyan:          '#48a888',
-  bright_cyan:   '#68c8a0',
-  rain:          '#7898b8',
-  magenta:       '#a85898',
-  bright_magenta:'#d068b8',
-  gray:          '#a0a098',
-  dim:           '#606058',
-  flash:         '#ffffff',
-  star:          '#b8b8a8',
-  moon:          '#e8e4d0',
-};
-let _dayPalette = null; // stashed original C values when night is active
-
-function _applyNightPalette(on) {
-  if (on && !_dayPalette) {
-    _dayPalette = {};
-    for (const k of Object.keys(NIGHT_PALETTE)) { _dayPalette[k] = C[k]; C[k] = NIGHT_PALETTE[k]; }
-    document.documentElement.style.setProperty('--text', '#d0ccc0');
-    document.documentElement.style.setProperty('--bg', '#0b0e16');
-    document.documentElement.style.setProperty('--scrim-bg', 'rgba(11, 14, 22, .76)');
-  } else if (!on && _dayPalette) {
-    for (const k of Object.keys(_dayPalette)) C[k] = _dayPalette[k];
-    _dayPalette = null;
-    document.documentElement.style.setProperty('--text', '#000000');
-    document.documentElement.style.setProperty('--bg', '#f9f8f5');
-    document.documentElement.style.setProperty('--scrim-bg', 'rgba(249, 248, 245, .76)');
-  }
-}
+// Canonical Garden presentation is owned by web/garden-renderer.mjs.
+// Legacy renderer-local world generation, gameplay collision, target authority,
+// and persistence were deleted. This renderer owns only disposable art/motion;
+// pointer targets derive from projection-owned hotspots.
 
 async function initTextLayout(){
   try{
-    ({prepareWithSegments,layoutWithLines,clearCache} =
-      await import('https://cdn.jsdelivr.net/npm/@chenglou/pretext@0.0.4/+esm'));
+    ({prepareWithSegments,layoutWithLines,clearCache}=await import(
+      './web/vendor/pretext/layout.js'
+    ));
     _textLayoutMode='pretext';
-  }catch(err){
-    console.warn('[viewer] pretext unavailable; using browser text fallback',err);
-    prepareWithSegments=null; layoutWithLines=null; clearCache=()=>{};
+  }catch(error){
+    console.warn('[viewer] bundled PreText unavailable; using browser text fallback',error);
+    prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
     _textLayoutMode='fallback';
   }
 }
 
-// ── Moon phase art (FL-G20) ──────────────────────────────────────────
-const MOON_ART = [
-  [],                                  // 0: new moon (invisible)
-  ['  _',' ) ',' \u203e '],            // 1: waxing crescent
-  [' _ ','|) ',' \u203e '],            // 2: first quarter
-  [' __ ','(O) ',' \u203e\u203e '],    // 3: waxing gibbous
-  [' __ ','(  )',' \u203e\u203e '],    // 4: full
-  [' __ ',' (O)',' \u203e\u203e '],    // 5: waning gibbous
-  [' _ ',' (|',' \u203e '],            // 6: last quarter
-  [' _ ',' ( ',' \u203e '],            // 7: waning crescent
-];
-function _moonPhase(){
-  // Synodic month ~ 29.53 days. Known new moon: 2000-01-06 18:14 UTC
-  const ref=Date.UTC(2000,0,6,18,14);
-  const days=(Date.now()-ref)/86400000;
-  const cyc=((days%29.53)+29.53)%29.53; // double-modulo for pre-2000 clocks
-  return(cyc/29.53*8)|0;
-}
-
-// Character cell size — measured once from DOM
-let CW = 8, CH = 15;
-
-// ── Animal relationship system (§6.8.2) ──────────────────────────────────
-const _ANIMAL_TYPES = ['cat', 'bird', 'rabbit', 'turtle'];
-const _ANIMAL_ART = {
-  cat: {
-    0: ['/\\_ ','o.  '],
-    1: ['/\\_/\\','(o.o)',' >^< '],
-    2: ['/\\_/\\','(-.-)',' = = '],
-    3: ['/\\_/\\','(zzz)',' ~_~ '],
-  },
-  bird: {
-    0: ['>-'],
-    1: ['>o<',' | '],
-    2: ['>o<','/|\\'],
-    3: ['(o)','/|\\'],
-  },
-  rabbit: {
-    0: ['(\\ '],
-    1: ['(\\ /)','.    '],
-    2: ['(\\ /)',' . . '],
-    3: ['(\\./)','  z  '],
-  },
-  turtle: {
-    0: [' (~) '],
-    1: [' (~) ','{__} '],
-    2: [' (~) ','{__} '],
-    3: ['(~o~)','{__}'],
-  },
-};
-const _ANIMAL_DELIVERY_FRAMES = {
-  cat:    [['/\\_/\\  ','(>[✉])  '],['/\\_/\\  ','(=[✉])  ']],
-  bird:   [['  >o<   ',' /|\\    ',' [✉]    '],['  >o<   ','  |\\    ',' [✉]    ']],
-  rabbit: [['(\\ /)  ','.[✉].   '],['(\\ /)  ',' [✉]    ']],
-  turtle: [[' (~)    ','{[✉]}   '],[' (~)    ','{[✉]}   ']],
-};
-// Default delivery creature (SPEC §6.3) — used unless an animal is bonded.
-const _LETTERBIRD_FRAMES = [
-  ['  \\      ',' >o<-[✉] ','  /      '],
-  ['  /      ',' >o<-[✉] ','  \\      '],
-];
-const _ANIMAL_FOOTPRINTS = {cat:'. .',bird:'v v',rabbit:'. .',turtle:'---'};
-const _ANIMAL_POSE_ART = {
-  cat: {
-    peek: ['/\\_ ','o.  '],
-    blink: ['/\\_/\\','(-.-)',' >^< '],
-    tail: ['/\\_/\\','(o.o)',' ~~^ '],
-    stretch: ['/\\_/\\\\','(o.o )',' _^_  '],
-    nap: ['/\\_/\\','(zzz)',' ~_~ '],
-    feed: ['/\\_/\\','(o.o)',' [_]  '],
-  },
-  bird: {
-    peek: ['>-'],
-    perch: ['>o<',' | '],
-    turn: ['<o>',' | '],
-    ruffle: ['\\o/',' | '],
-    dip: [' v ','/|\\'],
-    settled: ['(o)','/|\\'],
-  },
-  rabbit: {
-    peek: ['(\\ '],
-    twitch: ['(\\ /)',' . . '],
-    hop: ['(\\ /)','  .  '],
-    groom: ['(\\./)','  u  '],
-    rest: ['(\\./)','  z  '],
-    feed: ['(\\ /)',' \\/  '],
-  },
-  turtle: {
-    peek: [' (~) '],
-    step: [' (~)_','{__} '],
-    turn: [' (o~) ',' {__} '],
-    bob: ['(~o~)','{__}'],
-    rest: ['(~-~)','{__}'],
-    feed: [' (~) ','{_~} '],
-  },
-};
-const _ANIMAL_FEED_GLYPHS = {
-  cat: {lines:['[_]'],color:'bright_yellow',dx:3,dy:1},
-  bird: {lines:["'.'"],color:'bright_yellow',dx:0,dy:2},
-  rabbit: {lines:['"','\\/'],color:'bright_yellow',dx:1,dy:2},
-  turtle: {lines:['(_)'],color:'bright_green',dx:3,dy:1},
-};
-const _AMBIENT_BIRD_FRAMES = ['\\v/','_v_','/v\\','_v_'];
-const _AMBIENT_BIRD_COMPACT_FRAMES = ['>-','~>'];
-
-function _strHash(s){let h=0;for(let i=0;i<s.length;i++)h=(Math.imul(31,h)+s.charCodeAt(i))|0;return h>>>0;}
-function animalTrustTier(n){return n>=14?3:n>=7?2:n>=3?1:0;}
-function animalHomePos(type,seed,cols,rows){
-  const rng=new RNG((_strHash(type)^seed)>>>0);
-  const groundRow=rows-4;
-  const baseCol=Math.min(cols-10,Math.max(4,Math.floor(cols*.25)+rng.randint(-6,6)));
-  if(type==='bird') return{row:Math.max(3,groundRow-6),col:Math.min(cols-8,Math.max(4,baseCol+2))};
-  if(type==='turtle') return{row:groundRow,col:Math.min(cols-8,Math.max(4,baseCol-1))};
-  return{row:groundRow,col:baseCol};
-}
-function animalFrame(type,tier,pose='base'){
-  return(_ANIMAL_POSE_ART[type]&&_ANIMAL_POSE_ART[type][pose])||((_ANIMAL_ART[type]||{})[tier]||[]);
-}
-function artWidth(lines){
-  return lines.reduce((m,ln)=>Math.max(m,ln.length),0);
-}
-function clamp(n,min,max){
-  return Math.max(min,Math.min(max,n));
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  CORE: RNG, ScreenBuffer, GardenState
-// ═══════════════════════════════════════════════════════════════════
-
-class RNG {
-  constructor(seed) {
-    seed = seed >>> 0;
-    const h = x => { x ^= x>>16; x = Math.imul(x,0x45d9f3b)>>>0; x ^= x>>16; return x>>>0; };
-    this._a=h(seed); this._b=h(seed+1); this._c=h(seed+2); this._d=h(seed+3);
-    for (let i=0;i<20;i++) this.random();
-  }
-  random() {
-    let a=this._a,b=this._b,c=this._c,d=this._d;
-    const t=(a+b|0)+d|0; this._d=d+1|0; this._a=b^(b>>>9);
-    this._b=(c+(c<<3))|0; this._c=(c<<21|c>>>11); this._c=this._c+t|0;
-    return (t>>>0)/4294967296;
-  }
-  randint(a,b)  { return a+Math.floor(this.random()*(b-a+1)); }
-  choice(arr)   { return arr[Math.floor(this.random()*arr.length)]; }
-  choices(arr,w){ let r=this.random()*w.reduce((s,x)=>s+x,0);
-    for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i];}
-    return arr[arr.length-1]; }
-  uniform(a,b)  { return a+this.random()*(b-a); }
-}
-
-class ScreenBuffer {
-  constructor(rows,cols){
-    this.rows=rows; this.cols=cols;
-    const n=rows*cols;
-    this._ch=new Array(n).fill(' ');
-    this._col=new Array(n).fill('sky');
-    this._anim=new Uint8Array(n); // 1 = animated cell (keeps color in mode 3)
-  }
-  clear(){ this._ch.fill(' '); this._col.fill('sky'); this._anim.fill(0); }
-  put(r,c,ch,col){
-    if(r<0||r>=this.rows||c<0||c>=this.cols)return;
-    const i=r*this.cols+c; this._ch[i]=ch; this._col[i]=col;
-  }
-  putStr(r,c,text,col){ for(let i=0;i<text.length;i++) this.put(r,c+i,text[i],col); }
-  // Animated variants — tagged for color-mode 3 (B&W except anim)
-  putAnim(r,c,ch,col){
-    if(r<0||r>=this.rows||c<0||c>=this.cols)return;
-    const i=r*this.cols+c; this._ch[i]=ch; this._col[i]=col; this._anim[i]=1;
-  }
-  putStrAnim(r,c,text,col){ for(let i=0;i<text.length;i++) this.putAnim(r,c+i,text[i],col); }
-}
-
-class GardenState {
-  constructor(cols,rows,seed,season){
-    this.cols=cols; this.rows=rows; this.seed=seed; this.season=season;
-    this.groundY=rows-3; this.frame=0; this.wind=0;
-    this.postComplete=false; this.animalData=null; this.night=false; this.timeOfDay='day';
-    this.collisionMap=new Set(); this.topSurfaces={}; this.canopyCells=new Set();
-    this.mouseRow=-1; this.mouseCol=-1;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  PLANT GENERATORS
-// ═══════════════════════════════════════════════════════════════════
-
-function pPine(rng){
-  const h=rng.randint(8,16),lvls=h-2;
-  const rows=[[1,0,'|','brown'],[2,0,'|','brown']];
-  for(let lv=0;lv<lvls;lv++){
-    const dy=3+lv,w=lv;
-    if(lv===lvls-1){rows.push([dy,0,'^','bright_green']);}
-    else{const tip=lv%2?'*':'^',s='/'.repeat(w+1)+tip+'\\'.repeat(w+1);
-      rows.push([dy,-(w+1),s,lv>=lvls/2?'bright_green':'green']);}
-  }
-  return{type:'pine',rows,width:lvls*2+2,height:h+1};
-}
-function pOak(rng){
-  const h=rng.randint(8,14),th=Math.max(2,h/3|0);
-  const ch=rng.choice(['@','o','0','&']),rows=[];
-  for(let i=1;i<=th;i++) rows.push([i,0,'|','brown']);
-  const cr=h-th,rad=(cr/2|0)+1;
-  for(let lv=0;lv<=cr+1;lv++){
-    const dy=th+lv+1,t=(lv/(cr+1))*2-1;
-    const w=Math.max(0,Math.round(rad*Math.sqrt(Math.max(0,1-t*t))));
-    if(!w)continue;
-    rows.push([dy,-w,ch.repeat(w*2+1),(lv>0&&lv<=cr)?'bright_green':'green']);
-  }
-  return{type:'oak',rows,width:rad*2+3,height:h+3};
-}
-function pBush(rng){
-  const w=rng.randint(2,4),ch=rng.choice(['~','u','w','v']);
-  return{type:'bush',rows:[
-    [2,-(w+1),'('+ch.repeat(w*2+1)+')','bright_green'],
-    [1,-w,'{'+ch.repeat(w*2-1)+'}','green']],width:w*2+4,height:2};
-}
-function pFlower(rng){
-  const sp=rng.choice(['daisy','tulip','sunflower','wildflower','rose']);
-  const sh=rng.randint(2,5),rows=[];
-  for(let i=1;i<=sh;i++) rows.push([i,0,'|','green']);
-  if(sh>=2){
-    const ly=rng.randint(1,sh-1),sd=rng.choice(['left','right','both','none','none']);
-    if(sd==='left'||sd==='both') rows.push([ly,-1,'\\','green']);
-    if(sd==='right'||sd==='both') rows.push([ly,1,'/','green']);
-  }
-  const bh=sh+1; let w=3;
-  if(sp==='daisy'){const c=rng.choice(['white','bright_white','cyan','bright_cyan']);
-    rows.push([bh+1,-1,'\\*/',c],[bh,-1,'-O-','bright_yellow']);}
-  else if(sp==='tulip'){const c=rng.choice(['red','magenta','bright_magenta','bright_red']);
-    rows.push([bh+1,-1,'(")',c],[bh,-1,'|"|',c]);}
-  else if(sp==='sunflower'){rows.push([bh+1,-2,'\\{O}/','bright_yellow'],[bh,-1,'{#}','yellow']);w=5;}
-  else if(sp==='wildflower'){const c=rng.choice(['magenta','bright_magenta','cyan','bright_cyan','bright_white']);
-    rows.push([bh+1,0,'*',c],[bh,-1,'>*<',c]);}
-  else{const c=rng.choice(['red','bright_magenta','bright_red']);
-    rows.push([bh+1,-1,'@@@',c],[bh,-1,'(@)',c]);}
-  return{type:'flower',species:sp,rows,width:w,height:bh+2};
-}
-// Grass wind model ported from asciicker-y9-2 (FL-4482 "saved static cycle"):
-// a blade never leaves its cell — its tip glyph cycles through a fixed family,
-// phase = (per-clump seed + time step) % family size. Lean geometry from
-// glyph_fx_preview.py: upper cells lean more, world lean + slow ~0.1Hz sway.
-const GRASS_FAMS=[["'","`",','],['/','|','\\'],['v','y','w'],['"',';',"'"]];
-const GRASS_FLOWER_FAM=['*','+','*'];
-function grassCyclePhase(seed,frame,n){
-  return (seed+Math.floor(frame*0.12))%n;
-}
-function pGrass(rng){
-  const nb=rng.randint(1,3);
-  const dxs=nb===1?[0]:nb===2?[-1,1]:[-1,0,1];
-  const blades=[];let maxH=0;
-  for(const dx of dxs){
-    const h=rng.randint(2,5);if(h>maxH)maxH=h;
-    blades.push({dx,h,seed:rng.randint(0,1023),
-      fam:rng.randint(0,GRASS_FAMS.length-1),flower:rng.random()<0.09});
-  }
-  // Static upright rows kept for collision/top-surface; live sway is rendered
-  // separately in PlantLayer so rain/snow still land sensibly.
-  const rows=[];
-  for(const b of blades){
-    rows.push([b.h,b.dx,b.flower?'*':"'",'bright_green']);
-    for(let i=1;i<b.h;i++) rows.push([i,b.dx,'|','green']);
-  }
-  return{type:'grass',rows,blades,width:nb===1?1:3,height:maxH};
-}
-function pMushroom(rng){
-  const w=rng.randint(1,2),c=rng.choice(['red','bright_red','yellow','bright_white','magenta']);
-  return{type:'mushroom',rows:[[2,-w,'('+'~'.repeat(w*2)+')',c],[1,0,'|','white']],width:w*2+2,height:2};
-}
-function pFern(rng){
-  const h=rng.randint(2,4),rows=[[h+1,0,'*','bright_green']];
-  for(let i=1;i<=h;i++){
-    rows.push([i,0,'|','green']);
-    const lc=i%2?'bright_green':'green';
-    rows.push([i,-1,i%2?'*':',',lc],[i,1,i%2?'*':',',lc]);
-  }
-  return{type:'fern',rows,width:3,height:h+1};
-}
-
-const AUTUMN_COLS=['yellow','bright_yellow','orange','red','brown'];
-const DECIDUOUS=new Set(['oak','bush','willow']);
-function applyAutumn(plant,rng){
-  if(!DECIDUOUS.has(plant.type))return;
-  plant.rows=plant.rows.map(([dy,dx,t,c])=>[dy,dx,t,
-    (c==='bright_green'||c==='green')?rng.choice(AUTUMN_COLS):c]);
-}
-const SEASON_W={
-  spring:{pine:6,oak:6,bush:8,flower:30,grass:15,mushroom:2,fern:5},
-  summer:{pine:8,oak:8,bush:8,flower:18,grass:12,mushroom:3,fern:7},
-  autumn:{pine:10,oak:10,bush:6,flower:4,grass:8,mushroom:5,fern:6},
-  winter:{pine:15,oak:4,bush:4,flower:0,grass:4,mushroom:2,fern:3},
-};
-const DEFAULT_W={pine:8,oak:8,bush:8,flower:18,grass:12,mushroom:3,fern:7};
-const MAKERS={pine:pPine,oak:pOak,bush:pBush,flower:pFlower,grass:pGrass,mushroom:pMushroom,fern:pFern};
-
-function makePlant(rng,ptype,weights,season){
-  if(!ptype){const w=weights||DEFAULT_W;ptype=rng.choices(Object.keys(w),Object.values(w));}
-  const p=MAKERS[ptype](rng);
-  if(season==='autumn')applyAutumn(p,rng);
-  if(p.blades){
-    if(season==='spring')for(const b of p.blades)if(b.seed%5===0)b.flower=true;
-    else if(season==='winter')for(const b of p.blades)b.flower=false;
-  }
-  return p;
-}
-function genLayout(cols,rows,seed,weights,season){
-  const rng=new RNG(seed),gy=rows-3,placed=[],occ=[];
-  for(let _=0;_<cols*3;_++){
-    const p=makePlant(rng,null,weights,season);
-    const half=(p.width>>1)+2;
-    if(cols<half*2+4)continue;
-    const x=rng.randint(half+1,cols-half-2);
-    const xmin=x-half-1,xmax=x+half+1;
-    if(occ.some(([mn,mx])=>xmin<mx&&xmax>mn))continue;
-    occ.push([xmin,xmax]);
-    placed.push({plant:p,x,gy});
-  }
-  return placed;
-}
-const CANOPY=new Set(['pine','oak']);
-const CANOPY_SHIMMER=new Set(['oak','bush','pine']);
-const LEAF_CANOPY=new Set(['oak','willow']);
-function buildCollision(placed){
-  const col=new Set(),top={},can=new Set(),pine=new Set();
-  for(const{plant,x,gy}of placed){
-    const isLeafC=LEAF_CANOPY.has(plant.type);
-    const isPine=plant.type==='pine';
-    for(const[dy,dx,text]of plant.rows){
-      const row=gy-dy;
-      for(let i=0;i<text.length;i++){
-        if(text[i]===' ')continue;
-        const c=x+dx+i,key=`${row},${c}`;
-        col.add(key);
-        if(top[c]===undefined||row<top[c])top[c]=row;
-        if(isLeafC&&dy>=3)can.add(key);
-        if(isPine&&dy>=3)pine.add(key);
-      }
-    }
-  }
-  return{col,top,can,pine};
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  LAYERS
-// ═══════════════════════════════════════════════════════════════════
-
-const GND=',~.^,.,~^,.,~,.^,~.,';
-class BackgroundLayer{
-  render(buf,state){
-    const{cols,groundY:gy}=state;
-    for(let c=0;c<cols;c++){
-      buf.put(gy,  c,GND[c%GND.length],'ground');
-      buf.put(gy+1,c,GND[(c+5)%GND.length],'dim_green');
-    }
-    if(state.night){
-      // Scatter stars — deterministic from seed so they don't flicker every reset
-      const rng=new RNG(state.seed^0xc0ffee01);
-      const nStars=Math.floor(cols*(gy-3)*0.025);
-      for(let i=0;i<nStars;i++){
-        const sr=rng.randint(0,Math.max(0,gy-4));
-        const sc=rng.randint(0,cols-1);
-        const bright=rng.random()<0.18;
-        buf.put(sr,sc,bright?'*':'.', bright?'moon':'star');
-      }
-      // Moon — phase-aware, upper-right quadrant
-      const phase=_moonPhase();
-      const art=MOON_ART[phase];
-      if(art.length){
-        const mc=Math.floor(cols*0.78);
-        const mw=Math.max(...art.map(l=>l.length));
-        const mx=Math.max(0,Math.min(mc,cols-mw-1));
-        for(let i=0;i<art.length;i++) buf.putStr(1+i,mx,art[i],'moon');
-      }
-    }
-  }
-}
-
-// Rustle on cursor hover
-const RUSTLE_A={'@':'o','o':'0','0':'@','&':'@','*':'.', '^':'*','~':'`','u':'v','v':'u','w':'~','(':'<',')':'>'};
-const RUSTLE_B={'@':'0','o':'@','0':'o','&':'o','*':',', '^':'`','~':'v','u':'~','v':'w','w':'u'};
-const RUSTLE_EL=new Set('@o0&*^~uvw');
-function rustleChar(ch,intensity,seed){
-  if(!RUSTLE_EL.has(ch))return ch;
-  const n=Math.sin(seed)*intensity;
-  if(n>0.45)return RUSTLE_A[ch]||ch;
-  if(n<-0.45)return RUSTLE_B[ch]||ch;
-  return ch;
-}
-
-class PlantLayer{
-  constructor(){this.placed=[];}
-  regenerate(state){
-    const w=SEASON_W[state.season]||DEFAULT_W;
-    this.placed=genLayout(state.cols,state.rows,state.seed,w,state.season);
-    const{col,top,can,pine}=buildCollision(this.placed);
-    state.collisionMap=col; state.topSurfaces=top; state.canopyCells=can; state.pineCells=pine;
-  }
-  // Live grass: tri-stop color ramp (deep→green→bright, root→tip) and
-  // blade lean = wind*1.6 + sin(0.1Hz + seed)*0.6, scaled by height fraction.
-  _renderGrass(buf,state,plant,x,gy){
-    const t=state.frame,season=state.season;
-    // Seasonal ramps: summer/spring green, autumn straw, winter dull gray.
-    const ramp=season==='autumn'?['brown','yellow','bright_yellow']
-      :season==='winter'?['gray','gray','dim']
-      :['deep_green','green','bright_green'];
-    const tipCol=season==='autumn'?'bright_yellow':season==='winter'?'dim':'bright_green';
-    for(const b of plant.blades){
-      const lean=state.wind*1.6+Math.sin((t/200+b.seed*0.37)*6.2832)*0.6;
-      for(let i=1;i<=b.h;i++){
-        const frac=i/b.h,xoff=Math.round(lean*frac*1.2);
-        const row=gy-i,col=x+b.dx+xoff;
-        const l=lean*frac;
-        if(i===b.h){
-          const fam=b.flower?GRASS_FLOWER_FAM:GRASS_FAMS[b.fam];
-          const ch=fam[grassCyclePhase(b.seed,t,fam.length)];
-          buf.putAnim(row,col,ch,b.flower?'bright_yellow':tipCol);
-        }else{
-          const ch=l>0.3?'/':l<-0.3?'\\':'|';
-          buf.put(row,col,ch,ramp[frac<0.4?0:frac<0.75?1:2]);
-        }
-      }
-    }
-  }
-  // Ground cover: density-bucketed filler glyphs on the row above the ground
-  // line (sparse/medium/dense char sets), deterministic per column; a few
-  // cells shimmer via the same static-cycle trick.
-  _renderGroundCover(buf,state){
-    const gy=state.groundY,seed=state.seed;
-    const winter=state.season==='winter';
-    for(let c=0;c<state.cols;c++){
-      const h=(Math.imul(c+13,0x9e3779b1)^seed)>>>0;
-      const v=(h%1000)/1000;
-      if(v<(winter?0.82:0.48))continue;
-      let ch,colr;
-      if(v>0.92){ch='"';colr='green';}
-      else if(v>0.72){ch=';';colr='deep_green';}
-      else{ch=(h&1)?'.':',';colr='dim_green';}
-      if(h%11===0){
-        const fam=GRASS_FAMS[3];
-        ch=fam[grassCyclePhase(h&255,state.frame,fam.length)];
-      }
-      if(winter){ch=(h&1)?'.':'*';colr=(h&2)?'white':'dim';}          // snow-dusted
-      else if(state.season==='autumn'&&v>0.85)colr='yellow';          // strewn straw
-      buf.put(gy-1,c,ch,colr);
-    }
-  }
-  render(buf,state){
-    const mr=state.mouseRow,mc=state.mouseCol;
-    const R=5,R2=R*R;
-    this._renderGroundCover(buf,state);
-    const shimmerI=0.55+Math.abs(state.wind)*1.1;
-    for(const{plant,x,gy}of this.placed){
-      if(plant.blades){this._renderGrass(buf,state,plant,x,gy);continue;}
-      const canShimmer=CANOPY_SHIMMER.has(plant.type);
-      for(const[dy,dx,text,color]of plant.rows){
-        const row=gy-dy,baseCol=x+dx;
-        for(let i=0;i<text.length;i++){
-          let ch=text[i],anim=false;
-          const col=baseCol+i;
-          // Ambient canopy shimmer: a sparse fixed subset of foliage cells
-          // rustles with the wind (same static-cycle idea as grass tips) —
-          // the trees breathe without needing the cursor.
-          if(canShimmer&&dy>=2&&ch!==' '){
-            const h=(Math.imul(row*73+col*151+7,0x9e3779b1)>>>0);
-            if(h%8===0){
-              const ch2=rustleChar(ch,shimmerI,state.frame*0.06+(h%97)*0.7);
-              if(ch2!==ch){ch=ch2;anim=true;}
-            }
-          }
-          if(mr>=0&&ch!==' '){
-            const dr=row-mr,dc=col-mc,d2=dr*dr+dc*dc;
-            if(d2<R2){
-              const intensity=(1-Math.sqrt(d2)/R)*1.2;
-              ch=rustleChar(ch,intensity,state.frame*0.4+col*1.9+row*2.7);
-            }
-          }
-          if(anim)buf.putAnim(row,col,ch,color);
-          else buf.put(row,col,ch,color);
-        }
-      }
-    }
-  }
-}
-
-class Particle{
-  constructor(kind,x,y,vx,vy,ch,color,maxAge){
-    this.kind=kind;this.x=x;this.y=y;this.vx=vx;this.vy=vy;
-    this.ch=ch;this.color=color;this.age=0;this.maxAge=maxAge;
-    this.phase=Math.random()*6.28;this.amp=0.3+Math.random()*0.7;
-    this.rotPhase=Math.floor(Math.random()*3);
-  }
-}
-
-class ParticleLayer{
-  constructor(){this._p=[];this._rng=new RNG(Date.now()&0xffffffff);this._t=0;this._snow={};}
-  reset(){this._p=[];this._snow={};}
-
-  update(state){
-    this._t++;
-    if(this._t%2===0)this._spawn(state);
-    const alive=[];
-    for(const p of this._p){
-      p.age++;
-      if(p.kind==='rain'){
-        p.vy=Math.min(p.vy+0.08,2.2);               // gravity
-        p.x+=p.vx+state.wind*0.3; p.y+=p.vy;
-        const r=p.y|0,c=p.x|0,key=`${r},${c}`;
-        if(state.collisionMap.has(key)){
-          this._fragments(c,r,state.wind);            // plant hit → fragments
-        }else if(r>=state.groundY){
-          this._splashes(c,state.groundY);            // ground hit → splashes
-        }else if(p.age<=p.maxAge&&p.x>=0&&p.x<state.cols){
-          alive.push(p);
-        }
-        continue;
-      }
-      if(p.kind==='snow'){
-        p.x+=p.amp*Math.sin(p.phase+p.age*0.04)*0.25; p.y+=p.vy;
-        const ic=Math.round(p.x);
-        const surf=state.topSurfaces[ic]!==undefined?state.topSurfaces[ic]:state.groundY;
-        const dep=this._snow[ic]||0;
-        if((p.y|0)>=surf-dep){
-          if(dep<3)this._snow[ic]=(dep+1);            // accumulate
-          continue;
-        }
-        if(p.age<=p.maxAge&&p.x>=0&&p.x<state.cols&&p.y>=0)alive.push(p);
-        continue;
-      }
-      if(p.kind==='leaf'){
-        p.vx+=state.wind*0.04;
-        p.vx=Math.max(-0.8,Math.min(0.8,p.vx));
-        p.vy=Math.min(p.vy+0.04,1.5);
-        p.x+=p.vx; p.y+=p.vy*0.4;
-        if(p.age%8===0){p.rotPhase=(p.rotPhase+1)%3;}
-        p.ch=['\\','-','/'][p.rotPhase];
-        if((p.y|0)>=state.groundY){
-          p.kind='leaf-rest';p.vx=0;p.vy=0;p.ch='-';p.age=0;p.maxAge=41;
-          alive.push(p);
-        }else if(p.age<=p.maxAge&&p.x>=0&&p.x<state.cols){
-          alive.push(p);
-        }
-        continue;
-      }
-      if(p.kind==='leaf-rest'){
-        if(p.age<p.maxAge){alive.push(p);}
-        continue;
-      }
-      if(p.kind==='frag'||p.kind==='splash'){
-        // Age char: ' → . → ·
-        const f=p.age/p.maxAge;
-        p.ch=f<0.4?"'":f<0.75?'.':'\u00b7';
-        if(p.kind==='frag'){p.vx*=0.82;p.vy+=0.05;}
-        else{p.vx*=0.88;}
-        p.x+=p.vx; p.y+=p.vy;
-        if(p.age<p.maxAge&&p.x>=0&&p.x<state.cols&&p.y<state.groundY+2)alive.push(p);
-        continue;
-      }
-    }
-    this._p=alive;
-  }
-
-  _fragments(cx,cy,wind){
-    const rng=this._rng,n=rng.randint(2,4);
-    for(let i=0;i<n;i++)
-      this._p.push(new Particle('frag',cx,cy,
-        (wind>0?-1:1)*rng.uniform(0.1,0.4),rng.uniform(-0.3,0),
-        "'","rain",rng.randint(3,8)));
-  }
-  _splashes(cx,gy){
-    const rng=this._rng,n=rng.randint(3,5);
-    for(let i=0;i<n;i++)
-      this._p.push(new Particle('splash',
-        cx+rng.randint(-1,1),gy,rng.uniform(-0.35,0.35),0,
-        "'","white",rng.randint(3,8)));
-  }
-
-  _spawn(state){
-    const rng=this._rng,s=state.season;
-    const rainN=this._p.filter(p=>p.kind==='rain').length;
-    // Rain char leans with wind
-    const rc=state.wind>0.2?'\\':state.wind<-0.2?'/':'|';
-    if(s==='spring'&&rainN<60&&rng.random()<0.35)
-      this._p.push(new Particle('rain',rng.random()*state.cols,0,
-        state.wind*0.3,rng.uniform(0.5,1.0),rc,'rain',60));
-    if(s==='autumn'&&rainN<120){
-      const n=rng.randint(2,5);
-      for(let i=0;i<n;i++)
-        this._p.push(new Particle('rain',rng.random()*state.cols,0,
-          state.wind*0.3,rng.uniform(0.7,1.4),rc,'rain',35));
-    }
-    if(s==='winter'&&this._p.filter(p=>p.kind==='snow').length<80)
-      this._p.push(new Particle('snow',rng.random()*state.cols,0,0,
-        rng.uniform(0.08,0.25),rng.choice(['.','*']),'bright_white',300));
-    if(s==='autumn'){
-      const leafCap=Math.max(0,Math.min(60,Math.floor(state.canopyCells.size/3)));
-      const leafCount=this._p.filter(p=>p.kind==='leaf'||p.kind==='leaf-rest').length;
-      if(leafCount<leafCap){
-        let x,y,vx,vy;
-        if(rng.random()<0.3){
-          x=rng.random()*state.cols;y=rng.randint(0,2);
-          vx=rng.uniform(-0.3,0.3);vy=rng.uniform(0.1,0.25);
-        }else{
-          const arr=Array.from(state.canopyCells);
-          const[r,c]=arr[Math.floor(rng.random()*arr.length)].split(',').map(Number);
-          x=c;y=r;vx=rng.uniform(-0.2,0.2);vy=rng.uniform(0.05,0.2);
-        }
-        this._p.push(new Particle('leaf',x,y,vx,vy,
-          rng.choice([',','\'','~','*']),rng.choice(AUTUMN_COLS),150));
-      }
-    }
-  }
-
-  spawnAt(mr,mc,state){
-    const rng=new RNG(Date.now()&0xffffffff);
-    let n=0;
-    // Leaf burst from deciduous canopy
-    for(let dr=-4;dr<=4&&n<10;dr++)
-      for(let dc=-6;dc<=6&&n<10;dc++){
-        if(!state.canopyCells.has(`${mr+dr},${mc+dc}`))continue;
-        this._p.push(new Particle('leaf',mc+dc,mr+dr,
-          rng.uniform(-0.5,0.5),rng.uniform(-0.3,0.1),
-          rng.choice([',','\'','~','*','.']),
-          rng.choice(state.season==='autumn'?AUTUMN_COLS:['bright_green','green','bright_yellow','yellow','bright_magenta']),100));
-        n++;
-      }
-    // Pine needle rustle (FL-G22/G26) — use dedicated pineCells set
-    if(n===0){
-      for(let dr=-3;dr<=3&&n<6;dr++)
-        for(let dc=-4;dc<=4&&n<6;dc++){
-          const key=`${mr+dr},${mc+dc}`;
-          if(!state.pineCells.has(key))continue;
-          this._p.push(new Particle('frag',mc+dc,mr+dr,
-            rng.uniform(-0.3,0.3),rng.uniform(0.05,0.2),
-            rng.choice(["'",'.','`']),
-            rng.choice(['bright_green','green']),rng.randint(8,16)));
-          n++;
-        }
-    }
-  }
-
-  render(buf,state){
-    for(const p of this._p) buf.putAnim(p.y|0,p.x|0,p.ch,p.color);
-    // Snow accumulation piles
-    for(const[col,dep]of Object.entries(this._snow)){
-      const c=+col;
-      if(c<0||c>=state.cols)continue;
-      for(let d=0;d<dep;d++){
-        const r=state.groundY-d;
-        if(r>=0)buf.putAnim(r,c,(c+d)%3===0?'*':'.','bright_white');
-      }
-    }
-  }
-}
-
-class CreatureLayer{
-  constructor(){
-    this._cr=[];this._birdT=0;this._init=false;
-    this._animal=null;this._feedEvent=null;this._feedSeq=0;
-  }
-  reset(){
-    this._cr=[];this._init=false;this._birdT=0;
-    this._animal=null;this._feedEvent=null;
-  }
-  queueFeedReaction(data){
-    if(!data||!data.type)return;
-    this._feedEvent={type:data.type,seq:++this._feedSeq};
-  }
-  spawnAmbientBirdBurst(state){
-    if(!state)return;
-    this._spawnAmbientBirds(state,3+Math.floor(Math.random()*3),true);
-    this._birdT=0;
-  }
-  debugAnimalState(){
-    return this._animal?`${this._animal.mode}/${this._animal.pose}`:'none';
-  }
-  _initCreatures(state){
-    this._init=true;
-    const rng=new RNG(state.seed^0x12ab34cd),s=state.season;
-    if(s==='spring'||s==='summer'){
-      const n=rng.randint(1,2);
-      for(let i=0;i<n;i++){
-        const x=rng.randint(5,state.cols-5),y=rng.randint(3,state.groundY-8);
-        this._cr.push({kind:'butterfly',x,y,vx:rng.random()>.5?.3:-.3,
-          phase:rng.random()*6.28,
-          color:rng.choice(['bright_magenta','magenta','bright_cyan','cyan']),
-          frames:['><','||','><','\\/'],fi:0,active:true});
-      }
-    }
-    if(s==='summer'&&state.timeOfDay==='evening'){
-      const n=rng.randint(3,5);
-      for(let i=0;i<n;i++){
-        const x=rng.randint(3,state.cols-3),y=rng.randint(state.groundY-12,state.groundY-3);
-        this._cr.push({kind:'firefly',x,y,vx:(i%3-1)*0.04,
-          vy:i%2?0.02:-0.02,phase:i*0.7,on:3+(i%5),off:10+(i%15),active:true});
-      }
-    }
-  }
-  _spawnAmbientBirds(state,count,forceFlock=false){
-    const frames=state.cols<60?_AMBIENT_BIRD_COMPACT_FRAMES:_AMBIENT_BIRD_FRAMES;
-    const width=artWidth(frames);
-    const fromL=Math.random()>.5;
-    const flock=forceFlock?count:(Math.random()<0.28?3+Math.floor(Math.random()*3):1);
-    const baseY=Math.floor(Math.random()*Math.max(4,state.groundY-12))+2;
-    for(let i=0;i<flock;i++){
-      const trail=i*5;
-      const offsetY=(i%2===0?0:1)+(i===2?-1:0);
-      this._cr.push({
-        kind:'bird',
-        x:fromL?-width-2-trail:state.cols+2+trail,
-        y:clamp(baseY+offsetY,1,Math.max(2,state.groundY-8)),
-        vx:fromL?0.42:-0.42,
-        frames,
-        fi:i%frames.length,
-        frameStep:5+(i%3),
-        active:true
-      });
-    }
-  }
-  _ensureAnimal(state){
-    const ad=state.animalData;
-    if(!ad||!ad.triggered){this._animal=null;return null;}
-    const home=animalHomePos(ad.type,state.seed,state.cols,state.rows);
-    if(!this._animal||this._animal.type!==ad.type){
-      this._animal=this._newAnimal(ad,home,state);
-      return this._animal;
-    }
-    const a=this._animal;
-    const tierChanged=a.tier!==ad.tier;
-    a.tier=ad.tier;
-    a.wasAbsent=ad.wasAbsent;
-    a.homeRow=home.row;
-    a.homeCol=home.col;
-    this._syncAnimalAnchors(a,state);
-    if(tierChanged)this._resetAnimalTier(a,state);
-    return a;
-  }
-  _newAnimal(ad,home,state){
-    const a={
-      type:ad.type,tier:ad.tier,wasAbsent:ad.wasAbsent,
-      homeRow:home.row,homeCol:home.col,row:home.row,col:home.col,
-      targetRow:home.row,targetCol:home.col,
-      edgeRow:home.row,edgeCol:home.col,spotA:home.col,spotB:home.col,
-      mode:'idle',pose:'base',timer:0,visible:true,feedGlyph:null
-    };
-    this._syncAnimalAnchors(a,state);
-    this._resetAnimalTier(a,state);
-    return a;
-  }
-  _syncAnimalAnchors(a,state){
-    const width=Math.max(2,artWidth(animalFrame(a.type,Math.max(1,a.tier),'base')));
-    a.edgeCol=clamp(state.cols-width-2,0,Math.max(0,state.cols-width));
-    a.edgeRow=a.type==='bird'?Math.max(2,a.homeRow-1):state.rows-4;
-    a.spotA=clamp(a.homeCol,0,Math.max(0,state.cols-width-1));
-    const delta=a.type==='cat'?4:a.type==='bird'?4:a.type==='rabbit'?3:2;
-    a.spotB=clamp(a.homeCol+delta,0,Math.max(0,state.cols-width-1));
-  }
-  _resetAnimalTier(a,state){
-    a.feedGlyph=null;
-    if(a.tier===0){
-      a.row=a.edgeRow;
-      a.col=a.edgeCol+1.2;
-      a.targetCol=a.edgeCol;
-      a.targetRow=a.edgeRow;
-      a.mode='edge';
-      a.pose='peek';
-      a.timer=55;
-      a.visible=false;
-      return;
-    }
-    a.visible=true;
-    if(a.tier===1){
-      a.row=a.type==='bird'?a.homeRow+1:state.rows-4;
-      a.col=a.edgeCol+1;
-      a.targetCol=a.spotB;
-      a.targetRow=a.type==='bird'?a.homeRow:a.row;
-      a.mode='approach';
-      a.pose=this._idlePose(a,false);
-      a.timer=0;
-      return;
-    }
-    a.row=a.homeRow;
-    a.col=a.spotA;
-    a.targetCol=a.spotB;
-    a.targetRow=a.homeRow;
-    a.mode=a.tier>=3?'settled':'patrol';
-    a.pose=this._idlePose(a,false);
-    a.timer=40;
-  }
-  _idlePose(a,hover){
-    if(a.type==='cat')return hover?'blink':(a.tier>=3?'nap':'tail');
-    if(a.type==='bird')return hover?'turn':(a.tier>=3?'settled':'perch');
-    if(a.type==='rabbit')return hover?'twitch':(a.tier>=3?'groom':'twitch');
-    return hover?(a.tier>=2?'turn':'step'):(a.tier>=3?'rest':'bob');
-  }
-  _runEdgePeek(a,state,peekPose,altPose,blinkPose=peekPose){
-    if(--a.timer<=0){
-      a.visible=!a.visible;
-      a.timer=a.visible?42:96;
-    }
-    a.mode='edge';
-    a.row=a.edgeRow;
-    a.col=a.visible?a.edgeCol-0.8:a.edgeCol+1.2;
-    const flap=state.frame%48;
-    a.pose=!a.visible?peekPose:(flap<12?altPose:(flap<18?blinkPose:peekPose));
-  }
-  _move(a,colSpeed,rowSpeed=colSpeed){
-    if(Math.abs(a.targetCol-a.col)<=colSpeed)a.col=a.targetCol;
-    else a.col+=Math.sign(a.targetCol-a.col)*colSpeed;
-    if(Math.abs(a.targetRow-a.row)<=rowSpeed)a.row=a.targetRow;
-    else a.row+=Math.sign(a.targetRow-a.row)*rowSpeed;
-  }
-  _hoveringAnimal(a,state){
-    const art=animalFrame(a.type,a.tier,a.pose);
-    const h=art.length,w=Math.max(2,artWidth(art));
-    return state.mouseRow>=0&&
-      Math.abs(state.mouseRow-Math.round(a.row))<=h+1&&
-      Math.abs(state.mouseCol-Math.round(a.col))<=w+2;
-  }
-  _consumeFeedEvent(a,state){
-    if(!this._feedEvent||this._feedEvent.type!==a.type)return false;
-    const glyph=_ANIMAL_FEED_GLYPHS[a.type];
-    const width=glyph?artWidth(glyph.lines):0;
-    a.mode='feed-react';
-    a.pose='feed';
-    a.timer=28;
-    a.visible=true;
-    a.targetRow=a.type==='bird'?a.homeRow+0.9:a.homeRow;
-    a.targetCol=a.tier===0?Math.max(0,a.edgeCol-1):clamp(a.spotA+(a.type==='cat'?1:0),0,Math.max(0,state.cols-4));
-    if(glyph){
-      const homeCol=a.tier===0?Math.max(0,a.edgeCol-1):a.homeCol;
-      a.feedGlyph={
-        lines:glyph.lines,
-        color:glyph.color,
-        row:clamp(a.homeRow+(glyph.dy||0),0,Math.max(0,state.rows-glyph.lines.length-1)),
-        col:clamp(homeCol+(glyph.dx||0),0,Math.max(0,state.cols-width-1)),
-        timer:28
-      };
-    }
-    this._feedEvent=null;
-    return true;
-  }
-  _runFeedReaction(a){
-    if(a.feedGlyph&&--a.feedGlyph.timer<=0)a.feedGlyph=null;
-    if(a.mode!=='feed-react')return false;
-    a.pose='feed';
-    if(a.type==='bird'&&a.timer<12)a.targetRow=a.homeRow;
-    if(a.tier>0&&a.timer<12)a.targetCol=a.spotA;
-    this._move(a,a.type==='turtle'?0.12:0.34,a.type==='bird'?0.25:0.2);
-    if(--a.timer<=0){
-      a.mode=a.tier>=3?'settled':a.tier===2?'patrol':a.tier===1?'approach':'edge';
-      a.pose=this._idlePose(a,false);
-    }
-    return true;
-  }
-  _updateCat(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','tail','blink');return;}
-    if(a.tier===1){
-      if(a.mode==='hide'){
-        a.visible=false;
-        if(--a.timer<=0){
-          a.visible=true;
-          a.col=a.edgeCol+1;
-          a.targetCol=a.spotB;
-          a.mode='approach';
-        }
-        return;
-      }
-      if(a.mode==='approach'){
-        a.pose='tail';
-        this._move(a,0.34);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='pause';a.timer=38;}
-        return;
-      }
-      if(a.mode==='retreat'){
-        a.pose='tail';
-        a.targetCol=a.edgeCol+1;
-        this._move(a,0.34);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='hide';a.timer=72;}
-        return;
-      }
-      a.pose=hover?'blink':'tail';
-      if(--a.timer<=0)a.mode='retreat';
-      return;
-    }
-    if(--a.timer<=0){
-      a.targetCol=a.targetCol===a.spotA?a.spotB:a.spotA;
-      a.timer=a.tier>=3?70:42;
-    }
-    a.pose=hover?'blink':(a.tier>=3?(state.frame%90<18?'stretch':'nap'):(state.frame%42<10?'tail':'base'));
-    this._move(a,a.tier>=3?0.08:0.18);
-  }
-  _updateBird(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','ruffle','turn');return;}
-    if(a.tier===1){
-      if(a.mode==='approach'){
-        a.pose='dip';
-        this._move(a,0.4,0.25);
-        if(Math.abs(a.col-a.targetCol)<0.2&&Math.abs(a.row-a.targetRow)<0.2){a.mode='perch';a.timer=24;}
-        return;
-      }
-      if(a.mode==='shift'){
-        a.pose='perch';
-        this._move(a,0.36,0.25);
-        if(Math.abs(a.col-a.targetCol)<0.2&&Math.abs(a.row-a.targetRow)<0.2){a.mode='perch';a.timer=24;}
-        return;
-      }
-      a.pose=hover?'turn':'perch';
-      if(--a.timer<=0){
-        a.mode='shift';
-        const toAlt=Math.abs(a.targetCol-a.spotA)<0.2;
-        a.targetCol=toAlt?a.spotB:a.spotA;
-        a.targetRow=toAlt?a.homeRow+1:a.homeRow;
-      }
-      return;
-    }
-    if(--a.timer<=0){
-      const roam=a.tier===2&&Math.random()<0.45;
-      a.targetCol=roam&&Math.abs(a.targetCol-a.spotA)<0.2?a.spotB:a.spotA;
-      a.targetRow=a.targetCol===a.spotA?a.homeRow:a.homeRow+1;
-      a.timer=a.tier>=3?78:46;
-    }
-    a.pose=hover?'turn':(a.tier>=3?(state.frame%84<16?'ruffle':'settled'):(state.frame%56<12?'ruffle':'perch'));
-    this._move(a,a.tier>=3?0.1:0.22,0.16);
-  }
-  _updateRabbit(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','twitch');return;}
-    if(a.tier===1){
-      if(a.mode==='hide'){
-        a.visible=false;
-        if(--a.timer<=0){
-          a.visible=true;
-          a.col=a.edgeCol+1;
-          a.targetCol=a.spotB;
-          a.mode='approach';
-        }
-        return;
-      }
-      if(a.mode==='approach'){
-        a.pose='hop';
-        this._move(a,0.4);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='pause';a.timer=32;}
-        return;
-      }
-      if(a.mode==='retreat'){
-        a.pose='hop';
-        a.targetCol=a.edgeCol+1;
-        this._move(a,0.42);
-        if(Math.abs(a.col-a.targetCol)<0.2){a.mode='hide';a.timer=68;}
-        return;
-      }
-      a.pose=hover?'twitch':'base';
-      if(--a.timer<=0)a.mode='retreat';
-      return;
-    }
-    if(--a.timer<=0){
-      a.targetCol=a.targetCol===a.spotA?a.spotB:a.spotA;
-      a.timer=a.tier>=3?76:40;
-    }
-    a.pose=hover?'twitch':(a.tier>=3?(state.frame%92<24?'groom':'rest'):(state.frame%36<12?'hop':'twitch'));
-    this._move(a,a.tier>=3?0.08:0.2);
-  }
-  _updateTurtle(a,state,hover){
-    if(a.tier===0){this._runEdgePeek(a,state,'peek','step','turn');return;}
-    if(a.tier===1){
-      if(a.mode==='approach'){
-        a.pose='step';
-        this._move(a,0.1);
-        if(Math.abs(a.col-a.targetCol)<0.15){a.mode='pause';a.timer=46;}
-        return;
-      }
-      if(a.mode==='retreat'){
-        a.pose='turn';
-        a.targetCol=a.spotA;
-        this._move(a,0.08);
-        if(Math.abs(a.col-a.targetCol)<0.15){a.mode='pause';a.timer=40;}
-        return;
-      }
-      a.pose=hover?'turn':'bob';
-      if(--a.timer<=0){
-        a.mode=a.mode==='pause'&&Math.abs(a.col-a.spotA)<0.15?'approach':'retreat';
-        a.targetCol=a.mode==='approach'?a.spotB:a.spotA;
-      }
-      return;
-    }
-    if(--a.timer<=0){
-      a.targetCol=a.targetCol===a.spotA?a.spotB:a.spotA;
-      a.timer=a.tier>=3?90:54;
-    }
-    a.pose=hover?'turn':(a.tier>=3?(state.frame%100<24?'bob':'rest'):(state.frame%50<18?'step':'turn'));
-    this._move(a,a.tier>=3?0.05:0.08);
-  }
-  _updateAnimalActor(a,state){
-    const hover=this._hoveringAnimal(a,state);
-    this._consumeFeedEvent(a,state);
-    if(this._runFeedReaction(a))return;
-    if(a.feedGlyph&&--a.feedGlyph.timer<=0)a.feedGlyph=null;
-    if(a.type==='cat')this._updateCat(a,state,hover);
-    else if(a.type==='bird')this._updateBird(a,state,hover);
-    else if(a.type==='rabbit')this._updateRabbit(a,state,hover);
-    else this._updateTurtle(a,state,hover);
-  }
-  update(state){
-    if(!this._init)this._initCreatures(state);
-    const gy=state.groundY;
-    for(const c of this._cr){
-      if(!c.active)continue;
-      if(c.kind==='butterfly'){
-        c.fi=Math.floor(state.frame/6)%c.frames.length;
-        c.x+=c.vx;c.y+=0.15*Math.sin(state.frame*0.05+c.phase);
-        c.y=Math.max(2,Math.min(gy-5,c.y));
-        if(c.x<1){c.x=1;c.vx=Math.abs(c.vx);}
-        if(c.x>state.cols-3){c.x=state.cols-3;c.vx=-Math.abs(c.vx);}
-      }else if(c.kind==='bird'){
-        c.fi=Math.floor(state.frame/c.frameStep)%c.frames.length;c.x+=c.vx;
-        const w=artWidth(c.frames);
-        if(c.x<-w-2||c.x>state.cols+w+2)c.active=false;
-      }else if(c.kind==='firefly'){
-        c.x+=c.vx;c.y+=c.vy+0.05*Math.sin(state.frame*0.02+c.phase);
-        c.y=Math.max(1,Math.min(gy-2,c.y));
-      }
-    }
-    this._cr=this._cr.filter(c=>c.active!==false);
-    this._birdT++;
-    if(this._birdT>250+Math.floor(Math.random()*350)&&state.season!=='winter'){
-      this._birdT=0;
-      this._spawnAmbientBirds(state,1,false);
-    }
-    const animal=this._ensureAnimal(state);
-    if(animal)this._updateAnimalActor(animal,state);
-  }
-  render(buf,state){
-    for(const c of this._cr){
-      if(!c.active)continue;
-      const r=Math.round(c.y),col=Math.round(c.x);
-      if(c.kind==='butterfly') buf.putStrAnim(r,col,c.frames[c.fi],c.color);
-      else if(c.kind==='bird') buf.putStrAnim(r,col,c.frames[c.fi],'gray');
-      else if(c.kind==='firefly')
-        if(state.frame%(c.on+c.off)<c.on) buf.putAnim(r,col,'*','bright_yellow');
-    }
-    const a=this._animal;
-    if(!a)return;
-    const artLines=animalFrame(a.type,a.tier,a.pose);
-    if(a.feedGlyph){
-      a.feedGlyph.lines.forEach((ln,i)=>buf.putStrAnim(a.feedGlyph.row+i,a.feedGlyph.col,ln,a.feedGlyph.color||'bright_yellow'));
-    }
-    if(a.wasAbsent&&a.tier>0){
-      const fp=_ANIMAL_FOOTPRINTS[a.type]||'...';
-      buf.putStrAnim(Math.round(a.homeRow)+artLines.length,Math.max(0,Math.round(a.homeCol)),fp,'dim');
-    }
-    if(!a.visible)return;
-    const baseCol=clamp(Math.round(a.col),0,Math.max(0,state.cols-artWidth(artLines)-1));
-    artLines.forEach((ln,i)=>buf.putStrAnim(Math.round(a.row)+i,baseCol,ln,'brown'));
-  }
-}
-
-class SpecialLayer{
-  render(buf,state){
-    if(!state.postComplete)return;
-    const cx=state.cols>>1,gy=state.groundY;
-    buf.put(gy-1,cx,'|','green');
-    buf.putStr(gy-2,cx-1,'(@)','bright_red');
-    buf.putStr(gy-3,cx-1,'@@@','red');
-    // Generic perch bird unless bonded animal is present (rendered by CreatureLayer)
-    const ad=state.animalData;
-    if(!ad||ad.tier<3||!ad.triggered) buf.put(gy-9,cx+6,'v','bright_white');
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  DOM RENDERER — replaces canvas entirely
-// ═══════════════════════════════════════════════════════════════════
-
-// Pre-build HTML escape map for speed
-const ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;'};
-function esc1(ch){ return ESC_MAP[ch]||ch; }
-
-class GardenDOM {
-  constructor(el){
-    this.el=el;
-    this._rowEls=[];
-    this._lastGy=-1; this._lastNight=false; this._lastTimeOfDay='day';
-    this._cw=CW; this._ch=CH;
-    this._measure();
-  }
-
-  _measure(){
-    // Measure from inside #g so font-rendering context is identical to garden rows
-    const s=document.createElement('span');
-    s.textContent='WWWWWWWWWW';
-    s.style.cssText='position:absolute;top:-9999px;left:0;visibility:hidden;white-space:pre;pointer-events:none';
-    this.el.appendChild(s);
-    const cw=s.getBoundingClientRect().width/10;
-    this.el.removeChild(s);
-    // CH: measure a real div — inherits height:15px from #g>div CSS rule
-    const d=document.createElement('div');
-    d.style.cssText='position:absolute;top:-9999px;left:0;visibility:hidden;pointer-events:none';
-    d.textContent=' ';
-    this.el.appendChild(d);
-    const ch=d.getBoundingClientRect().height||15;
-    this.el.removeChild(d);
-    this._cw=cw;this._ch=ch;
-    CW=cw;CH=ch;
-  }
-
-  get cols(){ return Math.floor(this.el.clientWidth/this._cw); }
-  get rows(){ return Math.floor(this.el.clientHeight/this._ch); }
-
-  resize(){ this._measure(); }
-
-  setGroundBg(gy,rows,timeOfDay='day'){
-    if(gy===this._lastGy&&_devNight===this._lastNight&&timeOfDay===this._lastTimeOfDay)return;
-    this._lastGy=gy; this._lastNight=_devNight; this._lastTimeOfDay=timeOfDay;
-    const sky=timeOfDay==='evening'?'#ecd6b6':C.sky;
-    const ground=timeOfDay==='evening'?'#d8bea2':C.dim_green;
-    const pct=((gy+1)/rows*100).toFixed(2);
-    this.el.style.background=
-      `linear-gradient(to bottom,${sky} ${pct}%,${ground} ${pct}%)`;
-  }
-
-  blit(buf,gy){
-    this.setGroundBg(gy,buf.rows,getTimeOfDay());
-
-    // Sync row element count
-    while(this._rowEls.length<buf.rows){
-      const d=document.createElement('div');
-      this.el.appendChild(d);
-      this._rowEls.push(d);
-    }
-    while(this._rowEls.length>buf.rows){
-      this.el.removeChild(this._rowEls.pop());
-    }
-
-    // Render each row as colored spans
-    for(let r=0;r<buf.rows;r++){
-      let html='';
-      let curCol=null,curText='';
-
-      for(let c=0;c<buf.cols;c++){
-        const i=r*buf.cols+c;
-        const ch=buf._ch[i];
-
-        if(ch===' '){
-          if(curText){html+=`<span style="color:${curCol}">${curText}</span>`;curText='';curCol=null;}
-          html+=' ';
-          continue;
-        }
-
-        // Mode 3: non-animated cells go B&W; animated cells keep palette color
-        const rawCol=buf._col[i];
-        const col=(_colorMode===3&&!buf._anim[i])?'var(--text)':(C[rawCol]||'#404040');
-        if(col!==curCol){
-          if(curText){html+=`<span style="color:${curCol}">${curText}</span>`;curText='';}
-          curCol=col;
-        }
-        curText+=esc1(ch);
-      }
-      if(curText)html+=`<span style="color:${curCol}">${curText}</span>`;
-      this._rowEls[r].innerHTML=html;
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  GARDEN ENGINE
-// ═══════════════════════════════════════════════════════════════════
-
-function getSeason(){
-  // Dev override (< / > keys) takes precedence
-  if(_devSeason)return _devSeason.replace(/-(evening|night)$/,'');
-  // ?season= URL param lets QA force a season without editing JS or clock
-  const p=new URLSearchParams(location.search).get('season');
-  if(p&&['spring','summer','autumn','winter'].includes(p))return p;
-  const m=new Date().getMonth()+1;
-  if(m>=3&&m<=5)return'spring';if(m>=6&&m<=8)return'summer';
-  if(m>=9&&m<=11)return'autumn';return'winter';
-}
-function getTimeOfDay(){
-  if(_devSeason){
-    if(_devSeason.endsWith('-night'))return'night';
-    if(_devSeason.endsWith('-evening'))return'evening';
-    return'day';
-  }
-  const p=new URLSearchParams(location.search).get('time');
-  if(p&&['day','evening','night'].includes(p))return p;
-  const hour=new Date().getHours();
-  if(hour>=19&&hour<21)return'evening';
-  if(hour>=21||hour<5)return'night';
-  return'day';
-}
-
-class GardenEngine{
-  constructor(el){
-    this.dom=new GardenDOM(el);
-    this.el=el;
-    this.buf=null; this.state=null;
-    this.bg=new BackgroundLayer();
-    this.plants=new PlantLayer();
-    this.particles=new ParticleLayer();
-    this.creatures=new CreatureLayer();
-    this.special=new SpecialLayer();
-    this._raf=null; this._last=0; this._seed=12345;
-    this._postComplete=false; this._animalData=null;
-    this._bindMouse();
-  }
-
-  _bindMouse(){
-    this.el.addEventListener('mousemove',e=>{
-      if(!this.state)return;
-      const rect=this.el.getBoundingClientRect();
-      this.state.mouseRow=Math.floor((e.clientY-rect.top)/CH);
-      this.state.mouseCol=Math.floor((e.clientX-rect.left)/CW);
-      const key=`${this.state.mouseRow},${this.state.mouseCol}`;
-      this.el.style.cursor=this.state.collisionMap.has(key)?'pointer':'crosshair';
-    });
-    this.el.addEventListener('mouseleave',()=>{
-      if(this.state){this.state.mouseRow=-1;this.state.mouseCol=-1;}
-      this.el.style.cursor='crosshair';
-    });
-    this.el.addEventListener('click',e=>{
-      if(!this.state)return;
-      const rect=this.el.getBoundingClientRect();
-      const mr=Math.floor((e.clientY-rect.top)/CH);
-      const mc=Math.floor((e.clientX-rect.left)/CW);
-      this.particles.spawnAt(mr,mc,this.state);
-    });
-  }
-
-  setSeed(seed){ this._seed=seed; this._reset(); }
-
-  _reset(){
-    this.dom.resize();
-    const season=getSeason();
-    const timeOfDay=getTimeOfDay();
-    this.state=new GardenState(this.dom.cols,this.dom.rows,this._seed,season);
-    _applyNightPalette(timeOfDay==='night');
-    this.state.night=timeOfDay==='night';
-    this.state.timeOfDay=timeOfDay;
-    this.state.postComplete=this._postComplete;
-    this.state.animalData=this._animalData;
-    this.buf=new ScreenBuffer(this.dom.rows,this.dom.cols);
-    this.plants.regenerate(this.state);
-    this.particles.reset(); this.creatures.reset();
-  }
-
-  start(){
-    if(this._raf)return;
-    const tick=now=>{
-      this._raf=requestAnimationFrame(tick);
-      if(now-this._last<50)return; // ~20fps
-      this._last=now; this._tick();
-    };
-    this._raf=requestAnimationFrame(tick);
-  }
-
-  stop(){ if(this._raf){cancelAnimationFrame(this._raf);this._raf=null;} }
-
-  _tick(){
-    const s=this.state; s.frame++;
-    // Gusty wind: product of two slow oscillators (asciicker foliage_wind_state
-    // uses n0*n1 with a positive offset for a prevailing direction).
-    const n0=Math.sin(s.frame*0.008)+0.35*Math.sin(s.frame*0.0173+1.3);
-    const n1=Math.sin(s.frame*0.0052+4.1)+0.35*Math.sin(s.frame*0.0117+2.2);
-    s.wind=clamp(n0*n1*0.45+0.08,-0.65,0.65);
-    this.particles.update(s); this.creatures.update(s);
-    this.buf.clear();
-    this.bg.render(this.buf,s);
-    this.plants.render(this.buf,s);
-    this.particles.render(this.buf,s);
-    this.creatures.render(this.buf,s);
-    this.special.render(this.buf,s);
-    this.dom.blit(this.buf,s.groundY);
-  }
-
-  onResize(){ this._reset(); }
-  setPostComplete(v){ this._postComplete=v; if(this.state) this.state.postComplete=v; }
-  setAnimalData(data){ this._animalData=data; if(this.state) this.state.animalData=data; }
-  triggerAnimalFeedReaction(data){ this.creatures.queueFeedReaction(data); }
-  spawnAmbientBirdBurst(){ if(this.state) this.creatures.spawnAmbientBirdBurst(this.state); }
-  animalDebugState(){ return this.creatures.debugAnimalState(); }
-}
-
-// ═══════════════════════════════════════════════════════════════════
 //  VIEWER LOGIC
-// ═══════════════════════════════════════════════════════════════════
 
 const NS='lateletter_v1_';
+const SKY_REGION_KEY='lateletter_garden_sky_region_v1';
 const SIDS=['s-welcome','s-passphrase','s-status','s-select','s-reading','s-archive','s-error'];
+const GARDEN_DEBUG_REQUESTED=new URLSearchParams(location.search).get('garden_debug')==='1';
+const GARDEN_REVIEW_TIME_TEXT=new URLSearchParams(location.search).get('garden_review_time');
+const GARDEN_REVIEW_TIME_SECONDS=(()=>{
+  if(!GARDEN_REVIEW_TIME_TEXT||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(GARDEN_REVIEW_TIME_TEXT))return null;
+  const milliseconds=Date.parse(GARDEN_REVIEW_TIME_TEXT);
+  return Number.isFinite(milliseconds)?Math.floor(milliseconds/1000):null;
+})();
+const GARDEN_REVIEW_IS_LOCAL=(()=>{
+  const hostname=String(location.hostname||'').toLowerCase();
+  return hostname==='localhost'||hostname==='127.0.0.1'||hostname==='::1';
+})();
 
 let bundle=null,isDevFixture=false,decoded={};
 let readIds=new Set(),giftDiscovered={};
 let visitCount=0,firstRun=true,postComplete=false;
-let dueIdxs=[],curMsg=null,cachedPassphrase=null;
+let dueIdxs=[],curMsg=null,authenticated=false,authenticatedBinding=null;
+let authEpoch=0;
 let _firstReadGuide=false;
 let garden=null;
 let bundleCorrupted=false,bundleCorruptionReason='';
 
-// Animal relationship state (§6.8.2)
-let animalType=null,animalTier=0,animalTriggered=false,animalTrustActions=0,wasAbsent=false;
-let _devAnimal=null,_frbDone=false,_frbTimers=[];
+// Live animal identity, species, and bond state are consumed exclusively from
+// the canonical world projection.
+let wasAbsent=false;
+let _frbDone=false,_frbTimers=[];
 // Dev state
 let _devSeason=null,_devNight=false,_colorMode=0,_savedPalette=null;
 let _devGridActive=false,_devGridRaf=null;
 // Reading progress
 let _lineCount=0,_progressScrollOff=null;
+let gardenRuntime=null,gardenProgram=null,gardenProgramState={applied_occurrences:[]};
+const pendingGardenRuntimes=new Set();
+let standaloneMode=false,_gardenFocusReturn=null;
+let gardenContextObjectId=null;
+let gardenSessionStarted=0;
+let gardenProgramTail=Promise.resolve();
+let gardenNotice='';
+const reducedMotionQuery=window.matchMedia?.('(prefers-reduced-motion: reduce)')??{
+  matches:false,addEventListener:()=>{},
+};
+let _memoryInvoker=null,_memoryBackground=[];
+
+function gardenReviewTime(){
+  return GARDEN_REVIEW_IS_LOCAL&&GARDEN_REVIEW_TIME_SECONDS!==null&&
+    (standaloneMode||isDevFixture)
+    ?GARDEN_REVIEW_TIME_SECONDS:null;
+}
+
+async function _receiptGet(key){
+  return gardenReviewTime()===null?kvGet(key):null;
+}
+async function _receiptSet(key,value){
+  if(gardenReviewTime()===null)await kvSet(key,value);
+}
+
+function applyGardenPageTheme({mode='day'}={}){
+  const root=document.documentElement;
+  const themes={
+    day:{text:'#000000',bg:'#f9f8f5',scrim:'rgba(249,248,245,.82)',strong:'.78',muted:'.7',faint:'.62'},
+    evening:{text:'#24170f',bg:'#ecd6b6',scrim:'rgba(236,214,182,.84)',strong:'.82',muted:'.75',faint:'.7'},
+    night:{text:'#f1ede3',bg:'#0b0e16',scrim:'rgba(11,14,22,.88)',strong:'.84',muted:'.75',faint:'.62'},
+  };
+  const theme=themes[mode]||themes.day;
+  root.style.setProperty('--text',theme.text);
+  root.style.setProperty('--bg',theme.bg);
+  root.style.setProperty('--scrim-bg',theme.scrim);
+  root.style.setProperty('--opacity-strong',theme.strong);
+  root.style.setProperty('--opacity-muted',theme.muted);
+  root.style.setProperty('--opacity-faint',theme.faint);
+  root.dataset.gardenTheme=mode;
+}
+
+function gardenControlsEnabled(){
+  // Diagnostics are explicit even for the trusted fixture. A recipient bundle
+  // can never opt in through the query string.
+  return Boolean(GARDEN_DEBUG_REQUESTED&&(standaloneMode||isDevFixture));
+}
+function syncGardenControlsAvailability(){
+  const panel=document.getElementById('garden-controls');
+  if(!panel)return false;
+  const enabled=gardenControlsEnabled();
+  panel.hidden=!enabled;
+  if(!enabled)panel.classList.remove('open');
+  return enabled;
+}
+function openGardenControls(){
+  if(!syncGardenControlsAvailability())return;
+  document.getElementById('garden-controls').classList.add('open');
+  document.getElementById('garden-controls-close')?.focus();
+}
+function closeGardenControls(){
+  document.getElementById('garden-controls')?.classList.remove('open');
+  document.getElementById('garden-controls-open')?.focus();
+}
+
+function syncAmbientMotion(){
+  const motionPaused=Boolean(gardenRuntime?.state?.ui?.motion_paused);
+  // A fixed localhost review clock is also a resettable presentation-frame
+  // boundary. Freeze disposable animation without changing canonical pause
+  // state, elapsed Garden time, or authored schedule semantics.
+  garden?.setReducedMotion?.(
+    reducedMotionQuery.matches||gardenReviewTime()!==null,
+  );
+  updateCanonicalLiveLoop();
+}
+function updateCanonicalLiveLoop(){
+  if(!gardenRuntime)return;
+  const visible=document.getElementById('hud')?.classList.contains('vis')===true;
+  // Reduced motion changes presentation only. The saved canonical pause is
+  // the sole control allowed to stop Garden time and authored schedules.
+  const enabled=visible&&!Boolean(gardenRuntime.state?.ui?.motion_paused);
+  if(enabled&&!gardenRuntime.liveTimer)gardenRuntime.startLive({
+    intervalMs:1000,prefersReducedMotion:reducedMotionQuery.matches,
+    onProjection:()=>refreshAfterCanonicalLiveAdvance()
+      .catch(error=>console.error('[garden live]',error)),
+  });
+  else if(!enabled&&gardenRuntime.liveTimer)gardenRuntime.stopLive();
+}
+async function refreshAfterCanonicalLiveAdvance(){
+  if(gardenProgram&&authenticated&&!bundleCorrupted){
+    await runAuthenticatedGardenProgram();
+    dueIdxs=computeDue();
+  }
+  await renderCanonicalGarden();
+}
+
+function clearCanonicalGardenUi(){
+  document.getElementById('garden-object-list')?.replaceChildren();
+  document.getElementById('garden-action-sheet')?.replaceChildren();
+  const summary=document.getElementById('garden-scene-summary');
+  if(summary)summary.textContent='Garden preparing.';
+}
 
 // ── Storage ───────────────────────────────────────────────────────────
 let _db=null,storageOk=false;
@@ -1788,20 +661,33 @@ async function kvGet(k){
   });
   return localStorage.getItem(k);
 }
-async function kvSet(k,v){
+async function kvSet(k,v,{signal}={}){
+  if(signal?.aborted)throw signal.reason||new DOMException('Storage write aborted','AbortError');
   if(!storageOk)return;
   if(_db)return new Promise((res,rej)=>{
-    const tx=_db.transaction('kv','readwrite'),r=tx.objectStore('kv').put(v,k);
-    r.onsuccess=()=>res(); r.onerror=e=>rej(e.target.error);
+    const tx=_db.transaction('kv','readwrite');
+    let settled=false;
+    const cleanup=()=>signal?.removeEventListener('abort',abort);
+    const finish=(callback,value)=>{if(settled)return;settled=true;cleanup();callback(value);};
+    const abort=()=>{
+      try{tx.abort();}catch(_){}
+      finish(rej,signal?.reason||new DOMException('Storage write aborted','AbortError'));
+    };
+    if(signal?.aborted){abort();return;}
+    signal?.addEventListener('abort',abort,{once:true});
+    tx.oncomplete=()=>finish(res);
+    tx.onerror=()=>finish(rej,tx.error||new Error('Storage write failed'));
+    tx.onabort=()=>finish(rej,signal?.reason||tx.error||new DOMException('Storage write aborted','AbortError'));
+    tx.objectStore('kv').put(v,k);
   });
+  if(signal?.aborted)throw signal.reason||new DOMException('Storage write aborted','AbortError');
   try{localStorage.setItem(k,v);}catch(_){}
 }
-const kRead     =(bid,mid)=>`${NS}${bid}_read_${mid}`;
-const kVisits   =(bid)    =>`${NS}${bid}_visits`;
-const kFirst    =()       =>`${NS}first_run`;
-const kGift     =(bid,gid)=>`${NS}${bid}_gift_${gid}`;
-const kAnimal   =(bid)    =>`${NS}${bid}_animal`;
-const kLastVisit=(bid)    =>`${NS}${bid}_last_visit`;
+const kRead     =(binding,mid)=>`${NS}auth_${binding}_read_${mid}`;
+const kFirst    =binding      =>`${NS}auth_${binding}_first_run`;
+const PREVIEW_WORLD_ID='recipient-preview';
+const PREVIEW_SEED='lateletter-recipient-preview-v1';
+const PREVIEW_PROGRAM=Object.freeze({variables:{},entities:[],animals:[]});
 
 // ── Worker ────────────────────────────────────────────────────────────
 const WORKER_SRC=`
@@ -1819,7 +705,7 @@ self.onmessage=function(e){
     }
     self.postMessage({requestId:id,ok:true,messages:out});return;
   }
-  self.postMessage({requestId:id,ok:false,error:'Real decryption not yet implemented (step 13).'});
+  self.postMessage({requestId:id,ok:false,error:'Unsupported worker operation.'});
 };`;
 let _wk=null,_pend=new Map(),_rid=0;
 function getWorker(){
@@ -1843,7 +729,7 @@ function wCall(type,payload){
 
 // ── Bundle checksum / corruption handling ────────────────────────────
 function _visiblePayload(data){
-  return {
+  const payload={
     version:data.version,
     bundle_id:data.bundle_id,
     author_name:data.author_name,
@@ -1854,6 +740,11 @@ function _visiblePayload(data){
     garden_gifts:data.garden_gifts || [],
     notification:data.notification ?? null,
   };
+  if(data.version>=2){
+    payload.bundle_auth_kdf_params=data.bundle_auth_kdf_params ?? null;
+    payload.garden_program=data.garden_program ?? null;
+  }
+  return payload;
 }
 function _canonicalJson(v){
   if(v===null)return'null';
@@ -1881,134 +772,248 @@ async function verifyBundleChecksum(data,allowMissing){
 }
 
 // ── Bundle loading ────────────────────────────────────────────────────
-async function loadBundle(file){
+async function loadBundle(file,{trustedDevFixture=false}={}){
+  const loadEpoch=++authEpoch;
+  const assertCurrent=()=>{
+    if(loadEpoch!==authEpoch)throw new Error('bundle load was cancelled');
+  };
   const text=await file.text(),data=JSON.parse(text);
+  assertCurrent();
   if(!data||typeof data!=='object')throw new Error('Not a valid .lateletter file.');
-  if(data.version!==1)throw new Error(`Unsupported version: ${data.version??'(missing)'}`);
-  if(!data.bundle_id)throw new Error('Bundle missing bundle_id.');
-  bundle=data; isDevFixture=!bundle.hmac;
+  if(![1,2].includes(data.version))throw new Error(`Unsupported version: ${data.version??'(missing)'}`);
+  validateBundleIdentityShape(data);
+  await gardenProgramTail;
+  assertCurrent();
+  if(!data.hmac&&!trustedDevFixture)
+    throw new Error('Unsigned letter bundles are not accepted.');
+  bundle=data;isDevFixture=trustedDevFixture;
+  gardenRuntime?.invalidate?.();
+  authenticated=false;authenticatedBinding=null;decoded={};gardenProgram=null;gardenRuntime=null;
+  gardenProgramState={applied_occurrences:[]};visitCount=0;
+  clearCanonicalGardenUi();
   bundleCorrupted=false; bundleCorruptionReason='';
   const checksum=await verifyBundleChecksum(bundle,isDevFixture);
+  assertCurrent();
   if(!checksum.ok){
     bundleCorrupted=true;
     bundleCorruptionReason='this file appears damaged. the garden can still be viewed, but the letters stay sealed.';
   }else if(checksum.missing&&isDevFixture){
     console.warn('[viewer] dev fixture missing checksum; corruption gate relaxed for local demo flow');
   }
-  readIds=new Set();
-  for(const m of bundle.messages||[])
-    if(await kvGet(kRead(bundle.bundle_id,m.id))) readIds.add(m.id);
-  const v=await kvGet(kVisits(bundle.bundle_id));
-  visitCount=v?(parseInt(v,10)||0):0; visitCount++;
-  await kvSet(kVisits(bundle.bundle_id),String(visitCount));
-  const fr=await kvGet(kFirst()); firstRun=!fr;
-  if(firstRun) await kvSet(kFirst(),'1');
+  // Read receipts and first-run state are authentication-bound and stay
+  // completely unavailable on the pre-auth surface.
+  readIds=new Set();firstRun=true;
+  // Gifts/programs are deliberately inert until bundle authentication succeeds.
   giftDiscovered={};
-  for(const g of bundle.garden_gifts||[])
-    giftDiscovered[g.id]=!!(await kvGet(kGift(bundle.bundle_id,g.id)));
-  // Evaluate date + cumulative_visits triggers eagerly (no auth needed)
-  const _td=new Date();_td.setHours(0,0,0,0);
-  for(const g of bundle.garden_gifts||[]){
-    if(giftDiscovered[g.id])continue;
-    const t=g.trigger||{};let hit=false;
-    if(t.type==='date')hit=new Date(t.value+'T00:00:00')<=_td;
-    else if(t.type==='cumulative_visits')hit=visitCount>=parseInt(t.value,10);
-    if(hit){giftDiscovered[g.id]=true;await kvSet(kGift(bundle.bundle_id,g.id),'1');}
-  }
   // Animal state
-  animalType=null;animalTier=0;animalTriggered=false;animalTrustActions=0;wasAbsent=false;
-  _devAnimal=null;_frbDone=false;_devSeason=null;_devNight=false;_deliveryPlayed=false;
-  _applyNightPalette(false);
-  const _ag=(bundle.garden_gifts||[]).find(g=>g.type==='animal');
-  if(_ag){
-    animalType=_ag.catalog_id||null;
-    animalTriggered=!!giftDiscovered[_ag.id];
-    const _as=await kvGet(kAnimal(bundle.bundle_id));
-    if(_as){try{const a=JSON.parse(_as);animalTrustActions=a.trust_actions||0;animalTier=animalTrustTier(animalTrustActions);}catch(_){}}
-    const _lv=await kvGet(kLastVisit(bundle.bundle_id));
-    if(_lv){const lv=new Date(_lv+'T00:00:00'),td=new Date();td.setHours(0,0,0,0);lv.setHours(0,0,0,0);wasAbsent=(td-lv)>86400000;}
-    await kvSet(kLastVisit(bundle.bundle_id),new Date().toISOString().slice(0,10));
-  }
+  wasAbsent=false;
+  _frbDone=false;_devSeason=null;_devNight=false;_deliveryPlayed=false;
+  // Before authentication only an isolated base Garden exists. Persisted state
+  // may contain decrypted author prose, so it cannot be loaded or rendered yet.
+  await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
+    persistent:false,expectedEpoch:loadEpoch,program:PREVIEW_PROGRAM,
+  });
+  assertCurrent();
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────
 // Sealed-bundle crypto (SPEC §4, step 13): PBKDF2-SHA256 + AES-256-GCM,
 // recorded per-message in kdf_params. WebCrypto-native — no network, no WASM.
-function _b64ToBytes(s){
-  const bin=atob(s),buf=new Uint8Array(bin.length);
-  for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
-  return buf;
-}
-function _bundleKdfParams(){
-  for(const m of bundle.messages||[]){
-    const k=m.kdf_params;
-    if(k&&k.name==='PBKDF2'&&k.hash==='SHA-256'&&k.iterations>0)return k;
+const _b64ToBytes=decodeStrictBase64;
+const _validatePbkdf2Params=validateBrowserPbkdf2Params;
+const _LEGACY_BUNDLE_AUTH_KDF=Object.freeze({
+  name:'PBKDF2',hash:'SHA-256',iterations:600000,
+});
+function _validateSealedBundleCrypto(data,kdf){
+  _validatePbkdf2Params(kdf,data.version>=2?'bundle_auth_kdf_params':'messages[0].kdf_params');
+  _b64ToBytes(data.bundle_auth_salt,{field:'bundle_auth_salt',exact:16});
+  for(const [index,message] of (data.messages||[]).entries()){
+    _validatePbkdf2Params(message.kdf_params||kdf,`messages[${index}].kdf_params`);
+    _b64ToBytes(message.salt,{field:`messages[${index}].salt`,exact:16});
+    _b64ToBytes(message.nonce,{field:`messages[${index}].nonce`,exact:12});
+    _b64ToBytes(message.ciphertext,{field:`messages[${index}].ciphertext`,minimum:16});
   }
-  return null;
+  for(const [index,gift] of (data.garden_gifts||[]).entries()){
+    if(!gift.sentiment_ciphertext)continue;
+    _b64ToBytes(gift.salt,{field:`garden_gifts[${index}].salt`,exact:16});
+    _b64ToBytes(gift.nonce,{field:`garden_gifts[${index}].nonce`,exact:12});
+    _b64ToBytes(gift.sentiment_ciphertext,{
+      field:`garden_gifts[${index}].sentiment_ciphertext`,minimum:16,
+    });
+  }
+  if(data.version>=2){
+    const envelope=data.garden_program;
+    if(!envelope||envelope.version!==1)throw new Error('Unsupported garden program envelope.');
+    _validatePbkdf2Params(envelope.kdf_params, 'garden_program.kdf_params');
+    _b64ToBytes(envelope.salt,{field:'garden_program.salt',exact:16});
+    _b64ToBytes(envelope.nonce,{field:'garden_program.nonce',exact:12});
+    _b64ToBytes(envelope.ciphertext,{field:'garden_program.ciphertext',minimum:16});
+  }
 }
-async function _pbkdf2Key(pp,saltBytes,iterations){
+function _bundleKdfParams(data=bundle){
+  if(data?.version>=2&&data.bundle_auth_kdf_params)return data.bundle_auth_kdf_params;
+  // v1 bundle authentication was permanently defined with the original
+  // profile. Per-message parameters apply only to message decryption.
+  return data?.version===1?_LEGACY_BUNDLE_AUTH_KDF:null;
+}
+async function _pbkdf2Key(pp,saltBytes,params){
+  _validatePbkdf2Params(params);
   const base=await crypto.subtle.importKey(
     'raw',new TextEncoder().encode(pp),'PBKDF2',false,['deriveBits']);
   return new Uint8Array(await crypto.subtle.deriveBits(
-    {name:'PBKDF2',hash:'SHA-256',salt:saltBytes,iterations},base,256));
+    {name:'PBKDF2',hash:'SHA-256',salt:saltBytes,iterations:params.iterations},base,256));
 }
 async function _timingSafeHexEq(aHex,bHex){
   // Compare digests of both sides so mismatch position leaks nothing.
   const da=await _sha256Hex('cmp:'+aHex),db=await _sha256Hex('cmp:'+bHex);
   return da===db;
 }
-async function _gcmDecrypt(keyBytes,nonceB64,ctB64){
+async function _gcmDecrypt(keyBytes,nonceB64,ctB64,aad=null){
   const key=await crypto.subtle.importKey('raw',keyBytes,'AES-GCM',false,['decrypt']);
   const pt=await crypto.subtle.decrypt(
-    {name:'AES-GCM',iv:_b64ToBytes(nonceB64)},key,_b64ToBytes(ctB64));
+    {name:'AES-GCM',iv:_b64ToBytes(nonceB64,{field:'nonce',exact:12}),...(aad?{additionalData:new TextEncoder().encode(aad)}:{})},
+    key,_b64ToBytes(ctB64,{field:'ciphertext',minimum:16}));
   return new TextDecoder().decode(pt);
 }
+async function _persistenceBinding(keyBytes){
+  const prefix=new TextEncoder().encode('lateletter:persistence:v1\0');
+  const material=new Uint8Array(prefix.length+keyBytes.length);
+  material.set(prefix);material.set(keyBytes,prefix.length);
+  const digest=await crypto.subtle.digest('SHA-256',material);
+  return Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function _readAuthenticatedReceipts(binding,data=bundle){
+  const loaded=new Set();
+  for(const message of data.messages||[])
+    if(await _receiptGet(kRead(binding,message.id)))loaded.add(message.id);
+  return{readIds:loaded,firstRun:!await _receiptGet(kFirst(binding))};
+}
 async function verifyPassphrase(pp){
-  if(isDevFixture){
-    const r=await wCall('dev_decode',{messages:bundle.messages||[]});
-    decoded={};
-    for(const m of r.messages) decoded[m.id]={label:m.label,body:m.body};
-    for(const g of bundle.garden_gifts||[]){
+  const attemptEpoch=authEpoch;
+  const attemptBundle=bundle,attemptIsDevFixture=isDevFixture;
+  const assertCurrent=()=>{
+    if(attemptEpoch!==authEpoch||bundle!==attemptBundle)
+      throw new Error('unlock was cancelled');
+  };
+  const awaitCurrent=async pending=>{
+    const value=await pending;assertCurrent();return value;
+  };
+  if(attemptIsDevFixture){
+    const r=await awaitCurrent(wCall('dev_decode',{messages:attemptBundle.messages||[]}));
+    const decodedCandidate={};
+    for(const m of r.messages)decodedCandidate[m.id]={label:m.label,body:m.body};
+    const sentiments={};
+    for(const g of attemptBundle.garden_gifts||[]){
       if(!g.sentiment_ciphertext)continue;
-      try{g._sentiment=new TextDecoder().decode(_b64ToBytes(g.sentiment_ciphertext));}
-      catch(_){g._sentiment='';}
+      try{sentiments[g.id]=new TextDecoder().decode(_b64ToBytes(g.sentiment_ciphertext));}
+      catch(_){sentiments[g.id]='';}
     }
-    cachedPassphrase=pp; return true;
+    const programCandidate=migrateAuthenticatedLegacyGifts(attemptBundle.garden_gifts||[],{
+      authenticated:true,
+      decrypted_sentiments:sentiments,
+      message_ids:(attemptBundle.messages||[]).map(m=>m.id),
+    });
+    const candidateBinding=`dev-fixture:${attemptBundle.bundle_id}`;
+    const receipts=await awaitCurrent(
+      _readAuthenticatedReceipts(candidateBinding,attemptBundle),
+    );
+    const worldCandidate=await awaitCurrent(prepareAuthenticatedBundleGarden(
+      attemptBundle,candidateBinding,{deferPersistence:true,program:programCandidate},
+    ));
+    await publishAuthenticatedCandidate({
+      epoch:attemptEpoch,bundle:attemptBundle,runtime:worldCandidate.runtime,
+      programState:worldCandidate.programState,visitTotal:worldCandidate.visitTotal,
+      absent:worldCandidate.absent,decodedCandidate,programCandidate,candidateBinding,
+      receipts,sentiments,
+    });
+    assertCurrent();
+    return{epoch:attemptEpoch,runtime:worldCandidate.runtime};
   }
-  const kdf=_bundleKdfParams();
-  if(!kdf)throw new Error('This file uses an encryption this viewer cannot open yet.');
+  const kdf=_bundleKdfParams(attemptBundle);
+  if(!kdf)throw new Error('This letter uses a lock format this viewer cannot open yet.');
   if(!crypto.subtle)throw new Error('This browser cannot unlock letters (no WebCrypto).');
+  _validateSealedBundleCrypto(attemptBundle,kdf);
   // 1. Bundle HMAC gate — nothing is announced until this passes (SPEC §4).
-  const hmacKeyBytes=await _pbkdf2Key(pp,_b64ToBytes(bundle.bundle_auth_salt),kdf.iterations);
-  const hmacKey=await crypto.subtle.importKey(
-    'raw',hmacKeyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign']);
-  const mac=new Uint8Array(await crypto.subtle.sign(
-    'HMAC',hmacKey,new TextEncoder().encode(_canonicalJson(_visiblePayload(bundle)))));
+  const hmacKeyBytes=await awaitCurrent(_pbkdf2Key(pp,
+    _b64ToBytes(attemptBundle.bundle_auth_salt,{field:'bundle_auth_salt',exact:16}),kdf));
+  const hmacKey=await awaitCurrent(crypto.subtle.importKey(
+    'raw',hmacKeyBytes,{name:'HMAC',hash:'SHA-256'},false,['sign']));
+  const mac=new Uint8Array(await awaitCurrent(crypto.subtle.sign(
+    'HMAC',hmacKey,new TextEncoder().encode(_canonicalJson(_visiblePayload(attemptBundle))))));
   const macHex=Array.from(mac,b=>b.toString(16).padStart(2,'0')).join('');
-  if(!await _timingSafeHexEq(macHex,bundle.hmac))
+  if(!await awaitCurrent(_timingSafeHexEq(macHex,attemptBundle.hmac)))
     throw new Error('incorrect passphrase, or file modified');
+  const candidateBinding=await awaitCurrent(_persistenceBinding(hmacKeyBytes));
   // 2. Decrypt messages (per-message salt → per-message key).
-  decoded={};
-  for(const m of bundle.messages||[]){
-    const key=await _pbkdf2Key(pp,_b64ToBytes(m.salt),(m.kdf_params||kdf).iterations);
-    const p=JSON.parse(await _gcmDecrypt(key,m.nonce,m.ciphertext));
-    decoded[m.id]={label:p.label||'',body:p.body||''};
+  const decodedCandidate={};
+  for(const m of attemptBundle.messages||[]){
+    const params=m.kdf_params||kdf;
+    const key=await awaitCurrent(
+      _pbkdf2Key(pp,_b64ToBytes(m.salt,{field:'message.salt',exact:16}),params),
+    );
+    const p=JSON.parse(await awaitCurrent(_gcmDecrypt(key,m.nonce,m.ciphertext)));
+    decodedCandidate[m.id]={label:p.label||'',body:p.body||''};
   }
   // 3. Decrypt gift sentiments (per-gift salt, bundle-wide KDF params).
-  for(const g of bundle.garden_gifts||[]){
-    if(!g.sentiment_ciphertext){g._sentiment='';continue;}
-    const key=await _pbkdf2Key(pp,_b64ToBytes(g.salt),kdf.iterations);
-    try{g._sentiment=await _gcmDecrypt(key,g.nonce,g.sentiment_ciphertext);}
-    catch(_){g._sentiment='';}
+  const sentiments={};
+  for(const g of attemptBundle.garden_gifts||[]){
+    if(!g.sentiment_ciphertext){sentiments[g.id]='';continue;}
+    const key=await awaitCurrent(
+      _pbkdf2Key(pp,_b64ToBytes(g.salt,{field:'gift.salt',exact:16}),kdf),
+    );
+    sentiments[g.id]=await awaitCurrent(_gcmDecrypt(key,g.nonce,g.sentiment_ciphertext));
   }
-  cachedPassphrase=pp; return true;
+  let programCandidate;
+  if(attemptBundle.version>=2){
+    const envelope=attemptBundle.garden_program;
+    if(!envelope||envelope.version!==1)throw new Error('Unsupported garden program envelope.');
+    const params=envelope.kdf_params||attemptBundle.bundle_auth_kdf_params||kdf;
+    const key=await awaitCurrent(_pbkdf2Key(pp,
+      _b64ToBytes(envelope.salt,{field:'garden_program.salt',exact:16}),params));
+    programCandidate=parseGardenProgram(JSON.parse(await awaitCurrent(_gcmDecrypt(
+      key,envelope.nonce,envelope.ciphertext,'lateletter:garden-program:v1'))),{
+      knownLetterIds:(attemptBundle.messages||[]).map(message=>message.id),
+    });
+  }else{
+    programCandidate=migrateAuthenticatedLegacyGifts(attemptBundle.garden_gifts||[],{
+      authenticated:true,
+      decrypted_sentiments:sentiments,
+      message_ids:(attemptBundle.messages||[]).map(m=>m.id),
+    });
+  }
+  // Load and reconcile the authenticated world without writing it. Program
+  // materialization and memorial activation must succeed before one commit.
+  const receipts=await awaitCurrent(
+    _readAuthenticatedReceipts(candidateBinding,attemptBundle),
+  );
+  const worldCandidate=await awaitCurrent(prepareAuthenticatedBundleGarden(
+    attemptBundle,candidateBinding,{deferPersistence:true,program:programCandidate},
+  ));
+  await publishAuthenticatedCandidate({
+    epoch:attemptEpoch,bundle:attemptBundle,runtime:worldCandidate.runtime,
+    programState:worldCandidate.programState,visitTotal:worldCandidate.visitTotal,
+    absent:worldCandidate.absent,decodedCandidate,programCandidate,candidateBinding,
+    receipts,sentiments,
+  });
+  assertCurrent();
+  return{epoch:attemptEpoch,runtime:worldCandidate.runtime};
 }
 
 // ── Due / complete ────────────────────────────────────────────────────
 function computeDue(){
-  const today=new Date();today.setHours(0,0,0,0);
+  const reviewTime=gardenReviewTime();
+  const today=new Date(reviewTime===null?Date.now():reviewTime*1000);today.setHours(0,0,0,0);
+  const presented=new Set([
+    ...(Array.isArray(gardenRuntime?.state?.program_state?.presented_letters)
+      ?gardenRuntime.state.program_state.presented_letters:[]),
+    ...(Array.isArray(gardenProgramState?.presented_letters)
+      ?gardenProgramState.presented_letters:[]),
+  ].filter(value=>typeof value==='string'));
   return(bundle.messages||[]).reduce((acc,m,i)=>{
-    try{const d=new Date(m.date+'T00:00:00');if(d<=today&&!readIds.has(m.id))acc.push(i);}catch(_){}
+    try{
+      const d=new Date(m.date+'T00:00:00');
+      if((d<=today||presented.has(m.id))&&!readIds.has(m.id))acc.push(i);
+    }catch(_){}
     return acc;
   },[]);
 }
@@ -2016,30 +1021,262 @@ function isPostComplete(){
   const msgs=bundle.messages||[];return msgs.length>0&&msgs.every(m=>readIds.has(m.id));
 }
 
-// ── Triggers ──────────────────────────────────────────────────────────
-async function evalTriggers(justRead=null){
-  const today=new Date();today.setHours(0,0,0,0);
-  for(const g of bundle.garden_gifts||[]){
-    if(giftDiscovered[g.id])continue;
-    const t=g.trigger||{};let hit=false;
-    if(t.type==='date')hit=new Date(t.value+'T00:00:00')<=today;
-    else if(t.type==='cumulative_visits')hit=visitCount>=parseInt(t.value,10);
-    else if(t.type==='post_letter'&&justRead)hit=t.value===justRead;
-    if(hit){giftDiscovered[g.id]=true;await kvSet(kGift(bundle.bundle_id,g.id),'1');}
+// ── Canonical Garden owner ───────────────────────────────────────────
+async function prepareCanonicalGardenRuntime(
+  worldId,seed,{persistent=true,deferPersistence=false,program=null}={},
+){
+  const reviewTime=gardenReviewTime();
+  const worldPersistence=persistent&&reviewTime===null;
+  const runtime=new GardenRuntime({
+    worldId,seed,program,
+    load:worldPersistence?kvGet:async()=>null,
+    save:worldPersistence?kvSet:async()=>{},
+    now:()=>reviewTime??Math.floor(Date.now()/1000),
+  });
+  pendingGardenRuntimes.add(runtime);
+  try{
+    await runtime.open({persist:worldPersistence&&!deferPersistence});
+    // Worlds persisted before the projection renderer inherited the model's
+    // corner camera even though all generated content lives in positive world
+    // space. Migrate that one known legacy state through the canonical reducer.
+    const camera=runtime.state.ui.camera;
+    if(camera[0]<=1&&camera[1]<=1&&runtime.projection.objects.length){
+      const fixtures=runtime.projection.objects.filter(object=>object.kind==='fixture');
+      const frameObjects=fixtures.length?fixtures:runtime.projection.objects;
+      const target=[
+        Math.floor(runtime.state.world_width/2),
+        Math.round(frameObjects.reduce((total,object)=>total+object.position[1],0)/frameObjects.length),
+      ];
+      await runtime.dispatch('browser_keyboard','pan',{args:{
+        dx:target[0]-camera[0],dy:target[1]-camera[1],
+      },metadata:{migration:'legacy-corner-camera-v1'}});
+    }
+    return runtime;
+  }catch(error){
+    runtime.invalidate();
+    throw error;
+  }finally{
+    pendingGardenRuntimes.delete(runtime);
   }
-  // Re-evaluate animal triggered state
-  if(animalType){
-    const _ag=(bundle.garden_gifts||[]).find(g=>g.type==='animal');
-    if(_ag&&!animalTriggered&&giftDiscovered[_ag.id]){
-      animalTriggered=true;
-      if(garden)garden.setAnimalData(_animalData());
-      _updateAnimalHud();
+}
+async function publishCanonicalGardenRuntime(runtime,expectedEpoch){
+  if(expectedEpoch!==authEpoch){runtime.invalidate();throw new Error('Garden open was cancelled');}
+  const previous=gardenRuntime;
+  if(previous&&previous!==runtime)previous.invalidate();
+  gardenRuntime=runtime;
+  gardenContextObjectId=null;
+  gardenSessionStarted=runtime.state.last_observed_wall_time||0;
+  await renderCanonicalGarden();
+  if(expectedEpoch!==authEpoch||gardenRuntime!==runtime){
+    runtime.invalidate();
+    if(gardenRuntime===runtime)gardenRuntime=null;
+    throw new Error('Garden open was cancelled');
+  }
+  return runtime;
+}
+async function openCanonicalGarden(
+  worldId,seed,{
+    persistent=true,deferPersistence=false,expectedEpoch=authEpoch,program=null,
+  }={},
+){
+  const runtime=await prepareCanonicalGardenRuntime(
+    worldId,seed,{persistent,deferPersistence,program},
+  );
+  if(expectedEpoch!==authEpoch){runtime.invalidate();throw new Error('Garden open was cancelled');}
+  return publishCanonicalGardenRuntime(runtime,expectedEpoch);
+}
+async function prepareAuthenticatedBundleGarden(
+  data,binding,{deferPersistence=false,program=null}={},
+){
+  if(!binding)throw new Error('authenticated persistence binding is unavailable');
+  const runtime=await prepareCanonicalGardenRuntime(
+    `bundle:${data.bundle_id}:${binding}`,data.garden_seed,{
+    persistent:true,deferPersistence,program,
+  });
+  const programState={...(runtime.state.program_state||{})};
+  if(!Array.isArray(programState.applied_occurrences))programState.applied_occurrences=[];
+  const visitTotal=(parseInt(programState.visit_total,10)||0)+1;
+  programState.visit_total=visitTotal;
+  return{
+    runtime,programState,visitTotal,
+    absent:(runtime.absenceReport?.elapsed_seconds||0)>86400,
+  };
+}
+async function publishAuthenticatedCandidate(candidate){
+  const isCurrent=()=>candidate.epoch===authEpoch&&bundle===candidate.bundle;
+  if(!isCurrent()){candidate.runtime.invalidate();throw new Error('unlock was cancelled');}
+  await publishCanonicalGardenRuntime(candidate.runtime,candidate.epoch);
+  if(!isCurrent()){candidate.runtime.invalidate();throw new Error('unlock was cancelled');}
+  decoded=candidate.decodedCandidate;gardenProgram=candidate.programCandidate;
+  authenticatedBinding=candidate.candidateBinding;
+  readIds=candidate.receipts.readIds;firstRun=candidate.receipts.firstRun;
+  gardenProgramState=candidate.programState;visitCount=candidate.visitTotal;
+  wasAbsent=candidate.absent;
+  for(const gift of candidate.bundle.garden_gifts||[])
+    gift._sentiment=candidate.sentiments[gift.id]||'';
+  authenticated=true;
+}
+async function dispatchGardenUi(modality,intent,{target_id=null,args={},metadata={}}={}){
+  if(!gardenRuntime)return null;
+  const result=await gardenRuntime.dispatch(modality,intent,{target_id,args,metadata});
+  if(result.accepted){
+    gardenNotice=result.reason||result.summary||'';
+    if(result.changed&&gardenProgram&&authenticated&&!bundleCorrupted)
+      await runAuthenticatedGardenProgram();
+    await renderCanonicalGarden();
+    _renderGardenActions();
+    if(intent==='feed'&&garden&&target_id)garden.triggerAnimalFeedReaction({objectId:target_id});
+  }
+  return result;
+}
+function canonicalActionRequest(action,focused){
+  if(focused?.kind==='fixture'){
+    if(action==='inspect')return{intent:'inspect',args:{}};
+    if(action==='move')return{intent:'move_fixture',args:{
+      x:Number(document.getElementById('garden-place-x').value),
+      y:Number(document.getElementById('garden-place-y').value),
+      rotation:focused.semantic_state.rotation||0,
+    }};
+    if(action==='rotate')return{intent:'move_fixture',args:{
+      x:focused.position[0],y:focused.position[1],rotation:((focused.semantic_state.rotation||0)+90)%360,
+    }};
+    if(action==='tend')return{intent:'tend',args:{care_action:'tend'}};
+    return{intent:'primary_interact',args:{fixture_action:action}};
+  }
+  if(action==='observe')return{intent:'inspect',args:{}};
+  if(['water','prune','train','rest'].includes(action))
+    return{intent:'tend',args:{care_action:action}};
+  if(action==='transplant')return{intent:'tend',args:{care_action:'transplant',
+    x:Math.min(gardenRuntime.state.world_width-1,focused.position[0]+1),y:focused.position[1]}};
+  if(action==='tend')return{intent:'tend',args:{care_action:'water'}};
+  return{intent:action,args:{}};
+}
+async function renderCanonicalGarden(){
+  const panel=document.getElementById('garden-controls');
+  if(!panel||!gardenRuntime?.projection)return;
+  syncAmbientMotion();
+  garden?.setFocusedObject?.(gardenRuntime.state.ui.focus_id);
+  garden?.render(gardenRuntime.projection);
+  if(!syncGardenControlsAvailability())return;
+  const list=document.getElementById('garden-object-list');
+  const sheet=document.getElementById('garden-action-sheet');
+  document.getElementById('garden-scene-summary').textContent=
+    [gardenNotice,gardenRuntime.sceneSummary()].filter(Boolean).join(' ');
+  const focusId=gardenRuntime.state.ui.focus_id;list.innerHTML='';
+  for(const object of gardenRuntime.projection.objects){
+    const li=document.createElement('li'),button=document.createElement('button');
+    button.type='button';button.className='btn';button.dataset.objectId=object.object_id;
+    const description=object.semantic_state?.semantic_description||
+      `${object.semantic_name} at ${object.position[0]},${object.position[1]}.`;
+    button.textContent=`${object.semantic_name} — ${object.kind}: ${description}`;
+    button.setAttribute('aria-current',String(object.object_id===focusId));
+    button.onclick=async event=>{
+      const modality=inputModalityFromBrowserEvent(event);
+      _gardenFocusReturn=object.object_id;
+      await dispatchGardenUi(modality,'move_focus',{args:{target_id:object.object_id},metadata:{source:'object-list'}});
+      const camera=gardenRuntime.state.ui.camera;
+      await dispatchGardenUi(modality,'pan',{args:{
+        dx:object.position[0]-camera[0],dy:object.position[1]-camera[1],
+      },metadata:{source:'object-list-frame'}});
+      await dispatchGardenUi(modality,'open_actions',{target_id:object.object_id});
+      document.querySelector('#garden-action-sheet button')?.focus();
+    };
+    li.appendChild(button);list.appendChild(li);
+  }
+  sheet.innerHTML='';
+  if(gardenRuntime.state.ui.journal_open){
+    const entries=gardenRuntime.state.journal;
+    const text=document.createElement('p');text.className='t3';
+    text.textContent=entries.length?entries.map(item=>`${item.label}: ${item.description}`).join(' · '):'Your journal is waiting for a first discovery.';
+    sheet.appendChild(text);
+  }
+  const focused=gardenRuntime.focusedObject();
+  if(focused){
+    for(const action of focused.actions){
+      const button=document.createElement('button');button.type='button';button.className='btn';
+      button.textContent=action==='inspect'?'glance':action.replaceAll('_',' ');
+      button.setAttribute('aria-label',`${button.textContent} ${focused.semantic_name}`);
+      button.onclick=event=>{
+        const request=canonicalActionRequest(action,focused);
+        return dispatchGardenUi(inputModalityFromBrowserEvent(event),request.intent,{
+        target_id:focused.object_id,args:request.args,
+        metadata:{control:'action-sheet'},
+      });};
+      sheet.appendChild(button);
     }
   }
 }
-function _animalData(){
-  if(!animalType)return null;
-  return{type:animalType,tier:animalTier,triggered:animalTriggered,wasAbsent};
+async function runAuthenticatedGardenProgram(){
+  const pending=gardenProgramTail.then(
+    _runAuthenticatedGardenProgramNow,_runAuthenticatedGardenProgramNow,
+  );
+  gardenProgramTail=pending.then(()=>undefined,()=>undefined);
+  return pending;
+}
+async function _runAuthenticatedGardenProgramNow(){
+  if(!gardenProgram||!authenticated||bundleCorrupted)return;
+  const epoch=authEpoch,runtime=gardenRuntime,program=gardenProgram;
+  const isCurrent=()=>epoch===authEpoch&&authenticated&&gardenRuntime===runtime&&gardenProgram===program;
+  const preparedState=await runtime.adoptProgram(program);
+  if(!isCurrent())return;
+  preparedState.visit_total=visitCount;
+  const observed=runtime.state.last_observed_wall_time||Math.floor(Date.now()/1000);
+  const now=new Date(observed*1000),nowIso=now.toISOString();
+  const localParts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{
+    timeZone:program.author_timezone,year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23',
+  }).formatToParts(now).filter(item=>item.type!=='literal').map(item=>[item.type,item.value]));
+  const localIso=`${localParts.year}-${localParts.month}-${localParts.day}T${localParts.hour}:${localParts.minute}:${localParts.second}`;
+  const lastSeconds=Number(runtime.previousObservedWallTime??Math.max(0,observed-1));
+  const eligible={},missedSummaries=[];
+  for(const event of program.events){
+    if(!event.schedule)continue;
+    const expanded=expandGardenSchedule(event.schedule,{
+      event_id:event.id,last_seen_utc:new Date(lastSeconds*1000).toISOString(),
+      now_utc:nowIso,
+    });
+    if(expanded.occurrences.length){
+      eligible[event.id]=expanded.occurrences.at(-1).id;
+      if(expanded.summarized_missed>0)missedSummaries.push({
+        event_id:event.id,occurrence_id:expanded.occurrences.at(-1).id,
+        missed_count:Math.min(400,expanded.summarized_missed),
+        catch_up_truncated:Boolean(expanded.catch_up_truncated),
+      });
+    }
+  }
+  const entities=preparedState.entities||{};
+  const completed=preparedState.completed_events||[];
+  const facts={
+    'time.utc':nowIso.replace('.000Z','+00:00'),'time.local':localIso,
+    'date.range':localIso.slice(0,10),
+    'season.current':(()=>{const month=Number(localParts.month);return month>=3&&month<=5?'spring':month>=6&&month<=8?'summer':month>=9&&month<=11?'autumn':'winter';})(),
+    'visit.total':visitCount,'visit.nth':visitCount,
+    'absence.days':Math.floor((runtime.absenceReport?.elapsed_seconds||0)/86400),
+    'session.duration_seconds':Math.max(0,observed-gardenSessionStarted),
+    'letter.due':(bundle.messages||[]).filter((message,index)=>computeDue().includes(index)).map(message=>message.id),
+    'letter.read':[...readIds].sort(),
+    'gift.revealed':Object.keys(entities).filter(key=>entities[key]?.revealed).sort(),
+    'gift.examined':[...new Set(runtime.state.journal.filter(item=>item.status==='examined').map(item=>item.object_id))].sort(),
+    'event.completed':completed.map(String).sort(),
+    'animal.arrived':runtime.state.animals.map(item=>item.animal_id).sort(),
+    'animal.bond_tier':Math.max(0,...runtime.state.animals.map(item=>item.bond_tier)),
+    'animal.interaction':[...new Set(runtime.state.animals.flatMap(item=>Object.keys(item.interaction_counts)))].sort(),
+    'animal.memory':[...new Set(runtime.state.animals.flatMap(item=>item.recent_memories.map(memory=>memory.kind)))].sort(),
+    'plant.growth_stage':Math.max(0,...runtime.state.plants.map(item=>item.growth_points)),
+    'plant.bloom':runtime.state.plants.filter(item=>item.topology.some(node=>node.bloom_state==='bloom')).map(item=>item.plant_id).sort(),
+    'fixture.present':runtime.state.fixtures.map(item=>item.fixture_id).sort(),
+  };
+  const result=await evaluateGardenProgram(program,preparedState,{
+    seed:runtime.state.seed,facts,eligible_occurrences:eligible,
+    missed_event_summaries:missedSummaries,
+  });
+  if(!isCurrent())return;
+  await runtime.materializeProgram(program,result);
+  if(!isCurrent())return;
+  gardenProgramState={...result.state,visit_total:visitCount};
+  giftDiscovered={};
+  for(const gift of bundle.garden_gifts||[])
+    giftDiscovered[gift.id]=(gardenProgramState.completed_events||[]).includes(`legacy.${gift.id}`);
 }
 
 // ── Screen management ─────────────────────────────────────────────────
@@ -2049,34 +1286,53 @@ function showScreen(name){
   for(const id of SIDS)
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
+  garden?.setPresentationActive?.(name==='garden');
+  if(name!=='garden')closeGardenControls();
+  syncGardenControlsAvailability();
+  updateCanonicalLiveLoop();
 }
 
 // ── Animal helpers ────────────────────────────────────────────────────
-async function feedAnimal(options={}){
-  const mutateTrust=options.mutateTrust!==false;
-  if(!animalType||!animalTriggered)return;
-  if(mutateTrust){
-    if(!bundle||animalTier>=3)return;
-    animalTrustActions++;animalTier=animalTrustTier(animalTrustActions);
-    await kvSet(kAnimal(bundle.bundle_id),JSON.stringify({trust_actions:animalTrustActions}));
-    if(garden)garden.setAnimalData(_animalData());
-    _updateAnimalHud();
-  }
-  if(garden)garden.triggerAnimalFeedReaction({type:animalType,tier:animalTier});
+function _projectedAnimals(){
+  return(gardenRuntime?.projection?.objects||[]).filter(item=>item.kind==='animal');
 }
-function devCycleAnimal(){
-  if(!_devAnimal){_devAnimal={ti:0,tier:0};}
-  else{if(++_devAnimal.tier>3){_devAnimal.tier=0;_devAnimal.ti=(_devAnimal.ti+1)%_ANIMAL_TYPES.length;}}
-  const type=_ANIMAL_TYPES[_devAnimal.ti],tier=_devAnimal.tier;
-  if(garden)garden.setAnimalData({type,tier,triggered:true,wasAbsent:tier>0});
-  const el=document.getElementById('hud-animal');
-  if(el)el.textContent=`[dev] ${type} tier ${tier}`;
+function _legacyAuthoredAnimalId(){
+  const gift=(bundle?.garden_gifts||[]).find(item=>item.type==='animal'&&giftDiscovered[item.id]);
+  return gift?`legacy-entity.${gift.id}`:null;
+}
+function _relationshipAnimal(){
+  const animals=_projectedAnimals();
+  const focusId=gardenRuntime?.state?.ui?.focus_id||gardenContextObjectId;
+  const focused=animals.find(item=>item.object_id===focusId);
+  if(focused)return focused;
+  const legacyId=_legacyAuthoredAnimalId();
+  const authored=legacyId?animals.find(item=>item.object_id===legacyId):null;
+  if(authored)return authored;
+  return animals.length===1?animals[0]:null;
+}
+function _bondedDeliveryAnimal(){
+  const preferred=_relationshipAnimal();
+  if(Number(preferred?.semantic_state?.bond_tier||0)>=3)return preferred;
+  return _projectedAnimals()
+    .filter(item=>Number(item.semantic_state?.bond_tier||0)>=3)
+    .sort((left,right)=>left.object_id.localeCompare(right.object_id))[0]||null;
+}
+async function feedAnimal(event,targetId=null){
+  const animal=targetId
+    ? _projectedAnimals().find(item=>item.object_id===targetId)
+    : _relationshipAnimal();
+  if(animal)await dispatchGardenUi(inputModalityFromBrowserEvent(event),'feed',{
+    target_id:animal.object_id,metadata:{control:'hud'},
+  });
 }
 function _updateAnimalHud(){
   const el=document.getElementById('hud-animal');if(!el)return;
-  if(!animalType||!animalTriggered){el.textContent='';return;}
-  if(animalTier===0)el.textContent=`a stray ${animalType} lingers at the edge… [f] to leave food`;
-  else if(animalTier<3)el.textContent=`[f] · feed the ${animalType}`;
+  const animal=_relationshipAnimal();
+  if(!authenticated||bundleCorrupted||!animal){el.textContent='';return;}
+  const species=animal.semantic_state?.species_id||animal.semantic_name||'animal';
+  const tier=Number(animal.semantic_state?.bond_tier||0);
+  if(tier===0)el.textContent=`a stray ${species} lingers at the edge…`;
+  else if(tier<3)el.textContent=`the ${species} is beginning to trust you`;
   else el.textContent='';
 }
 
@@ -2092,31 +1348,124 @@ function startFirstRunBanner(){
 }
 
 // ── Garden / HUD ──────────────────────────────────────────────────────
+function _gardenMemories(){
+  if(!bundle||!authenticated||bundleCorrupted)return[];
+  return(bundle.garden_gifts||[]).filter(g=>giftDiscovered[g.id]);
+}
+function _mkHudButton(label,fn,key=null){
+  const b=document.createElement('button');
+  b.className='btn';b.type='button';b.textContent=label;b.onclick=fn;
+  if(key){b.setAttribute('aria-keyshortcuts',key);b.title=`keyboard: ${key}`;}
+  return b;
+}
+async function focusGardenObject(direction,event=null,source='context-navigation'){
+  if(!gardenRuntime)return;
+  const modality=inputModalityFromBrowserEvent(event);
+  await dispatchGardenUi(modality, 'move_focus', {
+    args:{direction},metadata:{control:source},
+  });
+  const focused=gardenRuntime.focusedObject();
+  if(focused){
+    const camera=gardenRuntime.state.ui.camera;
+    await dispatchGardenUi(modality,'pan',{args:{
+      dx:focused.position[0]-camera[0],dy:focused.position[1]-camera[1],
+    },metadata:{control:`${source}-frame`}});
+  }
+  gardenContextObjectId=focused?.object_id||null;
+  _renderGardenActions();
+}
+function _renderGardenActions(){
+  const actions=document.getElementById('hud-actions');
+  if(!actions)return;
+  actions.innerHTML='';
+  const memories=_gardenMemories();
+  if(memories.length)
+    actions.appendChild(_mkHudButton(memories.length===1?'examine memory':'examine memories',showGardenMemories,'i'));
+  const relationshipAnimal=_relationshipAnimal();
+  const relationshipTier=Number(relationshipAnimal?.semantic_state?.bond_tier||0);
+  const relationshipSpecies=relationshipAnimal?.semantic_state?.species_id||
+    relationshipAnimal?.semantic_name||'animal';
+  if(authenticated&&!bundleCorrupted&&relationshipAnimal&&relationshipTier<3)
+    actions.appendChild(_mkHudButton(`feed ${relationshipSpecies}`,
+      event=>feedAnimal(event,relationshipAnimal.object_id),'f'));
+  const focused=gardenRuntime?.focusedObject?.();
+  if(!focused||focused.object_id!==gardenContextObjectId){
+    if(gardenRuntime){
+      const guide=document.createElement('span');guide.className='t3';
+      guide.textContent='Choose a detail, or take a slow look around.';
+      actions.appendChild(guide);
+      actions.appendChild(_mkHudButton('take a closer look',
+      event=>focusGardenObject('next',event),']'));
+    }
+    return;
+  }
+  const status=document.createElement('span');status.className='t3';status.role='status';
+  status.textContent=focused.semantic_name;actions.appendChild(status);
+  actions.appendChild(_mkHudButton('previous',
+    event=>focusGardenObject('previous',event),'['));
+  actions.appendChild(_mkHudButton('next',
+    event=>focusGardenObject('next',event),']'));
+  const unavailableWithoutEditor=new Set(['move','rotate','transplant','open_journal']);
+  for(const action of focused.actions.filter(item=>!unavailableWithoutEditor.has(item))){
+    const label=action==='inspect'?'look closer at':action==='primary_interact'?'interact with':action.replaceAll('_',' ');
+    const button=_mkHudButton(`${label} ${focused.semantic_name}`,event=>{
+      const request=canonicalActionRequest(action,focused);
+      return dispatchGardenUi(inputModalityFromBrowserEvent(event),request.intent,{
+        target_id:focused.object_id,args:request.args,
+        metadata:{control:'context-actions'},
+      });
+    });
+    button.dataset.contextAction=action;
+    actions.appendChild(button);
+  }
+}
+function showGardenMemories(){
+  const memories=_gardenMemories();
+  if(memories.length===0)return;
+  if(memories.length===1){showMemory(memories[0]);return;}
+  showArchive();
+  const first=document.querySelector('#arc-content [data-gid]');
+  if(first)first.focus();
+}
 function showGarden(){
-  garden.setPostComplete(postComplete);
   const name=bundle?.author_name||'someone who loves you';
-  document.getElementById('hud-author').textContent=`planted for you by ${name}.`;
+  document.getElementById('hud-author').textContent=standaloneMode
+    ? 'your quiet standalone garden.' : `planted for you by ${name}.`;
+  const reviewTime=gardenReviewTime();
+  if(reviewTime===null)delete document.documentElement.dataset.gardenReviewTime;
+  else document.documentElement.dataset.gardenReviewTime=
+    new Date(reviewTime*1000).toISOString().replace('.000Z','Z');
   const btns=document.getElementById('hud-btns');btns.innerHTML='';
   const mk=(label,hi,fn)=>{
     const b=document.createElement('button');
     b.className='btn'+(hi?' hi':'');b.textContent=label;b.onclick=fn;return b;
   };
-  if(bundleCorrupted){
+  if(standaloneMode){
+    // Standalone is the Garden itself; it has no synthetic letter archive.
+  }else if(bundleCorrupted){
     btns.appendChild(mk('damaged file',true,()=>showStatus(
       'this file appears damaged.',
       bundleCorruptionReason||'the garden can still be viewed, but the letters stay sealed.',
       [{label:'back to garden',hi:true,fn:showGarden}],
     )));
-  }else if(cachedPassphrase!==null){
+  }else if(authenticated){
     btns.appendChild(mk('letters',true,showArchive));
   }else{
     btns.appendChild(mk('open letters',true,showPassphrase));
   }
+  if(gardenControlsEnabled()){
+    const controls=mk('garden diagnostics',false,openGardenControls);
+    controls.id='garden-controls-open';
+    btns.appendChild(controls);
+  }
   showScreen('garden');
-  startFirstRunBanner();
   _updateAnimalHud();
+  _renderGardenActions();
+  renderCanonicalGarden();
 }
-function afterAuth(){ showArchive(); }
+function afterAuth(){
+  showArchive();
+}
 function openDue(){
   if(dueIdxs.length===0){
     showStatus('no letters today.','come back anytime — this garden is yours.',
@@ -2148,17 +1497,38 @@ function showPassphrase(){
 }
 async function handleUnlock(){
   if(bundleCorrupted)return;
+  const unlockEpoch=authEpoch,unlockBundle=bundle;
   const inp=document.getElementById('pp-input'),btn=document.getElementById('btn-unlock');
   const errEl=document.getElementById('pp-err'),infoEl=document.getElementById('pp-info');
   errEl.classList.remove('on');
   infoEl.textContent=isDevFixture?'unlocking… (dev fixture)':'unlocking…';
   infoEl.classList.add('on'); inp.disabled=btn.disabled=true;
   try{
-    await verifyPassphrase(inp.value);
-    await evalTriggers(null);
-    postComplete=isPostComplete(); dueIdxs=computeDue();
+    const attempt=await verifyPassphrase(inp.value);
+    const assertCurrent=()=>{
+      if(attempt.epoch!==authEpoch||!authenticated||gardenRuntime!==attempt.runtime)
+        throw new Error('unlock was cancelled');
+    };
+    assertCurrent();
+    postComplete=isPostComplete();
+    await runAuthenticatedGardenProgram();
+    assertCurrent();
+    if(postComplete){await attempt.runtime.markStoryComplete();assertCurrent();}
+    dueIdxs=computeDue();
+    await attempt.runtime.commitPersistence();
+    assertCurrent();
+    if(firstRun&&authenticatedBinding){
+      await _receiptSet(kFirst(authenticatedBinding),'1');assertCurrent();
+    }
+    inp.value='';
     afterAuth();
   }catch(err){
+    if(unlockEpoch!==authEpoch||bundle!==unlockBundle)return;
+    purgeDecryptedState({showPreview:false});
+    const previewEpoch=authEpoch;
+    await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
+      persistent:false,expectedEpoch:previewEpoch,program:PREVIEW_PROGRAM,
+    });
     errEl.textContent=isDevFixture?`error: ${err.message}`:'incorrect passphrase, or file modified';
     errEl.classList.add('on'); infoEl.classList.remove('on');
     inp.disabled=btn.disabled=false; inp.focus();
@@ -2189,64 +1559,85 @@ function showLetterSelect(){
 }
 
 // ── Animal delivery animation (FL-G21) ───────────────────────────────
-let _deliveryIv=null,_deliveryOv=null;
+let _deliveryIv=null,_deliveryOv=null,_deliveryTimeout=null,_deliveryResolve=null;
 function _cancelDelivery(){
   if(_deliveryIv){clearInterval(_deliveryIv);_deliveryIv=null;}
+  if(_deliveryTimeout){clearTimeout(_deliveryTimeout);_deliveryTimeout=null;}
   if(_deliveryOv){_deliveryOv.remove();_deliveryOv=null;}
+  if(_deliveryResolve){const resolve=_deliveryResolve;_deliveryResolve=null;resolve();}
 }
-function _playDelivery(cb){
+function _playDelivery(){
   _cancelDelivery();
-  // SPEC §6.3: a bonded (tier 3) animal delivers; otherwise the letter-bird.
-  const bonded=animalType&&animalTriggered&&animalTier>=3&&_ANIMAL_DELIVERY_FRAMES[animalType];
-  const frames=bonded?_ANIMAL_DELIVERY_FRAMES[animalType]:_LETTERBIRD_FRAMES;
-  const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:12;pointer-events:none;opacity:0;transition:opacity .4s;';
-  const pre=document.createElement('pre');
-  pre.style.cssText='font:13px/15px "Courier New",monospace;color:var(--text);opacity:.8;text-align:center;';
-  ov.appendChild(pre);document.body.appendChild(ov);
-  _deliveryOv=ov;
-  // Three phases: approach (slide in, flapping) → settle (small dip) →
-  // present (hold pose, envelope glints). Sub-cell approach motion comes
-  // from a CSS transform so the char frames stay clean.
-  pre.style.transform=`translateX(${bonded?'-24vw':'-38vw'}) translateY(${bonded?'0':'-6vh'})`;
-  pre.style.transition='transform 1.5s cubic-bezier(.25,.8,.35,1)';
-  let fi=0,tick=0;
-  pre.textContent=frames[0].join('\n');
-  requestAnimationFrame(()=>{ov.style.opacity='1';pre.style.transform='translate(0,0)';});
-  _deliveryIv=setInterval(()=>{
+  return new Promise(resolve=>{
+    _deliveryResolve=resolve;
     try{
-      tick++;
-      if(tick===11){pre.style.transition='transform .22s ease-out';pre.style.transform='translateY(4px)';}
-      if(tick===13)pre.style.transform='translateY(0)';
-      if(tick<11)fi=(fi+1)%frames.length;else fi=0;
-      let txt=frames[fi].join('\n');
-      if(tick>=13&&tick%4>=2)txt=txt.replace('[✉]','{✉}');
-      pre.textContent=txt;
-      if(tick>=22){_cancelDelivery();ov.style.opacity='0';setTimeout(()=>{ov.remove();cb();},400);}
+      // SPEC §6.3: a bonded (tier 3) animal delivers; otherwise the letter-bird.
+      const deliveryAnimal=_bondedDeliveryAnimal();
+      const bonded=deliveryAnimal!==null;
+      const deliverySpecies=deliveryAnimal?.semantic_state?.species_id||null;
+      const deliveryTier=Number(deliveryAnimal?.semantic_state?.bond_tier||0);
+      const frames=deliveryFramesFor(deliverySpecies,deliveryTier);
+      if(!Array.isArray(frames)||frames.length===0)throw new Error('delivery atlas is empty');
+      const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:12;pointer-events:none;opacity:0;transition:opacity .4s;';
+      const pre=document.createElement('pre');
+      pre.setAttribute('role','img');pre.setAttribute('aria-label',bonded?'A bonded animal delivers the letter.':'A letter-bird delivers the letter.');
+      pre.style.cssText='font:13px/15px "Courier New",monospace;color:var(--text);opacity:.8;text-align:center;';
+      ov.appendChild(pre);document.body.appendChild(ov);_deliveryOv=ov;
+      const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+      pre.style.transform=reduced?'translate(0,0)':`translateX(${bonded?'-24vw':'-38vw'}) translateY(${bonded?'0':'-6vh'})`;
+      pre.style.transition=reduced?'none':'transform 1.5s cubic-bezier(.25,.8,.35,1)';
+      let fi=0,tick=reduced?21:0;
+      pre.textContent=frames[0].join('\n');
+      requestAnimationFrame(()=>{ov.style.opacity='1';pre.style.transform='translate(0,0)';});
+      _deliveryIv=setInterval(()=>{
+        try{
+          tick++;
+          if(tick===11){pre.style.transition='transform .22s ease-out';pre.style.transform='translateY(4px)';}
+          if(tick===13)pre.style.transform='translateY(0)';
+          if(tick<11)fi=(fi+1)%frames.length;else fi=0;
+          let txt=frames[fi].join('\n');
+          if(tick>=13&&tick%4>=2)txt=txt.replace('[✉]','{✉}');
+          pre.textContent=txt;
+          if(tick>=22){
+            clearInterval(_deliveryIv);_deliveryIv=null;ov.style.opacity='0';
+            _deliveryTimeout=setTimeout(()=>{
+              _deliveryTimeout=null;if(_deliveryOv===ov)_deliveryOv=null;ov.remove();
+              if(_deliveryResolve){const done=_deliveryResolve;_deliveryResolve=null;done();}
+            },reduced?0:400);
+          }
+        }catch(_){_cancelDelivery();}
+      },reduced?1:150);
     }catch(_){_cancelDelivery();}
-  },150);
+  });
 }
 
 // ── Open letter ───────────────────────────────────────────────────────
 let _deliveryPlayed=false;
+let _letterOpenInFlight=false;
 async function openLetter(msgIdx){
+  if(_letterOpenInFlight)return;
+  _letterOpenInFlight=true;
+  try{
   const msg=bundle.messages[msgIdx],dec=decoded[msg.id]||{label:'',body:''};
   curMsg={msg,...dec};
   _firstReadGuide=firstRun&&readIds.size===0;
   const isFirstRead=!readIds.has(msg.id);
+  if(isFirstRead&&!_deliveryPlayed){
+    await _playDelivery();
+    _deliveryPlayed=true;
+  }
+  showReading(curMsg);
   if(isFirstRead){
     readIds.add(msg.id);
-    dueIdxs=dueIdxs.filter(i=>bundle.messages[i].id!==msg.id);
-    await kvSet(kRead(bundle.bundle_id,msg.id),'1');
+    if(!authenticatedBinding)throw new Error('authenticated receipt binding is unavailable');
+    await _receiptSet(kRead(authenticatedBinding,msg.id),'1');
   }
-  await evalTriggers(msg.id);
+  await runAuthenticatedGardenProgram();
+  dueIdxs=computeDue();
   postComplete=isPostComplete();
-  if(isFirstRead&&!_deliveryPlayed){
-    _deliveryPlayed=true;
-    _playDelivery(()=>showReading(curMsg));
-  }else{
-    showReading(curMsg);
-  }
+  if(postComplete)await gardenRuntime.markStoryComplete();
+  }finally{_letterOpenInFlight=false;}
 }
 
 // ── Reading ───────────────────────────────────────────────────────────
@@ -2273,10 +1664,13 @@ function showArchive(){
 }
 function buildArchive(){
   const msgs=bundle.messages||[],gifts=bundle.garden_gifts||[];
-  const today=new Date();today.setHours(0,0,0,0);
+  const reviewTime=gardenReviewTime();
+  const today=new Date(reviewTime===null?Date.now():reviewTime*1000);today.setHours(0,0,0,0);
   let html='';
   for(const msg of msgs){
-    const isRead=readIds.has(msg.id),due=new Date(msg.date+'T00:00:00')<=today;
+    const presented=new Set(Array.isArray(gardenRuntime?.state?.program_state?.presented_letters)
+      ?gardenRuntime.state.program_state.presented_letters:[]);
+    const isRead=readIds.has(msg.id),due=new Date(msg.date+'T00:00:00')<=today||presented.has(msg.id);
     let cls,lbl,canOpen;
     if(isRead){cls='read';canOpen=true;lbl=decoded[msg.id]?.label||fmtDate(msg.date);}
     else if(due){cls='unread';canOpen=true;lbl=fmtDate(msg.date);}
@@ -2306,6 +1700,7 @@ function buildArchive(){
 
 // ── Memory ────────────────────────────────────────────────────────────
 function showMemory(gift){
+  _memoryInvoker=document.activeElement instanceof HTMLElement?document.activeElement:null;
   document.getElementById('mem-type').textContent=giftLabel(gift);
   let s='';
   if(isDevFixture){
@@ -2315,31 +1710,162 @@ function showMemory(gift){
         for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
         s=new TextDecoder().decode(buf);}catch(_){}
     }
-  }else{s='[encrypted — decryption in step 13]';}
+  }else{s=gift._sentiment||'';}
   document.getElementById('mem-text').textContent=s||'(no text)';
   const m=document.getElementById('modal-mem');
+  _memoryBackground=[...document.body.children]
+    .filter(element=>element!==m&&element.tagName!=='SCRIPT')
+    .map(element=>[element,element.hasAttribute('inert')]);
+  for(const [element] of _memoryBackground)element.setAttribute('inert','');
   m.classList.add('open');m.setAttribute('aria-hidden','false');
   document.getElementById('btn-close-mem').focus();
 }
 function closeMemory(){
   const m=document.getElementById('modal-mem');
+  if(!m.classList.contains('open'))return;
   m.classList.remove('open');m.setAttribute('aria-hidden','true');
+  for(const [element,wasInert] of _memoryBackground)
+    if(!wasInert)element.removeAttribute('inert');
+  _memoryBackground=[];
+  const invoker=_memoryInvoker;_memoryInvoker=null;
+  if(invoker?.isConnected)invoker.focus();
+}
+function trapMemoryFocus(event){
+  const modal=document.getElementById('modal-mem');
+  const focusable=[...modal.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+  )].filter(element=>!element.hidden);
+  if(focusable.length===0){event.preventDefault();modal.querySelector('.mem-inner')?.focus();return;}
+  const first=focusable[0],last=focusable.at(-1),active=document.activeElement;
+  if(event.shiftKey&&(active===first||!modal.contains(active))){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&(active===last||!modal.contains(active))){event.preventDefault();first.focus();}
 }
 
 // ── Pretext letter body ───────────────────────────────────────────────
 const LETTER_FONT='13px "Times New Roman", Times, serif', LETTER_LH=21;
 let _resizeObs=null,_prepared=null,_preparedText='';
-function renderBody(text,el){
-  if(!prepareWithSegments||!layoutWithLines){
-    el.classList.add('fallback');
-    el.textContent=text;
-    requestAnimationFrame(()=>{
-      const lh=parseFloat(getComputedStyle(el).lineHeight)||LETTER_LH;
-      _lineCount=Math.max(text.split('\n').length,Math.round(el.scrollHeight/lh));
-      _updateLineCt();
-    });
-    return;
+function renderBodyFallback(text,el){
+  el.classList.add('fallback');
+  el.textContent=text;
+  requestAnimationFrame(()=>{
+    const lh=parseFloat(getComputedStyle(el).lineHeight)||LETTER_LH;
+    _lineCount=Math.max(text.split('\n').length,Math.round(el.scrollHeight/lh));
+    _updateLineCt();
+  });
+}
+function disablePretext(error){
+  console.warn('[viewer] bundled PreText layout failed; using browser text fallback',error);
+  prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
+  _prepared=null;_preparedText='';_textLayoutMode='fallback';
+}
+// Segment kinds that represent a stretchable gap between words.
+//
+// PreText labels an ordinary ' ' differently depending on the whiteSpace
+// profile it was prepared with. Under the default profile a space is 'space';
+// under 'pre-wrap' -- which this viewer uses, so that the author's own line
+// breaks and blank lines survive -- the very same character is classified
+// 'preserved-space' instead (see analysis.js classifySegmentBreakChar).
+// Matching only 'space' therefore matched nothing at all here, which is why
+// every line silently took the plain branch below and the letter never
+// appeared justified.
+const JUSTIFY_GAP_KINDS=new Set(['space','preserved-space']);
+
+// Build one justified line element, or return null if this line must not be
+// justified.
+//
+// prepared  the PreText prepare result (segments / kinds / widths, all indexed
+//           identically and absolute across the whole text)
+// line      one entry from layoutWithLines(), carrying {start,end} positions
+// width     the container width in CSS pixels that the line must fill
+// isLast    true for the final line of the body, which stays ragged
+//
+// Returns an HTMLDivElement, or null when the caller should fall back to a
+// plain left-aligned line.
+function buildJustifiedLine(prepared,line,width,isLast){
+  // The final line of a body is never justified -- stretching it would leave a
+  // short closing line spread edge to edge.
+  if(isLast)return null;
+
+  const startSeg=line.start.segmentIndex,endSeg=line.end.segmentIndex;
+
+  // A line's segment range is HALF-OPEN: buildLineTextFromRange iterates
+  // [startSeg, endSeg) over whole segments and then appends only a partial
+  // prefix of segments[endSeg] when endGraphemeIndex > 0. Slicing endSeg+1
+  // would therefore pull in text belonging to the *next* line.
+  //
+  // A nonzero start/end grapheme index means the line begins or ends midway
+  // through a segment (an over-long word split across lines). Per-segment
+  // widths describe whole segments, so they cannot measure those partial
+  // pieces. Rather than justify from wrong measurements, decline the line and
+  // let the caller render it plainly.
+  if(line.start.graphemeIndex>0||line.end.graphemeIndex>0)return null;
+
+  const kinds=prepared.kinds.slice(startSeg,endSeg);
+  const segs=prepared.segments.slice(startSeg,endSeg);
+  const widths=prepared.widths.slice(startSeg,endSeg);
+  if(!kinds.length)return null;
+
+  // A hard break inside the range means the author ended the line themselves.
+  // That line is the last line of its paragraph, so it stays ragged for the
+  // same reason the final line does.
+  if(kinds.includes('hard-break'))return null;
+
+  // Locate the first and last real word. Whitespace outside that span is
+  // leading indentation or a trailing space; neither may be stretched, or the
+  // text would be pushed away from the margin.
+  const firstWord=kinds.findIndex(k=>k==='text');
+  const lastWord=kinds.lastIndexOf('text');
+  if(firstWord<0||lastWord<=firstWord)return null;   // needs 2+ words to justify
+
+  // Only gaps strictly between the first and last word are stretchable.
+  const gaps=[];
+  for(let j=firstWord+1;j<lastWord;j++){
+    if(JUSTIFY_GAP_KINDS.has(kinds[j]))gaps.push(j);
   }
+  if(!gaps.length)return null;
+
+  // Leading indentation renders at its natural width and reduces the space the
+  // justified span has to fill.
+  let leadWidth=0;
+  for(let j=0;j<firstWord;j++)leadWidth+=widths[j];
+
+  // Everything from the first to the last word, split into the parts that keep
+  // their natural width and the gaps that absorb the slack.
+  let gapNatural=0,nonGap=0;
+  for(let j=firstWord;j<=lastWord;j++){
+    if(gaps.includes(j))gapNatural+=widths[j];
+    else nonGap+=widths[j];
+  }
+
+  // Solve for the per-gap addition that makes the rendered row exactly fill the
+  // container:  leadWidth + nonGap + gapNatural + gaps.length*extra == width
+  const extra=(width-leadWidth-nonGap-gapNatural)/gaps.length;
+
+  // Negative slack means the line already overflows, so stretching is wrong.
+  // A very large addition means a nearly empty line would be blown apart; cap
+  // it at three times a natural gap and decline beyond that, which keeps the
+  // ragged look where justification would look broken.
+  if(!(extra>=0))return null;
+  const naturalGap=gapNatural/gaps.length;
+  if(naturalGap>0&&extra>naturalGap*3)return null;
+
+  const d=document.createElement('div');
+  d.className='ll ll-j';
+  const gapSet=new Set(gaps);
+  for(let j=0;j<=lastWord;j++){
+    const sp=document.createElement('span');
+    if(gapSet.has(j)){
+      sp.className='sp';
+      sp.style.width=(widths[j]+extra)+'px';
+      sp.textContent=' ';
+    }else{
+      sp.textContent=segs[j];
+    }
+    d.appendChild(sp);
+  }
+  return d;
+}
+function renderBodyWithPretext(text,el){
   el.classList.remove('fallback');
   const w=el.clientWidth;if(!w)return;
   if(text!==_preparedText){
@@ -2353,41 +1879,24 @@ function renderBody(text,el){
   for(let i=0;i<lines.length;i++){
     const line=lines[i];
     const isLast=i===lines.length-1;
-    try{
-      const startSeg=line.start.segmentIndex,endSeg=line.end.segmentIndex;
-      const segs=_prepared.segments.slice(startSeg,endSeg+1);
-      const kinds=_prepared.kinds.slice(startSeg,endSeg+1);
-      const widths=_prepared.widths.slice(startSeg,endSeg+1);
-      const wordCount=kinds.filter(k=>k==='text').length;
-      const spaceCount=kinds.filter(k=>k==='space').length;
-      if(!isLast&&wordCount>1&&spaceCount>0){
-        // Justified line: distribute extra space across inter-word gaps
-        const wordWidthSum=widths.reduce((s,ww,j)=>kinds[j]==='text'?s+ww:s,0);
-        const extraPerSpace=(w-wordWidthSum)/spaceCount;
-        if(extraPerSpace>=0){
-          const d=document.createElement('div');d.className='ll ll-j';
-          for(let j=0;j<segs.length;j++){
-            const sp=document.createElement('span');
-            if(kinds[j]==='space'){
-              sp.className='sp';
-              sp.style.width=(widths[j]+extraPerSpace)+'px';
-              sp.textContent=' ';
-            }else{
-              sp.textContent=segs[j];
-            }
-            d.appendChild(sp);
-          }
-          frag.appendChild(d);
-          continue;
-        }
-      }
-    }catch(_){}
-    // Fallback: plain left-aligned line
+    let justified=null;
+    // A measurement fault must never cost the reader the letter itself, so a
+    // failure here degrades this one line to plain text rather than throwing.
+    try{justified=buildJustifiedLine(_prepared,line,w,isLast);}
+    catch(_){justified=null;}
+    if(justified){frag.appendChild(justified);continue;}
+    // Plain left-aligned line: last lines, paragraph ends, single-word lines,
+    // and anything justification declined.
     const d=document.createElement('div');d.className='ll';d.textContent=line.text;
     frag.appendChild(d);
   }
   el.replaceChildren(frag);
   _updateLineCt();
+}
+function renderBody(text,el){
+  if(!prepareWithSegments||!layoutWithLines){renderBodyFallback(text,el);return;}
+  try{renderBodyWithPretext(text,el);}
+  catch(error){disablePretext(error);renderBodyFallback(text,el);}
 }
 function _updateLineCt(){
   const lc=document.getElementById('lm-linect');
@@ -2460,51 +1969,26 @@ function htmlEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 // ── Arc seeding (?arc= URL param — browser demo harness §24 step 11a Part B) ──
 async function _arcSeed(arc){
-  if(!arc||!bundle)return;
-  const bid=bundle.bundle_id;
+  if(!arc||!bundle||!isDevFixture)return;
+  const binding=`dev-fixture:${bundle.bundle_id}`;
   const msgs=bundle.messages||[];
-  const gifts=bundle.garden_gifts||[];
-  const ag=gifts.find(g=>g.type==='animal');
-  const actionMap={0:0,1:3,2:7,3:14};
   if(arc==='postcomplete'){
-    // Mark all messages read; trigger all gifts; bond the animal
-    for(const m of msgs){readIds.add(m.id);await kvSet(kRead(bid,m.id),'1');}
-    for(const g of gifts){giftDiscovered[g.id]=true;await kvSet(kGift(bid,g.id),'1');}
-    if(ag){animalTrustActions=14;animalTier=3;animalTriggered=true;
-      await kvSet(kAnimal(bid),JSON.stringify({trust_actions:14}));}
-  }else if(/^trust[123]$/.test(arc)){
-    const tier=parseInt(arc[5]);
-    const actions=actionMap[tier]??3;
-    if(ag){
-      giftDiscovered[ag.id]=true;await kvSet(kGift(bid,ag.id),'1');
-      animalTrustActions=actions;animalTier=tier;animalTriggered=true;
-      await kvSet(kAnimal(bid),JSON.stringify({trust_actions:actions}));
-    }
-  }else if(arc==='item'){
-    // Trigger non-animal gifts so `i · examine` appears
-    for(const g of gifts){
-      if(g.type!=='animal'){giftDiscovered[g.id]=true;await kvSet(kGift(bid,g.id),'1');}
-    }
+    // Fixture harness may seed letter history; Garden state still uses commands.
+    for(const m of msgs){readIds.add(m.id);await _receiptSet(kRead(binding,m.id),'1');}
   }else if(arc==='waiting'){
-    // Clear all state — fresh visit, no letters due (bundle should have future dates)
-    for(const m of msgs){readIds.delete(m.id);await kvSet(kRead(bid,m.id),'');}
-    for(const g of gifts){giftDiscovered[g.id]=false;await kvSet(kGift(bid,g.id),'');}
-    visitCount=1;await kvSet(kVisits(bid),'1');
+    // Clear letter history only; canonical Garden persistence is not bypassed.
+    for(const m of msgs){readIds.delete(m.id);await _receiptSet(kRead(binding,m.id),'');}
+    visitCount=1;gardenProgramState.visit_total=1;
   }
-  // delivery: no state change needed — loadBundle already set up fresh visit state
-  // Sync in-memory animal state to garden renderer
-  if(garden)garden.setAnimalData(_animalData());
 }
 
 // ── File handling ─────────────────────────────────────────────────────
-async function handleFile(file){
+async function handleFile(file,options={}){
   if(!file)return;
   try{
-    await loadBundle(file);
+    await loadBundle(file,options);
     const arc=new URLSearchParams(location.search).get('arc');
-    if(arc)await _arcSeed(arc);
-    garden.setSeed(bundle.garden_seed||12345);
-    garden.setAnimalData(_animalData());
+    if(arc&&isDevFixture)await _arcSeed(arc);
     showGarden();
   }catch(err){
     document.getElementById('err-h').textContent='could not open this file';
@@ -2516,85 +2000,45 @@ async function handleFile(file){
 // ── Dev tools (isDevFixture only) ────────────────────────────────────
 function _devCycleColorMode(){
   const g=document.getElementById('g');
-  if(_colorMode===0){
-    // → mode 1: white background (stash day values, not night-overwritten C)
-    _savedPalette={sky:_dayPalette?_dayPalette.sky:C.sky,dim_green:_dayPalette?_dayPalette.dim_green:C.dim_green};
-    C.sky='#ffffff';C.dim_green='#f0f0f0';
-    if(_dayPalette){_dayPalette.sky='#ffffff';_dayPalette.dim_green='#f0f0f0';}
-    g.style.filter='';
-    if(garden){garden.dom._lastGy=-1;garden._reset();}
-    _colorMode=1;console.log('[dev] color: white-bg');
-  }else if(_colorMode===1){
-    // → mode 2: full grayscale CSS filter — restore sky/ground then apply night if active
-    if(_savedPalette){
-      if(_dayPalette){_dayPalette.sky=_savedPalette.sky;_dayPalette.dim_green=_savedPalette.dim_green;C.sky=NIGHT_PALETTE.sky;C.dim_green=NIGHT_PALETTE.dim_green;}
-      else{C.sky=_savedPalette.sky;C.dim_green=_savedPalette.dim_green;}
-      _savedPalette=null;
-    }
-    if(garden){garden.dom._lastGy=-1;garden._reset();}
-    g.style.filter='grayscale(1) contrast(1.2)';
-    _colorMode=2;console.log('[dev] color: full-grayscale');
-  }else if(_colorMode===2){
-    // → mode 3: B&W except animated cells
-    g.style.filter='';
-    _colorMode=3;console.log('[dev] color: bw-anim');
-  }else{
-    // mode 3 → 0: restore default
-    g.style.filter='';_colorMode=0;
-    if(_savedPalette){
-      if(_dayPalette){_dayPalette.sky=_savedPalette.sky;_dayPalette.dim_green=_savedPalette.dim_green;C.sky=NIGHT_PALETTE.sky;C.dim_green=NIGHT_PALETTE.dim_green;}
-      else{C.sky=_savedPalette.sky;C.dim_green=_savedPalette.dim_green;}
-      _savedPalette=null;
-    }
-    if(garden){garden.dom._lastGy=-1;garden._reset();}
-    console.log('[dev] color: default');
-  }
+  _colorMode=(_colorMode+1)%3;
+  g.style.filter=_colorMode===1?'grayscale(1) contrast(1.2)':_colorMode===2?'contrast(1.25)':'';
 }
-function _refreshDevGridBg(){
-  if(!_devGridActive)return;
-  const ov=document.getElementById('dev-overlay');
-  if(!ov)return;
-  ov.style.backgroundImage=
-    `repeating-linear-gradient(to right,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CW*10}px),`+
-    `repeating-linear-gradient(to bottom,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CH*10}px)`;
-}
+function _refreshDevGridBg(){}
 function _devToggleGrid(){
-  let ov=document.getElementById('dev-overlay');
-  if(_devGridActive){
-    _devGridActive=false;
-    if(ov)ov.remove();
-    if(_devGridRaf){cancelAnimationFrame(_devGridRaf);_devGridRaf=null;}
-    return;
+  _devGridActive=!_devGridActive;
+  document.getElementById('g').classList.toggle('debug-grid',_devGridActive);
+}
+function getSeason(){return gardenRuntime?.projection?.scene?.season||'spring';}
+function getTimeOfDay(){return gardenRuntime?.projection?.scene?.time_of_day||'day';}
+
+function purgeDecryptedState({showPreview=true}={}){
+  authEpoch++;
+  for(const runtime of pendingGardenRuntimes)runtime.invalidate?.();
+  pendingGardenRuntimes.clear();
+  if(gardenRuntime)gardenRuntime.invalidate?.();
+  authenticated=false;authenticatedBinding=null;
+  decoded={};gardenProgram=null;gardenProgramState={applied_occurrences:[]};
+  gardenRuntime=null;readIds=new Set();giftDiscovered={};dueIdxs=[];curMsg=null;
+  visitCount=0;firstRun=true;postComplete=false;
+  for(const gift of bundle?.garden_gifts||[])delete gift._sentiment;
+  _cancelDelivery();teardownResize();closeMemory();
+  document.getElementById('mem-type')?.replaceChildren();
+  document.getElementById('mem-text')?.replaceChildren();
+  garden?.clear?.();clearCanonicalGardenUi();
+  const secretIds=['lm-from','lm-label','lm-date','letter-body','arc-title','arc-content'];
+  for(const id of secretIds){const node=document.getElementById(id);if(node)node.replaceChildren();}
+  const input=document.getElementById('pp-input');if(input){input.value='';input.disabled=false;}
+  const unlock=document.getElementById('btn-unlock');if(unlock)unlock.disabled=false;
+  if(showPreview&&bundle&&!standaloneMode){
+    showGarden();
   }
-  if(!ov){
-    ov=document.createElement('div');ov.id='dev-overlay';
-    ov.style.backgroundImage=
-      `repeating-linear-gradient(to right,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CW*10}px),`+
-      `repeating-linear-gradient(to bottom,rgba(200,0,0,.1) 0,rgba(200,0,0,.1) 1px,transparent 1px,transparent ${CH*10}px)`;
-    document.getElementById('g').appendChild(ov);
-  }
-  _devGridActive=true;
-  let lastFps=0,_lastT=0,_frames=0;
-  const modes=['default','white-bg','grayscale','bw-anim'];
-  const tick=t=>{
-    if(!_devGridActive)return;
-    _devGridRaf=requestAnimationFrame(tick);
-    _frames++;
-    if(t-_lastT>=1000){lastFps=Math.round(_frames*1000/(t-_lastT));_frames=0;_lastT=t;}
-    const s=garden?.state;
-    const mr=s?.mouseRow??-1,mc=s?.mouseCol??-1;
-    const cur=_devSeason||(getTimeOfDay()==='day'?getSeason():`${getSeason()}-${getTimeOfDay()}`);
-    const ad=s?.animalData;
-    const anStr=ad?`${ad.type}/${ad.tier}`:'none';
-    const anDbg=garden?.animalDebugState?.()||'none';
-    ov.textContent=
-      `${s?.cols||0}x${s?.rows||0} | CW=${CW.toFixed(2)} CH=${CH.toFixed(1)} | mouse(${mc},${mr}) | FPS:${lastFps}\n`+
-      `season: ${cur}  color: ${modes[_colorMode]||_colorMode}  animal: ${anStr}  behavior: ${anDbg}\n`+
-      `  ,/. season+time   Shift+A animal   Shift+B color\n`+
-      `  Shift+D dump   Shift+G grid (this)   f feed   Shift+R react\n`+
-      `  Shift+P post-cmp   Shift+F first-run   Shift+I gift   Shift+V visit   Shift+N birds`;
-  };
-  _devGridRaf=requestAnimationFrame(tick);
+}
+async function restoreGenericPreview(){
+  if(!bundle||standaloneMode)return;
+  await openCanonicalGarden(PREVIEW_WORLD_ID,PREVIEW_SEED,{
+    persistent:false,program:PREVIEW_PROGRAM,
+  });
+  showGarden();
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────
@@ -2607,6 +2051,74 @@ function wire(){
   dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fi.click();}});
   document.getElementById('btn-browse').onclick=e=>{e.stopPropagation();fi.click();};
   fi.onchange=e=>handleFile(e.target.files[0]);
+  document.getElementById('btn-standalone').onclick=async e=>{
+    e.stopPropagation();standaloneMode=true;bundle=null;authenticated=true;
+    await openCanonicalGarden('standalone:local','lateletter-standalone-v1');
+    showGarden();
+  };
+
+  document.querySelectorAll('[data-garden-action]').forEach(button=>{
+    button.onclick=async event=>{
+      const action=button.dataset.gardenAction;
+      const focus=gardenRuntime?.focusedObject();let args={};let target_id=null;
+      if(action==='pan')args={dx:Number(button.dataset.dx||0),dy:Number(button.dataset.dy||0)};
+      else if(action==='frame'){
+        const objects=gardenRuntime?.projection?.objects||[];
+        if(!objects.length)return;
+        const fixtures=objects.filter(object=>object.kind==='fixture');
+        const frameObjects=fixtures.length?fixtures:objects;
+        const target=[Math.floor(gardenRuntime.state.world_width/2),
+          Math.round(frameObjects.reduce((total,object)=>total+object.position[1],0)/frameObjects.length)];
+        args={dx:target[0]-gardenRuntime.state.ui.camera[0],dy:target[1]-gardenRuntime.state.ui.camera[1]};
+      }
+      else if(action==='pause_motion')args={paused:!gardenRuntime?.state.ui.motion_paused};
+      else if(action==='dwell'){
+        const changed=await gardenRuntime.tickLive(30);
+        gardenNotice=`Dwelled for 30 Garden seconds. ${changed?'The living world changed.':'The paused world stayed still.'}`;
+        await renderCanonicalGarden();
+        return;
+      }
+      else if(action==='place'){
+        args={
+          object_kind:document.getElementById('garden-place-kind').value,
+          catalog_id:document.getElementById('garden-place-catalog').value.trim(),
+          x:Number(document.getElementById('garden-place-x').value),
+          y:Number(document.getElementById('garden-place-y').value),
+        };
+      }else if(['inspect','tend','feed','play','collect','move_fixture'].includes(action))target_id=focus?.object_id||null;
+      await dispatchGardenUi(inputModalityFromBrowserEvent(event),action==='frame'?'pan':action,{
+        target_id,args,metadata:{control:'global-actions'},
+      });
+      if(action==='back'&&_gardenFocusReturn){
+        document.querySelectorAll('#garden-object-list [data-object-id]').forEach(item=>{
+          if(item.dataset.objectId===_gardenFocusReturn)item.focus();
+        });
+        _gardenFocusReturn=null;
+      }
+    };
+  });
+  document.getElementById('garden-controls-close').onclick=closeGardenControls;
+  document.getElementById('sky-opt-in').onclick=async event=>{
+    event.currentTarget.disabled=true;
+    try{
+      const region=await requestRoughSkyLocation();
+      localStorage.setItem(SKY_REGION_KEY,JSON.stringify(region));
+      garden?.setReaderRegion(region);
+    }catch(error){
+      document.getElementById('garden-scene-summary').textContent=`${gardenRuntime?.sceneSummary()||'Garden ready.'} ${error.message}; storybook sky kept.`;
+    }finally{event.currentTarget.disabled=false;}
+  };
+  document.getElementById('sky-use-region').onclick=()=>{
+    const raw=document.getElementById('sky-region').value;
+    if(!raw)return;
+    const [latitude_cell,longitude_cell]=raw.split(',').map(Number);
+    const region={latitude_cell,longitude_cell,grid_degrees:1};
+    localStorage.setItem(SKY_REGION_KEY,JSON.stringify(region));
+    garden?.setReaderRegion(region);
+  };
+  document.getElementById('sky-forget').onclick=()=>{
+    localStorage.removeItem(SKY_REGION_KEY);garden?.setReaderRegion(null);
+  };
 
   // Demo letter download + auto-load
   document.getElementById('btn-demo').onclick=async e=>{
@@ -2618,7 +2130,7 @@ function wire(){
       const blob=new Blob([text],{type:'application/json'});
       // Auto-load it directly
       const file=new File([blob],'demo.lateletter',{type:'application/json'});
-      await handleFile(file);
+      await handleFile(file,{trustedDevFixture:true});
     }catch(err){
       // Fallback: trigger download so user can upload manually
       const a=document.createElement('a');a.href='test_fixture.lateletter';
@@ -2662,34 +2174,46 @@ function wire(){
   document.getElementById('btn-close-mem').onclick=closeMemory;
   document.getElementById('modal-mem').addEventListener('click',e=>{
     if(e.target===document.getElementById('modal-mem'))closeMemory();});
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Escape')closeMemory();
-    // f = feed animal (authenticated, triggered, not yet bonded)
-    if(e.key==='f'&&cachedPassphrase!==null&&animalType&&animalTriggered&&animalTier<3){
-      e.preventDefault();feedAnimal();}
-    // Shift+A = dev: cycle animal types/tiers (dev fixture only)
-    if(e.key==='A'&&isDevFixture){e.preventDefault();devCycleAnimal();}
+  document.addEventListener('keydown',async e=>{
+    if(document.getElementById('modal-mem').classList.contains('open')){
+      if(e.key==='Escape'){e.preventDefault();closeMemory();return;}
+      if(e.key==='Tab'){trapMemoryFocus(e);return;}
+    }
+    const gardenReady=document.getElementById('hud').classList.contains('vis')&&
+      !document.getElementById('modal-mem').classList.contains('open');
+    const typing=/^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName||'')||e.target?.isContentEditable;
+    const nativeButtonActivation=e.target?.tagName==='BUTTON'&&(e.key==='Enter'||e.key===' ');
+    if(gardenReady&&!typing&&!nativeButtonActivation&&gardenRuntime){
+      const focus=gardenRuntime.focusedObject();
+      if(e.key==='['||e.key===']'){
+        e.preventDefault();
+        await focusGardenObject(e.key==='['?'previous':'next',e,'keyboard-navigation');
+        return;
+      }
+      if(e.key==='Enter'&&focus){
+        e.preventDefault();gardenContextObjectId=focus.object_id;
+        await dispatchGardenUi('browser_keyboard','open_actions',{
+          target_id:focus.object_id,metadata:{key:e.key,code:e.code,repeat:e.repeat},
+        });
+        _renderGardenActions();
+        return;
+      }
+      const bindings={
+        ArrowLeft:['pan',{args:{dx:-1,dy:0}}],ArrowRight:['pan',{args:{dx:1,dy:0}}],
+        ArrowUp:['pan',{args:{dx:0,dy:-20}}],ArrowDown:['pan',{args:{dx:0,dy:20}}],
+        g:['inspect',{target_id:focus?.object_id||null}],
+        t:['tend',{target_id:focus?.object_id||null,args:{care_action:'water'}}],
+        f:['feed',{target_id:focus?.object_id||null}],p:['play',{target_id:focus?.object_id||null}],
+        c:['collect',{target_id:focus?.object_id||null}],j:['open_journal',{}],
+        z:['undo',{}],' ':['pause_motion',{args:{paused:!gardenRuntime.state.ui.motion_paused}}],
+        Escape:['back',{}],
+      };
+      const binding=bindings[e.key];
+      if(binding){e.preventDefault();await dispatchGardenUi('browser_keyboard',binding[0],{
+        ...(binding[1]||{}),metadata:{key:e.key,code:e.code,repeat:e.repeat}});}
+    }
     // ── Dev-only keys (all gated) ──────────────────────────────────
     if(!isDevFixture)return;
-    // Shift+R : trigger feed reaction without mutating trust
-    if(e.key==='R'){
-      e.preventDefault();
-      const ad=garden?.state?.animalData;
-      if(ad&&ad.triggered){
-        garden.triggerAnimalFeedReaction({type:ad.type,tier:ad.tier});
-        console.log('[dev] feed reaction →',ad.type,ad.tier);
-      }else{
-        console.log('[dev] no active animal to react');
-      }
-    }
-    // Shift+N : spawn ambient bird burst
-    if(e.key==='N'){
-      e.preventDefault();
-      if(garden){
-        garden.spawnAmbientBirdBurst();
-        console.log('[dev] ambient birds spawned');
-      }
-    }
     // < / > : cycle seasons + time-of-day at runtime
     if(e.key===','||e.key==='.'){
       e.preventDefault();
@@ -2698,16 +2222,21 @@ function wire(){
       const idx=(states.indexOf(cur)+(e.key==='.'?1:states.length-1))%states.length;
       _devSeason=states[idx];
       _devNight=_devSeason.endsWith('-night');
-      if(garden){garden.dom._lastGy=-1;garden._reset();_refreshDevGridBg();}
+      if(gardenRuntime?.projection)garden?.render(gardenRuntime.projection);
       console.log('[dev] season →',_devSeason);
     }
     // Shift+D : dump state to console
     if(e.key==='D'){
       e.preventDefault();
+      const projectedAnimal=_relationshipAnimal();
       console.log('[dev] state',{
-        season:getSeason(),CW,CH,
+        season:getSeason(),cellWidth:garden?.cellWidth,cellHeight:garden?.cellHeight,
         cols:garden?.state?.cols,rows:garden?.state?.rows,
-        visitCount,animalType,animalTier,animalTriggered,
+        visitCount,animal:projectedAnimal?{
+          object_id:projectedAnimal.object_id,
+          species_id:projectedAnimal.semantic_state?.species_id||null,
+          bond_tier:Number(projectedAnimal.semantic_state?.bond_tier||0),
+        }:null,
         giftDiscovered:Object.keys(giftDiscovered).filter(k=>giftDiscovered[k]),
         postComplete,dueIdxs:dueIdxs.length,_colorMode
       });
@@ -2716,13 +2245,6 @@ function wire(){
     if(e.key==='B'){e.preventDefault();_devCycleColorMode();}
     // Shift+G : toggle grid overlay
     if(e.key==='G'){e.preventDefault();_devToggleGrid();}
-    // Shift+P : toggle post-complete state
-    if(e.key==='P'){
-      e.preventDefault();
-      postComplete=!postComplete;
-      if(garden)garden.setPostComplete(postComplete);
-      console.log('[dev] postComplete →',postComplete);
-    }
     // Shift+F : re-trigger first-run banner
     if(e.key==='F'){
       e.preventDefault();
@@ -2730,25 +2252,20 @@ function wire(){
       startFirstRunBanner();
       console.log('[dev] first-run banner re-triggered');
     }
-    // Shift+I : inject next undiscovered gift
-    if(e.key==='I'){
-      e.preventDefault();
-      if(bundle){
-        const g=(bundle.garden_gifts||[]).find(x=>!giftDiscovered[x.id]);
-        if(g){giftDiscovered[g.id]=true;kvSet(kGift(bundle.bundle_id,g.id),'1');evalTriggers(null);console.log('[dev] gift discovered:',g.id,g.type);}
-        else console.log('[dev] all gifts already discovered');
-      }
-    }
-    // Shift+V : simulate additional visit (increments visitCount + re-evals triggers)
+    // Shift+V : simulate a visit fact; the canonical program remains sole evaluator.
     if(e.key==='V'){
       e.preventDefault();
       visitCount++;
-      if(bundle)kvSet(kVisits(bundle.bundle_id),String(visitCount));
-      evalTriggers(null);
+      gardenProgramState.visit_total=visitCount;
+      runAuthenticatedGardenProgram();
       console.log('[dev] visitCount →',visitCount);
     }
   });
-  window.addEventListener('pagehide',()=>{cachedPassphrase=null;});
+  reducedMotionQuery.addEventListener('change',syncAmbientMotion);
+  window.addEventListener('pagehide',()=>{purgeDecryptedState();});
+  window.addEventListener('pageshow',event=>{
+    if(event.persisted){purgeDecryptedState();restoreGenericPreview().catch(console.error);}
+  });
   window.addEventListener('resize',()=>{if(garden)garden.onResize();_refreshDevGridBg();});
 }
 
@@ -2776,9 +2293,25 @@ async function loadUrlLetter(){
 async function init(){
   await initTextLayout();
   try{
-    garden=new GardenEngine(document.getElementById('g'));
-    garden._reset();
-    garden.start();
+    let readerRegion=null;
+    try{readerRegion=JSON.parse(localStorage.getItem(SKY_REGION_KEY)||'null');}catch(_){localStorage.removeItem(SKY_REGION_KEY);}
+    garden=new CanonicalGardenRenderer(document.getElementById('g'),{
+      prefersReducedMotion:reducedMotionQuery.matches,
+      readerRegion,
+      onTheme:applyGardenPageTheme,
+      onSelect:async (object,event)=>{
+        const modality=inputModalityFromBrowserEvent(event);
+        gardenContextObjectId=object.object_id;
+        await dispatchGardenUi(modality,'move_focus',{args:{target_id:object.object_id},metadata:{source:'canonical-raster'}});
+        if(gardenControlsEnabled()){
+          await dispatchGardenUi(modality,'open_actions',{target_id:object.object_id});
+          openGardenControls();
+          document.querySelector('#garden-action-sheet button')?.focus();
+        }
+      },
+    });
+    garden.startPresentation();
+    syncAmbientMotion();
   }catch(e){console.error('[init] garden failed:',e);}
   try{await storageInit();}catch(e){console.error('[init] storage failed:',e);}
   wire();

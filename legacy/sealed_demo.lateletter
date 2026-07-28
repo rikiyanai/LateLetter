@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "bundle_id": "527765c6-9c84-46b2-83c2-0d0a8e1869c6",
+  "author_name": "Riki",
+  "passphrase_hint": "what all of this grows into (six letters)",
+  "bundle_auth_salt": "7lBxHwexWobFZ7RSLTJqlA==",
+  "garden_seed": 20260719,
+  "messages": [
+    {
+      "id": "2da6d0fb-f56d-4b9f-952b-1d4b145b3672",
+      "date": "2026-07-19",
+      "ciphertext": "48AMMYR71ZvK4UbjAu8LV514ivhUDXwV23AOb+zoesVUiJcDrsskBFog6XprvHxyOlrU/1FB6FxLeaRb4nH1blnjlgqxIXa0wVTek9CK/0o8LC1JAX6AURljROhQLmT6mONBw9fnD+qG5B4+XkZwjH0V0GLFHuTITSkFE0gVHW+8qMj++BB4RZsegmGF8RQRr4U6E9Ji9TnvX/XubCq3upwxyiEkAaI16OM/PcGT2PbN7KEEFIqDt63UC88zZY79CdMubUeHByfsvSPEOUskF1fLKx3NhS5cu0yT9mh1vNbqFTSjvRW14GJPaUaIDDYjbeElnsqWlTP9RdtP9//XLz1uZh7G+2fEdABsN7KHLMQ/MQhtaZEMoW/mJ5VZsOJ4fm4VDtFVubYP5UpPlplgPnlouCiq1K+9ORxCpRlG4RtJ5frWE3i8UfVz6uElgzoSJwgMSf16NrVT1GpTNi+1n9P22A61tQn7+iO9I67r7DqvYrMJxMKL6JXi0nkxKPUKSnKf2zJ5udcdreiwvNKATpKq/whWEZHryCOhMaT4LfyUob5pP/0jhw2p32ci9r+aJLlro6wv7Ov/L5DdBu+JvpVerNQFM+0OdmDyZ6WHGWvN8O23qysM4b5ny3G9ed0EwzemQftYwEzra46XLno5pYNeGX5AI1Y0DO/V4A8wqPx92I+lQj3JJmO4RYXEP3vjeuHwu1skMsjh74fy04SYQ2YKcD0ao9Se33PVZNi3/FWET8GTnIxp5vjAPg65af2VJ9qnKfBmm7Baxj+BvJGuqidTz+vHtvo8Fi8arSnNKyYjTLklwk8Cu33z1N8SKDUa62QC51so8HQHBHI3JwQIccwrKMasq1OrqB0ZpzQOuDYGPqShE41oYXVQMYOoP4T8Tj794vVszVlk18oe2Kt908+8ARl6j0Afq/1EK4p1BgxOBA4uVvMloPxZSYajIY97JejrUxSjiMgZyblgKqnB4CTPYudcXuL2t5rwiFXgrKp5PybhD2XKqFAm+UjCA7VEjWozJFefhLhAmfbdYn7U",
+      "salt": "o5pKJFMOgm94sHqwFVVqfg==",
+      "nonce": "V5IukTN63kibjHEH",
+      "kdf_params": {
+        "name": "PBKDF2",
+        "hash": "SHA-256",
+        "iterations": 600000
+      }
+    }
+  ],
+  "garden_gifts": [
+    {
+      "id": "f312e39d-7514-404a-a7ad-c0315fd8aa9b",
+      "type": "animal",
+      "catalog_id": "cat",
+      "sentiment_ciphertext": "hjEQI/4zVSKZottSe/1AWUzLSjSwAFRVazmBDOwNFXSk7oVZU5/+17IgQEubI0fyZXI/Os/oupcSJ2Q=",
+      "salt": "ZBAQ4Db8WV/Do/t3F2y1sQ==",
+      "nonce": "FElV/H3hEr2KF9fF",
+      "trigger": {
+        "type": "cumulative_visits",
+        "value": "2"
+      },
+      "placement_hint": "random",
+      "animal_name": "Mochi",
+      "animal_collar_color": null
+    },
+    {
+      "id": "af7b35e1-4e52-458e-8d18-31e548a83250",
+      "type": "item",
+      "catalog_id": "coffee_mug",
+      "sentiment_ciphertext": "nRo61Eyl8++iOoxnEkIANIbcdnuaMalyF2XWmdPb11KQmtI=",
+      "salt": "5arTxvzrPzB8AgM5kqifUg==",
+      "nonce": "Jhrdq+0qRW7dtBZe",
+      "trigger": {
+        "type": "post_letter",
+        "value": "2da6d0fb-f56d-4b9f-952b-1d4b145b3672"
+      },
+      "placement_hint": "near_tallest_tree",
+      "animal_name": null,
+      "animal_collar_color": null
+    }
+  ],
+  "notification": null,
+  "checksum": "7e66d96dba648db39bd2e2fd2bdc45c1a7c6df01a13dc361fe6001cd3cc678e5",
+  "hmac": "f8005927e2dc0637f2587087a65279848d0b1d558e0495676818cb9747edd75a"
+}
