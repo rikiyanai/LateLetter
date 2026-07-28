@@ -4,7 +4,7 @@
   "author_name": "Demo Author",
   "passphrase_hint": "where flowers grow",
   "bundle_auth_salt": "Gns0dAHnAEXlX1Rd7MIjzw==",
-  "garden_seed": 20260721,
+  "garden_seed": 20260719,
   "messages": [
     {
       "id": "8384fcca-ff01-40b3-ab62-370b2d90331f",
@@ -23,7 +23,7 @@
     {
       "id": "8c595ae0-e613-470f-8d47-594884cb8548",
       "type": "animal",
-      "catalog_id": "rabbit",
+      "catalog_id": "cat",
       "sentiment_ciphertext": "zpJRQBD3gSkcHaIlKu5/A01jk4Rke5EIRxmc+W/IfstA1BZct6nztebt5Wf6V9ZsZV1gNkb4QD/xDxdqIcKbcsSbBaNvfOhga7DCFQ==",
       "salt": "Hzmi1Fdeue3BxidbV+xayw==",
       "nonce": "fuFTleGIbb0Wx2nL",
@@ -67,6 +67,6 @@
     }
   ],
   "notification": null,
-  "checksum": "097dcc7cb338783287c9ddd0da203f2685a2a066d044cfe2f0da4c8bd76e6572",
-  "hmac": "bc6538dc4a4f60bff1095553d430888be4ae29293eeb02a20bc46a412f1059b3"
+  "checksum": "da630f111cd6d68f814ac32f1acb0e474e10fff7f0b5f035e1fd7ad4d29fb4ad",
+  "hmac": "af3750679d386d2a4f3ad7214642cf35e46bbb1afa6104e76eba06529cc78ed8"
 }
