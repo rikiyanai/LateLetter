@@ -2,14 +2,17 @@
 
 import { normalizeGardenInput } from './garden-input.mjs';
 import {
+  LOAD_GENERATED,
   advanceGardenLive,
   canonicalWorldJson,
-  deserializeWorldState,
+  characterizeGardenWorld,
   dispatchGardenCommand,
   generateInitialWorld,
+  loadMigratedGardenWorld,
   materializeGardenProgramEffects,
   projectGardenScene,
   reconcileGardenOffline,
+  requireFreshComposition,
   seedGardenProgramState,
 } from './garden-world.mjs';
 
@@ -95,6 +98,12 @@ export class GardenRuntime {
     this.saveValue = save;
     this.program = program;
     this.now = now;
+    // How the world arrived, and what it is. Both are set by `open` and are
+    // null until then, because before a world has been opened there is no
+    // honest answer -- and a default of "generated" would be a lie told by a
+    // field initializer.
+    this.loadOrigin = null;
+    this.worldOrigin = null;
     this.state = null;
     this.projection = null;
     this.lastResult = null;
@@ -159,12 +168,28 @@ export class GardenRuntime {
       this.assertActive();
       let state;
       if (stored !== null && stored !== undefined && stored !== '') {
-        state = deserializeWorldState(stored);
+        // Through the migrating loader, not `deserializeWorldState` directly.
+        //
+        // This is the path where the defect actually happened: a persisted
+        // browser world of 13 plants / 22 fixtures / 4 animals / 8
+        // collectibles was opened and read as the current starter, which
+        // makes 2 / 5 / 0 / 0. Loading it raw meant nothing in the runtime
+        // knew, or could say, that the world had come out of storage.
+        const loaded = loadMigratedGardenWorld(stored);
+        state = loaded.state;
+        // Recorded on the runtime so any caller -- above all a visual review --
+        // can ask how this world arrived instead of assuming. No version stamp
+        // can answer this: being loaded is an event, not a lineage.
+        this.loadOrigin = loaded.loadOrigin;
         if (state.world_id !== this.worldId) throw new Error('stored Garden world identity mismatch');
       } else {
         state = await generateInitialWorld(this.worldId, this.seed);
+        this.loadOrigin = LOAD_GENERATED;
         this.assertActive();
       }
+      // Characterized on every open, so the fact is available before anything
+      // draws rather than being reconstructed afterwards from what was seen.
+      this.worldOrigin = characterizeGardenWorld(state);
       // An authenticated author program owns the relationship-animal roster.
       // Adopt it before offline reconciliation so sandbox animals cannot emit
       // return receipts or absence summaries in a recipient world.
@@ -388,6 +413,24 @@ export class GardenRuntime {
 
   focusedObject() {
     return this.projection?.objects.find(item => item.object_id === this.state?.ui.focus_id) ?? null;
+  }
+
+  /**
+   * Refuse to proceed unless this runtime holds a freshly generated world.
+   *
+   * The review entry point. Item 9 of the operator route reviews ONE fresh
+   * composition beside the deployed legacy, and the whole value of that
+   * comparison depends on the fresh side actually being fresh. Before this
+   * existed the runtime could not tell a generated world from a restored one,
+   * so the reviewer had to -- and once did not.
+   *
+   * @returns {object} the characterization, when it is fresh
+   * @throws {Error} when the world is stale or was loaded rather than
+   *         generated, listing every reason
+   */
+  requireFreshCompositionForReview() {
+    if (!this.state) throw new Error('the Garden runtime has no world open');
+    return requireFreshComposition(this.state, this.loadOrigin ?? LOAD_GENERATED);
   }
 
   sceneSummary() {

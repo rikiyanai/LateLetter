@@ -21,6 +21,7 @@
         "tests/test_garden_*.py",
         "tests/test_capture_html_garden_review.py",
         "docs/garden-asset-acceptance.json",
+        "docs/garden-composition-acceptance.json",
         "docs/garden-presentation-recipes.json",
         "docs/GARDEN_PARITY.md",
         "docs/ownership-lanes.json",

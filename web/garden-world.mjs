@@ -14,13 +14,36 @@ export const ENGINE_VERSION = 'garden-world-internal-v1';
 // Three versions, deliberately independent. `WORLD_SCHEMA_VERSION` above is the
 // SHAPE of the stored document -- can it be parsed. `GENERATOR_VERSION` is the
 // code that produced a world's initial content -- was it built by today's
-// generator. `COMPOSITION_VERSION` is the approved population -- is this what
-// the operator said yes to. A stored world can be current in the first and
-// stale in both others at once, which is why one number cannot carry them.
-// The Python constants in src/lateletter/garden/world/model.py must match, and
-// a contract test asserts they do.
+// generator. `COMPOSITION_VERSION` identifies which CANDIDATE composition
+// revision the population came from.
+//
+// `COMPOSITION_VERSION` carries NO approval and must never be read as one. An
+// earlier draft described it as the population the operator approved, which
+// made every generated world claim an approval nobody has granted for any
+// composition. Acceptance is a separate, fingerprint-bound operator verdict in
+// docs/garden-composition-acceptance.json.
+//
+// A stored world can be current in the first and stale in both others at once,
+// which is why one number cannot carry them. The Python constants in
+// src/lateletter/garden/world/model.py must match, and a contract test asserts
+// they do.
 export const GENERATOR_VERSION = 1;
 export const COMPOSITION_VERSION = 1;
+
+// How a world arrived in this process -- a different question from its lineage.
+// A world can have perfect stamps and still have come out of storage after a
+// hundred interactions. No stamp can record an event that happens at load time,
+// so the runtime reports it separately.
+export const LOAD_GENERATED = 'generated';
+export const LOAD_STORED = 'loaded';
+export const LOAD_SCHEMA_MIGRATED = 'schema_migrated';
+
+// Transforms from an older stored shape to the next one, keyed by the schema
+// they read. EMPTY, and honestly so: schema 1 is the only shape this project
+// has ever written, so there is no historical document any transform could have
+// been written against. Renumbering a document is not migrating it, so an
+// unregistered old schema is refused rather than renumbered.
+export const SCHEMA_MIGRATIONS = Object.freeze({});
 export const PROCESSED_COMMAND_LIMIT = 512;
 export const EVENT_TRACE_LIMIT = 512;
 export const LIVE_TRACE_LIMIT = 120;
@@ -641,6 +664,9 @@ export function deserializeWorldState(raw) {
     // 8/10/4/3 starter. See src/lateletter/garden/world/provenance.py.
     generator_version: optionalInteger(data.generator_version),
     composition_version: optionalInteger(data.composition_version),
+    composition_fingerprint:
+      data.composition_fingerprint === null || data.composition_fingerprint === undefined
+        ? null : String(data.composition_fingerprint),
     migrated_from_schema: optionalInteger(data.migrated_from_schema),
     world_id: String(data.world_id),
     seed: String(data.seed),
@@ -675,6 +701,9 @@ export function serializeWorldState(state) {
     engine_version: String(state.engine_version),
     generator_version: optionalInteger(state.generator_version),
     composition_version: optionalInteger(state.composition_version),
+    composition_fingerprint:
+      state.composition_fingerprint === null || state.composition_fingerprint === undefined
+        ? null : String(state.composition_fingerprint),
     migrated_from_schema: optionalInteger(state.migrated_from_schema),
     world_id: String(state.world_id),
     seed: String(state.seed),
@@ -721,11 +750,11 @@ export async function newGardenWorld(
   return deserializeWorldState({
     schema_version: WORLD_SCHEMA_VERSION,
     engine_version: ENGINE_VERSION,
-    // A world made HERE, now, by this code. This is the only place the content
-    // stamps are applied; anything that did not originate here must not carry
-    // them, which is what lets a review tell fresh from restored.
-    generator_version: GENERATOR_VERSION,
-    composition_version: COMPOSITION_VERSION,
+    // Deliberately UNSTAMPED. `newGardenWorld` returns an EMPTY world -- no
+    // plants, fixtures, animals or collectibles -- and stamping it here
+    // declared 0/0/0/0 to be a whole composition. The stamps belong at the end
+    // of successful starter generation, where there is a population to
+    // describe; see `generateInitialWorld`.
     world_id: String(worldId),
     seed: seedDigest,
     world_width: Math.max(1, integer(world_width)),
@@ -1104,6 +1133,16 @@ export async function generateInitialWorld(
   }
   if (!layoutIsSafe(state)) throw new Error('generated Garden layout failed safety validation');
   state.ui.camera = scaledStarterAnchor(state, [500, 650], 0);
+
+  // Stamp the composition ONLY here, at the end, after every placement has
+  // succeeded and the layout has been validated. Every exit above this line is
+  // a thrown error, so a partially generated world can never carry a stamp.
+  // The fingerprint is what makes the version number evidence instead of an
+  // assertion: a custom roster, or a world an author program later changes,
+  // stops matching its own stamp.
+  state.generator_version = GENERATOR_VERSION;
+  state.composition_version = COMPOSITION_VERSION;
+  state.composition_fingerprint = compositionFingerprint(state);
   return deserializeWorldState(serializeWorldState(state));
 }
 
@@ -2111,6 +2150,227 @@ function personalityEmphasis(personality) {
 }
 
 /** Build a read-only semantic projection; renderers may not mutate this state. */
+/**
+ * Count what a world actually contains.
+ *
+ * The version stamps say what a world CLAIMS to be; this says what it IS. The
+ * persisted 13-plant / 22-fixture / 4-animal / 8-collectible world was found by
+ * a person noticing the two disagreed with the 8/10/4/3 starter, so both belong
+ * in one report rather than one being derivable on request.
+ *
+ * @param {object} state - a deserialized world
+ * @returns {{plants: number, fixtures: number, animals: number, collectibles: number}}
+ */
+export function gardenWorldCensus(state) {
+  return {
+    plants: state.plants.length,
+    fixtures: state.fixtures.length,
+    animals: state.animals.length,
+    collectibles: state.collectibles.length,
+  };
+}
+
+/**
+ * Describe the roster a world actually holds, as one comparable string.
+ *
+ * A version number on its own is an unverified assertion: a world can carry the
+ * current number over an arbitrary population and nothing notices. This is the
+ * evidence half -- computed at generation time and stored, recomputed whenever a
+ * world is characterized. When the two disagree, the contents are no longer the
+ * composition the stamp names, which is what makes a custom roster or an
+ * author-program-modified world stop reading as the stamped composition.
+ *
+ * Readable rather than digested on purpose: a reviewer looking at a rejected
+ * world benefits from seeing WHICH species differ. Identities, not positions,
+ * because positions are seed-derived and two seeds give the same composition.
+ *
+ * Must produce byte-identical output to `composition_fingerprint` in
+ * src/lateletter/garden/world/provenance.py.
+ *
+ * @param {object} state - a world (deserialized or mid-generation)
+ * @returns {string} a canonical roster description
+ */
+export function compositionFingerprint(state) {
+  const sorted = values => [...values].sort().join(',');
+  return [
+    `plants=${sorted(state.plants.map(item => item.species_id))}`,
+    `fixtures=${sorted(state.fixtures.map(item => item.catalog_id))}`,
+    `animals=${sorted(state.animals.map(item => item.species_id))}`,
+    `collectibles=${sorted(state.collectibles.map(item => item.family))}`,
+  ].join('|');
+}
+
+/**
+ * Bring a stored DOCUMENT up to the current schema, and nothing else.
+ *
+ * Operates on the raw document because `deserializeWorldState` throws on any
+ * schema but the current one -- by the time a world object exists, migrating is
+ * already too late. It never touches the content stamps: a migration rewrites a
+ * document, it does not rebuild the garden inside it, and stamping today's
+ * generator onto what it upgraded would make an obsolete starter
+ * indistinguishable from one built today.
+ *
+ * @param {object} data - a document as read from storage
+ * @returns {{document: object, origin: string}} the document at the current
+ *          schema, and how it arrived: 'loaded' or 'schema_migrated'
+ * @throws {Error} when the document is from a newer build, or from an older
+ *         schema with no registered transform
+ */
+export function migrateGardenWorldDocument(data) {
+  const document = { ...data };
+  let storedSchema = integer(document.schema_version, 0);
+  const originalSchema = storedSchema;
+
+  if (storedSchema > WORLD_SCHEMA_VERSION) {
+    throw new Error(
+      `world schema ${storedSchema} was written by a newer build than this one, `
+      + `which understands ${WORLD_SCHEMA_VERSION}`,
+    );
+  }
+  if (storedSchema === WORLD_SCHEMA_VERSION) {
+    return { document, origin: LOAD_STORED };
+  }
+
+  while (storedSchema < WORLD_SCHEMA_VERSION) {
+    const transform = SCHEMA_MIGRATIONS[storedSchema];
+    if (!transform) {
+      throw new Error(
+        `no migration is registered from world schema ${storedSchema}; refusing to `
+        + 'renumber a document written under a shape this build has never seen',
+      );
+    }
+    Object.assign(document, transform(document));
+    storedSchema += 1;
+  }
+  document.schema_version = WORLD_SCHEMA_VERSION;
+  if (document.migrated_from_schema === null || document.migrated_from_schema === undefined) {
+    document.migrated_from_schema = originalSchema;
+  }
+  return { document, origin: LOAD_SCHEMA_MIGRATED };
+}
+
+/**
+ * Read a stored document, migrating its shape if it needs it.
+ *
+ * The pairing is the point: migrating without loading leaves a dict nobody
+ * validated, and loading without migrating throws on any older world.
+ *
+ * @param {object|string} raw - a document as read from storage
+ * @returns {{state: object, loadOrigin: string}} the world and how it arrived
+ */
+export function loadMigratedGardenWorld(raw) {
+  const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  const { document, origin } = migrateGardenWorldDocument(data);
+  return { state: deserializeWorldState(document), loadOrigin: origin };
+}
+
+/**
+ * Refuse anything that is not a freshly generated composition.
+ *
+ * TWO conditions, because they are two different facts. The lineage must be
+ * fresh -- every stamp current and the roster still matching -- AND the world
+ * must have been generated in this process rather than loaded. A world with
+ * perfect stamps that came out of storage after a hundred interactions has a
+ * fresh lineage and is not a fresh composition, and no stamp could ever say so.
+ *
+ * @param {object} state - the world about to be reviewed or captured
+ * @param {string} loadOrigin - 'generated' | 'loaded' | 'schema_migrated'
+ * @returns {object} the characterization, when it is fresh
+ * @throws {Error} when it is not, listing every reason
+ */
+export function requireFreshComposition(state, loadOrigin = LOAD_GENERATED) {
+  const origin = characterizeGardenWorld(state);
+  const reasons = [...origin.reasons];
+  if (loadOrigin !== LOAD_GENERATED) {
+    reasons.push(`this world was ${loadOrigin}, not generated in this process`);
+  }
+  if (reasons.length) {
+    const error = new Error(`this world is not a fresh composition: ${reasons.join('; ')}`);
+    error.origin = { ...origin, reasons };
+    throw error;
+  }
+  return origin;
+}
+
+/**
+ * Decide, from the world alone, whether it is a FRESH composition.
+ *
+ * Fresh means every stamp matches what this build produces today: the shape is
+ * current, the content came from today's generator, and the population is the
+ * composition the operator approved. Anything else is not fresh, and each
+ * reason is listed separately rather than summarised -- a world can be stale in
+ * several ways at once, and "stale" is not actionable where "built by generator
+ * 1, current is 2" is.
+ *
+ * This mirrors `characterize_world` in
+ * `src/lateletter/garden/world/provenance.py`; the two must agree, because a
+ * review of the browser Garden and a review of the terminal Garden have to mean
+ * the same thing by the word "fresh".
+ *
+ * @param {object} state - a deserialized world
+ * @returns {{label: string, is_fresh: boolean, schema_version: number,
+ *            generator_version: number|null, composition_version: number|null,
+ *            migrated: boolean, census: object, reasons: string[]}}
+ */
+export function characterizeGardenWorld(state) {
+  const reasons = [];
+
+  if (state.schema_version !== WORLD_SCHEMA_VERSION) {
+    reasons.push(`stored under schema ${state.schema_version}, current is ${WORLD_SCHEMA_VERSION}`);
+  }
+
+  // An absent stamp is reported as absent rather than as a mismatch: "made by
+  // an unknown generator" and "made by generator 1 when 2 is current" are
+  // different situations, and the first cannot even be compared.
+  if (state.generator_version === null || state.generator_version === undefined) {
+    reasons.push('no generator_version: this world predates version stamping');
+  } else if (state.generator_version !== GENERATOR_VERSION) {
+    reasons.push(`built by generator ${state.generator_version}, current is ${GENERATOR_VERSION}`);
+  }
+
+  if (state.composition_version === null || state.composition_version === undefined) {
+    reasons.push('no composition_version: this world names no composition revision');
+  } else if (state.composition_version !== COMPOSITION_VERSION) {
+    reasons.push(
+      `composition revision ${state.composition_version}, current is ${COMPOSITION_VERSION}`,
+    );
+  }
+
+  // The stamp against the contents. "Never described" and "described, and the
+  // description is now wrong" are reported separately: the second means
+  // somebody changed the world after it was generated.
+  const observed = compositionFingerprint(state);
+  if (state.composition_fingerprint === null || state.composition_fingerprint === undefined) {
+    reasons.push('no composition_fingerprint: the roster was never recorded');
+  } else if (state.composition_fingerprint !== observed) {
+    reasons.push(
+      'contents no longer match the stamped composition: '
+      + `stamped ${JSON.stringify(state.composition_fingerprint)}, holds ${JSON.stringify(observed)}`,
+    );
+  }
+
+  const migrated = state.migrated_from_schema !== null && state.migrated_from_schema !== undefined;
+  if (migrated) {
+    reasons.push(`shape migrated from schema ${state.migrated_from_schema}`);
+  }
+
+  return {
+    // "migrated" names an event that happened to this document; "restored"
+    // names a world that is simply older than the stamps. Calling the second
+    // one migrated would describe an event that never took place.
+    label: reasons.length === 0 ? 'fresh' : (migrated ? 'migrated' : 'restored'),
+    is_fresh: reasons.length === 0,
+    schema_version: state.schema_version,
+    generator_version: state.generator_version ?? null,
+    composition_version: state.composition_version ?? null,
+    composition_fingerprint: state.composition_fingerprint ?? null,
+    observed_fingerprint: observed,
+    migrated,
+    census: gardenWorldCensus(state),
+    reasons,
+  };
+}
+
 export async function projectGardenScene(sourceState) {
   const state = deserializeWorldState(serializeWorldState(sourceState));
   const objects = [];

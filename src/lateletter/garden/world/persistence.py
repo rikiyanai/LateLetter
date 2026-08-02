@@ -19,6 +19,19 @@ class WorldStore:
         self.path = Path(path)
 
     def load(self) -> WorldState:
+        """Read the stored world. See :meth:`load_with_origin` for how it came."""
+        return self.load_with_origin()[0]
+
+    def load_with_origin(self) -> tuple[WorldState, str]:
+        """Read the stored world AND how it arrived.
+
+        The origin is returned rather than inferred, because being loaded is an
+        event and no field inside the document can record it. A caller that
+        needs a freshly generated world -- a visual review above all -- has to
+        be able to tell, and until this existed it could not.
+
+        :returns: the world, and ``loaded`` or ``schema_migrated``
+        """
         try:
             with self.path.open("r", encoding="utf-8") as handle:
                 raw = json.load(handle)

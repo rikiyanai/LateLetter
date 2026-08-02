@@ -13,7 +13,15 @@ from .fixtures import (
     fixture_cells,
     layout_is_safe,
 )
-from .model import FixtureState, Vec2, WorldState, new_world, stable_id
+from .model import (
+    COMPOSITION_VERSION,
+    GENERATOR_VERSION,
+    FixtureState,
+    Vec2,
+    WorldState,
+    new_world,
+    stable_id,
+)
 from .plants import SPECIES_CATALOG, create_plant
 from .rng import DeterministicRNG, derive_seed
 
@@ -433,7 +441,29 @@ def generate_initial_world(
     # planted rooms rather than on the horizon.
     camera = _scaled_anchor(state, (500, 650), margin=0)
     state = replace(state, ui=replace(state.ui, camera=camera))
-    return state
+
+    # Stamp the composition ONLY here, at the end, after every placement has
+    # succeeded and the layout has been validated.
+    #
+    # `new_world` deliberately leaves these unset: it returns an empty world,
+    # and stamping there declared 0/0/0/0 to be a whole composition. Every
+    # `return` above this point is a raised exception, so a partially generated
+    # world can never carry a stamp either -- the stamp means "this population
+    # was produced, entire, by this generator", and there is no other place in
+    # the code where that is true.
+    #
+    # The fingerprint is what makes the version number evidence rather than an
+    # assertion: it describes the roster that was actually produced, so a custom
+    # roster, or a world an author program has since changed, no longer matches
+    # its own stamp. See `composition_fingerprint` in provenance.py.
+    from .provenance import composition_fingerprint
+
+    return replace(
+        state,
+        generator_version=GENERATOR_VERSION,
+        composition_version=COMPOSITION_VERSION,
+        composition_fingerprint=composition_fingerprint(state),
+    )
 
 
 def required_catalog_coverage(state: WorldState) -> dict[str, frozenset[str]]:
