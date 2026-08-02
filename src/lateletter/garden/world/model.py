@@ -40,6 +40,21 @@ UNDO_STACK_LIMIT = 128
 MILESTONE_RECEIPT_LIMIT = 512
 
 
+def _optional_int(value: Any) -> int | None:
+    """Read an integer that is allowed to be genuinely absent.
+
+    ``None`` is preserved rather than coerced, because for the version stamps
+    "not recorded" and "recorded as zero" are different facts about a stored
+    world and only one of them is true.
+
+    :param value: whatever the stored document held under the key
+    :returns: the integer, or None when the key was absent or explicitly null
+    """
+    if value is None:
+        return None
+    return int(value)
+
+
 def _canonical_value(value: Any) -> Any:
     if isinstance(value, Mapping):
         return {
@@ -620,6 +635,12 @@ class WorldState:
         return cls(
             schema_version=version,
             engine_version=str(data.get("engine_version", ENGINE_VERSION)),
+            # Absent stays absent. Defaulting these to the current constants
+            # would make every pre-versioning world claim to be today's, which
+            # is precisely the masquerade this field set exists to prevent.
+            generator_version=_optional_int(data.get("generator_version")),
+            composition_version=_optional_int(data.get("composition_version")),
+            migrated_from_schema=_optional_int(data.get("migrated_from_schema")),
             world_id=str(data["world_id"]),
             seed=str(data["seed"]),
             world_width=max(1, int(data.get("world_width", 120))),
@@ -664,4 +685,9 @@ def new_world(
         seed=seed_digest,
         world_width=max(1, world_width),
         world_height=max(1, world_height),
+        # A world made HERE, now, by this code. This is the only place the
+        # stamps are applied: they record the origin of the content, so
+        # anything that did not originate here must not carry them.
+        generator_version=GENERATOR_VERSION,
+        composition_version=COMPOSITION_VERSION,
     )
