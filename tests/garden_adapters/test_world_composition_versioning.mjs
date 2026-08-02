@@ -76,16 +76,23 @@ test('the stamp describes the roster the generator actually produced', async () 
   assert.deepEqual(gardenWorldCensus(world), {
     plants: 2, fixtures: 5, animals: 0, collectibles: 0,
   });
-  assert.ok(world.composition_fingerprint.includes('plants=oak,sunflower'));
+  // Species AND the authored anchor each was placed against. Names alone were
+  // not enough: moving every anchor produces a visibly different garden out of
+  // an identical species list.
+  assert.ok(world.composition_fingerprint.includes('plants=oak@60,300,sunflower@940,320'));
 });
 
-test('the browser and python fingerprints have the same form', async () => {
-  // Both languages must produce byte-identical fingerprints, or a world
-  // generated in one would read as tampered in the other.
+test('the browser and python fingerprints are the same string', async () => {
+  // Byte-identical, or a world generated in one language reads as tampered in
+  // the other. The expected value is duplicated from the Python test on
+  // purpose: two independent literals disagree loudly, where one shared helper
+  // would let both drift together.
   const world = await generated();
   assert.equal(
     world.composition_fingerprint,
-    'plants=oak,sunflower|fixtures=bench,lantern,mailbox,planter,stepping_stones'
+    'plants=oak@60,300,sunflower@940,320'
+    + '|fixtures=bench@375,650,lantern@625,650,mailbox@500,650,planter@750,650,'
+    + 'stepping_stones@250,650'
     + '|animals=|collectibles=',
   );
 });
@@ -109,7 +116,7 @@ test('a custom roster does not inherit the starter stamp', async () => {
   const custom = await generateInitialWorld('world-1', 'seed-1', { plant_species: ['oak'] });
   const starter = await generated();
   assert.notEqual(custom.composition_fingerprint, starter.composition_fingerprint);
-  assert.equal(characterizeGardenWorld(custom).is_fresh, true, 'fresh, just not the starter');
+  assert.equal(custom.composition_version, null, 'a custom roster claimed the named revision');
 });
 
 // ---------------------------------------------------------------------------
@@ -167,82 +174,33 @@ test('a current document loads and reports that it was loaded', async () => {
 });
 
 // ---------------------------------------------------------------------------
-// The runtime: the path where the defect actually happened.
+// The runtime path is NOT tested here.
+//
+// It is tested in tests/garden_adapters/test_review_refuses_restored_world.mjs,
+// which enters through `GardenRuntime.open` exactly as viewer-bnw.html does and
+// asserts on the side effects -- nothing saved, nothing projected, no state
+// adopted. Duplicating a weaker version of that here would give the two places
+// to disagree, and the weaker one would be the one that kept holding.
 // ---------------------------------------------------------------------------
 
-/**
- * Build a runtime over an in-memory store.
- *
- * @param {string|null} stored - a serialized world to open, or null to generate
- * @returns {GardenRuntime}
- */
-function runtimeOver(stored) {
-  let value = stored;
-  return new GardenRuntime({
-    worldId: 'world-1',
-    seed: 'seed-1',
-    load: async () => value,
-    save: async next => { value = next; },
-    now: () => 1000,
-  });
-}
-
-test('opening a stored world records that it was loaded', async () => {
+test('requireFreshComposition demands an explicit, known load origin', async () => {
+  // The permissive answer must never be the one you get by forgetting. An
+  // earlier version defaulted this to 'generated', so a caller who omitted it
+  // certified a loaded world as newly generated.
   const world = await generated();
-  const runtime = runtimeOver(JSON.stringify(serializeWorldState(world)));
-  await runtime.open();
-  assert.equal(runtime.loadOrigin, LOAD_STORED);
-  assert.equal(runtime.worldOrigin.is_fresh, true, 'lineage is fresh');
-});
-
-test('opening with nothing stored records that it was generated', async () => {
-  const runtime = runtimeOver(null);
-  await runtime.open();
-  assert.equal(runtime.loadOrigin, LOAD_GENERATED);
-  assert.equal(runtime.worldOrigin.is_fresh, true);
-  assert.deepEqual(runtime.worldOrigin.census, {
-    plants: 2, fixtures: 5, animals: 0, collectibles: 0,
-  });
-});
-
-test('a review refuses a loaded world even when its lineage is fresh', async () => {
-  // The case a version-stamp check can never catch, and the one a visual review
-  // most needs: a perfectly current world that is nonetheless not what the code
-  // just produced.
-  const world = await generated();
-  const runtime = runtimeOver(JSON.stringify(serializeWorldState(world)));
-  await runtime.open();
-  assert.throws(
-    () => runtime.requireFreshCompositionForReview(),
-    /not generated in this process/,
-  );
-});
-
-test('a review accepts a freshly generated world', async () => {
-  // The positive control: a refusal-only check proves nothing about whether
-  // anything can satisfy it.
-  const runtime = runtimeOver(null);
-  await runtime.open();
-  assert.equal(runtime.requireFreshCompositionForReview().is_fresh, true);
-});
-
-test('a review refuses a stored world with no stamps, which is the real defect', async () => {
-  // The 13/22/4/8 condition: a current-shape document with nothing recorded
-  // about where its contents came from. Before this it rendered silently.
-  const document = serializeWorldState(await generated());
-  delete document.generator_version;
-  delete document.composition_version;
-  delete document.composition_fingerprint;
-  const runtime = runtimeOver(JSON.stringify(document));
-  await runtime.open();
-  assert.equal(runtime.worldOrigin.label, 'restored');
-  assert.throws(() => runtime.requireFreshCompositionForReview(), /predates version stamping/);
-});
-
-test('requireFreshComposition defaults to the strict reading', async () => {
-  // A caller that omits the load origin is asserting it generated the world
-  // itself. The lenient answer must never be the one you get by forgetting.
-  const world = await generated();
-  assert.equal(requireFreshComposition(world).is_fresh, true);
+  assert.throws(() => requireFreshComposition(world), /unknown load origin/);
+  assert.throws(() => requireFreshComposition(world, 'probably'), /unknown load origin/);
+  assert.equal(requireFreshComposition(world, LOAD_GENERATED).is_fresh, true);
   assert.throws(() => requireFreshComposition(world, LOAD_STORED), /not generated/);
+});
+
+test('a custom roster is not the named composition and cannot be reviewed', async () => {
+  // A number every roster receives identifies nothing. An earlier version
+  // stamped the same revision on every successful generation, so a one-oak
+  // roster read as the current composition.
+  const custom = await generateInitialWorld('world-1', 'seed-1', { plant_species: ['oak'] });
+  assert.equal(custom.composition_version, null);
+  const origin = characterizeGardenWorld(custom);
+  assert.equal(origin.is_fresh, false, 'a non-starter population was certified as fresh');
+  assert.throws(() => requireFreshComposition(custom, LOAD_GENERATED), /no composition_version/);
 });

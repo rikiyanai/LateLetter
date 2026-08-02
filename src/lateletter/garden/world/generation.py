@@ -458,10 +458,27 @@ def generate_initial_world(
     # its own stamp. See `composition_fingerprint` in provenance.py.
     from .provenance import composition_fingerprint
 
+    # `COMPOSITION_VERSION` names ONE candidate composition -- the declared
+    # starter. A world generated from a custom roster is a different
+    # composition, so it does not get that number; it gets None, meaning "this
+    # population belongs to no named candidate".
+    #
+    # Without this, every successful generation stamped the same revision, so a
+    # one-oak test roster read as the current composition and would have been
+    # accepted by a fresh-composition review guard. A number that every roster
+    # receives identifies nothing.
+    is_declared_starter = (
+        tuple(requested_plants) == tuple(STARTER_PLANT_SPECIES)
+        and tuple(requested_animals) == tuple(STARTER_ANIMAL_SPECIES)
+        and tuple(requested_collectibles) == tuple(STARTER_COLLECTIBLES)
+    )
+
     return replace(
         state,
         generator_version=GENERATOR_VERSION,
-        composition_version=COMPOSITION_VERSION,
+        composition_version=COMPOSITION_VERSION if is_declared_starter else None,
+        # The fingerprint is recorded either way: a custom world should still be
+        # able to say its contents have not changed since it was generated.
         composition_fingerprint=composition_fingerprint(state),
     )
 

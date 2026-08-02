@@ -1898,7 +1898,45 @@ def compute_blockers(acceptance: dict, recipes: dict, renderer_source: str) -> d
             ).items()
             if position is None
         ),
+        # The STARTER COMPOSITION -- which population the recipient's world opens
+        # with -- as distinct from how any single thing in it is drawn. A garden
+        # can be made entirely of accepted drawings and still be the wrong
+        # garden, so the two verdicts are separate and both must clear.
+        #
+        # This is what makes docs/garden-composition-acceptance.json live policy
+        # rather than a file only tests read. Before it, the register existed and
+        # nothing consulted it, which is indistinguishable from not having one.
+        "unaccepted_starter_composition": unaccepted_starter_composition(),
     }
+
+
+def unaccepted_starter_composition() -> list[str]:
+    """Report the current starter composition unless the operator accepted it.
+
+    Generates the starter through the real generator and looks its revision and
+    roster fingerprint up in the acceptance register.  Nothing here reads a
+    version number and calls it approval: the number says which candidate this
+    is, the register says what the operator thought of it, and only the register
+    can clear this blocker.
+
+    :returns: a one-entry list naming the unaccepted composition, or empty when
+        a matching accepted verdict exists
+    """
+    # Imported here rather than at module scope: this validator is run as a
+    # standalone script from the repository root, and a top-level import of the
+    # package would make the whole gate depend on the package being installed.
+    sys.path.insert(0, str(ROOT / "src"))
+    from lateletter.garden.world.generation import generate_initial_world
+    from lateletter.garden.world.provenance import composition_acceptance
+
+    starter = generate_initial_world("release-gate", "release-gate")
+    verdict = composition_acceptance(starter)
+    if verdict == "accepted":
+        return []
+    return [
+        f"composition revision {starter.composition_version} "
+        f"({starter.composition_fingerprint}) is {verdict}"
+    ]
 
 
 def run() -> Report:

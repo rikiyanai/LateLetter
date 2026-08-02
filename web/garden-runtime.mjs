@@ -160,7 +160,40 @@ export class GardenRuntime {
     return pending;
   }
 
-  async open({ persist = true } = {}) {
+  /**
+   * Open the Garden world.
+   *
+   * @param {object} options
+   * @param {boolean} [options.persist] - whether to write the world back
+   * @param {string} options.composition - REQUIRED, and deliberately has no
+   *   default. `'require_fresh'` refuses anything that is not a world this
+   *   process just generated, BEFORE reconciliation, persistence or
+   *   projection; `'accept_restored'` opens whatever is stored.
+   *
+   *   There is no default because there is no answer that is right for both
+   *   callers, and the wrong one is silent in each direction. A review that
+   *   quietly accepted a restored world is the original defect -- a persisted
+   *   13/22/4/8 world was reviewed as the current starter. A product that
+   *   quietly refused one would delete a recipient's garden. Making every call
+   *   site say which it is turns that into a decision somebody made rather than
+   *   a default nobody read.
+   *
+   *   An earlier version of this had the refusal available as a method and no
+   *   caller invoking it, so the stale world still reconciled, persisted and
+   *   projected; only a later manual call threw, long after the damage.
+   * @returns {Promise<GardenRuntime>} this runtime
+   * @throws {Error} when `composition` is missing or unknown, or when
+   *   `'require_fresh'` was asked for and the world is not fresh
+   */
+  async open({ persist = true, composition } = {}) {
+    if (composition !== 'require_fresh' && composition !== 'accept_restored') {
+      throw new Error(
+        'GardenRuntime.open requires composition: "require_fresh" (a review or '
+        + 'capture, which must see only what this build just generated) or '
+        + '"accept_restored" (the product, which must never discard a '
+        + `recipient's world). Received ${JSON.stringify(composition)}.`,
+      );
+    }
     return this.enqueueMutation(async () => {
       this.assertActive();
       this.persistenceEnabled = Boolean(persist);
@@ -190,6 +223,19 @@ export class GardenRuntime {
       // Characterized on every open, so the fact is available before anything
       // draws rather than being reconstructed afterwards from what was seen.
       this.worldOrigin = characterizeGardenWorld(state);
+
+      // THE REFUSAL, and its position in this function is the whole point.
+      //
+      // It is here -- before the author program is seeded, before offline
+      // reconciliation, before `this.state` is assigned, before `persist()`,
+      // before `refreshProjection()` -- so that a world a review must not see
+      // is never saved, never projected and never painted. A guard placed after
+      // any of those would have already written to the recipient's storage and
+      // already produced the picture it exists to prevent.
+      if (composition === 'require_fresh') {
+        requireFreshComposition(state, this.loadOrigin);
+      }
+
       // An authenticated author program owns the relationship-animal roster.
       // Adopt it before offline reconciliation so sandbox animals cannot emit
       // return receipts or absence summaries in a recipient world.

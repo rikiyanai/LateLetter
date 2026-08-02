@@ -271,7 +271,7 @@ test('runtime persists exact canonical state and routes every action through red
     worldId: 'standalone:test', seed: 'cozy', now: () => 100,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const plant = runtime.projection.objects.find(item => item.kind === 'plant');
   assert.equal((await runtime.dispatch('touch', 'move_focus', {
     args: { target_id: plant.object_id }, metadata: { pointerId: 99 },
@@ -284,7 +284,7 @@ test('runtime persists exact canonical state and routes every action through red
     worldId: 'standalone:test', seed: 'ignored', now: () => 100,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   assert.equal(canonicalWorldJson(restored.state), canonicalWorldJson(runtime.state));
 });
 
@@ -297,7 +297,7 @@ test('runtime serializes concurrent accepted commands without losing either muta
       await new Promise(resolve => setTimeout(resolve, 2));
       values.set(key, value);
     },
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const animal = runtime.projection.objects.find(item => item.kind === 'animal');
   const before = runtime.state.command_sequence;
   const [feed, play] = await Promise.all([
@@ -371,7 +371,7 @@ test('program evaluator and authenticated v1 migration match fixtures', async ()
     worldId: 'bundle:legacy', seed: '7', now: () => 100,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const commandSequence = runtime.state.command_sequence;
   const processedCommands = [...runtime.state.processed_commands];
   const receipts = await runtime.materializeProgram(migrated, migratedResult);
@@ -394,7 +394,7 @@ test('program evaluator and authenticated v1 migration match fixtures', async ()
       await new Promise(resolve => setTimeout(resolve, 2));
       parallelValues.set(key, value);
     },
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const authoredAnimalId = 'legacy-entity.gift.rabbit';
   const [parallelReceipts, parallelPlay] = await Promise.all([
     parallel.materializeProgram(migrated, migratedResult),
@@ -477,7 +477,7 @@ test('letter presentation and missed summaries persist canonically only after ap
     worldId: 'letter-present:test', seed: 'future', now: () => 100,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   await runtime.materializeProgram(program, applied);
   assert.deepEqual(runtime.state.program_state.presented_letters, ['letter.future']);
   assert.ok(runtime.state.journal.some(entry => entry.object_id === 'letter.future'));
@@ -519,7 +519,7 @@ test('scheduled program occurrence materializes through canonical runtime once',
     worldId: 'scheduled:test', seed: 'schedule', now: () => 1_767_297_700,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const expanded = expandGardenSchedule(program.events[0].schedule, {
     event_id: 'scheduled.memory', last_seen_utc: '2025-12-31T00:00:00Z',
     now_utc: '2026-01-02T09:01:40Z',
@@ -549,13 +549,13 @@ test('authenticated program roster replaces sandbox animals before absence recon
     worldId: 'roster:test', seed: 'sandbox', now: () => 100,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   assert.ok(sandbox.state.animals.length > 0);
   const authenticated = await new GardenRuntime({
     worldId: 'roster:test', seed: 'sandbox', program, now: () => 200,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   assert.deepEqual(authenticated.state.animals, []);
   assert.equal((authenticated.state.program_state.absence_summary ?? [])
     .some(summary => summary.startsWith('Your ')), false);
@@ -579,7 +579,7 @@ test('an accepted interaction can unlock and persist an in-session authored even
     worldId: 'interaction:test', seed: 'bond', now: () => 100,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const animal = runtime.projection.objects.find(item => item.kind === 'animal');
   assert.equal((await runtime.dispatch('touch', 'feed', {
     target_id: animal.object_id, metadata: { control: 'action-sheet' },
@@ -600,7 +600,7 @@ test('runtime live tick persists projection changes and honors canonical pause',
     worldId: 'live:test', seed: 'dwell', now: () => 100,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => values.set(key, value),
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const before = runtime.state.effective_time;
   assert.equal(await runtime.tickLive(30), true);
   assert.equal(runtime.state.effective_time, before + 30);
@@ -618,7 +618,7 @@ test('resuming canonical pause discards its wall interval instead of replaying i
   const runtime = await new GardenRuntime({
     worldId: 'live:pause-resume', seed: 'pause', now: () => now,
     load: async () => null, save: async () => {},
-  }).open();
+  }).open({ composition: 'accept_restored' });
   const before = runtime.state.effective_time;
   await runtime.dispatch('browser_keyboard', 'pause_motion', { args: { paused: true } });
   now = 700;
@@ -635,7 +635,7 @@ test('live runtime coalesces ambient writes and supports one-write authenticated
     worldId: 'live:coalesced', seed: 'dwell', now: () => now,
     load: async key => values.get(key) ?? null,
     save: async (key, value) => { values.set(key, value); saves.push(value); },
-  }).open();
+  }).open({ composition: 'accept_restored' });
   assert.equal(saves.length, 1);
   runtime.liveObserved = 100;
   for (now = 101; now <= 104; now += 1) assert.equal(await runtime.tickLive(), true);
@@ -650,7 +650,7 @@ test('live runtime coalesces ambient writes and supports one-write authenticated
     worldId: 'live:transaction', seed: 'auth', now: () => 100,
     load: async () => null,
     save: async (_key, value) => transactionalSaves.push(value),
-  }).open({ persist: false });
+  }).open({ persist: false, composition: 'accept_restored' });
   assert.equal(transactionalSaves.length, 0);
   await assert.rejects(transactional.materializeProgram({
     version: 1, evaluator_version: 1, world_state_version: 1,
@@ -675,7 +675,7 @@ test('runtime invalidation cancels an in-flight open and every deferred force co
     load: async () => new Promise(resolve => { releaseLoad = resolve; }),
     save: async (_key, value) => saves.push(value),
   });
-  const opening = runtime.open({ persist: false });
+  const opening = runtime.open({ persist: false, composition: 'accept_restored' });
   await Promise.resolve();
   assert.equal(typeof releaseLoad, 'function');
   runtime.invalidate();
@@ -703,7 +703,7 @@ test('runtime invalidation aborts an already-started authenticated save before c
       });
       committed.push(value);
     },
-  }).open({ persist: false });
+  }).open({ persist: false, composition: 'accept_restored' });
   const commit = runtime.commitPersistence();
   await started;
   runtime.invalidate();

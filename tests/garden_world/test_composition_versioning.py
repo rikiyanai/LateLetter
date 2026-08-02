@@ -112,7 +112,29 @@ def test_the_stamp_describes_the_roster_the_generator_actually_produced():
     assert census["plants"] == len(STARTER_PLANT_SPECIES) == 2
     assert census == {"plants": 2, "fixtures": 5, "animals": 0, "collectibles": 0}
     assert world.composition_fingerprint == composition_fingerprint(world)
-    assert "plants=oak,sunflower" in world.composition_fingerprint
+    # Species AND the authored anchor each was placed against. Names alone were
+    # not enough: moving every anchor produces a visibly different garden out of
+    # an identical species list, so a verdict bound to names would survive a
+    # layout nobody had seen.
+    assert "plants=oak@60,300,sunflower@940,320" in world.composition_fingerprint
+
+
+def test_moving_an_authored_anchor_changes_the_fingerprint():
+    """A composition is where things are, not only what they are.
+
+    This is the assertion that stops an accepted verdict from surviving a
+    re-laid-out garden with an unchanged species list.
+    """
+    from lateletter.garden.world import generation as generation_module
+
+    world = _generated()
+    before = composition_fingerprint(world)
+    original = generation_module.STARTER_PLANT_ANCHORS["oak"]
+    generation_module.STARTER_PLANT_ANCHORS["oak"] = (999, 999)
+    try:
+        assert composition_fingerprint(world) != before
+    finally:
+        generation_module.STARTER_PLANT_ANCHORS["oak"] = original
 
 
 def test_a_version_stamp_is_never_an_operator_approval():
@@ -181,12 +203,26 @@ def test_a_current_stamp_over_a_changed_population_is_caught():
     assert origin.composition_fingerprint != origin.observed_fingerprint
 
 
-def test_a_custom_roster_does_not_inherit_the_starter_stamp():
-    """A world generated from a custom roster is a different composition."""
+def test_a_custom_roster_is_not_the_named_composition_and_cannot_be_reviewed():
+    """A number every roster receives identifies nothing.
+
+    An earlier version stamped ``COMPOSITION_VERSION`` on every successful
+    generation, so a one-oak test roster read as the current composition and a
+    fresh-composition review guard would have accepted it.  The revision names
+    ONE candidate -- the declared starter -- and a custom roster belongs to no
+    named candidate at all.
+    """
     custom = generate_initial_world("world-1", "seed-1", plant_species=["oak"])
+    assert custom.composition_version is None
     assert custom.composition_fingerprint != _generated().composition_fingerprint
-    assert characterize_world(custom).is_fresh, "it is fresh: it just is not the starter"
+
+    origin = characterize_world(custom)
+    assert not origin.is_fresh, "a non-starter population was certified as fresh"
+    assert any("names no composition revision" in reason for reason in origin.reasons)
     assert composition_acceptance(custom) == "not_reviewed"
+
+    with pytest.raises(NotAFreshComposition):
+        require_fresh_composition(custom, LOAD_GENERATED)
 
 
 def test_the_fingerprint_ignores_positions_so_two_seeds_are_one_composition():
@@ -356,9 +392,23 @@ def test_a_review_refuses_a_stale_world_and_carries_every_reason():
     stale = WorldState.from_dict(document)
 
     with pytest.raises(NotAFreshComposition) as caught:
-        require_fresh_composition(stale)
+        require_fresh_composition(stale, LOAD_GENERATED)
     assert caught.value.origin.reasons
     assert "predates version stamping" in str(caught.value)
+
+
+def test_the_load_origin_argument_is_mandatory_and_validated():
+    """The permissive answer must never be the one you get by forgetting.
+
+    An earlier version defaulted this to ``generated``, so a caller who simply
+    omitted it certified a loaded world as newly generated -- and a test
+    enshrined that bypass rather than catching it.
+    """
+    world = _generated()
+    with pytest.raises(TypeError):
+        require_fresh_composition(world)          # type: ignore[call-arg]
+    with pytest.raises(ValueError, match="unknown load origin"):
+        require_fresh_composition(world, "probably_generated")
 
 
 # ---------------------------------------------------------------------------

@@ -1131,7 +1131,19 @@ async function prepareCanonicalGardenRuntime(
   });
   pendingGardenRuntimes.add(runtime);
   try{
-    await runtime.open({persist:worldPersistence&&!deferPersistence});
+    // Which composition this surface is allowed to open, stated at the call
+    // site because there is no answer that is right for both.
+    //
+    // A review (`reviewTime!==null`) must see only what this build just
+    // generated: the original defect was a persisted 13/22/4/8 world reviewed
+    // as the current starter, and `require_fresh` makes that abort before the
+    // world is saved, projected or painted rather than after somebody notices.
+    // The product must never discard a recipient's garden, so it accepts a
+    // restored one.
+    await runtime.open({
+      persist:worldPersistence&&!deferPersistence,
+      composition:reviewTime===null?'accept_restored':'require_fresh',
+    });
     // Worlds persisted before the projection renderer inherited the model's
     // corner camera even though all generated content lives in positive world
     // space. Migrate that one known legacy state through the canonical reducer.

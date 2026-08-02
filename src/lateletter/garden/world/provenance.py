@@ -4,8 +4,8 @@ WHY THIS MODULE EXISTS
 ----------------------
 A localhost review of the browser Garden once opened a persisted world holding
 13 plants, 22 fixtures, 4 animals and 8 collectibles, and it was read as the
-current starter -- which generates 8 plants, 10 fixtures, 4 animals and 3
-collectibles.  Nothing lied.  The stored document was shape-valid, it loaded
+current starter -- which generates 2 plants and 5 fixtures.  Nothing lied.  The
+stored document was shape-valid, it loaded
 without complaint, and there was no field anywhere in it that could have said
 "an older generator made me".  The reviewer had no way to tell a restored world
 from a fresh one, so an obsolete starter was reviewed as today's candidate.
@@ -15,13 +15,20 @@ The fix is not a better reviewer.  It is a world that can answer the question.
 composition -- and this module turns them into the one sentence a review needs:
 is this composition FRESH, or is it something restored from before?
 
-WHAT "FRESH" MEANS HERE
------------------------
-Fresh means every stamp matches what this code produces today: the shape is
-current, the content was built by today's generator, and the population is the
-composition the operator approved.  Anything else is not fresh, and the reasons
-are enumerated rather than summarised, because "stale" is not actionable and
-"built by generator 1, current is 2" is.
+WHAT "FRESH" MEANS HERE, AND WHAT IT DOES NOT
+---------------------------------------------
+Fresh is a statement about LINEAGE only: the shape is current, the content was
+built by today's generator, and the population still matches the composition its
+own stamp describes.  Anything else is not fresh, and the reasons are enumerated
+rather than summarised, because "stale" is not actionable and "built by
+generator 1, current is 2" is.
+
+Fresh does NOT mean the operator approved anything.  Approval is a verdict a
+person gives, held in ``docs/garden-composition-acceptance.json`` and read by
+:func:`composition_acceptance`; no arrangement of numbers written by the
+generator can stand in for one.  Fresh also does not mean "newly generated": a
+world can have perfect stamps and still have come out of storage after a hundred
+interactions, which is why load origin is carried separately.
 
 WHAT A MIGRATION MAY AND MAY NOT DO
 -----------------------------------
@@ -66,6 +73,11 @@ _ACCEPTANCE_REGISTER = (
 LOAD_GENERATED = "generated"               # produced in this process, right now
 LOAD_STORED = "loaded"                     # read from storage at the current schema
 LOAD_SCHEMA_MIGRATED = "schema_migrated"   # read from storage and transformed
+
+# The whole set, so a caller cannot pass a value nobody defined. A guard that
+# silently accepts an unrecognised origin is a guard that can be switched off by
+# a typo.
+LOAD_ORIGINS = frozenset({LOAD_GENERATED, LOAD_STORED, LOAD_SCHEMA_MIGRATED})
 
 
 class NotAFreshComposition(RuntimeError):
@@ -158,7 +170,7 @@ def world_census(state: WorldState) -> dict[str, int]:
 
 
 def composition_fingerprint(state: WorldState) -> str:
-    """Describe the roster a world actually holds, as one comparable string.
+    """Describe the AUTHORED composition a world holds, as one comparable string.
 
     A version number on its own is an unverified assertion: a world can carry
     the current number over an arbitrary population and nothing notices.  This
@@ -166,27 +178,52 @@ def composition_fingerprint(state: WorldState) -> str:
     recomputed here whenever a world is characterized; when the two disagree,
     the world's contents are no longer the composition its stamp names.
 
-    That is what makes a custom test roster, or a world an author program has
-    since changed, stop reading as the stamped composition -- both keep the
-    number and both lose the match.
+    It covers the roster AND the authored placement inputs -- the anchor each
+    identity was placed against.  Roster names alone were not enough: moving
+    every anchor produces a visibly different garden out of an identical species
+    list, so an operator verdict bound to names only would survive a layout it
+    had never seen.  What it does NOT cover is the seed-derived position two
+    identical compositions land on; different seeds are the same composition.
 
     The form is deliberately readable rather than hashed.  A reviewer looking at
-    a rejected world benefits from seeing which species differ; a digest would
-    only tell them that something did.  It uses identities and not positions,
-    because positions are seed-derived and two worlds from different seeds are
-    still the same composition.
+    a rejected world benefits from seeing which entry differs; a digest would
+    only tell them that something did.
 
     :param state: the world to describe
     :returns: a canonical string, stable across processes and languages
     """
-    def _sorted(values: Iterable[str]) -> str:
-        return ",".join(sorted(values))
+    from .generation import (
+        STARTER_ANIMAL_ANCHORS,
+        STARTER_COLLECTIBLE_ANCHORS,
+        STARTER_FIXTURE_ANCHORS,
+        STARTER_PLANT_ANCHORS,
+    )
+
+    def _entries(identities: Iterable[str], anchors: Mapping[str, Any]) -> str:
+        # Each identity is written with the anchor it was authored against, so a
+        # change to the anchor table changes the fingerprint. An identity with no
+        # anchor is written as `?`, which is itself a difference worth seeing.
+        parts = []
+        for identity in sorted(identities):
+            anchor = anchors.get(identity)
+            parts.append(
+                f"{identity}@{anchor[0]},{anchor[1]}" if anchor else f"{identity}@?"
+            )
+        return ",".join(parts)
 
     return "|".join((
-        "plants=" + _sorted(plant.species_id for plant in state.plants),
-        "fixtures=" + _sorted(fixture.catalog_id for fixture in state.fixtures),
-        "animals=" + _sorted(animal.species_id for animal in state.animals),
-        "collectibles=" + _sorted(item.family for item in state.collectibles),
+        "plants=" + _entries(
+            (plant.species_id for plant in state.plants), STARTER_PLANT_ANCHORS,
+        ),
+        "fixtures=" + _entries(
+            (fixture.catalog_id for fixture in state.fixtures), STARTER_FIXTURE_ANCHORS,
+        ),
+        "animals=" + _entries(
+            (animal.species_id for animal in state.animals), STARTER_ANIMAL_ANCHORS,
+        ),
+        "collectibles=" + _entries(
+            (item.family for item in state.collectibles), STARTER_COLLECTIBLE_ANCHORS,
+        ),
     ))
 
 
@@ -259,7 +296,7 @@ def characterize_world(state: WorldState) -> WorldOrigin:
     )
 
 
-def require_fresh_composition(state: WorldState, load_origin: str = LOAD_GENERATED) -> WorldOrigin:
+def require_fresh_composition(state: WorldState, load_origin: str) -> WorldOrigin:
     """Refuse to proceed unless this world is a freshly generated composition.
 
     Called by any surface whose result would be misread otherwise -- above all
@@ -276,13 +313,20 @@ def require_fresh_composition(state: WorldState, load_origin: str = LOAD_GENERAT
 
     :param state: the world about to be reviewed or captured
     :param load_origin: how this world arrived; one of ``generated``,
-        ``loaded``, ``schema_migrated``. Defaults to ``generated`` so a caller
-        must not be able to omit it and accidentally get the lenient answer --
-        the strict reading is that a caller passing nothing is asserting it
-        generated the world itself
+        ``loaded``, ``schema_migrated``. MANDATORY and validated. An earlier
+        draft defaulted it to ``generated``, so a caller who simply forgot the
+        argument certified a loaded world as newly generated -- the permissive
+        answer was the one you got by not thinking about it, which is the worst
+        possible default for a guard
     :returns: the origin, when it is fresh
-    :raises NotAFreshComposition: when it is not, carrying every reason
+    :raises ValueError: when ``load_origin`` is not one of the three
+    :raises NotAFreshComposition: when the world is not a fresh composition
     """
+    if load_origin not in LOAD_ORIGINS:
+        raise ValueError(
+            f"unknown load origin {load_origin!r}; expected one of "
+            + ", ".join(sorted(LOAD_ORIGINS))
+        )
     origin = characterize_world(state)
     reasons = list(origin.reasons)
     if load_origin != LOAD_GENERATED:

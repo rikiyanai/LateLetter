@@ -37,6 +37,9 @@ export const COMPOSITION_VERSION = 1;
 export const LOAD_GENERATED = 'generated';
 export const LOAD_STORED = 'loaded';
 export const LOAD_SCHEMA_MIGRATED = 'schema_migrated';
+// The whole set, so a caller cannot pass a value nobody defined. A guard that
+// silently accepts an unrecognised origin can be switched off by a typo.
+export const LOAD_ORIGINS = new Set([LOAD_GENERATED, LOAD_STORED, LOAD_SCHEMA_MIGRATED]);
 
 // Transforms from an older stored shape to the next one, keyed by the schema
 // they read. EMPTY, and honestly so: schema 1 is the only shape this project
@@ -1141,7 +1144,20 @@ export async function generateInitialWorld(
   // assertion: a custom roster, or a world an author program later changes,
   // stops matching its own stamp.
   state.generator_version = GENERATOR_VERSION;
-  state.composition_version = COMPOSITION_VERSION;
+  // COMPOSITION_VERSION names ONE candidate composition -- the declared
+  // starter. A world generated from a custom roster is a different
+  // composition, so it gets null: it belongs to no named candidate. Without
+  // this, every successful generation stamped the same revision, so a one-oak
+  // roster read as the current composition and a fresh-composition review guard
+  // would have accepted it. A number every roster receives identifies nothing.
+  const isDeclaredStarter = (
+    JSON.stringify([...requestedPlants]) === JSON.stringify([...STARTER_PLANT_SPECIES])
+    && JSON.stringify([...requestedAnimals]) === JSON.stringify([...STARTER_ANIMAL_SPECIES])
+    && JSON.stringify([...requestedCollectibles]) === JSON.stringify([...STARTER_COLLECTIBLES])
+  );
+  state.composition_version = isDeclaredStarter ? COMPOSITION_VERSION : null;
+  // Recorded either way: a custom world should still be able to say its
+  // contents have not changed since it was generated.
   state.composition_fingerprint = compositionFingerprint(state);
   return deserializeWorldState(serializeWorldState(state));
 }
@@ -2191,12 +2207,21 @@ export function gardenWorldCensus(state) {
  * @returns {string} a canonical roster description
  */
 export function compositionFingerprint(state) {
-  const sorted = values => [...values].sort().join(',');
+  // Each identity is written with the anchor it was authored against, so a
+  // change to an anchor table changes the fingerprint. Roster names alone were
+  // not enough: moving every anchor produces a visibly different garden out of
+  // an identical species list, so a verdict bound to names would survive a
+  // layout the operator had never seen. An identity with no anchor is written
+  // `?`, which is itself a difference worth seeing.
+  const entries = (identities, anchors) => [...identities].sort().map(identity => {
+    const anchor = anchors[identity];
+    return anchor ? `${identity}@${anchor[0]},${anchor[1]}` : `${identity}@?`;
+  }).join(',');
   return [
-    `plants=${sorted(state.plants.map(item => item.species_id))}`,
-    `fixtures=${sorted(state.fixtures.map(item => item.catalog_id))}`,
-    `animals=${sorted(state.animals.map(item => item.species_id))}`,
-    `collectibles=${sorted(state.collectibles.map(item => item.family))}`,
+    `plants=${entries(state.plants.map(item => item.species_id), STARTER_PLANT_ANCHORS)}`,
+    `fixtures=${entries(state.fixtures.map(item => item.catalog_id), STARTER_FIXTURE_ANCHORS)}`,
+    `animals=${entries(state.animals.map(item => item.species_id), STARTER_ANIMAL_ANCHORS)}`,
+    `collectibles=${entries(state.collectibles.map(item => item.family), STARTER_COLLECTIBLE_ANCHORS)}`,
   ].join('|');
 }
 
@@ -2278,7 +2303,17 @@ export function loadMigratedGardenWorld(raw) {
  * @returns {object} the characterization, when it is fresh
  * @throws {Error} when it is not, listing every reason
  */
-export function requireFreshComposition(state, loadOrigin = LOAD_GENERATED) {
+export function requireFreshComposition(state, loadOrigin) {
+  // MANDATORY and validated. An earlier draft defaulted this to 'generated', so
+  // a caller who simply forgot the argument certified a loaded world as newly
+  // generated: the permissive answer was the one you got by not thinking about
+  // it, which is the worst possible default for a guard.
+  if (!LOAD_ORIGINS.has(loadOrigin)) {
+    throw new Error(
+      `unknown load origin ${JSON.stringify(loadOrigin)}; expected one of `
+      + [...LOAD_ORIGINS].sort().join(', '),
+    );
+  }
   const origin = characterizeGardenWorld(state);
   const reasons = [...origin.reasons];
   if (loadOrigin !== LOAD_GENERATED) {
@@ -2295,12 +2330,16 @@ export function requireFreshComposition(state, loadOrigin = LOAD_GENERATED) {
 /**
  * Decide, from the world alone, whether it is a FRESH composition.
  *
- * Fresh means every stamp matches what this build produces today: the shape is
- * current, the content came from today's generator, and the population is the
- * composition the operator approved. Anything else is not fresh, and each
- * reason is listed separately rather than summarised -- a world can be stale in
- * several ways at once, and "stale" is not actionable where "built by generator
- * 1, current is 2" is.
+ * Fresh is a statement about LINEAGE only: the shape is current, the content
+ * came from today's generator, and the population still matches the composition
+ * its own stamp describes. Each reason is listed separately rather than
+ * summarised -- a world can be stale in several ways at once, and "stale" is not
+ * actionable where "built by generator 1, current is 2" is.
+ *
+ * Fresh does NOT mean the operator approved anything: approval is a verdict a
+ * person gives, held in docs/garden-composition-acceptance.json. It also does
+ * not mean "newly generated" -- a world can have perfect stamps and still have
+ * come out of storage, which is why load origin is carried separately.
  *
  * This mirrors `characterize_world` in
  * `src/lateletter/garden/world/provenance.py`; the two must agree, because a
