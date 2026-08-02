@@ -1,0 +1,118 @@
+{
+  "calibrator": {
+    "name": "LateLetter monospace grid calibrator",
+    "version": "grid-calibrator-2"
+  },
+  "source_png": "/Users/r/Projects/LateLetter/tracked/LateLetterResearch/transcription-parity/horse-animation-sheet/source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "canvas": {
+    "width_px": 424,
+    "height_px": 468,
+    "background_rgb": [
+      255,
+      255,
+      255
+    ]
+  },
+  "normalization": {
+    "colour_space": "RGB",
+    "ink_threshold_l1": 25,
+    "background_method": "dominant_exact_rgb",
+    "guide_removal": "measured sparse dotted columns at 36px repetition; exact-column erase"
+  },
+  "guide_columns_px": [],
+  "grid": {
+    "columns": 40,
+    "rows": 21,
+    "origin_x_px": -7.0,
+    "first_baseline_y_px": 41.0,
+    "cell_advance_x_px": 11.0,
+    "line_height_px": 21.0,
+    "x_phase_px_mod_period": 4,
+    "y_phase_px_mod_period": 20,
+    "cell_crop_top_offset_px": -12,
+    "cell_crop_bottom_offset_px": 9,
+    "row_crop_measurement": {
+      "top": -12,
+      "bottom": 9,
+      "boundary_ink": 77,
+      "boundary_ink_mean": 3.6666666666666665,
+      "boundary_samples": 21,
+      "inter_row_clearance_px": 0
+    }
+  },
+  "font_model": {
+    "path": "/System/Library/Fonts/Menlo.ttc",
+    "size_px": 15,
+    "bbox_anchor": "ls"
+  },
+  "measurement": {
+    "x_autocorrelation": {
+      "6": 0.09315817252329008,
+      "7": 0.16388823592123095,
+      "8": 0.31709804741972025,
+      "9": 0.505954119049281,
+      "10": 0.6838314205020202,
+      "11": 0.7901266771626352,
+      "12": 0.7889851712384751,
+      "13": 0.6797004628763897,
+      "14": 0.5100440995229849
+    },
+    "y_autocorrelation": {
+      "14": 0.2368986676637002,
+      "15": 0.23327326445926652,
+      "16": 0.21739093213303867,
+      "17": 0.17882680300958403,
+      "18": 0.1664589881083219,
+      "19": 0.20152991780743873,
+      "20": 0.29472300977607735,
+      "21": 0.3796396675330628,
+      "22": 0.30600277052653674,
+      "23": 0.19685701832444735,
+      "24": 0.14468538808693948
+    },
+    "x_phase_boundary_ink": {
+      "0": 346.0,
+      "1": 271.0,
+      "2": 235.0,
+      "3": 211.0,
+      "4": 202.0,
+      "5": 250.0,
+      "6": 344.0,
+      "7": 389.0,
+      "8": 383.0,
+      "9": 397.0,
+      "10": 379.0
+    },
+    "y_phase_horizontal_ink": {
+      "0": 1077.0,
+      "1": 1080.0,
+      "2": 1060.0,
+      "3": 998.0,
+      "4": 971.0,
+      "5": 922.0,
+      "6": 857.0,
+      "7": 798.0,
+      "8": 781.0,
+      "9": 723.0,
+      "10": 656.0,
+      "11": 645.0,
+      "12": 596.0,
+      "13": 614.0,
+      "14": 719.0,
+      "15": 815.0,
+      "16": 846.0,
+      "17": 906.0,
+      "18": 1007.0,
+      "19": 1058.0,
+      "20": 1087.0
+    },
+    "ink_bbox_without_guides": {
+      "left_px": 36,
+      "top_px": 14,
+      "right_px": 239,
+      "bottom_px": 418
+    }
+  },
+  "status": "calibration_candidate"
+}

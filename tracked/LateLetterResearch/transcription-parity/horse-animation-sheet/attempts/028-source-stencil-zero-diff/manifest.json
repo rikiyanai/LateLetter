@@ -1,0 +1,636 @@
+{
+  "attempt": "028-source-stencil-zero-diff",
+  "source_png": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "transcript": "machine-cell-ocr.txt",
+  "status": "rejected_source_copy_proxy",
+  "canvas": {
+    "width_px": 424,
+    "height_px": 468,
+    "background_rgba": "#ffffffff"
+  },
+  "placement": {
+    "font_path": "/Library/Fonts/DejaVuSansMono.ttf",
+    "font_size_px": 17,
+    "origin_x_px": 0.0,
+    "first_baseline_y_px": 21.25,
+    "line_height_px": 21.45,
+    "supersample": 3,
+    "glyph_advance_px": 11.55,
+    "foreground_rgba": "#222529ff"
+  },
+  "renderer_configuration": {
+    "source": "diagnostic_source_cell_stencil",
+    "method": "candidate_nonblank_cells_select_source_neighborhoods",
+    "neighborhood_radius_cells": 1,
+    "font_recovered": false,
+    "not_original_font_render": true,
+    "authoritative_for_parity": false,
+    "source_pixels_used": true,
+    "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3"
+  },
+  "grid": {
+    "columns": 37,
+    "rows": 22,
+    "origin_x_px": -1.5,
+    "first_baseline_y_px": 20.0,
+    "advance_x_px": 11.55,
+    "advance_y_px": 21.0
+  },
+  "calibration": {
+    "path": "calibration.json",
+    "sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d"
+  },
+  "normalization": {
+    "colour_space": "RGB",
+    "ink_threshold_l1": 25,
+    "background_method": "dominant_exact_rgb",
+    "guide_removal": "none",
+    "foreground_rgb": [
+      34,
+      37,
+      41
+    ]
+  },
+  "recognizer": {
+    "name": "tesseract-cell-ocr",
+    "version": "cell-ocr-5-structural-gate",
+    "engine_version": "tesseract 5.5.1",
+    "options": [
+      "tesseract",
+      "--psm",
+      "10"
+    ]
+  },
+  "artifacts": {
+    "calibration_png": "calibration.png",
+    "cell_recognition_json": "cell-recognition.json",
+    "rerender_png": "rerender.png",
+    "overlay_png": "overlay.png",
+    "diff_png": "diff.png"
+  },
+  "unknown_cells": 0,
+  "low_confidence_cells": 0,
+  "structural_conflicts": 0,
+  "recognition_gate": {
+    "minimum_confidence": 0.85,
+    "requires_unknown_cells": 0,
+    "requires_low_confidence_cells": 0,
+    "requires_structural_conflicts": 0,
+    "passed": true
+  },
+  "occupancy_review": {
+    "path": "occupancy-review.json",
+    "sha256": "7e187afe62d2c90eb75172909bc6cb9c1b6c9f8fdab7d06dc86e340634b20b8c",
+    "verdict": "machine_reviewed"
+  },
+  "review": {
+    "layout_parity": "not_evidence_source_copy_proxy",
+    "human_visual_parity": "rejected_source_copy_proxy",
+    "raster_parity": "not_measured_source_copy",
+    "verdict": "rejected_source_copy_proxy",
+    "diff_pixel_count": 0,
+    "unknown_cells": 0,
+    "low_confidence_cells": 0,
+    "zero_diff_required": true
+  },
+  "parity": {
+    "mask_threshold": 230,
+    "diff_pixel_count": 0,
+    "source_only_pixels": 0,
+    "candidate_only_pixels": 0,
+    "zero_diff_required": true,
+    "passed": false,
+    "comparison_valid": false,
+    "source_pixels_used_in_candidate": true,
+    "interpretation": "rejected proxy: candidate rerender copied source pixels"
+  },
+  "stencil_selection": {
+    "selected_nonblank_cells": [
+      [
+        0,
+        3,
+        ","
+      ],
+      [
+        0,
+        4,
+        "~"
+      ],
+      [
+        0,
+        5,
+        "~"
+      ],
+      [
+        0,
+        6,
+        "_"
+      ],
+      [
+        1,
+        3,
+        "|"
+      ],
+      [
+        1,
+        4,
+        "/"
+      ],
+      [
+        1,
+        5,
+        "\\"
+      ],
+      [
+        1,
+        7,
+        "="
+      ],
+      [
+        1,
+        8,
+        "_"
+      ],
+      [
+        1,
+        10,
+        "_"
+      ],
+      [
+        1,
+        12,
+        "~"
+      ],
+      [
+        2,
+        4,
+        "_"
+      ],
+      [
+        2,
+        5,
+        "("
+      ],
+      [
+        2,
+        7,
+        ")"
+      ],
+      [
+        2,
+        8,
+        "_"
+      ],
+      [
+        2,
+        9,
+        "("
+      ],
+      [
+        2,
+        11,
+        ")"
+      ],
+      [
+        2,
+        12,
+        "\\"
+      ],
+      [
+        2,
+        13,
+        "~"
+      ],
+      [
+        2,
+        14,
+        "~"
+      ],
+      [
+        3,
+        4,
+        "\\"
+      ],
+      [
+        3,
+        5,
+        ","
+      ],
+      [
+        3,
+        6,
+        "\\"
+      ],
+      [
+        3,
+        9,
+        "_"
+      ],
+      [
+        3,
+        10,
+        "|"
+      ],
+      [
+        3,
+        11,
+        "\\"
+      ],
+      [
+        3,
+        13,
+        "\\"
+      ],
+      [
+        3,
+        14,
+        "~"
+      ],
+      [
+        3,
+        15,
+        "~"
+      ],
+      [
+        3,
+        16,
+        "~"
+      ],
+      [
+        4,
+        7,
+        "\\"
+      ],
+      [
+        4,
+        8,
+        "'"
+      ],
+      [
+        4,
+        12,
+        "\\"
+      ],
+      [
+        5,
+        7,
+        "'"
+      ],
+      [
+        5,
+        12,
+        "'"
+      ],
+      [
+        7,
+        3,
+        "("
+      ],
+      [
+        7,
+        4,
+        "("
+      ],
+      [
+        7,
+        5,
+        "^"
+      ],
+      [
+        7,
+        6,
+        "_"
+      ],
+      [
+        7,
+        7,
+        "_"
+      ],
+      [
+        7,
+        8,
+        "_"
+      ],
+      [
+        7,
+        9,
+        "_"
+      ],
+      [
+        8,
+        3,
+        "|"
+      ],
+      [
+        8,
+        5,
+        "/"
+      ],
+      [
+        8,
+        6,
+        "\\"
+      ],
+      [
+        8,
+        9,
+        "_"
+      ],
+      [
+        8,
+        10,
+        "_"
+      ],
+      [
+        8,
+        11,
+        "_"
+      ],
+      [
+        8,
+        12,
+        "_"
+      ],
+      [
+        8,
+        13,
+        "_"
+      ],
+      [
+        8,
+        15,
+        "_"
+      ],
+      [
+        8,
+        16,
+        "_"
+      ],
+      [
+        9,
+        6,
+        "("
+      ],
+      [
+        9,
+        9,
+        "/"
+      ],
+      [
+        9,
+        12,
+        "\\"
+      ],
+      [
+        9,
+        15,
+        ")"
+      ],
+      [
+        9,
+        17,
+        "\\"
+      ],
+      [
+        9,
+        18,
+        "\\"
+      ],
+      [
+        10,
+        6,
+        "/"
+      ],
+      [
+        10,
+        8,
+        "|"
+      ],
+      [
+        10,
+        9,
+        "~"
+      ],
+      [
+        10,
+        10,
+        "~"
+      ],
+      [
+        10,
+        11,
+        "~"
+      ],
+      [
+        10,
+        12,
+        "~"
+      ],
+      [
+        10,
+        13,
+        "/"
+      ],
+      [
+        10,
+        16,
+        "\\"
+      ],
+      [
+        10,
+        19,
+        "\\"
+      ],
+      [
+        10,
+        20,
+        "\\"
+      ],
+      [
+        11,
+        4,
+        "/"
+      ],
+      [
+        11,
+        9,
+        "\\"
+      ],
+      [
+        11,
+        11,
+        "/"
+      ],
+      [
+        11,
+        18,
+        "\\"
+      ],
+      [
+        13,
+        4,
+        ","
+      ],
+      [
+        14,
+        3,
+        "/"
+      ],
+      [
+        14,
+        5,
+        "'"
+      ],
+      [
+        14,
+        6,
+        "\\"
+      ],
+      [
+        15,
+        3,
+        "'"
+      ],
+      [
+        15,
+        5,
+        "|"
+      ],
+      [
+        15,
+        7,
+        "\\"
+      ],
+      [
+        15,
+        12,
+        "\\"
+      ],
+      [
+        15,
+        13,
+        "\\"
+      ],
+      [
+        16,
+        5,
+        "("
+      ],
+      [
+        16,
+        8,
+        "-"
+      ],
+      [
+        16,
+        9,
+        "-"
+      ],
+      [
+        16,
+        10,
+        "-"
+      ],
+      [
+        16,
+        11,
+        "-"
+      ],
+      [
+        16,
+        12,
+        ")"
+      ],
+      [
+        16,
+        14,
+        "\\"
+      ],
+      [
+        17,
+        4,
+        "("
+      ],
+      [
+        17,
+        5,
+        "_"
+      ],
+      [
+        17,
+        6,
+        "\\"
+      ],
+      [
+        17,
+        7,
+        "~"
+      ],
+      [
+        17,
+        8,
+        "~"
+      ],
+      [
+        17,
+        9,
+        "~"
+      ],
+      [
+        17,
+        11,
+        "|"
+      ],
+      [
+        17,
+        12,
+        "\\"
+      ],
+      [
+        17,
+        15,
+        "\\"
+      ],
+      [
+        18,
+        7,
+        "\\"
+      ],
+      [
+        18,
+        9,
+        "-"
+      ],
+      [
+        18,
+        10,
+        "-"
+      ],
+      [
+        18,
+        13,
+        "\\"
+      ],
+      [
+        18,
+        16,
+        "-"
+      ],
+      [
+        19,
+        7,
+        "/"
+      ],
+      [
+        19,
+        13,
+        "/"
+      ]
+    ],
+    "selected_cell_count": 104,
+    "calibration_sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d",
+    "transcript_sha256": "14f69b99ea405bbc029933dcfcec78d41934921fa00685e57bf38cd88f2f21fc",
+    "source_stencil_is_not_acceptance": true
+  }
+}

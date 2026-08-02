@@ -1,0 +1,52 @@
+{
+  "format": "lateletter-row-joint-transcription-v1",
+  "attempt": "035-row-joint-component-context",
+  "source_png": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "calibration": {
+    "path": "../031-middle-band-fail-closed/calibration.json",
+    "sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d"
+  },
+  "transcript": "machine-row-joint.txt",
+  "decoder": {
+    "name": "row-joint-decoder",
+    "version": "row-joint-2-component-context",
+    "beam_width": 96,
+    "minimum_margin": 0.35,
+    "window_radius_columns": 1,
+    "leave_one_out_templates": true
+  },
+  "grid": {
+    "columns": 37,
+    "rows": 22,
+    "origin_x_px": -1.5,
+    "first_baseline_y_px": 20.0,
+    "cell_advance_x_px": 11.55,
+    "line_height_px": 21.0,
+    "x_phase_px_mod_period": 4,
+    "y_phase_px_mod_period": 20,
+    "cell_crop_top_offset_px": -12,
+    "cell_crop_bottom_offset_px": 9,
+    "row_crop_measurement": {
+      "top": -12,
+      "bottom": 9,
+      "boundary_ink": 77,
+      "boundary_ink_mean": 3.5,
+      "boundary_samples": 22,
+      "inter_row_clearance_px": 0
+    }
+  },
+  "status": "rejected",
+  "unknown_cells": 30,
+  "low_confidence_cells": 31,
+  "artifacts": {
+    "transcript": "machine-row-joint.txt",
+    "templates": "template-bank.json",
+    "evidence": "row-decoding.json"
+  },
+  "acceptance": {
+    "operator_review": "pending",
+    "raster_parity": "not_run",
+    "zero_unknown_required": true
+  }
+}

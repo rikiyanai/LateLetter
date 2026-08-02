@@ -1,0 +1,98 @@
+{
+  "attempt": "026-bidirectional-spill-gate",
+  "source_png": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "transcript": "machine-cell-ocr.txt",
+  "status": "rejected_nonzero_diff",
+  "canvas": {
+    "width_px": 424,
+    "height_px": 468,
+    "background_rgba": "#ffffffff"
+  },
+  "placement": {
+    "font_path": "/Library/Fonts/DejaVuSansMono.ttf",
+    "font_size_px": 16,
+    "origin_x_px": 0.0,
+    "first_baseline_y_px": 21.25,
+    "line_height_px": 21.4,
+    "glyph_advance_px": 11.55,
+    "foreground_rgba": "#222529ff"
+  },
+  "renderer_configuration": {
+    "source": "explicit_attempt_override",
+    "font_path": "/Library/Fonts/DejaVuSansMono.ttf",
+    "font_size_px": 16,
+    "origin_offset_px": 1.5,
+    "baseline_offset_px": 1.25,
+    "line_height_px": 21.4
+  },
+  "grid": {
+    "columns": 37,
+    "rows": 22,
+    "origin_x_px": -1.5,
+    "first_baseline_y_px": 20.0,
+    "advance_x_px": 11.55,
+    "advance_y_px": 21.0
+  },
+  "calibration": {
+    "path": "calibration.json",
+    "sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d"
+  },
+  "normalization": {
+    "colour_space": "RGB",
+    "ink_threshold_l1": 25,
+    "background_method": "dominant_exact_rgb",
+    "guide_removal": "none",
+    "foreground_rgb": [
+      34,
+      37,
+      41
+    ]
+  },
+  "recognizer": {
+    "name": "tesseract-cell-ocr",
+    "version": "cell-ocr-5-structural-gate",
+    "engine_version": "tesseract 5.5.1",
+    "options": [
+      "tesseract",
+      "--psm",
+      "10"
+    ]
+  },
+  "artifacts": {
+    "calibration_png": "calibration.png",
+    "cell_recognition_json": "cell-recognition.json",
+    "rerender_png": "rerender.png",
+    "overlay_png": "overlay.png",
+    "diff_png": "diff.png"
+  },
+  "unknown_cells": 0,
+  "low_confidence_cells": 0,
+  "structural_conflicts": 0,
+  "recognition_gate": {
+    "minimum_confidence": 0.85,
+    "requires_unknown_cells": 0,
+    "requires_low_confidence_cells": 0,
+    "requires_structural_conflicts": 0,
+    "passed": true
+  },
+  "occupancy_review": {
+    "path": "occupancy-review.json",
+    "sha256": "7e187afe62d2c90eb75172909bc6cb9c1b6c9f8fdab7d06dc86e340634b20b8c",
+    "verdict": "machine_reviewed"
+  },
+  "review": {
+    "layout_parity": "pending",
+    "raster_parity": "blocked_unknown_font",
+    "human_visual_parity": "rejected_nonzero_diff",
+    "verdict": "rejected_nonzero_diff"
+  },
+  "parity": {
+    "mask_threshold": 25,
+    "diff_pixel_count": 1944,
+    "source_only_pixels": 1582,
+    "candidate_only_pixels": 362,
+    "zero_diff_required": true,
+    "passed": false
+  }
+}

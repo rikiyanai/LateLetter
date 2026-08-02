@@ -1,0 +1,20 @@
+{
+  "fixture_id": "negative-partial-kanji",
+  "renderer": "Pillow",
+  "pillow_version": "12.1.0",
+  "font_path": "/Library/Fonts/DejaVuSans.ttf",
+  "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+  "font_size_px": 22,
+  "foreground_rgb": [
+    34,
+    37,
+    41
+  ],
+  "background_rgb": [
+    255,
+    255,
+    255
+  ],
+  "degraded": false,
+  "generator": "tests/fixtures/transcription/build_corpus.py"
+}

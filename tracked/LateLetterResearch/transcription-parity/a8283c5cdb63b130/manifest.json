@@ -1,0 +1,70 @@
+{
+  "reference_id": "a8283c5cdb63b130",
+  "status": "verified_reference_transcription",
+  "source_png": "source/source.normalized.png",
+  "source_sha256": "c50bcf5ded3a0499f762762f8bec75db6ac2c9176806061a86c2a6d8317bd8d8",
+  "source_renderer": "unknown; source is a black-on-white raster",
+  "current_attempt": "attempts/015-final-structural-candidate/",
+  "calibration": {
+    "attempt": "attempts/008-dark-foreground-calibration/",
+    "path": "attempts/008-dark-foreground-calibration/calibration.json",
+    "sha256": "ab495f3d9221e7059017ba590487cf815476157004a68e7d7ebe04b33ce334de"
+  },
+  "transcript": "attempts/015-final-structural-candidate/machine-row-joint.txt",
+  "transcript_sha256": "bcbf1901d86a9bd55a4861f8ff973b1315f3d7ae28f58e43536c7d0e005e4012",
+  "latest_machine_candidate": {
+    "attempt": "attempts/015-final-structural-candidate/",
+    "transcript": "attempts/015-final-structural-candidate/machine-row-joint.txt",
+    "status": "accepted",
+    "unknown_cells": 0,
+    "low_confidence_cells": 0,
+    "structural_conflicts": 0,
+    "forced_blank_conflicts": 0,
+    "operator_review": "approved",
+    "raster_parity": "not_run"
+  },
+  "transcript_state": "No accepted TXT. Attempts 001–005 are calibration evidence; 006 and 008 are occupancy/review; attempts 007, 009–014 are immutable rejected decoder evidence; attempt 015 is the current zero-count machine candidate pending operator visual review. It must not be hand-edited or accepted.",
+  "canvas": {
+    "width_px": 271,
+    "height_px": 619,
+    "background_rgba": "ffffffff"
+  },
+  "grid": {
+    "columns": 16,
+    "rows": 19,
+    "advance_x_px": 17.95,
+    "advance_y_px": 33.0,
+    "origin_x_px": -15.75,
+    "first_baseline_y_px": 25.0
+  },
+  "review": {
+    "layout_parity": "accepted",
+    "human_visual_parity": "accepted",
+    "raster_parity": "not_run",
+    "verdict": "approved",
+    "unknown_cells": 0,
+    "low_confidence_cells": 0,
+    "structural_conflicts": 0,
+    "forced_blank_conflicts": 0,
+    "zero_diff_required": false,
+    "font_independent_structural_review_required": true,
+    "comparison_diff_pixel_count": null
+  },
+  "accepted": true,
+  "acceptance_receipt": "acceptance-receipt.json",
+  "excluded_attempts": {
+    "001-calibration-candidate": "rejected_pitch_outside_hardcoded_search_range",
+    "002-expanded-calibration": "rejected_raw_boundary_score_conflated_horizontal_joins_with_cuts",
+    "003-horizontal-join-aware-calibration": "completed_duplicate_join-aware_candidate",
+    "004-horizontal-join-aware-calibration": "completed_duplicate_join-aware_candidate",
+    "005-horizontal-join-aware-calibration": "superseded_by_dark_foreground_metadata",
+    "006-row-joint-candidate": "occupancy_and_review_only; decoder_requires_separate_immutable_output",
+    "007-row-joint-decode": "superseded_by_same-grid_candidate_with_source-derived_foreground",
+    "009-row-joint-decode": "rejected_horizontal_ownership_unknowns",
+    "010-four-row-horizontal-decode": "rejected_same-row_ownership_unknowns",
+    "011-same-row-horizontal-ownership": "rejected_four-row_horizontal_helper_not_covering_scaled_bands",
+    "012-same-row-horizontal-ownership": "rejected_clipped_component_ids_and_two_unknowns",
+    "013-clipped-component-ownership": "rejected_coarse_structural_conflict_aliases",
+    "014-exact-silhouette-conflict-gate": "rejected_dash_underscore_band_conflict"
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "false_unique_negative_fixtures": [],
+  "fixture_count": 1,
+  "ground_truth_passed_to_adapters": false,
+  "nondeterministic_adapters": [],
+  "positive_missing": [
+    "sitting-cat"
+  ],
+  "reason": "offline ensemble does not cover the release gate",
+  "remote_proposals_allowed": false,
+  "results": [
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 60276736,
+          "proposed_logical_order": [
+            "EEE,\nI> 2\nbog oh"
+          ],
+          "recognition_input_hash": "a4e907b307fb116a0f60bbe414fa8b14b764353fd0c322d3ecb8fa80ffd62893",
+          "repeat_run_hash": "70143b7b3afa637140e969fbc5b5dfe8c7e6bb21cbd79bd05849c732be67fea1",
+          "run_count": 4,
+          "run_input_hashes": [
+            "8c4b8a552a3d4342da539560046b84af88804e9197a3467af3e6925209cd31e5",
+            "2d952c2a62a27111987f80210aab4782f27ee6dabe0c7c33bae57413baafae5b",
+            "b29ce9ea34158bef31871994dad2a0a712ae5029c74954d147b3101587002e07",
+            "656e10e0f8d0f8fdf28c93550b5bf81c7452e38474f4257302a70edc8426cfd5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001",
+            "row-r002"
+          ],
+          "runtime_ms": 1126.363,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "EEE,\nI> 2\nbog oh"
+          ],
+          "unsupported_status": [
+            "empty_proposal"
+          ],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 60506112,
+          "proposed_logical_order": [
+            "CCC CC CECCCC OCC f= (EIA eiier-Mis-i= iii@ia@e nr Oda€sa@p’- n3sah asprO@= ®@= a-oahd o- o™ H aiind€’ ia= mt °Pe fnu rr ACY ]ItOIO COR COO CIC OCOCCCCCCCCCCOOCCCCCCCCCC”CCCt:naiimimwt MH os i AHnn@anisdp- d H Msi »dlsrai gn mi II O Hqpg -H pNiz€ienim n@=@™@H a@a©c mjd9 hHiad@nminia@:QHM TH CC\nIE & TE SE\nI I\nAw"
+          ],
+          "recognition_input_hash": "a4e907b307fb116a0f60bbe414fa8b14b764353fd0c322d3ecb8fa80ffd62893",
+          "repeat_run_hash": "41aba40ccf493418b6727f040f12d5d2698afb427fafb192082ba83c28cc5c29",
+          "run_count": 4,
+          "run_input_hashes": [
+            "8c4b8a552a3d4342da539560046b84af88804e9197a3467af3e6925209cd31e5",
+            "2d952c2a62a27111987f80210aab4782f27ee6dabe0c7c33bae57413baafae5b",
+            "b29ce9ea34158bef31871994dad2a0a712ae5029c74954d147b3101587002e07",
+            "656e10e0f8d0f8fdf28c93550b5bf81c7452e38474f4257302a70edc8426cfd5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001",
+            "row-r002",
+            "row-r003"
+          ],
+          "runtime_ms": 2451.647,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "CCC CC CECCCC OCC f= (EIA eiier-Mis-i= iii@ia@e nr Oda€sa@p’- n3sah asprO@= ®@= a-oahd o- o™ H aiind€’ ia= mt °Pe fnu rr ACY ]ItOIO COR COO CIC OCOCCCCCCCCCCOOCCCCCCCCCC”CCCt:naiimimwt MH os i AHnn@anisdp- d H Msi »dlsrai gn mi II O Hqpg -H pNiz€ienim n@=@™@H a@a©c mjd9 hHiad@nminia@:QHM TH CC\nIE & TE SE\nI I\nAw"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 60620800,
+          "proposed_logical_order": [
+            "本\nリッ ブラ\n未 二\n六 - ニ"
+          ],
+          "recognition_input_hash": "a4e907b307fb116a0f60bbe414fa8b14b764353fd0c322d3ecb8fa80ffd62893",
+          "repeat_run_hash": "23e1e0aeab88cded8643b1903183be3088b74506c03490197fae56e89b39437c",
+          "run_count": 4,
+          "run_input_hashes": [
+            "8c4b8a552a3d4342da539560046b84af88804e9197a3467af3e6925209cd31e5",
+            "2d952c2a62a27111987f80210aab4782f27ee6dabe0c7c33bae57413baafae5b",
+            "b29ce9ea34158bef31871994dad2a0a712ae5029c74954d147b3101587002e07",
+            "656e10e0f8d0f8fdf28c93550b5bf81c7452e38474f4257302a70edc8426cfd5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001",
+            "row-r002",
+            "row-r003"
+          ],
+          "runtime_ms": 3824.607,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "本\nリッ ブラ\n未 二\n六 - ニ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 60620800,
+          "proposed_logical_order": [
+            "الصصععصضصئصشيتبابساٌ_»بمسيستستتس_٠:‏ )ال 0\n/<- 72\nار"
+          ],
+          "recognition_input_hash": "a4e907b307fb116a0f60bbe414fa8b14b764353fd0c322d3ecb8fa80ffd62893",
+          "repeat_run_hash": "c4eaea3933bb1e297f343e3af84874a6a73904d67d31e7413c599eb425dd28b8",
+          "run_count": 4,
+          "run_input_hashes": [
+            "8c4b8a552a3d4342da539560046b84af88804e9197a3467af3e6925209cd31e5",
+            "2d952c2a62a27111987f80210aab4782f27ee6dabe0c7c33bae57413baafae5b",
+            "b29ce9ea34158bef31871994dad2a0a712ae5029c74954d147b3101587002e07",
+            "656e10e0f8d0f8fdf28c93550b5bf81c7452e38474f4257302a70edc8426cfd5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001",
+            "row-r002"
+          ],
+          "runtime_ms": 709.767,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "الصصععصضصئصشيتبابساٌ_»بمسيستستتس_٠:‏ )ال 0\n/<- 72\nار"
+          ],
+          "unsupported_status": [
+            "empty_proposal"
+          ],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 60620800,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "a4e907b307fb116a0f60bbe414fa8b14b764353fd0c322d3ecb8fa80ffd62893",
+          "repeat_run_hash": "2a218e405f802ea13b6050b064265e4f33df4abbedb520db147b1d7dd61de367",
+          "run_count": 4,
+          "run_input_hashes": [
+            "8c4b8a552a3d4342da539560046b84af88804e9197a3467af3e6925209cd31e5",
+            "2d952c2a62a27111987f80210aab4782f27ee6dabe0c7c33bae57413baafae5b",
+            "b29ce9ea34158bef31871994dad2a0a712ae5029c74954d147b3101587002e07",
+            "656e10e0f8d0f8fdf28c93550b5bf81c7452e38474f4257302a70edc8426cfd5"
+          ],
+          "run_spans": [],
+          "runtime_ms": 6.517,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "whole_run_proposal_unavailable"
+          ],
+          "version": "1"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-r000",
+        "row-r001",
+        "row-r002",
+        "row-r000",
+        "row-r001",
+        "row-r002",
+        "row-r003",
+        "row-r000",
+        "row-r001",
+        "row-r002",
+        "row-r003",
+        "row-r000",
+        "row-r001",
+        "row-r002"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "sitting-cat",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "EEE,\nI> 2\nbog oh",
+        "CCC CC CECCCC OCC f= (EIA eiier-Mis-i= iii@ia@e nr Oda€sa@p’- n3sah asprO@= ®@= a-oahd o- o™ H aiind€’ ia= mt °Pe fnu rr ACY ]ItOIO COR COO CIC OCOCCCCCCCCCCOOCCCCCCCCCC”CCCt:naiimimwt MH os i AHnn@anisdp- d H Msi »dlsrai gn mi II O Hqpg -H pNiz€ienim n@=@™@H a@a©c mjd9 hHiad@nminia@:QHM TH CC\nIE & TE SE\nI I\nAw",
+        "本\nリッ ブラ\n未 二\n六 - ニ",
+        "الصصععصضصئصشيتبابساٌ_»بمسيستستتس_٠:‏ )ال 0\n/<- 72\nار"
+      ],
+      "recognition_input_hash": "a4e907b307fb116a0f60bbe414fa8b14b764353fd0c322d3ecb8fa80ffd62893",
+      "target_evaluated_after_proposals": false,
+      "unsupported": false
+    }
+  ],
+  "status": "blocked_release_coverage",
+  "top_k": 5
+}

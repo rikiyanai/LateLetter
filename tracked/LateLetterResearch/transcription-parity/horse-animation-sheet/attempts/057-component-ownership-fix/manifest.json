@@ -1,0 +1,83 @@
+{
+  "format": "lateletter-row-joint-transcription-v1",
+  "attempt": "057-component-ownership-fix",
+  "source_png": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "calibration": {
+    "path": "../015-subpixel-calibration/calibration.json",
+    "sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d"
+  },
+  "transcript": "machine-row-joint.txt",
+  "transcript_sha256": "f1ae80be1e1dee24368d4fe329a8a6812d059f2f6f6eb1b4c6f51c8772dc600d",
+  "cell_count": 814,
+  "transcript_line_lengths": [
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37,
+    37
+  ],
+  "decoder": {
+    "name": "row-joint-decoder",
+    "version": "row-joint-9-bound-evidence-exact-shapes",
+    "beam_width": 96,
+    "minimum_margin": 0.35,
+    "window_radius_columns": 1,
+    "leave_one_out_templates": true
+  },
+  "grid": {
+    "columns": 37,
+    "rows": 22,
+    "origin_x_px": -1.5,
+    "first_baseline_y_px": 20.0,
+    "cell_advance_x_px": 11.55,
+    "line_height_px": 21.0,
+    "x_phase_px_mod_period": 4,
+    "y_phase_px_mod_period": 20,
+    "cell_crop_top_offset_px": -12,
+    "cell_crop_bottom_offset_px": 9,
+    "row_crop_measurement": {
+      "top": -12,
+      "bottom": 9,
+      "boundary_ink": 77,
+      "boundary_ink_mean": 3.5,
+      "boundary_samples": 22,
+      "inter_row_clearance_px": 0
+    }
+  },
+  "status": "rejected",
+  "unknown_cells": 2,
+  "low_confidence_cells": 2,
+  "structural_conflicts": 0,
+  "forced_blank_conflicts": 0,
+  "artifacts": {
+    "transcript": "machine-row-joint.txt",
+    "templates": "template-bank.json",
+    "evidence": "row-decoding.json"
+  },
+  "acceptance": {
+    "operator_review": "pending",
+    "raster_parity": "not_run",
+    "zero_unknown_required": true,
+    "zero_low_confidence_required": true,
+    "zero_structural_conflicts_required": true,
+    "zero_forced_blank_conflicts_required": true
+  }
+}

@@ -1,0 +1,2701 @@
+{
+  "capability_profiles": [
+    {
+      "adapter": "tesseract-offline",
+      "adapter_version": "5.5.1",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "extended-grapheme-candidate"
+      ],
+      "license": "Apache-2.0",
+      "model_hashes": {
+        "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+        "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+        "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+        "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+        "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+        "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548"
+      },
+      "offline": true,
+      "output_hash": "d2164aa7e29ed8822ae14de1c73f08f63a5340e2db3ff5ebba8b3b671f65b29a",
+      "runtime_hashes": {
+        "tesseract_binary": "f6684b4e366dfc22bc0f1a509a6c237df3833af4c7105ecd78b9c998a5ab4656"
+      },
+      "runtime_network": false,
+      "runtime_versions": {
+        "python": "3.14.3",
+        "tesseract": "5.5.1"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [
+        "arabic",
+        "ascii",
+        "cjk",
+        "digits",
+        "japanese",
+        "latin",
+        "vertical_text"
+      ],
+      "tested_fixture_families": [
+        "arabic",
+        "ascii",
+        "cjk",
+        "japanese",
+        "latin"
+      ],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "joined_text_art_runs",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "fixed-lattice-structural",
+      "adapter_version": "1",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "ascii-structural"
+      ],
+      "license": "CC0-1.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "b4870c7e126933be2d7266021e0e8394428a2f9c7bf58fba3b9e1b6966fec315",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {},
+      "status": "proposal_only",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "ascii",
+        "digits"
+      ],
+      "tested_fixture_families": [
+        "fixed_lattice_ascii"
+      ],
+      "unsupported_cases": [
+        "ambiguous_spill",
+        "emoji_zwj",
+        "proportional_runs",
+        "unicode_scripts"
+      ]
+    },
+    {
+      "adapter": "paddleocr-offline",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "Apache-2.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "b19b071997b5c86ad79398c155bc18469f8627959a094097f52521c798eac40e",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "paddleocr": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "arabic_model_not_verified",
+        "emoji_zwj",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "independent-offline-easyocr",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "Apache-2.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "d1ba9a33a4e1dd1d0a335700fe098d5c49a757d95256989df0a257fb9ad10fd6",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "easyocr": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "unverified_script_pack",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "independent-offline-surya",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "GPL-3.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "8784ccf54b3080958deec4f9e95f26946c29be7bed05a407732a6660cc078e0b",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "surya": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "unverified_script_pack",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "emoji-grapheme-atlas",
+      "adapter_version": "unicode-emoji-17.0",
+      "emoji_coverage": [
+        "RGI fully-qualified",
+        "count:3944"
+      ],
+      "grapheme_coverage": [
+        "extended-grapheme-cluster"
+      ],
+      "license": "OFL-1.1+Unicode-Terms-of-Use",
+      "model_hashes": {
+        "noto_color_emoji": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+        "unicode_emoji_test": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda"
+      },
+      "offline": true,
+      "output_hash": "f45d1b2f24e9e5262725ac185764429b6a0661772da714fa1737794f49320dc3",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "pillow": "12.1.0",
+        "regex": "2026.5.9",
+        "unicodedata": "16.0.0"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "emoji"
+      ],
+      "tested_fixture_families": [
+        "emoji_variation_selector",
+        "emoji_zwj"
+      ],
+      "unsupported_cases": [
+        "font_strike_unavailable",
+        "partial_cluster",
+        "unconfigured_sequence",
+        "visual_unicode_collision"
+      ]
+    }
+  ],
+  "environment_lock": {
+    "capability_profiles": [
+      {
+        "adapter": "tesseract-offline",
+        "adapter_version": "5.5.1",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "extended-grapheme-candidate"
+        ],
+        "license": "Apache-2.0",
+        "model_hashes": {
+          "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+          "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+          "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+          "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+          "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+          "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548"
+        },
+        "offline": true,
+        "output_hash": "d2164aa7e29ed8822ae14de1c73f08f63a5340e2db3ff5ebba8b3b671f65b29a",
+        "runtime_hashes": {
+          "tesseract_binary": "f6684b4e366dfc22bc0f1a509a6c237df3833af4c7105ecd78b9c998a5ab4656"
+        },
+        "runtime_network": false,
+        "runtime_versions": {
+          "python": "3.14.3",
+          "tesseract": "5.5.1"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [
+          "arabic",
+          "ascii",
+          "cjk",
+          "digits",
+          "japanese",
+          "latin",
+          "vertical_text"
+        ],
+        "tested_fixture_families": [
+          "arabic",
+          "ascii",
+          "cjk",
+          "japanese",
+          "latin"
+        ],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "joined_text_art_runs",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "fixed-lattice-structural",
+        "adapter_version": "1",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "ascii-structural"
+        ],
+        "license": "CC0-1.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "b4870c7e126933be2d7266021e0e8394428a2f9c7bf58fba3b9e1b6966fec315",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {},
+        "status": "proposal_only",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "ascii",
+          "digits"
+        ],
+        "tested_fixture_families": [
+          "fixed_lattice_ascii"
+        ],
+        "unsupported_cases": [
+          "ambiguous_spill",
+          "emoji_zwj",
+          "proportional_runs",
+          "unicode_scripts"
+        ]
+      },
+      {
+        "adapter": "paddleocr-offline",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "Apache-2.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "b19b071997b5c86ad79398c155bc18469f8627959a094097f52521c798eac40e",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "paddleocr": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "arabic_model_not_verified",
+          "emoji_zwj",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "independent-offline-easyocr",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "Apache-2.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "d1ba9a33a4e1dd1d0a335700fe098d5c49a757d95256989df0a257fb9ad10fd6",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "easyocr": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "unverified_script_pack",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "independent-offline-surya",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "GPL-3.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "8784ccf54b3080958deec4f9e95f26946c29be7bed05a407732a6660cc078e0b",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "surya": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "unverified_script_pack",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "emoji-grapheme-atlas",
+        "adapter_version": "unicode-emoji-17.0",
+        "emoji_coverage": [
+          "RGI fully-qualified",
+          "count:3944"
+        ],
+        "grapheme_coverage": [
+          "extended-grapheme-cluster"
+        ],
+        "license": "OFL-1.1+Unicode-Terms-of-Use",
+        "model_hashes": {
+          "noto_color_emoji": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+          "unicode_emoji_test": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda"
+        },
+        "offline": true,
+        "output_hash": "f45d1b2f24e9e5262725ac185764429b6a0661772da714fa1737794f49320dc3",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "pillow": "12.1.0",
+          "regex": "2026.5.9",
+          "unicodedata": "16.0.0"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "emoji"
+        ],
+        "tested_fixture_families": [
+          "emoji_variation_selector",
+          "emoji_zwj"
+        ],
+        "unsupported_cases": [
+          "font_strike_unavailable",
+          "partial_cluster",
+          "unconfigured_sequence",
+          "visual_unicode_collision"
+        ]
+      }
+    ],
+    "freetype": "not-recorded",
+    "harfbuzz": "not-installed",
+    "model_hashes": {
+      "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+      "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+      "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+      "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+      "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+      "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548",
+      "osd": "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff"
+    },
+    "output_hash": "365ea4a68db1912843ee90e5bf0d6901344f3392bf1729c532573e2a8a179ef8",
+    "pillow_version": "12.1.0",
+    "preprocessing": {
+      "ground_truth_to_adapter": false,
+      "network": "disabled"
+    },
+    "script_packs": [
+      "ara",
+      "chi_sim",
+      "chi_tra",
+      "eng",
+      "jpn",
+      "jpn_vert",
+      "osd"
+    ],
+    "uax29": "regex/2026.5.9",
+    "unicode_database": "16.0.0",
+    "wcwidth_version": "0.3.3"
+  },
+  "false_unique_negative_fixtures": [],
+  "fixture_count": 10,
+  "ground_truth_passed_to_adapters": false,
+  "holdout": {
+    "false_unique_negative_fixtures": [],
+    "fixture_count": 10,
+    "ground_truth_passed_to_adapters": false,
+    "manifest_sha256": "56af3353be3e15d911d7c1f072b469b1918a3d0d6cc361864886ce468301b665",
+    "nondeterministic_adapters": [],
+    "positive_missing": [
+      "holdout-fixed-small-light",
+      "holdout-fixed-large-dark",
+      "holdout-fixed-gray-rescaled",
+      "holdout-kana-latin",
+      "holdout-kanji-halfwidth",
+      "holdout-arabic-latin",
+      "holdout-emoji-color",
+      "holdout-mixed-rescaled"
+    ],
+    "reason": "offline ensemble does not cover the release gate",
+    "remote_proposals_allowed": false,
+    "results": [
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 73072640,
+            "proposed_logical_order": [
+              "> イー\n(=)"
+            ],
+            "repeat_run_hash": "cb6b70dc125b174e9c14289d9605ad9f7e24256142987ee948542797796bf010",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 1033.488,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "> イー\n(=)"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 73138176,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "ca69919f13a40f9cbb3547ad3356745ea0a2a1065100fa51213672d2c3a0c43b",
+            "run_spans": [],
+            "runtime_ms": 1.053,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 73138176,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "1231cfc48fcb1f0647189d7f47e6e382ecca65e4a96f2f8ed321401aeede167d",
+            "run_spans": [],
+            "runtime_ms": 1.233,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 73138176,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "d94ee9a4837322e3897031d4fd452c0fd2940e5d9af1fecf2bbad3030da99287",
+            "run_spans": [],
+            "runtime_ms": 1.077,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 73138176,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "3868a5f6d1bbcb33320e2ac5eb7e7ac4db46c78b9b3159b65c8592f0ae7d1f8e",
+            "run_spans": [],
+            "runtime_ms": 1.059,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 83017728,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "9ae3ed83667fc7af164c40ffc67074be56d1974079cbb8409f4e38b954329c85",
+            "run_spans": [],
+            "runtime_ms": 50.637,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-fixed-small-light",
+        "proposed_logical_order": [
+          "> イー\n(=)"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 83034112,
+            "proposed_logical_order": [
+              "sel WY\nニニ"
+            ],
+            "repeat_run_hash": "4169119e46190688a47284e001eed6c1ebd8b4cf8709450eaa1f12aef405344e",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 1304.443,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "sel WY\nニニ"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 83034112,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "634cb73fce2ed0b13b4c02d37b511074420084dd484554624a5a055a851e2f28",
+            "run_spans": [],
+            "runtime_ms": 1.129,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 83034112,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "f57a92056c1f1b83b9e1981b20f867f91216ec11641d40dd460ece5250f52523",
+            "run_spans": [],
+            "runtime_ms": 1.276,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 83034112,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "2f3a5067dc8f0e35c300dbc179244c3d355ca599d5b21128118e15f158df8323",
+            "run_spans": [],
+            "runtime_ms": 1.109,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 83034112,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "9dca16ba861145f7ef0bbd084a0e8dabfc2afc2f60f18d230b0380e8871bd499",
+            "run_spans": [],
+            "runtime_ms": 1.098,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 83116032,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "dfb8a42c6ceb7a62041ff7ca7a72a2b64fc296673959a5c3cb8c7f673b0ee489",
+            "run_spans": [],
+            "runtime_ms": 50.905,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-fixed-large-dark",
+        "proposed_logical_order": [
+          "sel WY\nニニ"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 83181568,
+            "proposed_logical_order": [
+              ">"
+            ],
+            "repeat_run_hash": "aed62942816d0617a3dc315f87ec683b39657efbf1233347b5edfe11b2bf78af",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 927.458,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              ">"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 83181568,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "9ce35d7ef46159731ca2edc7edb955191252b22f5f14d97e172f5d9fdebbd979",
+            "run_spans": [],
+            "runtime_ms": 1.129,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 83181568,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "350887f9bea08a2dfe5fe3152588280b55f48bd1e73863e4a8cc33ab56944e56",
+            "run_spans": [],
+            "runtime_ms": 1.252,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 83181568,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "d63180da902dad320c23a58ac0c117211918244603e1015f9e0ab5b9a700dcef",
+            "run_spans": [],
+            "runtime_ms": 1.096,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 83181568,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "ff2a7fc76eed0aff694a2bd6d6f0e822e60ccca9d7f3fd671ed8337a0e171f09",
+            "run_spans": [],
+            "runtime_ms": 1.101,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84000768,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "555e1a70583ae5cb2385c68dc09ab0645cf5b44492cc8618d802578b747e489c",
+            "run_spans": [],
+            "runtime_ms": 50.697,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-fixed-gray-rescaled",
+        "proposed_logical_order": [
+          ">"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 84000768,
+            "proposed_logical_order": [
+              "Late Letter\nkindness"
+            ],
+            "repeat_run_hash": "fda4e977c1efc98c465f267ae9a5103b31f190798736ec68e730e4e5d5edd3c6",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 898.668,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "Late Letter\nkindness"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 84000768,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "a2f23a0eb4a12bece36a68d58f5d714a9f84a00d5ea24601be7c9a4bf45f3478",
+            "run_spans": [],
+            "runtime_ms": 1.096,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 84000768,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "ae038b8bdcd69f15d2c787531fd52229fec20e2358fef9c42a0fa36aadfab08e",
+            "run_spans": [],
+            "runtime_ms": 1.224,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84000768,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "ce92fc465570ea76738942e2a321f313da5bf136b3f12377b86581f56ef5f411",
+            "run_spans": [],
+            "runtime_ms": 1.075,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84000768,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "fc1626e79dd987eb7a467a0e2b00704fd908146f082e357c7b9ea362d23c1a0a",
+            "run_spans": [],
+            "runtime_ms": 1.065,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "f5dcd738c15ec01c50e27341add8a67cf11b6d66a7b3002930ea1b25e24fdbdf",
+            "run_spans": [],
+            "runtime_ms": 50.174,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": true,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-latin-proportional",
+        "proposed_logical_order": [
+          "Late Letter\nkindness"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [
+              "00 ABC"
+            ],
+            "repeat_run_hash": "c1e919581e2e3f8436b5b0b45186a57e4c05f668b72548edba81fda9b3aae47a",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 1075.726,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "00 ABC"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "3ce0efd25dd279d5ab494fc87f207cd37ba2612e3333c4383820453f36e9980f",
+            "run_spans": [],
+            "runtime_ms": 1.161,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "f637d459b3a7a66ec57697780724c0eae2c2beb50a81d95344fe541354bcc2df",
+            "run_spans": [],
+            "runtime_ms": 1.246,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "93981912c8d34fcbeb3827224dad8b69f9511f894e6a13f407dc438f0dda6dd3",
+            "run_spans": [],
+            "runtime_ms": 1.121,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "e67f30c665dbb1583a004b51cbb02c58fbca39c756a7ddf814619f7f82c25851",
+            "run_spans": [],
+            "runtime_ms": 1.099,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "a99ab5bfc2655c60c5af63350e6595b67290444011355af46f659e2cab4d362e",
+            "run_spans": [],
+            "runtime_ms": 50.368,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-kana-latin",
+        "proposed_logical_order": [
+          "00 ABC"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [
+              "نل"
+            ],
+            "repeat_run_hash": "e963860d794fa9dca0e88f49c9a5aab3bb51dc6ba3ed17e22ee5b360031e7923",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 1033.917,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "نل"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "9196847a29d6772dccac55b9dfc7f05ee1a0b1f35687055261dd0c7725c4d712",
+            "run_spans": [],
+            "runtime_ms": 1.102,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "4e2b3082a32be3e179317606423648842bf9da25ed76ef699f4b69b379aa7d4b",
+            "run_spans": [],
+            "runtime_ms": 1.212,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "589e33ad41097eccbce81f2408c509d86c396b084123e4e9617d8039b34d5b9d",
+            "run_spans": [],
+            "runtime_ms": 1.082,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "7d597794c44e528d6046c317b8c7b21ea3507b6e1823cdcaf605630e278510b7",
+            "run_spans": [],
+            "runtime_ms": 1.063,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "87a979fc45ba3e5858803b216b657b569bb4fce46bb13cf615048f5804b86ff7",
+            "run_spans": [],
+            "runtime_ms": 49.751,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-kanji-halfwidth",
+        "proposed_logical_order": [
+          "نل"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [
+              "A ‏سلام‎"
+            ],
+            "repeat_run_hash": "0f58d3c5478d7482fd5489e9850af269dd9544c73faba93cb5d3265091a69cef",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 1008.822,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "A ‏سلام‎"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "2084c7b6281fdffd2afbf1a171c97db29edabf2a2ab2dabec3e648a234d8e0a6",
+            "run_spans": [],
+            "runtime_ms": 1.092,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "8640ebd83fd2b52dd499feb69774520e51b992db58f46f7168dbc9bba179b24a",
+            "run_spans": [],
+            "runtime_ms": 1.229,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "54ef2a37f0ca3c633666eb01b47700d4a8c6cf516e56e936a48fbcd04cb22fea",
+            "run_spans": [],
+            "runtime_ms": 1.085,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84213760,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "e8f401ad50e2a1c2baad9dc6b4b516e1919209bc32f3fd79b5ae78d15f08f027",
+            "run_spans": [],
+            "runtime_ms": 1.066,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84246528,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "395158e1baae98aca100f7cff613bd4ee946c0b199e7185dce65deac23dd8667",
+            "run_spans": [],
+            "runtime_ms": 49.69,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-arabic-latin",
+        "proposed_logical_order": [
+          "A ‏سلام‎"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 84246528,
+            "proposed_logical_order": [
+              "café é"
+            ],
+            "repeat_run_hash": "63ddda10f8339af72a49d231f3f784e7e0bf273c0a77f1b905561e21afa0916f",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 864.979,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "café é"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 84246528,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "86e6f326e41cee9e3b7ad381d5851d85a77b6ea04d62abff3b0d3c71217071fb",
+            "run_spans": [],
+            "runtime_ms": 1.088,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 84246528,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "7eb131c956667fa3e6e64c2cd78d7c38bc430ebecc127eb036451dfd60dce3f2",
+            "run_spans": [],
+            "runtime_ms": 1.209,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84246528,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "546cef45c098009a285e5419bd8ee985800de70fae6837e35d6fdbbf0ded0b94",
+            "run_spans": [],
+            "runtime_ms": 1.065,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84246528,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "ee4bdb6c75ec8b571c83b18d092d1a7a15986a710bb1af8179b5fb4925c46160",
+            "run_spans": [],
+            "runtime_ms": 1.062,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "edc10216a65cf9aca4e1690f121c26c9e5a9512f9a9430fa10d8efa45f3dbc3e",
+            "run_spans": [],
+            "runtime_ms": 50.232,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": true,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-combining",
+        "proposed_logical_order": [
+          "café é"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [
+              "oe"
+            ],
+            "repeat_run_hash": "2412bcbd3438bac23c4763ff99d22090fa613f4a1c723a97436f8bdfdd971873",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 1015.111,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "oe"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "f4c999535f71d43e73645d993f0512deca06a6d8875b231b34051a53aac1435d",
+            "run_spans": [],
+            "runtime_ms": 1.105,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "7d3a874d679aaf4c65e6e50a3d6bbeb95a0eb20ade3da24856f77468da64e3c8",
+            "run_spans": [],
+            "runtime_ms": 1.22,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "092a654678c8ee1ee226b37127fd7f429ebec89c93c2b9dea9cf873b90f54643",
+            "run_spans": [],
+            "runtime_ms": 1.081,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "88869e17f8738bcfc88af649db2d7128b87301efc86d497cd57528f33186f3b4",
+            "run_spans": [],
+            "runtime_ms": 1.082,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "cb97ffbd7f1156b44b62d48e012a47b0faf67360c1e43da6698062dedf50e69e",
+            "run_spans": [],
+            "runtime_ms": 49.709,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-emoji-color",
+        "proposed_logical_order": [
+          "oe"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      },
+      {
+        "adapters": [
+          {
+            "adapter": "tesseract-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [
+              "AL ‏سلام‎"
+            ],
+            "repeat_run_hash": "225d2f68464e0841ea2176e1fd2b2eb03c092c31e2b506f63b357e9f19099fcd",
+            "run_spans": [
+              "row-0"
+            ],
+            "runtime_ms": 1025.898,
+            "status": "proposal_only",
+            "top_k_logical_sequences": [
+              "AL ‏سلام‎"
+            ],
+            "unsupported_status": [],
+            "version": "5.5.1"
+          },
+          {
+            "adapter": "fixed-lattice-structural",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "4351394d2a8f2b1724285a87c7ae8a5ad4bfc1e67380bf40cbc8532ebf55364e",
+            "run_spans": [],
+            "runtime_ms": 1.132,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_mode_mismatch"
+            ],
+            "version": "1"
+          },
+          {
+            "adapter": "paddleocr-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "ec59be296315bd35ff0643a6622c9e2ae52bbf4751bf27f84237faae4a934cbd",
+            "run_spans": [],
+            "runtime_ms": 1.247,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "77d8cd489fe9ce0e6a580db5d49ec8011a3981947bfa7d617f71d9cc87b1bcb9",
+            "run_spans": [],
+            "runtime_ms": 1.108,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "independent-offline",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "44eee6c971ee4213463a3481e23a84e0244978ca6bef9cf88ca838225848457a",
+            "run_spans": [],
+            "runtime_ms": 1.08,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "recognizer_unavailable"
+            ],
+            "version": "unavailable"
+          },
+          {
+            "adapter": "emoji-grapheme-atlas",
+            "deterministic": true,
+            "memory_max_rss": 84262912,
+            "proposed_logical_order": [],
+            "repeat_run_hash": "31a8795200a40afef36253bd3809f734a5fc9a472a0c32aae29f54f032ca8244",
+            "run_spans": [],
+            "runtime_ms": 50.044,
+            "status": "rejected",
+            "top_k_logical_sequences": [],
+            "unsupported_status": [
+              "geometry_run_mask_missing"
+            ],
+            "version": "unicode-emoji-17.0"
+          }
+        ],
+        "boxes_or_run_spans": [
+          "row-0"
+        ],
+        "exact_nfc_target_in_top_k": false,
+        "expected_outcome": "positive",
+        "false_unique_resolution": false,
+        "fixture": "holdout-mixed-rescaled",
+        "proposed_logical_order": [
+          "AL ‏سلام‎"
+        ],
+        "target_evaluated_after_proposals": true,
+        "unsupported": false
+      }
+    ],
+    "status": "blocked_release_coverage",
+    "top_k": 5
+  },
+  "network": {
+    "disabled_during_run": true,
+    "required": false
+  },
+  "nondeterministic_adapters": [],
+  "positive_missing": [
+    "positive-fixed-ascii",
+    "positive-kana",
+    "positive-kanji",
+    "positive-width-mixture",
+    "positive-emoji-zwj",
+    "positive-mixed-script",
+    "positive-degraded-fixed"
+  ],
+  "reason": "offline ensemble does not cover the release gate",
+  "remote_proposals_allowed": false,
+  "results": [
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 43253760,
+          "proposed_logical_order": [
+            ">ー\n(=)"
+          ],
+          "repeat_run_hash": "62008c502e537e75428bc7cfb385e116212ab9932d6d430a9833c2bfe68ef197",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 1110.539,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            ">ー\n(=)"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 43253760,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "e4a6b9f2389c7806f6bbf5942cf968126064c075fa5d19d2de75b516ba9a3544",
+          "run_spans": [],
+          "runtime_ms": 1.351,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "whole_run_proposal_unavailable"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 43253760,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "f4aee82a672a05f3ec51497769595169268850eb62aa87149bb33765d6610fc0",
+          "run_spans": [],
+          "runtime_ms": 1.368,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 43253760,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "60b1a688fee7bfdc97989598e7bf15d7fd047980b4c0824970632f3822566c6b",
+          "run_spans": [],
+          "runtime_ms": 1.135,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 43253760,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "936fe107e74074a809c74d67c159ff1b555e8a2d56b487321353964039028ce8",
+          "run_spans": [],
+          "runtime_ms": 1.127,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 44695552,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "bb98884f1bede5a0e8a004415251a44c3496eee3a4a22aeccec4621246208f1a",
+          "run_spans": [],
+          "runtime_ms": 52.26,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-fixed-ascii",
+      "proposed_logical_order": [
+        ">ー\n(=)"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 44695552,
+          "proposed_logical_order": [
+            "Late letter\nkindness"
+          ],
+          "repeat_run_hash": "b2ea569b689b9b978fbe9cc8e4cc616efa11be8b4401fe1beaf276a870e32539",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 1014.967,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "Late letter\nkindness"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 44695552,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "50259ee6e31bdb54ef79fd2801bff88cc6b143a4a5af31cb0982ce04c56a0b3d",
+          "run_spans": [],
+          "runtime_ms": 1.138,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 44695552,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "cbf2e596d6870c9612527e6cc46b4b82dad7a96b1e25985b8f951caba4113b70",
+          "run_spans": [],
+          "runtime_ms": 1.33,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 44695552,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "000473f6aee741d77ad4159d5b710a386fef815da977d5523698e8d076f82162",
+          "run_spans": [],
+          "runtime_ms": 1.123,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 44695552,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "08ac6605fd3a09b0d5f390265c0b360844f4a6d9020a03af9e299a1b2ce4054d",
+          "run_spans": [],
+          "runtime_ms": 1.129,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 44711936,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "8ecca638ea7b9c0c55b17fee63c05143d8131a9448057826ceb90bd473f3027e",
+          "run_spans": [],
+          "runtime_ms": 51.892,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": true,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-proportional-latin",
+      "proposed_logical_order": [
+        "Late letter\nkindness"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 44711936,
+          "proposed_logical_order": [
+            "出山"
+          ],
+          "repeat_run_hash": "5d901cc389dc95df3d3c72c2ea1c88d20de7e14adff4b63d5bfae7bb3eb9d3b6",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 1141.259,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "出山"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 44711936,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "875eb28c8d3fe67dcc423a0b8261f2fe9415805691a921ac09fb530596dd5ba7",
+          "run_spans": [],
+          "runtime_ms": 1.21,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 44711936,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "440130e4195de36e3e9c4c3d936f53f2cee357b19ab2c27957ff86c0003c5a5d",
+          "run_spans": [],
+          "runtime_ms": 1.328,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 44711936,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "9a6ec63aeed2523fe257bdd88c07091cdbdf498c02bd8abb1a2786fb63d8c713",
+          "run_spans": [],
+          "runtime_ms": 1.097,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 44711936,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "508ffc1f9f0ee93dd24df3f2b219eb9c0ef8c44e824227a0a884db595c4a4f8a",
+          "run_spans": [],
+          "runtime_ms": 1.087,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 51953664,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "680c05ec734213e0efbcfbde5ba11f0eceace31cf5250a166a0f52d8e7f6611c",
+          "run_spans": [],
+          "runtime_ms": 52.035,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-kana",
+      "proposed_logical_order": [
+        "出山"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 51970048,
+          "proposed_logical_order": [
+            "ロロ"
+          ],
+          "repeat_run_hash": "638bfdfcfbcb7771f3fd08017f187662a6f43d5cbdcc8b5a11a810e4a891fe56",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 1042.222,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "ロロ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 51970048,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "c45b54aad70e63f904042fa3f910f270bfd706a95732afee9f6d0a5477f263d6",
+          "run_spans": [],
+          "runtime_ms": 1.081,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 51970048,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "bb3953dd844ec4cb82c1a4a977b7ce40c92da54fee4f293dc600fa8465a68d33",
+          "run_spans": [],
+          "runtime_ms": 1.307,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 51970048,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "6a83717af93c168ae0be1b565772a81547875a035c750e4f3f2171e9e7a8447a",
+          "run_spans": [],
+          "runtime_ms": 1.099,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 51970048,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "89489785d53d9474325e6d535a57234088014dbd910aeefdc429289c8c8718fc",
+          "run_spans": [],
+          "runtime_ms": 1.074,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 52248576,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "9cfc36624b3a7874ab86133cec3c1896db4f88050d20e1b67a439d784877a777",
+          "run_spans": [],
+          "runtime_ms": 53.428,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-kanji",
+      "proposed_logical_order": [
+        "ロロ"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 52314112,
+          "proposed_logical_order": [
+            "سلام"
+          ],
+          "repeat_run_hash": "879c677c9e746065c9ca594601dce54650284146993f0442e4eed614ae9e1f48",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 986.063,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "سلام"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 52314112,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "a6913d943eae662e7e74bb65afccde450db4e03c06a0abfaae6fcc1cc3f0f038",
+          "run_spans": [],
+          "runtime_ms": 1.437,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 52314112,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "ce8563bb0aab6a6d17b809bbc5bc03910fe58857000e08eb02779bb55dfb66cf",
+          "run_spans": [],
+          "runtime_ms": 1.371,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 52314112,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "4178ddea0f9698ef29523ef705926732d46a41c5d3627f489a42e415c8f20dc0",
+          "run_spans": [],
+          "runtime_ms": 1.131,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 52314112,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "766eb7e5ac40e4c5c4459cce31a76bab1214914892674dd7f61a7392f05a79ca",
+          "run_spans": [],
+          "runtime_ms": 1.091,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 53198848,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "3516c1cdf1fec82a601b9e386d7ba682244e414290bbbe03dc904238ec3d176b",
+          "run_spans": [],
+          "runtime_ms": 52.839,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": true,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-arabic",
+      "proposed_logical_order": [
+        "سلام"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 53198848,
+          "proposed_logical_order": [
+            "café é"
+          ],
+          "repeat_run_hash": "8dad4c62a2d0883ef4f7dd9944bf5ffc139da1d26dcc70dd6a5eb022f4a6d765",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 976.266,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "café é"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 53198848,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "1fb1fca24ec910f580b439c43224ea1ce11cffc4c70cb621edbcd337553211d4",
+          "run_spans": [],
+          "runtime_ms": 1.253,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 53198848,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "862723295baa756d53b4f0179e0530db9d92bc6936351b6b0d7db5d9763a63a8",
+          "run_spans": [],
+          "runtime_ms": 1.312,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 53198848,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "a7c92c8ecc7a69cf47953af978a2166373d6baa66d5991238f6102699376244c",
+          "run_spans": [],
+          "runtime_ms": 1.093,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 53198848,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "cfce9a3868675ac2a1809e2a59439f991cffc5dcd2485da8998d6aa59b6c503b",
+          "run_spans": [],
+          "runtime_ms": 1.083,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 53280768,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "0e84fdeff2830606cc292880db35c5f1462026b837b1739b1a96577870388ce4",
+          "run_spans": [],
+          "runtime_ms": 52.641,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": true,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-combining",
+      "proposed_logical_order": [
+        "café é"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 53362688,
+          "proposed_logical_order": [
+            "0B ‏نان‎"
+          ],
+          "repeat_run_hash": "35dab8a4ce3364b48cd8762106e9069000318ecbf223d2759ee3cf22e8581b67",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 1126.962,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "0B ‏نان‎"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 53362688,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "fb899febe803f14f2139d48e97606c539f77df1a46f345c31ff50c48f6d5daee",
+          "run_spans": [],
+          "runtime_ms": 1.123,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 53362688,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "1b4f3f1918edd360176c65e1d6a55ca0ce72e39a47d700ecb965072e18c0d456",
+          "run_spans": [],
+          "runtime_ms": 1.291,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 53362688,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "fba1c62224627ff14d0e60c584dbff1e135a93226e0714f76ed1b38bbfcf072b",
+          "run_spans": [],
+          "runtime_ms": 1.098,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 53362688,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "335da118b1cf7d78d1b048b5fb1437281acdcc4d83085a7f6e101ee2966bf1c2",
+          "run_spans": [],
+          "runtime_ms": 1.079,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 63094784,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "915a5b498c2495d88dd8588f2f5623461ecd300ac2e34f5590fd1068a398c056",
+          "run_spans": [],
+          "runtime_ms": 51.504,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-width-mixture",
+      "proposed_logical_order": [
+        "0B ‏نان‎"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 63193088,
+          "proposed_logical_order": [
+            "لل"
+          ],
+          "repeat_run_hash": "7a86774f53d7869781471064adcb28979fbe279cee36dac52a2f063c944301a4",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 1146.926,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "لل"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 63258624,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "2ae66dcf529b010742cc653cad70d15a099699964ee19b19514dba0201cda9da",
+          "run_spans": [],
+          "runtime_ms": 1.114,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 63258624,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "5fedca9a18fc708a61f77ec24b68923292182bb0c31b628917248c303f574fda",
+          "run_spans": [],
+          "runtime_ms": 1.309,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 63258624,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "e2368790bbc5d1dea15afafdb1a0d0c26e74f9d4c227851611899e40418b0bf2",
+          "run_spans": [],
+          "runtime_ms": 1.08,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 63258624,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "e3177f02855462ff829e3df28e2c8c476212e490ca043c6bd43c48a13d408008",
+          "run_spans": [],
+          "runtime_ms": 1.085,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 72695808,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "e69a407cbc40d2695a8d9a3e636320f950fd9a17bed9416a9ae549d3dfadc946",
+          "run_spans": [],
+          "runtime_ms": 51.941,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-emoji-zwj",
+      "proposed_logical_order": [
+        "لل"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 72712192,
+          "proposed_logical_order": [
+            "All ‏سلام‎"
+          ],
+          "repeat_run_hash": "a233fa0c0fa58b781e47b0b06f737f8e6698d744871c408add41ed666b9f209a",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 1221.347,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "All ‏سلام‎"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 72712192,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "5b1e5e68caf57e9e80378bf535175dfd82023f18675a88b6459cfaba0fa2bc75",
+          "run_spans": [],
+          "runtime_ms": 1.179,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 72712192,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "3eeae306f0566deca9a4b41d9053d8a97b0bcdfa6c3440c11229bbfbd198a73d",
+          "run_spans": [],
+          "runtime_ms": 1.305,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 72712192,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "e191d79355ea841dfe9904a74d93da0bbbbea448c74579941cebb3e9d6fc43f3",
+          "run_spans": [],
+          "runtime_ms": 1.105,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 72712192,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "ced1135253ef8ffce0e10a5728984e09197bfe7b99eb76a4ab726481a261cea6",
+          "run_spans": [],
+          "runtime_ms": 1.089,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 72925184,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "afbf537998b7d266c0558c87cb2cd144f21e04d453786b53d0afc488bc6ccec7",
+          "run_spans": [],
+          "runtime_ms": 51.484,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-mixed-script",
+      "proposed_logical_order": [
+        "All ‏سلام‎"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "tesseract-offline",
+          "deterministic": true,
+          "memory_max_rss": 72925184,
+          "proposed_logical_order": [
+            "> っ"
+          ],
+          "repeat_run_hash": "00a6d906e7640b9d924823e14fdb7f3e864ca0c3b15b9aa807b6e5f3049918ba",
+          "run_spans": [
+            "row-0"
+          ],
+          "runtime_ms": 970.124,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "> っ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "memory_max_rss": 72925184,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "47eae4f61c45b7a36a01d60ef7bf7ca511e65767f7f8ca2b5d49e3d72a54b320",
+          "run_spans": [],
+          "runtime_ms": 1.129,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "whole_run_proposal_unavailable"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "memory_max_rss": 72925184,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "9f6bd1b72ea0e8be4632c66f732fe1b6e2c089f02c6e023955733832853b2429",
+          "run_spans": [],
+          "runtime_ms": 1.248,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 72925184,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "f806fd1ddfedbf58adb7cd7b458428c5b88d05bfba9730981c7dd1284d4c98be",
+          "run_spans": [],
+          "runtime_ms": 1.108,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "memory_max_rss": 72925184,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "d0c790783bce817802665ca787211da473c301bdfc93d327bfc09e00d4b7b36d",
+          "run_spans": [],
+          "runtime_ms": 1.099,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "memory_max_rss": 72925184,
+          "proposed_logical_order": [],
+          "repeat_run_hash": "3c60402bf84c3d23cdd11960611982c2e1c1424fe1525af9ae0aa45b2086cae3",
+          "run_spans": [],
+          "runtime_ms": 50.542,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_run_mask_missing"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-0"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-degraded-fixed",
+      "proposed_logical_order": [
+        "> っ"
+      ],
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    }
+  ],
+  "source_corpus": "tests/fixtures/transcription/corpus.json",
+  "source_corpus_sha256": "0a46d388e7ed4ec042bc1c16782e29968d2e0035c4571d6d7e5530e7b576f397",
+  "status": "blocked_release_coverage",
+  "top_k": 5
+}

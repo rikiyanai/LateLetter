@@ -1,0 +1,355 @@
+{
+  "development": [
+    "fallback-kana",
+    "fallback-kanji",
+    "fallback-width-mixture",
+    "fallback-emoji-zwj",
+    "fallback-mixed-script"
+  ],
+  "fixtures": [
+    {
+      "class": "positive",
+      "expected_geometry_mode": "fixed_lattice",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-fixed-ascii",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-fixed-ascii/source.png",
+      "source_renderer_receipt": "positive/positive-fixed-ascii/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "e31b40032c6ba889026fa72356b11248dbf91986264c4d1b447fe1ee5906f189",
+      "source_sha256": "160c73497d73036520b755290fb9d49e319fd87f1e0e1bb7687042e62ebb58da",
+      "split": "release_gate",
+      "transcript": "positive/positive-fixed-ascii/transcript.txt",
+      "transcript_sha256": "a7fdefd054bbf8e0e1aed16714575c5cbc5f4bcce5b4afbd23935b53cd556912",
+      "visual_layout": "positive/positive-fixed-ascii/visual-layout.json",
+      "visual_layout_sha256": "16368b619169608871db2c8f621d9208de47e070c6a2ba8353f465bb40e272b2"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-proportional-latin",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-proportional-latin/source.png",
+      "source_renderer_receipt": "positive/positive-proportional-latin/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "4e405175f1c37bb205a22e484fb24f6ca95d6921f49271753dfe1916fea8030c",
+      "source_sha256": "fcc36ae8360cdf60072737d42555d8a4c768564db40f10a179b54ba9b594d64c",
+      "split": "release_gate",
+      "transcript": "positive/positive-proportional-latin/transcript.txt",
+      "transcript_sha256": "6c4c8af5e595a3b782fdbcaaf120698336cd7f614f39d8ba2f07336d6524f72f",
+      "visual_layout": "positive/positive-proportional-latin/visual-layout.json",
+      "visual_layout_sha256": "7388ccf66f8837ab4aa16d51b48e77bee5ad651edfac881680d4da987f4ea574"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-kana",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-kana/source.png",
+      "source_renderer_receipt": "positive/positive-kana/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "b0c08255d87d0978ff2204236d13679277b5036f897ec213b9b8cd72000af8d7",
+      "source_sha256": "042786032bd0b1f3db9f58292ec569848a3c3e1e28a4432b891fe7342ca0b220",
+      "split": "release_gate",
+      "transcript": "positive/positive-kana/transcript.txt",
+      "transcript_sha256": "4c6fc7df608d1b76ba52071b24bbfef9807a94ba0769210d1f2c3fd4aeaf5959",
+      "visual_layout": "positive/positive-kana/visual-layout.json",
+      "visual_layout_sha256": "9c722ab27267768cf2e7a5b2c937e6294cb2a719447757802821ed45d0cd2e75"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-kanji",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-kanji/source.png",
+      "source_renderer_receipt": "positive/positive-kanji/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "1d876d9f355e0b5bedbca410823b89dda74231737761d8e9c68d0dd70cf608eb",
+      "source_sha256": "9edce3c499452a26bb384191cb6ed0489373cfa8f12b97c9557e4ae887db698c",
+      "split": "release_gate",
+      "transcript": "positive/positive-kanji/transcript.txt",
+      "transcript_sha256": "8a5bd1700388632f35cc5ee7f0802c8dd77686cd19c9038ba3e8e3dbec24aad6",
+      "visual_layout": "positive/positive-kanji/visual-layout.json",
+      "visual_layout_sha256": "52d1a574aad8d40be924815d8623533c9483b6cbfc2a2ed3a1311cd425d1c01f"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-arabic",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-arabic/source.png",
+      "source_renderer_receipt": "positive/positive-arabic/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "48baf8cbc330e9218f765897700b0f5e98ae1f9b60d00fc3dbcd885d3e8700d1",
+      "source_sha256": "718132fd801301be27908b1671caecbce5978ab4fb735277853d5583b1d38fae",
+      "split": "release_gate",
+      "transcript": "positive/positive-arabic/transcript.txt",
+      "transcript_sha256": "3ea84a1b96a239288377b93468bf3127204fbbfcd5c42c1eea746a33000718c3",
+      "visual_layout": "positive/positive-arabic/visual-layout.json",
+      "visual_layout_sha256": "f695f5c773276915605d431e890f0408d674df8349c0eaf8e5dc42a35ff41c65"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-combining",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-combining/source.png",
+      "source_renderer_receipt": "positive/positive-combining/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "2602eaa93926c4b6e0b6b2badc3bf7bc27b68110602d5ce1621c2bc43c6f09f1",
+      "source_sha256": "125f9d821d6d20c127aa0ffb87d4dba918ad18370c5e19a8dc77560adfede9c5",
+      "split": "release_gate",
+      "transcript": "positive/positive-combining/transcript.txt",
+      "transcript_sha256": "a9cd7cc88c6f35b33d19b6aed2c43daea9c78347e483233a92c1e27ba97bb7af",
+      "visual_layout": "positive/positive-combining/visual-layout.json",
+      "visual_layout_sha256": "bc1a3ccc5b7b7ab160a21eacacb7a642c86dbb1a6ed740c6bdfbecf6d2e38a3d"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-width-mixture",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-width-mixture/source.png",
+      "source_renderer_receipt": "positive/positive-width-mixture/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "7019c6a0abff6645e308e6c30454bdde08fc30b9cb8232aef0a31384c4383cee",
+      "source_sha256": "556629aa85d9e6d359a2649a4a138de9cab656f33a316ee2b8cec57c0c83489a",
+      "split": "release_gate",
+      "transcript": "positive/positive-width-mixture/transcript.txt",
+      "transcript_sha256": "28f1f2e2d2c4da58c5ca90c34564299f6b4379aaa70b9fd2104e7f04b8045fb0",
+      "visual_layout": "positive/positive-width-mixture/visual-layout.json",
+      "visual_layout_sha256": "c2a6cf4354205880a21def767a45d597fe659398c92e1e1b5058c37f078f3903"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-emoji-zwj",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-emoji-zwj/source.png",
+      "source_renderer_receipt": "positive/positive-emoji-zwj/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "36d84b7694d364e2f6b517c11c793facde1fa95e81c32f8c1d3d06dc682222a6",
+      "source_sha256": "8b5797cb7c0f9ac8df3ad5852fcb5db32551d32811b775c9e36c953505627742",
+      "split": "release_gate",
+      "transcript": "positive/positive-emoji-zwj/transcript.txt",
+      "transcript_sha256": "d4d958b1c534d1fab665d376e87ea67d5ffade2f3ed588cc7b925a8164059c07",
+      "visual_layout": "positive/positive-emoji-zwj/visual-layout.json",
+      "visual_layout_sha256": "f180885d1c983848a7ad426688306a9b83f6644a9295a0ddf0a8299fe15690f8"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-mixed-script",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-mixed-script/source.png",
+      "source_renderer_receipt": "positive/positive-mixed-script/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "5d0ce37b0976cf313d5aaf50c8f02b34442a6c8d6ad19286809142135bc154b8",
+      "source_sha256": "98541318a80622672da6a672d2a247b87e887350c00e68670463607ac2986176",
+      "split": "release_gate",
+      "transcript": "positive/positive-mixed-script/transcript.txt",
+      "transcript_sha256": "bf5f81ea4571a3e48cd874bc7d0fadcd99882ffe226084c148a9b633d22cf46d",
+      "visual_layout": "positive/positive-mixed-script/visual-layout.json",
+      "visual_layout_sha256": "d7653a781846ba212f92add7576b68894754a5a17dfda0ad7de44730dcebf846"
+    },
+    {
+      "class": "positive",
+      "expected_geometry_mode": "fixed_lattice",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": [],
+      "id": "positive-degraded-fixed",
+      "provenance": {
+        "license": "CC0 test fixture; renderer fonts OFL-1.1",
+        "origin": "generated-in-repo",
+        "source": "corpus v2 verified-font builder"
+      },
+      "source_png": "positive/positive-degraded-fixed/source.png",
+      "source_renderer_receipt": "positive/positive-degraded-fixed/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "698cbc023e85c7f0c171ca527c2fcdef81a9c058418b49ae90f8a213014d77c0",
+      "source_sha256": "88a5ffecd072da23b6254be7a30243d03a0cc0293e7170bad5adf233caeb8a74",
+      "split": "release_gate",
+      "transcript": "positive/positive-degraded-fixed/transcript.txt",
+      "transcript_sha256": "247190f13499f98470ee8a88caa428efe089577d4671507a6b8fb77492ea4bce",
+      "visual_layout": "positive/positive-degraded-fixed/visual-layout.json",
+      "visual_layout_sha256": "1ad2bb3679495c829a213044435726e3e365e973cac48ac75cbcf523e05625b9"
+    },
+    {
+      "class": "fail_closed",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "unicode_visual_collision"
+      ],
+      "id": "fallback-kana",
+      "provenance": {
+        "license": "CC0 test fixture",
+        "origin": "reclassified v1 fallback-box evidence",
+        "source": "corpus v1 invalid-positive audit"
+      },
+      "source_png": "fail_closed/fallback-kana/source.png",
+      "source_renderer_receipt": "fail_closed/fallback-kana/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "0e6fe9b5264f14e0822001cd8b1a9d5665fa5c8b6023e3892eb047b82f7276f1",
+      "source_sha256": "9b1b014ef0a6d6aa16aa274a63939a126a69361007eff02c761abbf5619febd5",
+      "split": "development",
+      "transcript": "fail_closed/fallback-kana/transcript.txt",
+      "transcript_sha256": "4c6fc7df608d1b76ba52071b24bbfef9807a94ba0769210d1f2c3fd4aeaf5959",
+      "visual_layout": "fail_closed/fallback-kana/visual-layout.json",
+      "visual_layout_sha256": "3e4347a4c90b5d3a411532965f86ffe233b455680fd093a84a97a3072f836ac4"
+    },
+    {
+      "class": "fail_closed",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "unicode_visual_collision"
+      ],
+      "id": "fallback-kanji",
+      "provenance": {
+        "license": "CC0 test fixture",
+        "origin": "reclassified v1 fallback-box evidence",
+        "source": "corpus v1 invalid-positive audit"
+      },
+      "source_png": "fail_closed/fallback-kanji/source.png",
+      "source_renderer_receipt": "fail_closed/fallback-kanji/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "2514dbc1df69aa5d1cbc875f6a48b7b2537b0639968cc88fc0f1768dde1873c5",
+      "source_sha256": "59d2819d7e48ba849c3bd5df0b769bd2cd90d69fc74659005c8b54b858311d52",
+      "split": "development",
+      "transcript": "fail_closed/fallback-kanji/transcript.txt",
+      "transcript_sha256": "8a5bd1700388632f35cc5ee7f0802c8dd77686cd19c9038ba3e8e3dbec24aad6",
+      "visual_layout": "fail_closed/fallback-kanji/visual-layout.json",
+      "visual_layout_sha256": "dcabadde0a1192d42d2de8473906c23cfe52c3e57e07891825b12b235acd4cb2"
+    },
+    {
+      "class": "fail_closed",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "unicode_visual_collision"
+      ],
+      "id": "fallback-width-mixture",
+      "provenance": {
+        "license": "CC0 test fixture",
+        "origin": "reclassified v1 fallback-box evidence",
+        "source": "corpus v1 invalid-positive audit"
+      },
+      "source_png": "fail_closed/fallback-width-mixture/source.png",
+      "source_renderer_receipt": "fail_closed/fallback-width-mixture/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "3a40ee6cf1e1056820426804a16b9a4388bb62996497290d3efdaa934083a5db",
+      "source_sha256": "3d7bdd01bb3ad6e002193c9a1c03ead8675a4d20387269aa570fb5cfd77baf22",
+      "split": "development",
+      "transcript": "fail_closed/fallback-width-mixture/transcript.txt",
+      "transcript_sha256": "28f1f2e2d2c4da58c5ca90c34564299f6b4379aaa70b9fd2104e7f04b8045fb0",
+      "visual_layout": "fail_closed/fallback-width-mixture/visual-layout.json",
+      "visual_layout_sha256": "404e2c9d588db3f3c949d1e22df3c8c6b470991f6aff3ac72fbd084ef0a7fb45"
+    },
+    {
+      "class": "fail_closed",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "unicode_visual_collision"
+      ],
+      "id": "fallback-emoji-zwj",
+      "provenance": {
+        "license": "CC0 test fixture",
+        "origin": "reclassified v1 fallback-box evidence",
+        "source": "corpus v1 invalid-positive audit"
+      },
+      "source_png": "fail_closed/fallback-emoji-zwj/source.png",
+      "source_renderer_receipt": "fail_closed/fallback-emoji-zwj/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "0a677fb06283361a1063dae6ffe7c5983a55a788645c424b62fc6d48d392e01f",
+      "source_sha256": "7e3c3cdd5ba3e92fcba52c081414b313ac2579c08885db013d0ac5fef961228f",
+      "split": "development",
+      "transcript": "fail_closed/fallback-emoji-zwj/transcript.txt",
+      "transcript_sha256": "d4d958b1c534d1fab665d376e87ea67d5ffade2f3ed588cc7b925a8164059c07",
+      "visual_layout": "fail_closed/fallback-emoji-zwj/visual-layout.json",
+      "visual_layout_sha256": "cda653d5ecf1aebd04286a1edeb22644013fd3f50f0eb67b255322fa98768b49"
+    },
+    {
+      "class": "fail_closed",
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "unicode_visual_collision"
+      ],
+      "id": "fallback-mixed-script",
+      "provenance": {
+        "license": "CC0 test fixture",
+        "origin": "reclassified v1 fallback-box evidence",
+        "source": "corpus v1 invalid-positive audit"
+      },
+      "source_png": "fail_closed/fallback-mixed-script/source.png",
+      "source_renderer_receipt": "fail_closed/fallback-mixed-script/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "59b96e9aff997a87756da5823adcc313e52b30c73416f00d70237f1eaeca3ca4",
+      "source_sha256": "c234fcc320bd633b101a822f924c53f3dd77bf967e49b935421ab1e97cc2b49e",
+      "split": "development",
+      "transcript": "fail_closed/fallback-mixed-script/transcript.txt",
+      "transcript_sha256": "bf5f81ea4571a3e48cd874bc7d0fadcd99882ffe226084c148a9b633d22cf46d",
+      "visual_layout": "fail_closed/fallback-mixed-script/visual-layout.json",
+      "visual_layout_sha256": "865972b83bc33c482c25c21892ff4b55fbe3808eef9f6a4efde35a00466457bc"
+    }
+  ],
+  "generator": "tests/fixtures/transcription-v2/build_corpus_v2.py",
+  "release_gate": [
+    "positive-fixed-ascii",
+    "positive-proportional-latin",
+    "positive-kana",
+    "positive-kanji",
+    "positive-arabic",
+    "positive-combining",
+    "positive-width-mixture",
+    "positive-emoji-zwj",
+    "positive-mixed-script",
+    "positive-degraded-fixed"
+  ],
+  "renderer_contract": {
+    "coverage_policy": "positive fixture requires complete codepoint coverage before rendering",
+    "fallback_positive_policy": "fallback boxes are fail_closed visual collisions",
+    "font_cache_manifest": "../../../tracked/LateLetterResearch/transcription-model-cache/manifest.json"
+  },
+  "schema_version": "lateletter-transcription-corpus-1"
+}

@@ -1,0 +1,13 @@
+{
+  "anchors": [
+    {
+      "baseline": 30,
+      "row": 0,
+      "x": 12
+    }
+  ],
+  "direction": "ltr",
+  "fixture_id": "positive-combining",
+  "logical_rows": 1,
+  "mode": "shaped_runs"
+}

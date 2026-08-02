@@ -1,0 +1,548 @@
+{
+  "schema_version": "lateletter-transcription-corpus-1",
+  "generator": "tests/fixtures/transcription/build_corpus.py",
+  "development": [
+    "negative-uncertain-pitch",
+    "negative-ambiguous-width",
+    "negative-partial-kanji",
+    "negative-disconnected-combining",
+    "negative-visual-collision",
+    "negative-bidi-control",
+    "negative-unknown-font",
+    "negative-ui-contamination",
+    "negative-cross-row-spill",
+    "negative-joined-boundary",
+    "mutation-fixed-crop",
+    "mutation-rescaled-kana",
+    "mutation-ui-overlay"
+  ],
+  "release_gate": [
+    "positive-fixed-ascii",
+    "positive-proportional-latin",
+    "positive-kana",
+    "positive-kanji",
+    "positive-arabic",
+    "positive-combining",
+    "positive-width-mixture",
+    "positive-emoji-zwj",
+    "positive-mixed-script",
+    "positive-degraded-fixed"
+  ],
+  "fixtures": [
+    {
+      "id": "positive-fixed-ascii",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-fixed-ascii/source.png",
+      "source_sha256": "31e9e6d79831029f9d8fc6bd2b72777538b2a90832099f312b8df606f78b064a",
+      "transcript": "positive/positive-fixed-ascii/transcript.txt",
+      "transcript_sha256": "15cf73cf91f7e56c8aabfe006a48d0f1a2558bbfe9e789b11f2df7618082f5df",
+      "visual_layout": "positive/positive-fixed-ascii/visual-layout.json",
+      "visual_layout_sha256": "1628c707c74baab108bfea3caf176700bbf7782e17ee8e2dae49ed6b2507c586",
+      "source_renderer_receipt": "positive/positive-fixed-ascii/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "f805e928694ae75f07c431133ef212546df6e63e8dae0808aac9be270d936a11",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "fixed_lattice",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-proportional-latin",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-proportional-latin/source.png",
+      "source_sha256": "d5872da181e6675961f4165c5be584916898d281e3373bb9fdf1fd350efb680f",
+      "transcript": "positive/positive-proportional-latin/transcript.txt",
+      "transcript_sha256": "6c4c8af5e595a3b782fdbcaaf120698336cd7f614f39d8ba2f07336d6524f72f",
+      "visual_layout": "positive/positive-proportional-latin/visual-layout.json",
+      "visual_layout_sha256": "fb86c0e8997ec34f0fa0709cd33120accb3d6c5151aa6cf7c5ef84dcddf5e7c8",
+      "source_renderer_receipt": "positive/positive-proportional-latin/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "4c242a8abfe4c5381567eab2564a5ccb1795b76e22e579e588e9bb501bcd1210",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-kana",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-kana/source.png",
+      "source_sha256": "6cb808080bc9bbf7ec4de9f9b18952540fc23561b40e12a451857d17dbe6f76d",
+      "transcript": "positive/positive-kana/transcript.txt",
+      "transcript_sha256": "4c6fc7df608d1b76ba52071b24bbfef9807a94ba0769210d1f2c3fd4aeaf5959",
+      "visual_layout": "positive/positive-kana/visual-layout.json",
+      "visual_layout_sha256": "ebf838560237acd06005b2d6fea12cad7d79a273c8164d9829ab042a6642d17a",
+      "source_renderer_receipt": "positive/positive-kana/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "347a44cc574860adca0f67644a69e689edfaccfb3802cc5088c575c81ccde1fe",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-kanji",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-kanji/source.png",
+      "source_sha256": "8cc865bc2091489076ace5438bbfc3024619fd5539b06db0b3e6ca3beccdfbbb",
+      "transcript": "positive/positive-kanji/transcript.txt",
+      "transcript_sha256": "8a5bd1700388632f35cc5ee7f0802c8dd77686cd19c9038ba3e8e3dbec24aad6",
+      "visual_layout": "positive/positive-kanji/visual-layout.json",
+      "visual_layout_sha256": "7faa9bcf08b2437bfd442ea5f6132185bc3727ac7162292b482c2b236e12905b",
+      "source_renderer_receipt": "positive/positive-kanji/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "5cc57d5db56176aea598df24a967923e0e7cd92e120862b309a395b91048451e",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-arabic",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-arabic/source.png",
+      "source_sha256": "2daea64936582a1e50954a174c6d4b9c7e472da7d5a5fe4d97e7ffe3c9bafdb0",
+      "transcript": "positive/positive-arabic/transcript.txt",
+      "transcript_sha256": "3ea84a1b96a239288377b93468bf3127204fbbfcd5c42c1eea746a33000718c3",
+      "visual_layout": "positive/positive-arabic/visual-layout.json",
+      "visual_layout_sha256": "610da7edec060f2b20c27745bed58c23473bf10564c691c92407a1928210a716",
+      "source_renderer_receipt": "positive/positive-arabic/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "0717b8018a0db4ad7f6b64a3280ee055e59ad0980c3d00898a0df4fea73a507c",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-combining",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-combining/source.png",
+      "source_sha256": "ea8734de0e63e10885fb2ff332ec82cae1d5a05bbe12d753365d6f864e0b0e01",
+      "transcript": "positive/positive-combining/transcript.txt",
+      "transcript_sha256": "a9cd7cc88c6f35b33d19b6aed2c43daea9c78347e483233a92c1e27ba97bb7af",
+      "visual_layout": "positive/positive-combining/visual-layout.json",
+      "visual_layout_sha256": "10a9769f3fc23485653539b06d6ec2a86d7666cebd15f7a127dc8bf96fc1db32",
+      "source_renderer_receipt": "positive/positive-combining/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "ac8725392c7a301eaddf32b23b7f36c0df85f73832a6632e5c27d052ad4932be",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-width-mixture",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-width-mixture/source.png",
+      "source_sha256": "4a4ae33979e539d937426e74c882c11708ad8efcabf12cee4f9bd0d7b5ad159e",
+      "transcript": "positive/positive-width-mixture/transcript.txt",
+      "transcript_sha256": "28f1f2e2d2c4da58c5ca90c34564299f6b4379aaa70b9fd2104e7f04b8045fb0",
+      "visual_layout": "positive/positive-width-mixture/visual-layout.json",
+      "visual_layout_sha256": "da71a08c85f993c2266698664720256b00a14acac8a0c745be1499d5b944312e",
+      "source_renderer_receipt": "positive/positive-width-mixture/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "850c34659aca4ffe620dff63662aadfe64313d8e603f5b3a3044232a00d5c659",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-emoji-zwj",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-emoji-zwj/source.png",
+      "source_sha256": "cc571b56c4c783b5b620076d3b7dbfbe6fb08a1166739848965470ab7fd8e1cf",
+      "transcript": "positive/positive-emoji-zwj/transcript.txt",
+      "transcript_sha256": "d4d958b1c534d1fab665d376e87ea67d5ffade2f3ed588cc7b925a8164059c07",
+      "visual_layout": "positive/positive-emoji-zwj/visual-layout.json",
+      "visual_layout_sha256": "a154dd933e00a662cf022542b3d74e56993ae360c42646db8b702edc8246fb1a",
+      "source_renderer_receipt": "positive/positive-emoji-zwj/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "f6dc57971d333613b07b9efa531e58301cc1646da354ba84deb3d8aa401f5a74",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-mixed-script",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-mixed-script/source.png",
+      "source_sha256": "7fa11b5d9322ef65fec96c3359f54ab4c0d1b83f0203c3ce1f33db7295de8354",
+      "transcript": "positive/positive-mixed-script/transcript.txt",
+      "transcript_sha256": "bf5f81ea4571a3e48cd874bc7d0fadcd99882ffe226084c148a9b633d22cf46d",
+      "visual_layout": "positive/positive-mixed-script/visual-layout.json",
+      "visual_layout_sha256": "205fe77dcdd994f3933c5e4b109f8f75e4a1974aa75720e5a5b276cd1f77fc2e",
+      "source_renderer_receipt": "positive/positive-mixed-script/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "b19c5291af0b8b2262ddb5b4c2bbc574a47b832644387c3e6ed3389487e6c0b6",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "positive-degraded-fixed",
+      "split": "release_gate",
+      "class": "positive",
+      "source_png": "positive/positive-degraded-fixed/source.png",
+      "source_sha256": "a0b2680babfff2c387f5dac4bb37ef487f7ddffd20ec1d4d9e579aa6be592b83",
+      "transcript": "positive/positive-degraded-fixed/transcript.txt",
+      "transcript_sha256": "247190f13499f98470ee8a88caa428efe089577d4671507a6b8fb77492ea4bce",
+      "visual_layout": "positive/positive-degraded-fixed/visual-layout.json",
+      "visual_layout_sha256": "e675737969b48e4c1c6ed67da7b2df1d6f651906770deebdc92913989e49de47",
+      "source_renderer_receipt": "positive/positive-degraded-fixed/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "b0bc08e34618fce44d5d16bd2a838c11d0162ef267ede29d34a066c2082c9c70",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "fixed_lattice",
+      "expected_outcome": "positive",
+      "expected_rejection_codes": []
+    },
+    {
+      "id": "negative-uncertain-pitch",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-uncertain-pitch/source.png",
+      "source_sha256": "99c6bece0d5287bebf67737be6b46d263dd9e5943199c1d8de78aebefcfd5b87",
+      "transcript": "fail_closed/negative-uncertain-pitch/transcript.txt",
+      "transcript_sha256": "3c92949885ec5dd3ae4f8d0a071b263fc0d6f595621bcc5ddd6773ab2c799122",
+      "visual_layout": "fail_closed/negative-uncertain-pitch/visual-layout.json",
+      "visual_layout_sha256": "24f1e0be2bdcf3f235d68972443a96a008809ae83a4bddc9229e9b6495b00c06",
+      "source_renderer_receipt": "fail_closed/negative-uncertain-pitch/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "e4b71f67ada3f4ccc25e2ef6eb243fbe33a5078fbd202d2341b65a8c921a75a5",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "unresolved",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "geometry_unresolved"
+      ]
+    },
+    {
+      "id": "negative-ambiguous-width",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-ambiguous-width/source.png",
+      "source_sha256": "ca2a42c9da23e246693892d16fd93a6c677b895fd8ad7f57aac1bc7f5807df54",
+      "transcript": "fail_closed/negative-ambiguous-width/transcript.txt",
+      "transcript_sha256": "cd1fcdecba1e5f4d4d9345d00768d850e37b6f7c9f30e4d29a2b44dc2a5589bd",
+      "visual_layout": "fail_closed/negative-ambiguous-width/visual-layout.json",
+      "visual_layout_sha256": "3e8152140747dbc40806df1af325080a81b8b36cf74f2cc17130b7e5a6a5a2e9",
+      "source_renderer_receipt": "fail_closed/negative-ambiguous-width/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "2465d1424b5b1427a2607878ca31c2988c884ff38d39af083f3371a11a5379cb",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "width_profile_missing"
+      ]
+    },
+    {
+      "id": "negative-partial-kanji",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-partial-kanji/source.png",
+      "source_sha256": "97dbfa27a281a92aee92ffc634ad73b2a42371ff05cb07a8a3aa70ad72794c3d",
+      "transcript": "fail_closed/negative-partial-kanji/transcript.txt",
+      "transcript_sha256": "b681f2424a87062e3d20b2e6dc467cd21424b302e3b182f9cf02b62e943e859e",
+      "visual_layout": "fail_closed/negative-partial-kanji/visual-layout.json",
+      "visual_layout_sha256": "63d2ca29c1a0395fe5287265c67a824ff8a701748cc6d3ec856c36e26f6b9196",
+      "source_renderer_receipt": "fail_closed/negative-partial-kanji/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "3f76b0b6f1d43327f4f1831f9d96bae86ce9d41c73167fdc19a29e2ff4cdab30",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "component_unowned"
+      ]
+    },
+    {
+      "id": "negative-disconnected-combining",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-disconnected-combining/source.png",
+      "source_sha256": "11cf0575d3f07fc4668733d270c7f15b10d5f802ae4951871c62a1b3caad940c",
+      "transcript": "fail_closed/negative-disconnected-combining/transcript.txt",
+      "transcript_sha256": "f979a211b00b61497349a7c753652a3d173550a368711a9f9f9845e6383db7cb",
+      "visual_layout": "fail_closed/negative-disconnected-combining/visual-layout.json",
+      "visual_layout_sha256": "77431df87b791e28979ac4274452466f2ca901c51afbeeb725b52a5825d5ba35",
+      "source_renderer_receipt": "fail_closed/negative-disconnected-combining/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "a77e77de9e219445b2579b5e6ccf83794b4c04f641f51ba38708b375b442b604",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "component_unowned"
+      ]
+    },
+    {
+      "id": "negative-visual-collision",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-visual-collision/source.png",
+      "source_sha256": "213c832d68e8af21962950c44f5a14abadaa514b9c910d7f253db987362cdf01",
+      "transcript": "fail_closed/negative-visual-collision/transcript.txt",
+      "transcript_sha256": "b311c4328611ca284e869ecc3e02523943c970667c583ae59272f68cd297671b",
+      "visual_layout": "fail_closed/negative-visual-collision/visual-layout.json",
+      "visual_layout_sha256": "c7a444cfb6e249832dfe6ae5642e28bb85e5238063b5f1dad5ee5354086baf59",
+      "source_renderer_receipt": "fail_closed/negative-visual-collision/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "537d105b86928740e3869db7c8fc5531f711ba312625bc319f02bdf20a60d90c",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "unicode_visual_collision"
+      ]
+    },
+    {
+      "id": "negative-bidi-control",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-bidi-control/source.png",
+      "source_sha256": "b8b9694b975fac53b8122594c276e4c5d2cd25c3e04e8fc9923430f2d3687639",
+      "transcript": "fail_closed/negative-bidi-control/transcript.txt",
+      "transcript_sha256": "48d8a4dad6f468af87453259ee5e4cc275b36956be41d86aef9414c14c5a2d7c",
+      "visual_layout": "fail_closed/negative-bidi-control/visual-layout.json",
+      "visual_layout_sha256": "4de06770aedfb2049d1d5b7e9aebd9e8872f735fcb11b65f2dda3336bae0dffa",
+      "source_renderer_receipt": "fail_closed/negative-bidi-control/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "d2eb718c1fb02e1e2601067225a07bfc78a11180588a09ea4a239b4e496f2c3f",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "logical_visual_contradiction"
+      ]
+    },
+    {
+      "id": "negative-unknown-font",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-unknown-font/source.png",
+      "source_sha256": "2daea64936582a1e50954a174c6d4b9c7e472da7d5a5fe4d97e7ffe3c9bafdb0",
+      "transcript": "fail_closed/negative-unknown-font/transcript.txt",
+      "transcript_sha256": "3ea84a1b96a239288377b93468bf3127204fbbfcd5c42c1eea746a33000718c3",
+      "visual_layout": "fail_closed/negative-unknown-font/visual-layout.json",
+      "visual_layout_sha256": "59bae57fb223b4944df1de653c35ec91a15d3b52f0f3de447e41de6913983dac",
+      "source_renderer_receipt": "fail_closed/negative-unknown-font/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "81f6e21a1d7dd12968ed6bc9770c5a9ab4fbaeae75ef1ac44fe183a98f42e902",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "shaping_profile_missing"
+      ]
+    },
+    {
+      "id": "negative-ui-contamination",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-ui-contamination/source.png",
+      "source_sha256": "de17825a3250a2c7e9e47a8011b26026254b7260b58ea11f253bca00c0a7c0ca",
+      "transcript": "fail_closed/negative-ui-contamination/transcript.txt",
+      "transcript_sha256": "02a0b910ba4b91ffa89d56ac4215a60004ef64bf582a2c1261fe58e48a0a126f",
+      "visual_layout": "fail_closed/negative-ui-contamination/visual-layout.json",
+      "visual_layout_sha256": "3df214e4ad25ad1d5d53ef643ec307e2fa54e8b024911c8d5f512098e8d5ab03",
+      "source_renderer_receipt": "fail_closed/negative-ui-contamination/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "7df1d212b1853f8f0caea2262d199463cf14446ebefb98764079aff9689b7277",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "fixed_lattice",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "source_contamination"
+      ]
+    },
+    {
+      "id": "negative-cross-row-spill",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-cross-row-spill/source.png",
+      "source_sha256": "a5ca8aa97efa16f0991c4ee91a0fde44c04c00267567746a5fb34f1976e2d13b",
+      "transcript": "fail_closed/negative-cross-row-spill/transcript.txt",
+      "transcript_sha256": "e7319ea63753c36f7ac9e5383eefcb02404345737f2c7d70c8d6e784fb479c04",
+      "visual_layout": "fail_closed/negative-cross-row-spill/visual-layout.json",
+      "visual_layout_sha256": "2f43dff4c3691ce9daf8bd71baf753d9589f0a141c35887c8b315cc5cfa1aa94",
+      "source_renderer_receipt": "fail_closed/negative-cross-row-spill/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "68ce3aae5ef514fbe0950a2be95822b9aad5ca802b87e6f6397ee7bd3bbb9bcd",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "fixed_lattice",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "component_multiply_owned"
+      ]
+    },
+    {
+      "id": "negative-joined-boundary",
+      "split": "development",
+      "class": "fail_closed",
+      "source_png": "fail_closed/negative-joined-boundary/source.png",
+      "source_sha256": "bdc6e0a45a3fad5461877d5ce8a283bffa430fd97ba88d71c769f8d5e1e26ed4",
+      "transcript": "fail_closed/negative-joined-boundary/transcript.txt",
+      "transcript_sha256": "ad9fc589410a1a2da9b07974f68e52afc3f9152c9498bede9a76cf80885a7dd1",
+      "visual_layout": "fail_closed/negative-joined-boundary/visual-layout.json",
+      "visual_layout_sha256": "7942eabcb76b0f6ab715e0dbe50f8b6293055a12819b2720d5fed703fd1e056b",
+      "source_renderer_receipt": "fail_closed/negative-joined-boundary/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "a42d9d1ec984a94807902d36a24ef8e64c32532093489b58b984a72da11f3dd2",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "component_multiply_owned"
+      ]
+    },
+    {
+      "id": "mutation-fixed-crop",
+      "split": "development",
+      "class": "mutation",
+      "parent_fixture_id": "positive-fixed-ascii",
+      "mutation": "deterministic synthetic mutation",
+      "source_png": "mutations/mutation-fixed-crop/source.png",
+      "source_sha256": "58101fd68ec36ce810b5e137cc721716c81cf6f102df40cee02232da882ae3a3",
+      "transcript": "mutations/mutation-fixed-crop/transcript.txt",
+      "transcript_sha256": "6fff9341baaae783ba93cee7e3e032cf99d60030a85c670696e57fb5e3fe7d11",
+      "visual_layout": "mutations/mutation-fixed-crop/visual-layout.json",
+      "visual_layout_sha256": "77670e1eedbf9f9bea99bf8666a628cdf268ac509c9fe4217b953dd1c3006c27",
+      "source_renderer_receipt": "mutations/mutation-fixed-crop/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "c02111bfd74865369490f9c1e47086b6dc93928fde7f90e3c416a9510f00c80a",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "fixed_lattice",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "geometry_unresolved"
+      ]
+    },
+    {
+      "id": "mutation-rescaled-kana",
+      "split": "development",
+      "class": "mutation",
+      "parent_fixture_id": "positive-kana",
+      "mutation": "deterministic synthetic mutation",
+      "source_png": "mutations/mutation-rescaled-kana/source.png",
+      "source_sha256": "c0442ddb5d57baf3e7ae104b5b6e685f6a82e5f2e66769307eb7e2b0942501c2",
+      "transcript": "mutations/mutation-rescaled-kana/transcript.txt",
+      "transcript_sha256": "6fff9341baaae783ba93cee7e3e032cf99d60030a85c670696e57fb5e3fe7d11",
+      "visual_layout": "mutations/mutation-rescaled-kana/visual-layout.json",
+      "visual_layout_sha256": "4e5ed0e1e606447663a643652fdcf50ee0b83dd4d29b859ce8e193fb53a6b793",
+      "source_renderer_receipt": "mutations/mutation-rescaled-kana/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "1643139cc848296c7392d1342d715c5095c369f83a727cda831ab6862a237ec0",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "shaped_runs",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "geometry_unresolved"
+      ]
+    },
+    {
+      "id": "mutation-ui-overlay",
+      "split": "development",
+      "class": "mutation",
+      "parent_fixture_id": "positive-mixed-script",
+      "mutation": "deterministic synthetic mutation",
+      "source_png": "mutations/mutation-ui-overlay/source.png",
+      "source_sha256": "c0442ddb5d57baf3e7ae104b5b6e685f6a82e5f2e66769307eb7e2b0942501c2",
+      "transcript": "mutations/mutation-ui-overlay/transcript.txt",
+      "transcript_sha256": "6fff9341baaae783ba93cee7e3e032cf99d60030a85c670696e57fb5e3fe7d11",
+      "visual_layout": "mutations/mutation-ui-overlay/visual-layout.json",
+      "visual_layout_sha256": "cc18b79b85b9a80190354342ab632f85824b2a8aa29df12e4554caab7c125eb6",
+      "source_renderer_receipt": "mutations/mutation-ui-overlay/source-renderer-receipt.json",
+      "source_renderer_receipt_sha256": "b1d3601e84b25d7c677401c708bb3e36df6c40897087963ed649eb13ce05d5a3",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "LateLetter corpus builder"
+      },
+      "expected_geometry_mode": "unresolved",
+      "expected_outcome": "rejected",
+      "expected_rejection_codes": [
+        "source_contamination"
+      ]
+    }
+  ]
+}

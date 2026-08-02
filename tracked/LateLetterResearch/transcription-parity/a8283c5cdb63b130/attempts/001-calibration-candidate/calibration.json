@@ -1,0 +1,301 @@
+{
+  "calibrator": {
+    "name": "LateLetter monospace grid calibrator",
+    "version": "grid-calibrator-4-pitch-phase-review"
+  },
+  "source_png": "/Users/r/Projects/LateLetter/tracked/LateLetterResearch/transcription-parity/a8283c5cdb63b130/source/source.normalized.png",
+  "source_sha256": "c50bcf5ded3a0499f762762f8bec75db6ac2c9176806061a86c2a6d8317bd8d8",
+  "canvas": {
+    "width_px": 271,
+    "height_px": 619,
+    "background_rgb": [
+      255,
+      255,
+      255
+    ]
+  },
+  "normalization": {
+    "colour_space": "RGB",
+    "ink_threshold_l1": 25,
+    "background_method": "dominant_exact_rgb",
+    "guide_removal": "none",
+    "foreground_rgb": [
+      254,
+      254,
+      254
+    ]
+  },
+  "guide_columns_px": [],
+  "grid": {
+    "columns": 21,
+    "rows": 35,
+    "origin_x_px": -7.0,
+    "first_baseline_y_px": 17.0,
+    "cell_advance_x_px": 13.5,
+    "line_height_px": 18.0,
+    "x_phase_px_mod_period": 1,
+    "y_phase_px_mod_period": 17,
+    "cell_crop_top_offset_px": -12,
+    "cell_crop_bottom_offset_px": 6,
+    "row_crop_measurement": {
+      "top": -12,
+      "bottom": 6,
+      "boundary_ink": 319,
+      "boundary_ink_mean": 9.114285714285714,
+      "boundary_samples": 35,
+      "inter_row_clearance_px": 0
+    }
+  },
+  "font_model": {
+    "path": "/System/Library/Fonts/Menlo.ttc",
+    "size_px": 15,
+    "bbox_anchor": "ls"
+  },
+  "measurement": {
+    "x_autocorrelation": {
+      "6": 0.23297214448559317,
+      "7": 0.11747496257181507,
+      "8": 0.03991967188611351,
+      "9": 0.015342393508880257,
+      "10": 0.02386312897163359,
+      "11": 0.0869746355385769,
+      "12": 0.18939101870107725,
+      "13": 0.3193358532142198,
+      "14": 0.47233849990634535
+    },
+    "x_continuous_search": {
+      "period_px": 13.5,
+      "phase_px_mod_period": 6.5,
+      "origin_px": -7.0,
+      "boundary_columns_px": [
+        6,
+        20,
+        34,
+        47,
+        60,
+        74,
+        88,
+        101,
+        114,
+        128,
+        142,
+        155,
+        168,
+        182,
+        196,
+        209,
+        222,
+        236,
+        250,
+        263
+      ],
+      "boundary_ink_total": 514,
+      "boundary_ink_max": 85,
+      "boundary_columns_with_ink": 19
+    },
+    "x_candidate_comparison": [
+      {
+        "label": "integer-11",
+        "period_px": 11,
+        "phase_px_mod_period": 8,
+        "origin_px": -3,
+        "boundary_columns_px": [
+          8,
+          19,
+          30,
+          41,
+          52,
+          63,
+          74,
+          85,
+          96,
+          107,
+          118,
+          129,
+          140,
+          151,
+          162,
+          173,
+          184,
+          195,
+          206,
+          217,
+          228,
+          239,
+          250,
+          261
+        ],
+        "boundary_ink_total": 701,
+        "boundary_ink_max": 92,
+        "boundary_columns_with_ink": 23,
+        "phase_scores": {
+          "0": 713.0,
+          "1": 712.0,
+          "2": 730.0,
+          "3": 734.0,
+          "4": 718.0,
+          "5": 721.0,
+          "6": 734.0,
+          "7": 721.0,
+          "8": 701.0,
+          "9": 711.0,
+          "10": 716.0
+        }
+      },
+      {
+        "label": "integer-12",
+        "period_px": 12,
+        "phase_px_mod_period": 8,
+        "origin_px": -4,
+        "boundary_columns_px": [
+          8,
+          20,
+          32,
+          44,
+          56,
+          68,
+          80,
+          92,
+          104,
+          116,
+          128,
+          140,
+          152,
+          164,
+          176,
+          188,
+          200,
+          212,
+          224,
+          236,
+          248,
+          260
+        ],
+        "boundary_ink_total": 617,
+        "boundary_ink_max": 93,
+        "boundary_columns_with_ink": 20,
+        "phase_scores": {
+          "0": 709.0,
+          "1": 705.0,
+          "2": 623.0,
+          "3": 658.0,
+          "4": 666.0,
+          "5": 624.0,
+          "6": 699.0,
+          "7": 707.0,
+          "8": 617.0,
+          "9": 638.0,
+          "10": 647.0,
+          "11": 618.0
+        }
+      },
+      {
+        "label": "subpixel-selected",
+        "period_px": 13.5,
+        "phase_px_mod_period": 6.5,
+        "origin_px": -7.0,
+        "boundary_columns_px": [
+          6,
+          20,
+          34,
+          47,
+          60,
+          74,
+          88,
+          101,
+          114,
+          128,
+          142,
+          155,
+          168,
+          182,
+          196,
+          209,
+          222,
+          236,
+          250,
+          263
+        ],
+        "boundary_ink_total": 514,
+        "boundary_ink_max": 85,
+        "boundary_columns_with_ink": 19
+      }
+    ],
+    "y_autocorrelation": {
+      "14": 0.08365181428729528,
+      "15": 0.10914704670439068,
+      "16": 0.0896463654014005,
+      "17": 0.08975418402188258,
+      "18": 0.11007832201182827,
+      "19": 0.08404760929014203,
+      "20": 0.08649966684581324,
+      "21": 0.06862559194179499,
+      "22": 0.05779328144851612,
+      "23": 0.07321316283738011,
+      "24": 0.07014711260919702
+    },
+    "x_phase_boundary_ink": {
+      "0": 560.0,
+      "1": 546.0,
+      "2": 549.0,
+      "3": 547.0,
+      "4": 546.0,
+      "5": 552.0,
+      "6": 563.0,
+      "7": 572.0,
+      "8": 579.0,
+      "9": 586.0,
+      "10": 590.0,
+      "11": 584.0,
+      "12": 574.0,
+      "13": 563.0
+    },
+    "y_phase_horizontal_ink": {
+      "0": 3076.0,
+      "1": 3086.0,
+      "2": 2972.0,
+      "3": 2791.0,
+      "4": 2871.0,
+      "5": 2963.0,
+      "6": 2851.0,
+      "7": 2816.0,
+      "8": 2723.0,
+      "9": 2583.0,
+      "10": 2766.0,
+      "11": 2936.0,
+      "12": 2955.0,
+      "13": 3038.0,
+      "14": 2998.0,
+      "15": 2865.0,
+      "16": 2994.0,
+      "17": 3120.0
+    },
+    "ink_bbox_without_guides": {
+      "left_px": 0,
+      "top_px": 0,
+      "right_px": 270,
+      "bottom_px": 618
+    }
+  },
+  "status": "calibration_rejected",
+  "grid_legality": {
+    "x": {
+      "verdict": "rejected_boundary_crossings",
+      "boundary_ink_total": 514,
+      "boundary_ink_max": 85,
+      "boundary_columns_with_ink": 19,
+      "rule": "total<=8, max<=3, nonzero<=4"
+    },
+    "status": "rejected_boundary_crossings"
+  },
+  "review": {
+    "calibration_overlay": "pending_operator_review",
+    "contact_sheet": "calibration-candidates.png",
+    "required_checks": [
+      "vertical boundaries lie in real gutters",
+      "no substantive glyph strokes are divided",
+      "every visible row and column is covered",
+      "horizontal baselines and crops are correct"
+    ]
+  }
+}
