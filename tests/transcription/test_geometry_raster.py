@@ -102,6 +102,21 @@ def test_vertically_connected_cat_art_rejects_blank_gap_row_undersegmentation() 
     # four-band grouping; it remains evidence, not an automatic promotion.
     assert max(item["row_count"] for item in periodic) >= 9
 
+    phase8 = next(item for item in periodic if item["pitch"] == 23 and item["phase"] == 8)
+    phase9 = next(item for item in periodic if item["pitch"] == 23 and item["phase"] == 9)
+    assert phase8["valid"] is True
+    assert phase9["valid"] is True
+    assert phase8["baselines"] == [30, 53, 76, 99, 122, 145, 168, 191, 213]
+    assert phase9["baselines"] == [31, 54, 77, 100, 123, 146, 169, 192, 213]
+    assert phase8["baseline_delta_residuals"][-1] == -1
+    assert phase9["baseline_delta_residuals"][-1] == -2
+
+    terminal_sliver = next(item for item in periodic if item["pitch"] == 22 and item["phase"] == 12)
+    assert terminal_sliver["valid"] is False
+    assert terminal_sliver["terminal_sliver_rejected"] is True
+    assert terminal_sliver["baseline_delta_residuals"][-1] == -18
+    assert "terminal_sliver_rejected" in terminal_sliver["rejection_reasons"]
+
 
 def test_benchmark_v4_records_raster_geometry_instead_of_mask_missing() -> None:
     report_path = ROOT / "recognizer-benchmark-v4-geometry.json"
