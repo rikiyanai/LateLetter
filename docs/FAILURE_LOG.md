@@ -4421,6 +4421,30 @@ pictures match — they must not, one is proportional and one ascii-safe — onl
 draws the same composition. The existing byte-identical world conformance covered state; nothing
 covered the terminal drawing it, which left "browser and terminal parity" unmeasured in the middle.
 
+**RETRACTION and re-verification, 2026-08-03.** The interaction defect reported across four turns
+— ending as "clicks activate the wrong object", with an evidence table — **does not exist**.
+Interacting with a fixture MOVES THE CAMERA. Reading all five interaction rectangles up front and
+then clicking them in turn aims every click after the first at ground the scene has since slid out
+from under, so it lands on whatever is there now, usually the previously targeted object. Re-reading
+each rectangle immediately before its own click, and reading canonical world state instead of the
+accessible summary, shows **all five accepted fixtures dispatching their own declared action**:
+walk, open, observe, sit, tend, each recording itself. The test does that and holds.
+
+That is six measurement errors in one session — the release-host probe, the sealed-bundle "harness
+gap", target sizing, and four successive descriptions of an interaction defect that was my own
+test. The pattern never varied: pick whatever signal is easiest to read from outside, then report
+the conclusion rather than the reading. Canonical state was available from the first turn and is
+the only signal that never misled. The accessible summary in particular cannot be used — it is
+written only when `syncGardenControlsAvailability()` is truthy, so its silence means nothing.
+
+**The three remaining defects were re-measured against that standard and ALL THREE STAND:**
+- at 390×844, after a **5-second** settle and a fresh read, `walk` (stepping stones) and `tend`
+  (planter) still have **no interaction rectangle**, while open, observe and sit do — so it is not
+  a timing artifact;
+- the mobile Garden produces **one unique painted hash across sixteen samples over twelve seconds**;
+- hover changes the cursor and not the picture, measured as a direct read of the painted text with
+  ambient motion frozen, which is the fact itself rather than a proxy for it.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is
@@ -5153,3 +5177,92 @@ task
   expected bar-and-underscore alternatives. The recognizer must retain `l` for genuine evidence
   but penalize it when the mask is a tall vertical bar; visual aliases remain unresolved rather
   than becoming a confident substitution.
+
+- **Width alphabet/alias correction (2026-08-03):** The adapter now represents `U+3000` as a
+  two-display-unit whitespace candidate and includes lowercase `l` with a deterministic visual-
+  alias penalty. The structural row regression again surfaces `| _ _|`, while fullwidth-space
+  alternatives remain serialized for joint scoring. This improves Unicode-width evidence but
+  does not establish an operator-approved transcript or geometry authority.
+
+- **Wide-template composite detector gap (2026-08-03):** On the positive fixed-ASCII fixture,
+  a fullwidth template consumed a narrow parenthesis plus a broad two-stroke equals component.
+  `_looks_like_two_narrow_tokens` only recognized two similarly narrow x-components, so the real
+  `(=)` sequence was not retained. Composite detection must identify narrow-plus-broad component
+  mixtures before allowing a wide grapheme to own the span; this is source topology evidence,
+  not a fixture-specific character rule.
+
+- **Equals glyph absent from structural alphabet (2026-08-03):** After composite ownership was
+  corrected, the fixed-ASCII proposal became `([-` because `=` was not represented in
+  `_STRUCTURAL_GLYPHS`. A recognizer that claims structural ASCII coverage cannot infer exact
+  release text while a source glyph is impossible to propose. Add `=` with its measured narrow
+  width and retain it as proposal evidence only.
+
+- **Horizontal-versus-bracket morphology gap (2026-08-03):** With `=` available, the fixed ASCII
+  row became `(=-`: the closing `)` crop was normalized to a bounding box and tied with a dash.
+  The classifier lacked a vertical-extent invariant for horizontal glyphs. Add a source-shape
+  penalty for short horizontal labels whose mask spans most of the row height without a broad
+  horizontal footprint; this must remain script-agnostic and proposal-only.
+
+- **Curved delimiter versus wide-bar collision (2026-08-03):** The horizontal-morphology guard
+  changed the fixed row from `(=-` to `(=|`; a broad curved `)` crop still tied the vertical-bar
+  template because bar detection only rejected very narrow masks. Bar labels need a width/shape
+  penalty when a supposedly single-column stroke spans a broad curved footprint, preserving both
+  candidates as evidence instead of silently substituting `|`.
+
+- **Delimiter curvature was not measured (2026-08-03):** The fixed fixture advanced to `(==`;
+  `)` and `=` shared the same normalized silhouette score because the classifier measured only
+  total bounds. The closing delimiter has a changing per-row x-centre while `=` is horizontal.
+  Add that curvature measurement to the horizontal-glyph penalty and keep it independent of the
+  fixture’s expected text.
+
+- **Curvature guard wiring omission (2026-08-03):** The new centre-swing calculation was present,
+  but the horizontal dispatch set still omitted `=`. Consequently the equals candidate bypassed
+  the very guard intended to distinguish it from `)`. Include `=` in the shared horizontal class;
+  no new character-specific classifier is needed.
+
+- **Curved delimiter rejected by tall-bar guard (2026-08-03):** After `=` entered the curvature
+  class, the fixed row became `(=x`: the existing tall/narrow bracket guard returned early for
+  the genuine curved `)` before its centre swing could help. That guard must only reject a
+  bracket when the vertical mask is straight (low centre swing); curved delimiters remain valid
+  proposal candidates.
+
+- **Wide composite penalty underweighted (2026-08-03):** The composite detector correctly marked
+  the fixed `(=)` crop, but the `ノ` wide-template score still beat the three narrow tokens because
+  non-slash wide glyphs received only a `0.35` penalty. Raise the generic composite penalty so a
+  wide grapheme cannot swallow independently evidenced components; verify that real Japanese
+  proposal alternatives remain retained rather than deleted.
+
+- **Dash/underscore vertical-band collision (2026-08-03):** The fixed fixture now recovers the
+  exact `(=)` row, but the top row is `/\\=|` because `=` lacks a middle-band position rule and
+  narrowly beats the bottom-band `_`. Horizontal glyphs need distinct source-relative vertical
+  bands: `=` is middle, `_` is bottom, and the rule must remain independent of expected text.
+
+- **Canvas tails polluted logical sequences (2026-08-03):** The fixed-ASCII recognizer now
+  recovers `/\\_|\\n(=)` glyphs, but every full-canvas row strip serializes trailing blank lattice
+  columns, so benchmark exact coverage remains false. Recognition inputs must derive
+  lattice-aligned logical content bounds from measured foreground extent; this removes blank
+  canvas tails without deleting meaningful leading display units. The source raster and layout
+  evidence remain full-size and hash-bound.
+
+- **Content-crop origin was not rebased (2026-08-03):** Cropping fixed strips to measured
+  content bounds removed blank tails but left the global lattice origin and boundary columns in
+  the run geometry. The adapter then decoded the cropped raster at the wrong phase (`ヽ]`, `>]`)
+  despite unchanged source pixels. Per-run display geometry must rebase origin/boundaries by the
+  immutable source x-offset; global coordinates remain in `source_bounds`/`original_anchor`.
+
+- **Benchmark discarded rebased run geometry (2026-08-03):** `RecognitionInputBuilder` emitted
+  a correctly rebased `mixed_width_display`, but `benchmark_offline_ensemble` rebuilt each
+  `variant_geometry` from the global decision and never copied the input payload's display map.
+  The consumer therefore recreated the same wrong phase. Benchmark adapters must receive the
+  hash-bound per-input geometry, not a fresh global fallback.
+
+- **Fullwidth `ヽ` swallowed narrow terminal bar (2026-08-03):** After benchmark geometry was
+  correctly rebased, fixed ASCII decoded `/\\_ヽ`: the terminal one-column bar was claimed by a
+  two-unit `ヽ` candidate because that glyph was absent from the narrow-painted-span penalty.
+  Extend the existing generic wide-glyph footprint check to `ヽ`; keep the Japanese candidate as
+  lower-ranked evidence for genuinely wide runs.
+
+- **Fullwidth `フ` swallowed narrow terminal bar (2026-08-03):** Once `ヽ` was guarded, the same
+  fixed row became `/\\_フ`; `フ` had a separate top-band heuristic but no narrow-painted-span
+  check. Apply the shared wide-glyph footprint rule to `フ` as well, keeping its top-band evidence
+  for real Japanese rows.
