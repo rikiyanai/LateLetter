@@ -15,10 +15,16 @@ from lateletter.garden.materializer import (
     apply_program,
     build_runtime_facts,
     eligible_occurrences,
+    seed_program_state,
 )
 from lateletter.garden.program import ProgramAction, parse_program
 from lateletter.garden.world.fixtures import fixture_cells, layout_is_safe
-from lateletter.garden.world.generation import generate_initial_world
+from lateletter.garden.world.generation import (
+    REVIEW_PENDING_ANIMAL_SPECIES,
+    REVIEW_PENDING_COLLECTIBLES,
+    REVIEW_PENDING_PLANT_SPECIES,
+    generate_initial_world,
+)
 
 
 ROOT = Path(__file__).parents[2]
@@ -114,6 +120,7 @@ def test_program_effects_materialize_with_receipts_trace_and_runtime_state():
     updated = result.world
 
     animal = next(item for item in updated.animals if item.animal_id == "animal.miso")
+    assert {item.animal_id for item in updated.animals} == {"animal.miso"}
     assert animal.personality.boldness == 91
     assert animal.display_name == "Miso"
     assert animal.current_intent == "greet"
@@ -138,6 +145,24 @@ def test_program_effects_materialize_with_receipts_trace_and_runtime_state():
     second = apply_program(updated, program, facts=_facts(updated, program, now))
     assert second.effect_receipts == ()
     assert second.world.canonical_bytes() == updated.canonical_bytes()
+
+
+def test_program_roster_retires_sandbox_animals_and_stale_absence_copy():
+    world = generate_initial_world(
+        "authored-roster", 29,
+        plant_species=REVIEW_PENDING_PLANT_SPECIES,
+        animal_species=REVIEW_PENDING_ANIMAL_SPECIES,
+        collectibles=REVIEW_PENDING_COLLECTIBLES,
+    )
+    world = replace(world, program_state={
+        **dict(world.program_state),
+        "absence_summary": ["Your turtle is glad to see you."],
+    })
+
+    seeded = seed_program_state(world, _program())
+
+    assert seeded.animals == ()
+    assert seeded.program_state["absence_summary"] == []
 
 
 def test_schedule_occurrences_are_recurring_and_idempotent():
@@ -230,7 +255,12 @@ def test_summarize_then_current_persists_only_applied_bounded_summary():
 
 
 def test_unsafe_explicit_authored_position_fails_atomically():
-    world = generate_initial_world("unsafe-authored", 23)
+    world = generate_initial_world(
+        "unsafe-authored", 23,
+        plant_species=REVIEW_PENDING_PLANT_SPECIES,
+        animal_species=REVIEW_PENDING_ANIMAL_SPECIES,
+        collectibles=REVIEW_PENDING_COLLECTIBLES,
+    )
     occupied = world.plants[0].position.to_list()
     program = _single_action_program({
         "type": "entity.reveal", "target": "keepsake.authored",
@@ -303,7 +333,12 @@ def test_animal_fixture_destination_uses_safe_reachable_adjacent_cell():
 
 
 def test_prune_removes_requested_node_and_all_descendants():
-    world = generate_initial_world("prune", 13)
+    world = generate_initial_world(
+        "prune", 13,
+        plant_species=REVIEW_PENDING_PLANT_SPECIES,
+        animal_species=REVIEW_PENDING_ANIMAL_SPECIES,
+        collectibles=REVIEW_PENDING_COLLECTIBLES,
+    )
     plant = world.plants[0]
     selected = next(node for node in plant.topology if node.parent_id is not None)
     descendants = {selected.node_id}

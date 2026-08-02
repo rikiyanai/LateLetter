@@ -18,29 +18,60 @@ class FixtureDefinition:
     blocks_movement: bool = True
     connected_group: str | None = None
     interaction_verbs: tuple[str, ...] = ()
+    # SPEC 7.8.3.1: the single act that happens on a plain click, tap or Enter.
+    #
+    # AUTHORED, never inferred. It would be easy to take `interaction_verbs[0]`
+    # and call that the primary, and it would even be right for the bench -- but
+    # then the renderer's behaviour would be a side effect of tuple order, and
+    # a fixture whose first verb happens to be consequential would silently get
+    # a dangerous primary. Declaring it here is what lets the contract promise
+    # that a primary action is always obvious, safe and free of choices.
+    #
+    # `None` means the fixture declares no primary action. It is then inert to
+    # direct activation and its verbs are reached through "more actions" --
+    # explicitly allowed by 7.8.3.1. Most of the catalog is currently `None`:
+    # the five default-scene fixtures are authored below, and the rest await the
+    # same authoring pass. This does NOT change dispatch, which still falls back
+    # to `interaction_verbs[0]` in `_fixture_interaction`; it only governs what
+    # the world OFFERS as a one-click act.
+    primary_verb: str | None = None
+    # Second-person imperative shown on hover, on focus, and to screen readers.
+    # It names the act, not the object: "Sit on the garden bench", never "Bench".
+    primary_label: str | None = None
 
 
 FIXTURE_CATALOG: dict[str, FixtureDefinition] = {
-    "bench": FixtureDefinition("bench", "Garden bench", ("inspect", "primary_interact"), ("sit", "animal-rest", "author-socket"), Vec2(2, 1), interaction_verbs=("sit", "observe")),
+    # Primary actions are authored only for the five default-scene fixtures
+    # (`STARTER_FIXTURES`). Every other entry keeps `primary_verb=None` until it
+    # has been through the same authoring judgement, because a primary action is
+    # a promise about safety, not a convenience default.
+    "bench": FixtureDefinition("bench", "Garden bench", ("inspect", "primary_interact"), ("sit", "animal-rest", "author-socket"), Vec2(2, 1), interaction_verbs=("sit", "observe"), primary_verb="sit", primary_label="Sit on the garden bench"),
     "fence": FixtureDefinition("fence", "Fence", ("inspect", "primary_interact"), ("boundary", "perch", "vine-support"), connected_group="fence", interaction_verbs=("open", "close")),
     "gate": FixtureDefinition("gate", "Garden gate", ("inspect", "primary_interact"), ("open-close", "route"), blocks_movement=False, connected_group="fence", interaction_verbs=("open", "close")),
     "sundial": FixtureDefinition("sundial", "Sundial", ("inspect", "primary_interact"), ("garden-time", "authored-beat"), interaction_verbs=("read_time",)),
     "trellis": FixtureDefinition("trellis", "Trellis", ("inspect", "primary_interact"), ("train-plant", "animal-hide"), Vec2(2, 1), interaction_verbs=("train",)),
     "birdbath": FixtureDefinition("birdbath", "Birdbath", ("inspect", "primary_interact"), ("refill", "drink", "bathe"), interaction_verbs=("refill", "observe")),
-    "lantern": FixtureDefinition("lantern", "Lantern", ("inspect", "primary_interact"), ("light", "moth-visit"), interaction_verbs=("light", "extinguish")),
+    # The lantern's primary is deliberately `observe`, NOT `light`. Lighting is
+    # state-dependent -- it means something different depending on whether the
+    # lantern is already lit -- so it belongs to the spawned-opportunity path in
+    # 7.8.3.2, where the world can offer exactly the one that currently applies.
+    # Looking at the lantern is the act that is always available and always safe.
+    "lantern": FixtureDefinition("lantern", "Lantern", ("inspect", "primary_interact"), ("light", "moth-visit"), interaction_verbs=("light", "extinguish", "observe"), primary_verb="observe", primary_label="Look at the lantern"),
     "pond": FixtureDefinition("pond", "Pond", ("inspect", "primary_interact"), ("ripples", "aquatic-plant", "water-visitor"), Vec2(3, 2), blocks_movement=True, connected_group="pond_edge", interaction_verbs=("observe", "tend")),
     "memory_shrine": FixtureDefinition("memory_shrine", "Memory shrine", ("inspect", "primary_interact", "open_journal"), ("keepsake", "inscription", "memory-discovery"), Vec2(2, 1), interaction_verbs=("open", "remember")),
     "stepping_stone": FixtureDefinition("stepping_stone", "Stepping stone", ("inspect", "primary_interact"), ("path",), blocks_movement=False, connected_group="path", interaction_verbs=("walk",)),
     "bridge": FixtureDefinition("bridge", "Bridge", ("inspect", "primary_interact"), ("cross-water", "animal-route"), Vec2(3, 1), blocks_movement=False, interaction_verbs=("cross", "observe")),
-    "planter": FixtureDefinition("planter", "Planter", ("inspect", "primary_interact"), ("plant-container", "transplant"), Vec2(2, 1), interaction_verbs=("transplant", "tend")),
+    # `tend`, not `transplant`: transplanting moves a living plant and is a
+    # consequential choice, which 7.8.3.1 forbids as a primary action.
+    "planter": FixtureDefinition("planter", "Planter", ("inspect", "primary_interact"), ("plant-container", "transplant"), Vec2(2, 1), interaction_verbs=("transplant", "tend"), primary_verb="tend", primary_label="Tend the planter"),
     "table": FixtureDefinition("table", "Garden table", ("inspect", "primary_interact"), ("place-keepsake", "animal-sniff"), Vec2(2, 2), interaction_verbs=("arrange", "sit")),
     "chair": FixtureDefinition("chair", "Garden chair", ("inspect", "primary_interact"), ("sit", "observe"), interaction_verbs=("sit", "observe")),
     # Atlas-backed author fixtures.  These IDs are the prefix-stripped form of
     # ``atlas.v1.json`` assets and are therefore valid runtime catalog IDs, not
     # renderer aliases that silently degrade to collectibles.
     "fence_gate": FixtureDefinition("fence_gate", "Fence and gate", ("inspect", "primary_interact"), ("open-close", "route"), blocks_movement=False, connected_group="fence", interaction_verbs=("open", "close")),
-    "mailbox": FixtureDefinition("mailbox", "Memory mailbox", ("inspect", "primary_interact", "open_journal"), ("keepsake", "memory-discovery"), interaction_verbs=("open", "remember")),
-    "stepping_stones": FixtureDefinition("stepping_stones", "Stepping stones", ("inspect", "primary_interact"), ("path",), blocks_movement=False, connected_group="path", interaction_verbs=("walk",)),
+    "mailbox": FixtureDefinition("mailbox", "Memory mailbox", ("inspect", "primary_interact", "open_journal"), ("keepsake", "memory-discovery"), interaction_verbs=("open", "remember"), primary_verb="open", primary_label="Open the memory mailbox"),
+    "stepping_stones": FixtureDefinition("stepping_stones", "Stepping stones", ("inspect", "primary_interact"), ("path",), blocks_movement=False, connected_group="path", interaction_verbs=("walk",), primary_verb="walk", primary_label="Walk the stepping stones"),
     "table_chairs": FixtureDefinition("table_chairs", "Garden table and chairs", ("inspect", "primary_interact"), ("sit", "shared-space", "animal-sniff"), Vec2(2, 2), interaction_verbs=("sit", "arrange")),
     "well": FixtureDefinition("well", "Garden well", ("inspect", "primary_interact"), ("water-source", "draw-water"), interaction_verbs=("draw_water",)),
     "arbor": FixtureDefinition("arbor", "Garden arbor", ("inspect", "primary_interact"), ("plant-support", "shade", "animal-rest"), Vec2(2, 1), interaction_verbs=("rest", "observe")),
@@ -54,14 +85,19 @@ FIXTURE_CATALOG: dict[str, FixtureDefinition] = {
     "memorial_stone": FixtureDefinition("memorial_stone", "Memorial stone", ("inspect", "primary_interact", "open_journal"), ("inscription", "memory-discovery"), interaction_verbs=("remember", "observe")),
 }
 
-# The generated-world minimum follows the versioned atlas.  Older internal IDs
-# remain readable for persisted v1 worlds, but are not a second content owner.
+# Full functional catalog required for placement, authored programs, fixtures
+# tests, and persisted v1 compatibility. New gardens intentionally start with
+# a smaller composed subset; availability must not mean dumping the catalog
+# into every recipient's first view.
 REQUIRED_FUNCTIONAL_FIXTURES = (
     "bench", "fence_gate", "sundial", "trellis", "birdbath", "lantern",
     "pond", "mailbox", "stepping_stones", "bridge", "planter",
     "table_chairs", "well", "arbor", "wind_chime", "shed_edge",
     "tool_rack", "watering_can", "compost", "basket", "sign",
     "memorial_stone",
+)
+STARTER_FIXTURES = (
+    "bench", "mailbox", "stepping_stones", "planter", "lantern",
 )
 CONNECTED_GROUPS = ("fence", "hedge", "path", "pond_edge", "wall")
 CONNECTED_TILE_MASKS: dict[str, tuple[int, ...]] = {
@@ -118,6 +154,59 @@ def fixture_active_affordances(fixture: FixtureState) -> tuple[str, ...]:
     if fixture.catalog_id == "watering_can" and int(values.get("water_level", 0)) <= 0:
         enabled.discard("water")
     return tuple(sorted(enabled))
+
+
+def fixture_opportunities(fixture: FixtureState) -> tuple[dict[str, str], ...]:
+    """Return the spawned opportunities this fixture is currently offering.
+
+    SPEC 7.8.3.2. An opportunity is an act that only makes sense right now,
+    given world state -- lighting a lantern that is dark, extinguishing one that
+    is burning. It is offered as its own control beside the object rather than
+    buried in a menu, and it disappears when it stops applying rather than when
+    a timer runs out.
+
+    Computed HERE, in the world model, for the reason the contract insists on:
+    the renderer must never decide what looks available. It draws what this
+    returns and nothing else, so the browser and the terminal necessarily offer
+    the same opportunities from the same state.
+
+    :param fixture: The fixture whose current state decides what is on offer.
+    :returns: A tuple of records, each carrying
+
+        * `opportunity_id` -- stable for as long as the same opportunity stands.
+          The renderer uses it to tell "this is still the one I already drew"
+          from "this is new", which is what stops the attract animation
+          replaying on every repaint.
+        * `verb` -- an EXISTING canonical fixture verb, dispatched through the
+          ordinary `primary_interact` path. Opportunities add no new commands
+          and hold no state of their own.
+        * `label` -- second-person imperative, used as the control's accessible
+          name and its visible text.
+
+        The tuple is ordered by `opportunity_id` so both implementations and
+        every repaint agree on control order; empty means nothing is on offer.
+    """
+    values = fixture.authored_state
+    offers: list[dict[str, str]] = []
+    if fixture.catalog_id == "lantern":
+        # Exactly one of these is ever on offer, because they are the two sides
+        # of one piece of state. Offering both at once would be offering the
+        # user a choice, which is what the action sheet is for.
+        if bool(values.get("lit", False)):
+            offers.append({"verb": "extinguish", "label": "Put out the lantern"})
+        else:
+            offers.append({"verb": "light", "label": "Light the lantern"})
+    return tuple(sorted(
+        (
+            {
+                "opportunity_id": f"{fixture.fixture_id}:{offer['verb']}",
+                "verb": offer["verb"],
+                "label": offer["label"],
+            }
+            for offer in offers
+        ),
+        key=lambda offer: offer["opportunity_id"],
+    ))
 
 
 def _all_fixture_cells(state: WorldState, *, except_id: str | None = None) -> set[Vec2]:

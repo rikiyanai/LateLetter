@@ -70,10 +70,16 @@ const REQUIRED_FUNCTIONAL_FIXTURES = Object.freeze([
   'arbor', 'wind_chime', 'shed_edge', 'tool_rack', 'watering_can', 'compost',
   'basket', 'sign', 'memorial_stone',
 ]);
+export const STARTER_FIXTURES = Object.freeze([
+  'bench', 'mailbox', 'stepping_stones', 'planter', 'lantern',
+]);
 
 export const FIXTURE_VERBS = Object.freeze({
   bench: ['sit', 'observe'], fence: ['open', 'close'], gate: ['open', 'close'], sundial: ['read_time'],
-  trellis: ['train'], birdbath: ['refill', 'observe'], lantern: ['light', 'extinguish'], pond: ['observe', 'tend'],
+  // `observe` was added to the lantern so it can have a safe primary action
+  // (7.8.3.1) that is not one side of its lit/unlit state. Mirrored in
+  // `FIXTURE_CATALOG['lantern'].interaction_verbs` on the Python side.
+  trellis: ['train'], birdbath: ['refill', 'observe'], lantern: ['light', 'extinguish', 'observe'], pond: ['observe', 'tend'],
   memory_shrine: ['open', 'remember'], stepping_stone: ['walk'], bridge: ['cross', 'observe'],
   planter: ['transplant', 'tend'], table: ['arrange', 'sit'], chair: ['sit', 'observe'],
   fence_gate: ['open', 'close'], mailbox: ['open', 'remember'], stepping_stones: ['walk'],
@@ -82,6 +88,133 @@ export const FIXTURE_VERBS = Object.freeze({
   watering_can: ['fill', 'water'], compost: ['turn'], basket: ['review_inventory', 'gather'],
   sign: ['read'], memorial_stone: ['remember', 'observe'],
 });
+
+/**
+ * The single act a plain click, tap or Enter performs on each fixture.
+ *
+ * SPEC 7.8.3.1, and AUTHORED rather than inferred. Taking `FIXTURE_VERBS[id][0]`
+ * would even be right for the bench, but then behaviour would be a side effect
+ * of array order, and a fixture whose first verb happens to be consequential
+ * would silently acquire a dangerous primary. Declaring it is what lets the
+ * contract promise a primary action is always obvious, safe and choice-free.
+ *
+ * A missing entry means the fixture declares no primary action; it is then
+ * inert to direct activation and its verbs are reached through "more actions",
+ * which 7.8.3.1 explicitly allows. Only the five default-scene fixtures are
+ * authored so far -- the rest await the same judgement. This does NOT change
+ * dispatch, which still falls back to the first verb; it governs only what the
+ * world OFFERS as a one-click act.
+ *
+ * Kept in step with `primary_verb`/`primary_label` on `FixtureDefinition` in
+ * `src/lateletter/garden/world/fixtures.py`.
+ */
+export const FIXTURE_PRIMARY_ACTIONS = Object.freeze({
+  bench: { verb: 'sit', label: 'Sit on the garden bench' },
+  mailbox: { verb: 'open', label: 'Open the memory mailbox' },
+  stepping_stones: { verb: 'walk', label: 'Walk the stepping stones' },
+  // `tend`, not `transplant`: transplanting moves a living plant and is a
+  // consequential choice, which 7.8.3.1 forbids as a primary action.
+  planter: { verb: 'tend', label: 'Tend the planter' },
+  // `observe`, NOT `light`. Lighting is state-dependent -- it means something
+  // different depending on whether the lantern is already lit -- so it belongs
+  // to the spawned-opportunity path in 7.8.3.2, where the world can offer
+  // exactly the one that currently applies. Looking is always safe.
+  lantern: { verb: 'observe', label: 'Look at the lantern' },
+});
+
+/**
+ * Return the spawned opportunities a fixture is currently offering.
+ *
+ * SPEC 7.8.3.2. An opportunity is an act that only makes sense right now, given
+ * world state -- lighting a lantern that is dark, putting out one that is
+ * burning. It is offered as its own control beside the object rather than
+ * buried in a menu, and it goes away when it stops applying rather than when a
+ * timer runs out.
+ *
+ * Computed here, in the world model, for the reason the contract insists on:
+ * the renderer must never decide what looks available. It draws what this
+ * returns and nothing else, so the browser and the terminal necessarily offer
+ * the same opportunities from the same state.
+ *
+ * @param fixture Fixture record whose state decides what is on offer.
+ * @returns Records carrying `opportunity_id` (stable while the same
+ *   opportunity stands, so the attract animation does not replay on every
+ *   repaint), `verb` (an EXISTING canonical fixture verb -- opportunities add
+ *   no commands and hold no state), and `label` (second-person imperative used
+ *   as both accessible name and visible text). Ordered by `opportunity_id` so
+ *   both implementations and every repaint agree; empty means nothing on offer.
+ *
+ * Mirrors `fixture_opportunities` in
+ * `src/lateletter/garden/world/fixtures.py`.
+ */
+export function fixtureOpportunities(fixture) {
+  const values = fixture.authored_state ?? {};
+  const offers = [];
+  if (fixture.catalog_id === 'lantern') {
+    // Exactly one of these is ever on offer, because they are two sides of one
+    // piece of state. Offering both would be offering a choice, and choices
+    // are what the action sheet is for.
+    offers.push(values.lit
+      ? { verb: 'extinguish', label: 'Put out the lantern' }
+      : { verb: 'light', label: 'Light the lantern' });
+  }
+  return offers
+    .map(offer => ({
+      opportunity_id: `${fixture.fixture_id}:${offer.verb}`,
+      verb: offer.verb,
+      label: offer.label,
+    }))
+    .sort((left, right) => compareCodePoints(left.opportunity_id, right.opportunity_id));
+}
+// The bond tier at which an animal stops being a stranger. Mirrors
+// `ANIMAL_TRUST_TIER` in `src/lateletter/garden/world/animals.py`.
+export const ANIMAL_TRUST_TIER = 3;
+
+/** What to call this animal in a sentence addressed to the reader. */
+export function animalDisplayName(animal) {
+  return animal.display_name || String(animal.species_id).replaceAll('_', ' ');
+}
+
+/**
+ * The single act a plain click, tap or Enter on this animal performs.
+ *
+ * SPEC 7.8.3.1. Interaction with a living thing is DIRECT: clicking the cat
+ * does something to the cat rather than opening a menu about it. The verb is
+ * `play` because it is this model's safe, resource-free animal interaction;
+ * `pet` is not a canonical command, and inventing one so the label could match
+ * the decision's example wording would mean dispatching something the world
+ * does not implement.
+ *
+ * Mirrors `animal_primary_action` in `src/lateletter/garden/world/animals.py`.
+ */
+export function animalPrimaryAction(animal) {
+  return { verb: 'play', label: `Play with the ${animalDisplayName(animal)}` };
+}
+
+/**
+ * The spawned opportunities this animal is currently offering.
+ *
+ * SPEC 7.8.3.2. Feeding is state-dependent -- it means one thing to a stray and
+ * another to a companion -- so it is an opportunity, not a primary action.
+ * Eligibility is decided HERE rather than in the viewer, which is what stops
+ * the browser and the terminal offering different things from the same state.
+ *
+ * Mirrors `animal_opportunities` in `src/lateletter/garden/world/animals.py`.
+ */
+export function animalOpportunities(animal) {
+  const offers = [];
+  if (Number(animal.bond_tier ?? 0) < ANIMAL_TRUST_TIER) {
+    offers.push({ verb: 'feed', label: `Feed the ${animalDisplayName(animal)}` });
+  }
+  return offers
+    .map(offer => ({
+      opportunity_id: `${animal.animal_id}:${offer.verb}`,
+      verb: offer.verb,
+      label: offer.label,
+    }))
+    .sort((left, right) => compareCodePoints(left.opportunity_id, right.opportunity_id));
+}
+
 const FIXTURE_CONNECTED_GROUP = Object.freeze({
   fence: 'fence', gate: 'fence', fence_gate: 'fence',
   stepping_stone: 'path', stepping_stones: 'path', pond: 'pond_edge',
@@ -171,6 +304,77 @@ const SPECIES_CATALOG = Object.freeze({
   tulip: ['flower', 6, 10, 21600, ['stem', 'tulip-leaf', 'tulip-bloom']],
   sunflower: ['flower', 7, 12, 32400, ['stem', 'broadleaf', 'sunflower-bloom']],
   water_lily: ['aquatic', 7, 13, 43200, ['rhizome', 'lily-pad', 'water-bloom']],
+});
+// EMPTIED 2026-07-31, pending per-asset visual approval.
+//
+// The starter world used to place five plants, one cat and one collectible by
+// default. The operator reviewed and accepted the ten fixtures; none of this
+// content was ever submitted, and on seeing it in the scene they rejected it.
+//
+// The distinction that matters: this is not a capability removal. Every
+// species above remains defined and placeable, and the catalogues below are
+// untouched -- an author can still place any of them. What changes is that the
+// DEFAULT scene no longer ships art nobody approved. Each entry returns here
+// once its drawing has been through per-asset acceptance under SPEC 7.10.
+//
+// PARTIALLY REFILLED 2026-08-01 from the legacy art port. `oak` and `sunflower`
+// are now drawn entirely from the archive the operator approved on that date --
+// picture and wind sway both -- so they are approved art and stand in the
+// default scene again. `hydrangea`, `meadow_grass` and `lavender` are not back:
+// the archive does not draw them, so they would still be renderer-authored
+// placeholders. The cat is not back because a resting cat would fall through to
+// a renderer-authored sleeping pose, which the archive contains no version of.
+//
+// Must stay identical to `STARTER_*_SPECIES` in the Python generator; the world
+// conformance tests hold both implementations to the same starter output.
+export const STARTER_PLANT_SPECIES = Object.freeze(['oak', 'sunflower']);
+export const STARTER_ANIMAL_SPECIES = Object.freeze([]);
+export const STARTER_COLLECTIBLES = Object.freeze([]);
+
+// Exactly what the default scene carried until 2026-07-31, kept as a named set
+// rather than deleted outright.
+//
+// Two reasons it earns a name. It records what was removed, so restoring an
+// entry after its art is approved is a one-line move rather than an
+// archaeological dig through history. And it gives the tests that exercise
+// plant growth, animal behaviour and collectible pickup a way to ask for a
+// populated world explicitly -- those features did not go away, only their
+// unapproved presence in the DEFAULT scene did.
+//
+// Passing this to `generateInitialWorld` reproduces the pre-removal world
+// exactly. It must never become the default again without per-asset approval.
+// Keep in step with `REVIEW_PENDING_*` in the Python generator.
+export const REVIEW_PENDING_PLANT_SPECIES = Object.freeze([
+  'oak', 'hydrangea', 'meadow_grass', 'lavender', 'sunflower',
+]);
+export const REVIEW_PENDING_ANIMAL_SPECIES = Object.freeze(['cat']);
+export const REVIEW_PENDING_COLLECTIBLES = Object.freeze(['fallen_acorn']);
+// Canonical starter composition in thousandths of the world extent. Mirrors
+// `STARTER_FIXTURE_ANCHORS` in the Python generator EXACTLY, including the
+// authoritative starter row added on 2026-08-01; the reasoning for the shared
+// depth and the even horizontal spacing is written out in full there. The five
+// non-starter entries keep their original relationship anchors and are reached
+// only through authored programs.
+const STARTER_FIXTURE_ANCHORS = Object.freeze({
+  pond: [180, 400], bridge: [180, 450], birdbath: [80, 720],
+  trellis: [720, 450], arbor: [830, 700],
+  // ── the authoritative starter row ──
+  stepping_stones: [250, 650], bench: [375, 650], mailbox: [500, 650],
+  lantern: [625, 650], planter: [750, 650],
+});
+// `oak` and `sunflower` moved to the outer edges 2026-08-01, when the legacy
+// art port put them back in the default scene. See the Python generator for the
+// full reasoning and the measurements; the two files must agree.
+const STARTER_PLANT_ANCHORS = Object.freeze({
+  water_lily: [220, 420], oak: [60, 300], hydrangea: [360, 570],
+  willow: [900, 180], rose: [690, 440], meadow_grass: [470, 590],
+  lavender: [570, 760], sunflower: [940, 320],
+});
+const STARTER_ANIMAL_ANCHORS = Object.freeze({
+  bird: [100, 680], cat: [350, 780], rabbit: [740, 520], turtle: [220, 500],
+});
+const STARTER_COLLECTIBLE_ANCHORS = Object.freeze({
+  oak_leaf: [330, 290], lavender_sprig: [620, 650], fallen_acorn: [200, 790],
 });
 
 const ANIMAL_SPECIES = Object.freeze({
@@ -649,10 +853,123 @@ async function freePosition(state, domain, occupied, margin = 2) {
   throw new Error(`could not place ${canonicalJson(domain)} safely`);
 }
 
+function scaledStarterAnchor(state, anchor, margin = 2, footprint = [1, 1]) {
+  const maxX = Math.max(margin, state.world_width - footprint[0] - margin);
+  const maxY = Math.max(margin, state.world_height - footprint[1] - margin);
+  const spanX = Math.max(0, maxX - margin);
+  const spanY = Math.max(0, maxY - margin);
+  return [
+    margin + Math.floor((spanX * anchor[0] + 500) / 1000),
+    margin + Math.floor((spanY * anchor[1] + 500) / 1000),
+  ];
+}
+
+function nearStarterPosition(state, desired, occupied, margin = 2) {
+  const maximumRadius = Math.max(state.world_width, state.world_height);
+  for (let radius = 0; radius <= maximumRadius; radius += 1) {
+    for (let dy = -radius; dy <= radius; dy += 1) {
+      const dxAbs = radius - Math.abs(dy);
+      const offsets = dxAbs === 0 ? [0] : [-dxAbs, dxAbs];
+      for (const dx of offsets) {
+        const candidate = [desired[0] + dx, desired[1] + dy];
+        if (candidate[0] < margin || candidate[0] >= state.world_width - margin ||
+          candidate[1] < margin || candidate[1] >= state.world_height - margin) continue;
+        const key = cellKey(candidate);
+        if (!occupied.has(key)) {
+          occupied.add(key);
+          return candidate;
+        }
+      }
+    }
+  }
+  throw new Error(`could not place a starter object near ${canonicalJson(desired)}`);
+}
+
+/**
+ * Reject a starter roster this generator cannot honour, before it is used.
+ *
+ * Three things go wrong quietly without this check, so each becomes a loud
+ * error naming the offending id:
+ *
+ * - An UNKNOWN id used to surface as a `TypeError` reading a property of
+ *   `undefined` from the anchor lookup further down -- a crash with no
+ *   statement of what was actually wrong.
+ * - An UNSUPPORTED id -- one that exists in its catalogue but has no canonical
+ *   anchor here -- failed the same opaque way. Placement is not a free choice:
+ *   every starter sits at an authored position expressing a relationship
+ *   between objects, so a species with no anchor genuinely cannot be placed by
+ *   this generator, and saying so is more honest than inventing a spot.
+ * - A DUPLICATE id was accepted outright, and that is the dangerous one. Every
+ *   object id here is `stableId(kind, worldId, speciesId)`, a pure function of
+ *   the species -- so asking for a species twice produced two records SHARING
+ *   one id. Anything keyed by object id afterwards (focus, dispatch,
+ *   persistence) would then address an ambiguous target.
+ *
+ * @param kind Noun used in the error message, e.g. `'plant species'`.
+ * @param requested The roster as asked for, already normalised to an array.
+ * @param anchors Anchor table for this kind; its keys are the supported ids.
+ * @returns `requested` unchanged, so callers can use this inline.
+ * @throws {Error} On any unknown, unsupported or duplicated id.
+ *
+ * Kept textually in step with `_validated_roster` in
+ * `src/lateletter/garden/world/generation.py`: both implementations must
+ * refuse the same rosters for the same reasons.
+ */
+function validatedRoster(kind, requested, anchors) {
+  const seen = new Set();
+  const supported = Object.keys(anchors).sort();
+  for (const identifier of requested) {
+    if (seen.has(identifier)) {
+      throw new Error(`duplicate ${kind} requested: '${identifier}'`);
+    }
+    seen.add(identifier);
+    if (!Object.hasOwn(anchors, identifier)) {
+      throw new Error(
+        `unsupported ${kind} requested: '${identifier}' `
+        + `(supported: ${supported.join(', ')})`,
+      );
+    }
+  }
+  return requested;
+}
+
 /** Generate the same canonical initial state as Python; viewport is never input. */
+/**
+ * Generate canonical world coordinates; viewport size is not an input.
+ *
+ * `plant_species`, `animal_species` and `collectibles` exist because the
+ * default starter lists were emptied on 2026-07-31: their art had never been
+ * through per-asset visual approval, and the operator rejected it on sight.
+ * The CAPABILITY had to survive that removal -- plant growth, animal behaviour
+ * and collectible pickup are still real features with real tests, and those
+ * tests need a world that actually contains such things.
+ *
+ * So the default answers "what does a recipient see", which is currently only
+ * approved fixtures, while a caller that needs populated content asks for it
+ * explicitly. `null`/`undefined` means "use the default scene"; an explicit
+ * empty array means "deliberately none", and the two stay distinguishable.
+ *
+ * Keep these options in step with `generate_initial_world` in
+ * `src/lateletter/garden/world/generation.py`; the two implementations are
+ * held to identical output by the world conformance tests.
+ */
 export async function generateInitialWorld(
-  worldId, seed, { world_width = 120, world_height = 80 } = {},
+  worldId, seed, {
+    world_width = 120, world_height = 80,
+    plant_species = null, animal_species = null, collectibles = null,
+  } = {},
 ) {
+  // Validated before anything is placed, so a bad roster fails with a clear
+  // message instead of a partial world or a duplicated object id.
+  const requestedPlants = validatedRoster('plant species',
+    plant_species === null || plant_species === undefined
+      ? STARTER_PLANT_SPECIES : [...plant_species], STARTER_PLANT_ANCHORS);
+  const requestedAnimals = validatedRoster('animal species',
+    animal_species === null || animal_species === undefined
+      ? STARTER_ANIMAL_SPECIES : [...animal_species], STARTER_ANIMAL_ANCHORS);
+  const requestedCollectibles = validatedRoster('collectible',
+    collectibles === null || collectibles === undefined
+      ? STARTER_COLLECTIBLES : [...collectibles], STARTER_COLLECTIBLE_ANCHORS);
   if (world_width < MINIMUM_WORLD_WIDTH || world_height < MINIMUM_WORLD_HEIGHT) {
     throw new Error(`canonical world must be at least ${MINIMUM_WORLD_WIDTH}x${MINIMUM_WORLD_HEIGHT}`);
   }
@@ -660,36 +977,68 @@ export async function generateInitialWorld(
   const fixtureRng = new DeterministicRng(await deriveSeed(
     state.seed, 'layout', 'fixtures',
   ));
-  const fixtureIds = await shuffled(REQUIRED_FUNCTIONAL_FIXTURES, fixtureRng);
-  const columns = 5;
-  const spacingX = Math.max(8, Math.floor((state.world_width - 8) / columns));
-  const rows = Math.ceil(fixtureIds.length / columns);
-  const startY = Math.max(2, state.world_height - (rows * 5 + 3));
   state.fixtures = [];
-  for (let index = 0; index < fixtureIds.length; index += 1) {
-    const catalogId = fixtureIds[index];
-    state.fixtures.push(normalizeFixture({
+  const fixtureCellsUsed = new Set();
+  for (const catalogId of STARTER_FIXTURES) {
+    const fixture = normalizeFixture({
       fixture_id: await stableId('fixture', state.world_id, catalogId),
       catalog_id: catalogId,
-      position: [4 + (index % columns) * spacingX, startY + Math.floor(index / columns) * 5],
+      position: scaledStarterAnchor(
+        state, STARTER_FIXTURE_ANCHORS[catalogId], 2,
+        FIXTURE_CATALOG[catalogId].footprint,
+      ),
       rotation: fixtureRng.randbelow(4) * 90,
       authored: false,
-    }));
+    });
+    const cells = fixtureCells(fixture).map(cellKey);
+    if (cells.some(cell => fixtureCellsUsed.has(cell))) {
+      throw new Error(`starter fixture anchors overlap: ${catalogId}`);
+    }
+    cells.forEach(cell => fixtureCellsUsed.add(cell));
+    state.fixtures.push(fixture);
   }
   const occupied = new Set(state.fixtures.flatMap(fixtureCells).map(cellKey));
-  for (const speciesId of Object.keys(SPECIES_CATALOG).sort()) {
+  const plantAgeRng = new DeterministicRng(await deriveSeed(
+    state.seed, 'layout', 'plant-ages',
+  ));
+  for (const speciesId of requestedPlants) {
     const plantId = await stableId('plant', state.world_id, speciesId);
-    const position = await freePosition(state, ['plant', speciesId], occupied, 3);
+    const desired = scaledStarterAnchor(
+      state, STARTER_PLANT_ANCHORS[speciesId], 3,
+    );
+    const position = nearStarterPosition(state, desired, occupied, 3);
+    // Select age from the plant's own topology so every starter has at least
+    // four visible organs and at least one unborn organ in both runtimes.
+    const previewTopology = await generateTopology(state.seed, plantId, speciesId, 0);
+    const birthTimes = [...new Set(previewTopology.map(node => node.birth_time))]
+      .sort((left, right) => left - right);
+    const minimumVisible = Math.max(
+      4, Math.floor((previewTopology.length * 55 + 99) / 100),
+    );
+    const maximumVisible = Math.max(
+      minimumVisible, Math.floor(previewTopology.length * 85 / 100),
+    );
+    const eligibleAges = birthTimes.filter(age => {
+      const count = previewTopology.filter(node => node.birth_time <= age).length;
+      return count >= minimumVisible && count <= maximumVisible;
+    });
+    if (!eligibleAges.length) throw new Error(
+      `starter topology has no partial established age: ${plantId}`,
+    );
+    const plantedAt = -plantAgeRng.choice(eligibleAges);
     state.plants.push(normalizePlant({
       plant_id: plantId, species_id: speciesId, position,
-      topology: await generateTopology(state.seed, plantId, speciesId),
+      topology: await generateTopology(state.seed, plantId, speciesId, plantedAt),
       growth_period_seconds: SPECIES_CATALOG[speciesId][3],
     }));
   }
   const blocked = new Set([...occupied, ...state.plants.map(item => cellKey(item.position))]);
-  for (const speciesId of Object.keys(ANIMAL_SPECIES).sort()) {
+  for (const speciesId of requestedAnimals) {
     const animalId = await stableId('animal', state.world_id, speciesId);
-    const position = await freePosition(state, ['animal', speciesId], blocked, 2);
+    const desired = scaledStarterAnchor(
+      state, STARTER_ANIMAL_ANCHORS[speciesId], 2,
+    );
+    const position = nearStarterPosition(state, desired, blocked, 2);
     const personalityRng = new DeterministicRng(await deriveSeed(
       state.seed, 'animal', animalId, 'personality',
     ));
@@ -700,9 +1049,12 @@ export async function generateInitialWorld(
       ])),
     }));
   }
-  for (const catalogId of Object.keys(COLLECTIBLE_CATALOG).sort()) {
+  for (const catalogId of requestedCollectibles) {
     const collectibleId = await stableId('collectible', state.world_id, catalogId);
-    const position = await freePosition(state, ['collectible', catalogId], blocked, 2);
+    const desired = scaledStarterAnchor(
+      state, STARTER_COLLECTIBLE_ANCHORS[catalogId], 2,
+    );
+    const position = nearStarterPosition(state, desired, blocked, 2);
     const [family, provenance, label, description] = COLLECTIBLE_CATALOG[catalogId];
     state.collectibles.push(normalizeCollectible({
       collectible_id: collectibleId, family, provenance, label, description,
@@ -710,16 +1062,7 @@ export async function generateInitialWorld(
     }));
   }
   if (!layoutIsSafe(state)) throw new Error('generated Garden layout failed safety validation');
-  // Frame the populated region on first open: fixtures cluster near the
-  // bottom of the field, so an origin camera shows an almost-empty corner.
-  const fixtureYs = state.fixtures.map(fixture => fixture.position[1]);
-  state.ui.camera = [
-    Math.floor(state.world_width / 2),
-    Math.min(
-      state.world_height - 1,
-      Math.floor(fixtureYs.reduce((total, y) => total + y, 0) / fixtureYs.length),
-    ),
-  ];
+  state.ui.camera = scaledStarterAnchor(state, [500, 650], 0);
   return deserializeWorldState(serializeWorldState(state));
 }
 
@@ -1750,6 +2093,11 @@ export async function projectGardenScene(sourceState) {
         semantic_description: `${plant.species_id.replaceAll('_', ' ')} at ${plant.position[0]},${plant.position[1]}; ${plant.dormant ? 'resting' : 'growing'}, ${visible.length} visible organs.`,
         visible_organs: visibleOrganGeometry(plant, state.effective_time),
       },
+      // Plants declare no primary action and offer no opportunities yet. The
+      // fields are still present so every projected object has one shape and a
+      // renderer never has to test whether a key exists.
+      primary_action: null,
+      opportunities: [],
     });
   }
   for (const fixture of state.fixtures) {
@@ -1773,6 +2121,23 @@ export async function projectGardenScene(sourceState) {
         presentation_state: fixturePresentationState(fixture),
         semantic_description: `${definition.name} at ${fixture.position[0]},${fixture.position[1]}; ${fixturePresentationState(fixture)}.`,
         authored_state: clone(fixture.authored_state) },
+      // Both of these dispatch the SAME canonical command the action sheet
+      // would have dispatched -- `primary_interact` carrying a fixture verb.
+      // Nothing new is invented for the point-and-click path; only the route
+      // to it is shorter.
+      primary_action: FIXTURE_PRIMARY_ACTIONS[fixture.catalog_id]
+        ? {
+          command: 'primary_interact',
+          args: { fixture_action: FIXTURE_PRIMARY_ACTIONS[fixture.catalog_id].verb },
+          label: FIXTURE_PRIMARY_ACTIONS[fixture.catalog_id].label,
+        }
+        : null,
+      opportunities: fixtureOpportunities(fixture).map(offer => ({
+        opportunity_id: offer.opportunity_id,
+        command: 'primary_interact',
+        args: { fixture_action: offer.verb },
+        label: offer.label,
+      })),
     });
   }
   for (const animal of state.animals) {
@@ -1810,6 +2175,21 @@ export async function projectGardenScene(sourceState) {
         },
         semantic_description: `${animal.display_name ?? animal.species_id}, ${animal.species_id}, bond tier ${animal.bond_tier}; ${animal.current_intent}; personality ${personalityEmphasis(animal.personality)}; ${animal.recent_memories.length} memories; decision ${decision.priority_reason ?? 'not_yet_decided'}.`,
       },
+      // An animal's verb IS the canonical command -- `play` and `feed` are
+      // top-level commands, unlike a fixture verb, which travels inside
+      // `primary_interact`. The renderer dispatches whatever it is handed
+      // either way and does not need to know the difference.
+      primary_action: {
+        command: animalPrimaryAction(animal).verb,
+        args: {},
+        label: animalPrimaryAction(animal).label,
+      },
+      opportunities: animalOpportunities(animal).map(offer => ({
+        opportunity_id: offer.opportunity_id,
+        command: offer.verb,
+        args: {},
+        label: offer.label,
+      })),
     });
   }
   for (const item of state.collectibles.filter(candidate => !candidate.collected)) {
@@ -1822,12 +2202,17 @@ export async function projectGardenScene(sourceState) {
         family: item.family, provenance: item.provenance, authored: item.authored,
         semantic_description: `${item.label} at ${item.position[0]},${item.position[1]}; ${item.provenance}.`,
       },
+      primary_action: null,
+      opportunities: [],
     });
   }
   objects.sort((left, right) => left.depth - right.depth ||
     compareCodePoints(left.object_id, right.object_id));
   return {
     world_id: state.world_id, effective_time: state.effective_time,
+    // The pause-aware simulation clock is not civil time. Renderers use this
+    // separately projected observation watermark for sky/season presentation.
+    observed_time: state.last_observed_wall_time,
     camera: [...state.ui.camera], motion_paused: state.ui.motion_paused,
     scene: { ...clone(state.program_state?.scene ?? {}),
       absence_summary: [...(state.program_state.absence_summary ?? [])],
@@ -2108,7 +2493,16 @@ function programKind(definition) {
 
 export function seedGardenProgramState(sourceState, program) {
   const state = deserializeWorldState(serializeWorldState(sourceState));
+  // Once an authenticated author program is attached, its declarations own
+  // the complete relationship-animal roster. Generated catalog animals are a
+  // standalone sandbox concern and must not leak into a recipient's story.
+  const authoredAnimalIds = new Set((program.animals ?? []).map(item => String(item.id)));
+  const removedSandboxAnimals = state.animals.some(
+    item => !authoredAnimalIds.has(item.animal_id),
+  );
+  state.animals = state.animals.filter(item => authoredAnimalIds.has(item.animal_id));
   const programState = clone(state.program_state ?? {});
+  if (removedSandboxAnimals) programState.absence_summary = [];
   const variables = programState.variables ??= {};
   for (const [name, value] of Object.entries(program.variables ?? {})) {
     if (!Object.hasOwn(variables, name)) variables[name] = clone(value);

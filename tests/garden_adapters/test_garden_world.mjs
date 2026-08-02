@@ -9,6 +9,7 @@ import {
   compareCodePoints,
   deserializeWorldState,
   dispatchGardenCommand,
+  generateInitialWorld,
   projectGardenScene,
   reconcileGardenOffline,
   serializeWorldState,
@@ -248,8 +249,34 @@ function assertFinalExpectations(state) {
   assert.equal(state.undo_stack.length, expected.undo_depth);
 }
 
+/**
+ * Emit the starter fixture roster this generator produces, for byte comparison
+ * against the Python one.
+ *
+ * The anchors are canonical world data, so "identically in Python and JS" has
+ * to mean identical POSITIONS, not merely two tables that look alike when read
+ * side by side. Two tables can agree and still diverge if the scaling, the
+ * margin or the collision nudge differ; comparing the generated output catches
+ * that, and comparing the tables would not.
+ */
+async function runStarterCompositionScenario() {
+  const state = await generateInitialWorld('starter-composition', 'starter-seed');
+  return {
+    world_width: state.world_width,
+    world_height: state.world_height,
+    camera: state.ui.camera,
+    fixtures: state.fixtures.map(fixture => ({
+      catalog_id: fixture.catalog_id,
+      position: fixture.position,
+      rotation: fixture.rotation,
+    })),
+  };
+}
+
 if (process.argv.includes('--emit')) {
   process.stdout.write(JSON.stringify(await runScenario()));
+} else if (process.argv.includes('--starter-emit')) {
+  process.stdout.write(JSON.stringify(await runStarterCompositionScenario()));
 } else if (process.argv.includes('--projection-emit')) {
   process.stdout.write(JSON.stringify(await projectGardenScene(deserializeWorldState(scenario.initial_state))));
 } else if (process.argv.includes('--advanced-emit')) {
@@ -360,6 +387,100 @@ if (process.argv.includes('--emit')) {
     );
   });
 
+  test('generation refuses unsupported and duplicated starter rosters', async () => {
+    // The exact message strings are asserted, not just that something threw.
+    // Python carries the identical assertions in
+    // `tests/garden_world/test_generation_projection.py`, so if either
+    // implementation changes what it refuses -- or merely how it says so --
+    // one of the two suites goes red. That is what stops the two generators
+    // drifting into accepting different rosters.
+    await assert.rejects(
+      () => generateInitialWorld('x', '1', { plant_species: ['nope'] }),
+      { message: "unsupported plant species requested: 'nope' (supported: "
+        + 'hydrangea, lavender, meadow_grass, oak, rose, sunflower, '
+        + 'water_lily, willow)' },
+    );
+    // Duplicates matter because every object id is a pure function of the
+    // species: asking twice used to yield two records sharing one id.
+    await assert.rejects(
+      () => generateInitialWorld('x', '1', { plant_species: ['oak', 'oak'] }),
+      { message: "duplicate plant species requested: 'oak'" },
+    );
+    await assert.rejects(
+      () => generateInitialWorld('x', '1', { animal_species: ['dragon'] }),
+      { message: "unsupported animal species requested: 'dragon' "
+        + '(supported: bird, cat, rabbit, turtle)' },
+    );
+    await assert.rejects(
+      () => generateInitialWorld('x', '1', { collectibles: ['nope'] }),
+      { message: "unsupported collectible requested: 'nope' "
+        + '(supported: fallen_acorn, lavender_sprig, oak_leaf)' },
+    );
+    // The empty roster is NOT an error -- it is the current default, and means
+    // 'deliberately none' rather than 'nothing was asked for'.
+    const empty = await generateInitialWorld('x', '1', {
+      plant_species: [], animal_species: [], collectibles: [],
+    });
+    assert.deepEqual([empty.plants, empty.animals, empty.collectibles], [[], [], []]);
+  });
+
+  test('point-and-click model declares primary actions and state-dependent opportunities', async () => {
+    // BEHAVIOURAL, deliberately. The composition this runs on is under review
+    // and not approved, so nothing here asserts a glyph, a colour or a
+    // position -- only what the world OFFERS and what performing it does.
+    const world = await generateInitialWorld('interaction:contract', 'slice');
+    const scene = await projectGardenScene(world);
+    const bench = scene.objects.find(item => item.semantic_name === 'Garden bench');
+    const lantern = scene.objects.find(item => item.semantic_name === 'Lantern');
+
+    // 7.8.3.1: the world declares the act and its wording. A renderer reading
+    // this cannot invent behaviour, because there is nothing left to infer.
+    assert.deepEqual(bench.primary_action, {
+      command: 'primary_interact',
+      args: { fixture_action: 'sit' },
+      label: 'Sit on the garden bench',
+    });
+    // The lantern's primary is the SAFE act. Lighting is state-dependent and
+    // must not be the thing a plain click does.
+    assert.equal(lantern.primary_action.args.fixture_action, 'observe');
+    assert.deepEqual(bench.opportunities, []);
+
+    // 7.8.3.2: exactly one side of the lit/unlit state is ever on offer.
+    assert.equal(lantern.opportunities.length, 1);
+    assert.equal(lantern.opportunities[0].label, 'Light the lantern');
+    assert.equal(lantern.opportunities[0].command, 'primary_interact');
+    assert.equal(lantern.opportunities[0].args.fixture_action, 'light');
+
+    // Performing it goes through the ordinary dispatcher -- the opportunity
+    // owns no state and adds no command of its own.
+    const [lit, result] = await dispatchGardenCommand(world, {
+      world_id: world.world_id, sequence: world.command_sequence + 1,
+      kind: lantern.opportunities[0].command,
+      target_id: lantern.object_id,
+      args: lantern.opportunities[0].args,
+      command_id: 'command:opportunity-light',
+    });
+    assert.equal(result.accepted, true);
+    const litScene = await projectGardenScene(lit);
+    const litLantern = litScene.objects.find(item => item.object_id === lantern.object_id);
+    assert.equal(litLantern.semantic_state.authored_state.lit, true);
+    // The offer flips rather than vanishing: still exactly one, now the
+    // opposite act, under a DIFFERENT id so a renderer can tell it is new.
+    assert.equal(litLantern.opportunities.length, 1);
+    assert.equal(litLantern.opportunities[0].label, 'Put out the lantern');
+    assert.notEqual(
+      litLantern.opportunities[0].opportunity_id,
+      lantern.opportunities[0].opportunity_id,
+    );
+
+    // Every projected object carries both fields, so a renderer never has to
+    // test whether a key exists before reading it.
+    for (const object of scene.objects) {
+      assert.ok('primary_action' in object, object.object_id);
+      assert.ok(Array.isArray(object.opportunities), object.object_id);
+    }
+  });
+
   test('browser world core has no DOM dependency', async () => {
     assert.equal('document' in globalThis, false);
     const output = await runScenario();
@@ -368,6 +489,7 @@ if (process.argv.includes('--emit')) {
 
   test('projection exposes canonical topology, connected masks, and semantic actions', async () => {
     const projection = await projectGardenScene(deserializeWorldState(scenario.initial_state));
+    assert.equal(projection.observed_time, scenario.initial_state.last_observed_wall_time);
     const plant = projection.objects.find(item => item.kind === 'plant');
     assert.ok(Array.isArray(plant.semantic_state.visible_organs));
     assert.ok(plant.actions.includes('prune'));

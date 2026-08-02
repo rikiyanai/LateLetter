@@ -91,7 +91,13 @@ class GardenRenderer:
         except ValueError:
             sky = resolve_sky_mode("storybook_fallback")
         if sky.is_astronomical and sky.location is not None:
-            when = datetime.fromtimestamp(projection.effective_time, tz=timezone.utc)
+            # effective_time is elapsed simulation time, not a civil timestamp.
+            observed_time = (
+                projection.observed_time
+                if projection.observed_time is not None
+                else projection.effective_time
+            )
+            when = datetime.fromtimestamp(observed_time, tz=timezone.utc)
             for star in visible_stars(when, sky.location):
                 x = min(width - 1, int(float(star["azimuth_degrees"]) / 360 * width))
                 y = max(0, int((1 - float(star["altitude_degrees"]) / 90) * max(1, horizon - 1)))

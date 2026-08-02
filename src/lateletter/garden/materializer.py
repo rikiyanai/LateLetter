@@ -404,8 +404,28 @@ def _definitions(program: GardenProgram) -> dict[str, Mapping[str, Any]]:
     }
 
 
-def _seed_program_state(world: WorldState, program: GardenProgram) -> WorldState:
+def seed_program_state(world: WorldState, program: GardenProgram) -> WorldState:
+    # Authenticated author programs own the complete relationship-animal
+    # roster. Catalog animals generated for the standalone sandbox are retired
+    # before facts or effects run, while persisted state for declared animals
+    # is preserved.
+    authored_animal_ids = {
+        str(item["id"]) for item in program.animals
+        if isinstance(item.get("id"), str)
+    }
+    removed_sandbox_animals = any(
+        animal.animal_id not in authored_animal_ids for animal in world.animals
+    )
+    world = replace(
+        world,
+        animals=tuple(
+            animal for animal in world.animals
+            if animal.animal_id in authored_animal_ids
+        ),
+    )
     state = deepcopy(dict(world.program_state))
+    if removed_sandbox_animals:
+        state["absence_summary"] = []
     variables = state.setdefault("variables", {})
     for name, value in program.variables.items():
         variables.setdefault(str(name), deepcopy(value))
@@ -795,7 +815,7 @@ def apply_program(
     eligible: Mapping[str, str] | None = None,
 ) -> ProgramApplyResult:
     """Evaluate a program and atomically project new effects into ``WorldState``."""
-    world = _seed_program_state(world, program)
+    world = seed_program_state(world, program)
     prior_receipts = list(world.milestone_receipts)
     receipts = set(prior_receipts)
     created: list[str] = []

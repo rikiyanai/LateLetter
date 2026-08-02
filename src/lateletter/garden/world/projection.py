@@ -5,11 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping
 
-from .animals import ANIMAL_SPECIES
+from .animals import ANIMAL_SPECIES, animal_opportunities, animal_primary_action
 from .fixtures import (
     FIXTURE_CATALOG,
     fixture_active_affordances,
     fixture_cells,
+    fixture_opportunities,
     fixture_presentation_state,
 )
 from .model import Vec2, WorldState
@@ -171,6 +172,16 @@ class SceneObjectProjection:
     actions: tuple[str, ...]
     hotspot: Hotspot
     semantic_state: Mapping[str, Any]
+    # SPEC 7.8.3.1. What a plain click, tap or Enter on this object does, and
+    # what to call it on hover, on focus, and to a screen reader. `None` means
+    # the object offers no one-click act; it is then reached through "more
+    # actions". The renderer reads this instead of deciding for itself what a
+    # bench or a lantern ought to do.
+    primary_action: Mapping[str, Any] | None = None
+    # SPEC 7.8.3.2. Acts that apply only in the current world state, each drawn
+    # as its own control beside the object. Empty for most objects, most of the
+    # time -- that is the point: an opportunity is meant to be worth noticing.
+    opportunities: tuple[Mapping[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -185,6 +196,8 @@ class SceneObjectProjection:
             "actions": list(self.actions),
             "hotspot": self.hotspot.to_dict(),
             "semantic_state": dict(self.semantic_state),
+            "primary_action": None if self.primary_action is None else dict(self.primary_action),
+            "opportunities": [dict(item) for item in self.opportunities],
         }
 
 
@@ -196,11 +209,16 @@ class SceneProjection:
     motion_paused: bool
     scene: Mapping[str, Any]
     objects: tuple[SceneObjectProjection, ...]
+    # Civil/observed time is deliberately separate from effective_time.
+    # The latter is the pause-aware elapsed simulation clock and must never be
+    # interpreted as a Unix timestamp by a renderer.
+    observed_time: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "world_id": self.world_id,
             "effective_time": self.effective_time,
+            "observed_time": self.observed_time,
             "camera": self.camera.to_list(),
             "motion_paused": self.motion_paused,
             "scene": dict(self.scene),
@@ -279,6 +297,24 @@ def project_scene(state: WorldState) -> SceneProjection:
                  f"{fixture_presentation_state(fixture)}."
              ),
              "authored_state": dict(fixture.authored_state)},
+            # Both of these dispatch the SAME canonical command the action sheet
+            # would have dispatched -- `primary_interact` carrying a fixture
+            # verb. Nothing new is invented for the point-and-click path; only
+            # the route to it is shorter.
+            primary_action=None if definition.primary_verb is None else {
+                "command": "primary_interact",
+                "args": {"fixture_action": definition.primary_verb},
+                "label": definition.primary_label,
+            },
+            opportunities=tuple(
+                {
+                    "opportunity_id": offer["opportunity_id"],
+                    "command": "primary_interact",
+                    "args": {"fixture_action": offer["verb"]},
+                    "label": offer["label"],
+                }
+                for offer in fixture_opportunities(fixture)
+            ),
         ))
     for animal in state.animals:
         definition = ANIMAL_SPECIES[animal.species_id]
@@ -337,6 +373,24 @@ def project_scene(state: WorldState) -> SceneProjection:
                     f"decision {decision.get('priority_reason', 'not_yet_decided')}."
                 ),
             },
+            # An animal's verb IS the canonical command -- `play` and `feed` are
+            # top-level commands, unlike a fixture verb, which travels inside
+            # `primary_interact`. The renderer dispatches whatever it is handed
+            # either way and does not need to know the difference.
+            primary_action={
+                "command": animal_primary_action(animal)["verb"],
+                "args": {},
+                "label": animal_primary_action(animal)["label"],
+            },
+            opportunities=tuple(
+                {
+                    "opportunity_id": offer["opportunity_id"],
+                    "command": offer["verb"],
+                    "args": {},
+                    "label": offer["label"],
+                }
+                for offer in animal_opportunities(animal)
+            ),
         ))
     for item in state.collectibles:
         if item.collected:
@@ -363,11 +417,11 @@ def project_scene(state: WorldState) -> SceneProjection:
             },
         ))
     return SceneProjection(
-        state.world_id,
-        state.effective_time,
-        state.ui.camera,
-        state.ui.motion_paused,
-        {
+        world_id=state.world_id,
+        effective_time=state.effective_time,
+        camera=state.ui.camera,
+        motion_paused=state.ui.motion_paused,
+        scene={
             **(
                 dict(state.program_state.get("scene", {})) if isinstance(
                     state.program_state.get("scene", {}), Mapping
@@ -383,5 +437,6 @@ def project_scene(state: WorldState) -> SceneProjection:
                 entry.to_dict() for entry in sorted(state.journal, key=lambda value: value.entry_id)
             ],
         },
-        tuple(sorted(objects, key=lambda item: (item.depth, item.object_id))),
+        objects=tuple(sorted(objects, key=lambda item: (item.depth, item.object_id))),
+        observed_time=state.last_observed_wall_time,
     )

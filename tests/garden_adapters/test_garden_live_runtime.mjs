@@ -2,9 +2,21 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { canonicalWorldJson, generateInitialWorld, projectGardenScene } from '../../web/garden-world.mjs';
+import {
+  REVIEW_PENDING_ANIMAL_SPECIES,
+  REVIEW_PENDING_COLLECTIBLES,
+  REVIEW_PENDING_PLANT_SPECIES,
+  STARTER_ANIMAL_SPECIES,
+  STARTER_COLLECTIBLES,
+  STARTER_FIXTURES,
+  STARTER_PLANT_SPECIES,
+  canonicalWorldJson,
+  generateInitialWorld,
+  projectGardenScene,
+} from '../../web/garden-world.mjs';
 import {
   GardenRuntime,
+  WORLD_STORAGE_PREFIX,
   decodeStrictBase64,
   effectiveAmbientMotion,
   inputModalityFromBrowserEvent,
@@ -204,18 +216,57 @@ const fixture = async name => JSON.parse(await readFile(
   new URL(`../garden_contract/fixtures/${name}`, import.meta.url), 'utf8',
 ));
 
+/**
+ * Return a fresh key/value store that already holds a populated world.
+ *
+ * Many runtime tests below tend a plant, feed an animal or pick something up,
+ * so they need a world that actually contains those records -- and the default
+ * starter content is empty while its art waits for per-asset visual approval.
+ *
+ * The world is built here and written into the store, then the runtime opens
+ * it. That is the ordinary restore path rather than a test-only door:
+ * `GardenRuntime` opens whatever `load` hands back and only generates when
+ * there is nothing stored, so putting a world in the store is how any caller
+ * supplies a specific one. The runtime constructor itself takes no content
+ * arguments, which keeps a test's staging needs off the product surface.
+ *
+ * @param worldId Identity the runtime under test will open. The storage key is
+ *   derived from it exactly as the runtime derives its own, so a mismatch here
+ *   would surface as the runtime generating an empty world instead of silently
+ *   reading someone else's.
+ * @param seed Generation seed. Pass the same value the runtime is constructed
+ *   with, so the stored world is the one that runtime would have made itself.
+ * @returns A `Map` suitable for the `load`/`save` closures used throughout.
+ */
+async function populatedStore(worldId, seed) {
+  const values = new Map();
+  const world = await generateInitialWorld(worldId, seed, {
+    plant_species: REVIEW_PENDING_PLANT_SPECIES,
+    animal_species: REVIEW_PENDING_ANIMAL_SPECIES,
+    collectibles: REVIEW_PENDING_COLLECTIBLES,
+  });
+  values.set(`${WORLD_STORAGE_PREFIX}${worldId}`, canonicalWorldJson(world));
+  return values;
+}
+
 test('initial generation and projection are viewport-independent', async () => {
   const left = await generateInitialWorld('garden:test', 'seed-1');
   const right = await generateInitialWorld('garden:test', 'seed-1');
   assert.equal(canonicalWorldJson(left), canonicalWorldJson(right));
   const before = canonicalWorldJson(left);
   const projection = await projectGardenScene(left);
-  assert.equal(projection.objects.length, 47);
+  assert.equal(projection.objects.length,
+    STARTER_FIXTURES.length + STARTER_PLANT_SPECIES.length +
+    STARTER_COLLECTIBLES.length + STARTER_ANIMAL_SPECIES.length);
+  for (const plant of left.plants) {
+    const visibleCount = plant.topology.filter(node => node.birth_time <= 0).length;
+    assert.ok(visibleCount >= 4 && visibleCount < plant.topology.length);
+  }
   assert.equal(canonicalWorldJson(left), before);
 });
 
 test('runtime persists exact canonical state and routes every action through reducer', async () => {
-  const values = new Map();
+  const values = await populatedStore('standalone:test', 'cozy');
   const runtime = await new GardenRuntime({
     worldId: 'standalone:test', seed: 'cozy', now: () => 100,
     load: async key => values.get(key) ?? null,
@@ -238,7 +289,7 @@ test('runtime persists exact canonical state and routes every action through red
 });
 
 test('runtime serializes concurrent accepted commands without losing either mutation', async () => {
-  const values = new Map();
+  const values = await populatedStore('concurrent:test', 'queue');
   const runtime = await new GardenRuntime({
     worldId: 'concurrent:test', seed: 'queue', now: () => 100,
     load: async key => values.get(key) ?? null,
@@ -315,7 +366,7 @@ test('program evaluator and authenticated v1 migration match fixtures', async ()
   });
   assert.deepEqual(migratedResult.trace.filter(row => row.status === 'applied')
     .map(row => row.event_id).sort(), ['legacy.gift.flower', 'legacy.gift.rabbit']);
-  const values = new Map();
+  const values = await populatedStore('bundle:legacy', '7');
   const runtime = await new GardenRuntime({
     worldId: 'bundle:legacy', seed: '7', now: () => 100,
     load: async key => values.get(key) ?? null,
@@ -344,15 +395,15 @@ test('program evaluator and authenticated v1 migration match fixtures', async ()
       parallelValues.set(key, value);
     },
   }).open();
-  const baseAnimal = parallel.projection.objects.find(item => item.kind === 'animal');
+  const authoredAnimalId = 'legacy-entity.gift.rabbit';
   const [parallelReceipts, parallelPlay] = await Promise.all([
     parallel.materializeProgram(migrated, migratedResult),
-    parallel.dispatch('mouse', 'play', { target_id: baseAnimal.object_id }),
+    parallel.dispatch('mouse', 'play', { target_id: authoredAnimalId }),
   ]);
   assert.ok(parallelReceipts.length > 0);
   assert.equal(parallelPlay.accepted, true);
   assert.ok(parallel.state.journal.some(item => item.label === 'Clover'));
-  assert.equal(parallel.state.animals.find(item => item.animal_id === baseAnimal.object_id)
+  assert.equal(parallel.state.animals.find(item => item.animal_id === authoredAnimalId)
     .interaction_counts.play, 1);
   assert.equal(parallelValues.get(parallel.storageKey), canonicalWorldJson(parallel.state));
 });
@@ -421,7 +472,7 @@ test('letter presentation and missed summaries persist canonically only after ap
     facts: { 'visit.total': 2 }, missed_event_summaries: summary,
   });
   assert.deepEqual(applied.state.presented_letters, undefined);
-  const values = new Map();
+  const values = await populatedStore('letter-present:test', 'future');
   const runtime = await new GardenRuntime({
     worldId: 'letter-present:test', seed: 'future', now: () => 100,
     load: async key => values.get(key) ?? null,
@@ -463,7 +514,7 @@ test('scheduled program occurrence materializes through canonical runtime once',
         params: { kind: 'memory', label: 'Scheduled memory', text: 'Still here.' } }],
     }],
   });
-  const values = new Map();
+  const values = await populatedStore('scheduled:test', 'schedule');
   const runtime = await new GardenRuntime({
     worldId: 'scheduled:test', seed: 'schedule', now: () => 1_767_297_700,
     load: async key => values.get(key) ?? null,
@@ -484,6 +535,32 @@ test('scheduled program occurrence materializes through canonical runtime once',
   assert.deepEqual(await runtime.materializeProgram(program, evaluation), []);
 });
 
+test('authenticated program roster replaces sandbox animals before absence reconciliation', async () => {
+  const program = parseGardenProgram({
+    version: 1, evaluator_version: 1, world_state_version: 1,
+    atlas_version: 'garden-atlas-1', astronomy_catalog_version: 'bright-stars-1',
+    author_timezone: 'UTC', variables: {}, entities: [], animals: [], events: [],
+  });
+  // Seeded with animals on purpose: this test is about an authenticated
+  // program REPLACING a sandbox roster, so an empty world would let it pass
+  // without ever replacing anything.
+  const values = await populatedStore('roster:test', 'sandbox');
+  const sandbox = await new GardenRuntime({
+    worldId: 'roster:test', seed: 'sandbox', now: () => 100,
+    load: async key => values.get(key) ?? null,
+    save: async (key, value) => values.set(key, value),
+  }).open();
+  assert.ok(sandbox.state.animals.length > 0);
+  const authenticated = await new GardenRuntime({
+    worldId: 'roster:test', seed: 'sandbox', program, now: () => 200,
+    load: async key => values.get(key) ?? null,
+    save: async (key, value) => values.set(key, value),
+  }).open();
+  assert.deepEqual(authenticated.state.animals, []);
+  assert.equal((authenticated.state.program_state.absence_summary ?? [])
+    .some(summary => summary.startsWith('Your ')), false);
+});
+
 test('an accepted interaction can unlock and persist an in-session authored event', async () => {
   const program = parseGardenProgram({
     version: 1, evaluator_version: 1, world_state_version: 1,
@@ -497,7 +574,7 @@ test('an accepted interaction can unlock and persist an in-session authored even
         params: { kind: 'memory', label: 'Shared snack', text: 'A new memory.' } }],
     }],
   });
-  const values = new Map();
+  const values = await populatedStore('interaction:test', 'bond');
   const runtime = await new GardenRuntime({
     worldId: 'interaction:test', seed: 'bond', now: () => 100,
     load: async key => values.get(key) ?? null,
@@ -518,7 +595,7 @@ test('an accepted interaction can unlock and persist an in-session authored even
 });
 
 test('runtime live tick persists projection changes and honors canonical pause', async () => {
-  const values = new Map();
+  const values = await populatedStore('live:test', 'dwell');
   const runtime = await new GardenRuntime({
     worldId: 'live:test', seed: 'dwell', now: () => 100,
     load: async key => values.get(key) ?? null,

@@ -62,6 +62,82 @@ ANIMAL_SPECIES: dict[str, AnimalSpeciesDefinition] = {
     ),
 }
 
+# The bond tier at which an animal stops being a stranger. Below it, feeding is
+# the act that builds trust and is therefore worth surfacing; at and above it
+# the animal already trusts the reader and food is no longer the point.
+ANIMAL_TRUST_TIER = 3
+
+
+def animal_display_name(animal: AnimalState) -> str:
+    """What to call this animal in a sentence addressed to the reader."""
+    return animal.display_name or animal.species_id.replace("_", " ")
+
+
+def animal_primary_action(animal: AnimalState) -> dict[str, str]:
+    """The single act a plain click, tap or Enter on this animal performs.
+
+    SPEC 7.8.3.1, and the operator's decision of 2026-07-31: interaction with a
+    living thing is DIRECT. Clicking the cat does something to the cat; it does
+    not open a menu about the cat.
+
+    The verb is `play`, which is this world model's existing safe, resource-free
+    animal interaction -- it costs nothing, cannot be got wrong, and is
+    reversible in the only sense that matters, which is that doing it again is
+    fine. The decision text says "click to pet cat"; `pet` is not a canonical
+    command here, and inventing one so the label could match the example would
+    have meant the renderer dispatching something the world does not implement.
+    The model's word for the same gesture is `play`.
+
+    Feeding is deliberately NOT the primary. It is state-dependent -- it means
+    something entirely different to a stray than to a companion -- and
+    7.8.3.2 reserves state-dependent acts for spawned opportunities.
+
+    :param animal: The animal being projected.
+    :returns: `{verb, label}`; the projection turns it into a command record.
+    """
+    return {
+        "verb": "play",
+        "label": f"Play with the {animal_display_name(animal)}",
+    }
+
+
+def animal_opportunities(animal: AnimalState) -> tuple[dict[str, str], ...]:
+    """The spawned opportunities this animal is currently offering.
+
+    SPEC 7.8.3.2, and the operator's decision: "Feeding is a spawned
+    beside-object opportunity, not the cat's primary action. A spawned
+    affordance represents a state-dependent opportunity such as feeding an
+    eligible animal."
+
+    Eligibility is exactly what the browser HUD used to test for privately
+    before this moved into the world model: an animal below the trust tier. The
+    difference is that the browser is no longer the one deciding. It draws what
+    this returns, so the terminal offers the same thing from the same state, and
+    an opportunity cannot appear in one surface and not the other.
+
+    :param animal: The animal whose current state decides what is on offer.
+    :returns: Records of `{opportunity_id, verb, label}` sorted by
+        `opportunity_id`; empty when nothing is on offer.
+    """
+    offers: list[dict[str, str]] = []
+    if animal.bond_tier < ANIMAL_TRUST_TIER:
+        offers.append({
+            "verb": "feed",
+            "label": f"Feed the {animal_display_name(animal)}",
+        })
+    return tuple(sorted(
+        (
+            {
+                "opportunity_id": f"{animal.animal_id}:{offer['verb']}",
+                "verb": offer["verb"],
+                "label": offer["label"],
+            }
+            for offer in offers
+        ),
+        key=lambda offer: offer["opportunity_id"],
+    ))
+
+
 TIER_REPERTOIRES: dict[str, tuple[tuple[str, ...], ...]] = {
     "bird": (
         ("watch_from_branch", "startle_flutter", "explore_edge"),

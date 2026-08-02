@@ -61,7 +61,15 @@ export const BRIGHT_STAR_CATALOG = Object.freeze(BRIGHT_STAR_DATA.stars.map(star
 
 export function projectSkyPoints(sky, unixSeconds, viewport) {
   if (!sky.astronomical || !sky.region) {
-    return [[Math.floor(viewport[0] * 0.18), 1, '.'], [Math.floor(viewport[0] * 0.52), 2, '*'], [Math.floor(viewport[0] * 0.82), 1, '.']];
+    const width = Math.max(1, Math.floor(Number(viewport?.[0]) || 1));
+    const skyRows = Math.max(3, Math.floor((Number(viewport?.[1]) || 10) * 0.58));
+    const count = Math.max(12, Math.min(42, Math.floor(width / 4)));
+    const day = Math.floor(Math.max(0, Number(unixSeconds) || 0) / 86400);
+    return Array.from({ length: count }, (_, index) => [
+      (index * 37 + index * index * 3 + day * 17) % width,
+      1 + ((index * 19 + index * index + day * 11) % Math.max(1, skyRows - 1)),
+      index % 11 === 0 ? '*' : '.',
+    ]);
   }
   const gast = greenwichApparentSiderealTime(unixSeconds);
   return BRIGHT_STAR_CATALOG.map(([id, raHours, decDegrees, magnitude]) => {

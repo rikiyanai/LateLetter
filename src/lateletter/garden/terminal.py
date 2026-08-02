@@ -10,6 +10,8 @@ import time
 from typing import Any, Mapping
 
 from .input_adapters import InputEnvelope, InputModality, InputNormalizationError, normalize_input
+from .materializer import seed_program_state
+from .program import GardenProgram
 from .state import TerminalViewport
 from .world.clock import OfflineReport, reconcile_offline
 from .world.engine import CommandResult, activate_memorial, advance_live_world, dispatch
@@ -54,6 +56,10 @@ class TerminalWorldSession:
             "recipient-preview",
             "lateletter-recipient-preview-v1",
         )
+        # Pre-auth recipient space is not the standalone sandbox. Relationship
+        # animals belong to the encrypted author program and remain absent
+        # until authentication supplies that roster.
+        world = replace(world, animals=())
         world, report = reconcile_offline(world, observed)
         return cls(world, None, TerminalViewport(width, height), report)
 
@@ -69,7 +75,19 @@ class TerminalWorldSession:
         observed_wall_time: int | None = None,
         record_visit: bool = True,
         defer_persistence: bool = False,
+        program: GardenProgram | None = None,
     ) -> TerminalWorldSession:
+        """Open or restore a persistent Garden session.
+
+        Deliberately NOT a place to choose starter content. This session opens
+        whatever world already exists at `path`, and generates a default one
+        only when none does. Two content mechanisms already exist and cover the
+        real cases: an author's `program` supplies the relationship-animal
+        roster below, and any caller wanting a specific world can build it with
+        `generate_initial_world` and persist it through `WorldStore` before
+        opening. Adding a third, narrower content knob here would have served
+        only the tests that use it, so it does not live on this surface.
+        """
         # A world ID can contain author-controlled identifiers.  Persistence
         # filenames are fixed-length digests, never raw bundle IDs or paths.
         safe_name = hashlib.sha256(world_id.encode("utf-8")).hexdigest()
@@ -81,6 +99,11 @@ class TerminalWorldSession:
                 raise WorldPersistenceError("stored Garden world ID does not match requested world")
         else:
             world = generate_initial_world(world_id, seed)
+        # The author program owns the complete relationship-animal roster.
+        # Apply it before offline reconciliation so generic sandbox animals do
+        # not create recipient-facing return receipts or absence summaries.
+        if program is not None:
+            world = seed_program_state(world, program)
         observed = int(time.time()) if observed_wall_time is None else int(observed_wall_time)
         world, report = reconcile_offline(world, observed)
         world = activate_memorial(world)

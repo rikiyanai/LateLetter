@@ -76,11 +76,24 @@ export function effectiveAmbientMotion({ prefersReducedMotion = false, motionPau
 }
 
 export class GardenRuntime {
-  constructor({ worldId, seed, load, save, now = () => Math.floor(Date.now() / 1000) }) {
+  constructor({
+    // Deliberately no starter-content options here. This runtime opens
+    // whatever world `load` returns and generates a default one only when
+    // there is nothing stored. Two content mechanisms already exist and cover
+    // the real cases: an authenticated `program` supplies the
+    // relationship-animal roster in `open` below, and any caller wanting a
+    // specific world can build it with `generateInitialWorld` and hand it back
+    // through `load`. A third, narrower content knob on this constructor would
+    // have had no product caller -- `viewer-bnw.html` passes none of it -- so
+    // it does not live on this surface. Mirrors `TerminalWorldSession.open`.
+    worldId, seed, load, save, program = null,
+    now = () => Math.floor(Date.now() / 1000),
+  }) {
     this.worldId = String(worldId);
     this.seed = String(seed);
     this.loadValue = load;
     this.saveValue = save;
+    this.program = program;
     this.now = now;
     this.state = null;
     this.projection = null;
@@ -152,6 +165,10 @@ export class GardenRuntime {
         state = await generateInitialWorld(this.worldId, this.seed);
         this.assertActive();
       }
+      // An authenticated author program owns the relationship-animal roster.
+      // Adopt it before offline reconciliation so sandbox animals cannot emit
+      // return receipts or absence summaries in a recipient world.
+      if (this.program) state = seedGardenProgramState(state, this.program);
       this.previousObservedWallTime = state.last_observed_wall_time;
       const [reconciled, absenceReport] = await reconcileGardenOffline(state, this.now());
       this.assertActive();
@@ -322,6 +339,23 @@ export class GardenRuntime {
       await this.refreshProjection();
       this.assertActive();
       return receipts;
+    });
+  }
+
+  async adoptProgram(program) {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.state) throw new Error('Garden runtime is not open');
+      const state = this.state;
+      const prepared = seedGardenProgramState(state, program);
+      if (canonicalWorldJson(prepared) !== canonicalWorldJson(state)) {
+        this.state = prepared;
+        await this.persist();
+        this.assertActive();
+        await this.refreshProjection();
+        this.assertActive();
+      }
+      return JSON.parse(JSON.stringify(this.state.program_state));
     });
   }
 

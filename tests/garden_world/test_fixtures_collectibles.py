@@ -39,7 +39,18 @@ def test_required_fixture_catalog_has_actions_and_systemic_affordances():
 def test_every_required_fixture_verb_has_direct_persistent_state():
     state = generate_initial_world("fixture-verbs", 99, world_width=64, world_height=40)
     sequence = 0
-    for fixture in tuple(state.fixtures):
+    fixtures = {fixture.catalog_id: fixture for fixture in state.fixtures}
+    for catalog_id in REQUIRED_FUNCTIONAL_FIXTURES:
+        fixture = fixtures.get(catalog_id)
+        if fixture is None:
+            position = next(
+                Vec2(x, y)
+                for y in range(2, state.world_height - 3)
+                for x in range(2, state.world_width - 3)
+                if validate_fixture_placement(state, catalog_id, Vec2(x, y))
+            )
+            fixture = FixtureState(f"fixture:test:{catalog_id}", catalog_id, position)
+            state = replace(state, fixtures=(*state.fixtures, fixture))
         definition = FIXTURE_CATALOG[fixture.catalog_id]
         for verb in definition.interaction_verbs:
             sequence += 1

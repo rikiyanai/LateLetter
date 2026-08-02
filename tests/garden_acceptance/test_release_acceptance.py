@@ -470,14 +470,12 @@ def test_replay_camera_pan_and_hit_testing_are_deterministic_but_not_a_p95_claim
     assert at_sixty.hit_test(screen, target)
 
 
-def test_accessibility_static_contract_has_semantics_targets_and_motion_pause():
+def test_accessibility_static_contract_keeps_motion_controls_without_rejected_action_chrome():
     source = VIEWER.read_text(encoding="utf-8")
     required = {
         '@media (prefers-reduced-motion: reduce)',
         'id="garden-scene-summary"',
         'role="status" aria-live="polite"',
-        'id="garden-object-list" aria-label="Garden objects"',
-        'id="garden-action-sheet" role="group"',
         'min-width: 44px; min-height: 44px',
         'data-garden-action="pause_motion"',
         'data-garden-action="open_journal"',
@@ -485,6 +483,19 @@ def test_accessibility_static_contract_has_semantics_targets_and_motion_pause():
     }
     missing = sorted(value for value in required if value not in source)
     assert not missing
+
+    # SPEC 7.8.3 leaves nonvisual secondary-action parity OPEN; it explicitly
+    # forbids concealing that gap by painting the rejected list/sheet over the
+    # Garden. Accessibility requirements cannot be used to revive that UI.
+    forbidden = {
+        'id="garden-object-list" aria-label="Garden objects"',
+        'id="garden-action-sheet" role="group"',
+        'id="garden-invitation"',
+        'class="garden-opportunity"',
+        'More actions',
+    }
+    returned = sorted(value for value in forbidden if value in source)
+    assert not returned
 
 
 def test_sky_audit_covers_twelve_trusted_privacy_safe_vectors():

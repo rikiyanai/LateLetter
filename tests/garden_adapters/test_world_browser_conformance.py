@@ -135,6 +135,85 @@ def test_python_and_browser_worlds_match_every_checkpoint_and_persisted_byte():
     assert browser == python
 
 
+# The starter row, as decided by the operator on 2026-08-01, in thousandths of
+# the world extent. Pinned here as a literal so that changing the composition
+# requires changing this test as well — the anchors are canonical world data,
+# and a silent edit to them is a silent edit to everybody's Garden.
+AUTHORITATIVE_STARTER_ANCHORS = {
+    "stepping_stones": (250, 650),
+    "bench": (375, 650),
+    "mailbox": (500, 650),
+    "lantern": (625, 650),
+    "planter": (750, 650),
+}
+
+
+def _starter_anchor_subset() -> dict[str, tuple[int, int]]:
+    """Just the five starter entries of the canonical anchor table.
+
+    The table also holds anchors for the five catalog fixtures that are NOT in
+    the default scene; those are for authored programs and are deliberately not
+    pinned here.
+    """
+    from lateletter.garden.world.generation import STARTER_FIXTURE_ANCHORS
+
+    return {
+        catalog_id: STARTER_FIXTURE_ANCHORS[catalog_id]
+        for catalog_id in AUTHORITATIVE_STARTER_ANCHORS
+    }
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_starter_composition_is_authoritative_and_identical_in_both_generators():
+    """The five starter fixtures land on the same cells in Python and the browser.
+
+    Comparing the two anchor TABLES would not be enough. The tables are only
+    inputs; what a recipient sees is the output of scaling them against the
+    world extent, clamping them inside the margin, and nudging them apart when
+    footprints collide. Two identical tables can still produce different worlds
+    if any of those steps differs, so this compares the generated fixtures.
+    """
+    assert _starter_anchor_subset() == AUTHORITATIVE_STARTER_ANCHORS
+
+    result = subprocess.run(
+        [shutil.which("node") or "node", str(NODE_RUNNER), "--starter-emit"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    browser = json.loads(result.stdout)
+    world = generate_initial_world("starter-composition", "starter-seed")
+    python = {
+        "world_width": world.world_width,
+        "world_height": world.world_height,
+        "camera": [world.ui.camera.x, world.ui.camera.y],
+        "fixtures": [
+            {
+                "catalog_id": fixture.catalog_id,
+                "position": [fixture.position.x, fixture.position.y],
+                "rotation": fixture.rotation,
+            }
+            for fixture in world.fixtures
+        ],
+    }
+    by_catalog = lambda record: record["catalog_id"]  # noqa: E731
+    browser["fixtures"].sort(key=by_catalog)
+    python["fixtures"].sort(key=by_catalog)
+    assert browser == python
+
+    # The row is a row: one shared depth, strictly increasing x in the canonical
+    # left-to-right order. Losing either property is what let three fixtures
+    # hide behind one another in the first single-surface capture.
+    ordered = [
+        next(item for item in python["fixtures"] if item["catalog_id"] == catalog_id)
+        for catalog_id in AUTHORITATIVE_STARTER_ANCHORS
+    ]
+    assert len({item["position"][1] for item in ordered}) == 1
+    columns = [item["position"][0] for item in ordered]
+    assert columns == sorted(columns) and len(set(columns)) == len(columns)
+
+
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
 def test_python_and_browser_projection_match_topology_and_connected_state_exactly():
     result = subprocess.run(
@@ -235,9 +314,42 @@ def test_stress_compaction_matches_browser_bytes_and_survives_restart():
     )
 
 
+# The content this one conformance vector needs, named here instead of
+# inherited from whatever the default starter scene happens to contain.
+#
+# Why it has to be stated. The default scene is deliberately empty while its
+# art waits for per-asset approval, so a world generated with no arguments now
+# has no plants and no animals -- and a vector that compares Python and browser
+# behaviour across plants and animals had nothing left to compare. Reaching for
+# the default scene was always the wrong dependency: it made a parity test
+# quietly contingent on a composition decision that has nothing to do with
+# parity.
+#
+# Naming the roster locally also records what the vector is FOR. One plant is
+# enough, because the plant half throws the generated topology away and
+# substitutes a hand-built root/branch pair to drive the seven maturity stages
+# -- the species only has to exist. The three animals are the ones whose
+# decision paths differ below: bird takes the choreography-lock branch, cat the
+# authored-prohibition branch, rabbit the memory-saturation branch. Turtle is
+# left out on purpose -- no branch here exercises it, so including it would
+# enlarge the payload without enlarging coverage.
+#
+# These are review-pending species: defined, placeable, and absent from the
+# default scene until their drawings pass acceptance. Asking for them by name
+# is what "bounded" means here -- the test states its own needs and cannot be
+# broken, or silently widened, by a later change to the starter composition.
+CONFORMANCE_PLANT_SPECIES = ("oak",)
+CONFORMANCE_ANIMAL_SPECIES = ("bird", "cat", "rabbit")
+
+
 def _animal_plant_conformance_payload_and_result():
     plant_world = generate_initial_world(
         "stage-conformance", 77, world_width=64, world_height=40,
+        plant_species=CONFORMANCE_PLANT_SPECIES,
+        # No animals or collectibles: the plant half discards every other record
+        # a few lines below anyway, so asking for them would only add noise.
+        animal_species=(),
+        collectibles=(),
     )
     source_plant = plant_world.plants[0]
     root = OrganNode(
@@ -256,7 +368,19 @@ def _animal_plant_conformance_payload_and_result():
 
     animal_world = generate_initial_world(
         "animal-conformance", 91, world_width=64, world_height=40,
+        # Plants and collectibles are irrelevant to animal decision parity, and
+        # leaving them out keeps the compared payload to the records under test.
+        plant_species=(),
+        animal_species=CONFORMANCE_ANIMAL_SPECIES,
+        collectibles=(),
     )
+    # Guard the fixture itself. Every branch below is keyed on a species id, and
+    # a missing one would not fail loudly -- the loop would simply skip it and
+    # the vector would keep passing while covering less. Assert the roster
+    # arrived intact so a silent shrink is a test failure, not a quiet gap.
+    assert tuple(
+        sorted({animal.species_id for animal in animal_world.animals})
+    ) == tuple(sorted(CONFORMANCE_ANIMAL_SPECIES))
     animals = []
     for animal in animal_world.animals:
         candidates = set(ANIMAL_SPECIES[animal.species_id].repertoire)
