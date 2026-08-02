@@ -1125,7 +1125,21 @@ async function prepareCanonicalGardenRuntime(
   const worldPersistence=persistent&&reviewTime===null;
   const runtime=new GardenRuntime({
     worldId,seed,program,
-    load:worldPersistence?kvGet:async()=>null,
+    // A REVIEW still reads storage, and refuses what it finds.
+    //
+    // It would be easier to hand review mode an empty loader, and that is what
+    // this did: with nothing to load it always generated, so the picture was
+    // fresh. But "never looked" is not "proved fresh" -- it is the same answer
+    // arrived at by not asking, and it leaves the freshness of a review
+    // depending on a persistence flag two lines up rather than on the guard.
+    // Removing the guard entirely changed no observable behaviour, which is how
+    // a mechanism ends up load-bearing on paper and inert in fact.
+    //
+    // So a review reads what a recipient would have, and `require_fresh` in
+    // `open` refuses it before anything is projected, painted or written. A
+    // review is never given a writer, so refusing costs the stored world
+    // nothing.
+    load:(worldPersistence||reviewTime!==null)?kvGet:async()=>null,
     save:worldPersistence?kvSet:async()=>{},
     now:()=>reviewTime??Math.floor(Date.now()/1000),
   });
@@ -1268,6 +1282,15 @@ function installGardenReviewAccessor(){
       const rect=garden?.objectRectPixels?.(id);
       return rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null;
     },
+    // Where the open world came from, read off the runtime rather than
+    // inferred from the picture. A review that cannot ask this has to guess,
+    // and guessing is how a persisted 13/22/4/8 world was once reviewed as the
+    // current starter. Diagnostic only: it reads copies and dispatches nothing.
+    provenance:()=>gardenRuntime?{
+      load_origin:gardenRuntime.loadOrigin,
+      world_origin:gardenRuntime.worldOrigin
+        ?JSON.parse(JSON.stringify(gardenRuntime.worldOrigin)):null,
+    }:null,
     state:()=>gardenRuntime?{
       fixtures:gardenRuntime.state.fixtures.map(fixture=>({
         id:fixture.fixture_id,catalog:fixture.catalog_id,
@@ -2133,8 +2156,19 @@ function wire(){
   fi.onchange=e=>handleFile(e.target.files[0]);
   document.getElementById('btn-standalone').onclick=async e=>{
     e.stopPropagation();standaloneMode=true;bundle=null;authenticated=true;
-    await openCanonicalGarden('standalone:local','lateletter-standalone-v1');
-    showGarden();
+    try{
+      await openCanonicalGarden('standalone:local','lateletter-standalone-v1');
+      showGarden();
+    }catch(err){
+      // A review refusing a stored world reaches here. It must say so plainly
+      // rather than becoming an unhandled rejection with a blank page: the
+      // reviewer needs to know their browser is holding an older garden, not
+      // wonder why nothing appeared.
+      document.getElementById('err-h').textContent=
+        'this browser is holding an older garden';
+      document.getElementById('err-d').textContent=err.message;
+      showScreen('error');
+    }
   };
 
   document.querySelectorAll('[data-garden-action]').forEach(button=>{

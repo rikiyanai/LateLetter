@@ -1,0 +1,466 @@
+"""The review invariant, executed end to end in a real browser.
+
+Why this file exists
+--------------------
+Every previous attempt at this proved a mechanism and reported a product path.
+A guard was written, a unit test exercised the guard, and the report said the
+review surface enforced it -- while the surface itself had never been opened.
+
+So nothing here imports the guard, the runtime, or any module.  It starts a
+server, drives Google Chrome at ``viewer-bnw.html``, seeds the browser's own
+IndexedDB with a world a review must not see, and then asks the page what it is
+showing.  If the invariant is broken, this fails; if the invariant holds only in
+Node, this fails too.
+
+The invariant
+-------------
+    A visual-review entry point must prove it generated the exact current
+    starter composition in this process, before persistence or projection, and
+    must refuse everything else.
+
+What this file does NOT claim
+-----------------------------
+It is not visual acceptance.  It cannot be.  It checks the things a machine can
+check -- provenance, absence of the rejected action chrome, no console errors,
+the picture being painted at all -- and every question of whether the Garden
+looks right, feels alive, or is dense enough remains an operator judgement made
+by watching the real moving product.  A run of this file with no failures is a
+precondition for that review, never a substitute for it.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import json
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+import pytest
+
+
+playwright_api = pytest.importorskip(
+    "playwright.sync_api",
+    reason="playwright is not installed in this interpreter",
+)
+
+ROOT = Path(__file__).parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+DESKTOP = (1600, 1000)
+MOBILE = (390, 844)
+
+# The standalone Garden's world identity and the key its runtime stores under,
+# both duplicated from the product on purpose: if either changes, the seeding
+# below silently stops seeding anything, and a test that seeds nothing would
+# quietly stop testing the thing it exists for.
+STANDALONE_WORLD_ID = "standalone:local"
+STORAGE_KEY = f"lateletter_garden_world_v1_{STANDALONE_WORLD_ID}"
+
+# The review surface is gated on localhost AND an explicit review time. The
+# viewer accepts only a strict ISO-8601 instant here and treats anything else as
+# "no review time", which silently means "the product path" -- so this literal is
+# asserted to actually engage review mode by the first test below, rather than
+# trusted. A malformed value here would turn every review assertion into an
+# assertion about the product.
+REVIEW_QUERY = "garden_debug=1&garden_review_time=2026-06-01T12:00:00Z"
+PRODUCT_QUERY = "garden_debug=1"
+
+
+def _free_port() -> int:
+    """Ask the OS for a port nobody is using, and let go of it immediately."""
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
+
+@contextlib.contextmanager
+def _static_server():
+    """Serve the repository over HTTP for the duration of one test.
+
+    The viewer is an ES module and fetches sibling files, so ``file://`` will
+    not do -- the browser refuses cross-origin module imports from it.
+    """
+    port = _free_port()
+    process = subprocess.Popen(
+        [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
+        cwd=ROOT,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            with socket.socket() as probe:
+                if probe.connect_ex(("127.0.0.1", port)) == 0:
+                    break
+            time.sleep(0.05)
+        else:  # pragma: no cover - only on a badly wedged machine
+            raise RuntimeError("the static server never came up")
+        yield f"http://127.0.0.1:{port}"
+    finally:
+        process.terminate()
+        process.wait(timeout=10)
+
+
+def _restored_world_document() -> str:
+    """A stored world in the condition the browser one was actually found in.
+
+    Current shape, and no content stamps at all -- which is what a world written
+    before version stamping looks like, and what the reviewed 13/22/4/8 world
+    was.  Built through the real generator so the document is valid rather than
+    hand-approximated, then stripped of exactly the fields that make a world
+    able to say where it came from.
+    """
+    from lateletter.garden.world.generation import generate_initial_world
+
+    document = generate_initial_world(STANDALONE_WORLD_ID, "restored-seed").to_dict()
+    document["generator_version"] = None
+    document["composition_version"] = None
+    document["composition_fingerprint"] = None
+    # A marker no generated world would ever produce, so the assertions below can
+    # tell "the seeded world is on screen" from "a fresh world happens to look
+    # similar".
+    document["seed"] = "SEEDED-BY-THE-REVIEW-E2E-TEST"
+    return json.dumps(document)
+
+
+@contextlib.contextmanager
+def _chrome(origin: str, viewport=DESKTOP, seed_world: str | None = None):
+    """Open Chrome at the viewer with an optionally pre-seeded world store.
+
+    The world is written into the page's own IndexedDB, through the same
+    database and object store the viewer uses, BEFORE the viewer's scripts run.
+    That is what makes this the product path: nothing is injected into the
+    runtime and no module is stubbed; storage simply already contains something.
+
+    :param origin: base URL of the static server
+    :param viewport: (width, height) in CSS pixels
+    :param seed_world: a serialized world document to place in storage first
+    :yields: (page, errors) -- errors accumulates console and page errors
+    """
+    errors: list[str] = []
+    with playwright_api.sync_playwright() as driver:
+        try:
+            browser = driver.chromium.launch(channel="chrome")
+        except Exception as failure:  # pragma: no cover - environment dependent
+            pytest.skip(f"system Google Chrome is unavailable: {failure}")
+        context = browser.new_context(
+            viewport={"width": viewport[0], "height": viewport[1]},
+        )
+        page = context.new_page()
+        page.on("pageerror", lambda error: errors.append(f"pageerror: {error}"))
+        page.on(
+            "console",
+            lambda message: errors.append(f"console.{message.type}: {message.text}")
+            if message.type == "error"
+            and "/favicon.ico" not in (message.location or {}).get("url", "")
+            else None,
+        )
+        try:
+            if seed_world is not None:
+                # A blank same-origin document first, so IndexedDB is reachable
+                # without the viewer having started.
+                page.goto(f"{origin}/", wait_until="domcontentloaded")
+                page.evaluate(
+                    """async ({key, value}) => {
+                        const db = await new Promise((resolve, reject) => {
+                          const request = indexedDB.open('LateLetter', 1);
+                          request.onupgradeneeded = event => {
+                            const database = event.target.result;
+                            if (!database.objectStoreNames.contains('kv')) {
+                              database.createObjectStore('kv');
+                            }
+                          };
+                          request.onsuccess = event => resolve(event.target.result);
+                          request.onerror = event => reject(event.target.error);
+                        });
+                        await new Promise((resolve, reject) => {
+                          const tx = db.transaction('kv', 'readwrite');
+                          tx.objectStore('kv').put(value, key);
+                          tx.oncomplete = resolve;
+                          tx.onerror = event => reject(event.target.error);
+                        });
+                    }""",
+                    {"key": STORAGE_KEY, "value": seed_world},
+                )
+            yield page, errors
+        finally:
+            context.close()
+            browser.close()
+
+
+def _enter_standalone_garden(page, origin: str, query: str) -> None:
+    """Click the real visible standalone button and wait for the picture.
+
+    `#btn-standalone` and not `#btn-demo`, deliberately. The demo button opens
+    the non-persistent recipient PREVIEW world, whose loader always returns
+    null, so it generates whatever is in storage and could never have shown a
+    restored world in the first place -- a review passing through it would prove
+    nothing about the defect. `#btn-standalone` opens `standalone:local`, the
+    world that actually persists, which is where the 13/22/4/8 world lived.
+
+    The two tests below then differ only by the review query on the URL, so what
+    is being compared is the review policy itself and not two different paths.
+    """
+    page.goto(f"{origin}/viewer-bnw.html?{query}", wait_until="networkidle")
+    page.locator("#btn-standalone").click()
+    page.locator("#hud.vis").wait_for(state="visible")
+    page.locator("#g .garden-lattice-row").first.wait_for(state="attached")
+
+
+def _painted_glyph_count(page) -> int:
+    """How much ink is actually on the screen."""
+    return page.locator("#g .garden-lattice-row").evaluate_all(
+        "rows => rows.reduce((total, row) => total + row.textContent.trim().length, 0)"
+    )
+
+
+def _stored_world(page) -> str | None:
+    """Read the world document currently in the page's own storage."""
+    return page.evaluate(
+        """async key => {
+            const db = await new Promise((resolve, reject) => {
+              const request = indexedDB.open('LateLetter', 1);
+              request.onupgradeneeded = event => {
+                const database = event.target.result;
+                if (!database.objectStoreNames.contains('kv')) {
+                  database.createObjectStore('kv');
+                }
+              };
+              request.onsuccess = event => resolve(event.target.result);
+              request.onerror = event => reject(event.target.error);
+            });
+            return await new Promise((resolve, reject) => {
+              const tx = db.transaction('kv', 'readonly');
+              const read = tx.objectStore('kv').get(key);
+              read.onsuccess = event => resolve(event.target.result ?? null);
+              read.onerror = event => reject(event.target.error);
+            });
+        }""",
+        STORAGE_KEY,
+    )
+
+
+# ---------------------------------------------------------------------------
+# The invariant.
+# ---------------------------------------------------------------------------
+
+
+def test_the_review_surface_REFUSES_a_stored_world_and_paints_nothing():
+    """Seed storage with a restored world; the review must refuse it outright.
+
+    The strong form, and the reason this file was rewritten once. An earlier
+    version asserted only that the review SHOWED a fresh picture, which held
+    even with the guard deleted -- review mode had been handed an empty loader,
+    so it always generated and the guard never ran. "Never looked" is not
+    "proved fresh"; it is the same answer reached by not asking.
+
+    A review now reads exactly what a recipient's browser holds and refuses it,
+    so deleting the guard makes this fail. Nothing is projected, nothing is
+    painted, and because a review is never given a writer, nothing is lost.
+    """
+    with _static_server() as origin:
+        with _chrome(origin, seed_world=_restored_world_document()) as (page, errors):
+            page.goto(f"{origin}/viewer-bnw.html?{REVIEW_QUERY}", wait_until="networkidle")
+            page.locator("#btn-standalone").click()
+
+            # The refusal is visible to a person, not only to a log.
+            page.locator("#s-error").wait_for(state="visible", timeout=5000)
+            detail = page.locator("#err-d").inner_text()
+            assert "not a fresh composition" in detail, detail
+            assert "predates version stamping" in detail, detail
+
+            # Nothing was painted, and the stored world is untouched.
+            assert _painted_glyph_count(page) == 0, "the refused world was painted anyway"
+            assert _stored_world(page) == _restored_world_document(), (
+                "the review surface overwrote the stored world"
+            )
+        # A refusal is an expected outcome, so it must not arrive as an
+        # unhandled rejection or a console error.
+        assert errors == [], f"the refusal was reported as a page error: {errors}"
+
+
+def test_the_review_surface_generates_and_paints_when_storage_is_empty():
+    """The positive control: a review that can never run is not a review."""
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+
+            provenance = page.evaluate("() => window.__gardenReview.provenance()")
+            assert provenance is not None, "the review accessor was not installed"
+            assert provenance["load_origin"] == "generated", provenance["load_origin"]
+            assert provenance["world_origin"]["is_fresh"] is True, (
+                provenance["world_origin"]["reasons"]
+            )
+            assert _painted_glyph_count(page) > 0, "the review painted nothing"
+            # A review is given no writer, so it cannot leave a world behind for
+            # the next session to inherit.
+            assert _stored_world(page) is None, "the review persisted its world"
+        assert errors == [], f"the review surface logged errors: {errors}"
+
+
+def test_the_review_surface_shows_the_exact_current_starter_composition():
+    """Not merely fresh: the declared starter, measured from the running page.
+
+    A world can be freshly generated and still be a custom roster nobody
+    declared. The census here is read out of the browser, not out of a Python
+    constant, so it is the composition a reviewer would actually be looking at.
+    """
+    from lateletter.garden.world.generation import generate_initial_world
+    from lateletter.garden.world.provenance import world_census
+
+    expected = world_census(generate_initial_world("probe", "probe"))
+
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            origin_report = page.evaluate(
+                "() => window.__gardenReview.provenance().world_origin"
+            )
+            assert origin_report["census"] == expected, (
+                f"the review is showing {origin_report['census']}, "
+                f"not the declared starter {expected}"
+            )
+            assert origin_report["composition_version"] is not None, (
+                "the reviewed world belongs to no named composition revision"
+            )
+        assert errors == [], errors
+
+
+def test_the_product_path_keeps_a_recipients_restored_garden():
+    """The other direction, and it matters as much.
+
+    A guard that refused everywhere would delete a recipient's garden. The
+    product opens what is stored, and says plainly that it is restored rather
+    than pretending it is current.
+    """
+    with _static_server() as origin:
+        with _chrome(origin, seed_world=_restored_world_document()) as (page, errors):
+            _enter_standalone_garden(page, origin, PRODUCT_QUERY)
+
+            provenance = page.evaluate("() => window.__gardenReview.provenance()")
+            assert provenance["load_origin"] == "loaded", (
+                "the product regenerated over a stored world"
+            )
+            assert provenance["world_origin"]["is_fresh"] is False
+            assert provenance["world_origin"]["label"] == "restored"
+            assert _painted_glyph_count(page) > 0
+        assert errors == [], errors
+
+
+def test_the_reviewed_scene_holds_only_the_art_the_operator_accepted():
+    """Which objects are in the reviewed picture, against the verdict register.
+
+    Ten fixtures are accepted; no plant and no animal is.  The current starter
+    places five accepted fixtures AND two plants that carry no verdict, so this
+    test states that exactly, rather than passing on a vague "some accepted art
+    is present" or failing forever on a gap nobody has decided yet.
+
+    Written as an equality on both sets so it cannot drift in either direction:
+    adding unreviewed art to the starter fails it, and so does an approval
+    landing without the composition being reconsidered.  Neither change should
+    be able to happen quietly.
+    """
+    import json as _json
+
+    register = _json.loads((ROOT / "docs" / "garden-asset-acceptance.json").read_text())
+    accepted = {
+        row["asset_id"] for row in register["assets"]
+        if row["verdict"] in {"accepted", "accepted_as_deployed"}
+    }
+    assert accepted == {
+        "fixture.arbor", "fixture.bench", "fixture.birdbath", "fixture.bridge",
+        "fixture.lantern", "fixture.mailbox", "fixture.planter", "fixture.pond",
+        "fixture.stepping_stones", "fixture.trellis",
+    }, "the accepted inventory changed; the reviewed composition must be revisited"
+
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            objects = page.evaluate("() => window.__gardenReview.state().objects")
+            fixtures = page.evaluate("() => window.__gardenReview.state().fixtures")
+
+            in_scene = {f"fixture.{row['catalog']}" for row in fixtures}
+            assert in_scene <= accepted, (
+                f"the reviewed scene places unaccepted fixtures: {sorted(in_scene - accepted)}"
+            )
+            assert in_scene == {
+                "fixture.bench", "fixture.lantern", "fixture.mailbox",
+                "fixture.planter", "fixture.stepping_stones",
+            }, f"the starter fixture set changed: {sorted(in_scene)}"
+
+            # The recorded gap. Plants are drawn by the renderer and carry no
+            # per-asset verdict, so the reviewed composition is NOT one that
+            # could be accepted as it stands. Stating the count keeps it from
+            # growing unnoticed and keeps this file from implying otherwise.
+            plants = [row for row in objects if row["id"].startswith("plant")]
+            assert len(plants) == 2, (
+                "the number of unaccepted plant objects in the starter changed: "
+                f"{[row['id'] for row in plants]}"
+            )
+        assert errors == [], errors
+
+
+# ---------------------------------------------------------------------------
+# The rejected action chrome, at every required size.
+# ---------------------------------------------------------------------------
+
+
+FORBIDDEN_SELECTORS = (
+    "#garden-affordances",
+    "#garden-semantics",
+    "#garden-object-list",
+    "#garden-action-sheet",
+    ".garden-opportunity",
+    "#garden-invitation",
+)
+
+# Phrases from the rejected surfaces. Checked as TEXT because a rewritten
+# implementation would carry new element ids while saying the same things, and
+# it is the words over the picture the operator rejected.
+FORBIDDEN_PHRASES = ("Click to", "More actions", "Feed the bird", "Light the lantern")
+
+
+def _assert_no_action_chrome(page) -> None:
+    """No labels, cards, buttons, lists or sheets over or beside the picture."""
+    for selector in FORBIDDEN_SELECTORS:
+        assert page.locator(selector).count() == 0, selector
+    assert page.locator("#g button").count() == 0, "a button was painted in the Garden"
+    text = page.locator("#g").inner_text()
+    for phrase in FORBIDDEN_PHRASES:
+        assert phrase not in text, f"the Garden shows {phrase!r}"
+
+
+@pytest.mark.parametrize(
+    "viewport",
+    [DESKTOP, MOBILE, (320, 800)],
+    ids=["desktop-1600x1000", "mobile-390x844", "narrow-320"],
+)
+def test_no_action_chrome_at_every_required_size(viewport):
+    """1600x1000, 390x844 and 320 CSS pixels are all required review sizes."""
+    with _static_server() as origin:
+        with _chrome(origin, viewport=viewport) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            assert _painted_glyph_count(page) > 0, "the Garden painted nothing"
+            _assert_no_action_chrome(page)
+        assert errors == [], errors
+
+
+def test_no_action_chrome_survives_a_live_desktop_to_mobile_resize():
+    """Resizing in one live session, not two separate loads.
+
+    A surface can be clean on a fresh mobile load and still spawn chrome when a
+    desktop session is narrowed, because that path runs different code.
+    """
+    with _static_server() as origin:
+        with _chrome(origin, viewport=DESKTOP) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            _assert_no_action_chrome(page)
+            page.set_viewport_size({"width": MOBILE[0], "height": MOBILE[1]})
+            page.wait_for_timeout(400)
+            assert _painted_glyph_count(page) > 0, "the Garden emptied on resize"
+            _assert_no_action_chrome(page)
+        assert errors == [], errors
