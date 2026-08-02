@@ -110,12 +110,15 @@ def test_vertically_connected_cat_art_rejects_blank_gap_row_undersegmentation() 
     assert phase9["baselines"] == [31, 54, 77, 100, 123, 146, 169, 192, 213]
     assert phase8["baseline_delta_residuals"][-1] == -1
     assert phase9["baseline_delta_residuals"][-1] == -2
+    assert phase8["nominal_baselines"][-1] == 214
+    assert phase8["terminal_baseline_clamped"] is True
 
     terminal_sliver = next(item for item in periodic if item["pitch"] == 22 and item["phase"] == 12)
     assert terminal_sliver["valid"] is False
     assert terminal_sliver["terminal_sliver_rejected"] is True
     assert terminal_sliver["baseline_delta_residuals"][-1] == -18
     assert "terminal_sliver_rejected" in terminal_sliver["rejection_reasons"]
+    assert terminal_sliver["partial_edge_rows"] == []
 
 
 def test_benchmark_v4_records_raster_geometry_instead_of_mask_missing() -> None:

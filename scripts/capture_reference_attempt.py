@@ -56,11 +56,33 @@ def write_geometry_overlay(
         draw.line((0, y0, image.width - 1, y0), fill=(255, 64, 64, 210), width=1)
         draw.line((0, max(y0, y1 - 1), image.width - 1, max(y0, y1 - 1)), fill=(255, 64, 64, 210), width=1)
     # Orange alternatives expose harmonic/phase competition even when the
-    # blank-gap bands are later rejected as under-segmented.
-    for candidate in payload.get("projection_evidence", {}).get("periodic_row_candidates", [])[:4]:
+    # blank-gap bands are later rejected as under-segmented.  Keep the leading
+    # phases for the measured pitch family near the horizontal advance, plus
+    # the strongest rejected candidate, so a review cannot hide a one-pixel
+    # phase tie or terminal sliver.
+    periodic = list(payload.get("projection_evidence", {}).get("periodic_row_candidates", []))
+    reference = next(
+        (float(item.get("horizontal_advance_reference")) for item in periodic if item.get("horizontal_advance_reference")),
+        None,
+    )
+    families = {}
+    for candidate in periodic:
+        pitch = int(candidate.get("pitch", 0))
+        if reference is None or abs(pitch - reference) <= 4:
+            families.setdefault(pitch, []).append(candidate)
+    review_candidates = []
+    for pitch in sorted(families):
+        family = sorted(families[pitch], key=lambda item: (not bool(item.get("valid")), -float(item.get("independent_score", 0.0))))
+        review_candidates.extend(family[:2])
+    rejected = [item for item in periodic if not item.get("valid")]
+    if rejected:
+        review_candidates.append(max(rejected, key=lambda item: float(item.get("independent_score", 0.0))))
+    colors = ((255, 170, 0, 150), (40, 190, 120, 150), (180, 80, 255, 150), (255, 110, 30, 180))
+    for index, candidate in enumerate(review_candidates):
+        color = colors[index % len(colors)]
         for y0, y1 in candidate.get("row_bounds", []):
-            draw.line((0, int(y0), image.width - 1, int(y0)), fill=(255, 170, 0, 150), width=1)
-            draw.line((0, max(int(y0), int(y1) - 1), image.width - 1, max(int(y0), int(y1) - 1)), fill=(255, 170, 0, 150), width=1)
+            draw.line((0, int(y0), image.width - 1, int(y0)), fill=color, width=1)
+            draw.line((0, max(int(y0), int(y1) - 1), image.width - 1, max(int(y0), int(y1) - 1)), fill=color, width=1)
     if selected and selected.get("mode") == "fixed_lattice":
         origin = int(selected.get("origin_x", 0))
         advance = max(1, int(round(float(selected.get("advance_x", image.width)))))

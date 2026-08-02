@@ -279,6 +279,7 @@ def _periodic_row_candidates(
             gutter_score = 1.0 - (boundary_ink / considered if considered else 1.0)
             row_bounds: list[list[int]] = []
             baseline_rows: list[int] = []
+            nominal_baseline_rows: list[int] = []
             start = phase + ((y0 - phase) // pitch) * pitch
             while start + pitch <= 0:
                 start += pitch
@@ -291,6 +292,7 @@ def _periodic_row_candidates(
                     # A baseline is the nominal row baseline, clipped only by
                     # the observed ink extent.  Do not append y1 as a new
                     # baseline: that creates terminal sliver rows.
+                    nominal_baseline_rows.append(end - 1)
                     baseline_rows.append(min(end - 1, y1 - 1))
                 start += pitch
             baseline_deltas = [int(next_value - value) for value, next_value in zip(baseline_rows, baseline_rows[1:])]
@@ -359,6 +361,8 @@ def _periodic_row_candidates(
                     "row_count": len(row_bounds),
                     "row_bounds": row_bounds,
                     "baselines": baseline_rows,
+                    "nominal_baselines": nominal_baseline_rows,
+                    "terminal_baseline_clamped": bool(nominal_baseline_rows and nominal_baseline_rows[-1] != baseline_rows[-1]),
                     "baseline_deltas": baseline_deltas,
                     "baseline_delta_residuals": baseline_delta_residuals,
                     "partial_edge_rows": partial_edge_rows,
