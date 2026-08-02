@@ -241,6 +241,7 @@ def _periodic_row_candidates(
     *,
     min_pitch: int,
     max_pitch: int,
+    horizontal_advance_hint: float | None = None,
 ) -> list[dict[str, Any]]:
     """Measure row-pitch/phase alternatives independently of blank gaps.
 
@@ -258,6 +259,12 @@ def _periodic_row_candidates(
     y0, y1 = int(occupied[0]), int(occupied[-1]) + 1
     height, width = mask.shape
     candidates: list[dict[str, Any]] = []
+    vertical_autocorrelation = {
+        int(item["lag"]): float(item["score"])
+        for item in _autocorrelation(mask.sum(axis=1).astype(float), min_pitch, max_pitch)
+    }
+    top_clipped = bool(mask[0].any())
+    bottom_clipped = bool(mask[-1].any())
     for pitch in range(max(2, int(min_pitch)), min(int(max_pitch), height) + 1):
         for phase in range(pitch):
             boundaries = list(range(phase, y1 + pitch, pitch))
@@ -272,14 +279,77 @@ def _periodic_row_candidates(
             gutter_score = 1.0 - (boundary_ink / considered if considered else 1.0)
             row_bounds: list[list[int]] = []
             baseline_rows: list[int] = []
-            start = phase
-            while start < y1:
-                end = min(y1, start + pitch)
-                if end > y0:
-                    clipped_start = max(y0, start)
-                    row_bounds.append([clipped_start, end])
-                    baseline_rows.append(max(clipped_start, end - 1))
+            start = phase + ((y0 - phase) // pitch) * pitch
+            while start + pitch <= 0:
                 start += pitch
+            while start < y1:
+                end = start + pitch
+                if end > y0 and start < y1:
+                    clipped_start = max(0, start)
+                    clipped_end = min(height, end)
+                    row_bounds.append([clipped_start, clipped_end])
+                    # A baseline is the nominal row baseline, clipped only by
+                    # the observed ink extent.  Do not append y1 as a new
+                    # baseline: that creates terminal sliver rows.
+                    baseline_rows.append(min(end - 1, y1 - 1))
+                start += pitch
+            baseline_deltas = [int(next_value - value) for value, next_value in zip(baseline_rows, baseline_rows[1:])]
+            baseline_delta_residuals = [int(delta - pitch) for delta in baseline_deltas]
+            tolerance = max(1.0, pitch * 0.15)
+            partial_edge_rows: list[str] = []
+            if row_bounds and row_bounds[0][0] == 0 and phase != row_bounds[0][0]:
+                partial_edge_rows.append("initial")
+            if row_bounds and row_bounds[-1][1] == height and (row_bounds[-1][0] + pitch) > height:
+                partial_edge_rows.append("terminal")
+            clipping_proven = {
+                "initial": top_clipped,
+                "terminal": bottom_clipped,
+            }
+            partial_without_clipping = [edge for edge in partial_edge_rows if not clipping_proven[edge]]
+            terminal_sliver_rejected = bool(
+                baseline_delta_residuals
+                and abs(float(baseline_delta_residuals[-1])) > tolerance
+            )
+            initial_sliver_rejected = bool(
+                baseline_delta_residuals
+                and abs(float(baseline_delta_residuals[0])) > tolerance
+            )
+            profile_vectors: list[np.ndarray] = []
+            for bound_start, bound_end in row_bounds:
+                vector = mask[bound_start:bound_end].any(axis=0).astype(float)
+                norm = float(np.linalg.norm(vector))
+                if norm:
+                    profile_vectors.append(vector / norm)
+            similarities = [
+                float(np.dot(left, right))
+                for left, right in zip(profile_vectors, profile_vectors[1:])
+            ]
+            row_profile_similarity = float(np.mean(similarities)) if similarities else 0.0
+            autocorrelation_score = max(
+                0.0,
+                min(1.0, (vertical_autocorrelation.get(pitch, -1.0) + 1.0) / 2.0),
+            )
+            full_span_coverage = 1.0 if row_bounds and row_bounds[0][0] <= y0 and row_bounds[-1][1] >= y1 else 0.0
+            advance_proximity = (
+                max(0.0, 1.0 - abs(float(pitch) - float(horizontal_advance_hint)) / max(1.0, float(horizontal_advance_hint)))
+                if horizontal_advance_hint
+                else 0.0
+            )
+            rejection_reasons: list[str] = []
+            if terminal_sliver_rejected:
+                rejection_reasons.append("terminal_sliver_rejected")
+            if initial_sliver_rejected:
+                rejection_reasons.append("initial_sliver_rejected")
+            if partial_without_clipping:
+                rejection_reasons.append("partial_edge_without_clipping_evidence")
+            valid = not rejection_reasons
+            independent_score = float(
+                0.30 * row_profile_similarity
+                + 0.20 * float(gutter_score)
+                + 0.15 * autocorrelation_score
+                + 0.15 * full_span_coverage
+                + 0.20 * advance_proximity
+            )
             candidates.append(
                 {
                     "pitch": pitch,
@@ -289,12 +359,39 @@ def _periodic_row_candidates(
                     "row_count": len(row_bounds),
                     "row_bounds": row_bounds,
                     "baselines": baseline_rows,
+                    "baseline_deltas": baseline_deltas,
+                    "baseline_delta_residuals": baseline_delta_residuals,
+                    "partial_edge_rows": partial_edge_rows,
+                    "clipping_evidence": clipping_proven,
+                    "terminal_sliver_rejected": terminal_sliver_rejected,
+                    "initial_sliver_rejected": initial_sliver_rejected,
+                    "row_profile_similarity": row_profile_similarity,
+                    "vertical_autocorrelation": autocorrelation_score,
+                    "full_span_coverage": full_span_coverage,
+                    "horizontal_advance_reference": horizontal_advance_hint,
+                    "advance_proximity": advance_proximity,
+                    "independent_score": independent_score,
+                    "valid": valid,
+                    "rejection_reasons": rejection_reasons,
                     "ink_extent": [y0, y1],
                     "evidence": "periodic_row_projection",
                 }
             )
-    candidates.sort(key=lambda item: (-float(item["gutter_score"]), -int(item["row_count"]), int(item["pitch"]), int(item["phase"])))
-    return candidates[:16]
+    candidates.sort(
+        key=lambda item: (
+            not bool(item["valid"]),
+            -float(item["independent_score"]),
+            -float(item["gutter_score"]),
+            -int(item["row_count"]),
+            int(item["pitch"]),
+            int(item["phase"]),
+        )
+    )
+    # Retain the complete measured candidate set.  Downstream review surfaces
+    # may show the leading candidates, but dropping phases here would hide a
+    # one-pixel tie (or a rejected terminal-sliver alternative) from the
+    # evidence record.
+    return candidates
 
 
 def _run_anchors(mask: np.ndarray, row_bands: list[Mapping[str, Any]], *, merge_gap: int) -> list[dict[str, Any]]:
@@ -472,11 +569,6 @@ def build_geometry_evidence(
         {"row_index": item["row_index"], "baseline": item["baseline"], "confidence": item["confidence"]}
         for item in row_bands
     ]
-    periodic_row_candidates = _periodic_row_candidates(
-        projection,
-        min_pitch=int(configuration["min_vertical_pitch"]),
-        max_pitch=int(configuration["max_vertical_pitch"]),
-    )
     min_lag = int(configuration["min_horizontal_advance"])
     max_lag = min(int(configuration["max_horizontal_advance"]), max(1, width - 1))
     autocorrelation = _autocorrelation(column_projection, min_lag, max_lag)
@@ -565,6 +657,13 @@ def build_geometry_evidence(
     lattice_candidates.sort(key=lambda item: (-float(item["score"]), item["advance_x"], item["origin_x"]))
     if lattice_candidates:
         lattice_candidates = lattice_candidates[:8]
+
+    periodic_row_candidates = _periodic_row_candidates(
+        projection,
+        min_pitch=int(configuration["min_vertical_pitch"]),
+        max_pitch=int(configuration["max_vertical_pitch"]),
+        horizontal_advance_hint=(float(lattice_candidates[0]["advance_x"]) if lattice_candidates else None),
+    )
 
     run_anchors = _run_anchors(projection, row_bands, merge_gap=int(configuration["run_merge_gap"])) if selected_mask is not None else []
     shaped_score = 0.0
