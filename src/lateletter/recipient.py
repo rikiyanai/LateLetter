@@ -629,6 +629,7 @@ def run_recipient(
                             path=world_path,
                             observed_wall_time=observed_wall_time,
                             defer_persistence=True,
+                            program=candidate_program,
                         )
                         candidate_read_ids = (
                             candidate_store.read_set()

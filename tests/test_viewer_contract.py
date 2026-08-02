@@ -12,6 +12,7 @@ from lateletter.sealed import open_garden_program, verify_bundle_hmac
 
 ROOT = Path(__file__).parents[1]
 VIEWER = ROOT / "viewer-bnw.html"
+RENDERER = ROOT / "web" / "garden-renderer.mjs"
 DEPLOY = ROOT / ".github" / "workflows" / "deploy.yml"
 
 
@@ -70,7 +71,14 @@ def test_viewer_uses_canonical_runtime_for_live_garden_actions():
     assert "animalTriggered" not in source
     assert "postComplete=!postComplete" not in source
     assert "projection?.objects.find(item=>item.kind==='animal')" not in source
-    assert "target_id:animal.object_id,metadata:{control:'hud'}" in source
+    # The HUD's own feed dispatch was deleted on 2026-08-01 and must not come
+    # back. It carried a private eligibility rule (bond tier below three) that
+    # existed in no other surface, which is gameplay state owned by a browser
+    # control -- forbidden by SPEC 7.8.3.2. Feeding is now a spawned
+    # opportunity declared by the world model, so this string returning would
+    # mean the second, quieter owner had returned with it.
+    assert "target_id:animal.object_id,metadata:{control:'hud'}" not in source
+    assert "function feedAnimal(" not in source
     assert "deliveryAnimal?.semantic_state?.bond_tier" in source
     assert "#hud.vis { opacity: 1; pointer-events: none; }" in source
     assert "#hud button { pointer-events: auto; }" in source
@@ -82,44 +90,67 @@ def test_viewer_uses_canonical_runtime_for_live_garden_actions():
     assert 'aria-label="garden actions" aria-live="polite"' in source
 
 
-def test_viewer_gates_diagnostics_and_exposes_compact_semantic_actions():
+def test_viewer_keeps_garden_actions_on_the_picture_without_labels_or_cards():
     source = _viewer_source()
 
-    assert 'id="garden-object-list"' in source
-    assert 'id="garden-action-sheet"' in source
+    # Diagnostics remain local and explicitly gated; they are not product UI.
     assert 'id="garden-scene-summary"' in source
-    assert 'aria-live="polite"' in source
-    assert 'button, [role="button"], .fi {' in source
-    assert "min-width: 44px; min-height: 44px" in source
-    for action in ("open_journal", "undo", "place", "pause_motion", "back"):
-        assert f'data-garden-action="{action}"' in source
-    for action in ("inspect", "tend", "feed", "play", "collect", "move_fixture"):
-        assert action in source
-    assert 'data-garden-action="pan" data-dy="-20"' in source
-    assert 'data-garden-action="pan" data-dy="20"' in source
-    assert 'data-garden-action="frame"' in source
     assert 'id="garden-controls" aria-label="Garden diagnostic controls" hidden' in source
-    assert 'id="garden-controls-close"' in source
     assert "return Boolean(GARDEN_DEBUG_REQUESTED&&(standaloneMode||isDevFixture))" in source
     assert "new URLSearchParams(location.search).get('garden_debug')==='1'" in source
-    assert "if(gardenControlsEnabled()){" in source
-    assert "controls.id='garden-controls-open'" in source
-    assert "if(!syncGardenControlsAvailability())return" in source
-    assert "button.dataset.contextAction=action" in source
-    assert "const unavailableWithoutEditor=new Set(['move','rotate','transplant','open_journal'])" in source
-    assert "guide.textContent='Choose a detail, or take a slow look around.'" in source
-    assert "actions.appendChild(_mkHudButton('take a closer look'" in source
-    assert "event=>focusGardenObject('previous',event),'['" in source
-    assert "event=>focusGardenObject('next',event),']'" in source
-    assert "garden?.setPresentationActive?.(name==='garden')" in source
-    assert "dx:focused.position[0]-camera[0],dy:focused.position[1]-camera[1]" in source
-    assert "metadata:{control:`${source}-frame`}" in source
-    assert "gardenContextObjectId=focused?.object_id||null" in source
-    assert "garden?.setFocusedObject?.(gardenRuntime.state.ui.focus_id)" in source
-    assert "ArrowUp:['pan',{args:{dx:0,dy:-20}}]" in source
-    assert "ArrowDown:['pan',{args:{dx:0,dy:20}}]" in source
-    assert "classList.toggle('open',name==='garden')" not in source
 
+    # Operator verdict, 2026-08-01: the Garden picture owns no visible object
+    # labels, opportunity cards, object list, or overflow action sheet. These
+    # assertions are deliberately exhaustive across markup, CSS and JS so the
+    # rejected surface cannot return behind another review/query gate.
+    forbidden = (
+        'id="garden-affordances"',
+        'id="garden-semantics"',
+        'id="garden-object-list"',
+        'id="garden-action-sheet"',
+        "garden-opportunity",
+        "garden-invitation",
+        "renderGardenAffordances",
+        "renderGardenSemanticControls",
+        "showGardenInvitation",
+        "paintGardenInvitation",
+        "gardenSecondaryActions",
+        "More actions",
+        "besideObjectPlacement",
+    )
+    for token in forbidden:
+        assert token not in source, f"rejected Garden action surface returned: {token}"
+
+    # Hover itself is operator-approved picture behaviour. The renderer keeps
+    # the native mousemove -> hoverCell -> repaint path, but the old callback
+    # whose only owner was the rejected text invitation is deleted.
+    renderer = RENDERER.read_text(encoding="utf-8")
+    assert "this.element.addEventListener('mousemove', event => this._hoverAt(event));" in renderer
+    assert "this.hoverCell = this._eventCell(event);" in renderer
+    assert "if (this.projection && !this.prefersReducedMotion) this.render(this.projection);" in renderer
+    assert "onHoverObject" not in renderer
+
+    # Direct interaction remains on the drawing. Pointer/touch and keyboard
+    # dispatch the action declared by the canonical projection; no viewer-local
+    # label or menu decides what the act is.
+    assert "await dispatchGardenDeclaredAction(object.primary_action,object,event,'canonical-raster')" in source
+    assert "await dispatchGardenDeclaredAction(focus.primary_action,focus,e,'keyboard')" in source
+    assert "if((e.key==='m'||e.key==='M')&&focus)" not in source
+
+    # The old HUD action owner remains absent too.
+    assert "button.dataset.contextAction=action" not in source
+    assert "const unavailableWithoutEditor" not in source
+    assert "guide.textContent='Choose a detail, or take a slow look around.'" not in source
+    assert "actions.appendChild(_mkHudButton('take a closer look'" not in source
+    assert "status.textContent=focused.semantic_name" not in source
+    hud = source[source.index("function _renderGardenActions()"):
+                 source.index("function showGardenMemories()")]
+    assert "focusGardenObject" not in hud
+    assert "focusedObject" not in hud
+
+    resize = source[source.index("window.addEventListener('resize',()=>{"):]
+    resize = resize[:resize.index("});") + 3]
+    assert "garden?.onResize();" in resize
 
 def test_reproducible_review_clock_is_local_only_and_resets_world_persistence():
     source = _viewer_source()
@@ -177,7 +208,8 @@ def test_secret_bearing_viewer_is_offline_and_redacts_persisted_world_until_auth
 
     assert "cdn.jsdelivr.net" not in source
     assert "await import('http" not in source
-    assert "await import(\n      './web/vendor/pretext/layout.js'" in source
+    assert "import('./web/vendor/pretext/layout.js')" in source
+    assert "import('./web/vendor/pretext/measurement.js')" in source
     assert "_textLayoutMode='pretext'" in source
     assert "bundled PreText unavailable; using browser text fallback" in source
     assert "bundled PreText layout failed; using browser text fallback" in source
@@ -269,7 +301,22 @@ def test_resize_cannot_regenerate_canonical_topology():
     assert "GardenVisualState" not in source
     assert "class PlantLayer" not in source
     assert "collisionMap" not in source
-    assert "window.addEventListener('resize',()=>{if(garden)garden.onResize()" in source
+    assert "window.addEventListener('resize',()=>{" in source
+    assert "import { createPreTextMeasurer } from './web/garden-geometry.mjs';" in source
+    assert "import('./web/vendor/pretext/measurement.js')" in source
+    assert "gardenMeasurement=measurement" in source
+    assert "createPreTextMeasurer(gardenMeasurement" in source
+    assert "gardenMeasurementReady=gardenFaceMode==='exact'&&gardenMeasurement!==null" in source
+    assert "if(!gardenMeasurementReady)" in source
+    assert "measurer:gardenMeasurer" in source
+    assert "font:gardenMeasurer?gardenFont:null" in source
+    assert "GARDEN_ASSET_REVIEW_MODE" not in source
+    assert "GARDEN_ASSET_REVIEW_REQUESTED" not in source
+    assert "allowUnacceptedArt:GARDEN_REVIEW_IS_LOCAL" in source
+    assert "renderGardenAffordances" not in source
+    assert "besideObjectPlacement" not in source
+    resize = source[source.index("window.addEventListener('resize',()=>{"):]
+    assert "garden?.onResize();" in resize
 
 
 def test_garden_palette_themes_the_complete_recipient_surface():
@@ -359,14 +406,20 @@ def test_release_install_verifier_checks_packaged_resources_and_public_bundle():
 
 
 def test_behavioral_browser_modules_pass_node_contracts():
+    """Run every Node contract in the adapters directory.
+
+    Discovered rather than enumerated.  The list used to be written out by hand,
+    which meant a new contract file ran only if somebody remembered to add it
+    here -- and a contract that runs nowhere is indistinguishable from one that
+    passes.  Globbing makes adding the file the whole of the wiring.
+    """
+    contracts = sorted(
+        str(path.relative_to(ROOT))
+        for path in (ROOT / "tests" / "garden_adapters").glob("*.mjs")
+    )
+    assert contracts, "no Node contracts were found to run"
     completed = subprocess.run(
-        [
-            "node", "--test",
-            "tests/garden_adapters/test_garden_input.mjs",
-            "tests/garden_adapters/test_garden_world.mjs",
-            "tests/garden_adapters/test_garden_live_runtime.mjs",
-            "tests/garden_adapters/test_garden_renderer.mjs",
-        ],
+        ["node", "--test", *contracts],
         cwd=ROOT,
         check=False,
         capture_output=True,
@@ -391,9 +444,11 @@ def test_letter_justification_gap_kinds_match_the_prepared_whitespace_profile():
     """
     source = _viewer_source()
 
-    # The literal options object handed to prepareWithSegments.
+    # The literal options object handed to prepareWithSegments. The font
+    # argument is the local `font` derived by letterMetrics() from the painted
+    # element; it used to be the hardcoded LETTER_FONT constant.
     options_match = re.search(
-        r"prepareWithSegments\(text,LETTER_FONT,(\{[^)]*\})\)", source
+        r"prepareWithSegments\(text,font,(\{[^)]*\})\)", source
     )
     assert options_match, "could not locate the prepareWithSegments call"
     options_literal = options_match.group(1)
@@ -441,4 +496,125 @@ def test_letter_justification_gap_kinds_match_the_prepared_whitespace_profile():
         "the viewer can never justify a line: PreText emits gap kinds "
         f"{sorted(emitted - {'text'})} under {options_literal}, but the "
         f"justification path only stretches {sorted(gap_kinds)}"
+    )
+
+
+def test_letter_measurement_derives_from_the_painted_computed_styles():
+    """Measurement inputs must come from the element, never from constants.
+
+    The viewer used to carry ``LETTER_FONT='13px "Times New Roman"...'`` and
+    ``LETTER_LH=21`` as a hand-copied duplicate of values the stylesheet owns.
+    The stylesheet then drops ``.letter-body`` to 12px under its 480px
+    breakpoint, and nothing kept the copy in step. Measured in Chromium
+    against the sealed demo letter, every justified line on a phone therefore
+    stopped 19-23px short of the right margin while the desktop column was
+    flush -- the classic signature of measuring one font and painting another.
+
+    This contract pins the repair's shape: no constants survive, the metrics
+    come from ``getComputedStyle`` on the element being laid out, and both the
+    prepare and the layout call consume those derived values.
+    """
+    source = _viewer_source()
+
+    # The duplicated constants must be gone outright, not merely unused.
+    assert "LETTER_FONT" not in source
+    assert "LETTER_LH" not in source
+
+    # One helper owns the derivation, and it reads the painted element.
+    assert "function letterMetrics(el){" in source
+    assert "const cs=getComputedStyle(el);" in source
+
+    # A canvas-ready font shorthand assembled from computed values. The
+    # line-height component is deliberately excluded: canvas engines do not
+    # handle it consistently.
+    assert "${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}" in source
+
+    # Line height in pixels, with a defined answer when the computed value is
+    # the keyword 'normal' rather than a length.
+    assert "parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.2" in source
+
+    # The width a justified line must fill is the content box: clientWidth
+    # already excludes the scrollbar, so only padding has to come back off.
+    assert "el.clientWidth" in source
+    assert "(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0)" in source
+
+    # Both library calls must consume the derived values.
+    assert "prepareWithSegments(text,font,{whiteSpace:'pre-wrap'})" in source
+    assert "layoutWithLines(_prepared,w,lineHeight)" in source
+
+    # Prepared results carry canvas measurements taken at one specific font,
+    # so the cache has to be invalidated by a font change as well as by a text
+    # change. Without this a breakpoint crossing silently reuses stale widths.
+    assert "text!==_preparedText||font!==_preparedFont" in source
+    assert "_preparedText=text;_preparedFont=font;" in source
+
+
+def test_paragraph_break_rows_are_empty_and_the_stylesheet_gives_them_a_line_box():
+    """A paragraph break must occupy exactly one painted line box.
+
+    Measured in Chromium against the sealed demo letter, all blank rows were
+    ``0.00px`` tall at every width, so the letter's paragraph structure was
+    invisible and it read as one undifferentiated slab. The cause is plain CSS
+    box generation: the renderer emits ``<div class="ll"></div>`` for a blank
+    line, and a block box with no inline content generates no line box at all.
+
+    The repair is a zero-width space in generated content. That only works
+    while PreText really does hand the renderer an empty string for a blank
+    line -- if a future version emitted a space or a newline instead, the
+    ``:empty`` selector would stop matching and the rule would go silently
+    inert exactly the way the justification path once did. So this contract
+    drives the vendored library, with the viewer's own options, and requires
+    a genuinely empty line for a blank line before checking the stylesheet.
+    """
+    source = _viewer_source()
+
+    # The renderer must keep writing the line's text verbatim, so that a blank
+    # line really does produce an element matching :empty.
+    assert "d.className='ll';d.textContent=line.text;" in source
+
+    # The stylesheet must give such an element a line box.
+    assert re.search(
+        r"\.letter-body\s+\.ll:empty::after\s*\{\s*content:\s*\"\\200B\";\s*\}",
+        source,
+    ), "no rule gives an empty .ll row a line box"
+
+    # Behavioural half: ask the real library what a blank line looks like.
+    options_match = re.search(
+        r"prepareWithSegments\(text,font,(\{[^)]*\})\)", source
+    )
+    assert options_match, "could not locate the prepareWithSegments call"
+    options_literal = options_match.group(1)
+
+    probe = f"""
+      import {{ prepareWithSegments, layoutWithLines }}
+        from './web/vendor/pretext/layout.js';
+      // Canvas measurement is unavailable in Node. A flat 7px per character
+      // is enough for the library to segment and break lines.
+      globalThis.document = {{
+        createElement: () => ({{
+          getContext: () => ({{
+            measureText: (t) => ({{ width: t.length * 7 }}),
+            set font(_v) {{}},
+            get font() {{ return ''; }},
+          }}),
+        }}),
+      }};
+      const prepared = prepareWithSegments(
+        'Alpha beta gamma.\\n\\nDelta epsilon zeta.',
+        '13px serif',
+        {options_literal}
+      );
+      const {{ lines }} = layoutWithLines(prepared, 1000, 20);
+      console.log(JSON.stringify(lines.map((l) => l.text)));
+    """
+    result = subprocess.run(
+        ["node", "--input-type=module", "-e", probe],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    texts = json.loads(result.stdout.strip().splitlines()[-1])
+
+    assert "" in texts, (
+        "the :empty rule can never match: for a blank line PreText emitted "
+        f"{texts!r} rather than an empty string"
     )

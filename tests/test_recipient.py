@@ -21,6 +21,13 @@ from lateletter.garden.renderer import GardenRenderer, run_curses
 from lateletter.garden.world.clock import reconcile_offline
 from lateletter.garden.world.model import MILESTONE_RECEIPT_LIMIT, Vec2, WorldState
 from lateletter.garden.program import parse_program
+from lateletter.garden.world.generation import (
+    REVIEW_PENDING_ANIMAL_SPECIES,
+    REVIEW_PENDING_COLLECTIBLES,
+    REVIEW_PENDING_PLANT_SPECIES,
+    generate_initial_world,
+)
+from lateletter.garden.world.persistence import WorldStore
 from lateletter.garden.terminal import (
     FULL_GARDEN_PARITY,
     TERMINAL_HELP_LINES,
@@ -60,12 +67,37 @@ def receipt_store(tmp_path, monkeypatch):
 
 
 def _session(tmp_path, *, visits: int = 0) -> TerminalWorldSession:
+    """Open a session over a world that actually contains plants and animals.
+
+    The tests below tend plants, feed animals and pick up collectibles, so an
+    empty world would leave them nothing to act on -- and the default starter
+    content is empty while its art waits for per-asset visual approval.
+
+    The world is therefore built and persisted here FIRST, then opened. That is
+    the ordinary restore path, not a test-only door: `TerminalWorldSession.open`
+    loads whatever world already exists at `path`, so writing one there is how
+    any caller supplies a specific world. `open` itself takes no content
+    arguments, which keeps a test's staging needs out of the product surface.
+    """
+    world_path = tmp_path / "world.json"
+    # Seed only on the FIRST call for this `tmp_path`. Several tests reopen the
+    # same world to assert that a session persisted what it should have, and
+    # rewriting a fresh world here would silently erase exactly the state those
+    # assertions are checking for -- the seeding stands in for a world created
+    # on an earlier run, not for one created on every open.
+    if not world_path.exists():
+        WorldStore(world_path).save(generate_initial_world(
+            "bundle-under-test", 41,
+            plant_species=REVIEW_PENDING_PLANT_SPECIES,
+            animal_species=REVIEW_PENDING_ANIMAL_SPECIES,
+            collectibles=REVIEW_PENDING_COLLECTIBLES,
+        ))
     session = TerminalWorldSession.open(
         world_id="bundle-under-test",
         seed=41,
         width=80,
         height=24,
-        path=tmp_path / "world.json",
+        path=world_path,
         observed_wall_time=1_000,
         record_visit=False,
     )
@@ -176,6 +208,7 @@ def test_terminal_preview_is_generic_and_never_persists(tmp_path):
         observed_wall_time=1_000,
     )
     assert preview.world.world_id == "recipient-preview"
+    assert preview.world.animals == ()
     assert preview.store is None
     assert handle_terminal_key(preview, ord("o")).accepted
     assert protected.read_bytes() == b"existing authenticated world bytes"
@@ -689,11 +722,13 @@ def test_normal_sealed_v2_bundle_opens_and_materializes_program(tmp_path):
     session = TerminalWorldSession.open(
         world_id=bundle.bundle_id, seed=bundle.garden_seed, width=80, height=24,
         path=tmp_path / "sealed-v2.json", observed_wall_time=1_000,
+        program=program,
     )
     _apply_open_program(session, bundle, program, today=date.today(), read_ids=set())
 
     assert messages == [("For today", "Private letter")]
     assert any(item.collectible_id == "gift.key" for item in session.world.collectibles)
+    assert session.world.animals == ()
     assert any(entry.label == "Sealed memory" for entry in session.world.journal)
     assert session.world.program_state["applied_occurrences"]
     before = session.world.canonical_bytes()

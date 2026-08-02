@@ -23,6 +23,10 @@ dev = [
 
 [project.scripts]
 lateletter = "lateletter.cli:main"
+# Loopback author server. Kept as a console script rather than a module people
+# have to remember how to invoke, because the author UI is meant to be opened
+# by someone writing a letter, not by someone operating a service.
+lateletter-author = "lateletter.author_web:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

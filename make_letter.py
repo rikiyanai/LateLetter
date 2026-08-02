@@ -38,23 +38,20 @@ import getpass
 import json
 import subprocess
 import sys
-import uuid
-from datetime import date
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from lateletter.bundle import (  # noqa: E402
-    BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, Notification, read_bundle,
-    write_bundle,
+from lateletter.author_service import (  # noqa: E402
+    AuthorServiceError, write_bundle_file,
 )
+from lateletter.bundle import read_bundle  # noqa: E402
 from lateletter.garden.program import (  # noqa: E402
-    GardenProgram, ProgramValidationError, parse_program,
+    ProgramValidationError, parse_program,
 )
 from lateletter.intake import passphrase_strength_warning  # noqa: E402
 from lateletter.sealed import (  # noqa: E402
-    open_garden_program, open_gift_sentiment, open_message, seal_bundle,
-    seal_garden_program, seal_message, verify_bundle_hmac,
+    open_garden_program, open_gift_sentiment, open_message, verify_bundle_hmac,
 )
 
 
@@ -148,175 +145,6 @@ def _fresh_passphrase(password_fn=getpass.getpass) -> str:
     return passphrase
 
 
-def _program_to_mapping(program: GardenProgram) -> dict:
-    def condition(value):
-        if value.kind in {"all", "any"}:
-            return {value.kind: [condition(child) for child in value.children]}
-        if value.kind == "not":
-            return {"not": condition(value.children[0])}
-        result = {"fact": value.fact, "op": value.op}
-        if value.ref is not None:
-            result["ref"] = value.ref
-        elif value.op != "exists" or value.value is not None:
-            result["value"] = value.value
-        return result
-
-    return {
-        "version": program.version,
-        "evaluator_version": program.evaluator_version,
-        "world_state_version": program.world_state_version,
-        "atlas_version": program.atlas_version,
-        "astronomy_catalog_version": program.astronomy_catalog_version,
-        "author_timezone": program.author_timezone,
-        "variables": dict(program.variables),
-        "entities": [dict(value) for value in program.entities],
-        "animals": [dict(value) for value in program.animals],
-        "events": [{
-            "id": event.id,
-            "conditions": condition(event.conditions),
-            "schedule": dict(event.schedule) if event.schedule is not None else None,
-            "occurrence": event.occurrence,
-            "priority": event.priority,
-            "exclusive_group": event.exclusive_group,
-            "cooldown": dict(event.cooldown) if event.cooldown is not None else None,
-            "actions": [{
-                "type": action.type, "target": action.target,
-                "params": dict(action.params),
-            } for action in event.actions],
-        } for event in program.events],
-    }
-
-
-def _replace_message_references(value, message_ids: list[str]):
-    if isinstance(value, str):
-        if value == "FIRST_MESSAGE":
-            return message_ids[0]
-        if value.startswith("MESSAGE_") and value[8:].isdigit():
-            index = int(value[8:])
-            if index >= len(message_ids):
-                raise ValueError(f"message reference {value} is out of range")
-            return message_ids[index]
-        return value
-    if isinstance(value, list):
-        return [_replace_message_references(child, message_ids) for child in value]
-    if isinstance(value, dict):
-        return {
-            key: _replace_message_references(child, message_ids)
-            for key, child in value.items()
-        }
-    return value
-
-
-def _garden_program_from_source(src: dict, message_ids: list[str]) -> dict | None:
-    if "garden_program" in src and "garden_beats" in src:
-        raise ValueError("use either 'garden_program' or 'garden_beats', not both")
-    raw = src.get("garden_program")
-    if raw is None and "garden_beats" in src:
-        beats_source = src["garden_beats"]
-        if isinstance(beats_source, list):
-            beats = beats_source
-            garden = {}
-        elif isinstance(beats_source, dict):
-            garden = beats_source
-            beats = garden.get("beats", [])
-        else:
-            raise ValueError("'garden_beats' must be a list or structured object")
-        if not isinstance(beats, list):
-            raise ValueError("'garden_beats.beats' must be a list")
-        events = []
-        for index, beat in enumerate(beats):
-            if not isinstance(beat, dict):
-                raise ValueError(f"garden beat {index} must be an object")
-            events.append({
-                "id": beat.get("id"),
-                "conditions": beat.get("when", beat.get("conditions")),
-                "schedule": beat.get("schedule"),
-                "occurrence": beat.get(
-                    "occurrence",
-                    "recurring" if beat.get("schedule", {}).get("recurrence") else "once",
-                ) if isinstance(beat.get("schedule", {}), dict) else beat.get(
-                    "occurrence", "once",
-                ),
-                "priority": beat.get("priority", 0),
-                "exclusive_group": beat.get("exclusive_group"),
-                "cooldown": beat.get("cooldown"),
-                "actions": beat.get("actions", []),
-            })
-        raw = {
-            "version": 1,
-            "evaluator_version": 1,
-            "world_state_version": 1,
-            "atlas_version": garden.get(
-                "atlas_version", src.get("atlas_version", "garden-atlas-1"),
-            ),
-            "astronomy_catalog_version": garden.get(
-                "astronomy_catalog_version",
-                src.get("astronomy_catalog_version", "bright-stars-1"),
-            ),
-            "author_timezone": garden.get(
-                "author_timezone", src.get("author_timezone", "UTC")
-            ),
-            "variables": garden.get("variables", src.get("garden_variables", {})),
-            "entities": garden.get("entities", src.get("garden_entities", [])),
-            "animals": garden.get("animals", src.get("garden_animals", [])),
-            "events": events,
-        }
-    if raw is None:
-        return None
-    if not isinstance(raw, dict):
-        raise ValueError("'garden_program' must be an object")
-    resolved = _replace_message_references(raw, message_ids)
-    return _program_to_mapping(parse_program(
-        resolved, known_letter_ids=set(message_ids),
-    ))
-
-
-def _message_specs(src: dict) -> list[tuple[str, dict]]:
-    raw_messages = src.get("messages")
-    if not isinstance(raw_messages, list) or not raw_messages:
-        raise ValueError("source file needs at least one message")
-    specs: list[tuple[str, dict]] = []
-    for index, message in enumerate(raw_messages):
-        if not isinstance(message, dict):
-            raise ValueError(f"messages[{index}] must be an object")
-        raw_date = message.get("date")
-        label = message.get("label", "")
-        body = message.get("body")
-        if not isinstance(raw_date, str):
-            raise ValueError(f"messages[{index}].date must be an ISO date")
-        try:
-            date.fromisoformat(raw_date)
-        except ValueError as exc:
-            raise ValueError(f"messages[{index}].date must be a real ISO date") from exc
-        if not isinstance(label, str):
-            raise ValueError(f"messages[{index}].label must be text")
-        if not isinstance(body, str) or not body.strip():
-            raise ValueError(f"messages[{index}].body must be non-empty text")
-        specs.append((str(uuid.uuid4()), message))
-    return specs
-
-
-def _bundle_metadata(src: dict) -> tuple[str, str | None, int, dict]:
-    author_name = src.get("author_name", "")
-    hint = src.get("passphrase_hint")
-    seed = src.get("garden_seed", 0)
-    notification = src.get("notification") or {}
-    if not isinstance(author_name, str):
-        raise ValueError("author_name must be text")
-    if hint is not None and not isinstance(hint, str):
-        raise ValueError("passphrase_hint must be text or null")
-    if isinstance(seed, bool) or not isinstance(seed, int):
-        raise ValueError("garden_seed must be an integer")
-    if not isinstance(notification, dict):
-        raise ValueError("notification must be an object or null")
-    unknown = set(notification) - {"email", "method"}
-    if unknown:
-        raise ValueError(
-            f"notification has unknown fields: {', '.join(sorted(unknown))}"
-        )
-    return author_name, hint, seed, notification
-
-
 def build(
     source_path: Path,
     out_path: Path,
@@ -324,6 +152,15 @@ def build(
     passphrase: str | None = None,
     password_fn=getpass.getpass,
 ) -> None:
+    """Seal a private source file into a private bundle.
+
+    This function owns only the two things that are specific to running from a
+    terminal: proving the paths are private, and collecting the passphrase
+    without echoing it. Everything about what a bundle IS — its metadata, its
+    messages, its Garden program, its sealing and its round-trip proof — belongs
+    to lateletter.author_service, which the HTML author UI also calls. Keeping
+    one owner is what stops the two front ends drifting into two bundle formats.
+    """
     try:
         source_path, out_path = _validate_private_paths(source_path, out_path)
         src = json.loads(source_path.read_text(encoding="utf-8"))
@@ -334,67 +171,24 @@ def build(
                 "remove 'passphrase' from the plaintext source; it is requested privately"
             )
         passphrase = _fresh_passphrase(password_fn) if passphrase is None else passphrase
-        if len(passphrase) < 12 or passphrase_strength_warning(passphrase) is not None:
-            raise ValueError("provide a strong fresh passphrase of at least 12 characters")
     except (OSError, json.JSONDecodeError, ValueError) as exc:
         sys.exit(f"error: {exc}")
 
     try:
-        author_name, hint, garden_seed, notification = _bundle_metadata(src)
-        specs = _message_specs(src)
-        garden_program = _garden_program_from_source(
-            src, [message_id for message_id, _message in specs],
-        )
-    except ValueError as exc:
+        summary = write_bundle_file(src, passphrase, out_path)
+    except AuthorServiceError as exc:
+        # The service reports every problem it found at once; the command line
+        # shows them all rather than making the author rerun to find the next.
+        sys.exit("error: " + "; ".join(exc.issues))
+    except (ValueError, ProgramValidationError) as exc:
         sys.exit(f"error: invalid source or garden program: {exc}")
-    if src.get("garden_gifts"):
-        sys.exit(
-            "error: legacy garden_gifts are not accepted; use the encrypted v2 garden_program"
-        )
-    if garden_program is None:
-        sys.exit("error: a full encrypted garden_program or garden_beats timeline is required")
 
-    messages = [
-        seal_message(
-            passphrase,
-            message_id=message_id,
-            date=message["date"],
-            label=message.get("label", ""),
-            body=message["body"],
-        )
-        for message_id, message in specs
-    ]
-
-    bundle = Bundle(
-        version=BUNDLE_VERSION_WITH_GARDEN_PROGRAM,
-        author_name=author_name,
-        passphrase_hint=hint,
-        garden_seed=garden_seed,
-        messages=messages,
-        garden_gifts=[],
-        garden_program=seal_garden_program(passphrase, garden_program),
-        notification=Notification(
-            email=notification.get("email"),
-            method=notification.get("method"),
-        ),
-    )
-    seal_bundle(bundle, passphrase)
-    write_bundle(bundle, out_path)
-
-    # Round-trip proof before declaring success.
-    reread = read_bundle(out_path)
-    assert verify_bundle_hmac(reread, passphrase), "HMAC round-trip failed"
-    for msg in reread.messages:
-        open_message(passphrase, msg)
-    parse_program(
-        open_garden_program(passphrase, reread.garden_program),
-        known_letter_ids={message.id for message in reread.messages},
-    )
-
+    bundle = read_bundle(out_path)
     print(f"sealed  {out_path}")
     print(f"  author: {bundle.author_name}   seed: {bundle.garden_seed}")
     print(
-        f"  messages: {len(messages)}   legacy gifts: 0   garden program: yes"
+        f"  messages: {summary['message_count']}   legacy gifts: 0   "
+        f"garden program: yes"
     )
     print(f"  hint shown to recipient: {bundle.passphrase_hint!r}")
     print("  passcode is NOT stored in the file — share it in person.")
