@@ -1,0 +1,52 @@
+LateLetter Research Archive
+===========================
+
+Research pass: 2026-07-30
+Access date: 2026-07-30
+Purpose: Seeded world generation, legal placement, procedural plant form,
+idle garden nurturing, virtual-pet relationships, and bounded adaptive animals.
+
+Archive policy
+--------------
+
+These are source notes, not unauthorized copies of complete webpages, manuals,
+or papers. Each file records the source URL, source type, findings in original
+paraphrase, limitations, and the decision transferred into LateLetter. Consult
+the linked source for the full text. This keeps the repository useful and
+auditable without redistributing copyrighted material.
+
+Files
+-----
+
+01_minecraft_world_generation.txt
+02_minecraft_feature_taxonomy.txt
+03_minecraft_tree_feature.txt
+04_terraria_world_generation.txt
+05_minecraft_seed_versioning.txt
+06_tamagotchi_manual.txt
+07_neko_atsume.txt
+08_viridi.txt
+09_the_garden_path.txt
+10_kinder_world.txt
+11_nintendogs.txt
+12_peridot.txt
+13_sony_aibo.txt
+14_creatures_artificial_life.txt
+15_melson_aibo_children_study.txt
+16_long_term_hri_review.txt
+17_companion_robot_absence_pilot.txt
+
+Canonical specification targets
+-------------------------------
+
+docs/SPEC.md sections 7.3, 7.3.1, 7.8.2, 7.8.3, 7.8.5, 7.8.7,
+7.8.13, and 7.8.14.
+
+Resulting product position
+--------------------------
+
+LateLetter combines constrained seeded generation, indirect invitation,
+slow persistent garden change, and bounded animal memory. It does not use
+punitive Tamagotchi-style need decay, bond loss, death, guilt, or required
+daily attendance. The author composes; a bundle recipient nurtures existing
+plants and animals; only standalone sandbox mode adds placement agency.

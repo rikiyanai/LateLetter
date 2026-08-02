@@ -1,0 +1,29 @@
+Source: Minecraft Creator, minecraft:tree_feature
+Publisher: Microsoft
+URL: https://learn.microsoft.com/en-us/minecraft/creator/reference/content/featuresreference/examples/features/minecraft_tree_feature?view=minecraft-bedrock-experimental
+Accessed: 2026-07-30
+Type: Official technical reference
+
+Relevant findings
+-----------------
+
+Minecraft's tree feature treats a tree as an anchored column/trunk plus a
+canopy. The schema varies trunk height and canopy offset while retaining that
+structural identity. Specialized forms expose branches, trunk lean, roots,
+canopy families, permitted base blocks, replacement rules, and material that
+growth may pass through.
+
+LateLetter transfer
+-------------------
+
+A LateLetter tree must first satisfy trunk/root/support invariants. Its seed
+then chooses height, attachment tiers, lean, branch counts, crown dimensions,
+and controlled asymmetry within species ranges. Random ancestry among arbitrary
+earlier organs is not an acceptable tree grammar.
+
+Limit
+-----
+
+This reference is for Minecraft Bedrock features and includes experimental
+schema material. It is evidence for constrained structure, not a compatibility
+target.

@@ -1,0 +1,27 @@
+Source: World generation
+Publisher: Official Terraria Wiki
+URL: https://terraria.wiki.gg/wiki/World_generation
+Accessed: 2026-07-30
+Type: Official game reference
+
+Relevant findings
+-----------------
+
+Terraria exposes world creation as a long, ordered generation pipeline.
+Several steps attempt a target number of placements but may produce fewer when
+candidate positions fail their rules. Special seeds alter selected passes and
+world traits rather than suspending all placement constraints.
+
+LateLetter transfer
+-------------------
+
+Bound every candidate set and permit a stable omission when no legal position
+exists. Required room content must block acceptance or author export; optional
+content may be absent with a recorded rejection trace. Never retry forever and
+never force an object into an illegal position to satisfy a requested count.
+
+Limit
+-----
+
+The wiki documents observed Terraria behavior, not a reusable API. Exact pass
+names and counts are not LateLetter requirements.

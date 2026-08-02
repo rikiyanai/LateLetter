@@ -1,0 +1,29 @@
+Sources: aibo personality guide and aibo FAQ
+Publisher: Sony
+URLs:
+  https://helpguide.sony.net/aibo/ers1000/v1/en-us/contents/TP0001970096.html
+  https://direct.sony.com/aibo-faq/
+Accessed: 2026-07-30
+Type: Official product documentation
+
+Relevant findings
+-----------------
+
+Sony describes aibo's personality and behavior as developing through
+interaction and experience. It recognizes familiar people, remembers responses
+that pleased an owner, and expresses state through body language and behavior.
+The animal retains bounded autonomy instead of executing every request identically.
+
+LateLetter transfer
+-------------------
+
+Persist temperament, preferences, familiarity and a small set of salient
+memories. Let these fields bias future legal actions, approach distance,
+favorite-place use, greetings and shared rituals. Use readable motion and pose
+to reveal state. Generative conversation or cloud learning is not required.
+
+Limit
+-----
+
+aibo uses sensors, robotics, cloud services and proprietary learning. This is
+evidence for interaction-shaped individuality, not an implementation template.

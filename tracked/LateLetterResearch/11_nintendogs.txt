@@ -1,0 +1,27 @@
+Source: nintendogs + cats instruction manual
+Publisher: Nintendo
+URL: https://assets.nintendo.eu/image/upload/v1635394807/NAL/Support/Nintendogs_Cats_manual.pdf
+Accessed: 2026-07-30
+Type: Official product manual
+
+Relevant findings
+-----------------
+
+The manual connects naming, petting and bonding to later trick training.
+Walking, play, repeated voice/touch interaction and learned commands give the
+pet a repertoire shared with its trainer. It explicitly distinguishes the
+virtual pets from living animals: they remain puppies or kittens and do not age.
+
+LateLetter transfer
+-------------------
+
+Relationship progress should unlock recognizable behaviors and shared rituals,
+not merely badges. Interaction variety, recognition, practice and the animal's
+changed response are stronger evidence of a relationship than a number alone.
+Non-mortality is compatible with meaningful pet play.
+
+Limit
+-----
+
+Competition, trainer points and repeated command training are not required
+LateLetter loops and should not become grind gates.

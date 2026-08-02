@@ -1,0 +1,27 @@
+Source: Original Tamagotchi instruction manual
+Publisher: Bandai
+URL: https://www.bandai.com/amfile/file/download/file/3642/product/1309530/
+Accessed: 2026-07-30
+Type: Official product manual
+
+Relevant findings
+-----------------
+
+Classic Tamagotchi makes care legible through health, hunger, happiness,
+discipline, attention calls, and care mistakes. Repeated maintenance and
+correct responses influence development and survival. This creates clear
+responsibility and strong cause-and-effect, but also makes absence consequential.
+
+LateLetter transfer
+-------------------
+
+Keep readable cause-and-effect and development changed by interaction. Reject
+attention alarms, care mistakes, death, illness, bond loss, punitive need
+decay, and guilt for time away. "Tamagotchi-like" is therefore not the correct
+LateLetter product description.
+
+Limit
+-----
+
+This source documents mechanics; it does not establish psychological outcomes
+or prove that every player experiences attachment.

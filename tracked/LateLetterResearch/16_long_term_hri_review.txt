@@ -1,0 +1,28 @@
+Source: Long-Term Interactions with Social Robots: Trends, Insights, and Recommendations
+Authors: Kayla Matheus, Rebecca Ramnauth, Brian Scassellati, Nicole Salomons
+Journal: ACM Transactions on Human-Robot Interaction 14(3), 2025
+DOI: https://doi.org/10.1145/3729539
+Accessed: 2026-07-30
+Type: Peer-reviewed review article
+
+Relevant findings
+-----------------
+
+The review analyzes 120 long-term human-robot interaction studies conducted
+between 2003 and 2023 across several domains. It treats repeated interaction
+with the same people over multiple sessions and days as a separate evaluation
+problem involving autonomy, modality, deployment context and sustained use.
+
+LateLetter transfer
+-------------------
+
+Animal acceptance cannot be established by reducer tests or a single scripted
+scene. Evaluation must cover repeated sessions, return after absence,
+recognizable preference/memory changes, novelty loss, and whether the animal's
+behavior remains legible and welcome over time.
+
+Limit
+-----
+
+The review spans heterogeneous physical robots and domains. It supports a
+longitudinal evaluation requirement, not a specific LateLetter effect claim.

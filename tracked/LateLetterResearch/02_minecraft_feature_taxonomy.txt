@@ -1,0 +1,29 @@
+Source: Minecraft Creator, Features Taxonomy
+Publisher: Microsoft
+URL: https://learn.microsoft.com/en-us/minecraft/creator/documents/featurestaxonomy?view=minecraft-bedrock-stable
+Accessed: 2026-07-30
+Type: Official technical documentation
+
+Relevant findings
+-----------------
+
+The documentation separates natural features, block placement, conditional
+placement, and grouping. Conditional placement searches for suitable surfaces
+and controls density. Sequential groups make a later feature depend on the
+successful position of an earlier feature, whereas aggregate groups evaluate
+their children independently. Examples distinguish plants that require water
+from plants that merely require soil-like ground.
+
+LateLetter transfer
+-------------------
+
+Every candidate needs explicit surface, adjacency, dependency, clearance, and
+exclusion rules. Pond, bridge, and water-lily composition should be a sequence:
+failure to place the pond blocks its dependants and produces a diagnostic.
+Independent decorative alternatives should use aggregate semantics.
+
+Limit
+-----
+
+The source describes Minecraft add-on schemas. LateLetter uses its own
+canonical objects and traces rather than copying the JSON format.
