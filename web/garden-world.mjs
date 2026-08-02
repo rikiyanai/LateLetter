@@ -600,6 +600,21 @@ function normalizeTrace(data) {
   };
 }
 
+/**
+ * Read an integer that is allowed to be genuinely absent.
+ *
+ * `null` is preserved rather than coerced to a number, because for the version
+ * stamps "not recorded" and "recorded as zero" are different facts about a
+ * stored world and only one of them is true.
+ *
+ * @param {unknown} value - whatever the stored document held under the key
+ * @returns {number|null} the integer, or null when absent or explicitly null
+ */
+function optionalInteger(value) {
+  if (value === null || value === undefined) return null;
+  return integer(value);
+}
+
 export function deserializeWorldState(raw) {
   const data = typeof raw === 'string' ? JSON.parse(raw) : raw;
   const schemaVersion = integer(data.schema_version, 0);
@@ -609,6 +624,13 @@ export function deserializeWorldState(raw) {
   return {
     schema_version: schemaVersion,
     engine_version: String(data.engine_version ?? ENGINE_VERSION),
+    // Absent stays absent. Defaulting these to the current constants would
+    // make every world stored before they existed claim to be today's, which
+    // is how a persisted 13/22/4/8 world came to be reviewed as the current
+    // 8/10/4/3 starter. See src/lateletter/garden/world/provenance.py.
+    generator_version: optionalInteger(data.generator_version),
+    composition_version: optionalInteger(data.composition_version),
+    migrated_from_schema: optionalInteger(data.migrated_from_schema),
     world_id: String(data.world_id),
     seed: String(data.seed),
     world_width: Math.max(1, integer(data.world_width, 120)),
@@ -640,6 +662,9 @@ export function serializeWorldState(state) {
   return {
     schema_version: integer(state.schema_version),
     engine_version: String(state.engine_version),
+    generator_version: optionalInteger(state.generator_version),
+    composition_version: optionalInteger(state.composition_version),
+    migrated_from_schema: optionalInteger(state.migrated_from_schema),
     world_id: String(state.world_id),
     seed: String(state.seed),
     world_width: integer(state.world_width),
