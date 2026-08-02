@@ -582,6 +582,141 @@ def test_every_interactive_target_meets_the_44px_minimum():
         assert errors == [], errors
 
 
+def test_hovering_accepted_ink_marks_it_interactive_without_saying_a_word():
+    """The half that holds: the cursor tells you the ink can be touched.
+
+    Checked separately from the picture-change half below, because they are two
+    different promises and one of them is currently kept.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            target = _accepted_fixture_target(page)
+            assert target is not None
+
+            page.mouse.move(5, 5)
+            page.wait_for_timeout(300)
+            assert page.evaluate(
+                "() => getComputedStyle(document.getElementById('g')).cursor"
+            ) == "default"
+
+            page.mouse.move(
+                target["rect"]["x"] + target["rect"]["width"] / 2,
+                target["rect"]["y"] + target["rect"]["height"] / 2,
+            )
+            page.wait_for_timeout(400)
+            assert page.evaluate(
+                "() => getComputedStyle(document.getElementById('g')).cursor"
+            ) == "pointer", "hovering interactive ink did not mark it interactive"
+
+            # And it says nothing while doing so: no tooltip, no label, no card.
+            # The rejected implementation answered hover by printing an
+            # instruction, which is the thing that must not come back.
+            _assert_no_action_chrome(page)
+            assert target["primary"]["label"] not in page.locator("#g").inner_text(), (
+                "hovering printed the action label over the picture"
+            )
+        assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. Hovering an accepted "
+        "fixture's ink changes the cursor to `pointer` but does not change the "
+        "picture at all: the painted text is byte-identical before and after, "
+        "and no element carries a hover or focus class. Measured with "
+        "`garden_review_time` freezing ambient motion, so the comparison is the "
+        "hover and not the weather. The destination requires hover to change "
+        "the picture -- rustle, pose change, emphasis -- and forbids it saying "
+        "anything; today it does neither. A pose or emphasis state is new art "
+        "and needs its own verdict, so it is NOT invented here. Left strict so "
+        "it cannot be normalised into the baseline, and so that a later "
+        "correction cannot land silently."
+    ),
+)
+def test_hovering_accepted_ink_changes_the_picture():
+    """Hover must change the picture itself, not merely the cursor."""
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            target = _accepted_fixture_target(page)
+            assert target is not None
+
+            page.mouse.move(5, 5)
+            page.wait_for_timeout(300)
+            before = page.locator("#g").inner_text()
+
+            page.mouse.move(
+                target["rect"]["x"] + target["rect"]["width"] / 2,
+                target["rect"]["y"] + target["rect"]["height"] / 2,
+            )
+            page.wait_for_timeout(400)
+            assert page.locator("#g").inner_text() != before, (
+                f"hovering {target['primary']['label']!r} changed nothing in the picture"
+            )
+        assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. The Garden picture cannot "
+        "take keyboard focus at all: `#g` carries no tabindex, so it is not in "
+        "the tab order, and the arrow keys pan the CAMERA rather than moving "
+        "canonical focus -- the accessible summary reports 'Panned to 61,51 ... "
+        "No object focused'. Enter therefore reaches no primary action and the "
+        "canonical interaction count stays at zero. Keyboard-complete play is a "
+        "hard accessibility requirement, and spatial focus navigation plus "
+        "Enter is the stated contract. Owned by the interaction-mask step, "
+        "which is where focus and hit geometry get a single owner. Left strict "
+        "so it cannot be normalised into the baseline, and so that a later "
+        "correction cannot land silently."
+    ),
+)
+def test_keyboard_focus_and_enter_perform_the_same_primary_action():
+    """A person who cannot use a pointer must reach the same single action."""
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+
+            def totals() -> int:
+                rows = page.evaluate("() => window.__gardenReview.state().fixtures")
+                return sum(row["interaction_count"] for row in rows)
+
+            before = totals()
+            page.locator("#g").focus()
+            for _ in range(12):
+                page.keyboard.press("ArrowRight")
+                page.wait_for_timeout(80)
+            page.keyboard.press("Enter")
+            page.wait_for_timeout(400)
+
+            assert totals() == before + 1, (
+                "keyboard focus and Enter did not reach any canonical primary action"
+            )
+        assert errors == [], errors
+
+
+def test_the_garden_is_reachable_at_200_percent_zoom():
+    """200% zoom is a required review condition, not an edge case."""
+    with _static_server() as origin:
+        with _chrome(origin, viewport=(800, 500)) as (page, errors):
+            # A 1600x1000 layout viewed at 200% is a 800x500 CSS viewport, which
+            # is what a browser zoom actually produces.
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            assert _painted_glyph_count(page) > 0, "nothing painted at 200% zoom"
+            _assert_no_action_chrome(page)
+            interactive = page.evaluate(
+                """() => window.__gardenReview.state().objects
+                    .filter(object => object.primary_action)
+                    .filter(object => window.__gardenReview.objectRectPixels(object.id))
+                    .length"""
+            )
+            assert interactive > 0, "no interactive object is reachable at 200% zoom"
+        assert errors == [], errors
+
+
 def test_the_garden_keeps_moving_without_any_input():
     """It must live on its own, not only when touched.
 
@@ -624,6 +759,68 @@ def test_the_garden_keeps_moving_on_mobile_too():
             second = page.locator("#g").inner_text()
             assert first != second, "the mobile Garden was motionless for three seconds"
         assert errors == [], errors
+
+
+def test_day_evening_and_night_are_visually_distinct():
+    """Time of day must read differently. This one holds.
+
+    Driven by `garden_review_time`, which is how the operator's own review
+    query selects an instant -- so these are the same three moments a reviewer
+    would look at, not a private test hook.
+    """
+    instants = {
+        "day": "2026-07-15T12:00:00Z",
+        "evening": "2026-07-15T19:30:00Z",
+        "night": "2026-07-15T23:00:00Z",
+    }
+    seen: dict[str, str] = {}
+    with _static_server() as origin:
+        for name, when in instants.items():
+            with _chrome(origin) as (page, errors):
+                _enter_standalone_garden(page, origin, f"garden_debug=1&garden_review_time={when}")
+                seen[name] = page.evaluate(
+                    "() => getComputedStyle(document.documentElement)"
+                    ".getPropertyValue('--bg').trim()"
+                )
+                assert _painted_glyph_count(page) > 0, f"{name} painted nothing"
+                assert errors == [], errors
+    assert len(set(seen.values())) == 3, f"time of day does not read differently: {seen}"
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. At midday the painted text is "
+        "BYTE-IDENTICAL across spring, summer and winter -- desktop hash "
+        "770ad5a5d909ec70 for both spring and winter, and one shared mobile hash "
+        "3ac79ca42f5e65db for all three. Only autumn differs. Time of day does "
+        "read differently, but season does not, and the destination requires "
+        "seasonal weighting, plant colouring, weather and ambience to visibly "
+        "change across all four. Seasonal plant colouring and weather are art "
+        "and recipes that carry no verdict, so nothing is invented here to make "
+        "this hold. Left strict so it cannot be normalised into the baseline, "
+        "and so that a later correction cannot land silently."
+    ),
+)
+def test_the_four_seasons_are_visually_distinct():
+    """Four seasons at the same hour must not paint the same picture."""
+    midday = {
+        "spring": "2026-04-15T12:00:00Z",
+        "summer": "2026-07-15T12:00:00Z",
+        "autumn": "2026-10-15T12:00:00Z",
+        "winter": "2026-01-15T12:00:00Z",
+    }
+    painted: dict[str, str] = {}
+    with _static_server() as origin:
+        for name, when in midday.items():
+            with _chrome(origin) as (page, errors):
+                _enter_standalone_garden(page, origin, f"garden_debug=1&garden_review_time={when}")
+                painted[name] = page.locator("#g").inner_text()
+                assert errors == [], errors
+    assert len(set(painted.values())) == 4, (
+        "seasons that paint the same picture: "
+        f"{sorted(k for k in painted if list(painted.values()).count(painted[k]) > 1)}"
+    )
 
 
 def test_reduced_motion_still_paints_the_garden():

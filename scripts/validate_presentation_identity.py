@@ -88,6 +88,11 @@ ACCEPTANCE = ROOT / "docs" / "garden-asset-acceptance.json"
 RECIPES = ROOT / "docs" / "garden-presentation-recipes.json"
 RENDERER = ROOT / "web" / "garden-renderer.mjs"
 DECISION_RECORD = ROOT / "docs" / "operator-decision-record.md"
+# The operator's four direct-acceptance verdicts. Kept in its own file because a
+# judgement made by a person after watching the product is a different kind of
+# fact from anything this validator computes, and must never be derivable from
+# the things it computes.
+_REVIEW_VERDICTS = ROOT / "docs" / "garden-review-verdicts.json"
 
 # Verdicts that permit a source to appear in a released frame.  Everything else
 # -- not_reviewed, rejected, or an unrecognised string -- blocks a release.
@@ -1907,7 +1912,32 @@ def compute_blockers(acceptance: dict, recipes: dict, renderer_source: str) -> d
         # rather than a file only tests read. Before it, the register existed and
         # nothing consulted it, which is indistinguishable from not having one.
         "unaccepted_starter_composition": unaccepted_starter_composition(),
+        # The one gate no machine can clear. Everything else in this validator
+        # measures structure; none of it can say whether the Garden is worth
+        # looking at. Four verdicts, blocked separately, because they fail for
+        # different reasons and collapsing them would let three unexamined
+        # judgements ride on the easiest one.
+        "operator_review_outstanding": outstanding_operator_verdicts(),
     }
+
+
+def outstanding_operator_verdicts() -> list[str]:
+    """Report every direct-acceptance verdict the operator has not given.
+
+    Read from ``docs/garden-review-verdicts.json``.  Nothing computes or infers
+    these: a verdict is a person's judgement after watching the moving product,
+    and no test result, density number or opened screenshot substitutes for one.
+
+    :returns: one entry per outstanding verdict, empty only when all four are
+        accepted
+    """
+    register = json.loads(_REVIEW_VERDICTS.read_text(encoding="utf-8"))
+    outstanding = []
+    for name, record in sorted(register["verdicts"].items()):
+        verdict = record.get("verdict", "not_reviewed")
+        if verdict != "accepted":
+            outstanding.append(f"{name} is {verdict}")
+    return outstanding
 
 
 def unaccepted_starter_composition() -> list[str]:

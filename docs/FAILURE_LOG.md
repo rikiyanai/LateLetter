@@ -4265,6 +4265,48 @@ delivery, bonded-animal delivery, the memorial state and the five emotional mome
 and were deliberately not invented, per the standing instruction to ignore unapproved animals and
 plants and make nothing up.
 
+**Direct-acceptance verdicts now exist as a gate, 2026-08-03.**
+`docs/garden-review-verdicts.json` holds FOUR separate verdicts — assets, composition, motion
+package, emotional moments — all `not_reviewed`, and the release gate reports
+`operator_review_outstanding: 4`. Four rather than one because they fail independently: every
+drawing can be right while the composition they form is wrong, a correct still composition can be
+dead in motion, and a garden can be dense, correct and moving and still not feel like anything.
+Collapsing them would let three unexamined judgements ride on the easiest. A verdict binds to the
+exact evidence sha256 it was given, so re-rendering inherits nothing. The file names what cannot
+stand in for a verdict, including this assistant's opinion of a capture it opened.
+
+**Time-and-season matrix captured and opened**,
+`docs/visual-review/2026-08-03/garden/matrix/` — eight instants × two sizes, driven by the same
+`garden_review_time` query the operator's own review uses.
+
+Three further defects found, all now strict `xfail` in the browser E2E:
+
+3. **Keyboard play is impossible.** `#g` carries no `tabindex`, so the picture is not in the tab
+   order at all, and the arrow keys pan the CAMERA instead of moving canonical focus — the
+   accessible summary reads "Panned to 61,51 … No object focused". Enter reaches no primary action
+   and the canonical interaction count stays at zero.
+4. **Hover changes the cursor but not the picture.** The cursor does become `pointer` over
+   interactive ink, which is half the contract and holds. The painted text is byte-identical before
+   and after, and no element carries a hover or focus class, measured with ambient motion frozen so
+   the comparison is the hover and not the weather.
+5. **Seasons are not visually distinct.** At midday the painted text is BYTE-IDENTICAL across
+   spring, summer and winter — desktop hash `770ad5a5d909ec70` for spring and winter, one shared
+   mobile hash `3ac79ca42f5e65db` for all three. Only autumn differs. Time of day DOES read
+   differently and that test holds: day `#f9f8f5`, evening `#ecd6b6`, night `#0b0e16`.
+
+A hover pose, an emphasis state and seasonal plant colouring are all new art with no verdict, so
+none was invented to make any of these hold.
+
+**What holds end to end on the product path, with accepted art only:** the review refuses a stored
+world and paints nothing while leaving storage byte-identical; with empty storage it generates,
+paints and persists nothing; the product opens a restored world and labels it restored; the census
+equals the declared starter; a click and a single tap each raise that exact fixture's canonical
+interaction count; hover marks ink interactive and says nothing; day/evening/night are distinct;
+the desktop Garden moves unattended; reduced motion still paints; the Garden is reachable at 200%
+zoom; and no rejected chrome appears at 1600×1000, 390×844, 320 px, at 200% zoom, or across a live
+desktop→mobile resize — by selector and by the rejected phrases — with no page or console errors
+anywhere.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is
