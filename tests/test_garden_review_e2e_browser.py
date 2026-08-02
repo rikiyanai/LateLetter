@@ -520,6 +520,17 @@ def test_clicking_one_accepted_fixture_reaches_the_canonical_world():
 @pytest.mark.xfail(
     strict=True,
     reason=(
+        "MEASUREMENT DEFECT IN THIS TEST, corrected 2026-08-03, and left failing "
+        "until it is rewritten. Clicking DOES reach the canonical world for more "
+        "than stepping stones: the mailbox click produces 'Used open at Memory "
+        "mailbox' in the accessible summary, with a journal entry and a focus "
+        "move. Two things were wrong here. `interaction_count` is not the signal "
+        "-- fixtures track different state per verb -- and the accessible summary "
+        "updates asynchronously, so a 500ms wait reads the PREVIOUS click's "
+        "result and every fixture looks one behind. Kept strict and failing "
+        "rather than deleted, because a defect I recorded wrongly must not vanish "
+        "quietly; it needs a signal that settles before it is read. The original, "
+        "incorrect text follows.\n\n"
         "DEFECT, found by this test on 2026-08-03, and hidden until it was "
         "written. Only ONE of the five accepted starter fixtures responds to a "
         "click: stepping stones ('walk') raises its canonical interaction count, "
@@ -658,6 +669,16 @@ def test_a_single_tap_performs_the_primary_action_on_touch():
 @pytest.mark.xfail(
     strict=True,
     reason=(
+        "MEASUREMENT DEFECT IN THIS TEST, corrected 2026-08-03, and left failing "
+        "until it is rewritten. `objectRectPixels` reports the canonical HOTSPOT, "
+        "and hit testing expands that through `expandTarget` to "
+        "`MINIMUM_TARGET_PX` before deciding what a pointer touched -- so the "
+        "44px floor IS applied where it matters, and this test was measuring the "
+        "wrong rectangle. What remains genuinely unproven is whether the EXPANDED "
+        "target is reachable, which needs a hit probe rather than a rectangle "
+        "read. Kept strict and failing rather than deleted, because a defect I "
+        "recorded wrongly must not vanish quietly; it is superseded, not cleared. "
+        "The original, incorrect text follows.\n\n"
         "DEFECT, found by this test on 2026-08-03. Every interaction rectangle "
         "the product produces is the raw cell rect -- measured at 11x13 CSS "
         "pixels for a one-cell fixture and 22x13 for a two-cell one -- against a "
