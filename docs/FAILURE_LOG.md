@@ -3963,6 +3963,242 @@ rise from 161 is this contract's nineteen executed cases, all of which hold. Tar
 holding. `scripts/check_lane_boundary.py` refuses the Garden lane's patch today, correctly, on
 four contended paths.
 
+**Route item 3 — persisted composition is versioned, 2026-08-02.**
+Three stamps, deliberately independent, because one number cannot carry three facts:
+`schema_version` is the SHAPE of the document (can it be parsed), `generator_version` is the code
+that produced the content (was it built by today's generator), `composition_version` is the
+approved population (is this what the operator said yes to). A stored world can be current in the
+first and stale in both others at once — which is exactly how a persisted 13-plant / 22-fixture /
+4-animal / 8-collectible world was reviewed as the current 8/10/4/3 starter. Nothing in that
+document was false; there was no field capable of saying "an older generator made me".
+
+The correctness property the whole thing rests on: **absent stays absent.** A world stored before
+the stamps existed reads as `None`, never as today's constants. Defaulting a missing stamp to the
+current version would make every pre-versioning world claim to be today's, which is the masquerade
+restated as a default value. `None` and `0` are also kept apart, because "cannot say what made me"
+and "made by generator 0" are different sentences and only one is true.
+
+Two findings from building it:
+1. **A migration operating on a loaded world could never run.** `WorldState.from_dict` refuses any
+   schema but the current one, so by the time a world exists as an object the load has already
+   succeeded or already thrown. Migration has to sit between reading the file and constructing the
+   state; it is `migrate_world_document` / `load_migrated_world`, and `WorldStore.load` now goes
+   through it, so the path is reachable from storage rather than merely defined.
+2. **A migration must never rewrite the content stamps.** It upgrades a document's shape; it does
+   not rebuild the garden inside it. If it stamped today's generator onto what it upgraded, then
+   migrating an obsolete starter would make it indistinguishable from one built today — the
+   masquerade reintroduced by the code meant to prevent it. Older documents migrate; NEWER ones are
+   refused rather than downgraded, since reading a future document by ignoring the fields we do not
+   understand silently discards whatever they meant.
+
+Three labels, and the distinction between the last two is not cosmetic: `fresh`, `migrated` (a
+shape upgrade happened to this document), and `restored` (the world is simply older than the
+stamps). **The 13/22/4/8 world is `restored`, not `migrated`** — nothing migrated it, and calling
+it migrated would describe an event that never took place. `require_fresh_composition` is the
+enforceable half for the visual-review step: a fresh-composition review refuses anything else and
+carries every reason on the exception, which is the difference between reviewing today's Garden and
+reviewing something restored from before it.
+
+Both languages carry the same three fields and the same characterization
+(`characterizeGardenWorld`), and the pre-existing cross-language contract
+`test_python_and_browser_worlds_match_every_checkpoint_and_persisted_byte` holds unchanged — so the
+two serialisations are byte-identical with the new fields in them, proven rather than asserted.
+One superseded test was deleted in the same patch as its replacement, per the standing rule:
+`test_unsupported_schema_is_reported` asserted that EVERY non-current schema is refused, which was
+true before there was a migration and is now true in one direction only; it is replaced by a test
+per direction.
+
+**The tree state changed underneath this work and the change is the good one.** Mid-session another
+actor committed the whole checkout in lane-separated commits — `1043` changed entries down to
+**4**. Attribution scan across the last 25 commits: **zero** matches for AI/assistant/co-authored
+markers; author is the operator's own identity. Every artifact from route items 1, 2 and 3 is in
+`HEAD` intact — the contract module, its executed tests, the reference composer, the lane manifest
+and checker, and the provenance module. The mixed-tree problem named in item 1 is therefore no
+longer the blocking condition it was; what remains uncommitted is this session's in-flight work.
+
+Verification, `/opt/homebrew/opt/python@3.14/bin/python3.14` (3.14.3): **855 holding, 5 failing** —
+the same five by name. Node: **189 tests, 188 holding, 1 failing** — the stepping-stones ground
+defect, row 49 column 67 at 1600×1000; the rise from 180 is this item's nine executed browser
+cases, and the Python rise from 838 is its sixteen.
+
+**Route item 3 outcome — REJECTED, 2026-08-03.** Seven findings, and the first three are one
+mistake: a semantic was invented and then asserted rather than measured.
+
+1. `composition_version` was documented as "the population the operator reviewed and approved".
+   No composition has ever been approved. Every generated world therefore claimed a verdict that
+   does not exist.
+2. Worse, the stamp was applied in `new_world()`, which returns an EMPTY world — and the tests
+   built their "fresh" world through it, so **0/0/0/0 was certified as the approved fresh
+   composition**. The report also quoted a historical 8/10/4/3 as the current starter; the real
+   one is **2 plants / 5 fixtures / 0 animals / 0 collectibles**, which measuring would have shown.
+3. The stamp was an unverified assertion. Nothing compared it to the world's contents, so a world
+   could carry current versions over any roster and read as fresh; custom rosters and
+   author-program-modified worlds kept the stamp too.
+4. The browser path — where the defect actually occurred — was untouched. `garden-runtime.mjs`
+   still called `deserializeWorldState(stored)` directly: no migration, no characterization, no
+   refusal. A stale world would still render and persist, because no caller refused it.
+5. Parity was overstated. Python had migration and store wiring; JavaScript had deserialization
+   and characterization only.
+6. The migration test used a counterfeit: a current document with its schema number changed, which
+   the migration changed back. That proves a number can be reassigned, not that a document can be
+   migrated.
+7. "Fresh" conflated lineage with load origin. A current world loaded after many interactions read
+   as fresh, and no version stamp can record an event that happens at load time.
+
+**Route item 3, second attempt — 2026-08-03. Every correction applied.**
+
+- **The stamp names a candidate revision; approval lives elsewhere.** `composition_version` is a
+  revision number and says nothing about review. Acceptance is a separate operator verdict in
+  `docs/garden-composition-acceptance.json`, bound to the revision AND the exact roster
+  fingerprint, so re-rostering under the same number inherits nothing. The register is **empty**,
+  and a test asserts the generated starter reads `not_reviewed` — which is the true state.
+- **Stamped only after generation succeeds.** `new_world` stamps nothing; `generate_initial_world`
+  stamps at its last line, after every placement and the layout safety check. Every earlier exit is
+  a raised exception, so a partial world cannot carry a stamp either. A test asserts an empty world
+  is not a composition.
+- **The stamp is bound to the contents.** `composition_fingerprint` describes the roster actually
+  produced — `plants=oak,sunflower|fixtures=bench,lantern,mailbox,planter,stepping_stones|animals=|collectibles=`
+  — recorded at generation and recomputed at every characterization. Removing one plant now reports
+  "contents no longer match the stamped composition", with both fingerprints shown so a reviewer
+  sees WHICH species differ. Readable rather than hashed, and roster-not-position, so two seeds are
+  one composition.
+- **Load origin is a separate, reported fact.** `generated` / `loaded` / `schema_migrated`.
+  `require_fresh_composition` demands fresh lineage AND generation in this process, and defaults to
+  the strict reading so the lenient answer is never what you get by forgetting. This is the case no
+  stamp can ever catch.
+- **The browser path is wired.** `GardenRuntime.open()` goes through `loadMigratedGardenWorld`,
+  records `loadOrigin`, characterizes into `worldOrigin`, and exposes
+  `requireFreshCompositionForReview()`. Seven executed runtime tests cover it, including the real
+  13/22/4/8 condition: a stored current-shape document with no stamps now refuses instead of
+  rendering silently.
+- **Migration is a registered transform or a refusal.** `SCHEMA_MIGRATIONS` is **empty**, which is
+  the honest state: schema 1 is the only shape this project has ever written, so no transform could
+  have been written against a real historical document. An unregistered older schema is now
+  REFUSED, in both languages, rather than renumbered.
+- **The historical fixture is authentic in the way that matters.**
+  `tests/garden_world/fixtures/historical_world_13_22_4_8.json` loads through the real reader with
+  a census of 13/22/4/8 and no stamps. Its README states plainly what it is not: not a byte copy of
+  the world seen in that browser session, because that document was never captured. It is also not
+  a schema-migration fixture — the historical world was never an older SHAPE, which is why
+  characterization and not migration is where it is handled.
+
+Superseded tests were replaced rather than kept beside their replacements, per the standing rule:
+the `new_world`-based freshness tests, and `test_an_older_world_is_migrated_on_load_and_says_so`,
+whose subject no longer exists.
+
+Verification, `/opt/homebrew/opt/python@3.14/bin/python3.14` (3.14.3): **862 holding, 5 failing** —
+the same five by name. Node: **197 tests, 196 holding, 1 failing** — the stepping-stones ground
+defect, row 49 column 67 at 1600×1000.
+
+**Commit 112de21 outcome — REJECTED, 2026-08-03, and the pattern behind it is named.**
+The operator's diagnosis, which is correct and is the durable finding of this whole family:
+
+> "Method exists" gets reported as "product path enforces it." Self-authored unit tests replace an
+> end-to-end test through the real viewer. Each audit checks the claimed corrections instead of
+> re-testing the actual invariant from scratch. Status prose is written before the browser
+> behaviour is proven. Passing proxy tests are treated as completion despite the candidate still
+> doing the forbidden thing.
+
+The invariant was always stateable in one sentence, and was not the thing being built:
+
+> A visual-review entry point must prove it generated the exact current starter composition in this
+> process, before persistence or projection, and must refuse everything else.
+
+Six findings against 112de21: the guard was an optional method with no product caller, so a
+stamp-less stored world opened, projected 7 objects and persisted, and only a later manual call
+threw; `load_origin` defaulted to `generated`, and a test enshrined that bypass; every successful
+generation received the same `COMPOSITION_VERSION`, so a one-oak custom roster read as the current
+composition; the fingerprint covered roster names only, so anchor and layout changes kept it;
+the false-approval wording survived in `provenance.py` and `garden-world.mjs` and the obsolete
+8/10/4/3 starter was still quoted; and the acceptance register was read by nothing but tests.
+
+**Corrections, 2026-08-03 — the invariant first, mechanisms subordinate to it.**
+
+- **The refusal is IN the path.** `GardenRuntime.open` now takes a required `composition` policy
+  and refuses before the author program is seeded, before offline reconciliation, before
+  `this.state` is assigned, before `persist()` and before `refreshProjection()`.
+  `viewer-bnw.html` — the product caller — passes `require_fresh` in review mode and
+  `accept_restored` otherwise. There is no default: a lenient one reviews a restored world, a
+  strict one deletes a recipient's garden, and both are silent.
+- **The proof is an adversarial product-path test**, `tests/garden_adapters/test_review_refuses_restored_world.mjs`.
+  It never calls the guard. It seeds storage with a world a review must not see, enters through
+  `open` exactly as the viewer does, and asserts the SIDE EFFECTS: `saves` empty, `projection`
+  null, `state` null — each separately, since a guard between two of them would satisfy one.
+  **Anti-vacuity check performed and recorded:** moving the guard to after `persist()` and
+  `refreshProjection()` makes it fail with "the restored world was written to storage"; restored,
+  it holds. A test that cannot detect the defect it describes proves nothing.
+- **`load_origin` is mandatory and enum-validated** in both languages; the test that enshrined the
+  default is deleted and replaced by one asserting the omission raises.
+- **The composition revision names ONE candidate.** A custom roster gets `composition_version:
+  None` — it belongs to no named candidate — so a fresh-review guard refuses it. A number every
+  roster receives identifies nothing.
+- **The fingerprint covers the authored composition, not just names:** each identity is written
+  with the anchor it was placed against, so moving an anchor changes it and an accepted verdict
+  cannot survive a re-laid-out garden. Seed-derived positions are still excluded, because two seeds
+  are one composition. A test moves an anchor and requires the fingerprint to change.
+- **The acceptance register is live policy.** `scripts/validate_presentation_identity.py` now
+  computes `unaccepted_starter_composition`, generating the starter through the real generator and
+  looking it up. It currently reports the starter as `not_reviewed`, which blocks a release — the
+  true state.
+- **The stale wording is gone from both modules** and the starter is quoted as measured, 2/5/0/0.
+
+Also corrected: the Node tally method used earlier in this session truncated long output and
+under-reported failures. Counts below are per-file, first-match.
+
+Verification: Python **860 holding, 9 failing** — this lane's same five by name, plus four in
+`tests/transcription/test_geometry_raster.py` belonging to the transcription lane's in-flight work.
+Node: **199 tests, 198 holding, 1 failing** — the stepping-stones ground defect. Release gate:
+eleven blockers plus the new composition blocker, all reported.
+
+**The review invariant is now executed in a real browser, 2026-08-03.**
+`tests/test_garden_review_e2e_browser.py` starts a server, drives Google Chrome at
+`viewer-bnw.html`, seeds the page's own IndexedDB through the same database, store and key the
+viewer uses, clicks the visible `#btn-standalone`, and asks the page what it is showing. It imports
+no runtime module and calls no guard.
+
+**It found the defect it was built to find, in its own first draft.** The mutation "delete the
+review guard entirely" did NOT fail the first version, because review mode had been handed
+`load: async()=>null` — with nothing to load it always generated, so the picture was fresh and the
+guard never ran. "Never looked" is not "proved fresh"; it is the same answer reached by not asking,
+and it left a review's freshness resting on a persistence flag rather than on the guard.
+
+Corrected: **a review now READS what a recipient's browser holds and refuses it.** The loader is
+live in review mode; the writer never is, so refusing costs the stored world nothing. The refusal
+is surfaced to a person — "this browser is holding an older garden" — rather than becoming an
+unhandled rejection over a blank page.
+
+Two mutations recorded, both now caught by the browser test:
+- delete the guard in `GardenRuntime.open` → the review paints the restored world → FAILS;
+- downgrade the review call site to `accept_restored` → same → FAILS.
+Restored, nine cases hold.
+
+What the browser test asserts, all through the product path: the review REFUSES a stored world,
+paints zero glyphs, leaves storage byte-identical, and reports the refusal without a console error;
+with empty storage it generates, paints, is `is_fresh`, and persists nothing; the product path
+opens a recipient's restored world and labels it `restored` rather than pretending it is current;
+the reviewed census equals the declared starter; no rejected action chrome at 1600×1000, 390×844 or
+320 CSS pixels, nor across a live desktop→mobile resize, checked by selector AND by the phrases the
+operator rejected; and no page or console errors anywhere.
+
+**Accepted-art audit on the real frame, and the gap stated rather than filled.** Ten fixtures carry
+`accepted`; no plant and no animal does. The reviewed scene places exactly five accepted fixtures —
+bench, lantern, mailbox, planter, stepping_stones — and **two plant objects that carry no verdict at
+all**. The test asserts both sets by equality, so adding unreviewed art fails it and an approval
+landing without the composition being reconsidered fails it too. No plant or animal art was
+invented, approved or implied. The reviewed composition is therefore NOT one that could be
+accepted as it stands, and the release gate agrees: `unaccepted_starter_composition` reports
+`not_reviewed`.
+
+Verification: Python **873 holding, 6 failing** — this lane's same five by name, plus one in
+`tests/transcription/` belonging to the other lane's in-flight work. Node: **199 tests, 198 holding,
+1 failing**, the stepping-stones ground defect. Browser E2E: **9 cases, all holding**, plus the two
+mutation runs above.
+
+Still NOT proven, and not claimed: this is machine-checkable structure only. No operator has looked
+at the moving product. Motion, density, seasons, day/night, delivery, bonded animals, item
+discovery, the memorial state and the five emotional moments are all untouched by this work, and
+the letter-typography and stepping-stones defects remain open.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is
@@ -3972,7 +4208,9 @@ four contended paths.
   and the gap the product actually has is measured — 0 of 24 writer sites carry identity and none
   of the four writers could carry one if they tried, 16 atlas assets unaccepted, 4 recipes
   unaccepted, 1 required presentation absent, 4 gameplay-art owners outside the atlas. Do not
-  commit: the tree holds **1043** changed entries across multiple lanes
+  commit: (superseded 2026-08-02 by the lane-separated commits recorded under route item 3 — the
+  count below described the checkout before them, and the tree now holds 4 in-flight entries at
+  `3344d6d`) the tree held **1043** changed entries across multiple lanes
   and is still growing (798 → 912 → 949 → 950 → 954 → 958 → 1023 → 1043, mostly transcription
   fixtures, model caches and an untracked emoji-model directory). As of 2026-08-02 the index is no
   longer clean either: **943 paths are STAGED**, 722 of them under `tracked/LateLetterResearch`, by
@@ -4528,3 +4766,89 @@ task
   evidence because its final baseline delta is 4px (residual −18px), marked
   `terminal_sliver_rejected`. All measured pitch/phase hypotheses remain in the evidence record;
   no phase is selected for recognition.
+
+- **Periodic-candidate regression result (2026-08-02):** Literal sitting-cat evidence now
+  preserves both 23px phase-8 and phase-9 nine-row alternatives, including nominal versus
+  ink-clamped terminal baselines, while the 22px phase-12 ten-row candidate is rejected for its
+  4px terminal delta. The complete `tests/transcription` suite passes 35 tests. Attempt 004 has
+  not been created; recognition remains paused pending geometry review and operator-visible
+  comparison of the retained alternatives.
+
+- **Periodic validity was mistaken for pitch/phase authority (2026-08-03):** The geometry
+  evidence currently retains 83 valid hypotheses across 25 pitches. Its aggregate score ranks
+  an incorrect 20px hypothesis above the visually plausible 23px family; 23px phases 8 and 9
+  differ in seven component relationships and are not ownership-equivalent, while their score
+  margin is only 0.006. Candidate validity therefore does not prove pitch, phase, or ownership.
+  This is a new OPEN geometry-authority failure. Preserve attempts 002–003; do not create attempt
+  004 or run recognition until the four proof states (candidate, pitch, phase, ownership) are
+  represented and independently gated.
+
+- **Authority-state separation implemented (2026-08-03):** `GeometryDecision` and the raster
+  evidence now distinguish `candidate_valid`, `pitch_proven`, `phase_proven`, and
+  `ownership_proven`. Pitch authority uses only raster-period evidence (gutter energy, vertical
+  autocorrelation, span coverage, harmonic family diagnostics, and foreground-threshold replay);
+  horizontal advance and row-profile similarity remain diagnostic. Phase evidence retains
+  ownership signatures for every pitch family, so adjacent phases are not collapsed when their
+  seam relationships differ. Recognition inputs reject any fixed lattice missing one of the four
+  proofs. Legacy bbox row candidates are explicitly non-authoritative; ownership accounting uses
+  pixel intervals plus cross-row seam continuation evidence. A `--geometry-only` capture mode now
+  emits only geometry evidence, a source-sized overlay, and a candidate contact sheet. Attempt 004
+  remains uncreated.
+
+- **Whole-reference geometry gate (2026-08-03):** Read-only replay across sitting-cat,
+  horse-animation-sheet, ldb-flower-field, long-stem-bloom, a8283c5cdb63b130, bbbb-flowers, and
+  the v2 fixed/CJK fixtures created no attempts and no TXT. Sitting-cat is rejected with explicit
+  pitch/phase/ownership authority failures; horse is rejected on the same authority margin;
+  ldb is rejected for under-segmented rows; a828 and long-stem retain measured evidence but the
+  exclusive router remains unresolved; bbbb and compact v2 fixtures retain their constrained
+  proof states. Queue recognition remains paused.
+
+- **Periodic authority scoring failure exposed (2026-08-03):** Raw vertical autocorrelation
+  favors stroke-frequency harmonics, so the current aggregate score can rank an incorrect
+  short pitch (8px/20px) above the cleaner 23px interline family. Foreground stability only
+  compared surviving candidate sets and replayed complementary background masks; it did not
+  prove that the same pitch, phase ownership group, normalized margins, and ownership
+  signature won each retained threshold. Pitch and phase proof predicates also incorrectly
+  required the absence of all competing families/groups, making authority either false for
+  the wrong reason or unsafe when a runner-up existed. The internal fixed-lattice branch can
+  report `passed=true` while the final geometry bundle is rejected, creating a contradictory
+  authority surface. This is an OPEN source-only geometry failure. Preserve attempts 002–003;
+  do not create attempt 004 or run recognition until lexicographic seam/harmonic authority,
+  threshold-stable foreground evidence, and explicit four-state proof predicates are fixed.
+
+- **Geometry-first inference deadlock (2026-08-03):** The current production contract requires
+  one pitch, phase, and ownership proof before any recognizer may receive a run strip. Sitting-cat
+  demonstrates that this dependency is impossible for connected structural art: short stroke
+  repetition and the real interline period are both supported by the raster, and text/run
+  proposals are the evidence needed to resolve the geometry. The pipeline therefore rejects
+  before the evidence that could disambiguate it is allowed to exist. This is an architectural
+  failure, not a font or Unicode failure. The correction must preserve all measured geometry
+  hypotheses as non-authoritative proposal inputs, perform joint geometry/text/ownership
+  decoding, and require the four proof states only for final candidate/TXT acceptance. No
+  proposal may promote itself, and no accepted TXT may be emitted from an unresolved hypothesis.
+
+- **Joint-evidence seam introduced (2026-08-03):** The authority surface now uses normalized
+  seam energy/contrast and explicit stroke-harmonic rejection; sitting-cat retains 23px as the
+  source-raster winner while 8px/short families remain diagnostic and rejected as harmonics.
+  Threshold replay is limited to the selected light-background family and records winning
+  pitch, phase group, margins, and ownership signature; the replay is correctly unstable when
+  thresholds change that winner. A new proposal-only hypothesis builder exposes bounded,
+  hash-bound row strips for measured candidates without marking them authoritative or writing
+  TXT. The recognizer benchmark consumes those hypothesis strips for proposal evidence when
+  geometry is unresolved; canonical candidate/TXT construction still requires all four proof
+  states. Router branch scores are now labeled `branch_candidate_passed` and cannot surface as
+  `passed=true` unless final geometry authority is proved. Attempts 002–003 remain frozen and
+  attempt 004 remains uncreated.
+
+- **Superseding audit correction (2026-08-03):** The preceding `Geometry-first inference deadlock`
+  entry overclaimed impossibility and is superseded. Geometry-first architecture is not inherently
+  impossible; this repository's blank-gap projection grouping and autocorrelation implementation
+  are inadequate for connected mixed-width art. The actual chain is: mixed-width Unicode source
+  is falsely forced into a uniform fixed-cell model; nine visual rows collapse into four strips;
+  single-line Tesseract receives malformed multi-row strips; structural recognition has no real
+  inference implementation; and the capture command is evidence-only with no candidate authority.
+  The proposal-hypothesis patch is not a joint decoder: capture still exits on unresolved geometry,
+  the benchmark only enumerates hypotheses, vertical pitch is incorrectly reused as horizontal
+  advance in hypothesis inputs, and no selector/alignment/candidate writer exists. Preserve
+  attempts 001–003 and do not create attempt 004 until baseline detection, mixed-width geometry,
+  a real row recognizer, joint alignment, and exact nine-row evaluation evidence exist.
