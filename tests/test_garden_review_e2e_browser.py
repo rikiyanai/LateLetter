@@ -449,6 +449,181 @@ def test_no_action_chrome_at_every_required_size(viewport):
         assert errors == [], errors
 
 
+# ---------------------------------------------------------------------------
+# Picture-owned interaction, exercised only on art the operator accepted.
+#
+# The five fixtures in the starter are all `accepted`; the two plants are not,
+# and declare no primary action, so nothing below touches them. No pose, state,
+# effect or behaviour is invented anywhere in this section.
+# ---------------------------------------------------------------------------
+
+
+def _accepted_fixture_target(page):
+    """Pick an accepted fixture that declares a primary action, and its rect.
+
+    Returns the object id, its interaction rectangle in CSS pixels, and the
+    canonical primary action declaration -- read from the page, so the test
+    aims at whatever the product actually projected rather than at a guess.
+    """
+    return page.evaluate(
+        """() => {
+            const review = window.__gardenReview;
+            const fixture = review.state().objects.find(
+              object => object.id.startsWith('fixture') && object.primary_action,
+            );
+            if (!fixture) return null;
+            const rect = review.objectRectPixels(fixture.id);
+            return rect ? {id: fixture.id, rect, primary: fixture.primary_action} : null;
+        }"""
+    )
+
+
+def test_clicking_accepted_fixture_ink_performs_its_canonical_primary_action():
+    """The picture is the control surface: a click on ink changes world state.
+
+    Not "a class toggled" and not "a handler fired" -- the canonical interaction
+    count on that exact fixture goes up, which is the only evidence that the
+    dispatch reached the world rather than stopping at the DOM.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            target = _accepted_fixture_target(page)
+            assert target is not None, "no accepted fixture with a primary action was projected"
+
+            def interactions() -> int:
+                rows = page.evaluate("() => window.__gardenReview.state().fixtures")
+                return next(row["interaction_count"] for row in rows if row["id"] == target["id"])
+
+            before = interactions()
+            page.mouse.click(
+                target["rect"]["x"] + target["rect"]["width"] / 2,
+                target["rect"]["y"] + target["rect"]["height"] / 2,
+            )
+            page.wait_for_timeout(400)
+            assert interactions() == before + 1, (
+                f"clicking {target['primary']['label']!r} did not reach the canonical world"
+            )
+            # And it did so without any of the rejected chrome appearing as a
+            # result of the interaction, which is when it used to appear.
+            _assert_no_action_chrome(page)
+        assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. At 390x844 two of the five "
+        "accepted starter fixtures -- stepping_stones (world x=31) and planter "
+        "(x=88) -- have no interaction rectangle at all: they fall outside the "
+        "cropped mobile width. Mobile may crop peripheral scenery; it may not "
+        "lose reachable interactions. Owned by the interaction-mask step of the "
+        "operator route, which gives every interactive asset state a "
+        "projection/atlas-owned mask. Left strict so it cannot be normalised "
+        "into the baseline, and so that a later correction cannot land silently."
+    ),
+)
+def test_a_single_tap_performs_the_primary_action_on_touch():
+    """One tap, not a hover-equivalent first tap and a second to confirm."""
+    with _static_server() as origin:
+        with _chrome(origin, viewport=MOBILE) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            target = _accepted_fixture_target(page)
+            assert target is not None
+
+            def interactions() -> int:
+                rows = page.evaluate("() => window.__gardenReview.state().fixtures")
+                return next(row["interaction_count"] for row in rows if row["id"] == target["id"])
+
+            before = interactions()
+            page.touchscreen.tap(
+                target["rect"]["x"] + target["rect"]["width"] / 2,
+                target["rect"]["y"] + target["rect"]["height"] / 2,
+            )
+            page.wait_for_timeout(400)
+            assert interactions() == before + 1, "the first tap did not act"
+        assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. Every interaction rectangle "
+        "the product produces is the raw cell rect -- measured at 11x13 CSS "
+        "pixels for a one-cell fixture and 22x13 for a two-cell one -- against a "
+        "44px floor that SPEC 7.2 already states and that MINIMUM_TARGET_PX in "
+        "web/garden-geometry.mjs already defines. Nothing enlarges them. Two of "
+        "the five accepted fixtures have no rectangle at all on mobile, which is "
+        "the separate defect above. Owned by the interaction-mask step of the "
+        "operator route; enlarging a hotspot to the floor is explicitly "
+        "permitted there and requires no new art. Left strict so it cannot be "
+        "normalised into the baseline, and so that a later correction cannot "
+        "land silently."
+    ),
+)
+def test_every_interactive_target_meets_the_44px_minimum():
+    """A target below the floor is present but not reachable by a fingertip."""
+    with _static_server() as origin:
+        with _chrome(origin, viewport=MOBILE) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            rects = page.evaluate(
+                """() => window.__gardenReview.state().objects
+                    .filter(object => object.primary_action)
+                    .map(object => ({
+                      id: object.id, rect: window.__gardenReview.objectRectPixels(object.id),
+                    }))"""
+            )
+            assert rects, "no interactive object was projected"
+            for row in rects:
+                assert row["rect"] is not None, f"{row['id']} has no interaction rectangle"
+                assert row["rect"]["width"] >= 44 and row["rect"]["height"] >= 44, (
+                    f"{row['id']} is {row['rect']['width']}x{row['rect']['height']}px"
+                )
+        assert errors == [], errors
+
+
+def test_the_garden_keeps_moving_without_any_input():
+    """It must live on its own, not only when touched.
+
+    Compared as painted text over real elapsed time. `garden_review_time` is
+    deliberately NOT used for this one: it freezes disposable motion, which is
+    exactly what is being measured.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, PRODUCT_QUERY)
+            first = page.locator("#g").inner_text()
+            page.wait_for_timeout(3000)
+            second = page.locator("#g").inner_text()
+            assert first != second, "the Garden was motionless for three seconds"
+        assert errors == [], errors
+
+
+def test_reduced_motion_still_paints_the_garden():
+    """A person who cannot take motion still gets the picture."""
+    with _static_server() as origin:
+        with playwright_api.sync_playwright() as driver:
+            try:
+                browser = driver.chromium.launch(channel="chrome")
+            except Exception as failure:  # pragma: no cover - environment dependent
+                pytest.skip(f"system Google Chrome is unavailable: {failure}")
+            context = browser.new_context(
+                viewport={"width": DESKTOP[0], "height": DESKTOP[1]},
+                reduced_motion="reduce",
+            )
+            page = context.new_page()
+            errors: list[str] = []
+            page.on("pageerror", lambda error: errors.append(f"pageerror: {error}"))
+            try:
+                _enter_standalone_garden(page, origin, REVIEW_QUERY)
+                assert _painted_glyph_count(page) > 0, "reduced motion painted nothing"
+                _assert_no_action_chrome(page)
+            finally:
+                context.close()
+                browser.close()
+            assert errors == [], errors
+
+
 def test_no_action_chrome_survives_a_live_desktop_to_mobile_resize():
     """Resizing in one live session, not two separate loads.
 

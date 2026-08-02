@@ -4199,6 +4199,32 @@ at the moving product. Motion, density, seasons, day/night, delivery, bonded ani
 discovery, the memorial state and the five emotional moments are all untouched by this work, and
 the letter-typography and stepping-stones defects remain open.
 
+**Two interaction defects found BY the browser E2E, 2026-08-03. Recorded, not corrected.**
+Both were found by extending the end-to-end file to picture-owned interaction on accepted art only.
+No pose, state, effect or behaviour was invented to make anything hold; both are marked
+`xfail(strict=True)`, so they cannot be normalised into the baseline and a later correction cannot
+land silently either.
+
+1. **Reachable interactions are lost on mobile.** At 390×844, two of the five accepted starter
+   fixtures — `stepping_stones` (world x=31) and `planter` (x=88) — have **no interaction
+   rectangle at all**; they fall outside the cropped width. Mobile may crop peripheral scenery; it
+   may not lose reachable interactions.
+2. **No interaction target meets the 44px floor.** Every rectangle the product produces is the raw
+   cell rect — measured at **11×13 CSS pixels** for a one-cell fixture, 22×13 for a two-cell one —
+   against a floor SPEC §7.2 already states and `MINIMUM_TARGET_PX` in `web/garden-geometry.mjs`
+   already defines. Nothing enlarges them.
+
+Both belong to the interaction-mask step of the operator route, where every interactive asset state
+gets a projection/atlas-owned mask and enlarging a hotspot to the floor is explicitly permitted.
+
+What DOES hold end to end, on the product path, using only accepted fixtures: a click on fixture
+ink raises that exact fixture's canonical `interaction_count`, so the dispatch reaches the world
+rather than stopping at the DOM, and no rejected chrome appears as a result; the Garden keeps
+moving with no input (painted text differs across three real seconds, measured without
+`garden_review_time`, which would have frozen the thing being measured); reduced motion still
+paints the picture with no chrome. Also measured and worth recording: at 390×844 the scene paints
+**54 glyphs across 64 rows**, which is a density observation for the operator, not a verdict.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is
