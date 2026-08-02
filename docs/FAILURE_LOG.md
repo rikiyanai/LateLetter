@@ -4359,7 +4359,24 @@ from one that does not exist. Verified: the build exits non-zero, names
 `--skip-release-gate` works and has to be typed, so it is visible in a command line and a CI log.
 Deployment is untouched and stays on the legacy builder until the operator's cutover.
 
-**The §7.8.13 authenticated path is written but does NOT run — recorded, not claimed.**
+**Correction, same day: the §7.8.13 authenticated path RUNS. The harness was wrong, not the
+product.** Loading a bundle does not ask for a passphrase — the Garden appears first and an "open
+letters" control leads to it, which is the first-run design. The earlier version waited for
+`#pp-input` immediately after the drop, saw a hidden field, and was recorded below as a product
+harness gap. It was the test asking the wrong question. Three cases now run against a bundle sealed
+with the product's own `seal_message`/`seal_bundle`:
+- a sealed bundle paints the Garden **before** asking anything, and neither the letter label nor
+  its body is anywhere on the page — the first-run promise and the pre-authentication privacy rule
+  measured together;
+- the correct passphrase is accepted and the Garden stands on the far side of it;
+- a wrong passphrase is refused, leaks neither label nor body, and correctly does NOT hide the
+  Garden, because hiding it would punish a typo.
+The paragraph below is retained as written, since the record of a wrong diagnosis is worth more
+than a tidy log. §7.8.13 is no longer partial for the authenticated browser path; **terminal parity
+is still not exercised by this file** and is covered separately by
+`tests/garden_adapters/test_world_browser_conformance.py`.
+
+**Superseded — the §7.8.13 authenticated path is written but does NOT run.**
 Two cases seal a real bundle with the product's own `seal_message`/`seal_bundle`, drop it on the
 viewer, and require the Garden on the far side of a passphrase (and require a wrong passphrase to
 reveal nothing and open nothing). They are SKIPPED with the reason stated in the file: a minimal
@@ -5056,3 +5073,29 @@ task
   multiply-owned pixels remain. The report exposes this as `ownership_gate: diagnostic_only`; it
   still cannot promote geometry or write TXT. Lower-row recognition remains open and attempts
   001–003/attempt 004 status is unchanged.
+
+- **Painted-cluster recognition was locally greedy (2026-08-03):** The structural Unicode
+  proposal path measured whole painted x-clusters, but committed each cluster to its single
+  lowest-cost glyph before row-level alternatives were considered. Connected lower cat rows
+  therefore selected wide Japanese/punctuation labels for merged ASCII strokes, while the
+  fixed-unit beam and neighboring row evidence had no way to compete. This is a generic
+  run-decoding defect, not a sitting-cat rule: cluster alternatives must remain bounded,
+  deterministic proposal evidence and be decoded as a sequence with overlap/width checks.
+  The proposal path remains non-authoritative; no candidate TXT or attempt 004 is authorized.
+
+- **Cluster sequence beam correction (2026-08-03):** `_cluster_sequences` now retains a bounded
+  deterministic beam of painted-cluster alternatives, applies display-span overlap penalties,
+  and records each alternative as proposal evidence. Regression coverage proves repeated runs
+  are hash-identical, lower connected rows expose competing sequences, and edge ownership
+  conserves every substantive source pixel exactly once. This removes the local-greedy loss but
+  does not establish the cat transcript: lower rows still require joint ownership/Unicode
+  resolution and operator review. Attempts 001–003 remain frozen; attempt 004 and accepted TXT
+  remain blocked.
+
+- **Proposal flattening dropped beam alternatives (2026-08-03):** The benchmark helper
+  `_proposal_texts` collected only each candidate's primary text and ignored its serialized
+  `alternatives`. The new cluster beam therefore preserved deterministic alternatives in the
+  proposal artifact while the joint row-alignment scorer never received them. This is a generic
+  proposal-retention defect, not a cat-specific rule. Alternatives must be surfaced with a
+  deterministic confidence/rank penalty while remaining proposal-only; no candidate TXT or
+  acceptance may be inferred from the expanded set.

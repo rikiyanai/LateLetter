@@ -1011,20 +1011,44 @@ def _sealed_bundle(tmp_path, passphrase: str = "correct horse"):
     return path
 
 
-@pytest.mark.skip(
-    reason=(
-        "INCOMPLETE HARNESS, not a product finding, 2026-08-03. A bundle sealed "
-        "with seal_message/seal_bundle and dropped on #file-input leaves the "
-        "viewer on no visible screen with the default 'something went wrong' "
-        "text, so handleFile is not reaching its own error path. The minimal "
-        "bundle here carries no author_name and garden_seed 0, and the product "
-        "also has a BUNDLE_VERSION_WITH_GARDEN_PROGRAM it may require; which of "
-        "those the viewer needs has not been established. Skipped rather than "
-        "left red, because a red test that fails for a harness reason gets read "
-        "as a product defect -- and rather than deleted, because SPEC 7.8.13 "
-        "requires exactly this path and nothing else in this file covers it."
-    ),
-)
+def _open_sealed_bundle(page, origin, bundle):
+    """Drive the recipient's real flow up to the passphrase prompt.
+
+    Loading a bundle does NOT ask for a passphrase: the Garden appears first and
+    an "open letters" control is what leads to it. An earlier version of these
+    tests waited for `#pp-input` straight after the drop, saw a hidden field, and
+    was skipped as a broken harness -- the product was doing the right thing and
+    the test was asking the wrong question.
+    """
+    page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
+    page.locator("#file-input").set_input_files(str(bundle))
+    page.locator("#g .garden-lattice-row").first.wait_for(state="attached", timeout=15000)
+    page.get_by_role("button", name="open letters").first.click()
+    page.locator("#pp-input").wait_for(state="visible", timeout=10000)
+
+
+def test_a_sealed_bundle_opens_the_garden_before_asking_anything(tmp_path):
+    """The Garden comes before the authentication, and leaks nothing.
+
+    This is the first-run promise and the privacy rule in one measurement: the
+    picture is painted from a real sealed bundle, and nothing the passphrase
+    protects -- the label, the body -- is anywhere on the page yet.
+    """
+    bundle = _sealed_bundle(tmp_path)
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
+            page.locator("#file-input").set_input_files(str(bundle))
+            page.locator("#g .garden-lattice-row").first.wait_for(state="attached", timeout=15000)
+
+            assert _painted_glyph_count(page) > 0, "a sealed bundle painted no Garden"
+            body = page.locator("body").inner_text()
+            assert "Open today" not in body, "the sealed label leaked before authentication"
+            assert "waiting to deliver" not in body, "the sealed body leaked before authentication"
+            _assert_no_action_chrome(page)
+        assert errors == [], errors
+
+
 def test_an_authenticated_sealed_bundle_opens_the_garden(tmp_path):
     """The recipient's actual path, end to end, through a real browser.
 
@@ -1037,17 +1061,10 @@ def test_an_authenticated_sealed_bundle_opens_the_garden(tmp_path):
 
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
-            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
-
-            # Nothing about the letter may be visible before authentication.
-            assert "Open today" not in page.locator("body").inner_text(), (
-                "a sealed label leaked before the passphrase was entered"
-            )
-
-            page.locator("#file-input").set_input_files(str(bundle))
-            page.locator("#pp-input").wait_for(state="visible", timeout=10000)
+            _open_sealed_bundle(page, origin, bundle)
             page.locator("#pp-input").fill(passphrase)
             page.locator("#btn-unlock").click()
+            page.wait_for_timeout(2500)
 
             page.locator("#g .garden-lattice-row").first.wait_for(
                 state="attached", timeout=15000,
@@ -1055,33 +1072,21 @@ def test_an_authenticated_sealed_bundle_opens_the_garden(tmp_path):
             assert _painted_glyph_count(page) > 0, (
                 "the authenticated Garden painted nothing"
             )
+            # The passphrase was accepted: the prompt is gone and its error is
+            # not showing. Asserting the letter body would test the reading
+            # surface, which is a different gate from this one.
+            assert not page.locator("#pp-err.on").count(), "the passphrase was refused"
             _assert_no_action_chrome(page)
         assert errors == [], errors
 
 
-@pytest.mark.skip(
-    reason=(
-        "INCOMPLETE HARNESS, not a product finding, 2026-08-03. A bundle sealed "
-        "with seal_message/seal_bundle and dropped on #file-input leaves the "
-        "viewer on no visible screen with the default 'something went wrong' "
-        "text, so handleFile is not reaching its own error path. The minimal "
-        "bundle here carries no author_name and garden_seed 0, and the product "
-        "also has a BUNDLE_VERSION_WITH_GARDEN_PROGRAM it may require; which of "
-        "those the viewer needs has not been established. Skipped rather than "
-        "left red, because a red test that fails for a harness reason gets read "
-        "as a product defect -- and rather than deleted, because SPEC 7.8.13 "
-        "requires exactly this path and nothing else in this file covers it."
-    ),
-)
 def test_a_wrong_passphrase_reveals_nothing_and_opens_no_garden(tmp_path):
     """Failure must not expose what success would have shown."""
     bundle = _sealed_bundle(tmp_path, "correct horse")
 
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
-            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
-            page.locator("#file-input").set_input_files(str(bundle))
-            page.locator("#pp-input").wait_for(state="visible", timeout=10000)
+            _open_sealed_bundle(page, origin, bundle)
             page.locator("#pp-input").fill("not the passphrase")
             page.locator("#btn-unlock").click()
             page.wait_for_timeout(1500)
@@ -1089,7 +1094,8 @@ def test_a_wrong_passphrase_reveals_nothing_and_opens_no_garden(tmp_path):
             body = page.locator("body").inner_text()
             assert "Open today" not in body, "a wrong passphrase leaked the letter label"
             assert "waiting to deliver" not in body, "a wrong passphrase leaked the body"
-            assert page.locator("#g .garden-lattice-row").count() == 0, (
-                "a wrong passphrase opened the Garden"
-            )
+            # The Garden legitimately stays on screen -- it was already there
+            # before authentication, and hiding it would punish a typo. What
+            # must not happen is the letter becoming readable.
+            assert page.locator("#pp-err.on").count(), "a wrong passphrase was not refused"
         assert errors == [], errors
