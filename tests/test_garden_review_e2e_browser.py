@@ -540,67 +540,70 @@ def test_clicking_one_accepted_fixture_reaches_the_canonical_world():
         assert errors == [], errors
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, characterised 2026-08-03 by observing canonical world state "
-        "directly instead of any DOM summary. Clicks land on the WRONG OBJECT. "
-        "Clicking the stepping stones raises stepping-stones walk_count to 1, "
-        "correctly. Clicking the MAILBOX then raises stepping-stones walk_count "
-        "to 2. Clicking the lantern and the bench change nothing at all. "
-        "Clicking the PLANTER sets the mailbox to open:true. So a click "
-        "activates a previously targeted object rather than the one under the "
-        "pointer -- hit resolution is reading stale frame geometry, not queuing "
-        "a dispatch. This is why three earlier descriptions were wrong: the "
-        "accessible summary was reporting a real action on the wrong object, "
-        "which looks exactly like a lagging report of the right one. It is also "
-        "why no DOM signal could settle it -- the summary is written only when "
-        "`syncGardenControlsAvailability()` is truthy, so absence of a change "
-        "there is not absence of an action. Left strict: this is the most "
-        "serious interaction defect on the board, and it must not be normalised."
-    ),
-)
 def test_clicking_EVERY_accepted_fixture_reaches_the_canonical_world():
-    """Each of the five, with a signal that settles before it is read.
+    """All five, each rectangle re-read immediately before its own click.
 
-    Two things were wrong in the first version. `interaction_count` is not the
-    signal -- fixtures track different state per verb -- and a fixed 350ms wait
-    read the PREVIOUS click's summary, so every fixture appeared one behind and
-    four working objects looked broken.
+    The re-read is the entire correctness of this test, and getting it wrong
+    produced four wrong descriptions of a defect that does not exist.
 
-    This waits for the accessible summary to CHANGE, then checks it names the
-    action that was just dispatched. That is the product's own account of what
-    it did, polled until it settles.
+    Interacting with a fixture MOVES THE CAMERA. Reading all five rectangles up
+    front and then clicking them in turn aims every click after the first at
+    ground the scene has since slid out from under: the click lands on whatever
+    is there now, which is usually the previously targeted object. That looks
+    exactly like "clicks activate the wrong object", and it was reported as
+    exactly that. Canonical state, read per click against a freshly read
+    rectangle, shows all five fixtures dispatching their own action correctly.
+
+    The signal is canonical world state, not the accessible summary: the summary
+    is written only when `syncGardenControlsAvailability()` is truthy, so its
+    silence means nothing either way.
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
             _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            targets = page.evaluate(
-                """() => {
-                    const review = window.__gardenReview;
-                    return review.state().objects
-                      .filter(object => object.id.startsWith('fixture') && object.primary_action)
-                      .map(object => ({
-                        rect: review.objectRectPixels(object.id),
-                        action: object.primary_action.args.fixture_action,
-                      }))
-                      .filter(row => row.rect);
-                }"""
+            actions = page.evaluate(
+                """() => window.__gardenReview.state().objects
+                    .filter(object => object.id.startsWith('fixture') && object.primary_action)
+                    .map(object => object.primary_action.args.fixture_action)"""
             )
-            assert len(targets) == 5, f"expected five clickable fixtures, got {len(targets)}"
+            assert sorted(actions) == ["observe", "open", "sit", "tend", "walk"], actions
 
-            for target in targets:
-                previous = _summary(page)
+            def fixtures():
+                return {
+                    row["id"]: (row["interaction_count"], row["last_interaction"])
+                    for row in page.evaluate("() => window.__gardenReview.state().fixtures")
+                }
+
+            for action in actions:
+                target = page.evaluate(
+                    """action => {
+                        const review = window.__gardenReview;
+                        const object = review.state().objects.find(
+                          candidate => candidate.primary_action
+                            && candidate.primary_action.args.fixture_action === action,
+                        );
+                        return object
+                          ? {id: object.id, rect: review.objectRectPixels(object.id)} : null;
+                    }""",
+                    action,
+                )
+                assert target and target["rect"], f"the {action!r} fixture left the frame"
+
+                before = fixtures()
                 page.mouse.click(
                     target["rect"]["x"] + target["rect"]["width"] / 2,
                     target["rect"]["y"] + target["rect"]["height"] / 2,
                 )
-                assert _summary_changes(page, previous), (
-                    f"clicking the {target['action']!r} fixture produced no response at all"
-                )
-                assert _summary(page).lower().startswith(f"used {target['action']}"), (
-                    f"clicking the {target['action']!r} fixture reported "
-                    f"{_summary(page)[:60]!r} instead"
+                landed = False
+                for _ in range(30):
+                    page.wait_for_timeout(100)
+                    if fixtures()[target["id"]] != before[target["id"]]:
+                        landed = True
+                        break
+                assert landed, f"clicking the {action!r} fixture changed nothing"
+                assert fixtures()[target["id"]][1] == action, (
+                    f"the {action!r} fixture recorded "
+                    f"{fixtures()[target['id']][1]!r} instead"
                 )
                 _assert_no_action_chrome(page)
         assert errors == [], errors
