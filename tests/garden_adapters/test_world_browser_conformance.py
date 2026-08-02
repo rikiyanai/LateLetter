@@ -621,3 +621,60 @@ def test_the_terminal_renders_the_same_starter_composition_the_browser_reviews()
         assert fixture.catalog_id in {
             "bench", "lantern", "mailbox", "planter", "stepping_stones",
         }, f"the terminal starter holds an unexpected fixture: {fixture.catalog_id}"
+
+
+def test_every_starter_object_has_terminal_ink_as_well_as_browser_ink():
+    """Render parity in the only sense the contract allows.
+
+    The two pictures must NOT match -- one is proportional, one ascii-safe --
+    so comparing them would assert something the spec forbids. What must hold is
+    that every semantic object selects art in BOTH profiles: an enhanced browser
+    asset with no valid terminal fallback is a gap that only shows up when
+    somebody opens the terminal.
+
+    The composition check above proved both renderers hold the same objects.
+    This goes one step further and requires the terminal to actually PUT INK
+    somewhere for each of them, so an object cannot be present in the world,
+    drawn in the browser, and invisible in the terminal.
+    """
+    from lateletter.garden.atlas import atlas_asset_frame, validate_atlas
+    from lateletter.garden.renderer import GardenRenderer
+    from lateletter.garden.world.generation import generate_initial_world
+
+    world = generate_initial_world("render-parity", "render-parity")
+    lines = renderer_lines = GardenRenderer(120, 48).render_lines(world)
+    assert any(line.strip() for line in lines), "the terminal drew nothing"
+
+    # Every accepted fixture in the starter must resolve to terminal art. A
+    # missing frame raises, so this is a real lookup and not a truthiness check.
+    for fixture in world.fixtures:
+        frame = atlas_asset_frame(
+            _atlas_asset(f"fixture.{fixture.catalog_id}"), state="idle",
+        )
+        assert frame, f"{fixture.catalog_id} has no terminal frame"
+        # A frame is rows of (glyph, ...) cells rather than strings, so ink is
+        # counted per cell. Checking truthiness of the frame alone would accept
+        # a frame of blanks, which is exactly the invisible-in-terminal case
+        # this test exists to catch.
+        ink = sum(
+            1 for row in frame for cell in row
+            if str(cell[0] if isinstance(cell, (tuple, list)) else cell).strip()
+        )
+        assert ink > 0, f"{fixture.catalog_id} resolves to an empty terminal frame"
+
+
+def _atlas_asset(asset_id: str):
+    """Look one asset out of the versioned atlas, by id."""
+    import json
+
+    from lateletter.garden.atlas import validate_atlas
+
+    root = Path(__file__).resolve().parents[2]
+    atlas = validate_atlas(
+        json.loads((root / "src" / "lateletter" / "garden" / "data" / "atlas.v2.json")
+                   .read_text(encoding="utf-8"))
+    )
+    for asset in atlas["assets"]:
+        if asset["id"] == asset_id:
+            return asset
+    raise AssertionError(f"{asset_id} is not in the atlas")
