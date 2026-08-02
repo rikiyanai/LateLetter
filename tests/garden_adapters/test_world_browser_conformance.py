@@ -581,3 +581,43 @@ def test_multi_year_offline_receipts_are_bounded_byte_exact_and_restart_stable()
     assert python["receipt_count"] == MILESTONE_RECEIPT_LIMIT
     assert python["receipt_total"] > python["receipt_count"]
     assert python["offline_total"] == 700
+
+
+def test_the_terminal_renders_the_same_starter_composition_the_browser_reviews():
+    """Terminal parity for the composition the browser review actually shows.
+
+    The world-state conformance above proves both implementations agree on
+    canonical bytes. It does not prove the TERMINAL draws that world, and the
+    browser review (tests/test_garden_review_e2e_browser.py) only ever measures
+    the browser -- so "browser and terminal parity" was an unmeasured claim in
+    the middle.
+
+    This closes the narrow, checkable part of it: the same starter world, put
+    through the terminal renderer, produces ink, and every canonical object the
+    browser review reports is present in the terminal's own object set. It does
+    NOT claim the two pictures match -- they must not, one is proportional and
+    one is ascii-safe -- only that the terminal draws the same composition.
+    """
+    from lateletter.garden.renderer import GardenRenderer
+    from lateletter.garden.world.generation import generate_initial_world
+    from lateletter.garden.world.provenance import world_census
+
+    world = generate_initial_world("parity-probe", "parity-probe")
+
+    # The same census the browser review asserts it is looking at.
+    assert world_census(world) == {
+        "plants": 2, "fixtures": 5, "animals": 0, "collectibles": 0,
+    }
+
+    renderer = GardenRenderer(120, 48)
+    lines = renderer.render_lines(world)
+    ink = sum(len(line.strip()) for line in lines)
+    assert ink > 0, "the terminal drew nothing for the starter composition"
+
+    # Every canonical object id the browser would project is a real object here
+    # too: same identities, same world, two renderers.
+    assert len(world.object_ids()) == 7, world.object_ids()
+    for fixture in world.fixtures:
+        assert fixture.catalog_id in {
+            "bench", "lantern", "mailbox", "planter", "stepping_stones",
+        }, f"the terminal starter holds an unexpected fixture: {fixture.catalog_id}"

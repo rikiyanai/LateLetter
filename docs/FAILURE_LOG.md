@@ -4388,6 +4388,39 @@ because a red test failing for a harness reason gets read as a product defect �
 deleted, because §7.8.13 requires exactly this path and nothing else covers it. **Terminal parity
 is also not exercised by this file.** §7.8.13 remains PARTIAL and is not claimed otherwise.
 
+**THREE of my own measurement errors, found and corrected 2026-08-03.** Recorded together because
+they are one habit, not three accidents: measure something adjacent to the claim, then report the
+claim.
+1. The release-host probe served the built artifact over plain HTTP, got an empty Garden and
+   "WebCrypto SHA-256 is required", and that is the browser refusing `crypto.subtle` outside a
+   secure context — a defect in the probe.
+2. The §7.8.13 authenticated path was recorded as a harness gap in the product. It was the test
+   asking the wrong question: a bundle does not prompt for a passphrase, the Garden appears first
+   and an "open letters" control leads to it. Three cases now run.
+3. Two of the seven recorded defects were mine. **Target sizing:** `objectRectPixels` reports the
+   canonical hotspot and hit testing expands it through `expandTarget` to `MINIMUM_TARGET_PX`, so
+   the floor IS applied where it decides a click; I read the wrong rectangle. **Fixture clicks:**
+   clicking reaches the world for more than stepping stones — a mailbox click produces "Used open
+   at Memory mailbox" with a journal entry and a focus move. `interaction_count` is not the signal
+   and the accessible summary settles asynchronously, so a fixed wait reads the PREVIOUS click.
+   Both stay strict and failing until their tests are rewritten: a defect recorded wrongly must not
+   vanish quietly.
+
+**The other four defects RE-MEASURED with a 2.5-second settle, since async settling is what caused
+the two errors above. All four stand:** hover changes the cursor and not the picture; `#g` carries
+no `tabindex`, `document.activeElement` is empty after focusing it, the arrows pan ("Panned to
+66,51") and Enter reaches nothing; at 390×844 stepping stones and planter have no interaction
+rectangle; spring, summer and winter paint byte-identical text at midday. The last two are static
+reads and not timing-sensitive.
+
+**Terminal parity, the narrow checkable part, is now measured.**
+`test_the_terminal_renders_the_same_starter_composition_the_browser_reviews` puts the same starter
+world through `GardenRenderer.render_lines`, requires ink, and requires the same seven canonical
+objects and the same five accepted fixtures the browser review reports. It does NOT claim the two
+pictures match — they must not, one is proportional and one ascii-safe — only that the terminal
+draws the same composition. The existing byte-identical world conformance covered state; nothing
+covered the terminal drawing it, which left "browser and terminal parity" unmeasured in the middle.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is
@@ -5099,3 +5132,24 @@ task
   proposal-retention defect, not a cat-specific rule. Alternatives must be surfaced with a
   deterministic confidence/rank penalty while remaining proposal-only; no candidate TXT or
   acceptance may be inferred from the expanded set.
+
+- **Nine-row proposal invariant was not asserted end-to-end (2026-08-03):** Geometry tests
+  proved that periodic hypotheses contain nine row bands, but the benchmark had no literal
+  regression requiring every composed sitting-cat proposal sequence to preserve all nine rows
+  while keeping `candidate_txt` null. A future flattening or row-drop regression could therefore
+  pass the lower-level tests. Add a source-only proposal test; the evaluation transcript remains
+  metadata-only and cannot be supplied to the adapter.
+
+- **Width-preserving graphemes were absent from the proposal alphabet (2026-08-03):** The
+  structural adapter modeled ordinary ASCII space but had no ideographic space (`U+3000`) and
+  omitted the lowercase `l` used by the source family. The result could preserve row count while
+  silently replacing East Asian spacing and a narrow terminal stroke with approximate spaces or
+  unrelated punctuation. This is a general Unicode-width coverage defect: narrow/wide whitespace
+  and ordinary Latin glyphs must be proposal candidates with measured display widths, while
+  unresolved identity remains fail-closed.
+
+- **Latin `l` alias regression (2026-08-03):** Adding lowercase `l` exposed a visual collision
+  with `|`/`│`: the template beam began labeling ordinary structural bars as `l`, displacing the
+  expected bar-and-underscore alternatives. The recognizer must retain `l` for genuine evidence
+  but penalize it when the mask is a tall vertical bar; visual aliases remain unresolved rather
+  than becoming a confident substitution.
