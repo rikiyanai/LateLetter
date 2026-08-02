@@ -4519,3 +4519,12 @@ task
   implementation is still required before this reference can proceed. Recognition-input building
   also refuses a serialized fixed-lattice proof whose row-band evidence does not prove periodic
   baseline coverage, preventing the frozen false proof from being reused as authority.
+
+- **Periodic-candidate validity correction (2026-08-02):** The candidate sweep now records
+  baseline deltas and residuals, partial-edge rows, clipping evidence, independent row-profile /
+  gutter / vertical-autocorrelation / span metrics, and explicit validity. It never creates a
+  baseline from the terminal ink coordinate. Sitting-cat's 23px phase-8 and phase-9 candidates
+  remain explicit nine-row alternatives; the 22px phase-12 candidate is retained as rejected
+  evidence because its final baseline delta is 4px (residual −18px), marked
+  `terminal_sliver_rejected`. All measured pitch/phase hypotheses remain in the evidence record;
+  no phase is selected for recognition.

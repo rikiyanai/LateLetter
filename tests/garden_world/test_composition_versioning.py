@@ -25,7 +25,8 @@ from lateletter.garden.world.model import (
 from lateletter.garden.world.provenance import (
     NotAFreshComposition,
     characterize_world,
-    migrate_world_shape,
+    load_migrated_world,
+    migrate_world_document,
     require_fresh_composition,
     world_census,
 )

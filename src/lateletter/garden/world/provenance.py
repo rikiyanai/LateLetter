@@ -35,6 +35,7 @@ stops a migration from laundering an obsolete starter into a fresh-looking one.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any, Mapping
 
 from .model import (
     COMPOSITION_VERSION,
@@ -189,33 +190,58 @@ def require_fresh_composition(state: WorldState) -> WorldOrigin:
     return origin
 
 
-def migrate_world_shape(state: WorldState) -> WorldState:
-    """Bring a stored world's SHAPE up to date, and nothing else.
+def migrate_world_document(data: Mapping[str, Any]) -> dict[str, Any]:
+    """Bring a stored DOCUMENT up to the current schema, and nothing else.
 
-    What this deliberately does not do is touch ``generator_version`` or
+    This works on the raw document rather than on a :class:`WorldState`,
+    because ``WorldState.from_dict`` refuses any schema but the current one --
+    so by the time a world exists as an object, migration is already too late.
+    A migration has to happen between reading the file and constructing the
+    state, which is where this sits.
+
+    What it deliberately does not do is touch ``generator_version`` or
     ``composition_version``.  A migration reads and rewrites a document; it does
-    not rebuild the garden inside it.  Leaving the content stamps alone is what
-    guarantees a migrated world can never afterwards pass as fresh -- and the
-    migration records the schema it came from, so the fact of having been
-    migrated survives too.
+    not rebuild the garden inside it.  Leaving the content stamps alone is the
+    single rule that keeps a migration honest: if it stamped today's generator
+    onto the world it upgraded, then upgrading an obsolete starter would make it
+    indistinguishable from one built today -- the masquerade, reintroduced by
+    the very code meant to prevent it.
 
-    :param state: a world loaded from storage
-    :returns: the same world at the current schema, marked as migrated; the
-        input unchanged when it was already current and unmigrated
+    :param data: a document as read from storage
+    :returns: a new document at the current schema, marked as migrated; a plain
+        copy when it was already current and unmigrated
+    :raises ValueError: when the document was written by a NEWER build. Reading
+        a future document by ignoring the fields we do not understand would
+        silently discard whatever they meant.
     """
-    if state.schema_version == WORLD_SCHEMA_VERSION and state.migrated_from_schema is None:
-        return state
-    from dataclasses import replace
+    document = dict(data)
+    stored_schema = int(document.get("schema_version", 0))
 
-    return replace(
-        state,
-        schema_version=WORLD_SCHEMA_VERSION,
-        # Record the ORIGINAL schema, not the one we happen to be migrating
-        # from on a second pass: a world migrated twice still came from where it
-        # came from.
-        migrated_from_schema=(
-            state.migrated_from_schema
-            if state.migrated_from_schema is not None
-            else state.schema_version
-        ),
-    )
+    if stored_schema > WORLD_SCHEMA_VERSION:
+        raise ValueError(
+            f"world schema {stored_schema} was written by a newer build "
+            f"than this one, which understands {WORLD_SCHEMA_VERSION}"
+        )
+    if stored_schema == WORLD_SCHEMA_VERSION:
+        return document
+
+    document["schema_version"] = WORLD_SCHEMA_VERSION
+    # Record the ORIGINAL schema, not the one we happen to be migrating from on
+    # a second pass: a world migrated twice still came from where it came from.
+    if document.get("migrated_from_schema") is None:
+        document["migrated_from_schema"] = stored_schema
+    return document
+
+
+def load_migrated_world(data: Mapping[str, Any]) -> WorldState:
+    """Read a stored document, migrating its shape if it needs it.
+
+    The pairing matters more than either half: a caller that migrates without
+    loading has a dict nobody validated, and a caller that loads without
+    migrating gets an exception on any older world.  This is the entry point
+    storage should use.
+
+    :param data: a document as read from storage
+    :returns: the world, which will report itself as migrated if it was
+    """
+    return WorldState.from_dict(migrate_world_document(data))
