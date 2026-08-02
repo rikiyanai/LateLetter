@@ -543,18 +543,19 @@ def test_clicking_one_accepted_fixture_reaches_the_canonical_world():
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "DEFECT, re-established 2026-08-03 with a settling signal, and its SHAPE "
-        "corrected twice. The first click of a session reaches the world; the "
-        "next does not, and polling the accessible summary for four seconds "
-        "after clicking the mailbox shows no change at all. It is not that only "
-        "stepping stones is clickable -- an earlier probe saw 'Used open at "
-        "Memory mailbox' appear THREE clicks later, so the dispatch is queued or "
-        "serialised behind something and lands only when later activity flushes "
-        "it. My first report called it 'four fixtures unclickable'; my second "
-        "called that a pure measurement artifact. Both were wrong: the artifact "
-        "was real AND so is the defect, and the honest description is a "
-        "dispatch that does not settle. Left strict so it cannot be normalised "
-        "into the baseline."
+        "UNRESOLVED, and the SIGNAL is not trustworthy. 2026-08-03. Clicking a "
+        "second fixture produces no change in the accessible summary within four "
+        "seconds of polling, and an earlier probe saw one surface three clicks "
+        "later. But the summary is written only when "
+        "`syncGardenControlsAvailability()` is truthy (viewer-bnw.html, in "
+        "`renderCanonicalGarden`), so an unchanged summary is NOT evidence that "
+        "the dispatch did not happen -- the reporting surface is gated on "
+        "something unrelated to the dispatch. Three descriptions of this have now "
+        "been wrong: 'four fixtures unclickable', then 'pure measurement "
+        "artifact', then 'queued dispatch'. The next attempt must observe "
+        "canonical world state directly rather than any DOM summary. Left strict "
+        "and failing because SOMETHING here is unproven, and a test that stops "
+        "asking is worse than one that fails."
     ),
 )
 def test_clicking_EVERY_accepted_fixture_reaches_the_canonical_world():
