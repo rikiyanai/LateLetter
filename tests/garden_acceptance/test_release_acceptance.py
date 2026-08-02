@@ -537,3 +537,51 @@ def test_gate_status_matrix_never_converts_proxy_evidence_into_release_claims():
             relative, function = selector.split("::", 1)
             source = (ROOT / relative).read_text(encoding="utf-8")
             assert f"def {function}(" in source
+
+
+def test_the_gate_matrix_agrees_with_the_browser_e2e_defects():
+    """The matrix must not claim what the executed review disproves.
+
+    Its other tests check the matrix's internal shape, which a stale claim
+    satisfies perfectly: gate 12 read "target sizing and narrow layout pass"
+    while the browser E2E was recording that every target is 15x17 px and that
+    two accepted fixtures are unreachable on mobile. Formatting checks cannot
+    catch that, so this ties the prose to the tests that measure it.
+
+    Deliberately a link check rather than a re-measurement. It asserts the gate
+    cites the file that holds the evidence and does not assert the opposite of
+    what that file records; measuring the product twice would just give the two
+    places somewhere new to disagree.
+    """
+    matrix = json.loads(GATE_MATRIX.read_text(encoding="utf-8"))
+    e2e = ROOT / "tests" / "test_garden_review_e2e_browser.py"
+    assert e2e.exists(), "the browser E2E named by the gate matrix is missing"
+    recorded = e2e.read_text(encoding="utf-8")
+
+    # Each defect the E2E records as a strict expected failure, with the phrase
+    # a gate must therefore not be claiming.
+    for marker, forbidden_claim in (
+        ("under the 44px floor", "target sizing"),
+        ("no interaction rectangle", "narrow layout"),
+    ):
+        assert marker in recorded or "44px floor" in recorded, (
+            f"the E2E no longer records {marker!r}; this check needs rewriting"
+        )
+        for gate in matrix["gates"]:
+            blocker = gate.get("blocker", "")
+            claims_pass = f"{forbidden_claim} and" in blocker or f"and {forbidden_claim}" in blocker
+            if claims_pass:
+                assert "DO NOT" in blocker or "do not" in blocker, (
+                    f"gate {gate['gate']} claims {forbidden_claim!r} passes while "
+                    "the browser E2E records it as a defect"
+                )
+
+    accessibility = next(g for g in matrix["gates"] if g["name"] == "Accessibility")
+    parity = next(g for g in matrix["gates"] if g["name"] == "Input parity")
+    for gate in (accessibility, parity):
+        assert "tests/test_garden_review_e2e_browser.py" in gate["evidence"], (
+            f"gate {gate['gate']} does not cite the browser review that measures it"
+        )
+        assert gate["status"] != "PASS", (
+            f"gate {gate['gate']} is PASS while the browser review records defects in it"
+        )

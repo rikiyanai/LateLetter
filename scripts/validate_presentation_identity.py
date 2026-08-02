@@ -69,6 +69,7 @@ Exit code is 0 when there are no violations and no active blockers, 1 otherwise.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
@@ -1932,11 +1933,55 @@ def outstanding_operator_verdicts() -> list[str]:
         accepted
     """
     register = json.loads(_REVIEW_VERDICTS.read_text(encoding="utf-8"))
+    vocabulary = set(register["vocabulary"])
     outstanding = []
     for name, record in sorted(register["verdicts"].items()):
         verdict = record.get("verdict", "not_reviewed")
+
+        # An unknown word is not an acceptance. Checking only `!= "accepted"`
+        # would also treat a typo as a rejection, which is the safe direction;
+        # refusing it outright says which one it actually was.
+        if verdict not in vocabulary:
+            outstanding.append(f"{name} carries the unknown verdict {verdict!r}")
+            continue
         if verdict != "accepted":
             outstanding.append(f"{name} is {verdict}")
+            continue
+
+        # An acceptance is only as good as the evidence it was given. Without
+        # this, setting four strings to "accepted" cleared the blocker with
+        # `evidence: null` -- an approval of nothing, recorded by nobody, at no
+        # time. That is the exact shape of the defect this register exists to
+        # prevent, reintroduced inside its own checker.
+        for field in ("evidence", "decided_by", "decided_at_utc"):
+            if not record.get(field):
+                outstanding.append(f"{name} is accepted but records no {field}")
+
+        evidence = record.get("evidence")
+        if not evidence:
+            continue
+        if not isinstance(evidence, list):
+            outstanding.append(f"{name} evidence must be a list of artifacts")
+            continue
+        for artifact in evidence:
+            path = artifact.get("path") if isinstance(artifact, dict) else None
+            digest = artifact.get("sha256") if isinstance(artifact, dict) else None
+            if not path or not digest:
+                outstanding.append(f"{name} evidence entry needs a path and a sha256")
+                continue
+            located = ROOT / path
+            if not located.exists():
+                outstanding.append(f"{name} cites missing evidence {path}")
+                continue
+            # The verdict binds to the bytes that were watched. Re-rendering the
+            # product produces new artifacts and inherits nothing, because
+            # approval attaches to what was actually looked at.
+            actual = hashlib.sha256(located.read_bytes()).hexdigest()
+            if actual != digest:
+                outstanding.append(
+                    f"{name} evidence {path} has changed since it was accepted "
+                    f"(recorded {digest[:12]}, now {actual[:12]})"
+                )
     return outstanding
 
 

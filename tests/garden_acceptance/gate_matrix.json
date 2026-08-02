@@ -1,20 +1,192 @@
 {
-  "spec": "7.8.13",
-  "bundle_requirement": "normal checksummed and HMAC-authenticated sealed v2 bundle",
-  "gates": [
-    {"gate": 1, "name": "Production reachability", "status": "PARTIAL", "evidence": ["sealed_demo.lateletter", "docs/GARDEN_QA_2026-07-21.md", "tests/garden_acceptance/test_release_acceptance.py"], "automated_checks": [], "blocker": "The complete normal sealed flow passes locally; the pushed Pages deployment still needs the same visible end-to-end replay."},
-    {"gate": 2, "name": "Input parity", "status": "PARTIAL", "evidence": ["tests/garden_adapters/test_input_adapters.py", "tests/garden_adapters/test_world_browser_conformance.py", "docs/GARDEN_QA_2026-07-21.md"], "automated_checks": [], "blocker": "All semantic command bytes and reducers match, but every visible action still requires physical traversal through touch, mouse, keyboard, and terminal."},
-    {"gate": 3, "name": "Standalone value", "status": "BLOCKED", "evidence": ["docs/GARDEN_QA_2026-07-21.md"], "automated_checks": [], "blocker": "The implemented standalone glance, tend, and dwell loops require direct human usefulness observation."},
-    {"gate": 4, "name": "Plant stability", "status": "PASS", "evidence": ["tests/garden_acceptance/garden_acceptance_runner.mjs", "tests/garden_acceptance/test_release_acceptance.py", "tests/garden_adapters/test_world_browser_conformance.py"], "automated_checks": ["tests/garden_acceptance/test_release_acceptance.py::test_one_hundred_topology_hashes_and_stable_ids_match_browser_runtime", "tests/garden_adapters/test_world_browser_conformance.py::test_animal_decisions_locomotion_and_all_plant_stages_match_browser_restart_exactly"], "blocker": ""},
-    {"gate": 5, "name": "Layout safety", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_contract/test_renderer.py", "tests/garden_adapters/test_garden_renderer.mjs", "tests/garden_adapters/test_world_browser_conformance.py"], "automated_checks": ["tests/garden_acceptance/test_release_acceptance.py::test_one_thousand_layouts_are_safe_and_all_connected_masks_resolve", "tests/garden_acceptance/test_release_acceptance.py::test_authored_program_materializes_byte_identical_world_and_trace_cross_runtime", "tests/garden_contract/test_renderer.py::test_terminal_renderer_covers_all_connected_masks_and_animal_tiers", "tests/garden_adapters/test_world_browser_conformance.py::test_every_fixture_verb_has_exact_browser_python_linked_world_effects"], "blocker": ""},
-    {"gate": 6, "name": "Atlas portability", "status": "PARTIAL", "evidence": ["tests/garden_contract/test_atlas.py", "tests/garden_adapters/test_garden_renderer.mjs"], "automated_checks": [], "blocker": "The single manifest and width/grapheme validation pass, but the supported browser/terminal screenshot matrix for tofu, overlap, and frame jitter remains."},
-    {"gate": 7, "name": "Animal behavior", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_world/test_animals.py", "tests/garden_contract/test_renderer.py", "tests/garden_adapters/test_garden_renderer.mjs", "tests/garden_adapters/test_world_browser_conformance.py"], "automated_checks": ["tests/garden_acceptance/test_release_acceptance.py::test_four_species_personality_hysteresis_and_all_absence_windows_are_humane", "tests/garden_contract/test_renderer.py::test_terminal_renderer_covers_all_connected_masks_and_animal_tiers", "tests/garden_adapters/test_world_browser_conformance.py::test_animal_decisions_locomotion_and_all_plant_stages_match_browser_restart_exactly"], "blocker": ""},
-    {"gate": 8, "name": "Author control", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/test_author.py", "tests/test_cli.py"], "automated_checks": ["tests/garden_acceptance/test_release_acceptance.py::test_normal_sealed_v2_bundle_drives_authored_arc_with_exact_preview_trace"], "blocker": ""},
-    {"gate": 9, "name": "Temporal correctness", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_contract/test_schedule.py", "tests/garden_contract/test_program_evaluator.py"], "automated_checks": ["tests/garden_acceptance/test_release_acceptance.py::test_temporal_order_idempotency_dst_missed_year_catchup_and_rollback"], "blocker": ""},
-    {"gate": 10, "name": "Parallax and performance", "status": "PARTIAL", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_contract/test_renderer.py", "tests/garden_adapters/test_garden_renderer.mjs"], "automated_checks": [], "blocker": "Per-object parallax, inverse hit testing, deterministic rate, ten-minute pan, and partial diffs pass; reference desktop/mobile p95 frame-time measurements remain."},
-    {"gate": 11, "name": "Sky accuracy and privacy", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_contract/fixtures/astronomy_vectors.v1.json", "docs/GARDEN_QA_2026-07-21.md"], "automated_checks": ["tests/garden_acceptance/test_release_acceptance.py::test_sky_audit_covers_twelve_trusted_privacy_safe_vectors"], "blocker": ""},
-    {"gate": 12, "name": "Accessibility", "status": "PARTIAL", "evidence": ["tests/test_viewer_contract.py", "tests/garden_adapters/test_garden_renderer.mjs", "docs/GARDEN_QA_2026-07-21.md"], "automated_checks": [], "blocker": "Semantic controls, reduced motion, target sizing, and narrow layout pass; VoiceOver/NVDA, no-color, and 200% zoom require human observation."},
-    {"gate": 13, "name": "Absence and ethics", "status": "PASS", "evidence": ["tests/garden_acceptance/test_release_acceptance.py", "tests/garden_world/test_clock.py", "tests/garden_contract/test_program_evaluator.py"], "automated_checks": ["tests/garden_acceptance/test_release_acceptance.py::test_four_species_personality_hysteresis_and_all_absence_windows_are_humane"], "blocker": ""},
-    {"gate": 14, "name": "Human acceptance", "status": "BLOCKED", "evidence": [], "automated_checks": [], "blocker": "Direct human sign-off cannot be replaced by code, fixtures, or agent observation."}
-  ]
+ "spec": "7.8.13",
+ "bundle_requirement": "normal checksummed and HMAC-authenticated sealed v2 bundle",
+ "gates": [
+  {
+   "gate": 1,
+   "name": "Production reachability",
+   "status": "PARTIAL",
+   "evidence": [
+    "sealed_demo.lateletter",
+    "docs/GARDEN_QA_2026-07-21.md",
+    "tests/garden_acceptance/test_release_acceptance.py"
+   ],
+   "automated_checks": [],
+   "blocker": "The complete normal sealed flow passes locally; the pushed Pages deployment still needs the same visible end-to-end replay."
+  },
+  {
+   "gate": 2,
+   "name": "Input parity",
+   "status": "PARTIAL",
+   "evidence": [
+    "docs/GARDEN_QA_2026-07-21.md",
+    "tests/garden_adapters/test_input_adapters.py",
+    "tests/garden_adapters/test_world_browser_conformance.py",
+    "tests/test_garden_review_e2e_browser.py"
+   ],
+   "automated_checks": [],
+   "blocker": "Pointer and touch reach the canonical world for ONE of the five accepted starter fixtures -- stepping stones. Mailbox, lantern, bench and planter do not respond to a click at all. Hover changes the cursor but not the picture. Keyboard focus and Enter reach nothing. Recorded as strict expected failures in tests/test_garden_review_e2e_browser.py. Terminal parity unaffected by this work."
+  },
+  {
+   "gate": 3,
+   "name": "Standalone value",
+   "status": "BLOCKED",
+   "evidence": [
+    "docs/GARDEN_QA_2026-07-21.md"
+   ],
+   "automated_checks": [],
+   "blocker": "The implemented standalone glance, tend, and dwell loops require direct human usefulness observation."
+  },
+  {
+   "gate": 4,
+   "name": "Plant stability",
+   "status": "PASS",
+   "evidence": [
+    "tests/garden_acceptance/garden_acceptance_runner.mjs",
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/garden_adapters/test_world_browser_conformance.py"
+   ],
+   "automated_checks": [
+    "tests/garden_acceptance/test_release_acceptance.py::test_one_hundred_topology_hashes_and_stable_ids_match_browser_runtime",
+    "tests/garden_adapters/test_world_browser_conformance.py::test_animal_decisions_locomotion_and_all_plant_stages_match_browser_restart_exactly"
+   ],
+   "blocker": ""
+  },
+  {
+   "gate": 5,
+   "name": "Layout safety",
+   "status": "PASS",
+   "evidence": [
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/garden_contract/test_renderer.py",
+    "tests/garden_adapters/test_garden_renderer.mjs",
+    "tests/garden_adapters/test_world_browser_conformance.py"
+   ],
+   "automated_checks": [
+    "tests/garden_acceptance/test_release_acceptance.py::test_one_thousand_layouts_are_safe_and_all_connected_masks_resolve",
+    "tests/garden_acceptance/test_release_acceptance.py::test_authored_program_materializes_byte_identical_world_and_trace_cross_runtime",
+    "tests/garden_contract/test_renderer.py::test_terminal_renderer_covers_all_connected_masks_and_animal_tiers",
+    "tests/garden_adapters/test_world_browser_conformance.py::test_every_fixture_verb_has_exact_browser_python_linked_world_effects"
+   ],
+   "blocker": ""
+  },
+  {
+   "gate": 6,
+   "name": "Atlas portability",
+   "status": "PARTIAL",
+   "evidence": [
+    "tests/garden_contract/test_atlas.py",
+    "tests/garden_adapters/test_garden_renderer.mjs"
+   ],
+   "automated_checks": [],
+   "blocker": "The single manifest and width/grapheme validation pass, but the supported browser/terminal screenshot matrix for tofu, overlap, and frame jitter remains."
+  },
+  {
+   "gate": 7,
+   "name": "Animal behavior",
+   "status": "PASS",
+   "evidence": [
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/garden_world/test_animals.py",
+    "tests/garden_contract/test_renderer.py",
+    "tests/garden_adapters/test_garden_renderer.mjs",
+    "tests/garden_adapters/test_world_browser_conformance.py"
+   ],
+   "automated_checks": [
+    "tests/garden_acceptance/test_release_acceptance.py::test_four_species_personality_hysteresis_and_all_absence_windows_are_humane",
+    "tests/garden_contract/test_renderer.py::test_terminal_renderer_covers_all_connected_masks_and_animal_tiers",
+    "tests/garden_adapters/test_world_browser_conformance.py::test_animal_decisions_locomotion_and_all_plant_stages_match_browser_restart_exactly"
+   ],
+   "blocker": ""
+  },
+  {
+   "gate": 8,
+   "name": "Author control",
+   "status": "PASS",
+   "evidence": [
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/test_author.py",
+    "tests/test_cli.py"
+   ],
+   "automated_checks": [
+    "tests/garden_acceptance/test_release_acceptance.py::test_normal_sealed_v2_bundle_drives_authored_arc_with_exact_preview_trace"
+   ],
+   "blocker": ""
+  },
+  {
+   "gate": 9,
+   "name": "Temporal correctness",
+   "status": "PASS",
+   "evidence": [
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/garden_contract/test_schedule.py",
+    "tests/garden_contract/test_program_evaluator.py"
+   ],
+   "automated_checks": [
+    "tests/garden_acceptance/test_release_acceptance.py::test_temporal_order_idempotency_dst_missed_year_catchup_and_rollback"
+   ],
+   "blocker": ""
+  },
+  {
+   "gate": 10,
+   "name": "Parallax and performance",
+   "status": "PARTIAL",
+   "evidence": [
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/garden_contract/test_renderer.py",
+    "tests/garden_adapters/test_garden_renderer.mjs"
+   ],
+   "automated_checks": [],
+   "blocker": "Per-object parallax, inverse hit testing, deterministic rate, ten-minute pan, and partial diffs pass; reference desktop/mobile p95 frame-time measurements remain."
+  },
+  {
+   "gate": 11,
+   "name": "Sky accuracy and privacy",
+   "status": "PASS",
+   "evidence": [
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/garden_contract/fixtures/astronomy_vectors.v1.json",
+    "docs/GARDEN_QA_2026-07-21.md"
+   ],
+   "automated_checks": [
+    "tests/garden_acceptance/test_release_acceptance.py::test_sky_audit_covers_twelve_trusted_privacy_safe_vectors"
+   ],
+   "blocker": ""
+  },
+  {
+   "gate": 12,
+   "name": "Accessibility",
+   "status": "PARTIAL",
+   "evidence": [
+    "docs/GARDEN_QA_2026-07-21.md",
+    "tests/garden_adapters/test_garden_renderer.mjs",
+    "tests/test_garden_review_e2e_browser.py",
+    "tests/test_viewer_contract.py"
+   ],
+   "automated_checks": [],
+   "blocker": "Reduced motion and 200% zoom now hold in a real browser. TARGET SIZING and NARROW LAYOUT DO NOT: every interaction rectangle is 15x17 or 30x17 CSS pixels against the 44px floor, and at 390x844 the stepping stones and planter have no rectangle at all. Keyboard play is impossible -- #g carries no tabindex and the arrow keys pan the camera rather than moving canonical focus, so Enter reaches no action. Recorded as strict expected failures in tests/test_garden_review_e2e_browser.py. VoiceOver/NVDA and no-color still require human observation. (Corrected 2026-08-03: this entry previously claimed target sizing and narrow layout pass, which the browser E2E disproves.)"
+  },
+  {
+   "gate": 13,
+   "name": "Absence and ethics",
+   "status": "PASS",
+   "evidence": [
+    "tests/garden_acceptance/test_release_acceptance.py",
+    "tests/garden_world/test_clock.py",
+    "tests/garden_contract/test_program_evaluator.py"
+   ],
+   "automated_checks": [
+    "tests/garden_acceptance/test_release_acceptance.py::test_four_species_personality_hysteresis_and_all_absence_windows_are_humane"
+   ],
+   "blocker": ""
+  },
+  {
+   "gate": 14,
+   "name": "Human acceptance",
+   "status": "BLOCKED",
+   "evidence": [],
+   "automated_checks": [],
+   "blocker": "Direct human sign-off cannot be replaced by code, fixtures, or agent observation."
+  }
+ ]
 }

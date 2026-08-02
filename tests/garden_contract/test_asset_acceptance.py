@@ -1372,3 +1372,78 @@ def test_atlas_lineage_cannot_claim_a_current_acceptance_verdict():
             receipt = lineage["historical_review"]
             assert receipt["authoritative"] is False
             assert receipt["superseded_by"] == "docs/garden-asset-acceptance.json"
+
+
+def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
+    """Four strings set to "accepted" must not clear the acceptance gate.
+
+    The first version of ``outstanding_operator_verdicts`` checked only
+    ``verdict != "accepted"``, so editing four words cleared the blocker with
+    ``evidence: null`` -- an approval of nothing, recorded by nobody, at no
+    time.  That is the exact defect the register exists to prevent, rebuilt
+    inside its own checker, and it was reported as working without ever being
+    exercised.
+
+    Each mutation below is the smallest edit that would have passed then.
+    """
+    import hashlib as _hashlib
+    import json as _json
+
+    from scripts.validate_presentation_identity import (  # noqa: PLC0415
+        _REVIEW_VERDICTS,
+        outstanding_operator_verdicts,
+    )
+
+    register = _json.loads(_REVIEW_VERDICTS.read_text(encoding="utf-8"))
+
+    def _with(verdict_patch: dict) -> list[str]:
+        mutated = copy.deepcopy(register)
+        for name in mutated["verdicts"]:
+            mutated["verdicts"][name].update(verdict_patch)
+        original = _REVIEW_VERDICTS.read_text(encoding="utf-8")
+        _REVIEW_VERDICTS.write_text(_json.dumps(mutated), encoding="utf-8")
+        try:
+            return outstanding_operator_verdicts()
+        finally:
+            _REVIEW_VERDICTS.write_text(original, encoding="utf-8")
+
+    # Bare "accepted" with nothing behind it.
+    problems = _with({"verdict": "accepted"})
+    assert problems, "four words cleared the operator acceptance gate"
+    assert any("records no evidence" in problem for problem in problems)
+
+    # Evidence named but absent from disk.
+    problems = _with({
+        "verdict": "accepted",
+        "evidence": [{"path": "docs/no-such-capture.png", "sha256": "0" * 64}],
+        "decided_by": "operator",
+        "decided_at_utc": "2026-08-03T00:00:00Z",
+    })
+    assert any("missing evidence" in problem for problem in problems)
+
+    # Evidence that exists but is not the artifact that was watched.
+    # Deliberately NOT the verdict register itself: this helper rewrites that
+    # file, so citing it would compare a digest against bytes the test just
+    # changed and fail for a reason that has nothing to do with the gate.
+    real = ROOT / "docs" / "garden-asset-acceptance.json"
+    problems = _with({
+        "verdict": "accepted",
+        "evidence": [{"path": "docs/garden-asset-acceptance.json", "sha256": "1" * 64}],
+        "decided_by": "operator",
+        "decided_at_utc": "2026-08-03T00:00:00Z",
+    })
+    assert any("has changed since it was accepted" in problem for problem in problems)
+
+    # A word nobody defined is not an acceptance.
+    problems = _with({"verdict": "approved-ish"})
+    assert any("unknown verdict" in problem for problem in problems)
+
+    # The satisfiable case: a real artifact, its real digest, an author and a
+    # time. A gate that can never be cleared teaches nothing about the gate.
+    digest = _hashlib.sha256(real.read_bytes()).hexdigest()
+    assert _with({
+        "verdict": "accepted",
+        "evidence": [{"path": "docs/garden-asset-acceptance.json", "sha256": digest}],
+        "decided_by": "operator",
+        "decided_at_utc": "2026-08-03T00:00:00Z",
+    }) == []

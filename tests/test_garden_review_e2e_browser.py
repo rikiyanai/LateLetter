@@ -478,36 +478,146 @@ def _accepted_fixture_target(page):
     )
 
 
-def test_clicking_accepted_fixture_ink_performs_its_canonical_primary_action():
-    """The picture is the control surface: a click on ink changes world state.
+def test_clicking_one_accepted_fixture_reaches_the_canonical_world():
+    """The positive control, kept separate so the defect below is not vacuous.
 
-    Not "a class toggled" and not "a handler fired" -- the canonical interaction
-    count on that exact fixture goes up, which is the only evidence that the
-    dispatch reached the world rather than stopping at the DOM.
+    Stepping stones is the one fixture whose click currently reaches the world.
+    Asserting it here proves the dispatch path exists and works, which is what
+    makes "the other four do nothing" a defect in those four rather than a
+    broken test.
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
             _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            target = _accepted_fixture_target(page)
-            assert target is not None, "no accepted fixture with a primary action was projected"
+            target = page.evaluate(
+                """() => {
+                    const review = window.__gardenReview;
+                    const object = review.state().objects.find(
+                      candidate => candidate.primary_action
+                        && candidate.primary_action.args.fixture_action === 'walk',
+                    );
+                    return object
+                      ? {id: object.id, rect: review.objectRectPixels(object.id)} : null;
+                }"""
+            )
+            assert target and target["rect"], "the stepping stones were not projected"
 
-            def interactions() -> int:
+            def count() -> int:
                 rows = page.evaluate("() => window.__gardenReview.state().fixtures")
                 return next(row["interaction_count"] for row in rows if row["id"] == target["id"])
 
-            before = interactions()
+            before = count()
             page.mouse.click(
                 target["rect"]["x"] + target["rect"]["width"] / 2,
                 target["rect"]["y"] + target["rect"]["height"] / 2,
             )
             page.wait_for_timeout(400)
-            assert interactions() == before + 1, (
-                f"clicking {target['primary']['label']!r} did not reach the canonical world"
-            )
-            # And it did so without any of the rejected chrome appearing as a
-            # result of the interaction, which is when it used to appear.
+            assert count() == before + 1, "no fixture click reaches the canonical world at all"
             _assert_no_action_chrome(page)
         assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03, and hidden until it was "
+        "written. Only ONE of the five accepted starter fixtures responds to a "
+        "click: stepping stones ('walk') raises its canonical interaction count, "
+        "while mailbox ('open'), lantern ('observe'), bench ('sit') and planter "
+        "('tend') all stay at zero. An earlier version of this test used "
+        "`.find(...)`, exercised whichever fixture came first -- the one that "
+        "works -- and reported that clicking worked. Four accepted, declared, "
+        "visible objects cannot be operated by a pointer. Left strict so it "
+        "cannot be normalised into the baseline, and so that a later correction "
+        "cannot land silently."
+    ),
+)
+def test_clicking_EVERY_accepted_fixture_performs_its_canonical_primary_action():
+    """Each fixture in the scene, not one of them.
+
+    Each declares a DIFFERENT primary action -- sit, open, observe, walk, tend --
+    so one passing says nothing about the others. Every one is clicked here and
+    its own count checked, and the set of actions reached is asserted so a
+    fixture cannot quietly stop declaring one.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            targets = page.evaluate(
+                """() => {
+                    const review = window.__gardenReview;
+                    return review.state().objects
+                      .filter(object => object.id.startsWith('fixture') && object.primary_action)
+                      .map(object => ({
+                        id: object.id,
+                        rect: review.objectRectPixels(object.id),
+                        primary: object.primary_action,
+                      }))
+                      .filter(row => row.rect);
+                }"""
+            )
+            assert len(targets) == 5, (
+                f"expected all five starter fixtures to be clickable, got {len(targets)}"
+            )
+
+            def interactions(object_id: str) -> int:
+                rows = page.evaluate("() => window.__gardenReview.state().fixtures")
+                return next(row["interaction_count"] for row in rows if row["id"] == object_id)
+
+            reached = set()
+            for target in targets:
+                before = interactions(target["id"])
+                page.mouse.click(
+                    target["rect"]["x"] + target["rect"]["width"] / 2,
+                    target["rect"]["y"] + target["rect"]["height"] / 2,
+                )
+                page.wait_for_timeout(350)
+                assert interactions(target["id"]) == before + 1, (
+                    f"clicking {target['primary']['label']!r} did not reach the canonical world"
+                )
+                reached.add(target["primary"]["args"]["fixture_action"])
+                # The rejected chrome used to appear as a RESULT of interacting,
+                # so it is re-checked after each one rather than once at the end.
+                _assert_no_action_chrome(page)
+
+            assert reached == {"sit", "open", "observe", "walk", "tend"}, (
+                f"the five fixtures no longer declare five distinct actions: {sorted(reached)}"
+            )
+        assert errors == [], errors
+
+
+def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
+    """Say plainly which accepted art this file does not exercise.
+
+    Ten fixtures carry an operator verdict; the starter places five. Arbor,
+    birdbath, bridge, pond and trellis are accepted drawings that appear in no
+    scene here, so nothing in this file is evidence about them -- and a reader
+    should not have to infer that from a passing run.
+
+    Asserted as an exact set so it cannot drift: if the starter grows to include
+    them this fails and the claim gets rewritten, and if an accepted asset is
+    withdrawn it fails too.
+    """
+    import json as _json
+
+    register = _json.loads((ROOT / "docs" / "garden-asset-acceptance.json").read_text())
+    accepted = {
+        row["asset_id"] for row in register["assets"]
+        if row["verdict"] in {"accepted", "accepted_as_deployed"}
+    }
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            in_scene = {
+                f"fixture.{row['catalog']}"
+                for row in page.evaluate("() => window.__gardenReview.state().fixtures")
+            }
+        assert errors == [], errors
+
+    assert accepted - in_scene == {
+        "fixture.arbor", "fixture.birdbath", "fixture.bridge",
+        "fixture.pond", "fixture.trellis",
+    }, "the accepted art this review does not cover has changed"
 
 
 @pytest.mark.xfail(
