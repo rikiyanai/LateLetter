@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 
 from .model import WorldState
+from .provenance import load_migrated_world
 
 
 class WorldPersistenceError(RuntimeError):
@@ -21,7 +22,15 @@ class WorldStore:
         try:
             with self.path.open("r", encoding="utf-8") as handle:
                 raw = json.load(handle)
-            return WorldState.from_dict(raw)
+            # Migrate the DOCUMENT before constructing the state.
+            # ``WorldState.from_dict`` refuses any schema but the current one,
+            # so a migration applied afterwards could never run: by then the
+            # load has already succeeded or already thrown. Going through
+            # ``load_migrated_world`` is what makes the migration reachable
+            # from storage at all, and it stamps nothing about the world's
+            # CONTENT -- an older world stays an older world, and reports
+            # itself as migrated rather than fresh.
+            return load_migrated_world(raw)
         except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
             raise WorldPersistenceError(f"could not load Garden world: {exc}") from exc
 
