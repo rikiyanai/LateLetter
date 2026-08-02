@@ -458,8 +458,16 @@ def _capture_viewport(
     page.on(
         "console",
         lambda message: console_errors.append(message.text)
-        if message.type == "error"
+        if message.type == "error" and "favicon.ico" not in (
+            (message.location or {}).get("url", "") + " " + message.text
+        )
         else None,
+        # Chrome logs a console error for the favicon it requests on its own,
+        # and the page never asks for one. It shows up here but not in
+        # `bad_responses`, which watches real navigations -- so it is filtered by
+        # name rather than by weakening the check, exactly as
+        # tests/test_garden_interaction_browser.py already does. Any other 404
+        # still fails the capture.
     )
     page.on(
         "response",
@@ -571,13 +579,29 @@ def _validate_browser_capture(
         details["bad_responses"],
         [],
     )
+    # The scene must report every object KIND it actually contains, and must not
+    # be required to contain kinds the starter deliberately does not place.
+    #
+    # This previously demanded all four -- plants, fixtures, relationship animals
+    # and collectibles -- which was true of the starter that was rejected on
+    # sight and emptied. Since then the roster has been two plants and five
+    # fixtures pending per-asset approval, so the check failed on every capture
+    # for describing a composition that no longer exists. A capture tool that
+    # always fails teaches a reader to ignore it, which is worse than not
+    # checking at all.
+    #
+    # What is still worth checking is that the counts are a SUBSET of the four
+    # canonical kinds and non-empty: an unknown kind means the scene grew
+    # something the accessible summary has no vocabulary for, and no kinds at all
+    # means the summary is describing nothing.
+    canonical_kinds = {"plants", "fixtures", "relationship_animals", "collectibles"}
+    observed_kinds = set(details["object_counts"])
     _check(
         checks,
         f"{name} ARIA object counts",
-        set(details["object_counts"])
-        == {"plants", "fixtures", "relationship_animals", "collectibles"},
+        bool(observed_kinds) and observed_kinds <= canonical_kinds,
         details["object_counts"],
-        "all four canonical object-kind counts",
+        "a non-empty subset of the four canonical object kinds",
     )
     return checks
 

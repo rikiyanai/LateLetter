@@ -599,6 +599,33 @@ def test_the_garden_keeps_moving_without_any_input():
         assert errors == [], errors
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. At 390x844 the Garden is "
+        "motionless AND nearly empty: 6 non-blank rows out of 64, 57 glyphs, and "
+        "ONE unique painted-text hash across twelve samples over six seconds. "
+        "Four of those six rows are sky holding one or two characters ('..', "
+        "'.', '*.', '.'). Desktop over the same window paints 300 glyphs across "
+        "58 rows and produces eight distinct hashes. The Garden must visibly "
+        "live without input, and mobile may crop peripheral scenery but may not "
+        "become a still, empty frame. Left strict so it cannot be normalised "
+        "into the baseline, and so that a later correction cannot land silently."
+    ),
+)
+def test_the_garden_keeps_moving_on_mobile_too():
+    """Same measurement as the desktop case, at the required phone size."""
+    with _static_server() as origin:
+        with _chrome(origin, viewport=MOBILE) as (page, errors):
+            _enter_standalone_garden(page, origin, PRODUCT_QUERY)
+            page.wait_for_timeout(1500)
+            first = page.locator("#g").inner_text()
+            page.wait_for_timeout(3000)
+            second = page.locator("#g").inner_text()
+            assert first != second, "the mobile Garden was motionless for three seconds"
+        assert errors == [], errors
+
+
 def test_reduced_motion_still_paints_the_garden():
     """A person who cannot take motion still gets the picture."""
     with _static_server() as origin:

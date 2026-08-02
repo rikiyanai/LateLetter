@@ -4225,6 +4225,46 @@ moving with no input (painted text differs across three real seconds, measured w
 paints the picture with no chrome. Also measured and worth recording: at 390×844 the scene paints
 **54 glyphs across 64 rows**, which is a density observation for the operator, not a verdict.
 
+**Motion review package built and OPENED, 2026-08-03.**
+`docs/visual-review/2026-08-03/garden/02-fresh-candidate-motion-*`: ten-second 1600×1000 and
+390×844 WebM masters, PNG stills, a 960×600 GIF and a receipt. Built from the real product path via
+`scripts/capture_html_garden_review.py`. **Both stills were opened and looked at before being
+reported**, which is the step the route requires and which no receipt can perform.
+
+Two capture-tool defects corrected first, so the receipt measures the product rather than the tool:
+the console-error check counted Chrome's own `favicon.ico` request, which the page never makes and
+which `bad_responses` never saw — filtered by name, as the existing browser test already does, not
+by weakening the check; and the ARIA check demanded all four canonical object kinds, which
+described the rejected starter that was emptied in July. It now requires a non-empty SUBSET, so an
+unknown kind still fails while a deliberately absent one does not. A check that always fails
+teaches a reader to ignore it.
+
+**What the receipt then found, and what I saw in the stills.**
+
+MEASURED, and now a strict `xfail` in the E2E: at **390×844 the Garden is motionless and nearly
+empty** — 6 non-blank rows of 64, **57 glyphs**, and **one** unique painted-text hash across twelve
+samples over six seconds. Four of those six rows are sky holding one or two characters. Desktop
+over the same window paints **300 glyphs across 58 rows** and produces **eight** distinct hashes.
+
+OBSERVED in the opened stills, and offered as observation rather than verdict:
+- Desktop places all seven objects along ONE row near the bottom, like items on a shelf rather than
+  an inhabited place. Roughly the middle 45% of the frame is entirely empty, and the lower quarter
+  is a flat untextured ground band — two solid colour blocks meeting at a hard horizontal edge, with
+  no soil, grass, path or transition. That is the unexplained divider and the large dead region the
+  destination text forbids by name.
+- Mobile shows three fixtures only — bench, mailbox, lantern — four sky dots, and **no plants at
+  all**. Stepping stones and planter are absent entirely, which is the same defect already recorded
+  as "no interaction rectangle on mobile": they are not cropped scenery, they are two of the five
+  accepted interactive objects.
+- The mailbox red `7` signal is present and correct on both.
+
+Everything above is machine-checkable structure and my own reading of two stills. **No operator has
+watched the moving product**, and the items that need art nobody has approved — seasons, day and
+night, weather, ambient birds, relationship animals and their bond tiers, item discovery, letter
+delivery, bonded-animal delivery, the memorial state and the five emotional moments — are untouched
+and were deliberately not invented, per the standing instruction to ignore unapproved animals and
+plants and make nothing up.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is
@@ -4878,3 +4918,12 @@ task
   advance in hypothesis inputs, and no selector/alignment/candidate writer exists. Preserve
   attempts 001–003 and do not create attempt 004 until baseline detection, mixed-width geometry,
   a real row recognizer, joint alignment, and exact nine-row evaluation evidence exist.
+
+- **Joint proposal retention gap (2026-08-03):** The mixed-width hypothesis builder now emits
+  source-derived row strips and the structural Unicode adapter produces deterministic proposal
+  text, but `benchmark_offline_ensemble` only composes each hypothesis into a flat sequence. It
+  does not retain the adapter's per-hypothesis/per-row alternatives for the joint alignment seam,
+  so geometry/text evidence cannot be scored together. This remains proposal evidence only: no
+  candidate TXT, acceptance, or attempt 004 is authorized. The next slice must bind row proposals
+  to hypothesis IDs, record a diagnostic alignment report with explicit unresolved status, and
+  keep candidate writing impossible until ownership and exact logical sequence gates exist.
