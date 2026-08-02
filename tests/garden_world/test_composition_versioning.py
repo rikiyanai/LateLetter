@@ -135,11 +135,11 @@ def test_a_shape_migration_never_launders_an_old_world_into_a_fresh_one():
     the masquerade, reintroduced by the very code meant to prevent it.
     """
     document = _fresh().to_dict()
+    document["schema_version"] = WORLD_SCHEMA_VERSION - 1   # an older shape
     del document["generator_version"]
     del document["composition_version"]
-    stored = WorldState.from_dict(document)
 
-    migrated = migrate_world_shape(stored)
+    migrated = load_migrated_world(document)
 
     assert migrated.schema_version == WORLD_SCHEMA_VERSION
     assert migrated.generator_version is None, "the migration invented a content stamp"
@@ -151,19 +151,61 @@ def test_a_shape_migration_never_launders_an_old_world_into_a_fresh_one():
     assert origin.migrated is True
 
 
+def test_migration_is_reachable_from_storage_at_all():
+    """``WorldState.from_dict`` refuses any schema but the current one.
+
+    So a migration that operated on a loaded world could never run: by the time
+    the object exists, loading has already succeeded or already thrown.  The
+    migration has to sit between reading the file and constructing the state,
+    and this asserts that it does.
+    """
+    document = _fresh().to_dict()
+    document["schema_version"] = WORLD_SCHEMA_VERSION - 1
+
+    with pytest.raises(ValueError):
+        WorldState.from_dict(document)
+
+    assert load_migrated_world(document).schema_version == WORLD_SCHEMA_VERSION
+
+
+def test_a_document_from_a_newer_build_is_refused_rather_than_downgraded():
+    """Reading a future document by ignoring what we do not understand would
+    silently discard whatever those fields meant."""
+    document = _fresh().to_dict()
+    document["schema_version"] = WORLD_SCHEMA_VERSION + 1
+    with pytest.raises(ValueError, match="newer build"):
+        migrate_world_document(document)
+
+
 def test_migrating_twice_still_records_where_the_world_originally_came_from():
     """A world migrated twice still came from where it came from."""
-    stored = replace(_fresh(), schema_version=WORLD_SCHEMA_VERSION, migrated_from_schema=0)
-    once = migrate_world_shape(stored)
-    twice = migrate_world_shape(once)
-    assert twice.migrated_from_schema == 0
+    document = _fresh().to_dict()
+    document["schema_version"] = WORLD_SCHEMA_VERSION - 1
+    once = migrate_world_document(document)
+    twice = migrate_world_document(once)
+    assert twice["migrated_from_schema"] == WORLD_SCHEMA_VERSION - 1
 
 
-def test_a_current_unmigrated_world_is_left_exactly_alone():
-    """A migration that rewrites a world it did not need to touch is a change
-    nobody asked for, and would mark a fresh world as migrated."""
-    world = _fresh()
-    assert migrate_world_shape(world) is world
+def test_a_current_document_is_left_exactly_alone():
+    """A migration that rewrites a document it did not need to touch is a
+    change nobody asked for, and would mark a fresh world as migrated."""
+    document = _fresh().to_dict()
+    assert migrate_world_document(document) == document
+    assert characterize_world(load_migrated_world(document)).is_fresh
+
+
+def test_a_stale_world_that_was_never_shape_migrated_is_restored_not_migrated():
+    """The 13/22/4/8 case exactly: a current-shape document with no content
+    stamps.  Nothing migrated it -- it was simply written before the stamps
+    existed -- and calling that "migrated" would describe an event that never
+    happened."""
+    document = _fresh().to_dict()
+    del document["generator_version"]
+    del document["composition_version"]
+    origin = characterize_world(load_migrated_world(document))
+    assert origin.label == "restored"
+    assert origin.migrated is False
+    assert not origin.is_fresh
 
 
 def test_a_review_surface_refuses_a_world_that_is_not_fresh():
