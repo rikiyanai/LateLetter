@@ -226,3 +226,42 @@ def test_the_real_closure_contains_the_modules_the_garden_needs():
     # PreText is vendored as several modules that import one another; the
     # measurement module is the one the geometry layer depends on directly.
     assert "web/vendor/pretext/measurement.js" in relative
+
+
+def test_the_root_build_refuses_while_release_blockers_stand(tmp_path):
+    """The gate must be invoked by the build, not by somebody's memory.
+
+    Until this landed, ``scripts/validate_presentation_identity.py`` was a
+    diagnostic nothing called: not the build, not the Pages workflow, not the
+    deploy. A root artifact could be produced with unaccepted art, anonymous
+    paint and no operator acceptance, and the only thing between that and a
+    deploy was a person remembering. A gate nothing invokes is indistinguishable
+    from a gate that does not exist.
+    """
+    import subprocess
+    import sys
+
+    ROOT_DIR = Path(__file__).parents[1]
+    target = tmp_path / "site"
+
+    refused = subprocess.run(
+        [sys.executable, "scripts/prepare_pages_site.py", str(target)],
+        cwd=ROOT_DIR, capture_output=True, text=True,
+    )
+    assert refused.returncode != 0, "the root artifact built with blockers standing"
+    assert "refusing to build the root artifact" in refused.stderr
+    # The reason is named, not merely counted: a refusal that does not say what
+    # is wrong gets bypassed rather than acted on.
+    assert "operator_review_outstanding" in refused.stderr
+    assert not target.exists(), "a refused build still left an artifact behind"
+
+    # And the bypass exists, works, and has to be typed. A build that could
+    # never be produced would block the diagnostic work that clears the
+    # blockers; one that bypasses silently would not be a gate at all.
+    allowed = subprocess.run(
+        [sys.executable, "scripts/prepare_pages_site.py", str(target),
+         "--skip-release-gate"],
+        cwd=ROOT_DIR, capture_output=True, text=True,
+    )
+    assert allowed.returncode == 0, allowed.stderr
+    assert (target / "index.html").exists()

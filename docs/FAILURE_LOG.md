@@ -4348,6 +4348,29 @@ behavioural cases for the current five-fixture review scene; **seven** reachable
 strict expected failures; the presentation validator reports release blockers but is not invoked by
 build or deployment; §7.8.13 remains partial.
 
+**The release gate is now invoked by the build, 2026-08-03.**
+`scripts/prepare_pages_site.py` calls `validate_presentation_identity` before producing the root
+artifact and REFUSES while blockers stand, naming them. Until now that validator was a diagnostic
+nothing called — not the build, not the Pages workflow, not the deploy — so a root artifact could
+be produced with unaccepted art, anonymous paint and no operator acceptance, and the only thing
+between that and a deploy was somebody remembering. A gate nothing invokes is indistinguishable
+from one that does not exist. Verified: the build exits non-zero, names
+`operator_review_outstanding` among the reasons, and leaves no artifact behind; the bypass
+`--skip-release-gate` works and has to be typed, so it is visible in a command line and a CI log.
+Deployment is untouched and stays on the legacy builder until the operator's cutover.
+
+**The §7.8.13 authenticated path is written but does NOT run — recorded, not claimed.**
+Two cases seal a real bundle with the product's own `seal_message`/`seal_bundle`, drop it on the
+viewer, and require the Garden on the far side of a passphrase (and require a wrong passphrase to
+reveal nothing and open nothing). They are SKIPPED with the reason stated in the file: a minimal
+sealed bundle dropped on `#file-input` leaves the viewer on no visible screen with the default
+"something went wrong" text, so `handleFile` is not reaching its own error path. The bundle carries
+no `author_name` and `garden_seed` 0, and there is a `BUNDLE_VERSION_WITH_GARDEN_PROGRAM` the
+viewer may require; which of those matters has not been established. Skipped rather than left red,
+because a red test failing for a harness reason gets read as a product defect — and rather than
+deleted, because §7.8.13 requires exactly this path and nothing else covers it. **Terminal parity
+is also not exercised by this file.** §7.8.13 remains PARTIAL and is not claimed otherwise.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is

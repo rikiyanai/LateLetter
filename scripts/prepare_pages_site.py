@@ -10,6 +10,7 @@ from pathlib import Path
 from urllib.parse import quote, urlsplit
 import re
 import shutil
+import sys
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -545,15 +546,65 @@ def prepare_pages_site(output: Path) -> None:
     verify_pages_site(output)
 
 
+def enforce_release_gate() -> None:
+    """Refuse to hand back a root artifact while release blockers stand.
+
+    Until now ``scripts/validate_presentation_identity.py`` was a diagnostic
+    somebody had to remember to run: nothing in the build or the Pages workflow
+    invoked it, so a root artifact could be produced with unaccepted art,
+    anonymous paint and no operator acceptance, and the only thing standing
+    between that and a deploy was a person's memory.  A gate nothing calls is
+    indistinguishable from a gate that does not exist.
+
+    This does not touch deployment, which stays on the legacy builder until the
+    operator's cutover.  It makes the ROOT artifact refuse to be built while the
+    conditions it is gated on are unmet, which is the honest place for the check:
+    the artifact is the thing that would ship.
+
+    :raises RuntimeError: listing every outstanding blocker
+    """
+    sys.path.insert(0, str(REPOSITORY_ROOT / "scripts"))
+    from validate_presentation_identity import run as _run_gate  # noqa: PLC0415
+
+    report = _run_gate()
+    if report.ok:
+        return
+    lines = []
+    for name, entries in sorted(report.blockers.items()):
+        if entries:
+            lines.append(f"  {name}: {len(entries)}")
+            lines.extend(f"      {entry}" for entry in entries[:4])
+    for violation in report.violations[:10]:
+        lines.append(f"  violation: {violation}")
+    raise RuntimeError(
+        "refusing to build the root artifact while release blockers stand:\n"
+        + "\n".join(lines)
+        + "\n\nRun scripts/validate_presentation_identity.py for the full report. "
+        "Pass --skip-release-gate to build anyway; doing so produces an artifact "
+        "that must not be deployed."
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("site_root", type=Path)
     parser.add_argument("--verify-only", action="store_true")
+    parser.add_argument(
+        "--skip-release-gate",
+        action="store_true",
+        help=(
+            "build even though release blockers stand. Deliberately explicit and "
+            "deliberately loud: a bypass that has to be typed is visible in a "
+            "command line and a CI log, where a default would not be."
+        ),
+    )
     args = parser.parse_args()
     if args.verify_only:
         verify_pages_site(args.site_root)
-    else:
-        prepare_pages_site(args.site_root)
+        return 0
+    if not args.skip_release_gate:
+        enforce_release_gate()
+    prepare_pages_site(args.site_root)
     return 0
 
 

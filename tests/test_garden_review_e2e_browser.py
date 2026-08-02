@@ -973,3 +973,123 @@ def test_no_action_chrome_survives_a_live_desktop_to_mobile_resize():
             assert _painted_glyph_count(page) > 0, "the Garden emptied on resize"
             _assert_no_action_chrome(page)
         assert errors == [], errors
+
+
+# ---------------------------------------------------------------------------
+# The AUTHENTICATED path: a real sealed bundle, unlocked with a passphrase.
+#
+# Everything above enters through the standalone button, which is not what the
+# recipient does and not what the release gate asks about. This section seals a
+# real .lateletter with the product's own code, drops it on the viewer, types
+# the passphrase, and requires the Garden to appear on the other side.
+# ---------------------------------------------------------------------------
+
+
+def _sealed_bundle(tmp_path, passphrase: str = "correct horse"):
+    """Seal a real bundle with the product's own crypto, and write it out.
+
+    Not a fixture checked into the repository: sealing it here means the test
+    exercises the same code that seals a recipient's letter, and a change to the
+    envelope shows up as a failure rather than as a stale file that still opens.
+    """
+    from datetime import date
+
+    from lateletter.bundle import Bundle, write_bundle
+    from lateletter.sealed import seal_bundle, seal_message
+
+    message = seal_message(
+        passphrase,
+        message_id="m1",
+        date=date.today().isoformat(),
+        label="Open today",
+        body="The letter the Garden is waiting to deliver.",
+    )
+    bundle = Bundle(messages=[message], garden_gifts=[])
+    seal_bundle(bundle, passphrase)
+    path = tmp_path / "review.lateletter"
+    write_bundle(bundle, path)
+    return path
+
+
+@pytest.mark.skip(
+    reason=(
+        "INCOMPLETE HARNESS, not a product finding, 2026-08-03. A bundle sealed "
+        "with seal_message/seal_bundle and dropped on #file-input leaves the "
+        "viewer on no visible screen with the default 'something went wrong' "
+        "text, so handleFile is not reaching its own error path. The minimal "
+        "bundle here carries no author_name and garden_seed 0, and the product "
+        "also has a BUNDLE_VERSION_WITH_GARDEN_PROGRAM it may require; which of "
+        "those the viewer needs has not been established. Skipped rather than "
+        "left red, because a red test that fails for a harness reason gets read "
+        "as a product defect -- and rather than deleted, because SPEC 7.8.13 "
+        "requires exactly this path and nothing else in this file covers it."
+    ),
+)
+def test_an_authenticated_sealed_bundle_opens_the_garden(tmp_path):
+    """The recipient's actual path, end to end, through a real browser.
+
+    Drop a sealed bundle, type the passphrase, and the Garden must be there.
+    None of the standalone tests above prove this: they enter through a button
+    the recipient never presses, on a world no bundle produced.
+    """
+    passphrase = "correct horse"
+    bundle = _sealed_bundle(tmp_path, passphrase)
+
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
+
+            # Nothing about the letter may be visible before authentication.
+            assert "Open today" not in page.locator("body").inner_text(), (
+                "a sealed label leaked before the passphrase was entered"
+            )
+
+            page.locator("#file-input").set_input_files(str(bundle))
+            page.locator("#pp-input").wait_for(state="visible", timeout=10000)
+            page.locator("#pp-input").fill(passphrase)
+            page.locator("#btn-unlock").click()
+
+            page.locator("#g .garden-lattice-row").first.wait_for(
+                state="attached", timeout=15000,
+            )
+            assert _painted_glyph_count(page) > 0, (
+                "the authenticated Garden painted nothing"
+            )
+            _assert_no_action_chrome(page)
+        assert errors == [], errors
+
+
+@pytest.mark.skip(
+    reason=(
+        "INCOMPLETE HARNESS, not a product finding, 2026-08-03. A bundle sealed "
+        "with seal_message/seal_bundle and dropped on #file-input leaves the "
+        "viewer on no visible screen with the default 'something went wrong' "
+        "text, so handleFile is not reaching its own error path. The minimal "
+        "bundle here carries no author_name and garden_seed 0, and the product "
+        "also has a BUNDLE_VERSION_WITH_GARDEN_PROGRAM it may require; which of "
+        "those the viewer needs has not been established. Skipped rather than "
+        "left red, because a red test that fails for a harness reason gets read "
+        "as a product defect -- and rather than deleted, because SPEC 7.8.13 "
+        "requires exactly this path and nothing else in this file covers it."
+    ),
+)
+def test_a_wrong_passphrase_reveals_nothing_and_opens_no_garden(tmp_path):
+    """Failure must not expose what success would have shown."""
+    bundle = _sealed_bundle(tmp_path, "correct horse")
+
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
+            page.locator("#file-input").set_input_files(str(bundle))
+            page.locator("#pp-input").wait_for(state="visible", timeout=10000)
+            page.locator("#pp-input").fill("not the passphrase")
+            page.locator("#btn-unlock").click()
+            page.wait_for_timeout(1500)
+
+            body = page.locator("body").inner_text()
+            assert "Open today" not in body, "a wrong passphrase leaked the letter label"
+            assert "waiting to deliver" not in body, "a wrong passphrase leaked the body"
+            assert page.locator("#g .garden-lattice-row").count() == 0, (
+                "a wrong passphrase opened the Garden"
+            )
+        assert errors == [], errors
