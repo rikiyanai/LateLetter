@@ -4307,6 +4307,47 @@ zoom; and no rejected chrome appears at 1600×1000, 390×844, 320 px, at 200% zo
 desktop→mobile resize — by selector and by the rejected phrases — with no page or console errors
 anywhere.
 
+**E2E claim REJECTED, 2026-08-03. Seven findings, all correct.** The claim overstated coverage and
+overstated the gate. Corrections applied:
+
+- **The verdict gate did not authenticate anything.** `outstanding_operator_verdicts` checked only
+  the verdict string, so editing four words to `accepted` cleared the release blocker with
+  `evidence: null` — an approval of nothing, recorded by nobody, at no time. That is the register's
+  own defect rebuilt inside its own checker, and it was reported as working without ever being
+  exercised. It now requires a known verdict word, an author, a timestamp, and evidence whose
+  sha256 still matches the bytes on disk. Five mutations plus a satisfiable positive control.
+- **A NEW DEFECT the single-fixture test was hiding.** The interaction test used `.find(...)`,
+  exercised whichever fixture came first, and reported that clicking worked. Parameterised over all
+  five: **only stepping stones ('walk') reaches the canonical world. Mailbox ('open'), lantern
+  ('observe'), bench ('sit') and planter ('tend') do not respond to a click at all** — four
+  accepted, declared, visible objects that a pointer cannot operate. Strict `xfail`, beside a
+  positive control so it is not vacuous. Desktop rectangles measured at 15×17 and 30×17 px.
+- **Five accepted assets this review never touches** — arbor, birdbath, bridge, pond, trellis — are
+  now asserted as an exact set, so nothing here can be read as evidence about them.
+- **Gate 12 claimed "target sizing and narrow layout pass"** while the browser review was recording
+  that every target is 15×17 px and two accepted fixtures are unreachable on mobile. Gates 12 and 2
+  now state what was measured, cite the review, and a new check keeps the matrix from claiming what
+  that review contradicts. Its other tests validated formatting only, which a stale claim satisfies.
+
+**Not corrected, and stated plainly rather than implied:** the validator is still a manual
+diagnostic and a test dependency — nothing in the build or the Pages workflow invokes it, and
+deployment still publishes `legacy/` via `prepare_legacy_site.py`. The §7.8.13 production gate is
+NOT what this file exercises: it requires an authenticated sealed bundle and terminal parity, and
+this serves the repository over localhost, opens `viewer-bnw.html?garden_debug=1`, clicks the
+standalone button, and loads no `.lateletter` and no passphrase. Production remains byte-identical
+to `legacy/viewer-bnw.html`, sha `93d239…0faa`, which is not this candidate.
+
+**Method note, so a bad measurement is not later mistaken for a defect:** an attempt to serve the
+built artifact under release-host semantics over plain HTTP produced "WebCrypto SHA-256 is required
+for Garden command IDs" and an empty Garden. That is the browser refusing `crypto.subtle` outside a
+secure context, i.e. a defect in the probe, not in the product. A release-host check needs HTTPS or
+a trusted-origin flag; it was not completed and nothing is claimed from it.
+
+Accurate standing claim: a real-Chrome localhost standalone test covers 16 structural and
+behavioural cases for the current five-fixture review scene; **seven** reachable requirements are
+strict expected failures; the presentation validator reports release blockers but is not invoked by
+build or deployment; §7.8.13 remains partial.
+
 - Status: OPEN. Step 1 is NOT implemented and must not be marked so — the operator's sequencing
   puts marking and committing after the corrections are accepted, and attempts 2, 3, 4, 5, 6, 7
   and now the whole method family 1-8 were rejected after being reported as finished work. What is
@@ -4969,3 +5010,26 @@ task
   candidate TXT, acceptance, or attempt 004 is authorized. The next slice must bind row proposals
   to hypothesis IDs, record a diagnostic alignment report with explicit unresolved status, and
   keep candidate writing impossible until ownership and exact logical sequence gates exist.
+
+- **Joint row-alignment seam wired (2026-08-03):** The benchmark now retains each adapter's
+  per-hypothesis/per-row alternatives, binds them to measured hypothesis IDs, and emits a
+  hash-bound `joint_alignment` report containing row-width alignment, winner/runner evidence,
+  and margins. The report is explicitly `status: unresolved`, `authority: proposal_alignment_only`,
+  and `candidate_txt: null`; a diagnostic ranking cannot authorize geometry or transcript output.
+  Structural proposals remain visibly imperfect and no exact nine-row logical sequence has been
+  operator-approved. Attempts 001–003 remain frozen; attempt 004 and accepted TXT remain blocked.
+
+- **Cluster-anchored recognizer still incomplete (2026-08-03):** The structural Unicode adapter
+  now has a second deterministic proposal path anchored to measured painted x-clusters. It keeps
+  narrow `/` and `>` from being swallowed by a wide token and recovers a `/>  フ` alternative for
+  sitting-cat row 2. Morphology/width scoring still produces incorrect alternatives on the lower
+  connected rows; this is proposal evidence, not an exact transcript. Add exact row-sequence
+  assertions only after the operator-pending evaluation candidate is reviewed. No candidate TXT,
+  attempt 004, or acceptance is authorized.
+
+- **Joint ownership gate added (2026-08-03):** Hypothesis inputs now carry their measured
+  ownership counts/signature into `jointly_score_geometry_hypotheses`. A row-width alignment is
+  rejected diagnostically when owned pixels do not equal substantive pixels or when unowned or
+  multiply-owned pixels remain. The report exposes this as `ownership_gate: diagnostic_only`; it
+  still cannot promote geometry or write TXT. Lower-row recognition remains open and attempts
+  001–003/attempt 004 status is unchanged.
