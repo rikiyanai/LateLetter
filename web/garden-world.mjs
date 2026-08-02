@@ -10,6 +10,17 @@ import {
 
 export const WORLD_SCHEMA_VERSION = 1;
 export const ENGINE_VERSION = 'garden-world-internal-v1';
+
+// Three versions, deliberately independent. `WORLD_SCHEMA_VERSION` above is the
+// SHAPE of the stored document -- can it be parsed. `GENERATOR_VERSION` is the
+// code that produced a world's initial content -- was it built by today's
+// generator. `COMPOSITION_VERSION` is the approved population -- is this what
+// the operator said yes to. A stored world can be current in the first and
+// stale in both others at once, which is why one number cannot carry them.
+// The Python constants in src/lateletter/garden/world/model.py must match, and
+// a contract test asserts they do.
+export const GENERATOR_VERSION = 1;
+export const COMPOSITION_VERSION = 1;
 export const PROCESSED_COMMAND_LIMIT = 512;
 export const EVENT_TRACE_LIMIT = 512;
 export const LIVE_TRACE_LIMIT = 120;
@@ -710,6 +721,11 @@ export async function newGardenWorld(
   return deserializeWorldState({
     schema_version: WORLD_SCHEMA_VERSION,
     engine_version: ENGINE_VERSION,
+    // A world made HERE, now, by this code. This is the only place the content
+    // stamps are applied; anything that did not originate here must not carry
+    // them, which is what lets a review tell fresh from restored.
+    generator_version: GENERATOR_VERSION,
+    composition_version: COMPOSITION_VERSION,
     world_id: String(worldId),
     seed: seedDigest,
     world_width: Math.max(1, integer(world_width)),
