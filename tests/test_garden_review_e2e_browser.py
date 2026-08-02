@@ -543,19 +543,21 @@ def test_clicking_one_accepted_fixture_reaches_the_canonical_world():
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "UNRESOLVED, and the SIGNAL is not trustworthy. 2026-08-03. Clicking a "
-        "second fixture produces no change in the accessible summary within four "
-        "seconds of polling, and an earlier probe saw one surface three clicks "
-        "later. But the summary is written only when "
-        "`syncGardenControlsAvailability()` is truthy (viewer-bnw.html, in "
-        "`renderCanonicalGarden`), so an unchanged summary is NOT evidence that "
-        "the dispatch did not happen -- the reporting surface is gated on "
-        "something unrelated to the dispatch. Three descriptions of this have now "
-        "been wrong: 'four fixtures unclickable', then 'pure measurement "
-        "artifact', then 'queued dispatch'. The next attempt must observe "
-        "canonical world state directly rather than any DOM summary. Left strict "
-        "and failing because SOMETHING here is unproven, and a test that stops "
-        "asking is worse than one that fails."
+        "DEFECT, characterised 2026-08-03 by observing canonical world state "
+        "directly instead of any DOM summary. Clicks land on the WRONG OBJECT. "
+        "Clicking the stepping stones raises stepping-stones walk_count to 1, "
+        "correctly. Clicking the MAILBOX then raises stepping-stones walk_count "
+        "to 2. Clicking the lantern and the bench change nothing at all. "
+        "Clicking the PLANTER sets the mailbox to open:true. So a click "
+        "activates a previously targeted object rather than the one under the "
+        "pointer -- hit resolution is reading stale frame geometry, not queuing "
+        "a dispatch. This is why three earlier descriptions were wrong: the "
+        "accessible summary was reporting a real action on the wrong object, "
+        "which looks exactly like a lagging report of the right one. It is also "
+        "why no DOM signal could settle it -- the summary is written only when "
+        "`syncGardenControlsAvailability()` is truthy, so absence of a change "
+        "there is not absence of an action. Left strict: this is the most "
+        "serious interaction defect on the board, and it must not be normalised."
     ),
 )
 def test_clicking_EVERY_accepted_fixture_reaches_the_canonical_world():
