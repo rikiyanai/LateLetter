@@ -557,15 +557,29 @@ When the last letter in the bundle has been read, the product's delivery mission
 
 ### 6.8 Garden Progression Layer
 
-The garden is not just a delivery mechanism — it is a place the recipient tends. Over time, the recipient's care creates a living relationship with the garden: plants they grew, animals that trust them, small authored memories discovered in the landscape. The progression layer is stored independently from the bundle's `garden_seed` — the seed-based garden is the author's gift; the recipient's additions are their own contribution to the shared space.
+The garden is not just a delivery mechanism — it is a place the recipient tends. Over time,
+the recipient's care creates a living relationship with the composed garden: plants whose
+development they influenced, animals that recognize them, and small authored memories
+discovered in the landscape. The progression layer is stored independently from the
+bundle's `garden_seed`—the seed-based garden is the author's gift; the recipient contributes
+a persistent history of nurturing rather than changing its composition.
 
 #### 6.8.1 Design principles (research-informed)
 
-Derived from prior art analysis of passive care games (Neko Atsume, Viridi, Stardew Valley, Tsuki Adventure, Animal Crossing) and grief-tech UX research (SafeBeyond, HereAfter AI, memorial space design). Full research notes archived in project history.
+Derived from prior art analysis of passive care games, virtual pets, adaptive companion
+agents, constrained world generation and long-term human-robot interaction. The 2026-07-30
+source notes are tracked in `tracked/LateLetterResearch/`.
 
-1. **Cumulative investment, not streaks.** Relationship depth is gated by total care actions (e.g., fed the cat 7 times), not consecutive daily visits. A recipient who misses three months picks up where they left off. Consecutive-streak mechanics create anxiety incompatible with grief (Animal Crossing anti-pattern: weeds + shaming on return).
-2. **Gentle entropy, immediate recovery.** Plants droop if unwatered for weeks; the cat stops visiting if unfed for a long time. But recovery is instant on return — water the plant once, it perks up. No guilt, no shaming, no "where have you been?" commentary.
-3. **Evidence of absence, not punishment.** When the recipient returns after a gap, they find traces: footprints where the cat checked for them, an empty food bowl, a wilted-but-alive plant. The garden noticed they were gone. It waited. (Tsuki Adventure model: "you witness what happened while you were away.")
+1. **Cumulative, varied investment—not streaks.** Relationship depth is gated by varied
+   interactions and shared rituals, not consecutive daily visits or one repeated verb. A
+   recipient who misses three months picks up where they left off.
+2. **Gentle visual change, immediate recovery.** A plant may enter seasonal rest or show a
+   recoverable dry state, and an animal continues its autonomous routine. Absence never
+   removes the animal, lowers bond, creates sickness, or generates care debt. One appropriate
+   action restores any care-responsive plant presentation.
+3. **Evidence of elapsed life, not punishment.** On return, the recipient may find footprints,
+   a feather, a new resting place, a bloom, or another bounded discovery. The garden changed
+   while they were away; it did not suffer to compel their return.
 4. **Automatic nudges, not menus.** Interactions surface via status bar callouts ("a stray cat lingers at the edge…") rather than action menus. The recipient presses a single key to respond. One action at a time — grief reduces decision-making capacity.
 5. **The garden and letters must reinforce one another.** In standalone mode the garden is the primary experience. In authored-bundle mode the letters remain emotionally first-class, but tending, collecting, animal behavior, and authored world changes continue between deliveries. Neither side may reduce the other to an interruption or a decorative backdrop.
 6. **No unsolicited notifications tied to the deceased.** The garden never pushes notifications referencing the author by name in a guilt context. All engagement is pull-based.
@@ -575,14 +589,15 @@ Derived from prior art analysis of passive care games (Neko Atsume, Viridi, Star
 
 Animals are the primary relationship mechanic. The v1 starter set is **four animals: bird, cat, rabbit, and turtle**.
 
-**Trust tiers (cumulative, not consecutive):**
+**Bond tiers:** §7.8.7 owns the scoring, memory and behavioral contract. Tiers are cumulative
+and non-decaying, but full bond additionally requires interaction variety.
 
-| Trust tier | Cumulative actions | Behavior |
-|-----------|-------------------|----------|
-| 0 — Wild | 0 | Animal appears at garden edge occasionally. Status bar nudge: *"a stray cat lingers at the edge… press f to leave food"* (feed key is `f`; `i` is an acceptable alternative — decide during implementation) |
-| 1 — Curious | ~3 | Animal enters the garden. Approaches but keeps distance. Food bowl or equivalent interaction point visible. |
-| 2 — Familiar | ~7 | Animal is present when the garden opens. Sits in a consistent spot. Reacts visibly to recipient's presence (tail flick, head turn). |
-| 3 — Bonded | ~14 | Animal has a "home" spot in the garden. Naps on warm rocks. **On letter delivery days, this animal delivers the letter instead of the default letter-bird** (see §6.3 cross-reference). |
+| Bond tier | Behavior |
+|-----------|----------|
+| 0 — Stranger | Animal watches from safety, explores edges, and avoids direct approach. |
+| 1 — Familiar | Animal approaches after a pause, accepts care, and uses a nearby fixture. |
+| 2 — Bonded | Animal initiates play, follows briefly, rests nearby, and recalls preferences. |
+| 3 — Full bond | Animal greets on return, brings discoveries, seeks shared spaces, and may perform authored delivery. |
 
 **Per-animal details:**
 - **Cat:** Multi-line ASCII art. Sits, walks, tail-flick, naps. Can have a colored collar and nametag — author-assigned during garden direction (§6.8.5) or recipient-chosen. The cat's name is part of the relationship.
@@ -597,7 +612,10 @@ Animals are the primary relationship mechanic. The v1 starter set is **four anim
   width tracking.
 - **Turtle:** Slow, reliable, always eventually arrives. Deliberate ground movement. Never startles. Stays longer than any other animal at each tier — the tortoise of the garden. At trust tier 3 it has a favorite rock it always returns to. ASCII art TBD during implementation (two-line shell silhouette).
 
-**Absence and recovery:** Trust does not decrease on absence. But evidence of the animal's visits appears: footprints in the ground row, feathers near the perch, claw marks on a tree trunk, an empty food bowl. The animal returns within 1–2 visits of resumed care — it was waiting.
+**Absence and recovery:** Bond does not decrease on absence. Evidence of autonomous life may
+appear—footprints, feathers, a newly favored perch or claw marks on a tree—but the animal
+does not withhold its relationship until a care debt is paid. Its presence follows its
+species/personality routine and authored scenes.
 
 **Letter delivery integration:** When the recipient has reached trust tier 3 (Bonded) with any animal, that animal delivers letters on due dates instead of the default letter-bird (§6.3). The cat carries the envelope in its mouth; the bird carries it in talons. If multiple animals are bonded, the most recently interacted-with delivers. This ties the recipient's care of the garden to the emotional climax of letter delivery. If no animal is bonded, the default letter-bird behavior (§6.3) is unchanged.
 
@@ -661,11 +679,15 @@ After letter writing (Phase 1 authoring — intake, Q&A, drafts, encryption), th
 | Animals | Cat, bird, rabbit, turtle | Which animal, optional name, optional collar color (cat), trigger for first appearance |
 | Items | 15 curated ASCII objects — see §6.8.3 catalog | Which item, sentiment text (1–2 sentences), trigger |
 | Landmarks | Carved rock, small bench, birdhouse, wind chime, lantern | What it is, optional inscription text, trigger |
-| Task nudges | Author-written gentle prompts | The prompt text ("Plant something new today," "Sit with the cat for a minute"), trigger |
+| Task nudges | Author-written gentle prompts | The prompt text ("Water the lavender if you feel like it," "Sit with the cat for a minute"), trigger |
 
 **Author UX:** Rich but optional. Presented as a guided flow after letter completion: *"Would you like to leave something in the garden too?"* The author picks from the catalog, writes sentiment/inscription text, and assigns a trigger. One item at a time, fatigue-aware, auto-saved. Matches the existing intake style (§5.1). The session can be entered and exited freely — partial garden direction is saved and resumable.
 
-**Task nudges:** Author-written prompts that appear as gentle status bar messages on their trigger date or visit count. They are suggestions, not obligations: *"Plant something new today."* *"Watch the sunset."* *"Look up — count the birds."* The recipient can ignore them. They are the author reaching forward in time to share a moment, not assign homework.
+**Task nudges:** Author-written prompts that appear as gentle status bar messages on their
+trigger date or visit count. They are suggestions, not obligations: *"Water the lavender if
+you feel like it."* *"Watch the sunset."* *"Sit near the cat for a minute."* The recipient
+can ignore them. They are the author reaching forward in time to share a moment, not assign
+homework or grant placement agency.
 
 #### 6.8.6 Bundle schema addition
 
@@ -702,31 +724,29 @@ Garden direction data is stored in the `.lateletter` bundle as a new top-level f
 
 #### 6.8.7 Recipient state persistence
 
-Progression state is stored in `~/.lateletter/recipient/garden_state.json`, separate from the bundle and from read receipts:
+Progression state is stored as the versioned canonical `WorldState`, separate from the
+sealed bundle and namespaced by the authenticated bundle binding. Terminal storage uses
+the recipient state directory; HTML uses IndexedDB. Both serialize the same canonical
+fields and reducer receipts rather than renderer-specific progression records. A simplified
+shape is:
 
 ```json
 {
   "<bundle_id>": {
     "total_visits": 42,
     "last_visit": "2027-08-15",
-    "animals": {
-      "cat": {
-        "name": "Whiskers",
-        "trust_actions": 12,
-        "trust_tier": 3,
-        "last_fed": "2027-08-15"
-      }
-    },
-    "recipient_plants": [
-      { "type": "sapling", "position": [12, 18], "planted_at": "2027-07-01", "growth_stage": 3 }
-    ],
-    "discovered_items": ["<gift_id>"],
-    "completed_nudges": ["<gift_id>"]
+    "world_state_version": 1,
+    "animals": [{"animal_id":"animal.cat","species_id":"cat","bond_points":40,"bond_tier":3}],
+    "plants": [{"plant_id":"plant.sapling","species_id":"oak","growth_age":3600}],
+    "inventory": ["<collectible_id>"],
+    "milestone_receipts": ["<canonical_receipt_id>"],
+    "program_state": {"applied_occurrences": ["<occurrence_id>"]}
   }
 }
 ```
 
-The browser viewer stores equivalent state in IndexedDB (namespaced `lateletter_v1_` prefix). If browser storage is unavailable, progression features are disabled but letters remain fully readable.
+If persistence is unavailable, letters remain readable and the Garden may run ephemerally;
+the renderer never becomes a fallback progression owner.
 
 #### 6.8.8 Post-completion integration
 
@@ -779,7 +799,9 @@ Failure mode: The bird spawns, the recipient presses `e`, the overlay appears. I
 
 What must be true: Each tier transition must be perceptible and feel earned. Tier 0 (animal peeks from the garden edge, skittish) → tier 1 (visits but keeps distance) → tier 2 (approaches, can be fed) → tier 3 (bonded, stays). The recipient should feel the relationship deepening over time. No numeric progress bars — only visible behavioral change.
 
-Verify: Use `Shift+A` to cycle all 16 animal states across all 4 animals. Is each tier visually distinct from the last? Does tier 3 feel like something the garden chose to give?
+Verify: Use canonical fixture worlds and a normal sealed recipient flow to observe every
+species/tier transition through real `observe`, `feed`, and `play` commands. Is each tier
+visually distinct from the last? Does tier 3 feel like something the garden chose to give?
 
 Failure mode: Tiers look nearly identical. The recipient never notices the animal is getting closer.
 
@@ -815,6 +837,12 @@ Failure mode: The memory overlay text is generic or announcement-style. The item
 
 All animations prototyped in `ascii-animations/` are approved for integration into the garden. The prototypes define the visual language — integration must preserve the look and feel established there.
 
+> **Subordinate to §7.10 (noted 2026-08-02).** This section carries no attribution and no date,
+> and a blanket approval cannot override a dated per-asset verdict. Where §7.1 lists an
+> animation that §7.10 or `docs/garden-presentation-recipes.json` records as `rejected` — the
+> sky clouds and distant birds, rejected 2026-08-01 — the dated rejection governs. §7.1
+> describes the prototype library; it does not license anything into a live frame.
+
 **Creatures:**
 
 | Animation | Prototype | Description | Procedural generation |
@@ -847,32 +875,312 @@ All animations prototyped in `ascii-animations/` are approved for integration in
 
 ### 7.2 Rendering architecture
 
-The garden renderer uses a **5-layer compositing model**. Each layer updates independently at its own cadence and writes to a shared screen buffer. Layers are drawn back-to-front; later layers overwrite earlier ones at occupied cells.
+The Garden has one authoritative versioned `WorldState`, reducer, clock, camera,
+topology, object/action model, and projection. Terminal and HTML renderers are read-only
+consumers of the same projection. They may differ in disposable presentation detail, but
+neither may generate or persist gameplay positions, collision, targets, growth, animal
+decisions, schedule results, inventory, milestones, or author-program effects.
 
-| Layer | Contents | Update cadence | Notes |
-|-------|----------|---------------|-------|
-| 0 — Background | Sky gradient, ground row | On resize or season change | Static except for time-of-day palette shifts |
-| 1 — Plants | Trees, flowers, new plant types with wind sway | 300–500ms | Procedurally placed by seed; sway frames cycle on wind timer |
-| 2 — Particles | Rain, snow, falling leaves | 40–80ms (fast) | Particle system: spawn/update/kill per frame. Each particle has position, velocity, lifetime |
-| 3 — Creatures | Birds, butterflies, fireflies | 100–200ms | Independent movement AI per creature. Spawn/despawn at screen edges |
-| 4 — Special | Letter-bird, message overlays | Event-driven | Controlled by bundle auth state, not animation timer. Highest z-order |
+| Presentation plane | Projection inputs | Renderer-owned output | Forbidden ownership |
+|---|---|---|---|
+| Scene | season, weather, civil time, sky mode | palette, sky/ground cells, moon/star glyphs | season/time/weather state |
+| Objects | exact IDs, positions, depth, topology, footprints, hotspots, actions, semantic state | atlas glyphs, bounded LOD, color, wind/pose frames | placement, collision, hit identity, actions |
+| Effects | accepted exact target ID, semantic object surfaces, motion policy | bounded rain/snow/leaves, hover/click/feed feedback, one-cell ambience | world mutation or target selection |
+| Recipient UI | canonical focus, journal/inventory, letter/program facts | named buttons, status prose, accessible summary | duplicate focus/progression state |
 
-**Shared particle API:** All particle-based animations (rain, snow, leaves, firefly flashes, splashes) use a common `Particle` type with: `x: float, y: float, vx: float, vy: float, char: str, lifetime: int, color_pair: int`. The particle system runs a single update loop per frame that iterates all active particles, applies per-type physics (gravity, wind, drift), handles collisions with plant surfaces, and kills expired particles.
+HTML may deterministically pack projected art within a responsive 4–22-row band to avoid
+glyph overlap. A projection-owned connected group moves as one disposable unit; its relative
+anchors remain exact. Pointer targets originate from projected hotspots through that same
+transform/offset and may only be enlarged to the 44px accessibility minimum.
 
-**Plant collision surfaces:** Each plant registers its occupied cells as a collision map at placement time. Particles check this map for: snow accumulation (land on top surface), rain splashes (trigger splash on contact), leaf detachment points (spawn leaves from canopy cells).
+**Surface models:** Visible organs and fixture render cells come from canonical projection.
+Disposable snow/rain/leaf reactions may read those surfaces, but cannot register a second
+collision map or overwrite projected object art.
 
-**Performance budget:** Target 50ms frame time (20 FPS) on the composited garden. Individual layer updates must not exceed 10ms. If frame budget is exceeded, reduce particle density before dropping frames.
+#### 7.2.1 Visual source chains and the identity criterion
 
-**Integration with `garden.py`:** The Phase 1 refactoring of `garden.py` (step 3 in §24) must produce a renderer module that supports this layer model. The current monolithic `garden.py` draws plants directly to the screen — the refactored renderer must separate plant placement from screen drawing so animation layers can composite between them.
+Added 2026-08-02 under the operator route step 1. The table above says *what* the renderer
+may own. It did not say how a drawing acquires a reviewable identity, and that gap is what let
+a location-based rule delete approved art three times: ground cover, then butterflies and
+fireflies, then sky decoration — each removed for being renderer-local, which this section has
+always permitted.
 
-**Tick cadence note:** The browser viewer (`viewer-bnw.html`) uses a unified ~50ms RAF tick for all layers. The per-layer cadences listed in the table above (plants 300–500ms, particles 40–80ms, creatures 100–200ms) describe the curses/TUI design intent. Both are conformant implementations of this rendering architecture.
+Two chains produce an emitted cell. They are **not** tiers and they do not rank; they are
+different provenance routes with different review requirements.
 
-**Canopy surface models:** The particle system uses two distinct collision surface models, each serving a different physical purpose:
+```
+canonical object    ->  atlas asset          ->  emitted cell     (visual_source_kind 'atlas')
+projection/viewport/time  ->  presentation recipe  ->  emitted cell  (visual_source_kind 'recipe')
+```
 
-- **`canopyCells`** — cells from LEAF_CANOPY plants (oak, willow) at `dy ≥ 3` above the plant base. Drives leaf spawn origin (70% of autumn leaf spawns detach from these cells). Pine is excluded — evergreens do not shed leaves.
-- **`topSurfaces`** — per-column topmost occupied cell across *all* plant types (including pine). Drives snow accumulation in winter. This surface runs unconditionally with no plant-type gate.
+Every emitted nonblank primitive carries a `visual_source_id`. The word that matters is
+**carries**: the emitted thing holds the id, not merely the call that drew it. **How that is
+established is §7.2.2, and it is established at runtime.**
 
-The `dy ≥ 3` threshold excludes trunk rows (the bottom 1–2 rows above base) from the canopy set, preventing leaves from spawning at unnaturally low positions on the plant.
+Withdrawn 2026-08-02. This clause previously spelled out a three-part static test over the
+renderer's source — that a writer accept an identity parameter, hand it down into its callee's
+identity argument on every emitting branch, and store it into an allocated per-cell plane — and a
+checker read the JavaScript to decide it. Eight rounds of audit each shut one way of writing an
+invocation and produced another: a receiver that is not named, a receiver that is not a name at
+all, an invoked subscript, an optional invocation, a reflective `call`, an extracted reference, a
+right-hand side that mentions the identity and stores null. Whether a run of text will put an
+identity in a particular cell is a property of **execution**, and the ways to spell an invocation
+are not an enumerable set; a gate built on reading the text was converging on a second, worse
+JavaScript interpreter. The requirement is unchanged and is now stated where it can be measured:
+compose a frame through the public interface and read the primitives back.
+
+**`visual_source_kind` is derived, not stored:** the two identity spaces are disjoint and a test enforces that, so the id alone
+determines the chain — an `asset_id` means `atlas`, a `recipe_id` means `recipe`. Storing it
+alongside would create a second copy of a fact already implied by the first, and the two could
+then disagree; a cell claiming kind `atlas` under a `recipe_id` would have to be adjudicated,
+and there is no honest way to decide which half is the lie. Amended 2026-08-02 after an audit
+found the checker enforcing only the id: the contract was stating a field nothing produced or
+read, which is prose that cannot fail a build.
+
+| | atlas chain | recipe chain |
+|---|---|---|
+| `visual_source_id` | an `asset_id` in `docs/garden-asset-acceptance.json` | a `recipe_id` in `docs/garden-presentation-recipes.json` |
+| `object_id` | **may** carry one, inherited **only** from canonical projection | **must not** carry one |
+| owns | the drawing of a gameplay object | the visible language: glyph sets, colour-ramp shape, motion law, density law, cadence |
+| review | per-asset operator verdict (§7.10) | per-recipe verdict in the recipe register |
+
+A record on the recipe chain may be `kind: "paint"` (emits cells) or `kind: "law"` (decides
+what the painters are given — population density, wind, cadence, painter order, palette,
+measured cell size, animal state). A law emits no cells of its own but changes every cell
+downstream of it, so it needs identity for the same reason.
+
+**A law is never a cell's visual source.** A painted cell is produced by its recipe *and* by
+every law in force when it was painted, which one `visual_source_id` cannot express. The
+dependency is an explicit edge instead: a paint record declares `law_refs`, and each law
+declares its `dependents`. Both directions are checked, so a law that quietly loses a dependent
+fails rather than drifting. Naming a law as a cell's source is anonymity with a respectable id
+attached, and blocks a release.
+
+Recipe-chain state — particle lists, accumulation depth, animation phase — is presentation-local.
+It may **read** canonical surfaces (top surfaces, canopy cells, footprints) and may never write
+them, enter layout, enter command dispatch, register a second collision map, overwrite projected
+object art, or be persisted.
+
+**Release criterion — identity, not location.** Renderer-local paint is permitted; anonymous
+paint is not. A root-product release is blocked while any nonblank emitted cell carries no
+`visual_source_id`, any cited id names no record in either register, or any reachable source
+carries a verdict other than `accepted` / `accepted_as_deployed`. The two identity spaces are
+disjoint: a `recipe_id` may never equal an `asset_id`, and a recipe verdict may never confer
+acceptance on an atlas asset.
+
+**Two enforcers, and the boundary between them does not move.**
+
+- `scripts/validate_presentation_identity.py` validates the REGISTERS: that every id is declared,
+  that verdicts, presence requirements, `law_refs` and `dependents` edges are coherent, that the
+  two identity spaces stay disjoint, and that every provenance range and decision quotation is
+  true of the artifact and the operator record it cites. Checking that a claim about a file is
+  true is a decidable question about that file. **It may never infer JavaScript dataflow**, and it
+  may never decide whether a drawing carries identity by reading the renderer's source.
+- The composed FRAME answers whether a primitive carries identity, by being composed and read
+  (§7.2.2). This is the release criterion.
+
+The static writer-graph criterion that used to live in the first bullet is frozen at its extent of
+2026-08-02 and is not extended. It is withdrawn in the same patch that installs the runtime
+invariant, so the gap is never unmeasured and the two never both claim authority.
+
+Provenance is recorded per primitive where the primitive is emitted, and must survive
+serialisation. Serialising rows (`line`, `latticeHtml`) never assigns identity: a row routinely
+holds primitives from several sources, so no single id could truthfully describe one.
+
+Permanent policy and computed blockers are recorded separately. `release_policy` states what
+makes a release unacceptable and never empties; `active_release_blockers` are computed and must
+all clear before cutover. Asserting a list that mixes both is empty is unfalsifiable, not strict.
+
+**Verdicts.** `accepted_as_deployed` records the operator grant of 2026-08-01 over the art
+serving rikiworld.com/lateletter, and attaches to the exact characters, colours, constants and
+laws in blob `59dc49a820d07d1b6a1741e17aafe6d075f6c99d`. A migration reproducing them retains
+approval; a divergent reimplementation does not, and is recorded `candidate_status: different`
+so it cannot claim the verdict. The vocabulary is `accepted_as_deployed` / `accepted` /
+`not_reviewed` / `rejected`, and it is the same in the SPEC, the policy, the register and the
+validator.
+
+**Acceptance and presence are separate fields.** Whether the operator asked for a thing
+(`presence_requirement: required`) is not a verdict on any drawing of it. Held in one field,
+"the operator asked for birds" acted as approval of an unreviewed bird. A required presentation
+whose implementation is absent or rejected blocks a release exactly as a rejected drawing does —
+there the defect *is* the absence, so no amount of correct drawing elsewhere clears it.
+
+A source-code reference is provenance, not approval; only a `decision_ref` is evidence of that.
+The reference must also be *verifiable*: every cited range is checked against the immutable blob,
+every anchor must resolve to a real heading in `docs/operator-decision-record.md`, and every
+quoted operator statement must appear verbatim in the section it cites. Checking that a citation
+merely exists is what allowed eighteen ranges pointing at unrelated code and three anchors
+pointing at no heading to stand as evidence.
+
+**Performance budget:** Presentation targets a responsive 20 FPS ceiling when motion is
+visible. Row diffs compare glyph and color HTML; cell metrics cache until resize; the RAF
+sleeps when the Garden is hidden, paused, or reduced-motion suppresses animation. If the
+budget is exceeded, reduce disposable effect density/LOD before dropping semantic objects.
+
+**Portability:** Terminal renders the versioned ASCII/Unicode atlas directly. HTML may add
+projection-only storybook detail, but semantic labels, focus, coordinates, targets, and
+actions remain portable and renderer-independent.
+
+#### 7.2.2 The GardenPresentation interface contract
+
+Added 2026-08-02, superseding the static-source criterion withdrawn in §7.2.1. That criterion
+failed as a METHOD, not as an implementation: it tried to decide a property of running code by
+reading its text. This section states the same requirement as a contract on an INTERFACE, so it is
+settled by composing a frame and looking at what comes back.
+
+**GardenPresentation is two functions, and painting is a separate step.** The earlier
+`composePresentationFrame(input)` shape is withdrawn because it could not represent pointer hover
+or click feedback without hidden state. Presentation state is advanced explicitly from events, then
+the frame is composed from that state:
+
+```
+advancePresentationState(previousState, presentationEvents, tick) -> presentationState
+composePresentationFrame(projection, presentationState, context) -> PresentationFrame
+paintPresentationFrame(frame, surface) -> void
+```
+
+`presentationEvents` is the only way pointer movement, pointer leave, click feedback and focus
+changes enter the presentation layer. The resulting state is disposable and unpersisted, but it is
+not derivable from `(world_id, frame, viewport)` alone: hover depends on the current pointer
+position, and bursts depend on prior click events. A composer that reads pointer state, browser
+events or hidden module variables directly violates this contract.
+
+The split is the whole point. A composer that returns a value runs in Node, in Python, in a test,
+with no browser and no DOM, and every clause below becomes an assertion about the returned value. A
+composer that paints as it goes can only be inspected by reading its source, which is the approach
+this section replaces. `paintPresentationFrame` may not decide anything: if it can add a primitive,
+choose a colour, measure a run, resolve an accepted source, choose a painter order or place a hit
+region, the frame is not the truth about the picture.
+
+**State advance input — an exhaustive list.**
+
+| Input | What it carries |
+|---|---|
+| `previousState` | prior disposable presentation state, or absent for the first frame |
+| `presentationEvents` | pointer move cell/pixel, pointer leave, click feedback event, canonical focus change, reduced-motion transition; no command dispatch |
+| `tick` | presentation tick/frame index and elapsed presentation time |
+
+`advancePresentationState` may update hover emphasis, burst age, particle lists, accumulation
+depth and animation phase. It may not write canonical world state, persist anything, choose a
+command target or read the hostname.
+
+**Composition input — an exhaustive list.** The composer reads `projection`, `presentationState`
+and `context`, and nothing else:
+
+| Input | What it carries |
+|---|---|
+| `projection` | the canonical projection, read-only: exact object IDs, positions, depth, topology, footprints, hotspots, declared actions, semantic state, season, weather, civil time, sky mode |
+| `presentationState` | the disposable state returned by `advancePresentationState` |
+| `context.viewport` | pixel extent and logical cell extent |
+| `context.profile` | `browser-proportional` or `ascii-safe`; browser and terminal profiles are explicit inputs, not inferred from runtime |
+| `context.presentationGeometry` | immutable measurement table: bundled font identity/version/hash, cell geometry, world-to-pixel transform, asset-local prefix widths, row/run measurements and cache identity needed by §7.9 |
+| `context.acceptedManifest` | build-generated accepted-paint manifest bound to this release artifact by identity/hash |
+| `context.environment` | reduced-motion preference, theme, reader region and other non-authority presentation facts |
+
+Not inputs, and so not readable during composition: the wall clock, unseeded randomness, persisted
+storage, the world state behind the projection, the hostname, the DOM, Canvas, PreText, live font
+objects, or a global measurement cache. Contract P is implemented by passing the measurement table
+in `context.presentationGeometry`; a composer that secretly consults PreText/Canvas/DOM is not a
+pure composer. **The hostname is not an input**: paint authority arrives only as the build-bound
+accepted manifest, so accepted paint composes on every host and unreviewed ink composes on none.
+
+**Accepted manifest authority.** `acceptedManifest` is not caller-minted policy. A release manifest
+is generated at build time from the validated atlas and recipe registers, records the register
+hashes and artifact identity it was built against, and is included in the release artifact. A
+runtime caller may select among build-produced manifests only by artifact identity. Tests may inject
+manifests only through an explicit test adapter whose name makes the authority substitution visible.
+
+**Output — a `PresentationFrame` the caller can read.** It carries:
+
+| Field | Required content |
+|---|---|
+| `attempted_primitives` | every attempted draw in painter order, including overwritten/occluded primitives |
+| `visible_primitives` | final-visible primitives after overwrite/occlusion; this is the painting truth |
+| `background` | gradient/solid/background bands, with units and palette roles |
+| `interaction_regions` | transformed regions keyed by projected `object_id`; geometry, units, accessibility expansion and source asset/state mask |
+| `diagnostics` | density, counts, timings and review aids only; diagnostics never grant acceptance |
+
+Every primitive states its unit system (`cell`, `pixel`, or both), glyph/run content, position,
+dimensions, anchor, palette role/colour token, painter order, source_id, optional object_id,
+profile, and measured proportional run data when profile is `browser-proportional`. A primitive
+that is attempted and then hidden remains in `attempted_primitives`; only `visible_primitives`
+drive the final painted picture. With this structure, `paintPresentationFrame` copies a decided
+frame to a surface and cannot choose content, colour, position, order, measurement, background or
+hit geometry.
+
+**The contract must be executable.** The public runtime-frame check is over this
+`PresentationFrame`, not over renderer source. A reference composer must satisfy every clause and
+emit real ink; each clause must also be broken deliberately and caught. The existing
+`web/garden-presentation-contract.mjs` / `tests/garden_adapters/test_presentation_contract.mjs`
+draft predates the six blocking findings of 2026-08-02 and is not authoritative until updated to
+this section.
+
+**1. Runtime emitted-primitive identity.** Every nonblank primitive in a composed frame carries:
+
+- `source_id`, non-null, naming a record in `docs/garden-asset-acceptance.json` or
+  `docs/garden-presentation-recipes.json`. A `kind: "law"` record is never a `source_id` (§7.2.1);
+- `object_id`, present only on the atlas chain and inherited **only** from the projection. A
+  recipe-chain primitive carries none.
+
+Verified by composing an actual frame through the public interface and reading the primitives
+back: the invariant is over emitted values, not over the code that emitted them. It cannot be
+satisfied by adding an argument nothing reads, because nothing about the calling convention is
+inspected.
+
+**2. Presentation-only state travels through the public state advance, not behind it.** Particle
+lists, accumulation depth, animation phase, hover emphasis and burst age belong to the presentation
+layer. They are produced by `advancePresentationState`, consumed by `composePresentationFrame`, and
+returned as ordinary values; the composer keeps nothing of its own between calls. The checkable
+consequence is exact: **advancing state and composing twice from the same prior state, events, tick,
+projection and context returns the same cells, the same regions and the same next state**, and the
+composed picture does not change when the hostname underneath it changes. This state is never
+persisted, never written back to the world, never enters canonical layout or command dispatch,
+never registers a second collision map, and never overwrites projected object art. It may READ
+canonical surfaces — top surfaces, canopy cells, footprints.
+
+**3. Canonical-object interaction-region ownership.** The split is exact:
+
+- Projection owns `object_id`, selected `asset_id`/`state_id`, hotspot anchor and declared primary
+  action.
+- Atlas owns the asset-state-local interaction mask.
+- Composer transforms the atlas mask through the same presentation transform and binds the region
+  to the projected `object_id`.
+- Input adapters map a selected `object_id` back to the projection action and dispatch it through
+  the canonical command path.
+
+The composer may enlarge a transformed region to the 44px accessibility minimum
+(`MINIMUM_TARGET_PX`, `web/garden-geometry.mjs`). It may not invent a region, move one, drop one,
+derive one from what it happened to paint, or dispatch an action. On the composed frame:
+
+- every region is keyed by an `object_id` that exists in the projection;
+- every declared-interactive object that emitted visible ink has a region;
+- every region names the `asset_id`/`state_id` mask it came from;
+- hover changes the picture only — no label, tooltip, card, button, list or action sheet
+  (§7.8.3).
+
+An unowned region and unreachable interactive ink are both defects, and both are visible in the
+frame without a browser.
+
+**4. The validation boundary.** Registry validation validates IDs and provenance and never infers
+JavaScript dataflow (§7.2.1). Identity is a runtime question answered by a composed frame. The
+static writer graph, `unresolvable_paint_call_forms`, `writers_that_cannot_record_identity`, and
+the synthetic internal-Raster authority are frozen diagnostics only until the public runtime-frame
+check lands. They must be deleted in the same patch that installs that runtime check; they must not
+survive as a parallel policy owner.
+
+**Not yet true, recorded so the contract is not mistaken for a description.** As of 2026-08-02
+`CanonicalGardenRenderer.render(projection)` (`web/garden-renderer.mjs:2186`) composes and paints
+in one pass; its `Raster` is not exported; no per-primitive plane stores identity;
+`allowUnacceptedArt` still defaults to true; interaction regions are recovered by hit-testing
+painted output (`_layoutCandidatesAt`) rather than transported from the projection; and the
+terminal composer `GardenRenderer.render_lines(world)`
+(`src/lateletter/garden/renderer.py:67`) takes the world rather than a projection, so the two
+renderers do not yet share one composition input. The executed contract test records this by name:
+the live renderer exposes no composer, so there is no frame to apply the contract to, and the test
+fails the day one appears — which forces the gate and the code to move together rather than one
+quietly outrunning the other. Under the operator route of 2026-08-02 the accepted-paint manifest
+lands with the removal of `allowUnacceptedArt`, and the projection-owned interaction masks with the
+hover/click reconciliation that follows it.
 
 ### 7.3 Procedural generation philosophy
 
@@ -880,21 +1188,54 @@ The garden uses a **hybrid authored/procedural scene model**. Procedural systems
 
 - **Plants** are assembled from parameterized templates: trunk height, canopy shape, branch structure, flower pattern. The seed determines which parameters are chosen for each plant in the garden, making each recipient's garden unique but deterministic.
 - **Fixtures, collectibles, and animal key poses** are pre-authored atlas assets with stable anchors, collision masks, interaction hotspots, semantic labels, animation states, and ASCII fallbacks. Procedural placement may select and compose these assets but may not redraw their authoritative geometry at render time.
-- **Creatures** have procedurally varied behavior: flight paths, speeds, flash patterns, spawn timing. The seed initializes the RNG that drives these variations.
+- **Relationship animals** use canonical deterministic AI, position, memory, needs, intent,
+  bond tier, and choreography. **Ambient insects/glints** may vary as disposable one-cell
+  trajectories and must never impersonate a relationship animal.
 - **Weather** intensity and particle density are season-driven with seed-based variation in timing and placement.
 - The prototypes in `ascii-animations/` establish the **visual vocabulary** (what a butterfly looks like, how rain falls). The integration work translates these into parameterized generators that produce variety from the seed.
 
+**Seeded-generation contract:**
+
+- A seed selects among **legal** candidates; it never makes an illegal position, disconnected
+  plant organ, broken room dependency, or unreachable interaction acceptable.
+- Generation runs in stable passes: room/terrain regions → required fixtures and connected
+  paths → large plants → small plants → animal home/routine anchors → collectibles →
+  authored initial-state additions. A later pass may depend on an earlier successful
+  placement but may not silently invent a missing dependency.
+- Every candidate declares allowed regions/surfaces, footprint and clearance, required and
+  forbidden adjacency, dependency IDs/tags, maximum instances, and an optional
+  `exclusion_group`. Mutually exclusive candidates compete within that group; deterministic
+  priority and a seeded tie-break select at most the declared capacity.
+- Candidate positions are deterministically ordered, validated, and either accepted or
+  rejected with a traceable reason. Exhaustion produces an explicit omitted/blocked result;
+  the generator does not retry indefinitely or silently degrade a semantic placement such
+  as `near_bench` into an unrelated random location.
+- PRNG streams are derived independently from the world seed and stable purpose/object keys,
+  for example `hash(garden_seed, generator_version, "plants", plant_id)`. Adding a lantern
+  must not reshuffle every plant, and adding a plant must not rewrite animal temperament.
+- Reproducibility is scoped to the same generator/schema version, catalog, seed, author
+  program, and inputs. A generator change requires a version bump and an explicit
+  migration/legacy-regeneration policy.
+
 **What "procedural" means concretely for each element type:**
 
-- **Plant generators** take `(seed, position, season)` and return a renderable plant with sway frames. The generator uses constrained random parameters (height ranges, branch counts, canopy density) seeded deterministically. Two gardens with different seeds produce visibly different arrangements; the same seed always produces the same garden.
-- **Creature spawners** take `(seed, season, time_of_day)` and produce a schedule of spawn events. Each creature instance gets randomized movement parameters from the seed-derived RNG.
-- **Weather systems** take `(season, wind_strength)` and spawn particles at procedurally varied rates. Snow accumulation state is persistent within a session (builds up over time).
+- **Plant generators** take `(seed, generator_version, position, species, growth state)` and
+  return one persistent canonical topology plus named presentation states. The generator uses
+  constrained species parameters (height ranges, branch tiers/counts, attachment zones,
+  angles, canopy envelope and density). Two gardens with different seeds must produce visibly
+  different legal arrangements; the same complete generation input reproduces the same
+  topology and placement.
+- **Ambient presentation** takes `(world_id, projected scene, presentation frame)` and derives
+  bounded one-cell trajectories without persistence.
+- **Weather presentation** takes projected weather/season and semantic surfaces. Any lasting
+  world change is reducer state; disposable flakes, drops, and caps are not persisted.
 
 **Extending the garden with new animations:** To add a new animation type:
 1. Prototype it as a standalone curses script in `ascii-animations/` to find the visual language.
 2. Define its procedural parameters (what varies, what's fixed, what ranges).
-3. Implement it as a generator conforming to the layer/particle API.
-4. Register it in the appropriate layer and season/time-of-day activation table.
+3. Decide explicitly whether it is canonical world state or disposable presentation.
+4. Canonical features enter the world/reducer/projection first; disposable features consume
+   projection only and register in the relevant renderer portability profile.
 
 **Foliage character vocabulary:** All plant and particle characters are drawn from the following canonical vocabulary. Future plant types must choose from this table or explicitly extend it with a new role entry.
 
@@ -911,15 +1252,29 @@ The garden uses a **hybrid authored/procedural scene model**. Procedural systems
 
 Note: `@` is intentionally shared between deciduous foliage fill and flower head — this is historical overlap between dense foliage and dense flower clusters. Existing rose code is correct. Within a single new plant type, chars should not mix roles from unrelated rows.
 
-#### 7.3.1 Layout algorithm
+#### 7.3.1 Canonical layout algorithm
 
-The `genLayout` function places plants procedurally within the garden area using the following constants:
+Layout is world generation, not responsive renderer packing. It operates in canonical world
+coordinates before either renderer runs.
 
-- **Attempt count:** `cols × 3` — the number of random placement attempts per generation pass
-- **Collision padding:** `±2` columns beyond the plant's half-width, preventing overlap
-- **Expected density:** ~1 plant per 10–15 columns at typical viewport widths (80–120 cols)
-- **Sparse gardens:** At narrow viewports (< 60 cols), gardens may contain only 1–3 plants; this is correct by design — the layout algorithm does not force minimum density
-- **No intentional clearings** in v1; the algorithm distributes plants uniformly across available space
+1. Resolve authored room regions, reserved visibility areas, terrain/surface tags, safe
+   walkable corridors, and connected path/water masks.
+2. Materialize required room dependencies transactionally. For example, a water-garden room
+   may require pond → bridge → water lily; failure of a required predecessor blocks its
+   dependants and reports the room incomplete.
+3. For each remaining pass, derive a purpose-specific PRNG stream and deterministically
+   shuffle the bounded candidate set.
+4. Validate hard rules first: region/surface, dependency, footprint, clearance, path
+   reachability, attachment, exclusion group and author reservation.
+5. Score valid candidates for composition goals such as room cohesion, silhouette
+   separation, fixture affinity and intentional negative space. Seeded variation breaks
+   equivalent scores; it does not replace the score or legality checks.
+6. Commit the accepted candidate and update occupancy/affordance indices. If none is valid,
+   emit a stable omission with rejection reasons. Required omissions block export or initial
+   world acceptance.
+
+The renderer may apply a bounded, reversible display transform for a viewport, but it cannot
+change the canonical placement, relationships, occupancy, or hit identity.
 
 ### 7.4 Seasons
 
@@ -965,7 +1320,7 @@ Additional planned plant types: cactus (evergreen), bamboo (evergreen), lily (fl
 Derived from system time or `--time day/dusk/night`:
 - **Day**: Default palette, full color.
 - **Dusk/Evening**: Palette warms (amber sky gradient), fireflies spawn, moon not yet visible.
-- **Night**: Dark sky gradient, location/time-aware bright stars and moon when a real sky mode is active, no fireflies, ambient birds cease. A clearly labeled storybook fallback is available without location permission. See §7.8.9.
+- **Night**: Dark sky gradient, location/time-aware bright stars and moon when a real sky mode is active, with bounded one-cell fireflies where seasonally appropriate. The renderer never invents an ambient bird that could be mistaken for a relationship animal. A clearly labeled storybook fallback is available without location permission. See §7.8.9.
 
 ---
 
@@ -996,7 +1351,10 @@ The garden has **six independent state dimensions** that compose multiplicativel
 
 **States:** `spring` | `summer` | `autumn` | `winter`
 
-**Trigger:** Derived from calendar month. Transitions happen on the first visit of the month that falls in the new season range. No animation on transition — the garden re-seeds from the same `garden_seed` for a consistent but visually fresh layout.
+**Trigger:** Derived by the canonical civil clock from calendar month. Transitions happen on
+the first observed visit in the new season range. Existing world objects, positions, growth,
+and persistence remain intact; the new projected scene changes palette, weather, and eligible
+routines without re-seeding the Garden.
 
 **State machine:**
 ```
@@ -1009,18 +1367,18 @@ winter ──────► spring ──────► summer ─────
 
 | State | Sky | Plants | Weather | Creatures |
 |-------|-----|--------|---------|-----------|
-| spring | Cream (#f9f8f5) | Flowers dominant, bright greens | Light rain (`|`), butterflies | Butterflies, birds |
-| summer | Cream | Full palette | Calm (occasional clouds) | Butterflies, birds, fireflies (evening) |
-| autumn | Cream → warming | Yellows/reds/browns, dead trees | Heavy rain, falling leaves | Birds, fewer butterflies |
-| winter | Cream → cooler | Conifers, bare oaks | Snow accumulation | Birds (rare), no butterflies |
+| spring | Cream (#f9f8f5) | Flowers dominant, bright greens | Light rain (`|`) | Butterflies |
+| summer | Cream | Full palette | Calm | Butterflies, fireflies (evening/night) |
+| autumn | Cream → warming | Yellows/reds/browns, dead trees | Heavy rain, falling leaves | Fewer butterflies |
+| winter | Cream → cooler | Conifers, bare oaks | Snow accumulation | One-cell glints; no butterflies |
 
 **User flow (season):**
 ```
 [Visit page] → derive season from date
-    → regenerate PlantLayer from seed+season
-    → activate season-appropriate ParticleLayer spawn rules
-    → adjust CreatureLayer spawn weights
-    → palette unchanged (B&W) but plant color distribution shifts
+    → canonical clock/reducer projects scene season and weather
+    → renderer chooses palette and plant silhouettes from projected scene/object facts
+    → disposable weather and one-cell ambience use the same projected scene/surfaces
+    → no season, plant, creature, or collision state is written by the renderer
 ```
 
 ---
@@ -1089,49 +1447,53 @@ Weather is not a discrete state machine — it is a **probabilistic spawn layer*
 
 **User flow (weather):**
 ```
-[Each frame] → ParticleLayer._spawn(state)
-    → check state.season + active particle counts
-    → probabilistically push new particles into pool
-    → update: apply per-type physics (gravity/wind/drift/accumulation)
-    → render: buf.putAnim() so particles stay colored in mode 3
-    → kill: particles past maxAge or past ground/surface collision
+[Each presentation frame] → consume projected scene weather + semantic object surfaces
+    → derive bounded deterministic particle identities/trajectories
+    → draw rain/snow/leaves without overwriting projected object art
+    → clear disposable particles when paused/reduced-motion; persist nothing
 ```
 
 ---
 
 #### 7.7.4 Animal trust subsystem
 
-> **Prototype-only note:** The feed-count system below documents the current implementation and is not the final bonding contract. The deterministic hybrid animal AI, varied interactions, personality, memory, routines, and non-punitive bonding rules in §7.8.7 supersede it for release acceptance.
+The deterministic hybrid animal AI, varied interactions, personality, memory, routines,
+and non-punitive bonding rules in §7.8.7 are the authoritative contract.
 
 **States:** `absent` | tier 0 (stranger) | tier 1 (familiar) | tier 2 (bonded) | tier 3 (full bond)
 
-`absent` = no animal gift in bundle, or animal gift not yet triggered. `tier 0–3` = animal gift triggered, trust level derived from accumulated `trust_actions`.
+`absent` = no authored animal has arrived. Tier 0–3 is projected from canonical
+`bond_points` plus interaction diversity.
 
-**Thresholds:** 0–2 actions → tier 0; 3–6 → tier 1; 7–13 → tier 2; 14+ → tier 3.
+**Thresholds:** tier 1 at 8 points; tier 2 at 20 points with at least two interaction
+types; tier 3 at 40 points with all three interaction types (`observe`, `feed`, `play`).
+Repeated same-session actions have diminishing gain and never punish absence.
 
 **State machine:**
 ```
-absent ──[gift trigger fires]──► tier 0 (stranger, right-edge peek)
-  tier 0 ──[f × 3]──► tier 1 (familiar, home position, footprints if was absent)
-  tier 1 ──[f × 4]──► tier 2 (bonded)
-  tier 2 ──[f × 7]──► tier 3 (full bond — animal moves to perch at post-complete)
+absent ──[authored arrival]──► tier 0 (stranger)
+  tier 0 ──[8 points]──► tier 1 (familiar)
+  tier 1 ──[20 points + 2 interaction types]──► tier 2 (bonded)
+  tier 2 ──[40 points + observe/feed/play]──► tier 3 (full bond)
 ```
-Trust actions persist across sessions in IndexedDB / localStorage.
+Bond points, interaction counts, memories, needs, intent, and tier persist in canonical
+world state in both terminal and HTML.
 
 **Visual signature per tier (all animals share the pattern; art varies):**
 
 | Tier | Position | Behavior | User cue |
 |------|----------|----------|----------|
-| 0 | Right edge, partial peek | Appears/disappears on 6-frame interval | HUD: "a stray X lingers at the edge… [f] to leave food" |
-| 1 | Home position (25% from left, groundY-4) | Static art, footprints on first arrival | HUD: "[f] · feed the X" |
-| 2 | Home position | Static art, no footprints | HUD: "[f] · feed the X" |
-| 3 | Home position (day); perch at post-complete | Static art; moves to flower perch when post-complete | HUD: silent |
+| 0 | Canonical projected position | Safety/routine intent families; stranger tier mark | HUD may describe a stray animal |
+| 1 | Canonical projected position | Familiar routines and tier-1 mark | Named exact-target actions |
+| 2 | Canonical projected position | Broader social/play repertoire and tier-2 mark | Named exact-target actions |
+| 3 | Canonical projected position/choreography | Full repertoire, authored delivery eligible, tier-3 mark | Bonded delivery/choreography may activate |
 
 **Feed interaction (`f` key):**
-- Guard: authenticated (`cachedPassphrase !== null`) + animal triggered + tier < 3
-- Effect: increment `trust_actions`, recompute tier, persist to storage, update garden
-- Visual response (rabbit): carrot overlay `" / \/` appears at animal position for 1.5s
-- Other animals: need their own feed-response art (planned — see item 5, this log)
+- Guard: authenticated + an exact focused/authored canonical animal target + bond tier < 3
+- Effect: dispatch `feed` with that canonical object ID; the world reducer updates bond points,
+  interaction counts, tier, memories, and persistence before emitting a new projection
+- Visual response: bounded species-aware feedback is attached to the same accepted canonical
+  object ID; an ambiguous multi-animal generic action fails closed
 
 **Per-animal behavioral signatures (to be designed per tier):**
 
@@ -1145,14 +1507,13 @@ Trust actions persist across sessions in IndexedDB / localStorage.
 **User flow (animal):**
 ```
 [Bundle load] → find animal gift → check trigger → if triggered: load trust from storage
-    → derive tier from trust_actions
-    → garden.setAnimalData({type, tier, triggered, wasAbsent})
-    → CreatureLayer renders at appropriate position+art
-[f key pressed] → guard checks → feedAnimal()
-    → increment trust_actions → recompute tier → persist
-    → if rabbit: show carrot overlay 1.5s
-    → garden.setAnimalData() → re-render
-    → _updateAnimalHud()
+    → authenticated author program materializes the relationship-animal roster
+    → canonical world projection supplies exact ID, species, tier, intent, and actions
+    → renderer consumes that projection without mutable animal state
+[f key pressed] → resolve the focused or uniquely authored canonical animal
+    → dispatch semantic `feed` with its exact object ID
+    → reducer updates bond state and persistence → project → render
+    → HUD and delivery choreography consume the new projected tier
 ```
 
 ---
@@ -1192,32 +1553,36 @@ Gifts do not un-reveal. Examined state is visual/UX only — the underlying `gif
 
 **States:** `normal` | `post-complete`
 
-**Trigger:** All messages have been read (`readIds.size === bundle.messages.length`) AND all gifts have been examined. Alternatively, force-set via dev `Shift+P`.
+**Trigger:** The canonical author program/milestone conditions for completion are satisfied
+after recipient-visible letter and gift events.
 
 **State machine:**
 ```
 normal ──[all messages read + all gifts seen]──► post-complete (permanent)
 ```
-Post-complete state persists in IndexedDB under `kPostComplete(bundle_id)`.
+Completion persists as canonical milestone/program receipts in the same authenticated
+world state as every other Garden change.
 
 **Visual signature (post-complete):**
-- Red rose `(@)` / `@@@` appears at garden center (SpecialLayer)
-- Ambient perch-bird (`v`) at top of rose disappears if bonded animal is at tier 3
-- Bonded tier-3 animal relocates to perch position near rose (planned — currently static at home)
+- Authored memorial/rose entities and world changes appear through canonical projection.
+- A bonded tier-3 animal may perform authored delivery or completion choreography.
+- The renderer invents no generic perch bird or local completion entity.
 
 **User flow (post-completion):**
 ```
 [After reading a letter] → check: all read? all gifts seen?
-    → if yes: set postComplete=true, persist, garden.setPostComplete(true)
-    → SpecialLayer renders rose + conditionally hides perch bird
-    → if animal tier=3: animal moves to perch (planned)
+    → if yes: record the canonical completion milestone/program occurrence
+    → reducer persists it and projects the resulting world changes
+    → renderer consumes only the projected rose/animal/choreography state
 ```
 
 ---
 
 #### 7.7.7 State composition table
 
-At any moment the garden is described by a tuple: `(season, timeOfDay, animalTier, postComplete)`. Weather and gift states are deterministic from season and bundle state respectively and do not need to be tracked separately in this table.
+At any moment the presentation is derived from canonical scene state, projected animal bond
+tiers, and canonical milestone/program state. Weather and gift changes are deterministic world
+outputs, not renderer-local variables.
 
 Key intersections:
 
@@ -1232,7 +1597,7 @@ Key intersections:
 **Dimension independence:** Season changes do not affect animal tier. Time-of-day changes do not affect post-complete. Feeding the animal does not trigger weather changes. Each dimension is fully orthogonal except:
 - Post-complete + tier-3 animal: animal position overrides home (moves to perch)
 - Evening + summer: fireflies activate (both dimensions must be true simultaneously)
-- Night + any: ambient birds cease (night gates birds off entirely)
+- Any time + any: only canonical projected animals may use multi-cell animal art; the renderer does not invent ambient birds
 
 ---
 
@@ -1248,9 +1613,18 @@ Current ambient bird (`v`/`~` single char) is visually underdeveloped. New desig
 
 ---
 
-### 7.8 Standalone Cozy Garden and Author-Directed World Contract
+### 7.8 Canonical Garden Contract: Recipient Nurturing, Standalone Sandbox, and Author Direction
 
 This section is the canonical release contract created from the 2026-07-21 research pass. It supersedes narrower prototype claims elsewhere in §6–§7 when they conflict. The research sources establish interaction, representation, scheduling, accessibility, simulation, and privacy constraints; the concrete counts and feature minimums below are LateLetter product decisions.
+
+The three agency contracts are distinct even though they share one world model:
+
+- **Bundle recipient:** nurtures existing plants and animals through watering, plant
+  interaction and animal interaction. No placement, movement or rotation controls exist.
+- **Standalone sandbox:** may additionally place/move/undo recipient-owned fixtures and
+  plants because there is no author-directed memorial composition to preserve.
+- **Author:** composes the opening garden and schedules later changes through the authoring
+  surface and encrypted program. Authoring controls never appear in the recipient viewer.
 
 #### 7.8.1 One world model, two renderers
 
@@ -1271,22 +1645,30 @@ author program + garden clock + recipient actions + stable seeds
 - An authored animal scene acquires an explicit choreography lock from the animal controller, completes idempotently, and releases it back to normal AI. The old AI path must yield; dual ownership is forbidden.
 - Given the same schema versions, seeds, elapsed effective time, prior state, and command sequence, browser and terminal produce the same semantic state and event trace even when the displayed glyphs differ.
 
-#### 7.8.2 Standalone play loops and humane idle progression
+#### 7.8.2 Nurturing loops and humane idle progression
 
-Standalone mode must provide three useful session depths without a bundle or due letter:
+Standalone mode and the bundle recipient experience must provide three useful session depths
+without requiring a due letter. The verbs differ only where the agency split above says so:
 
 | Session | Target duration | Required agency |
 |---|---:|---|
 | Glance | 10–20 seconds | Notice weather/sky, a plant change, animal behavior, or a new discovery; inspect at least one thing |
 | Tend | About 2 minutes | Perform one care action, interact with an animal, and collect or journal one observation |
-| Dwell | 10+ minutes | Arrange fixtures, tend multiple plants, follow an animal routine, review collections, or pan through the garden |
+| Dwell | 10+ minutes | Tend multiple plants, follow an animal routine, review collections, or pan through the garden; standalone may additionally arrange recipient-owned objects |
 
 The core loop is `notice → choose a gentle action → see a persistent response → collect/arrange/remember → leave freely`.
 
 Required systems:
 
-- **Plant care:** observe, water, prune/train, transplant/place, and allow seasonal rest. Tending changes growth topology, bloom timing, visitor attraction, collectible yield, or authored-event eligibility; it cannot be a particle-only button.
-- **Spatial expression:** place, move, rotate where supported, and undo fixtures and recipient plants. Dragging is optional convenience, never the sole placement method.
+- **Plant care:** the bundle recipient may observe, water and interact with an existing plant,
+  including author-permitted pruning/training, and allow seasonal rest. Standalone may also
+  transplant/place recipient-owned plants. Tending changes growth topology, bloom timing,
+  visitor attraction, collectible yield, or authored-event eligibility; it cannot be a
+  particle-only button.
+- **Spatial expression:** author mode and standalone sandbox may place, move, rotate where
+  supported, and undo owned fixtures/plants. Dragging is optional convenience, never the sole
+  placement method. The bundle recipient has no placement/move/rotate action or hidden
+  production control.
 - **Collections:** at least four families—plant species/phenotypes, seasonal natural finds, animal traces/mementos, and authored keepsakes. First discovery automatically enters the journal with semantic name, source, date/season, and accessible description.
 - **Observation:** benches, clocks, sky, weather, ponds, and animal routines create non-resource interactions such as sit, watch, listen/read description, or wait for a short vignette.
 - **Bounded offline progress:** return processing computes aggregate deterministic milestones instead of replaying missed ticks. A welcome-back summary shows at most three notable changes and never blocks immediate play.
@@ -1300,26 +1682,40 @@ Humane-progression rules are non-negotiable:
 - Clock rollback clamps elapsed time to zero; it never reverses growth, duplicates rewards, or locks the player out.
 - A recipient may leave after one action without losing an opportunity.
 
-#### 7.8.3 Semantic input parity
+#### 7.8.3 Picture-owned interaction; no visible action chrome
 
-The canonical action vocabulary is:
+The shared world may continue to declare primary actions, opportunities and secondary
+commands. Those records are gameplay data; they do **not** authorize a renderer to print
+their labels as product UI.
 
-`move_focus`, `pan`, `inspect`, `primary_interact`, `open_actions`, `tend`, `feed`, `play`, `collect`, `place`, `move_fixture`, `undo`, `open_journal`, `pause_motion`, and `back`.
+**Operator decision, 2026-08-01.** The browser Garden is the picture. It must not paint
+buttons, cards, hover instructions, object names, object lists, spawned-opportunity labels,
+or a “More actions” sheet on or beside the scene. Review and diagnostic query parameters do
+not relax this rule. The deployed Garden at `https://rikiworld.com/lateletter/` is the visual
+baseline while the canonical renderer is rebuilt; a local review mode is not permission to
+invent a second interaction surface.
 
-| Action surface | Touch / pen | Mouse | Browser keyboard | Terminal |
-|---|---|---|---|---|
-| Select object | Single tap | Click | Arrow/tab focus | Grid cursor or object list |
-| Primary action | Tap visible action | Click visible action | Enter/Space | Enter or numbered command |
-| More actions | Action sheet | Action sheet/right click as optional shortcut | Menu key/button | Numbered menu or typed command |
-| Pan | One-finger drag or visible arrows | Drag/wheel or arrows | Arrow keys with camera focus | Arrow keys / pan command |
-| Place/move | Tap-to-place; drag optional | Click-to-place; drag optional | Grid movement + confirm | Coordinates/grid cursor + confirm |
-| Exit | Visible back/close | Visible back/close | Escape | Escape/`back` |
+- Click or tap on visible object ink performs that object's single safe primary action as
+  declared by the canonical projection. The viewer dispatches the declaration verbatim and
+  derives no gameplay behavior from the glyph, catalog id, name or kind.
+- Hover may change the picture itself (for example, rustle or emphasis) but may not reveal a
+  textual instruction, tooltip, card or label.
+- Browser keyboard may move canonical focus with the existing spatial/object navigation and
+  Enter may perform the focused object's declared primary action. A physical key is not an
+  acceptable hidden route to a browser-only menu.
+- Opportunities and secondary actions remain canonical world capabilities, but the browser
+  does not expose them until the operator approves a picture-native, non-label interaction
+  language. The rejected opportunity-card, object-list and action-sheet model must not be
+  retained behind a gate or as unreachable dead code.
+- Terminal commands may remain textual because the terminal is itself a textual control
+  surface. That does not license equivalent labels over the browser picture.
+- Author/diagnostic controls remain outside the product Garden, locally gated, and absent
+  from recipient mode.
 
-- No production feature may exist only behind a physical key, hover, long press, multi-touch, timed input, or developer fixture.
-- Every interactive browser object has a focusable semantic control or one-to-one object-list control with name, state, and available actions.
-- Visual glyph bounds do not define hit size. Targets are 44×44 CSS px where possible and never below WCAG 2.2's 24×24 minimum/spacing rule.
-- Focus order is logical and visible. Opening an object uses the same action sheet regardless of the selection modality.
-- Touch, mouse, keyboard, and terminal tests must dispatch the same semantic commands and serialize identical results.
+The prior §7.8.3.1–§7.8.3.3 contract—direct primary plus beside-object opportunity controls
+plus an overflow action sheet—is withdrawn. Its implementation was visually rejected after
+live comparison with the deployed Garden. Browser keyboard and screen-reader parity for
+secondary actions is therefore **OPEN**, not satisfied by reinstating the rejected labels.
 
 #### 7.8.4 Hybrid world composition and content inventory
 
@@ -1347,10 +1743,37 @@ Each required fixture has at least one direct interaction and one systemic or na
 
 Fixture placement cannot trap animals, hide required actions, break connected paths, or make collectibles unreachable. Undo and reset-to-safe-layout are mandatory.
 
+**Catalog completeness is not scene composition (operator decision, 2026-07-31).** The lists
+above say what the product must be able to draw. They do not say what a new garden opens
+with, and the two must not be conflated: a scene that shows everything the catalog can do is
+a showroom, not a place someone lives.
+
+The **default starter scene is exactly five fixtures** — bench, mailbox, stepping stones,
+planter, lantern — held in `STARTER_FIXTURES` in both implementations. An accepted fixture
+drawing is an approved **catalog asset**, available to authored programs, progression, and
+later compositions; acceptance never obliges it to appear at the start.
+
+Everything under `REVIEW_PENDING_*` — the starter plants, the cat, the starter collectible —
+stays **absent from the default scene** until each drawing is separately accepted under
+§7.10. Composition arguments must be made against the five, not against every drawing that
+has been approved.
+
 #### 7.8.5 Stable procedural plant growth
 
 Each plant is generated once into a persistent rooted topology graph. Every organ stores `node_id`, `parent_id`, kind, birth time, maturity time, final direction/length, glyph/style family, and optional bloom/fruit state.
 
+- The topology is one rooted, connected, acyclic support graph. Every non-root organ reaches
+  the root through its parent chain. Trees require an explicit main trunk/leader axis;
+  arbitrary attachment to any earlier organ is not a species model.
+- Species grammars define invariant form before seeded variation: trunk/stem axis, attachment
+  zones, branch tier/count ranges, legal angles/directions, taper, crown envelope, and
+  leaf/flower support rules. The seed chooses values inside those bounds.
+- Willow terminal branches must be able to turn downward after outward/upward attachment;
+  pine requires a central leader with lower branches wider than upper branches; oak begins
+  major branching above its lower trunk and maintains a broad crown. A glyph-family label
+  alone does not satisfy geometry.
+- Generated topology must pass connectivity, root support, species silhouette, bounds,
+  collision, growth-subset and renderer-parity validators before it is materialized.
 - Growth reveals and interpolates the same topology. It does not rerun a random grammar at each stage; existing branches cannot teleport, change parents, or change root cells.
 - Use parametric/stochastic L-systems for flowers, vines, grasses, and herbs; space-colonization skeletons for shrubs and trees; and hand-authored blueprints for narratively important plants. All implement the same age/growth interface.
 - Every species has at least: `seed`, `germination`, `sprout`, `juvenile`, `mature`, `flowering_or_fruiting`, and `dormant` representations. Reduced-motion/static mode must communicate every stage.
@@ -1386,11 +1809,30 @@ Persistent blackboard fields:
 - personality: boldness, sociability, curiosity, playfulness, patience, routine strength, food motivation, and day/night preference;
 - last visit/interaction, absence duration, interaction variety, authored preferences/prohibitions, routine windows, and milestone receipts.
 
+Seeded identity and relationship history are separate:
+
+- `AnimalIdentity` is immutable after creation: species, initial temperament weights,
+  routine bias, favorite affordance categories, curiosity radius and presentation variants.
+  It derives from an animal-specific PRNG stream, not the mutable relationship score.
+- `AnimalRelationship` is produced by recipient experience: bond tier, per-interaction
+  familiarity, shared rituals, learned favorites, and bounded episodic memories such as
+  first meeting, recent interaction and a few salient/favorite events.
+- `AuthorDirection` may name the animal, constrain personality/routines, reserve milestone
+  scenes and add encrypted memories. It does not pre-script every free-roam choice or replace
+  recipient-created relationship history.
+- The seed determines who the animal initially is; it does not predetermine whether or how
+  the recipient forms a relationship.
+
 Session blackboard fields:
 
 - energy, curiosity, social/play/rest appetite, current intent/target/path/pose, cooldowns, interruptions, nearby affordances, weather, season, time, and recipient focus.
 
-Utility combines need pressure, personality, bond, environmental affordance, novelty, cooldown, authored bias, and small seeded noise. Hysteresis and minimum dwell times prevent rapid behavior oscillation. Fixtures advertise affordances; for example, a bench offers rest-near-recipient, a birdbath offers drink/bathe, a fence offers perch/patrol, and tall plants offer hide/sniff.
+Utility combines need pressure, personality, bond, environmental affordance, novelty,
+cooldown, remembered preference, authored bias, and small seeded tie-breaking noise.
+Candidate actions are filtered for legality before scoring. Hysteresis and minimum dwell
+times prevent rapid behavior oscillation. Fixtures advertise affordances; for example, a
+bench offers rest-near-recipient, a birdbath offers drink/bathe, a fence offers perch/patrol,
+and tall plants offer hide/sniff.
 
 Bonding rules:
 
@@ -1400,6 +1842,11 @@ Bonding rules:
 - Animals never die, become sick, shame the recipient, permanently leave, or remove gifts because of neglect.
 - An animal may decline or delay interaction but visibly communicates intent; `inspect animal` explains the readable state without exposing numeric meters.
 - Return greetings are positive and species/personality-specific.
+- Relationship progress is communicated primarily through changed behavior—approach
+  distance, initiation, favorite-place use, learned rituals and recognition—not a
+  recipient-facing maintenance meter.
+- High-frequency repetition is never the optimal relationship strategy. Bond gain is bounded
+  by novelty, preference match, contextual relevance and per-action cooldown.
 
 | Bond tier | Minimum observable behavior contract |
 |---|---|
@@ -1572,7 +2019,7 @@ All frames have fixed tick durations and stable footprints. The same semantic st
 
 - Honor `prefers-reduced-motion` and provide an explicit persistent pause/reduced-motion toggle. All automatic motion lasting over five seconds can be paused/stopped/hidden.
 - Reduced motion freezes parallax, weather drift, idle sway, camera easing, and particle travel; it preserves immediate state changes and readable static poses.
-- Every sprite has an accessible name and plain-text state description. A scene summary/object list can say, for example, “Evening garden: rabbit near the pond; parcel under the bench.”
+- The browser's replacement nonvisual scene description is still open after the visible object-list model was withdrawn in §7.8.3. It must not be implemented as labels, cards or a list painted over the Garden.
 - No state relies on color, animation, or glyph shape alone. At 200% zoom and 320 CSS-pixel width, all actions remain reachable; the browser may switch to a focused-object/list view.
 - No essential action requires reaction timing. Pointer gestures and drag operations have single-pointer/button alternatives.
 - Author data cannot inject executable content or terminal escapes. Unknown atlas assets/actions resolve to safe placeholders/errors without corrupting state.
@@ -1584,9 +2031,14 @@ All frames have fixed tick durations and stable footprints. The same semantic st
 The garden is not “full,” “parity,” or “production-ready” until all gates pass against a normal sealed production bundle—not only a dev fixture:
 
 1. **Production reachability:** Published synthetic bundle contains at least one animal arc, authored plant change, fixture reveal, collectible/keepsake, and multi-condition event. A recipient completes them from the visible production UI.
-2. **Input parity:** Plant/tend, animal/feed/play, inspect, collect, place/move/undo, journal, pan, and pause pass through touch, mouse, keyboard, and terminal with identical state transitions.
+2. **Input parity:** Recipient plant/water/interact, animal/feed/play, inspect, collect,
+   journal, pan, and pause pass through touch, mouse, keyboard, and terminal with identical
+   state transitions. Author/standalone placement/move/rotate/undo pass separately; recipient
+   surfaces prove those commands absent.
 3. **Standalone value:** Human observation confirms useful glance, tend, and dwell sessions with no bundle and no letter due.
-4. **Plant stability:** For 100 fixed seeds, browser/terminal topology hashes and stable IDs match; visible nodes at earlier age are a subset of later age except explicit authored prune/death/revival beats.
+4. **Plant stability:** For 100 fixed seeds, browser/terminal topology hashes and stable IDs
+   match; visible nodes at earlier age are a subset of later age except explicit authored
+   pruning, dormancy or nonfatal revival beats.
 5. **Layout safety:** Across 1,000 generated gardens, plants respect fixture masks/paths and every interactable remains reachable. All 16 connected-tile masks render correctly.
 6. **Atlas portability:** Compiler rejects unsafe clusters/width drift; every enhanced asset has dimension-compatible ASCII and reduced-motion fallbacks; supported browser/terminal screenshot matrix has no tofu, overlap, or frame jitter.
 7. **Animal behavior:** Four species show distinct four-tier repertoires; personality/needs/memory measurably affect choices; no rapid oscillation; seven-day and one-year absence cause no loss or shame.
@@ -1600,10 +2052,17 @@ The garden is not “full,” “parity,” or “production-ready” until all 
 
 #### 7.8.14 Research basis
 
+The local provenance and transfer notes for the 2026-07-30 seed/nurturing/animal pass are
+archived in `tracked/LateLetterResearch/INDEX.txt`.
+
 Mechanics and humane engagement:
 
 - [Official Neko Atsume — How to Play](https://www.nekoatsume.com/sp/en/about.html)
 - [Official Tamagotchi Uni instruction manual](https://tamagotchi-official.com/manual/toy/uni/manual_02/Uni_WEB_IS_EN.pdf)
+- [Bandai Original Tamagotchi manual](https://www.bandai.com/amfile/file/download/file/3642/product/1309530/)
+- [Viridi — official Steam listing](https://store.steampowered.com/app/375950/Viridi/)
+- [The Garden Path — official Nintendo listing](https://www.nintendo.com/en-ca/store/products/the-garden-path-switch/)
+- [Kinder World — official game description](https://www.playkinderworld.com/game)
 - [Garden Life: A Cozy Simulator](https://www.nintendo.com/en-ca/store/products/garden-life-a-cozy-simulator-switch/)
 - [Animal Crossing: New Horizons — Explore](https://animalcrossing.nintendo.com/new-horizons/explore/)
 - [Cozy Grove calendar/campaign-time model](https://support.spryfox.com/hc/en-us/articles/1500005307201-How-do-campaign-days-and-time-in-general-work-Cozy-Grove)
@@ -1618,12 +2077,24 @@ Authoring, time, and animal behavior:
 - [W3C SCXML](https://www.w3.org/TR/scxml/) and [RFC 5545 calendar recurrence](https://www.ietf.org/rfc/rfc5545)
 - [CMU — Believable Agents and Interactive Drama](https://www.cs.cmu.edu/Groups/oz/papers/CMU-CS-97-156.html)
 - [Sony aibo FAQ](https://direct.sony.com/aibo-faq/)
+- [Sony aibo personality development guide](https://helpguide.sony.net/aibo/ers1000/v1/en-us/contents/TP0001970096.html)
 - [Nintendo Nintendogs](https://www.nintendo.com/en-gb/Games/Nintendo-DS/Nintendogs-Labrador-Friends-272057.html)
+- [Nintendo Nintendogs + Cats instruction manual](https://assets.nintendo.eu/image/upload/v1635394807/NAL/Support/Nintendogs_Cats_manual.pdf)
+- [Peridot traits/archetypes](https://nianticspatial.helpshift.com/hc/en/4-peridot/faq/697-traits-and-archetypes/) and [bond levels](https://nianticspatial.helpshift.com/hc/en/4-peridot/faq/688-dot-levels/?l=en&p=web)
+- [Grand, Cliff and Malhotra — Creatures: Artificial Life Autonomous Software Agents for Home Entertainment](https://doi.org/10.1145/267658.267663)
+- [Melson et al. — Children's Behavior toward and Understanding of Robotic and Living Dogs](https://eric.ed.gov/?id=EJ830357)
+- [Matheus et al. — Long-Term Interactions with Social Robots](https://doi.org/10.1145/3729539)
+- [Companion-robot absence pilot study](https://www.frontiersin.org/journals/computer-science/articles/10.3389/fcomp.2023.1129506/full)
 - [Unreal Engine Behavior Trees](https://dev.epicgames.com/documentation/en-us/unreal-engine/behavior-trees-in-unreal-engine)
 - [Game AI Pro — Utility Theory](https://www.gameaipro.com/)
 
 Procedural growth, Unicode, rendering, and sky:
 
+- [Minecraft Creator — World Generation Overview](https://learn.microsoft.com/en-us/minecraft/creator/documents/world-generation?view=minecraft-bedrock-stable)
+- [Minecraft Creator — Features Taxonomy](https://learn.microsoft.com/en-us/minecraft/creator/documents/featurestaxonomy?view=minecraft-bedrock-stable)
+- [Minecraft Creator — Tree Feature](https://learn.microsoft.com/en-us/minecraft/creator/reference/content/featuresreference/examples/features/minecraft_tree_feature?view=minecraft-bedrock-experimental)
+- [Official Terraria Wiki — World generation](https://terraria.wiki.gg/wiki/World_generation)
+- [Minecraft Wiki — Seed and generator-version behavior](https://minecraft.wiki/w/Seed_%28world_generation%29)
 - [Algorithmic Botany — Modeling plant development with L-systems](https://algorithmicbotany.org/papers/modeling-plant-development-with-l-systems.html), [Animation of Plant Development](https://www.algorithmicbotany.org/papers/animdev.sig93.pdf), and [Space Colonization](https://algorithmicbotany.org/papers/colonization.egwnp2007.html)
 - [Unicode UAX #29 — Grapheme Clusters](https://unicode.org/reports/tr29/), [UAX #11 — East Asian Width](https://www.unicode.org/reports/tr11/), [UTS #51 — Emoji](https://www.unicode.org/reports/tr51/), and [Unicode charts](https://www.unicode.org/charts/)
 - [W3C CSS Fonts 4](https://www.w3.org/TR/css-fonts-4/) and [Pointer Events](https://www.w3.org/TR/pointerevents/)
@@ -1631,6 +2102,424 @@ Procedural growth, Unicode, rendering, and sky:
 - [W3C Geolocation](https://www.w3.org/TR/geolocation/)
 - [VizieR Bright Star Catalogue](https://vizier.cfa.harvard.edu/viz-bin/VizieR?-source=V%2F50%2Fcatalog), [ESA Gaia DR3](https://www.cosmos.esa.int/web/gaia/dr3), and [Astronomy Engine](https://github.com/cosinekitty/astronomy)
 - [WCAG 2.2](https://www.w3.org/TR/WCAG22/), including keyboard access, pointer gestures, target size, animation-from-interactions, and pause/stop/hide requirements
+
+---
+
+### 7.9 Presentation geometry — proportional measured layout
+
+**Decision, 2026-07-30 (operator).** The Garden's browser presentation moves from a uniform
+character cell grid to **proportional glyph placement measured through PreText**. This section
+is the contract for that move. It amends §7.2 and §7.8.11 where they assume a uniform cell.
+
+#### 7.9.1 Why the cell grid is the wrong substrate
+
+Object art is to be derived from the existing ASCII and Shift_JIS art traditions rather than
+invented ad hoc. Shift_JIS art — the 2channel/AA tradition — is not merely "ASCII with more
+characters." Its entire technique depends on **proportional** metrics: glyphs of differing
+advance widths are chosen so that strokes align sub-cell, which is what produces curves and
+diagonals that a monospace grid cannot express. Rendering that art in a uniform cell destroys
+the thing that makes it art.
+
+The current renderer assumes uniform cells throughout: `cellWidth = 8`, `cellHeight = 15`,
+viewport extent computed as `clientWidth / cellWidth`, and inverse hit testing performed as
+`floor((clientX − rect.left) / cellWidth)`. Every one of those is a division by a constant.
+
+#### 7.9.2 What the world model keeps
+
+**World coordinates remain integer and unchanged.** This is the load-bearing constraint. The
+canonical world continues to place objects at integer `Vec2` positions with integer footprints,
+collision masks, and hotspots. Proportional geometry is a **presentation transform applied after
+projection**, exactly as §7.2 requires. Nothing about this decision moves placement, collision,
+hit identity, growth, or any other gameplay concern into a renderer.
+
+Concretely, the ownership boundary does not move:
+
+| Layer | Owns | Units |
+|---|---|---|
+| World / reducer | position, footprint, occupancy, hotspot identity | integer world cells |
+| Projection | which objects, which art token, which state | integer world cells |
+| **Presentation transform** | world cell → device pixels | **fractional px** |
+| Renderer | glyph runs, colour, motion | fractional px |
+
+**The world-to-pixel transform is affine and content-independent.** An object's pixel anchor is
+`origin + world_coordinate × lattice_spacing`, where the lattice spacing is a property of the font
+alone, derived once from a constant reference probe. No asset, no glyph, and no measured text
+appears in that expression.
+
+This is stated explicitly because the natural way to write a proportional renderer is the wrong
+way: accumulating each object's position from the widths of the text drawn before it. Such a
+renderer looks correct on its first screenshot and is wrong from then on. Widening one glyph inside
+one object would shove every object to its right sideways; placement would stop being a property of
+the world and become a side effect of drawing; collision would disagree with what the player sees;
+and the same seed would compose differently under different fonts. Proportional measurement is
+therefore **asset-local** — it lays out one asset's own rows relative to that asset's own anchor,
+and one asset's glyphs can never move another asset.
+
+#### 7.9.3 The measured layout contract
+
+PreText's `measurement.js` already exports everything required, and it is already vendored,
+same-origin, and offline:
+
+- `getMeasureContext()` — an `OffscreenCanvas` 2D context, falling back to a DOM canvas.
+- `getSegmentMetrics(seg, cache)` — advance width plus a `containsCJK` flag.
+- `getSegmentGraphemeWidths(...)` — per-grapheme advance widths.
+- `getSegmentGraphemePrefixWidths(...)` — **cumulative** prefix widths.
+- `getEngineProfile()` — per-engine epsilon and CJK carry behaviour, so Safari and Chromium
+  agree on line fitting.
+- `analysis.js` additionally exports `isCJK`, `kinsokuStart`, `kinsokuEnd` — the East-Asian
+  width knowledge the Shift_JIS lineage requires.
+
+Rules:
+
+1. **Rows stay discrete; columns become continuous.** Line height remains uniform, because AA
+   art itself assumes uniform leading. Horizontal position becomes a measured px offset. A
+   presentation row is therefore `(row_index, [glyph runs with measured x])`.
+2. **Art is stored as strings, not character matrices.** An asset frame is a list of row
+   strings. Its geometry is derived by measurement at load time, never hand-counted. Column
+   counting is no longer a meaningful validation.
+3. **Canonical hotspot rectangles own hit identity, and measured ink never does.** A pointer
+   event is dispatched by transforming each projected object's integer hotspot into a px rectangle
+   and testing containment. The projection is already the authority here — every object carries a
+   hotspot (`projection.py`, `garden-world.mjs`), and the renderer already refuses an object that
+   lacks one. Adopting proportional geometry changes only the units of that rectangle, never who
+   owns it.
+
+   Visible glyph extents are **not** an action target. Art is permitted to overhang its declared
+   footprint (rule 5), so if ink decided what was clicked, redrawing a picture would silently
+   change the game's affordances and an artist could invent an action target by accident.
+
+   Dispatch order, which must be deterministic because the same tap on the same scene has to do
+   the same thing on every machine:
+
+   1. An object whose **unexpanded** hotspot contains the point wins outright. Accessibility
+      expansion must never take a click from an object the player actually touched.
+   2. Otherwise, among objects whose **expanded** target contains the point, the nearest centre
+      wins.
+   3. Ties break on `object_id` by code point.
+
+   The WCAG 2.2 target minimum of 44 px is applied in px directly rather than converted to a cell
+   count, and expansion is symmetric about the rectangle's own centre so a grown target still
+   points at the same object.
+4. **Prefix-width binary search is asset-local and advisory.** Within one asset row, the grapheme
+   under a horizontal offset is found by binary-searching that row's cumulative prefix-width array
+   — exact rather than approximate, and O(log n), replacing division by a uniform cell width,
+   which is only correct when every glyph is the same width. Its offsets are measured from the
+   row's own left edge, not from the screen, and its results serve painting, hover highlighting
+   and glyph diagnostics. It never decides which object was clicked; rule 3 does.
+5. **Declared footprints stay integer.** An asset declares its footprint in world cells for
+   collision and occupancy; the presentation measures its actual px extent for painting only.
+   Where the two disagree, **collision follows the declared cell footprint** — a picture may
+   visually overhang, but it may never silently occupy a cell it did not declare.
+6. **Measurement is cached per font and invalidated on resize or font load**, using PreText's
+   existing `clearMeasurementCaches()`. Fonts must be loaded and ready before first measurement;
+   a fallback-font measurement that is later re-measured against the real font would move every
+   glyph. Because a cache is only valid under the font and scale it was built with, the safest
+   expression of this rule is that a font change, resize or zoom constructs a new presentation
+   transform rather than mutating one in place — which removes stale-cache bugs by construction
+   instead of managing them.
+
+#### 7.9.4 Atlas profile
+
+§7.8.11's profile list gains a fifth entry:
+
+- `browser-proportional`: measured proportional glyph placement, permitted to use the curated
+  CJK box/line/shading repertoire of the Shift_JIS tradition. Assets in this profile declare
+  **row strings and an integer cell footprint**, not a column count.
+
+The existing four profiles are unchanged and remain cell-based. `ascii-safe` remains the
+mandatory universal fallback, and the terminal renders it.
+
+#### 7.9.5 Terminal parity under proportional presentation
+
+The terminal cannot do proportional layout, and this contract does not ask it to. Parity is
+therefore restated precisely, amending §7.8.13 gate 6:
+
+- **Semantic parity is required and unchanged.** Same world state, same objects, same hotspot
+  identities, same actions, same event trace, same accessible descriptions.
+- **Pictorial parity is explicitly not required.** The browser may present a proportional
+  picture where the terminal presents its `ascii-safe` cell equivalent. This was already true
+  in principle — §7.2 permits renderers to "differ in disposable presentation detail" — and is
+  now stated as the intended outcome rather than a tolerated divergence.
+- Every `browser-proportional` asset **must** have an `ascii-safe` counterpart carrying the
+  same semantic token and the same declared cell footprint. An asset with no fallback is
+  rejected by the atlas compiler.
+
+#### 7.9.6 Migration cost
+
+The 2026-07-30 cost estimate is historical, not the current inventory. Atlas v2 now contains ten
+multi-row fixture drawings with paired `ascii-safe` and `browser-proportional` profiles. Their
+browser rows are painted by the product-wired PreText geometry from asset-local cumulative prefix
+widths; non-asset scene decoration remains on the affine world lattice. Plants, animals,
+collectibles and several effects still have renderer-local drawing owners, so they remain release
+blockers until those owners are deleted after atlas migration. `web/garden-atlas-art.mjs` is a
+generated runtime derivative of `atlas.v2.json`, and byte-exact regeneration is a build invariant.
+
+---
+
+### 7.10 Per-asset visual acceptance
+
+**Requirement, 2026-07-30 (operator).** Every feature, fixture, plant, and animal must be
+**individually accepted by the operator on sight**. This is a distinct gate from §7.8.13 gate 14
+and from §6.9, both of which review composed scenes and emotional moments rather than assets.
+
+#### 7.10.1 The rule
+
+- Scene-level acceptance **does not** confer asset-level acceptance, and asset-level acceptance
+  does not confer scene acceptance. They are independent gates and both are required.
+- An asset the operator has not accepted may not be described using any acceptance or
+  completion vocabulary in any document, commit message, or status report. Its accurate status
+  is **drafted**.
+- Machine checks — uniqueness, glyph legality, footprint conformance, no-tofu, contrast — are
+  **admission criteria for review**, not substitutes for it. An asset that satisfies every
+  automated check and has not been looked at is still `not_reviewed`. This is the same
+  substitution error recorded throughout `docs/FAILURE_LOG.md`, applied at asset granularity.
+- Review is per asset **per state that changes its silhouette**: growth stages for plants, pose
+  families for animals, and functional states for fixtures (lantern lit or dark, gate open or
+  shut). A state that reuses an accepted silhouette needs no separate review.
+
+#### 7.10.2 Registry
+
+Acceptance is recorded per asset in a tracked file, not in prose:
+
+```json
+{
+  "asset_id": "plant.willow",
+  "profile": "browser-proportional",
+  "states_reviewed": ["juvenile", "mature"],
+  "verdict": "accepted",
+  "reviewed_at": "2026-08-01",
+  "art_lineage": "ASCII — after the drooping-form conventions of terminal tree art",
+  "capture": "docs/visual-review/2026-08-01/plant-willow-mature.png"
+}
+```
+
+`verdict` is one of `accepted`, `rejected`, or `not_reviewed`. Every asset in the atlas begins at
+`not_reviewed`. The release gate is that **no released asset remains `not_reviewed` or
+`rejected`**. `docs/garden-asset-acceptance.json` is the sole current verdict owner. An atlas may
+retain a review receipt only as explicitly non-authoritative historical provenance pointing back
+to that registry; it may not carry a second current `review` verdict.
+
+`review_candidates` is not a fourth verdict. It identifies unaccepted drawings temporarily
+licensed on localhost for review while the public workflow remains on the frozen legacy snapshot.
+Every candidate must actually appear on that local surface; accepted catalog assets need not
+appear in the default scene. A root deployment is forbidden while review candidates, unaccepted
+reachable atlas assets, or renderer-local art owners remain.
+
+#### 7.10.3 Current standing
+
+As of 2026-08-01, **all ten drawn fixture assets carry an `accepted` verdict**. The operator marked
+bench, trellis and birdbath `READS` in round 3, then opened the round-4 response with `approved`
+and marked lantern, pond, mailbox, stepping stones, bridge, planter and arbor `READS`. The source
+receipts are the 2026-07-31T05:05:55 and 2026-07-31T06:03:29 operator messages in
+`docs/operator-decision-record.md`; Contract P did not withdraw them. The other sixteen atlas
+assets remain `not_reviewed` placeholders. Exact legacy art currently serving
+`rikiworld.com/lateletter` also carries the operator's standing art approval, but its current
+renderer-local ownership still blocks a canonical root release until it is migrated with exact
+provenance. Scene composition remains a separate, unaccepted gate. The public Pages workflow still
+serves the byte-frozen legacy snapshot, and the canonical root product remains release-blocked.
+
+#### 7.10.4 Sequencing
+
+Asset review is gated on species form and art ownership moving into the canonical layer.
+Reviewing browser-local art before that move would accept pictures the terminal cannot reproduce
+and that the migration would then discard. The order is therefore:
+
+1. Species form grammar and the blueprint/legality contract land (§7.3.1, §7.8.5).
+2. Art ownership moves from `web/garden-renderer.mjs` into the versioned atlas, in the
+   `browser-proportional` and `ascii-safe` profiles.
+3. Assets are drawn against the ASCII/Shift_JIS lineage.
+4. Each new or visually changed asset is reviewed and its verdict recorded. An exact,
+   provenance-verified migration of operator-approved legacy art retains the existing approval;
+   moving the same drawing or frame sequence into the atlas is not grounds to demand another
+   sign-off. New drawings, altered frames, and invented states or poses require their own review.
+5. Only then do scene composition, the motion package, and §6.9 emotional review proceed.
+
+#### 7.10.5 Reference-transcription parity
+
+Structural ASCII and Shift_JIS reference images are **research inputs**, not Garden assets.
+Converting a raster reference to UTF-8 text is an evidence-preservation task with its own
+acceptance gate. It does not accept an atlas asset, establish terminal/browser parity, or
+license a direct copy into the Garden.
+
+The current files in `/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES ` are explicitly
+pre-gate: the existing `.txt` files are `provisional`, and `character-dimensions.tsv` contains
+inferred dimensions rather than accepted grid measurements. Neither may be cited as a faithful
+transcription or used as an art source until it passes this section.
+
+For every reference image, the tracked transcription record contains:
+
+- the immutable source and normalized-PNG SHA-256 hashes, pixel dimensions, source licence or
+  provenance, and any crop/background normalization;
+- the source encoding and font/renderer when known; `unknown` is a valid value and must not be
+  guessed from appearance;
+- an explicit row-baseline model and horizontal origin/advance model. A single inferred
+  `character_width × character_height` pair is insufficient unless the source is demonstrably
+  uniform-cell. Proportional or mixed-width work records per-row prefix positions or the
+  measurement procedure that derives them;
+- the candidate and accepted UTF-8 transcripts, preserving literal leading/trailing spaces,
+  blank rows, grapheme clusters, and line endings. No OCR cleanup, whitespace trim, glyph
+  substitution, or Unicode normalization is implicit; any such transformation is named in the
+  record; and
+- the renderer, transform, diff artifacts, reviewer, verdict, and any exception used in the
+  parity decision.
+
+OCR or a vision model may produce a candidate only. It is never a parity oracle and cannot
+promote its own output. Each row is transcribed against the recovered row baseline and x origin,
+then re-rendered from the candidate text before it is accepted. This makes the common failures
+observable rather than cosmetic: row merges/splits, one-row vertical shifts, wrong leading-space
+count, drift from a wrong x origin or pitch, dropped punctuation, and a wrong glyph with the same
+rough silhouette.
+
+The geometry owner is raster-derived. `GeometryEvidenceBundle` measures foreground alternatives,
+row/column projections, autocorrelation, row bands, baselines, fixed-lattice candidates,
+shaped-run candidates, and glyph-free component evidence directly from the normalized source PNG.
+`route_raster_geometry` may select exactly one concrete model or must reject ties and insufficient
+evidence; caller-supplied proof scores, transcripts, visual-layout sidecars, and recognizer hints
+are not geometry evidence. A selected fixed model records origin, advance, line height, rows,
+columns, cell bounds, and the selected foreground-mask hash. A selected shaped model records row
+bands, baselines, run IDs/bounds, direction/orientation candidates, and the same mask hash.
+`RecognitionInputBuilder` reconstructs that mask from its pinned recipe, emits hash-bound run-strip
+PNGs and binary masks, and re-extracts components from the identical mask. Components outside every
+run, silently discarded pixels, or fixed/shaped claims over the same pixels reject before any
+recognizer runs.
+
+The fixed-cell ASCII decoder is not a universal Unicode recognizer. Sources containing Japanese
+kana or Kanji (including partial/cropped ideographs), combining marks, Arabic joining or bidi,
+fullwidth/halfwidth characters, emoji/variation selectors, ZWJ sequences, or any other non-ASCII
+grapheme cluster use the tracked Unicode run-decoder boundary in
+`tracked/LateLetterResearch/transcription-parity/unicode-run-decoder-design.md`. Its stages are
+geometry-only segmentation, whole-run grapheme recognition, script-aware shaping, component
+ownership, and profile-specific display-width validation. It normalizes to NFC and records the
+UAX #29, UAX #9, UAX #11, UTS #51, Unicode-data, font, and shaper versions. A partial component
+cannot name a code point by silhouette; visually indistinguishable Unicode sequences fail closed
+instead of being guessed. The fixed-cell path records `non_ascii_policy:
+defer_to_unicode_run_decoder` and must not grow per-glyph ASCII branches to absorb these sources.
+
+Recognizer coverage is an ensemble contract, not a claim that one recognizer covers all Unicode.
+A version-pinned offline proposal ensemble must cover every positive release fixture through an
+explicit capability profile recording scripts, directions, grapheme/emoji coverage, model and
+dictionary hashes, runtime versions, licensing, offline/network status, tested fixture families,
+and unsupported cases. No recognizer is authoritative: proposals are compared and gated by the
+same geometry, grapheme, shaping, ownership, width, and ambiguity evidence. If no installed profile
+covers a run, the result is `recognizer_unsupported` and fails closed. Unicode representation is
+universal, but pixels cannot guarantee recovery of visually indistinguishable non-equivalent
+sequences; those remain unresolved rather than being guessed.
+
+The release corpus is versioned independently from historical benchmark evidence. Corpus v1 and
+benchmark v4 remain immutable historical records; they cannot support a current coverage claim.
+Corpus v2 (`tests/fixtures/transcription-v2/corpus-v2.json`) admits a positive only after the
+selected project-controlled font's cmap coverage is hash-verified. A fallback-box rendering is a
+development `fail_closed` fixture with `unicode_visual_collision`, never a positive. For a proved
+fixed lattice, recognition input is one complete source-width row strip per measured row, not a
+set of isolated cell crops. The benchmark invokes every geometry-owned run and records its run
+hashes. Tesseract proposals are separate pinned PSM/language profiles (`psm7-eng`, `psm13-eng`,
+`psm7-jpn-cjk`, and `psm7-ara`); selecting only `runs[0]` is a contract violation. Benchmark v5
+is the first evidence package under this contract. Per-run proposals are composed in measured row
+order (runs within a row concatenate; rows join with literal newlines) before exact NFC coverage
+is scored. It remains blocked until all release positives appear in the deterministic offline
+top-k without false-unique negative resolutions.
+
+The emoji proposal profile is atlas-matching, not sequence injection. It reads a pinned UTS #51
+fully-qualified sequence file and pinned Noto Emoji bytes, shapes complete VS/ZWJ grapheme clusters,
+renders them across a bounded measured-advance range, and compares the resulting alpha/color mask
+against the geometry-owned run strip. It retains top-k residual evidence but rejects ties,
+unconfigured sequences, partial clusters, and visually equivalent alternatives. A transcript,
+fixture target, or caller-supplied emoji sequence is never an adapter input.
+
+**The re-render is a PNG comparison surface, not a browser text preview.** It is produced at the
+normalized source PNG's exact device-pixel width and height, using the recorded crop, background,
+font, font size, line height, x origin, row baselines, and pixel ratio. The transcript is not
+scaled independently to make it look close. If its measured ink would exceed the source canvas,
+the candidate fails layout parity; changing zoom, CSS scaling, screenshot scaling, or the source
+crop to hide that disagreement is forbidden. The review package presents source PNG and
+re-rendered PNG at one device pixel per image pixel, plus a same-sized 50% overlay and a
+difference/mask image. Zooming the *viewer* is allowed only when it zooms all four panels by the
+same integer factor; it cannot alter either rendered image.
+
+Parity has three independent checks, all retained in the record:
+
+1. **Layout parity.** Compare the accepted transcript's row baselines and grapheme anchors with
+   the source model. A known uniform-cell source must agree within one source pixel at every
+   baseline and anchor. A proportional or unknown-font source records the measured anchors and
+   requires a reviewer to inspect the alignment overlay; no estimated pitch may be silently used
+   as a pass.
+2. **Raster parity.** When the original font and renderer are available, render the accepted text
+   into that exact-size PNG and compare normalized ink masks plus its transparent overlay/diff.
+   The comparison is a forensic diagnostic, not the TXT acceptance owner: a different font,
+   antialiasing model, or rasterizer may produce a nonzero pixel diff while preserving the same
+   rows, columns, spaces, glyph identities, and structural strokes. If that renderer is
+   unavailable, this check is `blocked`, never `passed`; the record carries the labelled source-
+   font disclosure, and that disclosure does not block a structurally accepted TXT.
+3. **Human visual parity.** The operator reviews the pixel-aligned source PNG, re-rendered PNG,
+   overlay, and difference/mask together, including every row with nonblank ink. The reviewer
+   records `accepted`, `rejected`, or `blocked` and names any disagreement in rows, spaces,
+   glyph identity, ownership, or structural strokes. Machine similarity scores and font-only
+   raster residuals are diagnostic only and cannot substitute for this verdict.
+
+Only a record with accepted layout parity and human visual parity may be called a **verified
+reference transcription**. `blocked` raster parity is disclosed beside that label; it never
+becomes a claim of pixel-exact reconstruction. Candidates, including the present 26 TXT files,
+remain non-authoritative until then.
+
+Evidence lives under
+`tracked/LateLetterResearch/transcription-parity/<reference-id>/`: `manifest.json`, immutable
+source identity, `candidate.txt`, `accepted.txt` when accepted, rendered comparison, alignment
+overlay/diff, and the durable review receipt. The manifest is the source of truth; a contact
+sheet or browser-local checkbox is not.
+
+After a reference transcription is verified, the asset workflow begins separately:
+
+```
+verified reference transcription
+  → structural model (contours, attachments, voids, material and affordance facts)
+  → atlas asset with one semantic token and declared integer footprint
+  → browser-proportional + ascii-safe profiles
+  → §7.9 runtime semantic-parity checks and §7.10 per-profile visual acceptance
+```
+
+The two profiles may use different glyphs and have different pictorial extents. They must retain
+the same `asset_id`, structural-model/reference-transcript lineage, world anchor, declared
+footprint, hotspot identity, actions, and state semantics. Browser review uses the actual
+PreText-measured renderer; terminal review uses its real terminal renderer. A canonical world
+projection/event trace compared across both runtimes verifies those semantic fields. Thus a
+successful reference conversion supplies trustworthy design evidence, while §7.9.5 remains the
+separate guarantee that a recipient receives the same Garden behaviour in either runtime.
+
+#### 7.10.6 Monospace raster recovery execution order
+
+For a source that is demonstrably monospaced, recovery proceeds in this order. This is an
+execution contract, not a suggestion to manually repair OCR output.
+
+1. **Calibrate before recognizing.** Derive the background/ink mask, horizontal cell advance,
+   row pitch, grid phase, crop, and baselines from the source raster. Store the measurements and
+   calibration image in the manifest. A character count, a guessed font size, or a prior TXT may
+   not supply this grid. For `bbbb-flowers`, the measured periods are 9 px horizontally and 19 px
+   vertically; the former 9.266 px SF Mono advance is invalid for this reference.
+2. **Segment the fixed lattice.** Create one image region per `(row, column)` including blank
+   cells. Preserve its absolute grid index; do not trim leading or internal blanks. The resulting
+   occupancy map is reviewed before any string is emitted.
+3. **Recognize, do not hand-repair.** A line/character OCR engine may propose glyphs and bounding
+   boxes, but an adapter maps those proposals to lattice cells and records per-cell confidence.
+   Tesseract `makebox`/TSV or PaddleOCR boxes are candidate evidence only. Ambiguous cells remain
+   `unknown` and block the transcript; no operator or agent fills them from a visual guess.
+4. **Emit an immutable machine candidate.** The candidate carries the source hash, calibrator and
+   recognizer versions/options, grid record, per-cell confidence, and every unresolved cell. A
+   later run writes a new candidate ID; it never edits an earlier candidate in place.
+5. **Re-render on the same lattice.** The comparison renderer uses the measured advance and row
+   pitch explicitly, rather than the selected font's natural advance. It writes exact-canvas PNG,
+   overlay, and difference artifacts using a readable standard monospace face when the source
+   face is unknown. These artifacts are a font-independent structural review surface: they expose
+   missing/extra rows, misplaced spaces, wrong glyph identities, and ownership errors, but a raw
+   pixel diff is not itself a rejection.
+6. **Fail closed.** Any nonblank `unknown` cell, low-confidence cell, grid mismatch, unresolved
+   structural conflict, stale forced-blank state, or visually different structural stroke keeps
+   the candidate `rejected`. Only after the operator accepts the row/column layout and human
+   visual structure is its exact UTF-8 text copied to `accepted.txt`; a nonzero diff caused only
+   by an unavailable source font/renderer is recorded as `blocked`, not used to reject the TXT.
+
+The tracked plan and per-reference artifacts live in
+`tracked/LateLetterResearch/transcription-parity/`; no other directory, Preview window, or
+temporary OCR output is authoritative.
 
 ---
 
@@ -1938,7 +2827,7 @@ ASCII animation and motion language are therefore **not** one of the first few i
   - Produce a motion/style sheet with timing targets and procedural generation specs (partially captured in §7.2–7.3)
   - Second research pass (after integration): prototype additional animations (new plant types, bonus creatures, bloom/growth, wind interactions) once the core set is integrated and the rendering architecture is proven
 - **Integration phase — core set done 2026-04-19:**
-  - ~~Integrate approved prototype animations into the garden renderer using the 5-layer compositing model (§7.2)~~ ✓ — `src/lateletter/garden/` package (10 modules)
+  - ~~Integrate approved prototype motion language into projection-only terminal/HTML renderers (§7.2)~~ ✓ — historical layer prototypes remain reference material, not runtime owners
   - ~~Implement the shared particle API for rain, snow, leaves, splashes, firefly flashes~~ ✓ — `particles.py` with per-type physics dispatch and collision
   - ~~Implement plant collision surfaces for snow accumulation and rain splashes~~ ✓ — collision map, top surfaces, canopy cells registered at placement
   - Build procedural plant generators for new types: willow, cactus, bamboo, lily, sunflower (tall), dead tree (§7.1)
@@ -2007,7 +2896,9 @@ page (or a locally served copy), drops or selects their `.lateletter` file,
 enters the passphrase, and reads their letters. Decryption happens entirely
 client-side.
 
-**Scope (updated 2026-04-20):** The original plan was a letter reader with static garden illustration. The live 5-layer animated garden (§7.2) was ported to JS ahead of schedule and is now the browser viewer's backdrop — DOM text rendering (not canvas), full particle physics, seasonal weather, and creature layer. The rendering architecture below reflects what was built.
+**Scope (updated 2026-07-22):** The original static illustration and later mutable
+layered prototype are historical. The current browser backdrop is a DOM text projection of
+the canonical world with bounded disposable motion; §7.2 defines the active ownership model.
 
 **Rendering architecture — local HTML/CSS/JavaScript modules:**
 
@@ -2058,26 +2949,34 @@ The browser viewer supports the full progression layer alongside the live garden
 - **Item discovery:** Triggered items (date, cumulative-visit, post-letter) appear in the **Memories section** of the inbox — discovered items listed as `inbox-mem-btn`; undiscovered items are hidden until triggered. Clicking reveals the sentiment as a modal overlay. Discovery state persists in IndexedDB.
 - **Post-letter triggers:** After a letter is read, any newly triggered items surface immediately in the archive.
 - **Archive / inbox layout:** Transparent inbox floats over the live garden — read items at `.28` opacity, unread at `1.0`, locked at `.12`. No symbols. Memories section appears below letters when any item is discovered.
-- **Animal relationships:** Animal ASCII art (`_ANIMAL_ART` — cat/bird/rabbit/turtle, 4 trust tiers) rendered in `CreatureLayer`. The bundle's assigned animal appears at the appropriate trust tier; `f` key feeds (authenticated, triggered, tier < 3); bonded animals (tier 3) suppress the generic perch bird in `SpecialLayer`. IndexedDB tracks trust + last-visit per bundle. In dev fixture, `Shift+A` cycles all 16 states (4 animals × 4 tiers) and auto-injects a cat at tier 0 if no animal gift is present in the bundle.
+- **Animal relationships:** The authenticated author program owns the relationship-animal
+  roster. Canonical projection supplies exact object ID, species, bond tier, intent,
+  personality, memory, and actions; the renderer chooses disposable multi-line poses and
+  tier marks from those fields. `f` feeds only the focused or uniquely authored canonical
+  animal. IndexedDB persists canonical world bytes, never renderer-local trust.
 
 **Dev fixture mode (isDevFixture — bundle has no HMAC):**
 
-Dev fixture unlocks a set of secret keybindings for QA and design review. These are only active when the loaded file has no HMAC (base64 plaintext passthrough — the dev-fixture format). Production bundles never activate these.
+Dev fixture and explicit localhost `?garden_debug=1` sessions expose diagnostics for QA and
+design review. They may inspect canonical state or issue normal semantic commands, but they
+must not create a second mutable season, animal, progression, or collision owner. Production
+bundles ignore the debug query.
 
 | Keybinding | Action | Status |
 |---|---|---|
-| `Shift+A` | Cycle animal: advances through all 16 states (4 animals × 4 tiers). Auto-injects a cat at tier 0 if no animal gift in bundle. | Implemented |
-| `,` / `.` | Cycle season + time-of-day: spring → spring-night → summer → summer-night → autumn → autumn-night → winter → winter-night. Calls `garden._reset()`. | Implemented |
+| `,` / `.` | Presentation-only historical shortcut; must not satisfy season/time acceptance or mutate canonical state. | Diagnostic only |
 | `Shift+B` | Cycle color/background mode: default → white-bg → full-grayscale → B&W+anim → default. | Implemented |
-| `Shift+D` | Dump state object to console: season, CW/CH, cols×rows, visitCount, animal, gifts, postComplete, dueIdxs, colorMode. | Implemented |
+| `Shift+D` | Dump projection/runtime diagnostics without mutation. | Implemented |
 | `Shift+G` | Toggle grid overlay: shows cols×rows, CW/CH, mouse position, FPS, and full keybinding list. | Implemented |
 | `Shift+F` | Re-trigger first-run banner: resets `_frbDone`, shows "This garden was planted for you…" fade-in again. | Planned |
-| `Shift+P` | Toggle post-complete state: shows/hides the completion rose + bonded animal perch position. | Planned |
+| `Shift+P` | Forbidden as a completion owner; use an authored canonical completion occurrence. | Removed |
 | `Shift+V` | Simulate a visit: increments `visitCount`, re-evaluates cumulative_visits triggers. | Planned |
 | `Shift+I` | Cycle gift item state: hidden → revealed → examined (for each gift in bundle). | Planned |
 | `Shift+N` | Cycle time-of-day independently: day → evening → night (for firefly/moon testing without changing season). | Planned |
 
-**Dev overlay (Shift+G):** When active, shows live grid metrics, current state summary, and full keybinding reference in the top-left corner of `#g`. Must persist through `garden._reset()` calls (season/color changes). Grid-line background-image must recompute CW/CH after every reset.
+**Dev grid (Shift+G):** When active, toggles the presentation grid CSS only. Canonical state
+inspection lives in the gated diagnostics drawer or projection-backed console dump; there is
+no renderer reset method or persistent dev-overlay state owner.
 
 **Dev status header format (top of overlay):**
 ```
@@ -2139,10 +3038,10 @@ The dev fixture (a `.lateletter` file with `hmac=""` and base64 plaintext bodies
 |---|---|
 | All 4 seasons | `Shift+S` cycles spring → summer → autumn → winter |
 | All seasonal weather | Automatic per season: spring rain, autumn rain+leaves, winter snow, summer calm |
-| All 4 animals, all 4 trust tiers | `Shift+A` cycles 16 states; footprints shown at tiers 1–3 when wasAbsent=true |
+| All 4 animals, all 4 bond tiers | Deterministic canonical fixture worlds plus normal semantic `observe`/`feed`/`play` commands; no renderer-local cycle key |
 | Animal delivery animation | Auto-plays at tiers 1–3 (when letter is read with bonded animal) |
 | First-run banner | `Shift+F` re-triggers "This garden was planted for you…" |
-| Post-complete state | `Shift+P` toggles: rose appears, bonded animal moves to perch position |
+| Post-complete state | A fixture author program whose real recipient-visible conditions materialize canonical memorial/choreography entities |
 | Garden interactions | Click plants (leaf burst), hover (rustle), `f` key (feed animal) |
 | Cumulative-visit triggers | `Shift+V` simulates a visit; trigger fires when visitCount threshold met |
 | Date triggers | Use a test bundle with dates in the past |
@@ -2153,9 +3052,9 @@ The dev fixture (a `.lateletter` file with `hmac=""` and base64 plaintext bodies
 
 **Dev status overlay (top-right corner, dev fixture only):**
 ```
-[dev] summer · cat/2 · v=3 · post
+[dev] summer · focus=animal.cat · v=3 · completion=applied
 ```
-Format: `[dev] {season} · {animal}/{tier} · v={visitCount} · {post if postComplete}`
+Format is projection/runtime diagnostic prose only; it never stores independent values.
 
 **Test fixture format (`.lateletter` dev bundle):**
 - `hmac: ""` — activates dev fixture mode
@@ -2169,7 +3068,10 @@ The `test_fixture.lateletter` file in the repo should satisfy all of the above.
 
 These are NOT in v1 scope but should inform architecture:
 
-- ~~**Animated browser garden:**~~ **[DONE ahead of schedule — 2026-04-20]** DOM text renderer (GardenDOM) built in `viewer-bnw.html`. Full 5-layer compositor, ~20 FPS, scales with browser zoom. Remaining: cursor interaction QA (TODO 10b), animal art port (TODO 10c), first-run flow (TODO 10d).
+- **Historical animated browser garden:** The 2026-04 five-layer `GardenDOM` was prototype
+  evidence and was later removed. The current browser surface is the projection-only
+  canonical compositor; the historical package is preserved under `archive/` for comparison,
+  not as an active ownership model.
 - **Hosted HTML garden:** A web-hosted version where the recipient visits a URL instead of opening a local file. This requires hosting, accounts, and operational infrastructure. The trust model changes (the server sees the encrypted file) and must be explicitly disclosed.
 - **Managed email service:** A hosted notification service that handles cron scheduling, retry, and deliverability so the author/steward doesn't have to run a script. Requires long-lived infrastructure.
 - **Mobile app:** A native iOS/Android app for recipients. Possible but not planned — the browser viewer covers mobile browsers.
@@ -2387,13 +3289,13 @@ This is the canonical execution order for the project. The critical path runs th
 
    **Process rule:** Each subphase below requires (1) a research pass studying reference implementations and prototypes, (2) implementation, and (3) human verification before the subphase is closed. No subphase is marked done without the author running the garden and confirming the visual result.
 
-   **Completed (4a–4g):**
-   - ~~4a. Refactor `garden.py` into modular renderer with 5-layer compositing model (§7.2).~~ ✓ — `src/lateletter/garden/` package (10 modules). `garden.py` is now a thin CLI entry point with `--season` flag.
-   - ~~4b. Implement shared particle API (`Particle` type, spawn/update/kill loop, collision with plant surfaces).~~ ✓ — per-type physics dispatch, plant collision map with top surfaces and canopy cells, splash generation on impact.
-   - ~~4c. Integrate creature animations (first pass): butterfly, ambient bird, fireflies.~~ ✓ (code done, awaiting human verification) — butterfly (`><`/`||`/`\/` + up-dip), ambient bird (`v`/`~`), fireflies (3 Photinus species).
+   **Current canonical implementation (historical 4a–4g prototypes are diagnostic provenance):**
+   - ~~4a. Refactor world state/reducer/projection from renderer presentation (§7.2).~~ ✓ — terminal and HTML consume the same canonical projection.
+   - ~~4b. Implement bounded disposable effects from projected semantic object surfaces.~~ ✓ — no renderer-local collision or persistent particle owner.
+   - ~~4c. Integrate relationship-animal projection plus bounded ambient insects/glints.~~ ✓ — multi-cell animals are canonical objects; the renderer invents no ambient bird.
    - ~~4d. Integrate weather animations (first pass): rain, snow, clouds, lightning.~~ ✓ — first pass working. Rain refined in 4g.
-   - ~~4e. Integrate falling leaves with tree-canopy detachment points.~~ ✓ (code done, awaiting human verification) — leaves from canopy_cells, sine-wave oscillation, tumble char rotation, autumn-only.
-   - ~~4f. Implement season detection + seasonal weights, colors, and animation activation (§7.4).~~ ✓ — system-date detection, per-season weights, season→weather/creature activation.
+   - ~~4e. Integrate falling leaves from projected plant surfaces.~~ ✓ (code done, awaiting human verification) — autumn-only disposable presentation.
+   - ~~4f. Project canonical civil-time season + weather into renderer palettes/effects (§7.4).~~ ✓
    - ~~4g. Rain and wind refinement.~~ ✓ — denser rain (60 drops), gravity 0.08, diagonal `\` rendering, 3-fragment plant collision with reflection+damping (0.32), multi-particle ground splashes (3–5 fan, char aging `'`→`.`→`·`), wind modulates drop drift. Awaiting human verification.
 
 **4P. [SHIP-BLOCKING, REOPENED 2026-07-21] Standalone garden and authored-world track.**
@@ -2453,7 +3355,9 @@ The earlier 4h–4l items remain useful visual work, but no longer define the re
 7. **[REOPENED — 2026-07-21] Design and verify the recipient's daily experience.** §6.8 is the first-pass progression concept; §7.8 is the controlling researched contract.
 
    **Prototype decisions retained for migration, but not sufficient for release:**
-   - ✓ Normal-day experience: the garden is a place the recipient *tends*, not just watches. Progression layer with cumulative-investment animal relationships, author-programmed memory capsules (items), and gentle entropy with evidence-of-absence.
+   - ✓ Normal-day contract: the garden is a place the recipient *tends*, not just watches.
+     Progression uses varied cumulative animal relationships, author-programmed memory
+     capsules, nonfatal plant change, and evidence of elapsed life without care debt.
    - ✓ Post-completion memorial: bonded animals perch permanently + memorial flower + all unreleased garden gifts unlocked (§6.8.8).
    - ✓ Progression mechanics: cumulative actions (not streaks) — research-informed from Neko Atsume, Stardew Valley, Tsuki Adventure, grief-tech UX (§6.8.1).
    - ✓ Author garden direction: rich-but-optional Phase 2 authoring session with finite catalog of plants, animals, items, landmarks, task nudges (§6.8.5).
@@ -2487,7 +3391,9 @@ The earlier 4h–4l items remain useful visual work, but no longer define the re
 
 10. **[IN PROGRESS — core viewer and checksum/auth parity done; cross-browser human QA pending]** Build the browser viewer (`viewer-bnw.html`) — B&W Times New Roman aesthetic with a canonical semantic Garden projection; §7.8.13 controls full-parity status:
     - ~~Pure local HTML/CSS/JavaScript with built-in DOM fallback letter layout~~ ✓ — no remote runtime layout dependency; proportional TNR wrapping and responsive reflow
-    - ~~DOM-based 5-layer garden renderer (GardenDOM) replacing canvas — scales with browser zoom, no blur artifact; BackgroundLayer, PlantLayer (7 types, rustle on hover), ParticleLayer (rain gravity+wind, snow accumulation, leaves, fragments, splashes), CreatureLayer (butterfly, ambient bird, firefly), SpecialLayer~~ ✓
+    - ~~Projection-only DOM text compositor consuming canonical world objects, hotspots,
+      scene, animal state, topology, and actions; disposable palette, LOD, weather,
+      particles, and one-cell ambience own no gameplay state~~ ✓
     - ~~Seasonal weather: spring rain, autumn rain+leaves, winter snow, summer calm; wind-based rain char (`\`/`|`/`/`); plant collision → fragments; ground hit → splashes; char aging `'`→`.`→`·`~~ ✓
     - ~~File input: drag-and-drop or `<input type="file">` for `.lateletter` bundle~~ ✓
     - ~~Dev-fixture Web Worker (base64 plaintext passthrough); real crypto wired in step 13~~ ✓

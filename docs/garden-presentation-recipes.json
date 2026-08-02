@@ -1,0 +1,2085 @@
+{
+  "schema": 3,
+  "supersedes": "Schema 2 wrote presence requirements in the verdict field, cited eighteen line ranges that do not contain what they claim, addressed three decision anchors that resolve to no heading, and modelled laws as if a cell could name one as its single source. Schema 3 separates verdict from presence_requirement, verifies every range against the blob and every quotation against the decision record, and makes the law dependency an explicit two-way edge (law_refs / dependents). Schema 1's three mutually exclusive ownership tiers remain superseded: they confused a visual SOURCE with an EMITTED cell and left atlas artwork with no place in the model.",
+  "purpose": "The identity register for everything that decides what the Garden looks like. A visible cell must be traceable to a registered visual source, or nobody can tell an approved drawing from an invented one. Without this, the only available criterion was 'does the renderer own it', which contradicts SPEC 7.2 and caused approved art to be deleted three times.",
+  "source_chains": {
+    "note": "Two valid chains produce an emitted cell. They are not tiers and they do not rank; they are different provenance routes with different review requirements. Every emitted nonblank cell carries visual_source_kind and visual_source_id naming which chain it came from and which record within it.",
+    "chains": [
+      {
+        "kind": "atlas",
+        "chain": "canonical object -> atlas asset -> emitted cell",
+        "identity": "visual_source_kind = 'atlas', visual_source_id = an asset_id in docs/garden-asset-acceptance.json",
+        "object_id": "Cells on this chain MAY additionally carry object_id, and may inherit it ONLY from canonical projection. A renderer may never invent one.",
+        "review": "per-asset operator verdict under SPEC 7.10"
+      },
+      {
+        "kind": "recipe",
+        "chain": "projection / viewport / presentation time -> presentation recipe -> emitted cell",
+        "identity": "visual_source_kind = 'recipe', visual_source_id = a recipe_id in this file",
+        "object_id": "Cells on this chain MUST NOT carry an object_id. A recipe describes visible language; it owns no placement, no collision and no command target.",
+        "review": "per-recipe verdict in this file"
+      }
+    ],
+    "invariants": [
+      "A nonblank emitted cell with no visual_source_id is anonymous paint and blocks a root-product release.",
+      "A visual_source_id that names no record in either register is unknown paint and blocks a release.",
+      "A recipe_id and an asset_id may never be equal; identity crossover makes the acceptance state ambiguous by construction.",
+      "A recipe record may never contain an object_id field.",
+      "Recipe state (particle lists, accumulation depth, animation phase) is presentation-local and must never be persisted or read back into canonical world state."
+    ],
+    "release_criterion": "Identity, not location. Renderer-local paint is permitted. Anonymous paint is not. A reachable visual source blocks a root-product release when its verdict is not accepted or accepted_as_deployed."
+  },
+  "record_fields": {
+    "kind": "paint = emits cells directly. law = decides what the painters are given (population, motion, cadence, ordering, state). A law emits no cells of its own but changes every cell downstream of it, so it needs identity for exactly the same reason.",
+    "source_refs": "Immutable provenance: the blob hash, and a list of ranges. Each range is an object with `lines` and its OWN `contains` -- text those particular lines must hold, at least one token of which occurs exactly once in the artifact. Per-range binding matters: one record-wide list checked against every range concatenated let a correct span vouch for a wrong one. Bounds alone are not provenance either, since lines 1-2 are inside the blob and are not the ground cover. A source reference records WHERE the implementation is. It is NOT evidence that anyone approved it.",
+    "decision_refs": "Anchors into docs/operator-decision-record.md naming the operator statements the verdict rests on. A verdict of accepted_as_deployed or rejected with no decision_ref is an assistant assertion wearing a verdict's clothes.",
+    "candidate_status": "absent = the candidate renderer has no counterpart. exact = counterpart reproduces the source refs. different = a counterpart exists but its implementation diverges, so it does NOT inherit the verdict. rejected = the counterpart was shown to the operator and refused.",
+    "verdict": "See the verdicts block.",
+    "presence_requirement": "Whether the product must show this at all, which is a different question from whether any drawing of it was accepted. Keeping them in one field let 'the operator asked for birds' act as approval of an unreviewed bird.",
+    "law_refs": "The laws this record's cells depend on. A painted cell is produced by its recipe AND by every law in force when it was painted -- wind, cadence, painter order, palette, the measured cell, the serializer -- and one visual_source_id cannot express that.",
+    "dependents": "On a law: every record declaring it in law_refs. Computed, never hand-written, and checked in both directions so a law that quietly loses a dependent fails."
+  },
+  "verdicts": {
+    "accepted_as_deployed": "The exact implementation in the deployed legacy blob. The operator grant of 2026-08-01 covers the art serving rikiworld.com/lateletter, and this blob is that artifact. Approval attaches to these characters, colours, constants and laws. A migration reproducing them retains approval. A divergent reimplementation does not, and its candidate_status is 'different'.",
+    "accepted": "Reviewed and accepted in its current owner under SPEC 7.10.",
+    "not_reviewed": "Has identity, no operator verdict. Blocks a root-product release.",
+    "rejected": "Shown to the operator in a live frame and refused. Must not be painted."
+  },
+  "provenance_blob": {
+    "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+    "path": "legacy/viewer-bnw.html",
+    "bytes": 114235,
+    "note": "Verified with `git hash-object legacy/viewer-bnw.html`. This blob IS the artifact scripts/prepare_legacy_site.py publishes, so line ranges into it are primary provenance. The hash is immutable; the path is not."
+  },
+  "decisions": {
+    "D1": {
+      "anchor": "docs/operator-decision-record.md#operator--2026-08-01t131935-3296eefa-approval-legacy-reference",
+      "at": "2026-08-01T13:19:35",
+      "quotes": [
+        "I EXPLICTLY FUCKING APPROVED THE GODDMANF UCKNG FIXTURES U GAVE IN TEH FUCKING HTML AND THE FUCKING LEGACY ART"
+      ],
+      "covers": "the legacy art serving rikiworld.com/lateletter, and the ten HTML fixtures"
+    },
+    "D2": {
+      "anchor": "docs/operator-decision-record.md#q--2026-07-31t163533-3296eefa",
+      "at": "2026-07-31T16:40:24",
+      "quotes": [
+        "Clouds and distant birds, The HUD strip itself",
+        "DO 3 AS REPLACEMENT FOR WHAT CURRENTLY EXSITS"
+      ],
+      "covers": "refuses the candidate clouds, the candidate distant birds and the HUD strip; directs that legacy plant animation replace what the candidate currently shows",
+      "anchor_note": "The operator's answer is recorded inside the Q section, not under a heading of its own, so the anchor is the question it answers. The quotations are the operator's words within that section."
+    },
+    "D3": {
+      "anchor": "docs/operator-decision-record.md#operator--2026-07-31t122212-3296eefa-approval-legacy-reference",
+      "at": "2026-07-31T12:22:12",
+      "quotes": [
+        "ALSO EVERYTHING IS TOO SPARSE",
+        "BIRDS IN SKY SHOULD GO FROM ONE END OF SCREEN TO THE OTEHR",
+        "MAYBE LEGACY'S \"ONLY ONE BAND / ONE SURFACE \" IS MUCH BETTER?"
+      ],
+      "covers": "density is a stated defect, not a preference; full-width bird traversal is required behaviour"
+    }
+  },
+  "records": {
+    "recipe.generation.population_density": {
+      "kind": "law",
+      "plane": "generation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "768-781",
+            "contains": [
+              "function genLayout(",
+              "cols*3"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D3"
+      ],
+      "candidate_status": "different",
+      "language": "genLayout(cols, rows, seed, weights, season). Placement attempts number cols*3, so attempted density scales linearly with measured viewport width. Ground is pinned at gy = rows - 3. Each attempt makes a plant, computes half = (width >> 1) + 2, skips when the viewport is narrower than half*2 + 4, picks x in [half+1, cols-half-2], and rejects the placement when the interval [x-half-1, x+half+1] overlaps any accepted interval. Survivors accumulate; there is no target count. Density is an emergent property of width, plant widths and rejection, never a constant.",
+      "candidate_note": "The candidate generates a constant seven-object starter world independent of viewport, which is the direct cause of the sparse frame the operator rejected in D3. Restoring this law is a canonical-world question, not only a presentation one, and is why route step 8's composition question cannot be answered by adding art.",
+      "presence_requirement": "required",
+      "law_refs": [
+        "recipe.viewport.cell_measurement"
+      ],
+      "dependents": [
+        "recipe.ground.cover",
+        "recipe.ground.plant_beds",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint"
+      ]
+    },
+    "recipe.generation.seasonal_weights": {
+      "kind": "law",
+      "plane": "generation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "749-755",
+            "contains": [
+              "const SEASON_W=",
+              "const DEFAULT_W="
+            ]
+          },
+          {
+            "lines": "759",
+            "contains": [
+              "if(!ptype){const w=weights||DEFAULT_W;ptype=rng.choices(Object.keys(w),Object.values(w));}"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "SEASON_W gives each of seven species a weight per season; makePlant draws the species by weighted choice. Winter shifts hard to pine (15) and suppresses flowers to 0; spring peaks flowers at 30; autumn raises pine and oak to 10 and drops flowers to 4. DEFAULT_W matches summer. The seasonal character of the garden comes from this table, not from recolouring.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.time.phase_selection"
+      ],
+      "dependents": [
+        "recipe.ground.plant_beds",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint"
+      ]
+    },
+    "recipe.generation.plant_templates": {
+      "kind": "law",
+      "plane": "generation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "650-740",
+            "contains": [
+              "function pPine("
+            ]
+          },
+          {
+            "lines": "756",
+            "contains": [
+              "const MAKERS="
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "different",
+      "language": "Seven parameterised generators — pPine, pOak, pBush, pFlower, pGrass, pMushroom, pFern — each returning rows of [dy, dx, text, colour] plus a width, with pGrass returning blades instead. These are the deployed plant drawings in generated form: the art IS the generator output, so approval attaches to the generators, not to a frozen sprite.",
+      "candidate_note": "The candidate carries transcribed sprites in web/garden-legacy-art.mjs rather than these generators, so its plants cannot vary the way the deployed ones do. Recorded as different; the sprites' own provenance is tracked in docs/garden-asset-acceptance.json legacy_ported_renderer_art.",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.ground.plant_beds",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint"
+      ]
+    },
+    "recipe.generation.autumn_recolour": {
+      "kind": "law",
+      "plane": "generation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "742-748",
+            "contains": [
+              "const AUTUMN_COLS=",
+              "function applyAutumn("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "applyAutumn remaps only the two live foliage colours of deciduous species to a random pick from AUTUMN_COLS, per cell. Trunks, stems and non-deciduous species are untouched, which is why an autumn oak reads as the same tree in different foliage rather than a different asset.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.time.phase_selection"
+      ],
+      "dependents": [
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves"
+      ]
+    },
+    "recipe.generation.seasonal_grass_flowering": {
+      "kind": "law",
+      "plane": "generation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "706",
+            "contains": [
+              "const GRASS_FLOWER_FAM=['*','+','*'];",
+              "GRASS_FLOWER_FAM"
+            ]
+          },
+          {
+            "lines": "717",
+            "contains": [
+              "fam:rng.randint(0,GRASS_FAMS.length-1),flower:rng.random()<0.09});"
+            ]
+          },
+          {
+            "lines": "723",
+            "contains": [
+              "rows.push([b.h,b.dx,b.flower?'*':\"'\",'bright_green']);"
+            ]
+          },
+          {
+            "lines": "762-765",
+            "contains": [
+              "b.flower=true"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "In spring every fifth blade by seed is flagged flowering; in winter flowering is cleared. The flag changes the tip glyph family and colour at paint time.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.time.phase_selection"
+      ],
+      "dependents": [
+        "recipe.vegetation.grass_blades"
+      ]
+    },
+    "recipe.motion.wind_law": {
+      "kind": "law",
+      "plane": "motion",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "639",
+            "contains": [
+              "this.groundY=rows-3; this.frame=0; this.wind=0;"
+            ]
+          },
+          {
+            "lines": "1719-1725",
+            "contains": [
+              "foliage_wind_state",
+              "s.wind=clamp("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "Gusty wind is the PRODUCT of two slow composite oscillators, each a sine plus a 0.35-weighted faster sine at a different frequency and phase: n0 from 0.008 and 0.0173, n1 from 0.0052 and 0.0117. wind = clamp(n0*n1*0.45 + 0.08, -0.65, 0.65). The product gives gusts and lulls rather than a metronome, and the +0.08 offset gives a prevailing direction. Grass lean, canopy shimmer intensity, rain slant, leaf drift and snow drift all read this single value, which is why the whole scene gusts together.",
+      "candidate_note": "The candidate has no shared wind value, so its motions cannot correlate. This is a single-number dependency for at least five recipes.",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.feedback.hover_rustle",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    },
+    "recipe.motion.frame_cadence": {
+      "kind": "law",
+      "plane": "motion",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1707-1715",
+            "contains": [
+              "requestAnimationFrame",
+              "~20fps"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "requestAnimationFrame with an explicit 50ms floor, so the simulation advances at roughly 20fps regardless of display refresh. Every animation constant in this register — the /6 butterfly divisor, the %8 leaf rotation, the 41-frame leaf rest, the 250-600 tick bird interval — is calibrated against this tick, so changing the cadence silently changes every speed.",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.delivery.letterbird",
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.feed_glyph",
+        "recipe.feedback.focus_glyphs",
+        "recipe.feedback.hover_rustle",
+        "recipe.ground.cover",
+        "recipe.ground.plant_beds",
+        "recipe.scene.ground_line",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.sky.clouds",
+        "recipe.sky.distant_birds",
+        "recipe.special.post_complete_marker",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    },
+    "recipe.motion.painter_order": {
+      "kind": "law",
+      "plane": "motion",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1726-1733",
+            "contains": [
+              "this.bg.render(",
+              "this.dom.blit("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Per tick: particles.update, creatures.update, buffer clear, then paint strictly as background, plants, particles, creatures, special, then blit. Ordering IS the depth model — weather over plants, creatures over weather, the post-completion marker over everything. There is no z-buffer; the sequence is the layering.",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.delivery.letterbird",
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.feed_glyph",
+        "recipe.feedback.focus_glyphs",
+        "recipe.feedback.hover_rustle",
+        "recipe.ground.cover",
+        "recipe.ground.plant_beds",
+        "recipe.scene.ground_line",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.sky.clouds",
+        "recipe.sky.distant_birds",
+        "recipe.special.post_complete_marker",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    },
+    "recipe.scene.ground_line": {
+      "kind": "paint",
+      "plane": "scene",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "809-816",
+            "contains": [
+              "const GND=",
+              "class BackgroundLayer"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D3"
+      ],
+      "candidate_status": "different",
+      "language": "Two full-width rows. Row groundY takes GND[c % 20]; row groundY+1 takes GND[(c+5) % 20] in a dimmer tone. GND is a 20-character literal at :809. The +5 offset stops the pair reading as one stripe. D3 records the operator preferring this single-surface treatment to the candidate's banding.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawGround",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.scene.ground_gradient"
+      ]
+    },
+    "recipe.scene.starfield": {
+      "kind": "paint",
+      "plane": "scene",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "817-826",
+            "contains": [
+              "Scatter stars",
+              "nStars"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Night only. Star count is floor(cols * (groundY - 3) * 0.025), so density scales with sky AREA rather than being a constant. Positions come from RNG(seed ^ 0xc0ffee01), keeping the field stable across frames and identical across resets of the same seed. 18 percent use the brighter glyph and tone.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawSky",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.scene.moon": {
+      "kind": "paint",
+      "plane": "scene",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "465-470",
+            "contains": [
+              "const MOON_ART = [",
+              "MOON_ART"
+            ]
+          },
+          {
+            "lines": "827-835",
+            "contains": [
+              "// Moon — phase-aware, upper-right quadrant",
+              "MOON_ART",
+              "_moonPhase()"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Night only. MOON_ART indexed by computed lunar phase, drawn from row 1, column clamped to 78 percent of width less the art width.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawSky, MOON_ART at :48",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.ground.cover": {
+      "kind": "paint",
+      "plane": "ground",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "886-908",
+            "contains": [
+              "Ground cover:",
+              "_renderGroundCover"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D3"
+      ],
+      "candidate_status": "absent",
+      "language": "One full-width row at groundY-1. Per column c, h = (imul(c+13, 0x9e3779b1) ^ seed) >>> 0 and v = (h % 1000)/1000. Skipped when v < 0.48, or v < 0.82 in winter, so roughly half the row carries ink outside winter. Three density buckets at v > 0.92, v > 0.72 and the remainder, the last alternating on h & 1. Every eleventh hash substitutes an animating glyph from the fourth grass family. Winter and autumn override glyph and tone at :904-905.",
+      "candidate_owner": "REMOVED 2026-07-31",
+      "candidate_note": "The removed candidate code was NOT this recipe — it drew turf clumps plus a repeated unit at horizon-1 — so reinstating that code would not inherit this verdict. candidate_status is absent, not different.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.generation.population_density",
+        "recipe.scene.ground_gradient"
+      ]
+    },
+    "recipe.vegetation.plant_paint": {
+      "kind": "paint",
+      "plane": "vegetation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "914-943",
+            "contains": [
+              "of this.placed",
+              "plant.rows"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "different",
+      "language": "Blits each placed plant's [dy, dx, text, colour] rows at row = gy - dy, col = x + dx, skipping blanks so plants composite transparently rather than as boxes.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawObject",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.generation.population_density",
+        "recipe.generation.seasonal_weights",
+        "recipe.generation.plant_templates",
+        "recipe.motion.wind_law",
+        "recipe.time.phase_selection",
+        "recipe.generation.autumn_recolour"
+      ]
+    },
+    "recipe.vegetation.grass_blades": {
+      "kind": "paint",
+      "plane": "vegetation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "705-727",
+            "contains": [
+              "const GRASS_FAMS=[",
+              "GRASS_FAMS"
+            ]
+          },
+          {
+            "lines": "860-885",
+            "contains": [
+              "// Live grass: tri-stop color ramp (deep→green→bright, root→tip) and",
+              "GRASS_FAMS",
+              "_renderGrass"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "absent",
+      "language": "Per blade, lean = wind*1.6 + sin((frame/200 + seed*0.37) * 2pi) * 0.6. Column offset at height step i is round(lean * (i/h) * 1.2), so the blade curves along its length rather than shearing. Body glyph is a forward slash above local lean 0.3, a backslash below -0.3, else a vertical bar. Colour is a tri-stop ramp by height fraction with breaks at 0.4 and 0.75, keyed per season at :865-868. The tip animates through a grass-family cycle. Reads recipe.motion.wind_law.",
+      "candidate_owner": "NONE — the candidate has no grass species",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.generation.population_density",
+        "recipe.generation.seasonal_weights",
+        "recipe.generation.plant_templates",
+        "recipe.motion.wind_law",
+        "recipe.time.phase_selection",
+        "recipe.generation.seasonal_grass_flowering"
+      ]
+    },
+    "recipe.vegetation.canopy_shimmer": {
+      "kind": "paint",
+      "plane": "vegetation",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "782-784",
+            "contains": [
+              "const CANOPY=",
+              "CANOPY_SHIMMER"
+            ]
+          },
+          {
+            "lines": "922-931",
+            "contains": [
+              "// Ambient canopy shimmer: a sparse fixed subset of foliage cells"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "different",
+      "language": "Ambient and cursor-independent. For the three CANOPY_SHIMMER species only, foliage cells at dy >= 2 hash to h = imul(row*73 + col*151 + 7, 0x9e3779b1) >>> 0; one in eight substitutes rustleChar at intensity 0.55 + abs(wind)*1.1. The subset is invariant per cell, so the same cells breathe instead of the whole canopy boiling. Reads recipe.motion.wind_law.",
+      "candidate_owner": "web/garden-renderer.mjs::FOLIAGE_CYCLES at :1086 — a different law",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.generation.population_density",
+        "recipe.generation.seasonal_weights",
+        "recipe.generation.plant_templates",
+        "recipe.motion.wind_law"
+      ]
+    },
+    "recipe.feedback.hover_rustle": {
+      "kind": "paint",
+      "plane": "feedback",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "840-850",
+            "contains": [
+              "rustleChar",
+              "Rustle on cursor hover"
+            ]
+          },
+          {
+            "lines": "909-913",
+            "contains": [
+              "const mr=state.mouseRow,mc=state.mouseCol;"
+            ]
+          },
+          {
+            "lines": "932-941",
+            "contains": [
+              "if(mr>=0&&ch!==' '){",
+              "rustleChar"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "A circular region of radius 5 cells around the cursor. Intensity falls off as (1 - dist/5) * 1.2. rustleChar maps a ten-glyph alphabet through two substitution tables selected by sin(seed) * intensity against plus or minus 0.45; glyphs outside the alphabet pass through untouched, which is why trunks stay still while foliage moves. Hover applies to PAINTED cells.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawObject hover expansion",
+      "candidate_note": "The candidate expands a 1x1 canonical hotspot by 3x2 cells, so most visible ink does not respond. Substance of route step 4.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.motion.wind_law",
+        "recipe.feedback.hover_cursor_affordance"
+      ]
+    },
+    "recipe.feedback.hover_cursor_affordance": {
+      "kind": "law",
+      "plane": "feedback",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1668-1680",
+            "contains": [
+              "this.el.addEventListener('mousemove'",
+              "_bindMouse(",
+              "style.cursor="
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "The cursor becomes a pointer when the hovered cell key is present in the collision map derived from painted plant cells, and a crosshair otherwise. Interactivity is signalled by the cursor alone — no label, card or outline.",
+      "candidate_owner": "web/garden-renderer.mjs pointer handling",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.focus_glyphs",
+        "recipe.feedback.hover_rustle"
+      ]
+    },
+    "recipe.feedback.click_leaf_burst": {
+      "kind": "paint",
+      "plane": "feedback",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1075-1093",
+            "contains": [
+              "spawnAt(mr,mc,state)"
+            ]
+          },
+          {
+            "lines": "1681-1687",
+            "contains": [
+              "this.particles.spawnAt("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "On click, scan plus or minus 4 rows by plus or minus 6 columns for canopy cells and spawn up to 10 leaf particles from cells actually found, so a click on empty air produces nothing. Five-glyph set; autumn palette in autumn, a brighter mixed set otherwise. Lifetime 100 frames.",
+      "candidate_owner": "web/garden-renderer.mjs clickBursts",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.feedback.hover_cursor_affordance"
+      ]
+    },
+    "recipe.feedback.click_pine_rustle": {
+      "kind": "paint",
+      "plane": "feedback",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1094-1108",
+            "contains": [
+              "new Particle('frag',mc+dc,mr+dr,",
+              "new Particle('frag'"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "Fallback entered only when the leaf scan found nothing. Scans plus or minus 3 by plus or minus 4 for pine cells, spawning up to 6 fragments with lifetime 8 to 16 frames. Recorded in legacy as FL-G22/G26.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.feedback.hover_cursor_affordance"
+      ]
+    },
+    "recipe.feedback.feed_glyph": {
+      "kind": "paint",
+      "plane": "feedback",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1505-1507",
+            "contains": [
+              "a.feedGlyph.lines.forEach",
+              "a.feedGlyph"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "A transient multi-line glyph at a recorded row and column, painted above the animal in response to a feed event.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.animal.anchor_layout",
+        "recipe.animal.trust_tier_state_machine",
+        "recipe.animal.species_motion",
+        "recipe.animal.feed_reaction"
+      ]
+    },
+    "recipe.feedback.focus_glyphs": {
+      "kind": "paint",
+      "plane": "feedback",
+      "verdict": "not_reviewed",
+      "source_refs": null,
+      "decision_refs": [],
+      "candidate_status": "different",
+      "language": "Focus ring or emphasis glyphs around the keyboard-focused object.",
+      "candidate_owner": "web/garden-renderer.mjs focus paint",
+      "candidate_note": "Legacy has no keyboard focus indicator, so there is nothing to inherit. Required by SPEC 7.8.12 and must be reviewed on its own under route step 4.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.feedback.hover_cursor_affordance"
+      ]
+    },
+    "recipe.weather.rain": {
+      "kind": "paint",
+      "plane": "weather",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "960-980",
+            "contains": [
+              "_spawn(state)",
+              "p.amp"
+            ]
+          },
+          {
+            "lines": "1039-1052",
+            "contains": [
+              "_spawn(state){",
+              "_spawn(state)"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Spring caps at 60 drops with a 35 percent spawn chance every second tick; autumn caps at 120 with 2 to 5 per spawn. Gravity accumulates 0.08 per frame to terminal 2.2; horizontal motion is vx + wind*0.3. The glyph leans with wind above 0.2 and below -0.2. Reads recipe.motion.wind_law.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawWeather",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.motion.wind_law",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.weather.rain_fragments": {
+      "kind": "paint",
+      "plane": "weather",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1024-1030",
+            "contains": [
+              "_fragments(cx,cy,wind)"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "When a drop's integer cell is in the collision map it is consumed and 2 to 4 fragments spawn there, thrown against the wind, glyph ageing across three stages at lifetime fractions 0.4 and 0.75. Reads canonical collision, writes nothing — the reference case for a legal recipe-chain cell.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.motion.wind_law"
+      ]
+    },
+    "recipe.weather.rain_splashes": {
+      "kind": "paint",
+      "plane": "weather",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1031-1037",
+            "contains": [
+              "_splashes(cx,gy)"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "A drop reaching groundY spawns 3 to 5 splashes within one column either side, horizontal velocity plus or minus 0.35 decaying by 0.88 per frame, same three-stage glyph ageing.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.motion.wind_law"
+      ]
+    },
+    "recipe.weather.snow": {
+      "kind": "paint",
+      "plane": "weather",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "981-993",
+            "contains": [
+              "const ic=Math.round(p.x);"
+            ]
+          },
+          {
+            "lines": "1053-1055",
+            "contains": [
+              "p.kind==='snow').length<80",
+              "p.kind==='snow'"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Winter only, capped at 80 flakes, two-glyph set, fall speed 0.08 to 0.25, lifetime 300. Horizontal motion is amp * sin(phase + age*0.04) * 0.25, so each flake carries its own drift instead of a shared sway.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawWeather",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.motion.wind_law",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.weather.snow_accumulation": {
+      "kind": "paint",
+      "plane": "weather",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "981-993",
+            "contains": [
+              "const ic=Math.round(p.x);"
+            ]
+          },
+          {
+            "lines": "1109-1115",
+            "contains": [
+              "for(let d=0;d<dep;d++)"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "A flake landing on the canonical top surface for its column, falling back to groundY, is consumed and increments that column's depth counter, capped at 3. Depth paints upward from groundY alternating two glyphs on (col + depth) % 3. Holds mutable state that is never persisted — the second reference case for the boundary.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.motion.wind_law",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.weather.falling_leaves": {
+      "kind": "paint",
+      "plane": "weather",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "994-1022",
+            "contains": [
+              "p.vy=Math.min(p.vy+0.04,1.5);"
+            ]
+          },
+          {
+            "lines": "1056-1073",
+            "contains": [
+              "rng.choice(AUTUMN_COLS),150",
+              "s==='autumn'",
+              "AUTUMN_COLS"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Autumn only. Population cap is min(60, floor(canopyCells.size / 3)), so leaf density is a function of how much canopy exists rather than a constant. 70 percent detach from a real canopy cell; 30 percent enter from rows 0 to 2 with wider drift. vx accumulates wind*0.04 clamped to plus or minus 0.8; vy accumulates 0.04 to a cap of 1.5 applied at 0.4 scale. Every 8 frames the glyph advances through a three-stage rotation. On reaching groundY the leaf rests, motionless, removed after 41 frames.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawWeather",
+      "candidate_note": "SPEC 7.1 transcribes these constants and the transcription matches the blob.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.motion.wind_law",
+        "recipe.time.phase_selection",
+        "recipe.generation.autumn_recolour"
+      ]
+    },
+    "recipe.ambient.butterfly": {
+      "kind": "paint",
+      "plane": "ambient",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1131-1150",
+            "contains": [
+              "if(!state)return;"
+            ]
+          },
+          {
+            "lines": "1464-1475",
+            "contains": [
+              "if(!this._init)this._initCreatures(state);",
+              "c.kind==='butterfly'"
+            ]
+          },
+          {
+            "lines": "1493-1496",
+            "contains": [
+              "const r=Math.round(c.y),col=Math.round(c.x);"
+            ]
+          },
+          {
+            "lines": "1497",
+            "contains": [
+              "c.kind==='butterfly') buf.putStrAnim",
+              "c.kind==='butterfly'"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "different",
+      "language": "Spring and summer only, 1 to 2 instances from RNG(seed ^ 0x12ab34cd), spawned between row 3 and groundY-8. Four-frame wing cycle advancing every 6 ticks. Motion: x += vx at 0.3 per tick; y += 0.15 * sin(frame*0.05 + phase), clamped to rows 2..groundY-5. On reaching either edge the horizontal velocity reflects, so a butterfly patrols the planting rather than exiting.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawAmbient",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.ambient.firefly": {
+      "kind": "paint",
+      "plane": "ambient",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1151-1159",
+            "contains": [
+              "if(s==='summer'&&state.timeOfDay==='evening')"
+            ]
+          },
+          {
+            "lines": "1479-1482",
+            "contains": [
+              "}else if(c.kind==='firefly'){",
+              "c.kind==='firefly'"
+            ]
+          },
+          {
+            "lines": "1493-1496",
+            "contains": [
+              "const r=Math.round(c.y),col=Math.round(c.x);"
+            ]
+          },
+          {
+            "lines": "1499-1500",
+            "contains": [
+              "if(state.frame%(c.on+c.off)<c.on) buf.putAnim(r,col,'*','bright_yellow');",
+              "c.kind==='firefly'",
+              "bright_yellow"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "different",
+      "language": "Summer evenings only, 3 to 5 instances between groundY-12 and groundY-3. Each carries an independent duty cycle: on = 3 + (i % 5) ticks, off = 10 + (i % 15), visible while frame % (on + off) < on, so the field never blinks in unison. Motion: x += vx of (i%3 - 1)*0.04; y += vy of plus or minus 0.02 plus 0.05 * sin(frame*0.02 + phase), clamped to rows 1..groundY-2.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.ambient.bird_traversal": {
+      "kind": "paint",
+      "plane": "ambient",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "566-567",
+            "contains": [
+              "const _AMBIENT_BIRD_FRAMES = [",
+              "_AMBIENT_BIRD_FRAMES"
+            ]
+          },
+          {
+            "lines": "1160-1180",
+            "contains": [
+              "_spawnAmbientBirds(state,count,forceFlock=false){",
+              "_AMBIENT_BIRD_FRAMES",
+              "_spawnAmbientBirds("
+            ]
+          },
+          {
+            "lines": "1476-1478",
+            "contains": [
+              "c.fi=Math.floor(state.frame/c.frameStep)%c.frames.length;c.x+=c.vx;"
+            ]
+          },
+          {
+            "lines": "1485-1489",
+            "contains": [
+              "this._birdT++;",
+              "_spawnAmbientBirds("
+            ]
+          },
+          {
+            "lines": "1493-1496",
+            "contains": [
+              "const r=Math.round(c.y),col=Math.round(c.x);"
+            ]
+          },
+          {
+            "lines": "1498",
+            "contains": [
+              "else if(c.kind==='bird') buf.putStrAnim(r,col,c.frames[c.fi],'gray');",
+              "c.kind==='bird'"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D3"
+      ],
+      "candidate_status": "absent",
+      "language": "Birds enter fully off-screen at x = -width-2 (or cols+2) and traverse at plus or minus 0.42 per tick until they leave the far side, at which point they deactivate. Entry side is random. A flock forms 28 percent of the time with 3 to 5 birds, each trailing the previous by 5 columns with a small vertical offset so the group reads as a skein rather than a row. Base altitude is random within the upper sky, clamped to rows 1..groundY-8. The frame set narrows below 60 columns. Respawn interval is 250 to 600 ticks, suppressed in winter.",
+      "candidate_note": "Removed from the candidate together with the rejected sky drawing. verdict accepted_as_deployed with presence_requirement 'required': D3 asks for it explicitly, so its absence is a defect. Presence is not a verdict.",
+      "distinct_from": "recipe.sky.distant_birds",
+      "presence_requirement": "required",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.time.phase_selection"
+      ]
+    },
+    "recipe.animal.pose_paint": {
+      "kind": "paint",
+      "plane": "animal",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "526-565",
+            "contains": [
+              "const _ANIMAL_POSE_ART = {",
+              "_ANIMAL_POSE_ART"
+            ]
+          },
+          {
+            "lines": "1512-1516",
+            "contains": [
+              "if(!a.visible)return;"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "different",
+      "language": "animalFrame(type, tier, pose) lines painted with the base column clamped so art never overruns the right edge. Pose art is keyed by species and pose name.",
+      "candidate_owner": "web/garden-renderer.mjs::ANIMAL_POSES at :52",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.animal.anchor_layout",
+        "recipe.animal.trust_tier_state_machine",
+        "recipe.animal.species_motion",
+        "recipe.animal.feed_reaction"
+      ]
+    },
+    "recipe.animal.absence_footprints": {
+      "kind": "paint",
+      "plane": "animal",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "525",
+            "contains": [
+              "const _ANIMAL_FOOTPRINTS = {",
+              "_ANIMAL_FOOTPRINTS"
+            ]
+          },
+          {
+            "lines": "1508-1511",
+            "contains": [
+              "if(a.wasAbsent&&a.tier>0){",
+              "_ANIMAL_FOOTPRINTS",
+              "a.wasAbsent"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "When the animal was absent and trust tier exceeds 0, its species footprint string is painted in a dim tone one art-height below the home row. It marks that something was here without asserting that it is here now.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.animal.anchor_layout",
+        "recipe.animal.trust_tier_state_machine",
+        "recipe.animal.species_motion"
+      ]
+    },
+    "recipe.animal.anchor_layout": {
+      "kind": "law",
+      "plane": "animal",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "571-578",
+            "contains": [
+              "function animalHomePos("
+            ]
+          },
+          {
+            "lines": "1213-1222",
+            "contains": [
+              "a.edgeCol=clamp(state.cols-width-2,0,Math.max(0,state.cols-width));",
+              "a.edgeCol"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "Each animal derives four anchors from its home position and the measured viewport: edgeCol at cols-width-2, edgeRow at rows-4 for ground species or homeRow-1 for the bird, and two patrol spots — spotA at home and spotB offset by a per-species delta (cat 4, bird 4, rabbit 3, turtle 2). Anchors re-sync on every state refresh, so the animal's territory scales with the window.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.viewport.cell_measurement"
+      ],
+      "dependents": [
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.feedback.feed_glyph",
+        "recipe.special.post_complete_marker"
+      ]
+    },
+    "recipe.animal.trust_tier_state_machine": {
+      "kind": "law",
+      "plane": "animal",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "570",
+            "contains": [
+              "function animalTrustTier("
+            ]
+          },
+          {
+            "lines": "1181-1212",
+            "contains": [
+              "_ensureAnimal(state){",
+              "_ensureAnimal("
+            ]
+          },
+          {
+            "lines": "1223-1275",
+            "contains": [
+              "a.col=a.edgeCol+1.2;"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "different",
+      "language": "Trust tiers derive from action count at 3, 7 and 14. Tier 0 places the animal off-view at the edge in a peek pose, invisible, on a 55-tick timer. Tier 1 makes it visible and sets mode 'approach' toward spotB from the edge. Higher tiers patrol between spotA and spotB. A tier change re-runs the tier reset, so trust is expressed as position and behaviour rather than as a number on screen.",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.feedback.feed_glyph",
+        "recipe.special.post_complete_marker"
+      ]
+    },
+    "recipe.animal.species_motion": {
+      "kind": "law",
+      "plane": "animal",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1276-1463",
+            "contains": [
+              "_updateCat(a,state,hover){",
+              "_updateCat(",
+              "_hoveringAnimal("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1",
+        "D2"
+      ],
+      "candidate_status": "absent",
+      "language": "Four per-species update routines — cat, bird, rabbit, turtle — each with its own pause, approach and retreat cycle, pose selection and step rate. Common tail: on timer expiry the patrol target flips between spotA and spotB with a period of 90 ticks at tier 3 or above and 54 below; pose alternates on frame modulus (bob/rest above tier 3, step/turn below); movement speed is 0.05 at tier 3 or above and 0.08 below, so a bonded animal moves more slowly and settles more. Hovering the animal substitutes a 'turn' pose — the animal looks at the cursor.",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.feedback.feed_glyph",
+        "recipe.special.post_complete_marker"
+      ]
+    },
+    "recipe.animal.feed_reaction": {
+      "kind": "law",
+      "plane": "animal",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1123-1130",
+            "contains": [
+              "this._cr=[];this._init=false;this._birdT=0;",
+              "queueFeedReaction("
+            ]
+          },
+          {
+            "lines": "1281-1303",
+            "contains": [
+              "_consumeFeedEvent(a,state){",
+              "_consumeFeedEvent("
+            ]
+          },
+          {
+            "lines": "1304-1316",
+            "contains": [
+              "_runFeedReaction(a){",
+              "_runFeedReaction("
+            ]
+          },
+          {
+            "lines": "1455-1463",
+            "contains": [
+              "const hover=this._hoveringAnimal(a,state);",
+              "_consumeFeedEvent(",
+              "_runFeedReaction("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "A feed event is queued with a sequence number, consumed on the next update, and runs a reaction that pre-empts the normal species routine until it finishes; the transient feed glyph expires on its own timer.",
+      "presence_requirement": "optional",
+      "dependents": [
+        "recipe.animal.pose_paint",
+        "recipe.feedback.feed_glyph"
+      ]
+    },
+    "recipe.delivery.letterbird": {
+      "kind": "paint",
+      "plane": "delivery",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "520-524",
+            "contains": [
+              "// Default delivery creature (SPEC §6.3) — used unless an animal is bonded.",
+              "_LETTERBIRD_FRAMES"
+            ]
+          },
+          {
+            "lines": "2197-2199",
+            "contains": [
+              "function _playDelivery("
+            ]
+          },
+          {
+            "lines": "2202-2228",
+            "contains": [
+              "const ov=document.createElement('div');"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "A full-screen overlay, not a Garden cell. Two-frame letter-bird carrying an envelope. Three phases on a 150ms interval: approach — slides from -38vw and -6vh to origin over 1.5s on a cubic-bezier, flapping every tick; settle — at tick 11 a 4px dip over 220ms, restored at 13; present — pose held while the envelope glyph alternates between two bracket forms on tick % 4 >= 2. Ends at tick 22 with a 400ms fade. Sub-cell motion is a CSS transform so the character frames stay crisp.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows"
+      ]
+    },
+    "recipe.delivery.bonded_animal": {
+      "kind": "paint",
+      "plane": "delivery",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "510-519",
+            "contains": [
+              "2: [' (~) ','{__} '],",
+              "_ANIMAL_DELIVERY_FRAMES"
+            ]
+          },
+          {
+            "lines": "2200-2201",
+            "contains": [
+              "const bonded=animalType&&animalTriggered&&animalTier>=3&&_ANIMAL_DELIVERY_FRAMES[animalType];",
+              "_ANIMAL_DELIVERY_FRAMES"
+            ]
+          },
+          {
+            "lines": "2211-2227",
+            "contains": [
+              "bonded?'-24vw':'-38vw'",
+              "translateX"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "absent",
+      "language": "The same three-phase overlay, but when a bonded tier-3 animal exists it delivers instead of the letter-bird, using that species' own two-frame envelope-carrying art and a shorter -24vw approach with no vertical drop. The bond changes who brings the letter — the strongest expression of the nurturing loop in the deployed product.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.animal.anchor_layout",
+        "recipe.animal.trust_tier_state_machine",
+        "recipe.animal.species_motion"
+      ]
+    },
+    "recipe.special.post_complete_marker": {
+      "kind": "paint",
+      "plane": "special",
+      "verdict": "accepted_as_deployed",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1518-1529",
+            "contains": [
+              "class SpecialLayer",
+              "state.postComplete"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Painted only after the letter programme finishes. A three-row bloom at horizontal centre rising from groundY-1 to groundY-3, plus a single perching glyph at groundY-9 six columns right of centre, suppressed when a tier-3 triggered animal is already present so the two do not read as duplicates.",
+      "candidate_owner": "web/garden-renderer.mjs memorial paint",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.animal.anchor_layout",
+        "recipe.animal.trust_tier_state_machine",
+        "recipe.animal.species_motion"
+      ]
+    },
+    "recipe.sky.clouds": {
+      "kind": "paint",
+      "plane": "scene",
+      "verdict": "rejected",
+      "source_refs": null,
+      "decision_refs": [
+        "D2"
+      ],
+      "candidate_status": "rejected",
+      "language": "CLOUD_SHAPES table at web/garden-renderer.mjs:377, drifting through the sky band. Renderer-authored, no legacy antecedent.",
+      "candidate_note": "Refused by name in D2. The table remains in source with no caller and should be deleted by whichever patch takes the sky plane in route step 5. SPEC 7.1's undated blanket approval does not override a dated per-asset refusal.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows"
+      ]
+    },
+    "recipe.sky.distant_birds": {
+      "kind": "paint",
+      "plane": "scene",
+      "verdict": "rejected",
+      "source_refs": null,
+      "decision_refs": [
+        "D2"
+      ],
+      "candidate_status": "rejected",
+      "language": "Renderer-authored single-glyph birds scattered as static sky decoration in the upper band. Refused by name in D2.",
+      "distinct_from": "recipe.ambient.bird_traversal",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows"
+      ]
+    },
+    "recipe.ground.plant_beds": {
+      "kind": "paint",
+      "plane": "ground",
+      "verdict": "not_reviewed",
+      "source_refs": null,
+      "decision_refs": [],
+      "candidate_status": "different",
+      "language": "Bedding strips beneath plant cohorts. Renderer-authored; legacy reaches its ground density with recipe.ground.cover instead.",
+      "candidate_owner": "web/garden-renderer.mjs::_drawPlantBeds, stubbed to a no-op at :1917-1919",
+      "candidate_note": "No grant reaches this. Either the stub is deleted in route step 5 or the recipe is drawn and submitted for review; it must not ride in on the ground.cover verdict.",
+      "presence_requirement": "optional",
+      "law_refs": [
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.palette.day_night_mutation",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration",
+        "recipe.serialization.colored_rows",
+        "recipe.generation.population_density",
+        "recipe.generation.seasonal_weights",
+        "recipe.generation.plant_templates"
+      ]
+    },
+    "recipe.palette.day_night_mutation": {
+      "kind": "law",
+      "plane": "palette",
+      "verdict": "accepted_as_deployed",
+      "presence_requirement": "optional",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "379-405",
+            "contains": [
+              "const C = {"
+            ]
+          },
+          {
+            "lines": "407-433",
+            "contains": [
+              "const NIGHT_PALETTE"
+            ]
+          },
+          {
+            "lines": "436-450",
+            "contains": [
+              "function _applyNightPalette(",
+              "_dayPalette"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "C is the day colour table: 30 named tokens the whole product paints through. NIGHT_PALETTE overrides 24 of them with brighter variants for a dark ground, and _applyNightPalette(on) swaps the table in place, stashing the day values in _dayPalette so the swap is reversible. It also rewrites the CSS custom properties --text, --bg and --scrim-bg, so the letter chrome changes with the garden rather than against it. No cell names a colour; every cell names a TOKEN, and this law decides what that token currently means.",
+      "candidate_note": "The candidate carries its own palette and has no night mutation, so every colour decision downstream of it diverges even where the glyph matches.",
+      "law_refs": [
+        "recipe.time.phase_selection"
+      ],
+      "dependents": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.delivery.letterbird",
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.feed_glyph",
+        "recipe.feedback.focus_glyphs",
+        "recipe.feedback.hover_rustle",
+        "recipe.ground.cover",
+        "recipe.ground.plant_beds",
+        "recipe.scene.ground_gradient",
+        "recipe.scene.ground_line",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.sky.clouds",
+        "recipe.sky.distant_birds",
+        "recipe.special.post_complete_marker",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    },
+    "recipe.time.phase_selection": {
+      "kind": "law",
+      "plane": "time",
+      "verdict": "accepted_as_deployed",
+      "presence_requirement": "optional",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1629-1638",
+            "contains": [
+              "function getSeason("
+            ]
+          },
+          {
+            "lines": "1639-1651",
+            "contains": [
+              "function getTimeOfDay("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "getSeason() and getTimeOfDay() select the two inputs every seasonal and nocturnal recipe reads. Precedence is dev override, then URL parameter, then the real clock: months 3-5 spring, 6-8 summer, 9-11 autumn, else winter; hours 19-20 evening, 21-04 night, else day. This is why the deployed garden is never the same garden twice, and why a screenshot is not a review.",
+      "candidate_note": "The candidate accepts a season but has no time-of-day phase at all, so evening and night presentation cannot occur.",
+      "dependents": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.generation.autumn_recolour",
+        "recipe.generation.seasonal_grass_flowering",
+        "recipe.generation.seasonal_weights",
+        "recipe.palette.day_night_mutation",
+        "recipe.scene.ground_gradient",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    },
+    "recipe.scene.ground_gradient": {
+      "kind": "law",
+      "plane": "scene",
+      "verdict": "accepted_as_deployed",
+      "presence_requirement": "optional",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1572-1580",
+            "contains": [
+              "setGroundBg(gy,rows,timeOfDay='day'){",
+              "setGroundBg(",
+              "linear-gradient"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "The sky/ground split is a CSS linear-gradient on the container with a hard stop at ((groundY + 1) / rows) as a percentage, in evening #ecd6b6 over #d8bea2 and otherwise the sky and dim_green tokens. It emits no cells: the ground is the BACKGROUND behind the character grid, which is why the deployed garden reads as one surface with one band rather than as rows of drawn ground. Recomputed only when the ground row, night flag or time of day changes.",
+      "candidate_note": "This is the mechanism behind D3's 'ONLY ONE BAND / ONE SURFACE' preference. A candidate that draws ground as cells cannot reproduce it by drawing more cells.",
+      "law_refs": [
+        "recipe.time.phase_selection",
+        "recipe.palette.day_night_mutation"
+      ],
+      "dependents": [
+        "recipe.ground.cover",
+        "recipe.scene.ground_line"
+      ]
+    },
+    "recipe.viewport.cell_measurement": {
+      "kind": "law",
+      "plane": "viewport",
+      "verdict": "accepted_as_deployed",
+      "presence_requirement": "optional",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1544-1568",
+            "contains": [
+              "_measure(",
+              "WWWWWWWWWW"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "Cell width is measured by rendering a ten-W span INSIDE the garden element and dividing its width by ten, so the measurement carries the same font, weight and letter-spacing context as the rows themselves; cell height comes from a real div inheriting the 15px row rule. cols and rows are then floor(clientWidth / cw) and floor(clientHeight / ch). Every density, placement and traversal law is expressed in these units, so this law decides the size of the world.",
+      "candidate_note": "The candidate derives a grid without measuring inside the garden element, so its column count -- and therefore every viewport-dependent law -- differs from deployed.",
+      "dependents": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.animal.absence_footprints",
+        "recipe.animal.anchor_layout",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.delivery.letterbird",
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.feed_glyph",
+        "recipe.feedback.focus_glyphs",
+        "recipe.feedback.hover_rustle",
+        "recipe.generation.population_density",
+        "recipe.ground.cover",
+        "recipe.ground.plant_beds",
+        "recipe.scene.ground_line",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.sky.clouds",
+        "recipe.sky.distant_birds",
+        "recipe.special.post_complete_marker",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.viewport.resize_regeneration",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    },
+    "recipe.viewport.resize_regeneration": {
+      "kind": "law",
+      "plane": "viewport",
+      "verdict": "accepted_as_deployed",
+      "presence_requirement": "optional",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1570",
+            "contains": [
+              "resize(){ this._measure(); }"
+            ]
+          },
+          {
+            "lines": "1692-1705",
+            "contains": [
+              "this.plants.regenerate("
+            ]
+          },
+          {
+            "lines": "1736",
+            "contains": [
+              "onResize(){ this._reset(); }",
+              "onResize("
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "onResize re-measures, re-derives season and time of day, builds a NEW GardenState at the new cols/rows from the same seed, reallocates the buffer, regenerates plants and resets particles and creatures. The world is a function of the viewport, not a standing composition that is cropped: widening the window produces more plants rather than more empty space.",
+      "candidate_note": "The candidate's constant starter composition does not change under resize, which is the same root cause as the sparse frame in D3.",
+      "law_refs": [
+        "recipe.viewport.cell_measurement"
+      ],
+      "dependents": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.delivery.letterbird",
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.feed_glyph",
+        "recipe.feedback.focus_glyphs",
+        "recipe.feedback.hover_rustle",
+        "recipe.ground.cover",
+        "recipe.ground.plant_beds",
+        "recipe.scene.ground_line",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.sky.clouds",
+        "recipe.sky.distant_birds",
+        "recipe.special.post_complete_marker",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    },
+    "recipe.serialization.colored_rows": {
+      "kind": "law",
+      "plane": "serialization",
+      "verdict": "accepted_as_deployed",
+      "presence_requirement": "optional",
+      "source_refs": {
+        "blob": "59dc49a820d07d1b6a1741e17aafe6d075f6c99d",
+        "ranges": [
+          {
+            "lines": "1582-1622",
+            "contains": [
+              "blit(buf,gy)",
+              "innerHTML"
+            ]
+          }
+        ]
+      },
+      "decision_refs": [
+        "D1"
+      ],
+      "candidate_status": "different",
+      "language": "blit turns the cell buffer into DOM. One div per row; within a row, consecutive cells sharing a colour are coalesced into a single span, blanks break the run and are emitted as bare text, and colour mode 3 forces non-animated cells to --text while animated cells keep their token. This is the only place a cell becomes visible, so it is also the only place per-cell provenance can be preserved or lost.",
+      "candidate_note": "The candidate serialises through its own lattice path. Because a row routinely holds cells from several sources, provenance has to survive THIS step per cell; a row-level or serializer-level source id would be false by construction.",
+      "dependents": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.delivery.letterbird",
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.feed_glyph",
+        "recipe.feedback.focus_glyphs",
+        "recipe.feedback.hover_rustle",
+        "recipe.ground.cover",
+        "recipe.ground.plant_beds",
+        "recipe.scene.ground_line",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.sky.clouds",
+        "recipe.sky.distant_birds",
+        "recipe.special.post_complete_marker",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ]
+    }
+  },
+  "disambiguation": {
+    "birds": {
+      "note": "Settled from the existing decisions on 2026-08-02. Recorded here because an earlier draft wrongly filed it as an open conflict, which would have blocked route step 5 on a question the operator had already answered twice.",
+      "recipe.ambient.bird_traversal": "The deployed legacy behaviour: birds enter off-screen and cross the full width. D3 asks for exactly this. Verdict accepted_as_deployed with presence_requirement 'required' — absence is a defect, and presence is not a verdict.",
+      "recipe.sky.distant_birds": "The candidate's renderer-authored static sky decoration. D2 refuses it by name. Verdict 'rejected'.",
+      "recipe.sky.clouds": "Renderer-authored. D2 refuses it by name. Verdict 'rejected'.",
+      "why_they_were_confused": "Both were removed from _drawSkyLife in the same 2026-08-01 patch, so the candidate source records one deletion where the decisions record two different things: a refusal of invented decoration, and the loss of required deployed behaviour."
+    }
+  },
+  "presence_requirements": {
+    "required": "The operator asked for this behaviour explicitly, so its ABSENCE is a defect rather than a neutral state. This is a statement about whether the product must do the thing. It is NOT a verdict on any particular drawing of it, which is why it can no longer be written in the verdict field: doing so let a never-reviewed implementation ride into a release on the strength of the operator having asked for the feature.",
+    "optional": "Nothing obliges the product to show this. It may still be accepted, rejected or unreviewed on its own merits."
+  }
+}

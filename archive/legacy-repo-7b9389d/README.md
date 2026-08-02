@@ -34,5 +34,5 @@ The **get demo letter** button loads the exact safe v1 development fixture.
 The **get sealed letter** button loads a synthetic v1 sealed bundle; its demo
 passphrase is `garden`.
 
-This snapshot is historical evidence and a local comparison surface. Current
-production code must not import it.
+This snapshot is a historical reproduction surface, not an accepted visual
+baseline. Current production code must not import it.

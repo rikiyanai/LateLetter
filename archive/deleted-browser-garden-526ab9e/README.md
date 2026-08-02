@@ -4,14 +4,16 @@ This tracked directory preserves the complete runnable browser Garden package
 from commit `526ab9e9a281d9505be467501ffc2abe74eca40b`, the direct parent of
 `520f27ba78ae95f41661ba749ec22859d6d53ad8`.
 
-It is evidence and a visual reference. Production must not import this package
-or revive its `GardenVisualState` gameplay, layout, collision, persistence, or
-hit-test ownership. The supported renderer must manually port the presentation
-features while reading the current canonical projection.
+It is runnable historical implementation evidence, not an accepted visual
+baseline or quality benchmark. Production must not import this package or
+revive its `GardenVisualState` gameplay, layout, collision, persistence, or
+hit-test ownership. Individual presentation features may be studied here only
+while reading the current canonical projection and still require current
+operator approval.
 
 ## Contents
 
-- `viewer-bnw.html` — complete rich browser viewer/Garden before deletion
+- `viewer-bnw.html` — complete runnable historical browser viewer/Garden before deletion
 - `web/` — the exact semantic input, program, runtime, and world dependencies
 - `sealed_demo.lateletter` — exact tracked synthetic sealed demo at the source commit
 - `test_fixture.lateletter` — exact tracked development fixture at the source commit
@@ -38,7 +40,7 @@ git hash-object archive/deleted-browser-garden-526ab9e/viewer-bnw.html
 
 and likewise for every listed file. Each result must equal the source blob.
 
-## Local reference launch
+## Historical reproduction launch
 
 From the repository root:
 
@@ -52,5 +54,6 @@ Then open:
 http://127.0.0.1:8876/archive/deleted-browser-garden-526ab9e/viewer-bnw.html
 ```
 
-This launch is for visual comparison only. Recipient state is namespaced by
-the archived code and must not be treated as current production evidence.
+This launch reproduces the historical state only. Recipient state is
+namespaced by the archived code; neither the launch nor its imagery is an
+accepted visual baseline or current production evidence.
