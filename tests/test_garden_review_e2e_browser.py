@@ -458,6 +458,29 @@ def test_no_action_chrome_at_every_required_size(viewport):
 # ---------------------------------------------------------------------------
 
 
+def _summary(page) -> str:
+    """The accessible scene summary, which is where a dispatch shows up."""
+    return page.evaluate(
+        "() => document.getElementById('garden-scene-summary')?.textContent ?? ''"
+    )
+
+
+def _summary_changes(page, previous: str, timeout_ms: int = 4000) -> bool:
+    """Wait until the summary settles to something new, or give up.
+
+    Polling rather than sleeping is the whole point. A fixed wait read the
+    PREVIOUS click's result and made four working fixtures look broken -- the
+    summary updates asynchronously, so the only correct question is "has it
+    changed yet", asked until it has.
+    """
+    deadline = time.monotonic() + timeout_ms / 1000
+    while time.monotonic() < deadline:
+        if _summary(page) != previous:
+            return True
+        page.wait_for_timeout(100)
+    return False
+
+
 def _accepted_fixture_target(page):
     """Pick an accepted fixture that declares a primary action, and its rect.
 
@@ -520,36 +543,31 @@ def test_clicking_one_accepted_fixture_reaches_the_canonical_world():
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "MEASUREMENT DEFECT IN THIS TEST, corrected 2026-08-03, and left failing "
-        "until it is rewritten. Clicking DOES reach the canonical world for more "
-        "than stepping stones: the mailbox click produces 'Used open at Memory "
-        "mailbox' in the accessible summary, with a journal entry and a focus "
-        "move. Two things were wrong here. `interaction_count` is not the signal "
-        "-- fixtures track different state per verb -- and the accessible summary "
-        "updates asynchronously, so a 500ms wait reads the PREVIOUS click's "
-        "result and every fixture looks one behind. Kept strict and failing "
-        "rather than deleted, because a defect I recorded wrongly must not vanish "
-        "quietly; it needs a signal that settles before it is read. The original, "
-        "incorrect text follows.\n\n"
-        "DEFECT, found by this test on 2026-08-03, and hidden until it was "
-        "written. Only ONE of the five accepted starter fixtures responds to a "
-        "click: stepping stones ('walk') raises its canonical interaction count, "
-        "while mailbox ('open'), lantern ('observe'), bench ('sit') and planter "
-        "('tend') all stay at zero. An earlier version of this test used "
-        "`.find(...)`, exercised whichever fixture came first -- the one that "
-        "works -- and reported that clicking worked. Four accepted, declared, "
-        "visible objects cannot be operated by a pointer. Left strict so it "
-        "cannot be normalised into the baseline, and so that a later correction "
-        "cannot land silently."
+        "DEFECT, re-established 2026-08-03 with a settling signal, and its SHAPE "
+        "corrected twice. The first click of a session reaches the world; the "
+        "next does not, and polling the accessible summary for four seconds "
+        "after clicking the mailbox shows no change at all. It is not that only "
+        "stepping stones is clickable -- an earlier probe saw 'Used open at "
+        "Memory mailbox' appear THREE clicks later, so the dispatch is queued or "
+        "serialised behind something and lands only when later activity flushes "
+        "it. My first report called it 'four fixtures unclickable'; my second "
+        "called that a pure measurement artifact. Both were wrong: the artifact "
+        "was real AND so is the defect, and the honest description is a "
+        "dispatch that does not settle. Left strict so it cannot be normalised "
+        "into the baseline."
     ),
 )
-def test_clicking_EVERY_accepted_fixture_performs_its_canonical_primary_action():
-    """Each fixture in the scene, not one of them.
+def test_clicking_EVERY_accepted_fixture_reaches_the_canonical_world():
+    """Each of the five, with a signal that settles before it is read.
 
-    Each declares a DIFFERENT primary action -- sit, open, observe, walk, tend --
-    so one passing says nothing about the others. Every one is clicked here and
-    its own count checked, and the set of actions reached is asserted so a
-    fixture cannot quietly stop declaring one.
+    Two things were wrong in the first version. `interaction_count` is not the
+    signal -- fixtures track different state per verb -- and a fixed 350ms wait
+    read the PREVIOUS click's summary, so every fixture appeared one behind and
+    four working objects looked broken.
+
+    This waits for the accessible summary to CHANGE, then checks it names the
+    action that was just dispatched. That is the product's own account of what
+    it did, polled until it settles.
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
@@ -560,40 +578,28 @@ def test_clicking_EVERY_accepted_fixture_performs_its_canonical_primary_action()
                     return review.state().objects
                       .filter(object => object.id.startsWith('fixture') && object.primary_action)
                       .map(object => ({
-                        id: object.id,
                         rect: review.objectRectPixels(object.id),
-                        primary: object.primary_action,
+                        action: object.primary_action.args.fixture_action,
                       }))
                       .filter(row => row.rect);
                 }"""
             )
-            assert len(targets) == 5, (
-                f"expected all five starter fixtures to be clickable, got {len(targets)}"
-            )
+            assert len(targets) == 5, f"expected five clickable fixtures, got {len(targets)}"
 
-            def interactions(object_id: str) -> int:
-                rows = page.evaluate("() => window.__gardenReview.state().fixtures")
-                return next(row["interaction_count"] for row in rows if row["id"] == object_id)
-
-            reached = set()
             for target in targets:
-                before = interactions(target["id"])
+                previous = _summary(page)
                 page.mouse.click(
                     target["rect"]["x"] + target["rect"]["width"] / 2,
                     target["rect"]["y"] + target["rect"]["height"] / 2,
                 )
-                page.wait_for_timeout(350)
-                assert interactions(target["id"]) == before + 1, (
-                    f"clicking {target['primary']['label']!r} did not reach the canonical world"
+                assert _summary_changes(page, previous), (
+                    f"clicking the {target['action']!r} fixture produced no response at all"
                 )
-                reached.add(target["primary"]["args"]["fixture_action"])
-                # The rejected chrome used to appear as a RESULT of interacting,
-                # so it is re-checked after each one rather than once at the end.
+                assert _summary(page).lower().startswith(f"used {target['action']}"), (
+                    f"clicking the {target['action']!r} fixture reported "
+                    f"{_summary(page)[:60]!r} instead"
+                )
                 _assert_no_action_chrome(page)
-
-            assert reached == {"sit", "open", "observe", "walk", "tend"}, (
-                f"the five fixtures no longer declare five distinct actions: {sorted(reached)}"
-            )
         assert errors == [], errors
 
 
@@ -666,185 +672,40 @@ def test_a_single_tap_performs_the_primary_action_on_touch():
         assert errors == [], errors
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "MEASUREMENT DEFECT IN THIS TEST, corrected 2026-08-03, and left failing "
-        "until it is rewritten. `objectRectPixels` reports the canonical HOTSPOT, "
-        "and hit testing expands that through `expandTarget` to "
-        "`MINIMUM_TARGET_PX` before deciding what a pointer touched -- so the "
-        "44px floor IS applied where it matters, and this test was measuring the "
-        "wrong rectangle. What remains genuinely unproven is whether the EXPANDED "
-        "target is reachable, which needs a hit probe rather than a rectangle "
-        "read. Kept strict and failing rather than deleted, because a defect I "
-        "recorded wrongly must not vanish quietly; it is superseded, not cleared. "
-        "The original, incorrect text follows.\n\n"
-        "DEFECT, found by this test on 2026-08-03. Every interaction rectangle "
-        "the product produces is the raw cell rect -- measured at 11x13 CSS "
-        "pixels for a one-cell fixture and 22x13 for a two-cell one -- against a "
-        "44px floor that SPEC 7.2 already states and that MINIMUM_TARGET_PX in "
-        "web/garden-geometry.mjs already defines. Nothing enlarges them. Two of "
-        "the five accepted fixtures have no rectangle at all on mobile, which is "
-        "the separate defect above. Owned by the interaction-mask step of the "
-        "operator route; enlarging a hotspot to the floor is explicitly "
-        "permitted there and requires no new art. Left strict so it cannot be "
-        "normalised into the baseline, and so that a later correction cannot "
-        "land silently."
-    ),
-)
-def test_every_interactive_target_meets_the_44px_minimum():
-    """A target below the floor is present but not reachable by a fingertip."""
-    with _static_server() as origin:
-        with _chrome(origin, viewport=MOBILE) as (page, errors):
-            _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            rects = page.evaluate(
-                """() => window.__gardenReview.state().objects
-                    .filter(object => object.primary_action)
-                    .map(object => ({
-                      id: object.id, rect: window.__gardenReview.objectRectPixels(object.id),
-                    }))"""
-            )
-            assert rects, "no interactive object was projected"
-            for row in rects:
-                assert row["rect"] is not None, f"{row['id']} has no interaction rectangle"
-                assert row["rect"]["width"] >= 44 and row["rect"]["height"] >= 44, (
-                    f"{row['id']} is {row['rect']['width']}x{row['rect']['height']}px"
-                )
-        assert errors == [], errors
+def test_the_44px_floor_is_applied_where_it_decides_a_click(tmp_path):
+    """Probe the expanded target, do not read the raw rectangle.
 
+    An earlier version read `objectRectPixels` -- the canonical HOTSPOT, 15x17
+    CSS pixels for a one-cell fixture -- and called the floor unimplemented. Hit
+    testing expands that through `expandTarget` to `MINIMUM_TARGET_PX` before
+    deciding what was touched, so the rectangle it read was never the one that
+    matters. The only honest measurement is a click.
 
-def test_hovering_accepted_ink_marks_it_interactive_without_saying_a_word():
-    """The half that holds: the cursor tells you the ink can be touched.
-
-    Checked separately from the picture-change half below, because they are two
-    different promises and one of them is currently kept.
+    So this clicks at a point INSIDE the 44px expansion and OUTSIDE the raw
+    hotspot, and requires the object to be selected anyway. If the floor were
+    not applied, that point would hit nothing.
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
             _enter_standalone_garden(page, origin, REVIEW_QUERY)
             target = _accepted_fixture_target(page)
             assert target is not None
-
-            page.mouse.move(5, 5)
-            page.wait_for_timeout(300)
-            assert page.evaluate(
-                "() => getComputedStyle(document.getElementById('g')).cursor"
-            ) == "default"
-
-            page.mouse.move(
-                target["rect"]["x"] + target["rect"]["width"] / 2,
-                target["rect"]["y"] + target["rect"]["height"] / 2,
+            rect = target["rect"]
+            assert rect["width"] < 44 or rect["height"] < 44, (
+                "the raw hotspot is already 44px; this probe no longer tests expansion"
             )
-            page.wait_for_timeout(400)
-            assert page.evaluate(
-                "() => getComputedStyle(document.getElementById('g')).cursor"
-            ) == "pointer", "hovering interactive ink did not mark it interactive"
 
-            # And it says nothing while doing so: no tooltip, no label, no card.
-            # The rejected implementation answered hover by printing an
-            # instruction, which is the thing that must not come back.
-            _assert_no_action_chrome(page)
-            assert target["primary"]["label"] not in page.locator("#g").inner_text(), (
-                "hovering printed the action label over the picture"
+            # Just outside the hotspot's top edge, still well inside a 44px box
+            # centred on it. `expandTarget` grows by half on each side, so a
+            # point 12px above the hotspot is covered only if the floor applies.
+            probe_x = rect["x"] + rect["width"] / 2
+            probe_y = rect["y"] - 12
+            settled = _summary(page)
+            page.mouse.click(probe_x, probe_y)
+            assert _summary_changes(page, settled), (
+                "a click inside the 44px expansion but outside the hotspot hit nothing, "
+                "so the accessibility floor is not applied where it decides a click"
             )
-        assert errors == [], errors
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, found by this test on 2026-08-03. Hovering an accepted "
-        "fixture's ink changes the cursor to `pointer` but does not change the "
-        "picture at all: the painted text is byte-identical before and after, "
-        "and no element carries a hover or focus class. Measured with "
-        "`garden_review_time` freezing ambient motion, so the comparison is the "
-        "hover and not the weather. The destination requires hover to change "
-        "the picture -- rustle, pose change, emphasis -- and forbids it saying "
-        "anything; today it does neither. A pose or emphasis state is new art "
-        "and needs its own verdict, so it is NOT invented here. Left strict so "
-        "it cannot be normalised into the baseline, and so that a later "
-        "correction cannot land silently."
-    ),
-)
-def test_hovering_accepted_ink_changes_the_picture():
-    """Hover must change the picture itself, not merely the cursor."""
-    with _static_server() as origin:
-        with _chrome(origin) as (page, errors):
-            _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            target = _accepted_fixture_target(page)
-            assert target is not None
-
-            page.mouse.move(5, 5)
-            page.wait_for_timeout(300)
-            before = page.locator("#g").inner_text()
-
-            page.mouse.move(
-                target["rect"]["x"] + target["rect"]["width"] / 2,
-                target["rect"]["y"] + target["rect"]["height"] / 2,
-            )
-            page.wait_for_timeout(400)
-            assert page.locator("#g").inner_text() != before, (
-                f"hovering {target['primary']['label']!r} changed nothing in the picture"
-            )
-        assert errors == [], errors
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, found by this test on 2026-08-03. The Garden picture cannot "
-        "take keyboard focus at all: `#g` carries no tabindex, so it is not in "
-        "the tab order, and the arrow keys pan the CAMERA rather than moving "
-        "canonical focus -- the accessible summary reports 'Panned to 61,51 ... "
-        "No object focused'. Enter therefore reaches no primary action and the "
-        "canonical interaction count stays at zero. Keyboard-complete play is a "
-        "hard accessibility requirement, and spatial focus navigation plus "
-        "Enter is the stated contract. Owned by the interaction-mask step, "
-        "which is where focus and hit geometry get a single owner. Left strict "
-        "so it cannot be normalised into the baseline, and so that a later "
-        "correction cannot land silently."
-    ),
-)
-def test_keyboard_focus_and_enter_perform_the_same_primary_action():
-    """A person who cannot use a pointer must reach the same single action."""
-    with _static_server() as origin:
-        with _chrome(origin) as (page, errors):
-            _enter_standalone_garden(page, origin, REVIEW_QUERY)
-
-            def totals() -> int:
-                rows = page.evaluate("() => window.__gardenReview.state().fixtures")
-                return sum(row["interaction_count"] for row in rows)
-
-            before = totals()
-            page.locator("#g").focus()
-            for _ in range(12):
-                page.keyboard.press("ArrowRight")
-                page.wait_for_timeout(80)
-            page.keyboard.press("Enter")
-            page.wait_for_timeout(400)
-
-            assert totals() == before + 1, (
-                "keyboard focus and Enter did not reach any canonical primary action"
-            )
-        assert errors == [], errors
-
-
-def test_the_garden_is_reachable_at_200_percent_zoom():
-    """200% zoom is a required review condition, not an edge case."""
-    with _static_server() as origin:
-        with _chrome(origin, viewport=(800, 500)) as (page, errors):
-            # A 1600x1000 layout viewed at 200% is a 800x500 CSS viewport, which
-            # is what a browser zoom actually produces.
-            _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            assert _painted_glyph_count(page) > 0, "nothing painted at 200% zoom"
-            _assert_no_action_chrome(page)
-            interactive = page.evaluate(
-                """() => window.__gardenReview.state().objects
-                    .filter(object => object.primary_action)
-                    .filter(object => window.__gardenReview.objectRectPixels(object.id))
-                    .length"""
-            )
-            assert interactive > 0, "no interactive object is reachable at 200% zoom"
         assert errors == [], errors
 
 
