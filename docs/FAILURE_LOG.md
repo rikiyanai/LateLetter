@@ -5473,3 +5473,41 @@ defect + two corrections of my own measurement
   21 passing and 5 strict xfailed. §13's "at least ten seconds of real motion" and "every captured
   PNG/video opened and visually inspected before presentation" are now satisfied for the desktop
   candidate and legacy videos and for every still. The four operator verdicts remain unwritten.
+
+### Garden seasons: autumn is real, winter is not, and the hashes alone did not say which
+
+Question:
+Goal §13 requires "day/evening/night and all seasons" to be in the acceptance package AND every
+captured PNG opened before presentation. The sixteen-cell season matrix had been captured on
+2026-08-03 and never opened. The seasons defect was recorded from text hashes, which say two
+pictures differ but never say how, or which of the four seasons is the one that works.
+
+Type:
+observation refining an existing defect
+
+- **Opened all sixteen cells (2026-08-03):** `docs/visual-review/2026-08-03/garden/matrix/`.
+  AUTUMN genuinely works: the oak turns amber, its trunk with it, and detached leaf marks scatter
+  across the whole frame including below the horizon -- §4's "autumn leaves detach from canopy
+  surfaces, tumble, land" is visibly running. WINTER does not exist as a season: `winter-day` is
+  byte-identical to `spring-day` (`770ad5a5d909ec70`, 290 glyphs), and `winter-night` differs from
+  `summer-night` only by the night treatment. No snow on the ground, none on any plant surface, and
+  the oak keeps its full summer canopy and summer colour in January -- against §4's snow
+  accumulation and §7's dormant representation. SUMMER differs from spring by hash but at an
+  identical glyph count, so whatever changes is small.
+
+- **Day, evening and night are not at issue (2026-08-03):** cream at midday, amber at evening, and
+  at night a navy sky carrying scattered stars and a crescent moon, with every object still
+  readable. §4's "night supports accepted star and moon presentation" is satisfied on the product
+  path. Worth stating positively, because the seasons defect sat next to it and an unqualified
+  "time and season do not read" would have been wrong about half of it.
+
+- **Why the hashes were not enough (2026-08-03):** the recorded defect was accurate and unhelpful.
+  "Spring, summer and winter share a hash" is true, and it does not distinguish "seasons are not
+  implemented" from "three of four seasons are not implemented and the fourth is finished". The
+  second is what the images show, and it changes what the remaining work is: autumn is a working
+  reference for the other three rather than a fourth thing to build. The xfail reason now carries
+  what was seen, not only what was hashed.
+
+- Status: Implemented (unproven as visual acceptance). The seasons xfail is unchanged in outcome and
+  sharper in content. Nothing was built to make winter differ: seasonal colouring, dormancy and
+  snow are art and recipes carrying no verdict.
