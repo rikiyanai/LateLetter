@@ -821,10 +821,42 @@ def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
             }
         assert errors == [], errors
 
-    assert accepted - in_scene == {
+    uncovered = accepted - in_scene
+    assert uncovered == {
         "fixture.arbor", "fixture.birdbath", "fixture.bridge",
         "fixture.pond", "fixture.trellis",
     }, "the accepted art this review does not cover has changed"
+
+    # WHY they are uncovered, stated rather than left to inference.
+    #
+    # "Five accepted fixtures never enter the review" reads like a test-coverage
+    # gap that more testing would close. It is not. These five are accepted as
+    # ART and carry NO authored primary action, so placing them in a scene would
+    # not make them interactable -- a click would dispatch nothing. The catalog
+    # says why in its own comment: a primary action is a promise about safety,
+    # not a convenience default, and every entry outside the default scene keeps
+    # `primary_verb=None` until it has been through that judgement.
+    #
+    # Which verb each should get is exactly the kind of decision the destination
+    # spec reserves for the operator, so nothing here invents one. Read from the
+    # catalog rather than hardcoded, so that authoring one fails this test and
+    # forces the claim to be rewritten.
+    from lateletter.garden.world.fixtures import FIXTURE_CATALOG
+
+    interactable = {
+        f"fixture.{catalog}"
+        for catalog, definition in FIXTURE_CATALOG.items()
+        if definition.primary_verb is not None
+    }
+    assert not (uncovered & interactable), (
+        "an accepted fixture outside the starter now has an authored primary "
+        f"action: {sorted(uncovered & interactable)}. It is interactable and "
+        "this review no longer has a reason to skip it."
+    )
+    assert accepted & interactable == accepted - uncovered, (
+        "the five accepted fixtures this review does cover are exactly the ones "
+        "with an authored primary action; that correspondence has changed"
+    )
 
 
 @pytest.mark.xfail(

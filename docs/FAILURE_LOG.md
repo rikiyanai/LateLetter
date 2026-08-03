@@ -5637,3 +5637,38 @@ defect in a gate I built and reported as working
   validator still refuses, and now refuses for a better reason: all four verdicts are `not_reviewed`
   AND the register declares no operator, so there is currently no way for any acceptance to be
   recorded by anyone but the person who fills in that field.
+
+### The five uncovered fixtures are not a testing gap, and saying so was imprecise
+
+Question:
+"Five accepted fixtures -- arbor, birdbath, bridge, pond, trellis -- never enter the review" has
+been reported twice, by an external verification and by me, in a form that reads like a coverage
+gap more testing would close. Check whether that is what it is.
+
+Type:
+correction of an imprecise claim
+
+- **It is not a coverage gap (2026-08-03):** those five are accepted as ART and carry NO authored
+  primary action. `FIXTURE_CATALOG` in `src/lateletter/garden/world/fixtures.py` and
+  `FIXTURE_PRIMARY_ACTIONS` in `web/garden-world.mjs` both declare a primary verb for exactly five
+  catalog entries -- bench, mailbox, stepping_stones, planter, lantern -- which are precisely the
+  five in the starter. Placing any of the other five in a scene would not make it interactable: a
+  click would dispatch nothing, because there is nothing declared to dispatch.
+
+- **The absence is authored, not an oversight (2026-08-03):** the catalog says so in its own
+  comment -- "a primary action is a promise about safety, not a convenience default" -- and keeps
+  `primary_verb=None` for every entry that has not been through that judgement. Which verb each of
+  the five should get is exactly the kind of decision the destination's "explicitly unresolved human
+  decisions" list reserves for the operator, so nothing was invented to close it.
+
+- **Recorded so it drifts loudly (2026-08-03):**
+  `test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all` now reads the catalog rather
+  than hardcoding, and asserts two things: none of the five uncovered fixtures has an authored
+  primary action, and the five this review DOES cover are exactly the ones that do. Authoring a
+  primary verb for any of the five fails the test and forces the claim to be rewritten, which is
+  the correct trigger -- the moment one becomes interactable is the moment this review has no
+  reason to skip it.
+
+- Status: Implemented (unproven as visual acceptance). The claim is unchanged in outcome and
+  accurate in content: five accepted drawings are outside this review because they are not
+  interactable, not because nobody wrote a test.
