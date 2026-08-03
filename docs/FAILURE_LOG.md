@@ -5799,3 +5799,44 @@ observation + correction of a glyph claim I could not have read
 
 - Status: Recorded, not implemented. The strict xfail stands and its reason is accurate about the
   behaviour; this entry says what the fix actually costs.
+
+### Mobile: the two off-screen fixtures are not cropped, they are unreachable
+
+Question:
+The recorded mobile defect says stepping stones and planter have no interaction rectangle at
+390x844. That is a statement about the INITIAL frame. If a touch drag panned the camera they would
+still be reachable, and §1's "may crop peripheral scenery but may not lose reachable interactions"
+would arguably hold. Check whether it does.
+
+Type:
+defect, worse than recorded
+
+- **Measured (2026-08-03):** at 390x844 the five accepted fixtures report rectangles
+  `walk=absent, open=present, observe=present, sit=present, tend=absent`. A stepped drag from x=320
+  to x=40 across the middle of the frame leaves the painted text BYTE-IDENTICAL and every rectangle
+  unchanged. The viewer registers no `touchstart`, `touchmove`, `pointerdown` or drag handler on the
+  Garden; the only pan is the arrow keys, bound in the document `keydown` handler, which a phone
+  does not have. So the two fixtures are not off-screen -- they are unreachable by any means
+  available on a touch device. §10 requires touch-complete primary interaction and reachable actions
+  at 320 CSS pixels.
+
+- **Why it happens (2026-08-03):** `gardenPresentationProfile` computes
+  `xScale = clamp((width - 10) / (worldWidth * DEPTH.foreground), 0.80, 1.35)`. At a 48-cell phone
+  frame against a 120-column world the unclamped value is about 0.32, so the FLOOR of 0.80 binds:
+  the world is laid out roughly twice as wide as the frame and the remainder is simply outside it.
+  The floor exists to stop the art becoming unreadably squashed, which is a real concern -- so this
+  is a genuine conflict between two requirements, not an oversight.
+
+- **Not corrected, and why (2026-08-03):** the three ways out are different products. A narrower
+  canonical span on small screens is a composition change. A lower scale floor squashes measured art
+  and puts Contract P's "no one-cell shrinkage, no overlap" at risk. A touch pan gesture adds an
+  interaction the destination never specifies and §5 constrains tightly. Choosing among them is the
+  operator's, so nothing was built.
+
+- **Recorded as its own strict xfail (2026-08-03):** `test_touch_can_bring_an_off_screen_fixture_
+  into_reach` asserts the smaller and more certain claim -- that a full-width drag moves the picture
+  at all -- rather than that a specific fixture becomes hittable. If a drag cannot move the camera,
+  no amount of dragging reveals anything.
+
+- Status: Recorded, not implemented. Browser E2E 24 passing and 7 strict xfailed. The severity of
+  the mobile defect is corrected upward: it was written down as cropping and it is unreachability.

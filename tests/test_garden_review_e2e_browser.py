@@ -908,6 +908,59 @@ def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
         "into the baseline, and so that a later correction cannot land silently."
     ),
 )
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found on 2026-08-03 while checking how bad the mobile "
+        "rectangle defect actually is. The two accepted fixtures that fall "
+        "outside the 390x844 frame are not merely off-screen -- they are "
+        "UNREACHABLE. Dragging right across the full width of the phone frame "
+        "leaves the painted picture byte-identical and every interaction "
+        "rectangle unchanged, because the viewer registers no touchstart, "
+        "touchmove, pointerdown or drag handler on the Garden at all: the only "
+        "pan is the arrow keys, which a phone does not have. Goal section 10 "
+        "requires touch-complete primary interaction and reachable actions at "
+        "320 CSS pixels. Correcting it means choosing between a narrower "
+        "canonical span on small screens, a lower horizontal scale floor that "
+        "would squash measured art against Contract P, and adding a touch pan "
+        "gesture -- three different products, which is the operator's choice, "
+        "so nothing is invented here. Left strict so it cannot be normalised "
+        "into the baseline, and so that a later correction cannot land silently."
+    ),
+)
+def test_touch_can_bring_an_off_screen_fixture_into_reach():
+    """A phone with no keyboard must still be able to reach the whole Garden.
+
+    Asserted as "the picture moved", not "the fixture became hittable": if a
+    drag cannot move the camera at all then no amount of dragging will reveal
+    anything, and that is the smaller, more certain claim.
+    """
+    with _static_server() as origin:
+        with _chrome(origin, viewport=MOBILE) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            page.wait_for_timeout(3000)
+
+            def painted() -> str:
+                return page.locator("#g").inner_text()
+
+            before = painted()
+            # A long horizontal drag across the middle of the frame, stepped so
+            # it reads as a gesture rather than a teleport.
+            page.mouse.move(320, 400)
+            page.mouse.down()
+            for x in range(320, 40, -20):
+                page.mouse.move(x, 400)
+                page.wait_for_timeout(20)
+            page.mouse.up()
+            page.wait_for_timeout(800)
+
+            assert painted() != before, (
+                "dragging across the whole phone frame moved nothing, so the "
+                "fixtures outside it cannot be reached by touch at all"
+            )
+        assert errors == [], errors
+
+
 def test_a_single_tap_performs_the_primary_action_on_touch():
     """One tap, not a hover-equivalent first tap and a second to confirm."""
     with _static_server() as origin:
