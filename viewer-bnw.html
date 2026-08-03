@@ -1303,6 +1303,15 @@ function installGardenReviewAccessor(){
           ?JSON.parse(JSON.stringify(object.primary_action)):null,
       };
     },
+    // The camera, read straight off canonical UI state.
+    //
+    // "Did that gesture pan the Garden?" cannot be answered from the painted
+    // text, because the Garden repaints on its own and a frame taken after a
+    // drag differs from one taken before it whether or not the drag did
+    // anything. Asking the camera removes the ambient motion from the question
+    // entirely. Diagnostic only: it copies two numbers and dispatches nothing.
+    camera:()=>gardenRuntime?.state
+      ?[gardenRuntime.state.ui.camera[0],gardenRuntime.state.ui.camera[1]]:null,
     // Canonical integer positions of every projected object.
     //
     // "Move focus to the right" is a question about where things STAND, and

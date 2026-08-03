@@ -580,7 +580,7 @@ def test_the_gate_matrix_agrees_with_the_browser_e2e_defects():
     # a gate must therefore not be claiming.
     for marker, forbidden_claim in (
         ("no interaction rectangle", "narrow layout"),
-        ("not spatial", "spatial focus"),
+        ("arrow keys to `pan`", "spatial focus"),
     ):
         assert marker in recorded, (
             f"the E2E no longer records {marker!r}; this check needs rewriting"
@@ -610,6 +610,10 @@ def test_the_gate_matrix_agrees_with_the_browser_e2e_defects():
     for test_name, forbidden_denial in (
         ("def test_keyboard_focus_reaches_every_accepted_fixture", "keyboard play is impossible"),
         ("def test_the_44px_floor_is_applied_where_it_decides_a_click", "under the 44px floor"),
+        (
+            "def test_hovering_accepted_ink_changes_the_picture",
+            "changes only the cursor",
+        ),
     ):
         assert test_name in recorded, (
             f"the E2E no longer contains {test_name!r}; this check needs rewriting"

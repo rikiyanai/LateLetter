@@ -926,13 +926,17 @@ def test_touch_can_bring_an_off_screen_fixture_into_reach():
     """
     with _static_server() as origin:
         with _chrome(origin, viewport=MOBILE) as (page, errors):
-            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             page.wait_for_timeout(3000)
 
-            def painted() -> str:
-                return page.locator("#g").inner_text()
+            # The CAMERA, not the painted text. The Garden repaints on its own,
+            # so a frame taken after a drag differs from one taken before it
+            # whether or not the drag did anything -- an earlier version of this
+            # test compared painted text and would have reported success from
+            # ambient motion alone.
+            before = page.evaluate("() => window.__gardenReview.camera()")
+            assert before is not None, "the review surface exposes no camera"
 
-            before = painted()
             # A long horizontal drag across the middle of the frame, stepped so
             # it reads as a gesture rather than a teleport.
             page.mouse.move(320, 400)
@@ -943,9 +947,9 @@ def test_touch_can_bring_an_off_screen_fixture_into_reach():
             page.mouse.up()
             page.wait_for_timeout(800)
 
-            assert painted() != before, (
-                "dragging across the whole phone frame moved nothing, so the "
-                "fixtures outside it cannot be reached by touch at all"
+            assert page.evaluate("() => window.__gardenReview.camera()") != before, (
+                "dragging across the whole phone frame did not move the camera, "
+                "so the fixtures outside it cannot be reached by touch at all"
             )
         assert errors == [], errors
 
@@ -1045,7 +1049,7 @@ def _fixture_presentation_under_hover(page) -> tuple[set[str], set[str], set[str
     return before, during, after, cursor
 
 
-def test_hovering_accepted_ink_is_received_and_the_signal_is_quiet():
+def test_hovering_accepted_ink_changes_the_fixture_and_the_cursor():
     """The control: the hover lands, and the layer being watched does not drift.
 
     Two claims, both needed before the expected failure below means anything.
@@ -1055,7 +1059,7 @@ def test_hovering_accepted_ink_is_received_and_the_signal_is_quiet():
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
-            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             before, _, after, cursor = _fixture_presentation_under_hover(page)
             assert cursor == "pointer", (
                 f"the cursor over accepted fixture ink is {cursor!r}, so the "
@@ -1068,30 +1072,26 @@ def test_hovering_accepted_ink_is_received_and_the_signal_is_quiet():
         assert errors == [], errors
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, measured deterministically on 2026-08-03 after this behaviour "
-        "had lost its test entirely. Hovering an accepted fixture's ink changes "
-        "the CURSOR to 'pointer' and changes nothing about the fixture: the "
-        "measured-asset layer -- which holds every fixture's atlas art and the "
-        "inline colour that emphasis would alter -- is BYTE-IDENTICAL across "
-        "eighteen samples spanning pointer-away, pointer-over and pointer-away "
-        "again. Goal section 5 requires hovering visible ink to change the "
-        "picture, and lists cursor change as a separate affordance rather than "
-        "a substitute for it. The renderer does compute an `emphasized` flag "
-        "from the hover cell, so a response is designed and is not arriving; "
-        "which approved visual form it should take is a decision the operator "
-        "has not made, so nothing is invented here. Left strict so it cannot be "
-        "normalised into the baseline, and so that a later correction cannot "
-        "land silently."
-    ),
-)
 def test_hovering_accepted_ink_changes_the_picture():
-    """Cursor feedback is not picture feedback; the destination asks for both."""
+    """Goal §5: hovering visible object ink changes the picture, not just the cursor.
+
+    RETRACTED DEFECT. This was recorded on 2026-08-03 as a strict expected
+    failure -- "hover changes the cursor and nothing else" -- and it was my
+    measurement, not the product. The test opened the viewer with
+    `garden_review_time`, which deliberately FREEZES disposable presentation, so
+    the renderer never repainted and the emphasis it had already computed never
+    reached the DOM. On the product path the same measurement shows a distinct
+    fixture presentation for as long as the pointer is over the ink, reverting
+    exactly when it leaves.
+
+    The lesson generalises past hover: the review clock is right for provenance
+    questions and wrong for every question a repaint has to answer. The sky
+    motion test already used the product path for that reason; hover and the
+    mobile drag did not, and both said the wrong thing.
+    """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
-            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             before, during, after, _ = _fixture_presentation_under_hover(page)
             assert during - before - after, (
                 "every fixture presentation seen while hovering is one the "

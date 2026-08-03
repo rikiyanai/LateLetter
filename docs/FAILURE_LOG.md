@@ -5889,3 +5889,48 @@ defect, half correctable without any decision
 - Status: Implemented (unproven as visual acceptance). 356 world, adapter, contract and acceptance
   tests hold; all Garden Node suites 0 failing; browser E2E 24 passing and 7 strict xfailed. Gate 12
   records spatial focus as half done rather than absent.
+
+### RETRACTED: hover was never broken; I measured it with the clock stopped
+
+Question:
+The stop condition kept naming hover as an outstanding defect. Before restating that, check the one
+thing I had not: whether `garden_review_time` -- which the capture tool's own docstring says
+"intentionally freezes disposable presentation motion" -- also stops the repaint that would show
+hover emphasis.
+
+Type:
+RETRACTION of a defect I recorded, plus one measurement that has to be redone
+
+- **It does (2026-08-03):** every hover measurement I made used `REVIEW_QUERY`. The renderer
+  registers `mousemove` on its own element and sets `hoverCell`, `_drawObject` turns that into
+  `emphasized`, and `emphasized` selects the `gold` fixture colour -- all of it already implemented.
+  With the review clock frozen the renderer never repaints, so the emphasis it had computed never
+  reached the DOM, and my measurement saw a still layer and called it a dead product. On the product
+  path the same measurement shows a DISTINCT fixture presentation for every sample while the pointer
+  is over the ink -- hash `e997d678b642` against `15f90a2ce5f3` -- reverting exactly when it leaves,
+  with zero drift between the two pointer-away windows.
+
+- **The defect is withdrawn (2026-08-03):** `test_hovering_accepted_ink_changes_the_picture` is no
+  longer an expected failure; it holds on the product path. Gate 2 is corrected for the fourth time
+  in one day, every correction my own error. The withdrawn claim was recorded with a mutation proof,
+  a positive control and a deterministic signal -- and all three were applied to the wrong page,
+  which is worth stating plainly: rigour applied to a mis-specified setup produces confident wrong
+  answers, not fewer wrong answers.
+
+- **The mobile drag measurement had the same fault (2026-08-03):** it also ran under the review
+  clock, and its assertion compared PAINTED TEXT before and after a drag. On the product path that
+  comparison passes from ambient motion alone, so it was wrong in both directions -- it proved
+  nothing frozen and would have proved nothing running. It now reads the CAMERA, exposed as a new
+  read-only `__gardenReview.camera()`, which ambient motion cannot move. Re-measured on the product
+  path: the camera does not move, and `walk` and `tend` still have no rectangle. The defect stands;
+  the evidence for it is now sound.
+
+- **The general rule this cost me (2026-08-03):** the review clock is correct for provenance
+  questions -- did this world come from a generator, is this the current composition -- and wrong
+  for every question a repaint has to answer. The sky-motion test already used the product path for
+  exactly this reason and I did not carry that across. Seven measurement errors in this lane now,
+  and this is the first where the fix was not a better signal but a correctly configured page.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 25 passing and 6 strict xfailed.
+  Hover moves from the defect list to the holding list; the mobile touch defect stays with better
+  evidence.
