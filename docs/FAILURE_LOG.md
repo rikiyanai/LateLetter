@@ -5753,3 +5753,49 @@ coverage gap
 - Status: Implemented (unproven as visual acceptance). Browser E2E 24 passing and 6 strict xfailed.
   Everything in §13 that can be executed without an operator's judgement or without inventing art
   has now been executed. What remains is not blocked on effort.
+
+### The ambient bird is not missing art, it is a rewritten traversal awaiting a verdict
+
+Question:
+The absent ambient bird was recorded as a defect against an accepted recipe -- goal §2 says "the
+accepted legacy ambient-bird traversal is a different recipe and is required". Before treating that
+as an implementation task, check what the candidate actually contains.
+
+Type:
+observation + correction of a glyph claim I could not have read
+
+- **Correction first (2026-08-03):** the entry above describes the legacy birds as "cycling wing
+  poses (`><` -> `\/` -> `||`)". I read those glyphs off video frames downscaled to 1400px, where
+  three-cell ASCII at 15px is not resolvable. The real frames are
+  `_AMBIENT_BIRD_FRAMES = ['\v/','_v_','/v\','_v_']` at `legacy/viewer-bnw.html:566`, with
+  `['>-','~>']` reserved for widths under 60 columns. The traversal claim -- two birds crossing the
+  full width in ten seconds -- was measured in pixels and stands; the glyph names were invented by
+  my eye and are withdrawn.
+
+- **The ART is present and unchanged (2026-08-03):** `ambientBirdPresentation` in
+  `web/garden-renderer.mjs` carries `['\\v/','_v_','/v\\','_v_']`, byte-identical to the archived
+  legacy constant. Under §2, "exact provenance-verified legacy art and animation may retain its
+  approval when migrated unchanged", so the drawing itself is accepted.
+
+- **The TRAVERSAL is rewritten (2026-08-03):** legacy spawns one to five drifting actors on a random
+  250-600 frame timer, each entering off one edge at ±0.42 cells per frame with a per-bird flap
+  step, and never in winter. The candidate computes a stateless position per index: a stratified
+  start across a wrapped span, a fixed cadence from a seeded hash, and a bob cycle. Same characters,
+  different motion. §2 is explicit that "similar-looking or rewritten art does not inherit legacy
+  approval" and that "materially changed animation requires its own recorded visual verdict".
+
+- **Why it does not run (2026-08-03):** `_drawSkyLife` is deliberately empty -- "the sky band is
+  still computed... Nothing is drawn into it" -- and `_drawAmbient` was emptied on 2026-07-31 after
+  the operator rejected candidate clouds, candidate distant birds, butterflies and fireflies. The
+  emptying was correct. What it also removed, without the distinction being recorded, was the one
+  ambient population §2 requires.
+
+- **So this is one decision away, not one implementation away (2026-08-03):** restoring the bird
+  means either migrating the legacy traversal exactly -- spawn timer, edge entry, drift speed, the
+  winter exclusion -- which would inherit approval, or accepting the rewritten one, which needs a
+  verdict. Choosing between those is the operator's. Nothing was enabled here: switching on the
+  rewritten traversal would have shipped unverdicted animation while reporting that an accepted
+  recipe had been restored.
+
+- Status: Recorded, not implemented. The strict xfail stands and its reason is accurate about the
+  behaviour; this entry says what the fix actually costs.
