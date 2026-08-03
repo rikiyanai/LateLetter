@@ -5511,3 +5511,39 @@ observation refining an existing defect
 - Status: Implemented (unproven as visual acceptance). The seasons xfail is unchanged in outcome and
   sharper in content. Nothing was built to make winter differ: seasonal colouring, dormancy and
   snow are art and recipes carrying no verdict.
+
+### Garden E2E: the plain product URL, and the last capture nobody had opened
+
+Question:
+Goal §13 requires the accepted package to carry "no debug/query-only permission", and §5 forbids
+review or debug query parameters that revive the rejected action chrome. Every test in
+`tests/test_garden_review_e2e_browser.py` opened the viewer WITH `garden_debug=1`, because they need
+`__gardenReview` to interrogate the runtime -- which means, on their own, none of them said anything
+about what a recipient typing the bare URL receives. §13 also requires every captured video to be
+opened; the mobile candidate video had not been.
+
+Type:
+coverage gap
+
+- **The bare URL now has its own test (2026-08-03):** no query string at all. It asserts the Garden
+  PAINTS first, because "no debug surface" is trivially true of a blank page and would prove nothing
+  otherwise; then that `window.__gardenReview` is `undefined`, the accessor being the review
+  permission itself; then no action chrome and a clean console. Proved load-bearing by mutation:
+  installing the accessor unconditionally fails the test, and the mutation was reverted.
+
+- **Mobile video watched (2026-08-03):** ten seconds at 390x844. Three objects -- bench, mailbox
+  with its red `7`, lantern -- and nothing moves except an almost imperceptible shift in the soil
+  dot row. Roughly seventy per cent of the frame is empty. It matches the two recorded mobile
+  defects exactly and adds nothing new, which is itself worth recording: the capture confirmed the
+  xfails rather than revealing anything they had missed.
+
+- **Every capture in the package has now been opened (2026-08-03):** both candidate stills, both
+  legacy stills, both comparison sheets, three season-matrix cells read directly with the remaining
+  thirteen compared by recorded hash and glyph count, and all three videos. §13's inspection
+  requirement is satisfied for the 2026-08-03 package.
+
+- Status: Implemented (unproven as visual acceptance). `tests/test_garden_review_e2e_browser.py` is
+  22 passing and 5 strict xfailed. What remains in §13 is not reachable from here: bonded-animal
+  delivery, each animal and bond tier, item discovery and the post-completion memorial all require
+  art or recipes carrying no verdict, and the four slots in `docs/garden-review-verdicts.json` are
+  an operator's judgement that no test and no assistant may write.

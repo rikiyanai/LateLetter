@@ -931,6 +931,46 @@ def _upper_half_renderings(page, *, seconds: float) -> int:
     return len(seen)
 
 
+def test_the_plain_product_url_grants_no_debug_or_review_permission():
+    """No query string at all: the Garden opens, the review surface does not.
+
+    Goal §13 requires the accepted package to carry "no debug/query-only
+    permission", and §5 forbids "review/debug query parameters that revive"
+    the rejected action chrome. Every other test in this file opens the viewer
+    WITH `garden_debug=1`, because they need `__gardenReview` to ask the runtime
+    questions -- which means, on their own, they say nothing about what a
+    recipient who types the bare URL gets.
+
+    Three things are asserted, and the first two must hold together or neither
+    is worth anything:
+
+    1. The Garden paints. If it did not, "no debug surface" would be true of a
+       blank page and would prove nothing about the product.
+    2. `window.__gardenReview` is not installed. The accessor is the review
+       permission; its absence on the product path is the permission not being
+       granted.
+    3. No action chrome, and a clean console.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            # Deliberately NOT `_enter_standalone_garden`: that helper always
+            # appends a query, and a query is the thing under test.
+            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
+            page.locator("#btn-standalone").click()
+            page.locator("#hud.vis").wait_for(state="visible")
+            page.locator("#g .garden-lattice-row").first.wait_for(state="attached")
+
+            assert _painted_glyph_count(page) > 0, (
+                "the plain product URL painted nothing, so the absence of a "
+                "debug surface below proves nothing"
+            )
+            assert page.evaluate("() => typeof window.__gardenReview") == "undefined", (
+                "the review accessor is installed without anyone asking for it"
+            )
+            _assert_no_action_chrome(page)
+        assert errors == [], errors
+
+
 def test_the_deployed_legacy_sky_lives_which_is_how_the_measurement_is_known_to_work():
     """The positive control for the expected failure below.
 
