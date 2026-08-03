@@ -5420,3 +5420,56 @@ task + observation
   each animal and bond tier, item discovery, and the post-completion memorial, all of which need art
   or recipes carrying no verdict. The four operator verdicts in `docs/garden-review-verdicts.json`
   remain unwritten and are not mine to write.
+
+### Garden motion: the candidate's sky is dead, and the gate matrix has no gate that would notice
+
+Question:
+Goal §13 requires "at least ten seconds of real motion, not still images alone" in the acceptance
+package, and requires every captured video to be opened and inspected. The videos had been captured
+and never watched. Watching them is the whole point: a receipt saying the DOM changed is not a
+person seeing the Garden move.
+
+Type:
+defect + two corrections of my own measurement
+
+- **What the videos actually show (2026-08-03):** the deployed legacy carries TWO ambient birds
+  right to left across the full width in ten seconds, cycling wing poses (`><` -> `\/` -> `||`),
+  while its three canopies substitute glyphs and its grasses sway. The candidate, over the same ten
+  seconds, moves the oak trunk and the sunflower stem between `/`, `\` and `|`. Nothing else. The
+  canopy is static, no bird appears, no weather, no leaf.
+
+- **Measured, after two wrong measurements of my own (2026-08-03):** first by `.garden-lattice-row`
+  textContent, which reported three changing rows out of 58 -- directionally right but blind to the
+  measured atlas layer, which Contract P paints separately from the lattice, and unusable on the
+  legacy, which has no such rows. Then by `#g` innerText lines, which DOES include that layer but
+  made the row index meaningless: the candidate yields 378 lines because every measured glyph span
+  is its own line, the legacy yields 66 screen rows, so "the upper half of the lines" is the sky in
+  one viewer and nothing in particular in the other. That second reading made the test XPASS. The
+  measurement that holds is pixels: the top half of the viewport, screenshotted twice a second.
+  Candidate: ONE distinct rendering across forty samples over twenty seconds -- byte-identical, so
+  nothing above the horizon moves at all. Legacy, measured identically: FORTY distinct renderings
+  out of forty.
+
+- **This is an accepted recipe the candidate does not run (2026-08-03):** goal §2 says the accepted
+  legacy ambient-bird traversal "is a different recipe and is required", and §4 requires birds to
+  enter beyond one edge, traverse the entire visible width continuously and exit beyond the
+  opposite edge. Nothing is invented by requiring it. Recorded as a fifth strict xfail, with the
+  legacy measured by the same function in a separate PASSING test so that "the candidate's sky is
+  still" cannot be confused with "this measurement cannot see motion".
+
+- **The existing motion test passes on a signal far weaker than the destination (2026-08-03):**
+  `test_the_garden_keeps_moving_without_any_input` compares whole-frame text, so two alternating
+  trunk glyphs satisfy it completely, and the capture receipt agrees at seven unique frame hashes
+  out of ten. Both are true. Both are adjacent to the claim rather than the claim. The new test asks
+  a question the trunk cannot answer.
+
+- **No §7.8.13 gate covers §4 (2026-08-03):** gate 7 is relationship-animal repertoires and
+  explicitly not ambient life; gate 10 is parallax and frame timing. Nothing in the fourteen gates
+  asks whether the Garden visibly lives. A defect this large being invisible to the gate matrix is
+  a structural gap in the matrix, not only in the product. Recorded rather than acted on: adding a
+  fifteenth gate is a change to the operator's acceptance criteria, not mine to make.
+
+- Status: Implemented (unproven as visual acceptance). `tests/test_garden_review_e2e_browser.py` is
+  21 passing and 5 strict xfailed. §13's "at least ten seconds of real motion" and "every captured
+  PNG/video opened and visually inspected before presentation" are now satisfied for the desktop
+  candidate and legacy videos and for every still. The four operator verdicts remain unwritten.

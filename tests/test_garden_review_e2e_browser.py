@@ -31,6 +31,7 @@ precondition for that review, never a substitute for it.
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import json
 import socket
 import subprocess
@@ -894,6 +895,120 @@ def test_the_44px_floor_is_applied_where_it_decides_a_click(tmp_path):
             assert _summary_changes(page, settled), (
                 "a click inside the 44px expansion but outside the hotspot hit nothing, "
                 "so the accessibility floor is not applied where it decides a click"
+            )
+        assert errors == [], errors
+
+
+def _upper_half_renderings(page, *, seconds: float) -> int:
+    """How many DISTINCT pictures the top half of the viewport takes over `seconds`.
+
+    Measured in PIXELS, deliberately, after two text-based readings of the same
+    question disagreed with each other:
+
+    * `.garden-lattice-row` textContent misses the measured atlas layer entirely,
+      because Contract-P assets are painted separately from the lattice, and the
+      deployed legacy has no such rows at all -- so it can only ever measure the
+      candidate, and only part of it.
+    * `#g` innerText DOES include that layer, but at the cost of the line index
+      meaning something different in each viewer: the candidate yields 378 lines
+      because every measured glyph span is its own line, the legacy yields 66
+      screen rows. "Row 83" is then not a row and not comparable.
+
+    A screenshot has neither problem. The top half of the frame is sky by
+    construction -- the ground sits near the bottom in both viewers -- and two
+    identical pictures produce identical bytes.
+
+    :param page: an open Garden
+    :param seconds: how long to watch, sampled twice a second
+    :returns: the number of distinct renderings seen, 1 meaning nothing moved
+    """
+    size = page.viewport_size
+    clip = {"x": 0, "y": 0, "width": size["width"], "height": size["height"] // 2}
+    seen: set[str] = set()
+    for _ in range(int(seconds * 2)):
+        seen.add(hashlib.sha256(page.screenshot(clip=clip)).hexdigest())
+        page.wait_for_timeout(500)
+    return len(seen)
+
+
+def test_the_deployed_legacy_sky_lives_which_is_how_the_measurement_is_known_to_work():
+    """The positive control for the expected failure below.
+
+    Without this, "nothing moves in the candidate's sky" is indistinguishable
+    from "this measurement cannot see motion". Run against the accepted deployed
+    baseline -- the same reading, the same window, the same threshold -- the
+    legacy shows sky rows changing, because two ambient birds cross it.
+
+    The legacy opens from `#btn-demo`; it has no standalone mode.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            page.goto(f"{origin}/legacy/viewer-bnw.html", wait_until="networkidle")
+            page.locator("#btn-demo").click()
+            page.locator("#hud.vis").wait_for(state="visible")
+            page.wait_for_timeout(1500)
+
+            renderings = _upper_half_renderings(page, seconds=12)
+            assert renderings > 1, (
+                "the deployed legacy sky did not move either, so this measurement "
+                "proves nothing about the candidate"
+            )
+        assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by watching the captured motion on 2026-08-03. At "
+        "1600x1000 the top half of the candidate is BYTE-IDENTICAL across forty "
+        "screenshots over twenty seconds -- one single rendering. Nothing above "
+        "the horizon moves at all: no ambient bird, no cloud, no weather, no "
+        "leaf, and the oak canopy never changes. The only motion anywhere in "
+        "the frame is the oak trunk and the sunflower stem alternating between "
+        "'/', '\\\\' and '|'. The deployed legacy, measured identically, takes "
+        "FORTY distinct renderings out of forty samples, because two ambient "
+        "birds cross it right to left cycling wing poses. Goal section 2 states "
+        "that the accepted legacy ambient-bird traversal 'is a different recipe "
+        "and is required', and section 4 requires birds to enter beyond one "
+        "edge, traverse the entire visible width continuously and exit beyond "
+        "the opposite edge. This is an ACCEPTED legacy recipe that the "
+        "candidate does not run, so nothing is invented by requiring it. Owned "
+        "by the presentation-restoration step of the operator route. Left "
+        "strict so it cannot be normalised into the baseline, and so that a "
+        "later correction cannot land silently."
+    ),
+)
+def test_the_sky_lives_too_and_not_only_two_stems():
+    """Something must move above the plants, over a long enough look.
+
+    This exists because `test_the_garden_keeps_moving_without_any_input` below
+    passes on a signal far weaker than the destination requires: it compares
+    whole-frame text, so two alternating trunk glyphs satisfy it completely.
+    The capture receipt agrees with it -- seven unique frame hashes out of ten
+    -- and the video shows a Garden that is, to the eye, still. That is the same
+    adjacent-signal mistake this lane has made repeatedly: measuring something
+    true and adjacent to the claim, then reporting the claim.
+
+    So this asks a question the trunk cannot answer: does any row in the UPPER
+    HALF of the picture ever change? The ground sits near the bottom by
+    construction, so the upper half is sky, and a bird crossing it is the
+    accepted legacy recipe the goal file requires.
+
+    Twenty seconds, not three, because traversal is slow and a short look could
+    miss a bird that is genuinely there.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            # The product query, not the review query: review deliberately
+            # freezes disposable presentation motion, so asking it about motion
+            # would answer a question about the freeze.
+            _enter_standalone_garden(page, origin, PRODUCT_QUERY)
+            page.wait_for_timeout(1500)
+
+            renderings = _upper_half_renderings(page, seconds=20)
+            assert renderings > 1, (
+                "the top half of the Garden was byte-identical for twenty "
+                "seconds: nothing above the horizon moved at all"
             )
         assert errors == [], errors
 
