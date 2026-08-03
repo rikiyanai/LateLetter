@@ -183,10 +183,14 @@ export function pingPongLoop(count) {
  * advances its visual frame counter at roughly 100ms per step, so a cadence
  * value here is "archived milliseconds / 100", rounded.
  *
- *   gentle    400ms  -> 4   small flower sway, the archive's default breeze
- *   brisk     300ms  -> 3   medium flower sway
- *   heavy     500ms  -> 5   tall sunflower; "heavier, slower sway"
- *   creature  150ms  -> 2   bird wing flap, "9 frames, 150ms each"
+ * Tick length is the accepted cadence law's 50ms floor (~20 ticks a
+ * second, recipe.motion.frame_cadence), so archive durations convert at
+ * 20 ticks a second:
+ *
+ *   gentle    400ms  -> 8   small flower sway, the archive's default breeze
+ *   brisk     300ms  -> 6   medium flower sway
+ *   heavy     500ms  -> 10  tall sunflower; "heavier, slower sway"
+ *   creature  150ms  -> 3   bird wing flap, "9 frames, 150ms each"
  *
  * `focused` is the cadence used while an object is the focused one.  The
  * archive has no notion of focus, so this is not a transcription — it is the
@@ -196,11 +200,13 @@ export function pingPongLoop(count) {
  * archive does not license.
  */
 export const SWAY_CADENCE_FRAMES = Object.freeze({
-  gentle: 4,
-  brisk: 3,
-  heavy: 5,
-  creature: 2,
-  focused: 2,
+  gentle: 8,
+  brisk: 6,
+  heavy: 10,
+  creature: 3,
+  // 200ms while focused -- the one timing the archive does not license,
+  // carried across at the same wall-clock speed it always had.
+  focused: 4,
 });
 
 /**

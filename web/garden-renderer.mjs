@@ -432,49 +432,7 @@ export function skyCloudPresentation(
   return { x, y: Math.min(y, high), lines: shape };
 }
 
-/**
- * A distant bird: the preserved archive-era flap language, high up and
- * gliding across the sky.
- *
- * A relationship animal is a multi-line body in the creature colour, has a
- * canonical ID/hotspot/actions and remains attached to the Garden. These birds
- * are grey, one-line, untargetable presentation travellers. The old three-cell
- * `\v/ → _v_ → /v\ → _v_` cycle is readable as a bird in motion; the one-cell
- * `^`/`-` substitute was not.
- *
- * Returns [column, row, glyph].
- */
-export function ambientBirdPresentation(
-  worldId, index, frame, width, skyTop, skyBottom, count = 5,
-) {
-  const seed = stringHash(`${worldId}:skybird:${index}`);
-  // Keep the preserved archive-era flap language at phone width too. Three
-  // cells are still small enough for the narrow Garden, and swapping them for
-  // punctuation was the exact visual regression this presentation restores.
-  const frames = ['\\v/', '_v_', '/v\\', '_v_'];
-  const artWidth = Math.max(...frames.map(value => [...value].length));
-  const span = Math.max(8, width + artWidth + 4);
-  // Birds cross noticeably faster than clouds; that difference in speed is what
-  // makes the sky read as having two separate kinds of thing in it.
-  const cadence = 3 + (seed % 3);
-  const direction = index % 2 ? 1 : -1;
-  const travel = Math.floor(Math.max(0, frame) / cadence) * direction;
-  // Stratified across the width for the same reason clouds are: birds drawn
-  // from one unassisted seed cluster together and leave most of the sky empty.
-  const slice = span / Math.max(1, count);
-  const start = Math.floor(slice * index + noise(seed + 7) * slice);
-  const x = wrap(start + travel, span) - artWidth - 2;
-  const low = Math.max(1, skyTop);
-  const high = Math.max(low, skyBottom);
-  const base = low + Math.floor(noise(seed + 131) * Math.max(1, high - low + 1));
-  // Gentle rise and fall along the glide, one cell at a time.
-  const bobCycle = [0, 0, 1, 1, 0, 0, -1, -1];
-  const bob = bobCycle[Math.floor((Math.max(0, frame) + (seed % 7)) / 5) % bobCycle.length];
-  const wing = frames[
-    Math.floor((Math.max(0, frame) + (seed % 7)) / (3 + index % 3)) % frames.length
-  ];
-  return [x, clamp(base + bob, low, high), wing];
-}
+
 
 export function weatherParticlePosition(worldId, index, frame, width, horizon, kind = 'rain') {
   const seed = stringHash(`${worldId}:weather:${kind}:${index}`);
@@ -1959,59 +1917,136 @@ export function drawAmbient(raster, projection, palette, season, horizon, profil
 
 
 /**
- * Inhabit the sky.
+ * The archived ambient-bird frames, exactly as deployed.
  *
- * Everything below the object band is ground and planting; everything above
- * it was, until now, reserved space with nothing in it — more than half the
- * frame left blank in daylight, because stars and the moon only appear at
- * night. Clouds and distant birds are what that reserved space is for.
- *
- * Both are presentation only. They never enter the layout array, own no
- * canonical object, and cannot be focused or clicked, which is exactly what
- * keeps them from impersonating a relationship animal.
+ * `_AMBIENT_BIRD_FRAMES` / `_AMBIENT_BIRD_COMPACT_FRAMES` from the frozen
+ * legacy viewer (blob 59dc49a820d07d1b6a1741e17aafe6d075f6c99d, lines
+ * 566-567). The compact pair is what the deployed page shows below 60
+ * columns; swapping frames by width is part of the accepted recipe, not a
+ * candidate invention.
  */
+export const AMBIENT_BIRD_FRAMES = Object.freeze(['\\v/', '_v_', '/v\\', '_v_']);
+export const AMBIENT_BIRD_COMPACT_FRAMES = Object.freeze(['>-', '~>']);
+
+// The traversal constants, verbatim from the same blob: 0.42 cells per tick
+// (lines 1476-1478), a 250 + [0,350) tick respawn interval (1485-1489), a
+// 28% flock chance of 3-5 birds trailing by 5 columns (1160-1180). Ticks are
+// the accepted 50ms cadence, so these are the deployed speeds.
+const AMBIENT_BIRD_SPEED = 0.42;
+const AMBIENT_BIRD_RESPAWN_BASE = 250;
+const AMBIENT_BIRD_RESPAWN_SPREAD = 350;
+const AMBIENT_BIRD_FLOCK_CHANCE = 0.28;
+
 /**
- * Sky life. Currently draws NOTHING, and that is the correct state.
+ * Every bird spawn that has happened by `frame`, derived deterministically.
  *
- * REMOVED 2026-08-01, on operator instruction, after the clouds and distant
- * birds were identified in a live product frame as content that had never
- * been individually accepted.
+ * The deployed viewer drew its spawn times and flock parameters from
+ * `Math.random()`. The presentation contract forbids unseeded randomness --
+ * the same inputs must compose the same frame -- so the ENTROPY SOURCE is a
+ * seeded hash of the world id and the spawn ordinal while every DISTRIBUTION
+ * is kept verbatim: the interval is still 250 plus up to 350 ticks, the
+ * flock chance is still 28%, the flock is still 3 to 5. A viewer cannot
+ * observe which entropy source produced a draw; they can observe the
+ * distributions, and those are the deployed ones.
  *
- * What was here: two to five drifting `CLOUD_SHAPES` by day and evening, and
- * three to ten one-cell birds on the archived `\v/ _v_ /v\ _v_` flap cycle.
- * Both were authored inside this renderer. Neither has an `accepted` verdict
- * in `docs/garden-asset-acceptance.json`, and SPEC 7.10.1 is explicit that
- * passing every automated check while never having been looked at leaves an
- * asset `not_reviewed` — it does not make it shippable.
+ * Iterating from zero each call is deliberate: it makes the schedule a pure
+ * function of (worldId, frame), which is what lets the composer stay
+ * stateless about birds. The loop runs frame/250 iterations -- a few hundred
+ * after an hour of play -- which costs less than one row of painting.
  *
- * This is the same removal already made for the butterflies and fireflies on
- * 2026-07-31, applied to the rest of the renderer's self-authored decoration.
- * The Garden now paints its sky empty rather than filling it with drawings
- * nobody approved. An empty sky is an honest gap; unapproved decoration is
- * not.
- *
- * `skyCloudPresentation` and `ambientBirdPresentation` are deliberately KEPT
- * and still exported. They are pure trajectory functions with their own
- * tests, they encode the archived motion language, and the operator has
- * accepted the legacy animations as art. When sky life returns it should
- * return as accepted atlas assets driven by these same trajectories, not as
- * new renderer-local drawings.
- *
- * @param raster     Frame being painted; untouched while this is dormant.
- * @param projection Canonical scene; read for nothing at present.
- * @param palette    Active theme colours.
- * @param season     Canonical season name.
- * @param profile    Presentation profile; `bandTop` bounds the sky.
- * @param mode       'day' | 'evening' | 'night'.
+ * @param worldId canonical world id, the deterministic seed root
+ * @param frame   current presentation tick
+ * @returns spawn records `{time, index}` in chronological order
  */
-export function drawSkyLife(raster, projection, palette, season, profile, mode) {
-  // The sky band is still computed, because the boundary is real geometry and
-  // the next accepted asset will need it. Nothing is drawn into it.
-  const skyTop = 1;
-  const skyBottom = Math.max(skyTop + 1, profile.bandTop - 1);
-  void raster; void projection; void palette; void season; void mode;
-  void skyTop; void skyBottom;
+export function ambientBirdSpawns(worldId, frame) {
+  const spawns = [];
+  let time = 0;
+  let index = 0;
+  while (index < 10000) {   // backstop far beyond any real session
+    const wait = AMBIENT_BIRD_RESPAWN_BASE + Math.floor(
+      noise(stringHash(`${worldId}:bird-wait:${index}`)) * AMBIENT_BIRD_RESPAWN_SPREAD);
+    // The deployed timer spawns on the tick AFTER the threshold is exceeded.
+    time += wait + 1;
+    if (time > frame) break;
+    spawns.push({ time, index });
+    index += 1;
+  }
+  return spawns;
 }
+
+/**
+ * Sky life: the accepted legacy ambient-bird traversal, and nothing else.
+ *
+ * WHAT THIS IS. The exact port of the deployed recipe
+ * (`recipe.ambient.bird_traversal`, required by goal sections 2 and 4):
+ * birds enter fully beyond one edge, cross the entire visible width at
+ * 0.42 cells a tick, and leave beyond the opposite edge, flapping the
+ * archived frame cycle on a 5-7 tick step. 28% of spawns are a flock of
+ * 3 to 5, each trailing the previous by 5 columns with the deployed small
+ * vertical offsets so the group reads as a skein rather than a row. Base
+ * altitude is drawn within the upper sky and clamped to rows
+ * 1..groundY-8; below 60 columns the compact frame pair is used.
+ *
+ * WHAT THIS IS NOT. The clouds and one-cell distant-bird backdrop that
+ * were removed on 2026-08-01 stay removed: the operator identified them in
+ * a live frame as unapproved, and nothing here repaints them. The ambient
+ * TRAVERSAL is a different recipe -- named accepted-as-deployed in the
+ * register, with its provenance pinned to the frozen blob -- and it is
+ * required, not merely permitted.
+ *
+ * WINTER. The deployed viewer suppresses SPAWNING in winter. This port
+ * composes each frame from the current season, so in winter no birds paint
+ * at all; the one observable difference from the deployed behaviour is that
+ * a bird mid-crossing at the moment winter begins vanishes rather than
+ * finishing its crossing -- a seconds-long edge visible only at a season
+ * boundary, recorded here rather than silently absorbed.
+ *
+ * @param raster      frame being painted
+ * @param projection  canonical scene; read for world id only
+ * @param palette     active theme colours; birds paint in the muted role,
+ *                    the deployed 'gray'
+ * @param season      canonical season name; winter paints nothing
+ * @param profile     presentation profile; groundFront bounds altitude
+ * @param mode        'day' | 'evening' | 'night' (unused; birds fly in all)
+ * @param visualFrame current presentation tick
+ */
+export function drawSkyLife(raster, projection, palette, season, profile, mode, visualFrame) {
+  void mode;
+  if (season === 'winter') return;
+  const worldId = String(projection.world_id ?? 'garden');
+  const cols = raster.width;
+  const frames = cols < 60 ? AMBIENT_BIRD_COMPACT_FRAMES : AMBIENT_BIRD_FRAMES;
+  const width = Math.max(...frames.map(value => [...value].length));
+  const groundY = profile.groundFront;
+  // A spawn's farthest trailing bird has left the far edge after this many
+  // cells of travel; older spawns cannot paint and are skipped unexamined.
+  const farthestTravel = cols + 2 * (width + 2) + 5 * 4 + 2;
+
+  for (const spawn of ambientBirdSpawns(worldId, visualFrame)) {
+    const age = visualFrame - spawn.time;
+    if (age * AMBIENT_BIRD_SPEED > farthestTravel) continue;
+    const draw = key => noise(stringHash(`${worldId}:bird:${spawn.index}:${key}`));
+    const fromLeft = draw('side') > 0.5;
+    const flock = draw('flock') < AMBIENT_BIRD_FLOCK_CHANCE
+      ? 3 + Math.floor(draw('size') * 3) : 1;
+    const baseY = Math.floor(draw('baseY') * Math.max(4, groundY - 12)) + 2;
+    for (let i = 0; i < flock; i += 1) {
+      const trail = i * 5;
+      const offsetY = (i % 2 === 0 ? 0 : 1) + (i === 2 ? -1 : 0);
+      const startX = fromLeft ? -width - 2 - trail : cols + 2 + trail;
+      const vx = fromLeft ? AMBIENT_BIRD_SPEED : -AMBIENT_BIRD_SPEED;
+      const x = Math.round(startX + vx * age);
+      // The deployed deactivation bounds, verbatim.
+      if (x < -width - 2 || x > cols + width + 2) continue;
+      const y = clamp(baseY + offsetY, 1, Math.max(2, groundY - 8));
+      const frameStep = 5 + (i % 3);
+      const wing = frames[Math.floor(Math.max(0, visualFrame) / frameStep) % frames.length];
+      raster.text(x, y, wing, palette.dim, true, null,
+        { source: 'recipe.ambient.bird_traversal' });
+    }
+  }
+}
+
 
 
 export function drawWeather(raster, projection, palette, season, horizon, layout, visualFrame) {
@@ -2436,7 +2471,15 @@ export class CanonicalGardenRenderer {
       this.presentationTimer = null;
       if (!this.presentationWanted || !this.presentationActive || !this.projection ||
         this.projection.motion_paused || this.prefersReducedMotion) return;
-      if (now - this.presentationLast >= 100) {
+      // The 50ms floor is the ACCEPTED cadence law (recipe.motion.
+      // frame_cadence): requestAnimationFrame with an explicit 50ms floor,
+      // ~20 ticks a second regardless of display refresh. Every archived
+      // animation constant -- the 0.42-cell bird step, the 250-600 tick
+      // respawn interval, the sway cadences -- is calibrated against this
+      // tick, so the earlier 100ms floor silently halved every speed the
+      // operator accepted. Changing this number changes every motion in the
+      // Garden; it moves only with that register record.
+      if (now - this.presentationLast >= 50) {
         this.presentationLast = now; this.visualFrame += 1; this.render(this.projection);
       }
       this._ensurePresentationLoop();

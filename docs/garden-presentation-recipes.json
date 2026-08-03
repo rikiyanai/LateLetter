@@ -329,7 +329,7 @@
       "decision_refs": [
         "D1"
       ],
-      "candidate_status": "different",
+      "candidate_status": "exact",
       "language": "requestAnimationFrame with an explicit 50ms floor, so the simulation advances at roughly 20fps regardless of display refresh. Every animation constant in this register — the /6 butterfly divisor, the %8 leaf rotation, the 41-frame leaf rest, the 250-600 tick bird interval — is calibrated against this tick, so changing the cadence silently changes every speed.",
       "presence_requirement": "optional",
       "dependents": [
@@ -362,7 +362,8 @@
         "recipe.weather.rain_splashes",
         "recipe.weather.snow",
         "recipe.weather.snow_accumulation"
-      ]
+      ],
+      "candidate_note": "The candidate's presentation loop restored to the deployed 50ms floor on 2026-08-03 (web/garden-renderer.mjs _ensurePresentationLoop). The earlier 100ms floor silently halved every accepted speed; the sway cadence table in web/garden-legacy-art.mjs was re-expressed against the accepted tick in the same patch so every archive duration keeps its stated wall-clock length (400ms -> 8 ticks, 150ms -> 3)."
     },
     "recipe.motion.painter_order": {
       "kind": "law",
@@ -1280,9 +1281,9 @@
         "D1",
         "D3"
       ],
-      "candidate_status": "absent",
+      "candidate_status": "exact",
       "language": "Birds enter fully off-screen at x = -width-2 (or cols+2) and traverse at plus or minus 0.42 per tick until they leave the far side, at which point they deactivate. Entry side is random. A flock forms 28 percent of the time with 3 to 5 birds, each trailing the previous by 5 columns with a small vertical offset so the group reads as a skein rather than a row. Base altitude is random within the upper sky, clamped to rows 1..groundY-8. The frame set narrows below 60 columns. Respawn interval is 250 to 600 ticks, suppressed in winter.",
-      "candidate_note": "Removed from the candidate together with the rejected sky drawing. verdict accepted_as_deployed with presence_requirement 'required': D3 asks for it explicitly, so its absence is a defect. Presence is not a verdict.",
+      "candidate_note": "Ported exactly into the GardenPresentation composer on 2026-08-03 (web/garden-renderer.mjs drawSkyLife + ambientBirdSpawns): 0.42 cells per tick, entry at -width-2 / cols+2, deactivation beyond the far bound, 28% flocks of 3-5 trailing by 5 columns with the deployed vertical offsets, base altitude within max(4, groundY-12) clamped to 1..groundY-8, frameStep 5+(i%3) over the archived 4-frame cycle, compact pair below 60 columns, respawn 250 + [0,350) ticks, winter suppressed. Two deliberate, recorded deviations forced by the presentation contract: the ENTROPY SOURCE is a seeded hash instead of Math.random() with every distribution kept verbatim (unseeded randomness is not an available composer input), and a bird mid-crossing at the instant winter begins vanishes rather than finishing, because the composer reads the current season only. Distributions and speeds are the deployed ones; a viewer cannot observe the entropy source.",
       "distinct_from": "recipe.sky.distant_birds",
       "presence_requirement": "required",
       "law_refs": [

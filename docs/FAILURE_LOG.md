@@ -6274,3 +6274,48 @@ implementation; the atomic ownership transfer
 - Status: Implemented (unproven as visual acceptance). No old path can independently choose
   visible cells, colour, geometry, source authority, hit regions or painter order; what the
   Garden looks like is decided in exactly one place, under an authority that is data.
+
+### Route step 4, first patch: the deployed cadence and the exact ambient bird are restored, and two expected failures cleared
+
+Question:
+Begin the legacy-presentation restoration with the recipe the goal names as required: the exact
+ambient-bird traversal, and the cadence law every animation constant is calibrated against.
+
+Type:
+implementation with exact provenance; two strict xfails corrected into plain assertions
+
+- **The cadence was the hidden divergence (2026-08-03):** the register's frame-cadence law reads
+  "requestAnimationFrame with an explicit 50ms floor... every animation constant in this register
+  is calibrated against this tick", and the candidate's loop ran a 100ms floor -- silently
+  halving every speed the operator accepted. The loop now enforces the deployed 50ms floor, and
+  the sway table in `web/garden-legacy-art.mjs` is re-expressed against the accepted tick so
+  every archive duration keeps its stated wall-clock length (400ms -> 8 ticks, 150ms -> 3).
+  `recipe.motion.frame_cadence` is `candidate_status: exact`.
+
+- **The bird is the deployed bird (2026-08-03):** `drawSkyLife` now paints the exact traversal
+  from the frozen blob (59dc49a8, lines 566-567, 1160-1180, 1476-1498): entry fully beyond an
+  edge, 0.42 cells per tick, deactivation beyond the far bound, 28% flocks of 3-5 trailing by 5
+  columns with the deployed vertical offsets, base altitude clamped to rows 1..groundY-8,
+  frameStep 5+(i%3) over the archived four-frame cycle, the compact pair below 60 columns, a
+  250 + [0,350) tick respawn, winter suppressed. Two deviations, recorded in the register row
+  rather than absorbed: the entropy source is a seeded hash with every distribution verbatim
+  (the presentation contract forbids unseeded randomness), and a bird mid-crossing at winter
+  onset vanishes rather than finishing (the composer reads the current season only). The
+  REWRITTEN traversal -- wrapping travel, bob cycle, stratified starts, none of it deployed --
+  is deleted, and its tests are re-derived against the deployed laws, including the one that
+  had pinned the rewrite's phone-width choice against the blob's explicit compact pair.
+
+- **Two corrected expected failures (2026-08-03):** the sky test and the mobile-motion test now
+  assert their requirement plainly and hold: the candidate's upper half changes because a bird
+  crosses it, and the 390x844 Garden moves before any gesture because the compact bird crosses
+  the phone sky. Both watch windows extend to forty-five seconds with early exit, because the
+  deployed respawn law itself may wait thirty seconds before the first bird -- a shorter window
+  would fail the exact deployed behaviour whenever the seeded draw lands late, and the first
+  draw for `standalone:local` lands at 19.7 seconds.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 27 passing and 4 strict
+  xfailed; Garden Node suites 203 of 203; acceptance/contract/builder suites 247 of 247; the
+  runtime gate composes the starter with zero violations and zero suppression;
+  `required_presentation_absent` is empty for the first time. The remaining step-4 divergences
+  are the ground line, moon and starfield; the remaining xfails are touch, tap rectangles, the
+  arrow-key binding and the seasons.

@@ -8,7 +8,9 @@ import {
 } from '../../web/garden-legacy-art.mjs';
 
 import {
-  CanonicalGardenRenderer, ambientBirdPresentation, ambientEntityPosition,
+  CanonicalGardenRenderer, ambientEntityPosition,
+  AMBIENT_BIRD_FRAMES, AMBIENT_BIRD_COMPACT_FRAMES, ambientBirdSpawns, drawSkyLife,
+  Raster, DAY,
   animalPoseFamily, connectedMasks, gardenGroundY, gardenPresentationProfile,
   layoutGardenObjects, measuredAssetPlacement,
   objectBurstPattern, skyCloudPresentation,
@@ -402,12 +404,13 @@ test('a legacy plant sways by whole archived frames, never by loose glyphs', () 
   // both are asserted: the picture changes as a unit, and it returns to where
   // it started rather than wandering forever through fresh combinations.
   // Sampled one archived frame apart, not one presentation frame apart. The
-  // archive holds each picture for ~400ms and the Garden steps at ~100ms, so
-  // four consecutive presentation frames show the SAME picture by design;
+  // archive holds each picture for ~400ms and the Garden ticks at the
+  // accepted 50ms cadence (recipe.motion.frame_cadence), so EIGHT
+  // consecutive presentation frames show the SAME picture by design;
   // sampling every frame would only measure the hold.
   const seen = [];
   for (let step = 0; step < 20; step += 1) {
-    seen.push(layoutGardenObjects(legacyPlantScene('willow'), [120, 48], step * 4)[0]
+    seen.push(layoutGardenObjects(legacyPlantScene('willow'), [120, 48], step * 8)[0]
       .art.lines.join('\n'));
   }
   const distinct = new Set(seen);
@@ -1685,8 +1688,9 @@ test('every fixture picture is recognisable and unique at every density', () => 
 
 test('sky life travels continuously and never impersonates a relationship animal', () => {
   const width = 120, skyTop = 1, skyBottom = 18;
+  // Clouds remain a kept trajectory with no paint permission; their motion
+  // contract is unchanged.
   const cloudPictures = new Set();
-  const desktopBirdFrames = new Set();
   for (let index = 0; index < 8; index += 1) {
     for (let frame = 0; frame < 120; frame += 1) {
       const before = skyCloudPresentation('sky-proof', index, frame, width, skyTop, skyBottom, 8);
@@ -1695,35 +1699,93 @@ test('sky life travels continuously and never impersonates a relationship animal
       const span = Math.max(8, width + Math.max(...before.lines.map(l => [...l].length)) + 4);
       const dx = Math.abs(after.x - before.x);
       assert.ok(Math.min(dx, span - dx) <= 1, `cloud ${index} jumped at frame ${frame}`);
-      // A cloud keeps one altitude; only its position along the sky changes.
       assert.equal(after.y, before.y, `cloud ${index} changed altitude at frame ${frame}`);
-
-      const birdBefore = ambientBirdPresentation('sky-proof', index, frame, width, skyTop, skyBottom, 8);
-      const birdAfter = ambientBirdPresentation('sky-proof', index, frame + 1, width, skyTop, skyBottom, 8);
-      const birdSpan = Math.max(8, width + 6);
-      const bdx = Math.abs(birdAfter[0] - birdBefore[0]);
-      assert.ok(Math.min(bdx, birdSpan - bdx) <= 1, `bird ${index} jumped at frame ${frame}`);
-      assert.ok(Math.abs(birdAfter[1] - birdBefore[1]) <= 1, `bird ${index} hopped altitude`);
-      // Preserve the archive-era three-cell flap language. Relationship birds
-      // remain multi-line canonical bodies with IDs and hotspots; these are
-      // one-line, untargetable sky travellers.
-      assert.ok(['\\v/', '_v_', '/v\\'].includes(birdAfter[2]));
-      desktopBirdFrames.add(birdAfter[2]);
     }
   }
   assert.ok(cloudPictures.size >= 3, 'cloud catalogue collapsed to repeated bowls');
-  assert.deepEqual(desktopBirdFrames, new Set(['\\v/', '_v_', '/v\\']));
+});
 
-  const phoneBirdFrames = new Set();
-  for (let frame = 0; frame < 120; frame += 1) {
-    const phone = ambientBirdPresentation(
-      'sky-proof', 0, frame, 49, skyTop, skyBottom, 3,
-    );
-    assert.ok(['\\v/', '_v_', '/v\\'].includes(phone[2]),
-      'phone width replaced the archive-era bird with punctuation');
-    phoneBirdFrames.add(phone[2]);
+/**
+ * Paint one sky frame through the real painter and return the bird cells.
+ *
+ * The traversal is judged on what actually lands in a raster, because that
+ * is what a viewer sees; the spawn schedule alone cannot show a clamp or an
+ * edge bound misfiring.
+ */
+function birdCellsAt(frame, cols, season = 'summer') {
+  const raster = new Raster(cols, 40);
+  const profile = gardenPresentationProfile([cols, 40]);
+  drawSkyLife(raster, { world_id: 'sky-proof' }, DAY, season, profile, 'day', frame);
+  return raster.attempted.filter(item =>
+    item.source_id === 'recipe.ambient.bird_traversal' && item.glyph.trim());
+}
+
+test('the ambient bird traversal is the deployed recipe, edge to edge', () => {
+  const cols = 120;
+  const spawns = ambientBirdSpawns('sky-proof', 20000);
+  assert.ok(spawns.length > 5, 'a long session produced almost no bird spawns');
+  // The deployed interval: 250 plus up to 350 ticks, spawning the tick after
+  // the threshold -- so consecutive spawn gaps sit in [251, 601].
+  for (let i = 1; i < spawns.length; i += 1) {
+    const gap = spawns[i].time - spawns[i - 1].time;
+    assert.ok(gap >= 251 && gap <= 601, `respawn gap ${gap} is outside the deployed interval`);
   }
-  assert.deepEqual(phoneBirdFrames, new Set(['\\v/', '_v_', '/v\\']));
+  // Determinism: the schedule is a pure function of (worldId, frame).
+  assert.deepEqual(ambientBirdSpawns('sky-proof', 20000), spawns);
+
+  // Follow the first spawn across the sky, frame by frame.
+  const spawn = spawns[0];
+  let previousXs = null;
+  let firstSeen = null, lastSeen = null;
+  let minX = Infinity, maxX = -Infinity;
+  const frameGlyphs = new Set();
+  for (let frame = spawn.time; frame < spawn.time + Math.ceil((cols + 20) / 0.42); frame += 1) {
+    const cells = birdCellsAt(frame, cols);
+    if (!cells.length) { previousXs = null; continue; }
+    const xs = cells.map(cell => cell.x);
+    if (firstSeen === null) firstSeen = { frame, x: Math.min(...xs) };
+    lastSeen = { frame, xs };
+    minX = Math.min(minX, ...xs);
+    maxX = Math.max(maxX, ...xs);
+    cells.forEach(cell => frameGlyphs.add(cell.glyph));
+    // Continuous travel: at 0.42 cells a tick, no painted column moves more
+    // than one cell between consecutive frames.
+    if (previousXs !== null) {
+      const step = Math.abs(Math.min(...xs) - Math.min(...previousXs));
+      assert.ok(step <= 1, `the bird jumped ${step} cells in one tick at frame ${frame}`);
+    }
+    previousXs = xs;
+  }
+  assert.ok(firstSeen, 'the first spawn never painted at all');
+  // The crossing reaches from one edge region to the other: painting begins
+  // within a few cells of an edge and the swept range covers the full width.
+  assert.ok(minX <= 2, `the bird first appeared at ${minX}, not at an edge`);
+  assert.ok(maxX >= cols - 3, `the bird disappeared at ${maxX}, before the far edge`);
+  // Only the archived flap glyphs ever paint at desktop width.
+  const archived = new Set(AMBIENT_BIRD_FRAMES.flatMap(value => [...value]));
+  for (const glyph of frameGlyphs) {
+    assert.ok(archived.has(glyph), `unarchived bird glyph ${JSON.stringify(glyph)}`);
+  }
+});
+
+test('below sixty columns the deployed compact frames paint, and winter is empty', () => {
+  // Find any frame where a phone-width bird is on screen.
+  let compactSeen = new Set();
+  for (let frame = 0; frame < 4000; frame += 1) {
+    for (const cell of birdCellsAt(frame, 49)) compactSeen.add(cell.glyph);
+    if (compactSeen.size) break;
+  }
+  assert.ok(compactSeen.size > 0, 'no phone-width bird painted in 4000 ticks');
+  const compact = new Set(AMBIENT_BIRD_COMPACT_FRAMES.flatMap(value => [...value]));
+  for (const glyph of compactSeen) {
+    assert.ok(compact.has(glyph),
+      `phone bird painted ${JSON.stringify(glyph)}, not the deployed compact pair`);
+  }
+  // Winter: the deployed viewer stops spawning; this port paints nothing.
+  for (let frame = 0; frame < 4000; frame += 200) {
+    assert.equal(birdCellsAt(frame, 120, 'winter').length, 0,
+      'a bird painted in winter');
+  }
 });
 
 // REPLACED 2026-08-01: 'daylight inhabits the sky it reserves' required at

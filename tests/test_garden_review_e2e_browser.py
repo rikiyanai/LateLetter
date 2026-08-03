@@ -1149,7 +1149,7 @@ def test_the_44px_floor_is_applied_where_it_decides_a_click(tmp_path):
         assert errors == [], errors
 
 
-def _upper_half_renderings(page, *, seconds: float) -> int:
+def _upper_half_renderings(page, *, seconds: float, until: int | None = None) -> int:
     """How many DISTINCT pictures the top half of the viewport takes over `seconds`.
 
     Measured in PIXELS, deliberately, after two text-based readings of the same
@@ -1170,6 +1170,7 @@ def _upper_half_renderings(page, *, seconds: float) -> int:
 
     :param page: an open Garden
     :param seconds: how long to watch, sampled twice a second
+    :param until: stop early once this many distinct renderings are seen
     :returns: the number of distinct renderings seen, 1 meaning nothing moved
     """
     size = page.viewport_size
@@ -1177,6 +1178,10 @@ def _upper_half_renderings(page, *, seconds: float) -> int:
     seen: set[str] = set()
     for _ in range(int(seconds * 2)):
         seen.add(hashlib.sha256(page.screenshot(clip=clip)).hexdigest())
+        # Motion is a threshold question -- "did a second rendering ever
+        # appear" -- so once it has, watching longer only spends wall time.
+        if until is not None and len(seen) >= until:
+            break
         page.wait_for_timeout(500)
     return len(seen)
 
@@ -1283,30 +1288,20 @@ def test_the_deployed_legacy_sky_lives_which_is_how_the_measurement_is_known_to_
         assert errors == [], errors
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, found by watching the captured motion on 2026-08-03. At "
-        "1600x1000 the top half of the candidate is BYTE-IDENTICAL across forty "
-        "screenshots over twenty seconds -- one single rendering. Nothing above "
-        "the horizon moves at all: no ambient bird, no cloud, no weather, no "
-        "leaf, and the oak canopy never changes. The only motion anywhere in "
-        "the frame is the oak trunk and the sunflower stem alternating between "
-        "'/', '\\\\' and '|'. The deployed legacy, measured identically, takes "
-        "FORTY distinct renderings out of forty samples, because two ambient "
-        "birds cross it right to left cycling wing poses. Goal section 2 states "
-        "that the accepted legacy ambient-bird traversal 'is a different recipe "
-        "and is required', and section 4 requires birds to enter beyond one "
-        "edge, traverse the entire visible width continuously and exit beyond "
-        "the opposite edge. This is an ACCEPTED legacy recipe that the "
-        "candidate does not run, so nothing is invented by requiring it. Owned "
-        "by the presentation-restoration step of the operator route. Left "
-        "strict so it cannot be normalised into the baseline, and so that a "
-        "later correction cannot land silently."
-    ),
-)
 def test_the_sky_lives_too_and_not_only_two_stems():
     """Something must move above the plants, over a long enough look.
+
+    CORRECTED 2026-08-03: this was a strict expected failure -- the top half
+    of the candidate was byte-identical for twenty seconds because the sky
+    held nothing that moved. The accepted legacy ambient-bird traversal is
+    now ported exactly through the GardenPresentation composer, so the sky
+    lives again and this asserts it plainly.
+
+    The watch window is FORTY-FIVE seconds with an early exit, not twenty,
+    because that is the recipe's own guarantee: the deployed respawn law
+    waits 250 to 600 ticks (12.5 to 30 seconds at the accepted 50ms cadence)
+    before the first bird, and a shorter window would fail the exact
+    deployed behaviour whenever the seeded draw lands late.
 
     This exists because `test_the_garden_keeps_moving_without_any_input` below
     passes on a signal far weaker than the destination requires: it compares
@@ -1332,10 +1327,11 @@ def test_the_sky_lives_too_and_not_only_two_stems():
             _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             page.wait_for_timeout(1500)
 
-            renderings = _upper_half_renderings(page, seconds=20)
+            renderings = _upper_half_renderings(page, seconds=45, until=2)
             assert renderings > 1, (
-                "the top half of the Garden was byte-identical for twenty "
-                "seconds: nothing above the horizon moved at all"
+                "the top half of the Garden was byte-identical for forty-five "
+                "seconds: nothing above the horizon moved at all, although the "
+                "deployed respawn law guarantees a bird within thirty"
             )
         assert errors == [], errors
 
@@ -1373,52 +1369,35 @@ def test_the_garden_keeps_moving_without_any_input():
         assert errors == [], errors
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, re-measured on 2026-08-03 with a long poll after a sibling "
-        "defect turned out to be my measurement rather than the product. It "
-        "survives: over TWENTY seconds sampled twice a second on the product "
-        "path, the 390x844 Garden produces ONE distinct painted text and ONE "
-        "distinct screenshot. Not a phase artifact -- nothing moves at all. "
-        "The cause is the same one behind the mobile rectangle and touch "
-        "defects: `xScale` is floored at 0.80, so a 120-column world lays out "
-        "roughly twice as wide as a 48-cell phone frame, and BOTH PLANTS -- "
-        "the oak and the sunflower, the only objects in the starter that "
-        "animate -- fall outside it along with the stepping stones and the "
-        "planter. The phone is left with three static fixtures. The Garden "
-        "must visibly live without input, and mobile may crop peripheral "
-        "scenery but may not become a still frame. CORRECTED OWNERSHIP "
-        "(2026-08-03): an earlier version of this reason called the fix the "
-        "same unmade camera choice as the touch defect. That was wrong -- no "
-        "pan gesture makes an UNATTENDED Garden move, because this test by "
-        "definition sends no input. The clamp explains why the two animating "
-        "plants sit outside the frame; the fix is owned by the "
-        "presentation-restoration step of the execution order, which must make "
-        "the accepted legacy ambient bird, weather and vegetation recipes "
-        "produce visible motion inside the mobile frame before any gesture. "
-        "Left strict so it cannot be normalised into the baseline, and so that "
-        "a later correction cannot land silently."
-    ),
-)
 def test_the_garden_keeps_moving_on_mobile_too():
-    """Same measurement as the desktop case, at the required phone size."""
+    """Same measurement as the desktop case, at the required phone size.
+
+    CORRECTED 2026-08-03: this was a strict expected failure -- the phone
+    frame held only three static fixtures, because both animating plants fell
+    outside it, and nothing else moved. The exact legacy ambient-bird
+    traversal now crosses the phone sky too (below sixty columns it paints
+    the deployed compact frame pair), so the mobile Garden visibly lives
+    before any gesture, which is the requirement.
+
+    The window is forty-five seconds for the same reason as the sky test:
+    the deployed respawn law may wait up to thirty seconds before the first
+    bird, and a shorter window would fail the exact deployed behaviour.
+    """
     with _static_server() as origin:
         with _chrome(origin, viewport=MOBILE) as (page, errors):
             _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             page.wait_for_timeout(1500)
-            # Polled, like the desktop case, so this cannot fail merely because
-            # two instants landed on the same phase of a slow sway. Twenty
-            # seconds at 2Hz: if the phone Garden moves at all, forty samples
-            # will catch it.
             first = page.locator("#g").inner_text()
             moved = False
-            for _ in range(40):
+            for _ in range(90):
                 page.wait_for_timeout(500)
                 if page.locator("#g").inner_text() != first:
                     moved = True
                     break
-            assert moved, "the mobile Garden was motionless for twenty seconds"
+            assert moved, (
+                "the mobile Garden was motionless for forty-five seconds, "
+                "although the deployed respawn law guarantees a bird within thirty"
+            )
         assert errors == [], errors
 
 

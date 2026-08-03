@@ -207,7 +207,7 @@ export function composePresentationFrame(projection, state, context) {
   drawSky(raster, projection, sky, palette, profile, mode);
   // Sky life is drawn straight after the stars so that ground, planting and
   // objects all paint over it: clouds and distant birds are the backdrop.
-  drawSkyLife(raster, projection, palette, season, profile, mode);
+  drawSkyLife(raster, projection, palette, season, profile, mode, state.visualFrame);
   drawGround(raster, palette, season, profile);
   drawAmbient(raster, projection, palette, season, horizon, profile);
   // Far, middle and near are painter's cohorts derived from the canonical
