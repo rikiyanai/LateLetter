@@ -1427,36 +1427,21 @@ def test_day_evening_and_night_are_visually_distinct():
     assert len(set(seen.values())) == 3, f"time of day does not read differently: {seen}"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, found by this test on 2026-08-03. At midday the painted text is "
-        "BYTE-IDENTICAL across spring, summer and winter -- desktop hash "
-        "770ad5a5d909ec70 for both spring and winter, and one shared mobile hash "
-        "3ac79ca42f5e65db for all three. Only autumn differs. Time of day does "
-        "read differently, but season does not, and the destination requires "
-        "seasonal weighting, plant colouring, weather and ambience to visibly "
-        "change across all four. "
-        "Confirmed by opening the sixteen-cell season matrix in "
-        "docs/visual-review/2026-08-03/garden/matrix/ rather than by hash alone: "
-        "AUTUMN genuinely works -- the oak turns amber and detached leaves "
-        "scatter across the frame including below the horizon. WINTER does not "
-        "exist as a season: winter-day is the same bytes as spring-day, and "
-        "winter-night differs from summer-night only by the night treatment. "
-        "There is no snow on the ground or on any plant surface, and the oak "
-        "keeps its full summer canopy and summer colour in January, against "
-        "section 4's snow accumulation and section 7's dormant representation. "
-        "Day, evening and night ARE distinct and read well -- cream, amber, and "
-        "a navy sky carrying stars and a crescent moon -- so section 4's night "
-        "presentation is not at issue here. Seasonal plant colouring, dormancy "
-        "and weather are art and recipes that carry no verdict, so nothing is "
-        "invented here to make this hold. Left strict so it cannot be "
-        "normalised into the baseline, and so that a later correction cannot "
-        "land silently."
-    ),
-)
 def test_the_four_seasons_are_visually_distinct():
-    """Four seasons at the same hour must not paint the same picture."""
+    """Four seasons at the same hour must not paint the same picture.
+
+    CORRECTED 2026-08-03: this was a strict expected failure recorded as
+    "winter does not exist as a season", attributed to seasonal art carrying
+    no verdict. The real defect needed no new art at all: the candidate's
+    season chain read `month <= 8` with no lower bound, so January and
+    February fell into SUMMER -- winter never existed on the clock path --
+    and the scene-empty weather branch painted nothing in any season. Both
+    are deployed laws now transcribed exactly (frozen blob 59dc49a8, lines
+    1634-1637 and 1030-1056): months 12-2 are winter, winter snows
+    continuously, spring carries light rain, autumn sheds leaves. Particle
+    density remains the candidate's own until the full particle-system port;
+    presence is the deployed law.
+    """
     midday = {
         "spring": "2026-04-15T12:00:00Z",
         "summer": "2026-07-15T12:00:00Z",

@@ -963,7 +963,15 @@ export function seasonOf(projection) {
   const authored = String(projection.scene?.season ?? projection.scene?.palette ?? '').toLowerCase();
   for (const season of ['spring', 'summer', 'autumn', 'winter']) if (authored.includes(season)) return season;
   const month = new Date(presentationTime(projection) * 1000).getUTCMonth() + 1;
-  return month >= 3 && month <= 5 ? 'spring' : month <= 8 ? 'summer' : month <= 11 ? 'autumn' : 'winter';
+  // The deployed boundaries (frozen blob 59dc49a8, lines 1634-1637):
+  // 3-5 spring, 6-8 summer, 9-11 autumn, everything else winter. The earlier
+  // chain here tested `month <= 8` with no lower bound, so January and
+  // February fell into SUMMER and winter never existed on the clock path --
+  // the mis-transcription behind "winter-day paints the same bytes".
+  if (month >= 3 && month <= 5) return 'spring';
+  if (month >= 6 && month <= 8) return 'summer';
+  if (month >= 9 && month <= 11) return 'autumn';
+  return 'winter';
 }
 function lunarPhase(effectiveTime) {
   const days = ((Number(effectiveTime) * 1000 - Date.UTC(2000, 0, 6, 18, 14)) / 86400000);
@@ -2051,8 +2059,18 @@ export function drawSkyLife(raster, projection, palette, season, profile, mode, 
 
 export function drawWeather(raster, projection, palette, season, horizon, layout, visualFrame) {
   const weather = String(projection.scene?.weather ?? '').toLowerCase();
-  const rain = weather.includes('rain') || weather.includes('storm');
-  const snow = weather.includes('snow') || (season === 'winter' && weather.includes('weather'));
+  // The deployed law derives ambient weather FROM the season when the scene
+  // does not name any (frozen blob 59dc49a8, lines 1030-1056): winter snows
+  // continuously, spring carries persistent light rain, autumn sheds leaves.
+  // An authored scene weather still takes precedence -- it is canonical
+  // state -- but an empty one no longer means an empty sky in January.
+  // Particle DENSITY remains the candidate's own (the register's weather
+  // rows stay candidate_status 'different' until the full particle-system
+  // port); what this derives exactly is PRESENCE.
+  const rain = weather.includes('rain') || weather.includes('storm') ||
+    (!weather && season === 'spring');
+  const snow = weather.includes('snow') ||
+    (season === 'winter' && (weather.includes('weather') || !weather));
   const leaves = season === 'autumn' && !snow;
   const plants = layout.filter(entry => entry.object.kind === 'plant');
   const count = rain ? 70 : snow ? 45 : leaves && plants.length ? 16 : 0;

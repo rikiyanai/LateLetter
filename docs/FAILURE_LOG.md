@@ -6319,3 +6319,39 @@ implementation with exact provenance; two strict xfails corrected into plain ass
   `required_presentation_absent` is empty for the first time. The remaining step-4 divergences
   are the ground line, moon and starfield; the remaining xfails are touch, tap rectangles, the
   arrow-key binding and the seasons.
+
+### Route step 4, second patch: winter existed all along in the deployed law, and now it exists here
+
+Question:
+The seasons expected-failure was recorded as "seasonal plant colouring, dormancy and weather are
+art and recipes that carry no verdict" -- a claim that clearing it required new, unapproved art.
+Check that claim against the deployed law before treating it as blocked on a verdict.
+
+Type:
+correction of a wrong diagnosis, and the implementation that follows from the right one
+
+- **The recorded diagnosis was wrong (2026-08-03):** winter needed no new art. The candidate's
+  season chain read `month <= 8` with no lower bound, so January and February fell into SUMMER
+  -- `seasonOf` never returned winter on the clock path, which is why winter-day painted
+  another season's bytes and no winter treatment (ground texture, bird suppression) ever ran.
+  The deployed boundaries (frozen blob 59dc49a8, lines 1634-1637) are 3-5 spring, 6-8 summer,
+  9-11 autumn, everything else winter; they are now transcribed exactly.
+
+- **Season drives ambient weather, as deployed (2026-08-03):** the deployed viewer derives
+  weather FROM the season (blob lines 1030-1056): winter snows continuously, spring carries
+  persistent light rain, autumn sheds leaves. The candidate gated all weather on scene text, so
+  an empty scene meant an empty sky in January. Presence is now the deployed law, with authored
+  scene weather still taking precedence as canonical state. Particle DENSITY remains the
+  candidate's own -- the weather rows stay `candidate_status: different` until the full
+  particle-system port -- and that boundary is recorded here rather than blurred.
+
+- **The corrected test (2026-08-03):** `test_the_four_seasons_are_visually_distinct` holds and
+  its strict-xfail marker is removed; its docstring records the correction. Four seasons at the
+  same midday hour paint four distinct pictures: winter snow-textured and snowing, spring in
+  light rain, summer clear, autumn shedding.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 28 passing and 3 strict
+  xfailed -- the remaining three are touch pan, tap rectangles and the arrow-key binding, owned
+  by the route's mobile and keyboard steps. Garden Node suites 203 of 203; contract and
+  acceptance suites 225 of 225; the runtime gate composes with zero violations and zero
+  suppression.
