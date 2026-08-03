@@ -6143,3 +6143,37 @@ implementation; additive only, no ownership transferred yet
 
 - Status: Implemented (unproven). No product file changed; the gate the product must pass is now
   real, executable and mutation-proved.
+
+### Route step 3, second patch: the paint authority now covers the grant-backed legacy art, and reaches the runtime
+
+Question:
+Before moving composition into the new owner, settle what the owner may paint: the manifest
+derived only from per-asset verdict rows, but the starter oak, sunflower, cat and bird are
+accepted through the 2026-08-01 operator grant recorded in the register's
+`legacy_ported_renderer_art` section, not through verdict rows. An authority that omits them
+would force the composer to either drop accepted art or paint it anonymously -- both wrong.
+
+Type:
+implementation; additive, no ownership transferred yet
+
+- **`accepted_legacy_art` (2026-08-03):** the manifest and the new runtime authority carry the
+  17 `ported` keys -- five plant species at three sizes, `animal.cat`, `animal.bird` -- as a
+  THIRD identity namespace beside per-asset verdicts and paint recipes, kept separate because
+  their acceptance flows from a recorded grant plus per-identity archive provenance rather than
+  a verdict row. Nothing in `not_ported` (rose, tulip, rabbit, turtle, the invented rest pose,
+  and the rest) can enter the list: it is derived from `ported` keys only, and
+  `test_legacy_art_acceptance_is_exactly_the_ported_grant` additionally asserts every
+  `not_ported` name is absent. The contract module treats these identities as atlas-chain, so
+  their primitives may inherit an `object_id` from the projection.
+
+- **The runtime authority file (2026-08-03):** the composer needs the accepted lists at runtime
+  on every host, without hostname or query inputs. `web/garden-accepted-paint.v1.json` is now
+  generated from the SAME derivation the release manifest embeds (one shared function, so the
+  two can never disagree), committed in-tree, regenerated via
+  `prepare_pages_site.py --write-paint-authority`, and pinned to the registers by
+  `test_the_committed_runtime_authority_matches_the_registers` -- the same drift discipline the
+  fixture primary-action test established. Living under `web/` it enters the deploy dependency
+  walk the moment the viewer fetches it.
+
+- Status: Implemented (unproven). Builder/manifest suites 34 of 34 and Garden Node suites 201 of
+  201 locally. The composer itself is still unbuilt; this patch settles the authority it reads.

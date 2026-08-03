@@ -193,7 +193,16 @@ export function primitiveShapeViolations(frame) {
 export function identityViolations(frame, input) {
   const problems = [];
   const manifest = input.context?.acceptedManifest ?? {};
-  const assetIds = new Set(manifest.accepted_assets ?? []);
+  // Grant-backed legacy art identities are atlas-chain exactly like
+  // per-verdict assets: they are drawings OF gameplay objects, so their
+  // primitives may inherit an object_id from the projection. The manifest
+  // keeps the two lists separate because their acceptance MECHANISMS differ
+  // (verdict row versus recorded grant plus provenance); the chain they
+  // paint on is the same.
+  const assetIds = new Set([
+    ...(manifest.accepted_assets ?? []),
+    ...(manifest.accepted_legacy_art ?? []),
+  ]);
   const recipeIds = new Set(manifest.accepted_recipes ?? []);
   const lawIds = new Set(manifest.accepted_laws ?? []);
   const projectedIds = new Set((input.projection?.objects ?? []).map(o => o.object_id));

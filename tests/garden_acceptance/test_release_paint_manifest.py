@@ -29,14 +29,38 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
 from prepare_pages_site import (  # noqa: E402  (import follows path setup)
     ASSET_REGISTER,
+    PAINT_AUTHORITY_FILE,
     PAINT_IDENTITY_SOURCES,
     PAINT_MANIFEST_NAME,
     RECIPE_REGISTER,
     REPOSITORY_ROOT,
     build_paint_manifest,
+    paint_authority,
     prepare_pages_site,
     verify_paint_manifest,
 )
+
+
+def test_the_committed_runtime_authority_matches_the_registers():
+    """The drift gate for `web/garden-accepted-paint.v1.json`.
+
+    The runtime composer reads this committed file; the registers are the
+    truth. If they disagree -- someone edited a register without regenerating,
+    or edited the file by hand -- this fails and names the fix. This is the
+    same drift discipline the fixture primary-action test established: a
+    committed derivative is only trustworthy while a test pins it to its
+    source.
+    """
+    committed_path = REPOSITORY_ROOT / PAINT_AUTHORITY_FILE
+    assert committed_path.is_file(), (
+        "web/garden-accepted-paint.v1.json is missing; regenerate with "
+        "python3 scripts/prepare_pages_site.py --write-paint-authority"
+    )
+    committed = json.loads(committed_path.read_text(encoding="utf-8"))
+    assert committed == paint_authority(), (
+        "the committed runtime paint authority disagrees with the registers; "
+        "regenerate with python3 scripts/prepare_pages_site.py --write-paint-authority"
+    )
 
 
 @pytest.fixture(scope="module")
@@ -237,6 +261,27 @@ def test_an_unknown_verdict_refuses_to_build_rather_than_guess(built_site, tmp_p
 
     with pytest.raises(RuntimeError, match="unknown verdict"):
         build_paint_manifest(built_site, repository_root=fake_root)
+
+
+def test_legacy_art_acceptance_is_exactly_the_ported_grant(built_site):
+    """`accepted_legacy_art` is the register's ported list -- no more, no less.
+
+    The ported keys are exact archive transcriptions accepted through the
+    recorded 2026-08-01 operator grant, each with per-identity provenance.
+    The `not_ported` section names art that keeps renderer-authored
+    placeholders and carries NO acceptance; none of those names may appear.
+    """
+    manifest = json.loads((built_site / PAINT_MANIFEST_NAME).read_text(encoding="utf-8"))
+    register = json.loads((REPOSITORY_ROOT / ASSET_REGISTER).read_text(encoding="utf-8"))
+    ported = register["legacy_ported_renderer_art"]["ported"]
+    assert sorted(manifest["accepted_legacy_art"]) == sorted(ported.keys())
+    assert manifest["accepted_legacy_art"], "the grant-backed list went empty"
+    # Nothing the register says was NOT ported may be granted paint identity.
+    not_ported = register["legacy_ported_renderer_art"]["not_ported"]
+    for species in not_ported.get("plants", []):
+        assert not any(species in art_id for art_id in manifest["accepted_legacy_art"]), species
+    for species in not_ported.get("animals", []):
+        assert not any(f"animal.{species}" == art_id for art_id in manifest["accepted_legacy_art"]), species
 
 
 def test_the_manifest_carries_no_runtime_permission_vocabulary(built_site):

@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "purpose": "Runtime accepted-paint authority for the Garden composer, derived from the two verdict registers by scripts/prepare_pages_site.py. Regenerate with --write-paint-authority after any register change; a drift test fails while this file and the registers disagree.",
+  "registers": {
+    "asset_register": {
+      "path": "docs/garden-asset-acceptance.json",
+      "sha256": "f3590da3f01323c2672b0b51238da2b0b38089b6b8e4aba3029c11848a02d2ec"
+    },
+    "recipe_register": {
+      "path": "docs/garden-presentation-recipes.json",
+      "sha256": "79424ad17576b5750967bc2f265b66efaac061cf16fe7309ec49601512a68fb6"
+    }
+  },
+  "accepted_assets": [
+    "fixture.arbor",
+    "fixture.bench",
+    "fixture.birdbath",
+    "fixture.bridge",
+    "fixture.lantern",
+    "fixture.mailbox",
+    "fixture.planter",
+    "fixture.pond",
+    "fixture.stepping_stones",
+    "fixture.trellis"
+  ],
+  "accepted_recipes": [
+    "recipe.ambient.bird_traversal",
+    "recipe.ambient.butterfly",
+    "recipe.ambient.firefly",
+    "recipe.animal.absence_footprints",
+    "recipe.animal.pose_paint",
+    "recipe.delivery.bonded_animal",
+    "recipe.delivery.letterbird",
+    "recipe.feedback.click_leaf_burst",
+    "recipe.feedback.click_pine_rustle",
+    "recipe.feedback.feed_glyph",
+    "recipe.feedback.hover_rustle",
+    "recipe.ground.cover",
+    "recipe.scene.ground_line",
+    "recipe.scene.moon",
+    "recipe.scene.starfield",
+    "recipe.special.post_complete_marker",
+    "recipe.vegetation.canopy_shimmer",
+    "recipe.vegetation.grass_blades",
+    "recipe.vegetation.plant_paint",
+    "recipe.weather.falling_leaves",
+    "recipe.weather.rain",
+    "recipe.weather.rain_fragments",
+    "recipe.weather.rain_splashes",
+    "recipe.weather.snow",
+    "recipe.weather.snow_accumulation"
+  ],
+  "accepted_laws": [
+    "recipe.animal.anchor_layout",
+    "recipe.animal.feed_reaction",
+    "recipe.animal.species_motion",
+    "recipe.animal.trust_tier_state_machine",
+    "recipe.feedback.hover_cursor_affordance",
+    "recipe.generation.autumn_recolour",
+    "recipe.generation.plant_templates",
+    "recipe.generation.population_density",
+    "recipe.generation.seasonal_grass_flowering",
+    "recipe.generation.seasonal_weights",
+    "recipe.motion.frame_cadence",
+    "recipe.motion.painter_order",
+    "recipe.motion.wind_law",
+    "recipe.palette.day_night_mutation",
+    "recipe.scene.ground_gradient",
+    "recipe.serialization.colored_rows",
+    "recipe.time.phase_selection",
+    "recipe.viewport.cell_measurement",
+    "recipe.viewport.resize_regeneration"
+  ],
+  "accepted_legacy_art": [
+    "animal.bird",
+    "animal.cat",
+    "plant.oak.large",
+    "plant.oak.medium",
+    "plant.oak.small",
+    "plant.pine.large",
+    "plant.pine.medium",
+    "plant.pine.small",
+    "plant.sunflower.large",
+    "plant.sunflower.medium",
+    "plant.sunflower.small",
+    "plant.water_lily.large",
+    "plant.water_lily.medium",
+    "plant.water_lily.small",
+    "plant.willow.large",
+    "plant.willow.medium",
+    "plant.willow.small"
+  ]
+}

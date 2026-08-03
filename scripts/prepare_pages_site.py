@@ -693,6 +693,31 @@ def _accepted_law_ids(register: dict) -> list[str]:
     return sorted(accepted)
 
 
+def _accepted_legacy_art_ids(register: dict) -> list[str]:
+    """Every legacy-ported art identity the register records as grant-backed.
+
+    These are the `legacy_ported_renderer_art.ported` keys: exact
+    transcriptions of the archived legacy drawings, each with its archive
+    provenance recorded, accepted through the operator grant of 2026-08-01
+    ("the archived drawings and frame sequences are accepted as ART; an
+    exact, provenance-verified migration retains that approval"). They are a
+    THIRD identity namespace beside per-asset verdicts and paint recipes --
+    kept separate rather than folded into `accepted_assets` because their
+    acceptance flows from a recorded grant plus provenance, not from a
+    per-asset verdict row, and a reader auditing the manifest must be able to
+    see which mechanism accepted each id.
+
+    Only the `ported` keys qualify. The `not_ported` section names art that
+    keeps renderer-authored placeholders and carries no acceptance of any
+    kind; nothing from it may reach this list.
+
+    :param register: Parsed ``docs/garden-asset-acceptance.json``.
+    :returns: Sorted grant-backed legacy art identities.
+    """
+    ported = register.get("legacy_ported_renderer_art", {}).get("ported", {})
+    return sorted(ported.keys())
+
+
 def _artifact_file_hashes(site_root: Path) -> dict[str, str]:
     """Content hashes for every file in the built site, keyed by POSIX relpath.
 
@@ -725,6 +750,70 @@ def _canonical_json_bytes(payload: dict) -> bytes:
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def paint_authority(repository_root: Path = REPOSITORY_ROOT) -> dict:
+    """The runtime slice of the paint authority: the four accepted-id lists.
+
+    This is the derivation the release manifest embeds, exposed on its own
+    because the RUNTIME composer needs exactly these lists and none of the
+    artifact hashing: the browser consumes them as
+    ``web/garden-accepted-paint.v1.json`` (written by
+    ``--write-paint-authority`` and committed), so the same authority is
+    served from the source tree during review and from the built artifact in
+    release. A drift test pins the committed file to this derivation, so the
+    file cannot quietly disagree with the registers.
+
+    :param repository_root: Where the registers are read from.
+    :returns: The four sorted lists plus the register hashes they came from.
+    """
+    asset_register_bytes = (repository_root / ASSET_REGISTER).read_bytes()
+    recipe_register_bytes = (repository_root / RECIPE_REGISTER).read_bytes()
+    asset_register = json.loads(asset_register_bytes)
+    recipe_register = json.loads(recipe_register_bytes)
+    return {
+        "schema": 1,
+        "purpose": (
+            "Runtime accepted-paint authority for the Garden composer, "
+            "derived from the two verdict registers by "
+            "scripts/prepare_pages_site.py. Regenerate with "
+            "--write-paint-authority after any register change; a drift test "
+            "fails while this file and the registers disagree."
+        ),
+        "registers": {
+            "asset_register": {
+                "path": ASSET_REGISTER.as_posix(),
+                "sha256": _sha256_bytes(asset_register_bytes),
+            },
+            "recipe_register": {
+                "path": RECIPE_REGISTER.as_posix(),
+                "sha256": _sha256_bytes(recipe_register_bytes),
+            },
+        },
+        "accepted_assets": _accepted_asset_ids(asset_register),
+        "accepted_recipes": _accepted_recipe_ids(recipe_register),
+        "accepted_laws": _accepted_law_ids(recipe_register),
+        "accepted_legacy_art": _accepted_legacy_art_ids(asset_register),
+    }
+
+
+# Where the committed runtime authority lives. Under `web/` so the viewer can
+# fetch it with a relative specifier, which also pulls it into the deploy
+# dependency walk automatically.
+PAINT_AUTHORITY_FILE = Path("web/garden-accepted-paint.v1.json")
+
+
+def write_paint_authority(repository_root: Path = REPOSITORY_ROOT) -> Path:
+    """Regenerate the committed runtime paint-authority file.
+
+    :param repository_root: Repository to derive from and write into.
+    :returns: The written path.
+    """
+    destination = repository_root / PAINT_AUTHORITY_FILE
+    destination.write_text(
+        json.dumps(paint_authority(repository_root), indent=2) + "\n", encoding="utf-8",
+    )
+    return destination
+
+
 def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROOT) -> dict:
     """Compute the release paint manifest for a built site.
 
@@ -741,10 +830,10 @@ def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROO
     :returns: The manifest mapping, including its own ``manifest_identity``.
     :raises RuntimeError: on an unknown verdict in either register.
     """
-    asset_register_bytes = (repository_root / ASSET_REGISTER).read_bytes()
-    recipe_register_bytes = (repository_root / RECIPE_REGISTER).read_bytes()
-    asset_register = json.loads(asset_register_bytes)
-    recipe_register = json.loads(recipe_register_bytes)
+    # One derivation, shared with the committed runtime authority file, so
+    # the release manifest and the runtime composer can never disagree about
+    # what is accepted: they are the same function's output.
+    authority = paint_authority(repository_root)
 
     # The atlas is also parsed (not only hashed) so the manifest can name the
     # atlas id/version a reviewer would recognise, next to the exact bytes.
@@ -770,23 +859,19 @@ def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROO
             "caller-created permissions are not inputs and must never become "
             "inputs."
         ),
-        "registers": {
-            "asset_register": {
-                "path": ASSET_REGISTER.as_posix(),
-                "sha256": _sha256_bytes(asset_register_bytes),
-            },
-            "recipe_register": {
-                "path": RECIPE_REGISTER.as_posix(),
-                "sha256": _sha256_bytes(recipe_register_bytes),
-            },
-        },
-        "accepted_assets": _accepted_asset_ids(asset_register),
-        "accepted_recipes": _accepted_recipe_ids(recipe_register),
+        "registers": authority["registers"],
+        "accepted_assets": authority["accepted_assets"],
+        "accepted_recipes": authority["accepted_recipes"],
         # Accepted laws are NOT paint permission. They are listed so a frame
         # checker can tell "names a law" apart from "names an unknown id" --
         # both are defects, but they are different defects with different
         # causes, and conflating them hides which one happened.
-        "accepted_laws": _accepted_law_ids(recipe_register),
+        "accepted_laws": authority["accepted_laws"],
+        # Grant-backed legacy art identities (exact archive transcriptions).
+        # Atlas-chain like `accepted_assets` -- their primitives may carry an
+        # object_id -- but accepted through the recorded operator grant plus
+        # per-identity provenance rather than a per-asset verdict row.
+        "accepted_legacy_art": authority["accepted_legacy_art"],
         "profile_identity": {
             "atlas": {
                 "path": PAINT_IDENTITY_SOURCES[0].as_posix(),
@@ -876,7 +961,7 @@ def verify_paint_manifest(
                 f"{register_name} has changed since the manifest was "
                 "generated; the artifact's paint authority is stale"
             )
-    for list_name in ("accepted_assets", "accepted_recipes", "accepted_laws"):
+    for list_name in ("accepted_assets", "accepted_recipes", "accepted_laws", "accepted_legacy_art"):
         if stored.get(list_name) != expected[list_name]:
             errors.append(
                 f"{list_name} in the manifest does not match what the "
@@ -977,8 +1062,20 @@ def enforce_release_gate() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("site_root", type=Path)
+    parser.add_argument(
+        "site_root", type=Path, nargs="?", default=Path("_site"),
+        help="output directory for the built site (unused with --write-paint-authority)",
+    )
     parser.add_argument("--verify-only", action="store_true")
+    parser.add_argument(
+        "--write-paint-authority",
+        action="store_true",
+        help=(
+            "regenerate web/garden-accepted-paint.v1.json from the verdict "
+            "registers and exit. Run after any register change; the drift "
+            "test fails while the file and the registers disagree."
+        ),
+    )
     parser.add_argument(
         "--skip-release-gate",
         action="store_true",
@@ -989,6 +1086,10 @@ def main() -> int:
         ),
     )
     args = parser.parse_args()
+    if args.write_paint_authority:
+        written = write_paint_authority()
+        print(f"wrote {written.relative_to(REPOSITORY_ROOT)}")
+        return 0
     if args.verify_only:
         verify_pages_site(args.site_root)
         return 0
