@@ -2053,6 +2053,30 @@ def outstanding_operator_verdicts() -> list[str]:
                     f"{name} evidence {path} has changed since it was accepted "
                     f"(recorded {digest[:12]}, now {actual[:12]})"
                 )
+
+        # SHAPE, for the one verdict whose required evidence the register itself
+        # already states: motion needs "at least ten seconds of real motion at
+        # 1600x1000 and 390x844". Living in the review package is not enough --
+        # a still PNG lives there too, and a verdict about whether the Garden
+        # moves cannot be given by looking at one.
+        #
+        # Deliberately narrow. This checks that a video exists for each required
+        # size, by the filename the capture tool writes. It does NOT verify
+        # duration, that the video shows this candidate, or that anyone watched
+        # it; the first would need ffprobe here and the last cannot be checked by
+        # any machine. Overstating what this proves would repeat the mistake it
+        # exists to correct.
+        if name == "motion" and isinstance(evidence, list):
+            named = " ".join(
+                str(item.get("path", "")) for item in evidence if isinstance(item, dict)
+            )
+            for size in ("1600x1000", "390x844"):
+                if f"{size}.webm" not in named:
+                    outstanding.append(
+                        f"motion is accepted but cites no {size} video; the "
+                        "register requires ten seconds of real motion at both "
+                        "required sizes"
+                    )
     return outstanding
 
 

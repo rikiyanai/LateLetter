@@ -5672,3 +5672,51 @@ correction of an imprecise claim
 - Status: Implemented (unproven as visual acceptance). The claim is unchanged in outcome and
   accurate in content: five accepted drawings are outside this review because they are not
   interactable, not because nobody wrote a test.
+
+### The hover test was nondeterministic, and I reported its result as a fact
+
+Question:
+An external verification ran the browser E2E and got `1 failed, 23 passed, 5 xfailed` -- a strict
+XPASS on hover -- then repeated the hover test three times in isolation and got XPASS, XFAIL, XPASS.
+My report had stated categorically that hover changes only the cursor, and gate 2 said so too.
+
+Type:
+defect in a test I wrote and a claim I made from it
+
+- **The measurement was the mistake, again (2026-08-03):** the test screenshotted a region around a
+  fixture with the pointer away, then again 800ms later with the pointer over it, and asked whether
+  any rendering was unique to the second window. The Garden repaints on its own, so a rendering can
+  appear in the second window purely because time passed. `over - away` was therefore a function of
+  when the samples landed, not of hovering. This is the sixth time in this lane that a signal
+  adjacent to the claim has been measured and the claim reported.
+
+- **Correction: a signal with no clock in it (2026-08-03):** `.garden-measured-layer` holds every
+  fixture's measured atlas art and nothing else -- plants paint into the lattice through
+  `raster.art` -- and fixtures carry no ambient animation, so its markup is a still function of
+  fixture presentation. Emphasis is colour and colour is written into that markup as an inline
+  `color:`, so a hover response appears there and nothing else does. Three windows now, away / over
+  / away, and the OUTER PAIR is asserted equal by the control: if the layer drifts between two
+  pointer-away windows it is not quiet enough to attribute anything to hover, and the run says so
+  instead of producing a verdict.
+
+- **The defect is real, and now established (2026-08-03):** the layer is byte-identical across
+  eighteen samples spanning all three windows -- one hash, no drift. Four consecutive runs of the
+  hover pair produced identical results, against the previous version's XPASS/XFAIL/XPASS.
+
+- **Two overclaims corrected alongside it (2026-08-03):** the fixture-scope test read only Python's
+  `FIXTURE_CATALOG`, so authoring an off-starter primary action in the browser's
+  `FIXTURE_PRIMARY_ACTIONS` alone would not have failed it; it now asks node for the browser table
+  and asserts the two agree. And "not a testing gap" was too broad: it is not an INTERACTION
+  coverage gap, and the five drawings are proven unique and recognisable at three densities in
+  `tests/garden_adapters/test_garden_renderer.mjs`, but nothing shows them through a product scene
+  in a real browser. That remains open, and it is a composition gap rather than a testing one --
+  showing them means putting them in a starter, which is the operator's choice.
+
+- **Motion evidence must be a video (2026-08-03):** the verdict gate required evidence to live in
+  the review package, which a still PNG also does. The `motion` verdict now must cite a `.webm` for
+  each required size, by the filename the capture tool writes. Deliberately narrow, and the code
+  says so: it does not verify duration, that the video shows this candidate, or that anybody watched
+  it. Overstating what a check proves is the mistake this entry is about.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 23 passing and 6 strict xfailed,
+  reproduced four times for the hover pair. 225 contract and acceptance tests hold.

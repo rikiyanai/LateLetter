@@ -827,15 +827,25 @@ def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
         "fixture.pond", "fixture.trellis",
     }, "the accepted art this review does not cover has changed"
 
-    # WHY they are uncovered, stated rather than left to inference.
+    # WHY they are uncovered, stated rather than left to inference, and stated
+    # narrowly.
     #
     # "Five accepted fixtures never enter the review" reads like a test-coverage
-    # gap that more testing would close. It is not. These five are accepted as
-    # ART and carry NO authored primary action, so placing them in a scene would
-    # not make them interactable -- a click would dispatch nothing. The catalog
-    # says why in its own comment: a primary action is a promise about safety,
-    # not a convenience default, and every entry outside the default scene keeps
-    # `primary_verb=None` until it has been through that judgement.
+    # gap more testing would close. For INTERACTION it is not: these five are
+    # accepted as ART and carry NO authored primary action, so placing them in a
+    # scene would not make them interactable -- a click would dispatch nothing.
+    # The catalog says why in its own comment: a primary action is a promise
+    # about safety, not a convenience default, and every entry outside the
+    # default scene keeps `primary_verb=None` until it has been through that
+    # judgement.
+    #
+    # What this does NOT say is that their DRAWINGS are covered here. They are
+    # checked at the renderer level -- `tests/garden_adapters/
+    # test_garden_renderer.mjs` proves every catalog fixture gets a unique,
+    # recognisable, non-placeholder picture at three densities -- and nowhere in
+    # a product scene in a real browser. That remains an open gap, and it is a
+    # gap in composition rather than in testing: showing them through the
+    # product means putting them in a starter, which is the operator's choice.
     #
     # Which verb each should get is exactly the kind of decision the destination
     # spec reserves for the operator, so nothing here invents one. Read from the
@@ -848,6 +858,32 @@ def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
         for catalog, definition in FIXTURE_CATALOG.items()
         if definition.primary_verb is not None
     }
+
+    # Both implementations, not just Python. The browser reads its own
+    # `FIXTURE_PRIMARY_ACTIONS`, so authoring an off-starter action there alone
+    # would make a fixture interactable in the product while a Python-only
+    # check went on reporting that none of them are. Asked of node rather than
+    # parsed out of the file, so a rename or a reformat cannot quietly turn this
+    # into a check of nothing.
+    browser_interactable = {
+        f"fixture.{catalog}"
+        for catalog in json.loads(
+            subprocess.run(
+                [
+                    "node", "--input-type=module", "-e",
+                    "import {FIXTURE_PRIMARY_ACTIONS} from "
+                    f"'{(ROOT / 'web' / 'garden-world.mjs').as_uri()}';"
+                    "console.log(JSON.stringify(Object.keys(FIXTURE_PRIMARY_ACTIONS)));",
+                ],
+                capture_output=True, text=True, check=True, cwd=ROOT,
+            ).stdout
+        )
+    }
+    assert browser_interactable == interactable, (
+        "the browser and the canonical model disagree about which fixtures have "
+        f"a primary action: browser {sorted(browser_interactable)} versus "
+        f"canonical {sorted(interactable)}"
+    )
     assert not (uncovered & interactable), (
         "an accepted fixture outside the starter now has an authored primary "
         f"action: {sorted(uncovered & interactable)}. It is interactable and "
@@ -894,23 +930,31 @@ def test_a_single_tap_performs_the_primary_action_on_touch():
         assert errors == [], errors
 
 
-def _hovered_and_unhovered_renderings(page) -> tuple[set[str], set[str], str]:
-    """Pictures of one accepted fixture with the pointer away, then over it.
+def _fixture_presentation_under_hover(page) -> tuple[set[str], set[str], set[str], str]:
+    """Fixture presentation with the pointer away, over an accepted fixture, away again.
 
-    Measured in PIXELS over a region wide enough to hold the whole drawing, not
-    just the hotspot: `objectRectPixels` returns the canonical hotspot, which
-    for the stepping stones is 15x17 while the art is twelve cells across. A
-    clip sized to the hotspot would miss almost all of the picture it is asking
-    about. Colour emphasis also lives in markup and CSS rather than in the
-    painted text, so a text reading could not see a response even if there were
-    one.
+    WHY THIS SIGNAL. The first version of this compared SCREENSHOTS of a region
+    around the fixture, sampled pointer-away and then pointer-over 800ms later.
+    That is not a hover measurement: the Garden repaints on its own, so a
+    rendering can appear during the second window purely because time passed.
+    The test alternated between XFAIL and strict XPASS across runs and therefore
+    established nothing -- the same mistake, measuring a signal adjacent to the
+    claim, that this lane keeps making.
 
-    Several samples on each side, because the Garden changes slightly on its own
-    and one sample each way could not tell ambient change from a hover response.
+    `.garden-measured-layer` has neither problem. Only fixtures with measured
+    atlas art reach it -- plants paint into the lattice through `raster.art` --
+    and fixtures carry no ambient animation, so its markup is a still function
+    of fixture presentation. Emphasis is colour, and colour is written into that
+    markup as an inline `color:`, so a hover response would appear there and
+    nothing else would.
+
+    Three windows, not two, and the outer pair matters as much as the middle
+    one: if the two pointer-away windows disagree, the layer is not quiet and
+    any difference found in the middle window could be drift rather than hover.
 
     :param page: an open Garden with the review accessor available
-    :returns: (renderings with pointer away, renderings with pointer over,
-        the CSS cursor while over)
+    :returns: (markup seen before, markup seen while hovering, markup seen
+        after, the CSS cursor while hovering)
     """
     target = page.evaluate(
         """() => {
@@ -921,41 +965,50 @@ def _hovered_and_unhovered_renderings(page) -> tuple[set[str], set[str], str]:
         }"""
     )
     assert target and target["rect"], "no accepted fixture was projected to hover"
-    rect, pad = target["rect"], 160
-    clip = {
-        "x": max(0, rect["x"] - pad), "y": max(0, rect["y"] - pad),
-        "width": rect["width"] + pad * 2, "height": rect["height"] + pad * 2,
-    }
+    rect = target["rect"]
+    read = "() => document.querySelector('.garden-measured-layer').innerHTML"
 
-    def shot() -> str:
-        return hashlib.sha256(page.screenshot(clip=clip)).hexdigest()
+    def window() -> set[str]:
+        seen = set()
+        for _ in range(6):
+            seen.add(hashlib.sha256(page.evaluate(read).encode("utf-8")).hexdigest())
+            page.wait_for_timeout(300)
+        return seen
 
     page.mouse.move(5, 5)
-    page.wait_for_timeout(800)
-    away = {shot() for _ in range(4)}
+    page.wait_for_timeout(600)
+    before = window()
     page.mouse.move(rect["x"] + rect["width"] / 2, rect["y"] + rect["height"] / 2)
-    page.wait_for_timeout(800)
-    over = {shot() for _ in range(4)}
+    page.wait_for_timeout(600)
+    during = window()
     cursor = page.evaluate(
         "() => getComputedStyle(document.getElementById('g')).cursor"
     )
-    return away, over, cursor
+    page.mouse.move(5, 5)
+    page.wait_for_timeout(600)
+    after = window()
+    return before, during, after, cursor
 
 
-def test_hovering_accepted_ink_is_received_by_the_garden():
-    """The control: the pointer reaching the ink is registered at all.
+def test_hovering_accepted_ink_is_received_and_the_signal_is_quiet():
+    """The control: the hover lands, and the layer being watched does not drift.
 
-    Without this, the expected failure below would be ambiguous between "hover
-    produces no visual response" and "the hover never landed on the object", and
-    only the first is a defect in the product.
+    Two claims, both needed before the expected failure below means anything.
+    If the cursor never changed, "no visual response" could mean the pointer
+    never reached the object. If the measured layer changed on its own, a
+    difference found while hovering could be drift rather than a response.
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
             _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            _, _, cursor = _hovered_and_unhovered_renderings(page)
+            before, _, after, cursor = _fixture_presentation_under_hover(page)
             assert cursor == "pointer", (
                 f"the cursor over accepted fixture ink is {cursor!r}, so the "
                 "hover is not being received and the test below proves nothing"
+            )
+            assert before == after, (
+                "fixture presentation changed between two pointer-away windows, "
+                "so this layer is not quiet enough to attribute a change to hover"
             )
         assert errors == [], errors
 
@@ -963,18 +1016,18 @@ def test_hovering_accepted_ink_is_received_by_the_garden():
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "DEFECT, re-measured on 2026-08-03 after this behaviour lost its test. "
-        "Hovering an accepted fixture's ink changes the CURSOR to 'pointer' and "
-        "changes nothing else: over a clip wide enough to hold the whole "
-        "drawing, every rendering seen while hovering is one the Garden also "
-        "produces with the pointer parked in the corner. Goal section 5 allows "
-        "and requires the opposite -- 'hovering visible object ink changes the "
-        "picture: rustle, pose change, emphasis, or another approved visual "
-        "response' -- and lists cursor change as a SEPARATE affordance, not a "
-        "substitute for it. The renderer does compute an `emphasized` flag from "
-        "the hover cell, so the response is designed and not arriving; which "
-        "approved visual form it should take is a decision the operator has not "
-        "made, so nothing is invented here. Left strict so it cannot be "
+        "DEFECT, measured deterministically on 2026-08-03 after this behaviour "
+        "had lost its test entirely. Hovering an accepted fixture's ink changes "
+        "the CURSOR to 'pointer' and changes nothing about the fixture: the "
+        "measured-asset layer -- which holds every fixture's atlas art and the "
+        "inline colour that emphasis would alter -- is BYTE-IDENTICAL across "
+        "eighteen samples spanning pointer-away, pointer-over and pointer-away "
+        "again. Goal section 5 requires hovering visible ink to change the "
+        "picture, and lists cursor change as a separate affordance rather than "
+        "a substitute for it. The renderer does compute an `emphasized` flag "
+        "from the hover cell, so a response is designed and is not arriving; "
+        "which approved visual form it should take is a decision the operator "
+        "has not made, so nothing is invented here. Left strict so it cannot be "
         "normalised into the baseline, and so that a later correction cannot "
         "land silently."
     ),
@@ -984,11 +1037,11 @@ def test_hovering_accepted_ink_changes_the_picture():
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
             _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            away, over, _ = _hovered_and_unhovered_renderings(page)
-            assert over - away, (
-                "every picture seen while hovering the fixture is one the Garden "
-                "also paints with the pointer elsewhere, so hovering changed "
-                "nothing but the cursor"
+            before, during, after, _ = _fixture_presentation_under_hover(page)
+            assert during - before - after, (
+                "every fixture presentation seen while hovering is one the "
+                "Garden also paints with the pointer elsewhere, so hovering "
+                "changed nothing but the cursor"
             )
         assert errors == [], errors
 

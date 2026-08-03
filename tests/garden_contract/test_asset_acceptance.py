@@ -17,6 +17,7 @@ Local review candidates are recorded but never treated as release permission.
 from __future__ import annotations
 
 import copy
+import pathlib
 import json
 import re
 import shutil
@@ -1456,11 +1457,23 @@ def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
     package.mkdir(parents=True, exist_ok=True)
     watched = package / "probe.txt"
     watched.write_text("stand-in for a capture the operator watched\n", encoding="utf-8")
+    # Stand-ins for the two videos the register requires the MOTION verdict to
+    # cite. Named exactly as the capture tool names them, because that filename
+    # is what the shape check reads.
+    videos = [
+        package / "probe-desktop-1600x1000.webm",
+        package / "probe-mobile-390x844.webm",
+    ]
+    for video in videos:
+        video.write_text(f"stand-in for {video.name}\n", encoding="utf-8")
     try:
-        cited = [{
-            "path": "docs/visual-review/.acceptance-gate-probe/probe.txt",
-            "sha256": _hashlib.sha256(watched.read_bytes()).hexdigest(),
-        }]
+        def _cite(path: pathlib.Path) -> dict:
+            return {
+                "path": str(path.relative_to(ROOT)),
+                "sha256": _hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+
+        cited = [_cite(watched), *(_cite(video) for video in videos)]
         problems = _with({
             "verdict": "accepted", "evidence": cited,
             "decided_by": "somebody-else",
@@ -1491,6 +1504,19 @@ def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
         }, DECLARED)
         assert any("in the future" in problem for problem in problems)
 
+        # A still image cannot answer "does it move". The register says the
+        # motion verdict needs ten seconds at both required sizes, and evidence
+        # merely living in the review package does not satisfy that.
+        problems = _with({
+            "verdict": "accepted", "evidence": [_cite(watched)],
+            "decided_by": "the-operator",
+            "decided_at_utc": "2026-08-03T00:00:00Z",
+        }, DECLARED)
+        assert any("cites no 1600x1000 video" in problem for problem in problems)
+        assert any("cites no 390x844 video" in problem for problem in problems)
+        # ...and only the motion verdict is held to it.
+        assert all(problem.startswith("motion ") for problem in problems), problems
+
         # Digest bound to bytes: change the artifact and the verdict lapses.
         watched.write_text("re-rendered, so nothing was inherited\n", encoding="utf-8")
         problems = _with({
@@ -1503,7 +1529,7 @@ def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
         # The satisfiable case: a watched artifact in the review package, its
         # real digest, the declared operator, and a real past instant. A gate
         # that can never be cleared teaches nothing about the gate.
-        cited[0]["sha256"] = _hashlib.sha256(watched.read_bytes()).hexdigest()
+        cited[0] = _cite(watched)
         assert _with({
             "verdict": "accepted", "evidence": cited,
             "decided_by": "the-operator",
@@ -1511,4 +1537,6 @@ def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
         }, DECLARED) == []
     finally:
         watched.unlink(missing_ok=True)
+        for video in videos:
+            video.unlink(missing_ok=True)
         package.rmdir()
