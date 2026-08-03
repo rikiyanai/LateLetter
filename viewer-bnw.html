@@ -615,6 +615,27 @@ const GARDEN_REVIEW_IS_LOCAL=(()=>{
   return hostname==='localhost'||hostname==='127.0.0.1'||hostname==='::1';
 })();
 
+// The Garden's paint authority: the accepted-paint manifest derived from the
+// two verdict registers at build time (scripts/prepare_pages_site.py
+// --write-paint-authority) and committed beside the modules it governs. This
+// is what replaced the hostname-minted paint switch: permission is data bound to
+// the registers, identical on every host, and NOT a function of the
+// hostname above -- GARDEN_REVIEW_IS_LOCAL now gates only the read-only
+// review accessor, never what may be painted. If the manifest has already
+// landed by the time the renderer is constructed it is passed in directly;
+// otherwise it is installed on arrival and the Garden repaints once.
+let GARDEN_PAINT_AUTHORITY=null;
+fetch('./web/garden-accepted-paint.v1.json')
+  .then(response=>response.ok?response.json():null)
+  .catch(()=>null)
+  .then(authority=>{
+    GARDEN_PAINT_AUTHORITY=authority;
+    if(garden){
+      garden.paintAuthority=authority;
+      if(garden.projection)garden.render(garden.projection);
+    }
+  });
+
 let bundle=null,isDevFixture=false,decoded={};
 let readIds=new Set(),giftDiscovered={};
 let visitCount=0,firstRun=true,postComplete=false;
@@ -2477,11 +2498,12 @@ async function init(){
     garden=new CanonicalGardenRenderer(gardenElement,{
       measurer:gardenMeasurer,
       font:gardenMeasurer?gardenFont:null,
-      // Localhost is the working review surface while Pages continues to ship
-      // the legacy Garden. This paints the canonical candidate so its picture,
-      // hover rustle and direct clicks can be evaluated; it grants no release
-      // permission and does not restore any label/card/action-sheet UI.
-      allowUnacceptedArt:GARDEN_REVIEW_IS_LOCAL,
+      // Paint authority is DATA, not a hostname judgement: the build-derived
+      // accepted-paint manifest fetched at boot. Accepted art composes on
+      // every host; unreviewed ink composes on none. May still be null here
+      // if the fetch has not resolved; the fetch handler installs it and
+      // repaints the moment it lands.
+      paintAuthority:GARDEN_PAINT_AUTHORITY,
       prefersReducedMotion:reducedMotionQuery.matches,
       readerRegion,
       onTheme:applyGardenPageTheme,

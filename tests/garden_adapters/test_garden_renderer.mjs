@@ -783,7 +783,11 @@ test('real hover and click paths retain the exact semantic object', () => {
   assert.equal(element.style.cursor, 'pointer');
   assert.notEqual(after, before);
   renderer._burstAt(event);
-  assert.deepEqual(renderer.clickBursts.at(-1), {
+  // The click no longer mutates renderer state directly: it queues a burst
+  // EVENT, and the state advance at the next render turns it into a live
+  // burst. The identity facts are unchanged -- exact object, exact cell.
+  renderer.render(data);
+  assert.deepEqual(renderer.presentationState.clickBursts.at(-1), {
     x: plant.hitRect.left, y: plant.hitRect.top, frame: renderer.visualFrame,
     kind: 'plant', species: 'rose', catalog: undefined, objectId: 'plant:a',
   });
@@ -895,16 +899,23 @@ test('click and feed bursts are suppressed or cleared when motion is suppressed'
   const event = { clientX: plant.anchor[0] * renderer.cellWidth + 1,
     clientY: plant.anchor[1] * renderer.cellHeight + 1 };
   renderer._burstAt(event);
-  assert.equal(renderer.clickBursts.length, 1);
-  data = { ...data, motion_paused: true };
   renderer.render(data);
-  assert.deepEqual(renderer.clickBursts, []);
+  assert.equal(renderer.presentationState.clickBursts.length, 1);
+  const burstInk = frame => frame.visible_primitives
+    .filter(item => item.source_id === 'recipe.feedback.click_leaf_burst');
+  // While motion runs, the burst paints. When motion is suppressed the
+  // observable guarantees are: no burst INK reaches the picture, and no new
+  // burst EVENT is even recorded. (The state list itself now merely ages
+  // out; what the old cleared-list assertion protected was the ink.)
+  assert.ok(burstInk(renderer.lastFrame).length > 0);
+  data = { ...data, motion_paused: true };
+  assert.deepEqual(burstInk(renderer.render(data)), []);
   renderer._burstAt(event);
-  assert.deepEqual(renderer.clickBursts, []);
+  assert.equal(renderer.pendingEvents.length, 0, 'a paused Garden records no burst');
   renderer.setReducedMotion(true);
-  renderer.render({ ...data, motion_paused: false });
+  assert.deepEqual(burstInk(renderer.render({ ...data, motion_paused: false })), []);
   renderer._burstAt(event);
-  assert.deepEqual(renderer.clickBursts, []);
+  assert.equal(renderer.pendingEvents.length, 0, 'reduced motion records no burst');
 });
 
 test('browser renderer paints every canonical fixture footprint cell', () => {
@@ -1005,14 +1016,32 @@ test('rich projection restores layered plant animal palette and weather presenta
   assert.match(element.style.background, /linear-gradient/);
 });
 
-test('a release-blocked renderer paints neither rejected art nor its ground band', () => {
+test('an empty paint authority suppresses every attempted primitive', () => {
+  // This replaces the `allowUnacceptedArt: false` test: release blocking is
+  // no longer a boolean the caller mints from the hostname but a manifest of
+  // accepted ids. An authority that accepts NOTHING is the strictest case --
+  // every attempted primitive is suppressed, no ink reaches the lattice on
+  // any host -- while each suppressed attempt keeps its identity, so the
+  // frame can still say what WOULD have painted and under which id.
   const element = new FakeElement();
+  const nothingAccepted = {
+    accepted_assets: [], accepted_recipes: [], accepted_laws: [],
+    accepted_legacy_art: [],
+  };
   const frame = new CanonicalGardenRenderer(element, {
-    allowUnacceptedArt: false,
+    paintAuthority: nothingAccepted,
     prefersReducedMotion: true,
   }).render(projection());
   assert.ok(frame.lines.every(line => line.trim() === ''));
-  assert.doesNotMatch(element.style.background, /linear-gradient/);
+  assert.equal(frame.visible_primitives.filter(item => item.glyph.trim()).length, 0);
+  assert.ok(frame.diagnostics.suppressed > 0, 'the attempts were recorded, not skipped');
+  assert.equal(frame.diagnostics.authority_asserted, true);
+  // The same projection with no authority paints: suppression came from the
+  // manifest, not from where the code ran.
+  const diagnostic = new CanonicalGardenRenderer(new FakeElement(), {
+    prefersReducedMotion: true,
+  }).render(projection());
+  assert.ok(diagnostic.lines.some(line => line.trim() !== ''));
 });
 
 test('civil presentation uses canonical observed time, never elapsed simulation time', () => {
@@ -1323,10 +1352,12 @@ test('feed presentation retains exact canonical animal target identity', () => {
   const renderer = new CanonicalGardenRenderer(new FakeElement());
   renderer.render(data);
   renderer.triggerAnimalFeedReaction({ objectId: 'animal:rabbit:second' });
-  assert.equal(renderer.clickBursts.at(-1)?.objectId, 'animal:rabbit:second');
-  const count = renderer.clickBursts.length;
+  renderer.render(data);
+  assert.equal(renderer.presentationState.clickBursts.at(-1)?.objectId, 'animal:rabbit:second');
+  const count = renderer.presentationState.clickBursts.length;
   renderer.triggerAnimalFeedReaction({ objectId: 'animal:rabbit:missing' });
-  assert.equal(renderer.clickBursts.length, count);
+  renderer.render(data);
+  assert.equal(renderer.presentationState.clickBursts.length, count);
 });
 
 test('rough sky location is immediately quantized and raw coordinates are discarded', async () => {

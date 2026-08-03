@@ -305,22 +305,78 @@ test('a broken frame shape is reported as a sentence, not a TypeError', () => {
 });
 
 // ---------------------------------------------------------------------------
-// The live renderer, measured against the contract without being changed.
+// The LIVE owner, held to the same contract as the reference implementation.
 // ---------------------------------------------------------------------------
 
-test('the live renderer does not yet expose the split interface; the transfer step owns that', async () => {
-  // The ownership-transfer step of the execution order moves composition into
-  // a public GardenPresentation module and holds the LIVE product to this
-  // contract. Until that patch lands, `CanonicalGardenRenderer.render`
-  // composes and paints in one pass and returns no frame, so there is
-  // nothing to apply the contract to -- and this test pins that gap so the
-  // transfer cannot half-land: the moment a composer appears in the renderer
-  // module, this file must be re-derived to hold it to the contract.
-  const module = await import('../../web/garden-renderer.mjs');
-  const renderer = module.CanonicalGardenRenderer;
-  assert.ok(typeof renderer === 'function', 'the renderer class is exported');
-  assert.equal(typeof module.composePresentationFrame, 'undefined',
-    'a composer appeared without the contract test being re-derived');
-  assert.ok(!Object.getOwnPropertyNames(renderer.prototype).includes('composeFrame'),
-    'a composer method appeared without the contract test being re-derived');
+test('the live GardenPresentation owner conforms, composing real accepted art', async () => {
+  // The tripwire that used to stand here asserted that the renderer exposed
+  // no composer, pinning the pre-transfer gap. The ownership patch landed:
+  // web/garden-presentation.mjs is the public owner, so the honest test is
+  // now conformance of the REAL functions composing a REAL scene under the
+  // REAL committed paint authority -- not a fixture standing in for them.
+  const { readFileSync } = await import('node:fs');
+  const live = await import('../../web/garden-presentation.mjs');
+  const authority = JSON.parse(readFileSync(
+    new URL('../../web/garden-accepted-paint.v1.json', import.meta.url), 'utf8',
+  ));
+
+  // A small scene made ENTIRELY of accepted identities: two atlas fixtures
+  // and one grant-backed legacy plant. Anything unaccepted here would be a
+  // contract violation, which is the point -- the live product's default
+  // scene is built from exactly these families.
+  const projection = {
+    world_id: 'contract-live',
+    observed_time: 1750000000,
+    scene: { sky_mode: 'storybook_fallback', season: 'summer', story_time: 'day' },
+    camera: [0, 0],
+    objects: [
+      {
+        object_id: 'fixture:bench', kind: 'fixture', semantic_name: 'bench',
+        position: [20, 40], depth: 100, hotspot: { x: 20, y: 40, width: 5, height: 2 },
+        primary_action: { verb: 'sit', target: 'fixture:bench' },
+        semantic_state: { catalog_id: 'bench', presentation_state: 'idle',
+          connected_group: null, connected_mask: 0,
+          render_cells: [{ dx: 0, dy: 0, connected_mask: 0 }] },
+      },
+      {
+        object_id: 'plant:oak', kind: 'plant', semantic_name: 'oak',
+        position: [50, 40], depth: 100, hotspot: { x: 50, y: 40, width: 3, height: 3 },
+        primary_action: null,
+        semantic_state: { species_id: 'oak', visible_organ_count: 12,
+          connected_group: null, connected_mask: 0 },
+      },
+    ],
+  };
+  const context = {
+    viewport: [90, 34],
+    profile: 'browser-proportional',
+    presentationGeometry: { cellAdvance: 8, lineHeight: 15, affineOnly: false },
+    acceptedManifest: authority,
+    environment: { readerRegion: null, reducedMotion: false },
+  };
+  const input = {
+    projection,
+    previousState: null,
+    presentationEvents: [],
+    tick: { frame: 24, seconds: 360 },
+    context,
+  };
+  assertConforms(
+    { advance: live.advancePresentationState, compose: live.composePresentationFrame },
+    input,
+    'the live GardenPresentation owner',
+  );
+
+  // And not vacuously: the frame carries real ink from both identity chains
+  // and a region for the declared-interactive bench.
+  const state = live.advancePresentationState(null, [], input.tick);
+  const frame = live.composePresentationFrame(projection, state, context);
+  const inked = frame.visible_primitives.filter(item => item.glyph.trim());
+  assert.ok(inked.length > 50, 'the live frame is not empty');
+  assert.ok(inked.some(item => item.source_id === 'fixture.bench'));
+  assert.ok(inked.some(item => String(item.source_id).startsWith('plant.oak.')));
+  assert.ok(inked.some(item => item.source_id === 'recipe.scene.ground_line'));
+  assert.ok(frame.interaction_regions.some(region => region.object_id === 'fixture:bench'));
+  assert.equal(frame.diagnostics.suppressed, 0,
+    'a scene of accepted art suppresses nothing');
 });

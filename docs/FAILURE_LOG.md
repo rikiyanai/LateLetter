@@ -6212,3 +6212,65 @@ mechanical extraction, proved behaviour-preserving
 
 - Status: Implemented (unproven). Ownership has not moved yet; the class still orchestrates.
   What changed is that it now orchestrates through functions anyone can call.
+
+### Route step 3, the ownership patch: GardenPresentation owns the picture, and the static analyzer is gone
+
+Question:
+Transfer composition out of the renderer class atomically: install the public GardenPresentation
+module, delete every hostname-era paint permission in the same patch, and replace the static
+writer-graph gate with the public runtime-frame check, per SPEC 7.2.2 clause 4 and the execution
+order's transfer step.
+
+Type:
+implementation; the atomic ownership transfer
+
+- **The owner (2026-08-03):** `web/garden-presentation.mjs` implements
+  `advancePresentationState` / `composePresentationFrame` / `paintPresentationFrame`. Composition
+  is a pure function of projection, state and context; hover, click bursts and focus reach it
+  only as presentation events consumed by the advance; the paint step copies a decided frame and
+  decides nothing. `CanonicalGardenRenderer.render` is an adapter -- measure, advance, compose,
+  paint -- and the class makes no visual choice.
+
+- **Identity on every cell (2026-08-03):** the Raster records a per-cell `sources` plane and a
+  painter-ordered attempt log; all 24 draw call sites are stamped -- weather, sky and scene
+  recipes by their register ids, fixtures by their atlas asset ids, plants and animals by the
+  grant-backed legacy identities the legacy-art module now returns beside its frames. The focus
+  caret, the memory dot and placeholder art are recorded as honestly anonymous, which means
+  under any asserted authority they are suppressed rather than painted.
+
+- **Deleted in this same patch (2026-08-03):** `allowUnacceptedArt` (renderer option, render
+  gates, background branch, viewer construction); the hostname-conditioned background;
+  the viewer's hostname paint permission -- `GARDEN_REVIEW_IS_LOCAL` now gates only the
+  read-only review accessor, and paint authority is `web/garden-accepted-paint.v1.json`
+  fetched as data; the static writer-graph analyzer in
+  `scripts/validate_presentation_identity.py` (~1100 lines: tokenizer analysis, writer graph,
+  paint-site extraction) together with its seven blocker keys and the sixteen tests that
+  exercised invocation-form recognition -- their guarantees now live where they are decidable,
+  on frames the public interface actually composes.
+
+- **The runtime-frame check that replaced it (2026-08-03):** `scripts/compose_frame_check.mjs`
+  generates the starter world, projects it, composes it under the committed authority and
+  applies every contract clause. On the real starter: 852 attempted primitives, 733 visible,
+  ZERO contract violations, ZERO suppression, 7 interaction regions -- every cell of the product
+  frame names an accepted source. Divergence is reported from painted frame sources: the three
+  scene recipes (`ground_line`, `moon`, `starfield`) paint while their register rows say
+  `candidate_status: different`, an honest blocker that clears at the legacy-restoration step.
+  The registry's blocker conditions were updated to the new key set, exactly as the two frozen
+  diagnostics' own text demanded -- "delete this key in the same patch that installs the public
+  runtime-frame invariant".
+
+- **Both tripwires fired and were obeyed (2026-08-03):** the raster-identity live arm flipped
+  from "retains nothing" to "keeps identity exactly as the reference raster does", and the
+  contract suite's renderer tripwire became live conformance of the real owner composing real
+  accepted art. The drift gate on the committed authority also fired mid-patch when the registry
+  edit changed its pinned hash -- its first real catch -- and was cleared by regeneration.
+
+- **Proof the picture did not move (2026-08-03):** Garden Node suites 201 of 201;
+  `tests/garden_contract` 202 of 202 after re-derivation; full Python (minus the transcription
+  lane) 836 passing with only the four known-red tests -- three letter-typography defects owned
+  by the route's typography step and the deploy-cutover assertion held red until its step 14;
+  browser E2E 25 passing and 6 strict xfailed, the same set, before and after the transfer.
+
+- Status: Implemented (unproven as visual acceptance). No old path can independently choose
+  visible cells, colour, geometry, source authority, hit regions or painter order; what the
+  Garden looks like is decided in exactly one place, under an authority that is data.

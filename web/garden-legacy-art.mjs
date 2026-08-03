@@ -804,6 +804,11 @@ export function legacyPlantPresentation(species, stage, frame, seed = 0, focused
   return {
     lines: entry.frames[frameIndex],
     source: entry.source,
+    // The register identity this drawing is accepted under -- the key of
+    // `legacy_ported_renderer_art.ported` and of LEGACY_ART_PROVENANCE. The
+    // composer stamps it on every cell of the drawing, which is what lets a
+    // release frame say "this ink is the granted archive oak" at runtime.
+    identity: `plant.${species}.${stageSize(stage)}`,
     frameIndex,
     loopLength: entry.loop.length,
   };
@@ -833,6 +838,8 @@ export function legacyAnimalPresentation(species, family, frame, seed = 0) {
   return {
     lines: pose.frames[frameIndex],
     source: entry.source,
+    // Same contract as the plant form: the grant-backed register identity.
+    identity: `animal.${species}`,
     frameIndex,
     loopLength: pose.loop.length,
   };

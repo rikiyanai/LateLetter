@@ -33,10 +33,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parents[2]))
 from scripts.validate_presentation_identity import (  # noqa: E402
     compute_blockers,
-    extract_paint_sites,
-    extract_reader_sites,
-    unlisted_raster_methods,
-    unresolvable_writer_calls,
+    runtime_frame_report,
     validate_provenance,
     validate_registers,
 )
@@ -51,35 +48,21 @@ RECIPES = ROOT / "docs" / "garden-presentation-recipes.json"
 ATLAS = ROOT / "src" / "lateletter" / "garden" / "data" / "atlas.v2.json"
 VERDICTS = {"accepted", "rejected", "not_reviewed"}
 
-# A raster that actually threads identity through to the cell, used as the
-# POSITIVE control wherever a test needs an identified paint site.
-#
-# It is needed because the live renderer cannot produce one.  `art` destructures
-# four options properties and `source` is not among them; `measuredArt` reads
-# only `accents` and `animated` from its options object.  Both therefore accept
-# a `{source: '...'}` argument and drop it, so the emitted cell carries nothing
-# — and a checker that called those calls "identified" would have let route
-# step 5 clear every anonymous-paint blocker with dead arguments.
-#
-# READ FROM A FILE rather than written out here, and that is the whole point.
-# The previous version was a string in this module, and it would have thrown
-# `TypeError` on its first write: it declared `this.glyphs = []` and then indexed
-# `this.glyphs[y][x]`, so no row array ever existed.  It parsed, the static gate
-# credited it, and it could not have painted one cell — a positive control that
-# cannot run proves nothing about running code.  The same file is EXECUTED by
-# `tests/garden_adapters/test_raster_identity_contract.mjs`, which asserts the
-# exact id lands on the exact cell, so the static credit below and the executed
-# behaviour there are measurements of one artifact and cannot drift apart.
+# The reference raster FILE keeps its role as the executed positive control
+# in tests/garden_adapters/test_raster_identity_contract.mjs. The in-Python
+# `threaded()` splice helper that used to live here died with the static
+# analyzer on 2026-08-03: identity is now judged on frames the public
+# GardenPresentation interface actually composes, so a Python test has no
+# business splicing renderer source strings together.
 REFERENCE_RASTER = (
     ROOT / "tests" / "garden_contract" / "fixtures" / "identity_reference_raster.mjs"
 )
-IDENTITY_THREADED_RASTER = REFERENCE_RASTER.read_text(encoding="utf-8")
 
-
-def threaded(fragment: str) -> str:
-    """A fragment as it would read once the raster can record identity."""
-    return IDENTITY_THREADED_RASTER + fragment
-
+# An empty runtime-frame report, for blocker tests that exercise register
+# conditions and must not pay for a node subprocess per call. Tests that need
+# real runtime findings inject them explicitly -- the report is an INPUT to
+# compute_blockers, which is exactly what makes those injections honest.
+NO_RUNTIME_FINDINGS = {"violations": [], "divergent": [], "stats": {}}
 
 RECOVERED_ACCEPTED_FIXTURES = {
     "fixture.arbor",
@@ -256,109 +239,6 @@ def test_every_provenance_and_decision_claim_is_verified_against_its_source():
     assert problems == [], "unverifiable provenance:\n  " + "\n  ".join(problems)
 
 
-def test_anonymous_paint_is_recorded_as_a_release_blocker_not_silently_accepted():
-    """The renderer has no identity yet, and that fact must be visible.
-
-    This deliberately does NOT assert that every paint site is identified.
-    Route step 1 changes no rendering, so "every paint call carries an id"
-    cannot be its closure criterion -- threading ids through the painters is
-    step 5, downstream of the accepted-only release authority in step 3.  A step
-    gated on work its own contract forbids can never close.
-
-    What step 1 owes is that the gap is COUNTED and BLOCKS, rather than being
-    absent from the record.  When step 5 lands, this test starts reporting zero
-    and the deploy gate below is what keeps it there.
-    """
-    source = (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8")
-    sites = extract_paint_sites(source)
-    assert sites, "no paint sites found at all -- the scanner has stopped matching the renderer"
-
-    blockers = compute_blockers(_registry(), _recipes(), source)
-    anonymous = blockers["anonymous_paint_sites"]
-    identified = [site for site in sites if site.source_id is not None]
-    assert len(anonymous) + len(identified) == len(sites), (
-        "a paint site is neither identified nor counted as anonymous, so the blocker "
-        "under-reports the gap"
-    )
-
-
-def test_only_cell_writers_are_treated_as_paint_sites():
-    """A serializer is not a painter, and must not be asked to name one source.
-
-    ``raster.line`` returns a row and ``raster.latticeHtml`` turns rows into
-    markup.  Counting them as paint sites inflated the anonymous-paint figure
-    and, worse, implied that a row could name a single visual source -- which is
-    false by construction, because one row routinely holds cells from several
-    sources.  Provenance belongs on the cell at the moment it is written and has
-    to survive serialisation; that is a different obligation, on a different
-    line of code.
-    """
-    source = (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8")
-    writers = extract_paint_sites(source)
-    readers = extract_reader_sites(source)
-
-    assert {site.method for site in writers} <= {"put", "text", "art", "measuredArt"}
-    assert {site.method for site in readers} <= {"line", "latticeHtml"}
-    assert not ({site.method for site in writers} & {site.method for site in readers})
-
-
-def test_the_paint_scanner_reads_code_not_text_that_resembles_code():
-    """The scanner must be a tokenizer, and this is what proves it.
-
-    Every case below was executed against the previous raw-text scanner and got
-    the wrong answer: three inventions, and one real call whose identity was
-    lost because a ``)`` inside a string ended the argument walk early.  The
-    same family of bug had already been found and corrected once in the Pages
-    dependency scanner, which is why this reuses that tokenizer rather than
-    adding a second one to go wrong independently.
-    """
-    invisible = {
-        "line comment": "// raster.put(1, 2, 'x')",
-        "block comment": "/* raster.put(1, 2) */",
-        "quoted prose": "const note = \"raster.put(1, 2)\";",
-        "template text": "const t = `raster.put(1, 2)`;",
-        "regex literal": "const r = /raster.put(1,2)/;",
-        "escaped quote": r"const s = 'raster.put(\'x\')';",
-    }
-    for name, snippet in invisible.items():
-        assert extract_paint_sites(snippet) == [], f"{name} was read as a paint call"
-
-    # A real call whose arguments contain a parenthesis inside a string literal.
-    parenthesised = threaded("raster.art(x, y, f(')'), colour, {source: 'recipe.ground.cover'});")
-    sites = extract_paint_sites(parenthesised)
-    assert [site.source_id for site in sites] == ["recipe.ground.cover"], (
-        "a `)` inside a string truncated the argument walk, so an identified call "
-        "was reported as anonymous"
-    )
-
-    # Code inside a template substitution is still code.
-    substituted = threaded("const t = `${raster.art(x, y, g, c, {source: 'recipe.scene.moon'})}`;")
-    assert [site.source_id for site in extract_paint_sites(substituted)] == ["recipe.scene.moon"]
-
-    anonymous = [f"garden-renderer.mjs:{s.line} raster.{s.method}" for s in sites if s.source_id is None]
-    assert anonymous == [], (
-        f"{len(anonymous)} of {len(sites)} paint sites declare no visual source id, "
-        "so nothing records whether what they draw was ever approved:\n  "
-        + "\n  ".join(anonymous[:12])
-    )
-
-
-def test_a_new_raster_method_cannot_become_an_unwatched_paint_path():
-    """Adding an unrecognised paint API must be visible, not silent.
-
-    Every identity check above is scoped to a known list of paint methods.  A
-    new ``raster.blit`` would therefore be exempt from all of them by omission.
-    This makes the omission itself fail.
-    """
-    source = (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8")
-    unlisted = unlisted_raster_methods(source)
-    assert unlisted == [], (
-        f"the renderer calls raster methods the identity checker does not classify: "
-        f"{unlisted}. Either add them to WRITER_METHODS or READER_METHODS, or establish "
-        "that they cannot emit visible cells."
-    )
-
-
 def test_release_policy_and_active_blockers_are_separate_things():
     """A permanent rule and a clearable condition must not share a list.
 
@@ -422,6 +302,7 @@ def test_the_documented_blockers_are_exactly_the_computed_ones():
         _registry(),
         _recipes(),
         (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8"),
+        NO_RUNTIME_FINDINGS,
     ))
     assert documented == computed, (
         f"documented but never computed: {sorted(documented - computed)}; "
@@ -478,6 +359,10 @@ def test_a_root_deploy_requires_every_computed_blocker_to_clear():
         _registry(),
         _recipes(),
         (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8"),
+        # The REAL runtime report, not the empty stub: this is the deploy
+        # gate's own assertion, so it must judge the frame the product
+        # actually composes -- a node subprocess is the price of honesty here.
+        runtime_frame_report(),
     )
     outstanding = {name: items for name, items in blockers.items() if items}
 
@@ -507,48 +392,15 @@ def test_a_root_deploy_requires_every_computed_blocker_to_clear():
 # list unconditionally would pass every test in this file.
 
 
-def test_mutation_a_new_anonymous_painter_is_caught():
-    """Someone adds a paint call and forgets the source id."""
-    mutated = "raster.put(row, col, glyph, colour);"
-    sites = extract_paint_sites(mutated)
-    assert len(sites) == 1
-    assert sites[0].source_id is None, "an undeclared paint call was read as identified"
-
-
-def test_mutation_an_unknown_visual_source_id_is_caught():
-    """A paint call cites an id that no register defines."""
-    mutated = threaded("raster.art(r, c, g, col, {source: 'recipe.invented.thing'});")
-    blockers = compute_blockers(_registry(), _recipes(), mutated)
-    assert blockers["unknown_visual_source_ids"], (
-        "an unregistered visual source id was accepted as valid identity"
-    )
-
-
-def test_mutation_a_divergent_implementation_cannot_claim_an_accepted_recipe():
-    """The laundering move: cite an approved legacy id from changed code.
-
-    ``recipe.ground.cover`` is accepted_as_deployed with candidate_status
-    'absent' -- the candidate has no counterpart.  A paint call claiming that id
-    is asserting it reproduces the deployed implementation, which is exactly the
-    claim that must be verified rather than assumed.
-    """
-    mutated = threaded("raster.art(r, c, g, col, {source: 'recipe.ground.cover'});")
-    blockers = compute_blockers(_registry(), _recipes(), mutated)
-    assert blockers["divergent_implementations_claiming_approval"], (
-        "code that does not reproduce the deployed implementation was allowed to "
-        "claim its approval"
-    )
-
-
 def test_mutation_a_rejected_or_unreviewed_recipe_blocks_release():
     """A refused drawing must not clear the gate by being registered."""
     recipes = copy.deepcopy(_recipes())
     recipes["records"]["recipe.sky.clouds"]["verdict"] = "rejected"
-    blockers = compute_blockers(_registry(), recipes, "")
+    blockers = compute_blockers(_registry(), recipes, "", NO_RUNTIME_FINDINGS)
     assert "recipe.sky.clouds" in blockers["unaccepted_recipes"]
 
     recipes["records"]["recipe.scene.moon"]["verdict"] = "not_reviewed"
-    blockers = compute_blockers(_registry(), recipes, "")
+    blockers = compute_blockers(_registry(), recipes, "", NO_RUNTIME_FINDINGS)
     assert "recipe.scene.moon" in blockers["unaccepted_recipes"], (
         "an unreviewed recipe stopped blocking a release"
     )
@@ -659,26 +511,12 @@ def test_mutation_a_paraphrased_operator_quotation_is_caught():
     )
 
 
-def test_mutation_a_law_cannot_be_named_as_a_cells_visual_source():
-    """No cell comes only from "the wind".
-
-    A law decides how cells look and emits none of its own.  Naming one as a
-    source would satisfy every identity check while concealing which recipe
-    actually drew the cell -- anonymity with a respectable id attached.
-    """
-    mutated = threaded("raster.art(r, c, g, col, {source: 'recipe.motion.wind_law'});")
-    blockers = compute_blockers(_registry(), _recipes(), mutated)
-    assert blockers["laws_used_as_cell_sources"], (
-        "a law was accepted as the visual source of an emitted cell"
-    )
-
-
 def test_mutation_a_required_presentation_that_is_absent_blocks_a_release():
     """Absence is the defect, so nothing else clears it."""
     recipes = copy.deepcopy(_recipes())
     recipes["records"]["recipe.ground.cover"]["presence_requirement"] = "required"
     recipes["records"]["recipe.ground.cover"]["candidate_status"] = "absent"
-    blockers = compute_blockers(_registry(), recipes, "")
+    blockers = compute_blockers(_registry(), recipes, "", NO_RUNTIME_FINDINGS)
     assert "recipe.ground.cover" in blockers["required_presentation_absent"]
 
 
@@ -705,52 +543,6 @@ def test_mutation_a_deployment_claim_without_evidence_tokens_is_caught():
     del recipes["records"]["recipe.ground.cover"]["source_refs"]["ranges"][0]["contains"]
     problems = validate_provenance(recipes)
     assert any("non-empty list of evidence strings" in problem for problem in problems)
-
-
-def test_mutation_a_source_id_smuggled_through_a_nested_call_is_caught():
-    """``source`` must be a direct paint option, not an argument to something else.
-
-    ``raster.put(x, y, make({source: 'recipe.ground.cover'}))`` hands the object
-    to ``make``, which may return anything at all.  Accepting it let any call
-    claim identity by mentioning the property somewhere inside its arguments.
-    """
-    smuggled = threaded("raster.art(x, y, lines, colour, make({source: 'recipe.ground.cover'}));")
-    sites = extract_paint_sites(smuggled)
-    assert len(sites) == 1
-    assert sites[0].source_id is None, (
-        "an id belonging to a nested call's argument was read as this call's identity"
-    )
-
-    direct = threaded("raster.art(x, y, lines, colour, {source: 'recipe.ground.cover'});")
-    assert extract_paint_sites(direct)[0].source_id == "recipe.ground.cover"
-
-
-def test_mutation_the_self_delegation_exemption_does_not_widen_past_raster():
-    """Only the class named Raster may call the writers on itself unnamed.
-
-    Exempting any class that defines a method called ``put`` was a bypass: a
-    layer with its own ``put`` helper would have exempted every ``this.put``
-    inside it, which is exactly where anonymous paint would hide.
-    """
-    impostor = """
-    class PlantLayer {
-      put(x, y, g) { return g; }
-      render() { this.put(1, 2, '*'); }
-    }
-    """
-    sites = extract_paint_sites(impostor)
-    assert sites, "a this.put inside a non-Raster class was exempted from identity"
-    assert all(site.source_id is None for site in sites)
-
-    genuine = """
-    class Raster {
-      put(x, y, g) { return g; }
-      text(x, y, v) { this.put(x, y, v); }
-    }
-    """
-    assert extract_paint_sites(genuine) == [], (
-        "the paint API delegating to itself was counted as an anonymous paint site"
-    )
 
 
 def test_mutation_a_lowercased_operator_quotation_is_caught():
@@ -847,91 +639,6 @@ def test_mutation_vacuous_operator_quotations_are_caught():
         assert problems, f"quotes={vacuous!r} was accepted as evidence of a decision"
 
 
-def test_mutation_source_metadata_must_occupy_the_methods_options_position():
-    """Position is what makes ``source`` an option rather than a coincidence.
-
-    ``art`` takes its options object as the fifth argument, so that is the only
-    place its identity can live.  An object in the coordinate position, or one
-    chosen at runtime by a conditional, supplies an identity this checker cannot
-    decide -- and an identity that cannot be decided is not one.
-    """
-    accepted = threaded("raster.art(x, y, lines, colour, {source: 'recipe.ground.cover'});")
-    assert extract_paint_sites(accepted)[0].source_id == "recipe.ground.cover"
-
-    for bypass in (
-        # The object is the X COORDINATE, not the options.
-        "raster.art({source: 'recipe.ground.cover'}, y, lines, colour);",
-        # Supplied only on one branch, so the identity is a runtime coin toss.
-        "raster.art(x, y, lines, colour, flag ? {source: 'recipe.ground.cover'} : {});",
-        # Handed to another function, which may return anything at all.
-        "raster.art(x, y, lines, colour, make({source: 'recipe.ground.cover'}));",
-        # Not a literal, so unresolvable without executing the module.
-        "raster.art(x, y, lines, colour, {source: SOME_CONST});",
-    ):
-        # Threaded, so each one fails for its OWN reason rather than because the
-        # raster has nowhere to keep an identity.
-        sites = extract_paint_sites(threaded(bypass))
-        assert sites and sites[0].source_id is None, f"{bypass} was read as identified paint"
-
-
-def test_mutation_the_delegation_exemption_covers_only_the_writer_bodies():
-    """Not every method of Raster -- only the four that implement painting.
-
-    ``class Raster { draw() { this.put(...) } }`` is a painter like any other,
-    and exempting it would hide anonymous paint behind a method name in the one
-    class nobody re-reads.
-    """
-    impostor = """
-    class Raster {
-      put(x, y, glyph, color = null, animated = false, owner = null) { return glyph; }
-      draw() { this.put(1, 2, 'x'); }
-    }
-    """
-    sites = extract_paint_sites(impostor)
-    assert sites, "a this.put inside a non-writer method of Raster was exempted"
-    assert all(site.source_id is None for site in sites)
-
-    genuine = """
-    class Raster {
-      put(x, y, glyph, color = null, animated = false, owner = null) { return glyph; }
-      text(x, y, value, color = null) { this.put(x, y, value, color); }
-    }
-    """
-    assert extract_paint_sites(genuine) == [], (
-        "the paint API delegating to itself was counted as an anonymous paint site"
-    )
-
-
-def test_mutation_a_surplus_argument_is_not_an_options_position():
-    """A position must be one the function actually reads.
-
-    ``Raster.put`` declares six parameters and no options among them.  Deriving
-    a position "one past the signature" invented an argument slot: a seventh
-    argument to a six-parameter function is discarded silently at runtime, and
-    the checker was reporting that discarded object as the cell's identity --
-    an id that exists in the source and nowhere in the running program.
-    """
-    from scripts.validate_presentation_identity import writer_options_index
-
-    renderer = (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8")
-    indices = writer_options_index(renderer)
-    assert indices["put"] is None and indices["text"] is None, (
-        "a synthesised options position has come back for a method that has none"
-    )
-    assert indices["art"] == 4 and indices["measuredArt"] == 6
-
-    for surplus in (
-        "raster.put(x, y, glyph, colour, true, null, {source: 'recipe.ground.cover'});",
-        "raster.text(x, y, value, colour, true, null, {source: 'recipe.ground.cover'});",
-        "raster.put(x, y, glyph, colour, {source: 'recipe.ground.cover'});",
-    ):
-        sites = extract_paint_sites(surplus)
-        assert sites and sites[0].source_id is None, (
-            f"{surplus} was read as identified, but the function has no options parameter "
-            "to receive it"
-        )
-
-
 def test_mutation_each_cited_range_must_justify_itself():
     """One good span must not vouch for a wrong one.
 
@@ -959,113 +666,6 @@ def test_mutation_each_cited_range_must_justify_itself():
                 f"{recipe_id} span {position} was replaced with lines 1-2 and the record still "
                 "validated, so its neighbours were vouching for it"
             )
-
-
-def test_mutation_every_computed_member_call_blocks_whatever_produced_the_receiver():
-    """Neither the receiver's NAME nor its SHAPE is a fact about the object.
-
-    Two narrower versions of this rule leaked in turn.  Scoping it to a receiver
-    literally named ``raster`` leaked because ``const brush = raster`` paints
-    through the same object under a different word.  Requiring the token before
-    ``[`` to be a name or a string leaked one level up, because a receiver is an
-    EXPRESSION and an expression need not end in a name -- ``(brush)``,
-    ``getRaster()`` and ``(c ? a : b)`` all end in a closing parenthesis.
-
-    Alias tracking cannot decide the general case, so the trigger is the call
-    FORM: a matched ``]`` invoked immediately, however the object was obtained.
-    """
-    for evasion in (
-        # Named receivers, the first generation of this rule.
-        "raster['put'](x, y, g, colour);",
-        "const method = 'put'; raster[method](x, y, g, colour);",
-        "raster[WRITERS[i]](x, y, g, colour);",
-        "const brush = raster; brush['put'](x, y, g, colour);",
-        "const brush = raster; brush[method](x, y, g, colour);",
-        "this[method](x, y, g, colour);",
-        "function paint(surface) { surface[method](x, y, g, colour); }",
-        # Receivers that are expressions, the second generation.
-        "(brush)[method](x, y, g, colour);",
-        "getRaster()[method](x, y, g, colour);",
-        "brush?.[method](x, y, g, colour);",
-        "(condition ? raster : brush)[method](x, y, g, colour);",
-        # And the optional-chained plain member call, the other unresolvable form.
-        "raster?.put(x, y, g, colour);",
-        # Third generation: the INVOCATION, not just the access, can be written
-        # in forms the earlier rules stepped straight over.  Each of these was
-        # invisible to both the paint-site reader and the blocker list while the
-        # rule required a `(` immediately after the `]` or after the method name.
-        "brush?.[method]?.(x, y, g, colour);",
-        "brush[method]?.(x, y, g, colour);",
-        "raster.put?.(x, y, g, colour);",
-        "raster?.put?.(x, y, g, colour);",
-        # Reflective invocation, including a writer extracted into a variable
-        # first -- by the call, the raster is not mentioned at all, which is why
-        # the rule cannot be scoped to receivers that look like rasters.
-        "raster[method].call(raster, x, y, g, colour);",
-        "const paint = raster[method]; paint.call(raster, x, y, g, colour);",
-        "raster.put.call(raster, x, y, g, colour);",
-        "raster.put.apply(raster, [x, y, g, colour]);",
-        "const paint = raster.put.bind(raster); paint(x, y, g, colour);",
-    ):
-        assert unresolvable_writer_calls(evasion), f"{evasion} was invisible to the checker"
-        blockers = compute_blockers(_registry(), _recipes(), evasion)
-        assert blockers["unresolvable_paint_call_forms"], f"{evasion} did not block a release"
-
-    # The rule costs nothing today, which is the point of adopting it now: it is
-    # decided before a legitimate use exists to argue about.
-    renderer = (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8")
-    assert unresolvable_writer_calls(renderer) == []
-
-    # And it does not fire on ordinary subscripting, which is everywhere in the
-    # renderer.  A rule that blocks `this.glyphs[y][x]` would have to be turned
-    # off, and a gate that is turned off is not a gate.
-    for innocent in (
-        "const row = this.glyphs[y]; const cell = this.glyphs[y][x];",
-        "const colour = accents[`${row},${column}`] ?? color;",
-        "raster.put(x, y, g, colour);",
-    ):
-        assert unresolvable_writer_calls(innocent) == [], (
-            f"{innocent} was refused, but it reaches no writer indirectly"
-        )
-
-
-def test_the_static_identity_verdict_is_confirmed_by_running_the_code():
-    """Static credit is not evidence until something executes.
-
-    Reading source text is all a static gate can do, and it has been wrong twice
-    in the same way: it accepted a MENTION of the identity as proof the identity
-    was kept.  ``this.sources[y][x] = source ? null : null`` names it and stores
-    null; a reference raster that declared ``this.glyphs = []`` and then indexed
-    ``this.glyphs[y][x]`` could not have painted one cell.  Both cleared the gate
-    as it stood.
-
-    Tightening the text rules again would only postpone the next discarding
-    expression nobody thought of.  So the claim is settled by RUNNING the code:
-    ``tests/garden_adapters/test_raster_identity_contract.mjs`` executes both
-    rasters and looks at the cells.  This test binds the two measurements to the
-    same artifacts, so neither can be satisfied alone.
-    """
-    from scripts.validate_presentation_identity import writer_identity_positions
-
-    contract = ROOT / "tests" / "garden_adapters" / "test_raster_identity_contract.mjs"
-    assert contract.exists(), "the executed identity contract is missing"
-
-    # The file the static gate credits must be the file Node executes.  If these
-    # ever diverge, the positive control proves something about a raster that no
-    # longer exists.
-    assert REFERENCE_RASTER.name in contract.read_text(encoding="utf-8")
-    assert writer_identity_positions(IDENTITY_THREADED_RASTER) == {
-        "put": 6, "text": 6, "art": 4, "measuredArt": 6,
-    }, "the raster the executed contract proves out is not credited by the gate"
-
-    node = shutil.which("node")
-    if node is None:  # pragma: no cover - depends on the developer's machine
-        pytest.skip("node is not installed, so the executed contract cannot run here")
-    completed = subprocess.run(
-        [node, "--test", str(contract.relative_to(ROOT))],
-        cwd=ROOT, check=False, capture_output=True, text=True,
-    )
-    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_mutation_a_new_registry_rule_cannot_be_written_into_authority():
@@ -1099,130 +699,6 @@ def test_mutation_a_new_registry_rule_cannot_be_written_into_authority():
     registry["registry_invariants"] = registry["registry_invariants"][:-1]
     problems = validate_registers(registry, _recipes())
     assert any("does not declare it" in p for p in problems)
-
-
-def test_mutation_a_dead_options_argument_cannot_identify_a_cell():
-    """Receiving an argument is not carrying an identity.
-
-    ``docs/SPEC.md`` requires the emitted CELL to carry ``visual_source_id``.
-    The live raster stores glyph, colour, animation and owner, and neither
-    options-taking writer even reads ``source``: ``art`` destructures four
-    properties without it, and ``measuredArt`` reads only ``accents`` and
-    ``animated`` from its options object.  Both silently drop the value.
-
-    Reporting those calls as identified would have let route step 5 clear every
-    anonymous-paint blocker by adding dead arguments while not one cell gained
-    provenance -- the gate passing precisely as the product failed.
-    """
-    from scripts.validate_presentation_identity import (
-        writer_identity_positions,
-        writer_options_index,
-    )
-
-    renderer = (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8")
-
-    # The signature fact and the identity fact are different, and the gate is
-    # the second one.
-    assert writer_options_index(renderer)["art"] == 4
-    assert writer_identity_positions(renderer) == {
-        "put": None, "text": None, "art": None, "measuredArt": None,
-    }, "a writer that discards `source` was credited with carrying identity"
-
-    for dead in (
-        "raster.art(x, y, lines, colour, {source: 'recipe.ground.cover'});",
-        "raster.measuredArt(id, x, y, lines, anchor, colour, "
-        "{source: 'recipe.ground.cover'});",
-    ):
-        sites = extract_paint_sites(renderer + dead)
-        assert sites[-1].source_id is None, (
-            f"{dead} was read as identified, but the method drops the property and the "
-            "emitted cell has nowhere to keep it"
-        )
-        assert compute_blockers(_registry(), _recipes(), renderer + dead)[
-            "anonymous_paint_sites"
-        ], "a dead argument cleared the anonymous-paint blocker"
-
-    # The gate must be SATISFIABLE, or step 5 could never pass it and the check
-    # would be a permanent refusal wearing a rule's clothes.
-    threaded_positions = writer_identity_positions(IDENTITY_THREADED_RASTER)
-    assert threaded_positions == {"put": 6, "text": 6, "art": 4, "measuredArt": 6}
-    identified = extract_paint_sites(
-        threaded("raster.art(x, y, lines, colour, {source: 'recipe.ground.cover'});")
-    )
-    assert identified[-1].source_id == "recipe.ground.cover"
-
-    # Every way the chain can break, each caught on its own.  These are stated
-    # as (what to break, which writers must lose their credit) rather than
-    # prose, because the previous version of this check credited a writer when
-    # `source` appeared ANYWHERE in any call it made downstream -- which is
-    # co-occurrence, not dataflow, and every one of the breakages below cleared
-    # it.
-    for description, before, after, expected in (
-        (
-            "put stops storing the identity, so nothing above it can carry one",
-            "    this.sources[y][x] = source;\n", "",
-            {"put": None, "text": None, "art": None, "measuredArt": None},
-        ),
-        (
-            "put stores a discarding expression that merely MENTIONS the identity",
-            "this.sources[y][x] = source;",
-            "this.sources[y][x] = source ? null : null;",
-            {"put": None, "text": None, "art": None, "measuredArt": None},
-        ),
-        (
-            "the plane put assigns into was never allocated, so the write throws",
-            "    this.sources = Array.from"
-            "({ length: height }, () => Array(width).fill(null));\n", "",
-            {"put": None, "text": None, "art": None, "measuredArt": None},
-        ),
-        (
-            "text takes the identity and drops it, breaking art's chain one hop down",
-            "this.put(x + index, y, glyph, color, animated, owner, { source }));",
-            "this.put(x + index, y, glyph, color, animated, owner));",
-            # `measuredArt` keeps its credit because it calls `put` directly and
-            # never goes through `text`: the graph is followed, not assumed.
-            {"put": 6, "text": None, "art": None, "measuredArt": 6},
-        ),
-        (
-            "art hands the identity to text as the X COORDINATE",
-            "this.text(left, top + row, line, color, animated, owner, { source });",
-            "this.text(source, top + row, line, color, animated, owner);",
-            {"put": 6, "text": 6, "art": None, "measuredArt": 6},
-        ),
-        (
-            "art hands it down under a property name the callee does not read",
-            "this.text(left, top + row, line, color, animated, owner, { source });",
-            "this.text(left, top + row, line, color, animated, owner, { owner: source });",
-            {"put": 6, "text": 6, "art": None, "measuredArt": 6},
-        ),
-        (
-            "art carries it on the plain branch and drops it on the accent branch",
-            "accents[`${row},${column}`] ?? color, animated, owner, { source });",
-            "accents[`${row},${column}`] ?? color, animated, owner);",
-            {"put": 6, "text": 6, "art": None, "measuredArt": 6},
-        ),
-        (
-            "measuredArt stops reading source out of its options object",
-            "Boolean(options.animated), owner, { source: options.source });",
-            "Boolean(options.animated), owner);",
-            {"put": 6, "text": 6, "art": 4, "measuredArt": None},
-        ),
-    ):
-        mutated = IDENTITY_THREADED_RASTER.replace(before, after)
-        # A mutation that did not apply tests nothing while looking like proof.
-        assert mutated != IDENTITY_THREADED_RASTER, (
-            f"the mutation for {description!r} matched no text in the reference "
-            "raster, so it proved nothing"
-        )
-        assert writer_identity_positions(mutated) == expected, description
-
-    # A fallback is still storage: the allow-list must not be so tight that the
-    # obvious real implementation fails it.
-    with_fallback = IDENTITY_THREADED_RASTER.replace(
-        "this.sources[y][x] = source;", "this.sources[y][x] = source ?? null;"
-    )
-    assert with_fallback != IDENTITY_THREADED_RASTER
-    assert writer_identity_positions(with_fallback) == threaded_positions
 
 
 def test_mutation_a_new_authority_surface_cannot_be_added_under_a_new_name():
@@ -1336,6 +812,7 @@ def test_the_legacy_port_does_not_quietly_clear_the_release_blockers():
         registry,
         _recipes(),
         (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8"),
+        NO_RUNTIME_FINDINGS,
     )["gameplay_art_outside_atlas"]
     assert "plantArt" in blockers, (
         "the plant paint owner stopped being a release blocker without being "
@@ -1540,3 +1017,50 @@ def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
         for video in videos:
             video.unlink(missing_ok=True)
         package.rmdir()
+
+
+def test_mutation_runtime_frame_findings_surface_as_release_blockers():
+    """The runtime-report plumbing is load-bearing, proved by injection.
+
+    The deep clauses -- identity, authority, visibility, regions, determinism
+    -- are exercised where they run, in the Node contract suite over frames
+    the public interface composes. What THIS gate owns is that a finding from
+    that check cannot get lost between the report and the release decision,
+    so a finding is injected and must come out as a blocker.
+    """
+    poisoned = {
+        "violations": [{"clause": "1-identity", "detail": "(3,4) 'x' carries no source_id"}],
+        "divergent": ["recipe.example paints while candidate_status is 'different'"],
+        "stats": {},
+    }
+    blockers = compute_blockers(_registry(), _recipes(), "", poisoned)
+    assert any("carries no source_id" in item
+               for item in blockers["runtime_frame_violations"])
+    assert blockers["divergent_implementations_claiming_approval"] == poisoned["divergent"]
+
+
+def test_the_real_runtime_report_reflects_the_product_not_a_stub():
+    """One execution of the real check, pinned to facts that must hold now.
+
+    The composed starter frame carries identity on every primitive (zero
+    contract violations, zero suppression) and the three scene recipes that
+    paint while their register rows say `candidate_status: different` are
+    reported as divergent. If the divergence list ever empties, either the
+    legacy restoration landed (and the register rows say `exact`) or the
+    check went blind -- and the register cross-check distinguishes the two.
+    """
+    report = runtime_frame_report()
+    assert report["violations"] == [], report["violations"]
+    assert report["stats"]["suppressed"] == 0
+    assert report["stats"]["attempted"] > 500, "the gate frame is not vacuously small"
+    recipes = _recipes()["records"]
+    expected_divergent = {
+        source for source in report["stats"]["painted_sources"]
+        if source in recipes
+        and recipes[source]["verdict"] == "accepted_as_deployed"
+        and recipes[source].get("candidate_status") != "exact"
+    }
+    reported = {entry.split(" ")[0] for entry in report["divergent"]}
+    assert reported == expected_divergent, (
+        f"reported {sorted(reported)} but the registers imply {sorted(expected_divergent)}"
+    )

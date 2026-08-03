@@ -4,7 +4,7 @@
   "registers": {
     "asset_register": {
       "path": "docs/garden-asset-acceptance.json",
-      "sha256": "f3590da3f01323c2672b0b51238da2b0b38089b6b8e4aba3029c11848a02d2ec"
+      "sha256": "dd1c17ba23bb4381d08086d439e31c33d5a80c1191cbcde6a1db26d9d700e659"
     },
     "recipe_register": {
       "path": "docs/garden-presentation-recipes.json",

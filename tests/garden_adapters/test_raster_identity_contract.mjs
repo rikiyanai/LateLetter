@@ -30,9 +30,14 @@
  *     actually retain nothing -- otherwise the gate is refusing a raster that
  *     works, and the two would have to be reconciled before anything is trusted.
  *
- * The live arm therefore FAILS the day the renderer starts recording identity,
- * which is deliberate: route step 5 has to update both the code and the gate
- * together, and cannot quietly do one without the other.
+ * The live arm used to assert the OPPOSITE: that the live raster retained
+ * nothing, matching the static gate's refusal, and it was built to fail the
+ * day the renderer gained identity so code and gate could only move together.
+ * That day was 2026-08-03: the ownership-transfer patch threads a `sources`
+ * plane and an attempt log through the live raster, so the live arm now
+ * requires identity to be KEPT -- the exact behaviour the reference raster
+ * has always demonstrated -- and the static writer-graph gate is retired in
+ * the same patch, per SPEC 7.2.2 clause 4.
  */
 
 import assert from 'node:assert/strict';
@@ -43,6 +48,10 @@ import { dirname, resolve } from 'node:path';
 
 import { Raster as ReferenceRaster }
   from '../garden_contract/fixtures/identity_reference_raster.mjs';
+// The live class is public since the ownership-transfer patch: the composer
+// in web/garden-presentation.mjs constructs it, so it is part of the public
+// composition surface rather than a renderer internal.
+import { Raster as LiveRaster } from '../../web/garden-renderer.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB = resolve(HERE, '..', '..', 'web');
@@ -50,50 +59,6 @@ const RENDERER = resolve(WEB, 'garden-renderer.mjs');
 
 /** The id used throughout, distinctive enough that a substring scan is sound. */
 const TEST_SOURCE = 'recipe.identity_contract.probe';
-
-/**
- * Load the live renderer's `Raster`, which the module does not export.
- *
- * The class is internal, and this file must not change the renderer to reach it
- * -- the operator route's step 1 changes no rendering, and adding an export for
- * a test's convenience is still an edit to the file under examination. So the
- * module's own text is read, its relative import specifiers are rewritten to
- * absolute `file://` URLs (a `data:` module has no directory of its own to
- * resolve `./garden-atlas.mjs` against), an export of the class is appended, and
- * the result is imported.
- *
- * What executes is the renderer's real source, byte for byte, apart from the
- * specifier rewrite and the appended export line.
- *
- * @returns The `Raster` class as the live renderer actually defines it.
- */
-async function loadLiveRaster() {
-  const source = readFileSync(RENDERER, 'utf8');
-  const rebased = source.replace(
-    /(\bfrom\s*['"])\.\/([^'"]+)(['"])/g,
-    (_match, before, file, after) => `${before}${pathToFileURL(resolve(WEB, file)).href}${after}`,
-  );
-  const withExport = `${rebased}\nexport { Raster };\n`;
-  const url = `data:text/javascript;base64,${Buffer.from(withExport, 'utf8').toString('base64')}`;
-  return (await import(url)).Raster;
-}
-
-/**
- * Every per-cell plane a raster keeps, as flat arrays of cell values.
- *
- * Used to ask "is this id anywhere in this raster at all", which is a stronger
- * question than "is it in the plane I expected". A renderer that stashed the id
- * somewhere unexpected would still be recording it, and the live-arm assertion
- * below should not pass on a technicality.
- *
- * @param raster Any raster instance.
- * @returns One flat array per own property that looks like a grid of rows.
- */
-function cellPlanes(raster) {
-  return Object.entries(raster)
-    .filter(([, value]) => Array.isArray(value) && value.every(row => Array.isArray(row)))
-    .map(([name, rows]) => [name, rows.flat()]);
-}
 
 test('the reference raster records the exact source id on the cell put wrote', () => {
   const raster = new ReferenceRaster(10, 4);
@@ -162,33 +127,35 @@ test('a later write replaces the source id, and an anonymous write clears it', (
   assert.equal(raster.sources[1][1], null);
 });
 
-test('the live renderer retains no visual source, matching its static verdict', async () => {
-  const LiveRaster = await loadLiveRaster();
+test('the live raster keeps identity exactly as the reference raster does', () => {
   const raster = new LiveRaster(12, 6);
 
-  // Every writer, each handed the id in the most generous form available: the
-  // options object where one exists, a surplus trailing argument where it does
-  // not. This is exactly the shape route step 5 might be tempted to add first.
+  // Every writer, each handed the id the same way the composer hands it.
   raster.put(1, 1, 'A', null, false, null, { source: TEST_SOURCE });
   raster.text(1, 2, 'bc', null, false, null, { source: TEST_SOURCE });
   raster.art(5, 3, ['de'], null, { baseline: false, source: TEST_SOURCE });
   raster.measuredArt('fixture.bench', 5, 4, ['fg'], [0, 0], null, { source: TEST_SOURCE });
 
-  // The glyphs did land, so this is not a test that simply failed to paint.
+  // The glyphs landed AND every landed cell can say where it came from.
   assert.equal(raster.glyphs[1][1], 'A');
+  assert.equal(raster.sources[1][1], TEST_SOURCE);
+  for (const column of [1, 2]) assert.equal(raster.sources[2][column], TEST_SOURCE);
   assert.ok(raster.glyphs.flat().includes('d'));
+  const identified = raster.sources.flat().filter(id => id === TEST_SOURCE);
+  assert.equal(identified.length, 7, 'all seven written cells are identified');
 
-  // And not one cell, in any plane, kept the id.
-  for (const [name, cells] of cellPlanes(raster)) {
-    assert.ok(
-      !cells.includes(TEST_SOURCE),
-      `plane '${name}' unexpectedly retained a visual source id -- the renderer `
-      + 'has gained identity, so the static gate in '
-      + 'scripts/validate_presentation_identity.py must be re-derived against it',
-    );
-  }
-  // Stated separately from the scan, because the absent plane IS the defect:
-  // there is nowhere for a cell to keep provenance, which is what the blocker
-  // `writers_that_cannot_record_identity` reports without running anything.
-  assert.equal(raster.sources, undefined, 'the live raster has no per-cell source plane');
+  // Overwrite replaces the claim; an anonymous write clears it, so anonymous
+  // paint stays visible to the runtime gate instead of riding an earlier
+  // drawing's identity. Identical to the reference-raster clauses above.
+  raster.put(1, 1, 'B', null, false, null, { source: 'recipe.identity_contract.second' });
+  assert.equal(raster.sources[1][1], 'recipe.identity_contract.second');
+  raster.put(1, 1, 'C');
+  assert.equal(raster.sources[1][1], null);
+
+  // The attempt log kept every write in painter order, including the two that
+  // were later overwritten -- the raw material of attempted_primitives.
+  assert.equal(raster.attempted.length, 9);
+  assert.ok(raster.attempted.every((entry, index) => entry.painter_order === index + 1));
+  const covered = raster.attempted.filter(entry => entry.x === 1 && entry.y === 1);
+  assert.equal(covered.length, 3, 'overwritten attempts remain recorded');
 });

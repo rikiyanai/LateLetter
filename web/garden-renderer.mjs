@@ -8,6 +8,13 @@
  */
 
 import { glyphForProjection, organGlyph } from './garden-atlas.mjs';
+// The presentation OWNER. This module supplies the painters and the surface
+// class; garden-presentation.mjs decides what is composed. The import cycle
+// between the two is call-time only -- neither module reads the other's
+// bindings during evaluation -- and it is the intended shape of the split.
+import {
+  advancePresentationState, composePresentationFrame, paintPresentationFrame,
+} from './garden-presentation.mjs';
 import { canonicalProportionalArt } from './garden-atlas-art.mjs';
 import { projectSkyPoints, resolveBrowserSky } from './garden-sky.mjs';
 // Plant and animal drawings transcribed from the legacy archive, together with
@@ -774,8 +781,18 @@ export function connectedMasks(objects) {
   return result;
 }
 
-class Raster {
-  constructor(width, height) {
+export class Raster {
+  /**
+   * @param width     cells across
+   * @param height    cells down
+   * @param authority optional Set of accepted source ids. When present, a
+   *   write whose source the set does not contain is recorded as an
+   *   attempted-but-SUPPRESSED primitive and paints nothing: unreviewed ink
+   *   composes on no host. When null, everything paints WITH its identity --
+   *   the diagnostic mode Node adapters and authoring tools use.
+   */
+  constructor(width, height, { authority = null } = {}) {
+    this.authority = authority;
     this.width = width; this.height = height;
     this.glyphs = Array.from({ length: height }, () => Array(width).fill(' '));
     this.colors = Array.from({ length: height }, () => Array(width).fill(null));
@@ -787,15 +804,48 @@ class Raster {
     // time. A later non-asset write clears the owner, preserving painter order.
     this.owners = Array.from({ length: height }, () => Array(width).fill(null));
     this.measuredAssets = [];
+    // IDENTITY. `sources` keeps, per cell, the register id of whatever drew
+    // the cell's CURRENT glyph -- the runtime form of SPEC 7.2.1's
+    // visual_source_id. An anonymous write stores null rather than
+    // inheriting the previous claim, so anonymous paint stays visible to the
+    // gate instead of riding an earlier drawing's identity.
+    this.sources = Array.from({ length: height }, () => Array(width).fill(null));
+    // ATTEMPTS. Every write is also recorded in painter order, whether or
+    // not a later write covers it -- SPEC 7.2.2's attempted_primitives.
+    // `cellAttempt` maps each cell to the index of the attempt currently
+    // visible there, which is how the composer later derives
+    // visible_primitives without a second occlusion policy.
+    this.attempted = [];
+    this.cellAttempt = Array.from({ length: height }, () => Array(width).fill(null));
   }
-  put(x, y, glyph, color = null, animated = false, owner = null) {
+  put(x, y, glyph, color = null, animated = false, owner = null, options = null) {
     if (x < 0 || x >= this.width || y < 0 || y >= this.height || !glyph) return;
-    this.glyphs[y][x] = [...String(glyph)][0]; this.colors[y][x] = color;
+    const source = options?.source ?? null;
+    const objectId = options?.objectId ?? null;
+    // Suppression is a property of the write, decided by the authority this
+    // raster was constructed with. A blank glyph is never suppressed: it is
+    // not ink, and suppressing it would let an unaccepted drawing ERASE
+    // accepted ink underneath it, which is a paint decision by other means.
+    const glyphValue = [...String(glyph)][0];
+    const isInk = glyphValue !== ' ' && glyphValue !== '';
+    const suppressed = Boolean(
+      this.authority && isInk && (source === null || !this.authority.has(source)),
+    );
+    this.attempted.push({
+      x, y, glyph: glyphValue, color, animated,
+      source_id: source, object_id: objectId,
+      painter_order: this.attempted.length + 1,
+      suppressed,
+    });
+    if (suppressed) return;
+    this.glyphs[y][x] = glyphValue; this.colors[y][x] = color;
     this.animated[y][x] = animated; this.owners[y][x] = owner;
+    this.sources[y][x] = source;
+    this.cellAttempt[y][x] = this.attempted.length - 1;
   }
-  text(x, y, value, color = null, animated = false, owner = null) {
+  text(x, y, value, color = null, animated = false, owner = null, options = null) {
     [...String(value)].forEach((glyph, index) =>
-      this.put(x + index, y, glyph, color, animated, owner));
+      this.put(x + index, y, glyph, color, animated, owner, options));
   }
   /**
    * Draw a picture, optionally recolouring named parts of it.
@@ -810,16 +860,18 @@ class Raster {
    */
   art(anchorX, anchorY, lines, color, {
     baseline = true, animated = false, accents = null, owner = null,
+    source = null, objectId = null,
   } = {}) {
+    const identity = { source, objectId };
     const width = Math.max(0, ...lines.map(line => [...line].length));
     const top = baseline ? anchorY - lines.length + 1 : anchorY;
     const left = anchorX - Math.floor(width / 2);
     lines.forEach((line, row) => {
-      if (!accents) { this.text(left, top + row, line, color, animated, owner); return; }
+      if (!accents) { this.text(left, top + row, line, color, animated, owner, identity); return; }
       // Per-cell so an accent can sit inside a run of ordinary strokes.
       [...line].forEach((glyph, column) => {
         this.put(left + column, top + row,
-          glyph, accents[`${row},${column}`] ?? color, animated, owner);
+          glyph, accents[`${row},${column}`] ?? color, animated, owner, identity);
       });
     });
   }
@@ -841,11 +893,13 @@ class Raster {
     this.measuredAssets.push({
       objectId: String(objectId), anchor: [anchorX, anchorY], artAnchor: anchor,
       lines: [...lines], color, accents: options.accents ?? null,
+      source: options.source ?? null,
     });
     lines.forEach((line, row) => [...line].forEach((glyph, column) => {
       this.put(left + column, top + row, glyph,
         options.accents?.[`${row},${column}`] ?? color,
-        Boolean(options.animated), owner);
+        Boolean(options.animated), owner,
+        { source: options.source ?? null, objectId: String(objectId) });
     }));
   }
   line(row) { return this.glyphs[row].join(''); }
@@ -1143,7 +1197,8 @@ function legacyPlantArt(object, frame, hovered, lod) {
   // decision. Trees read as foliage, the two flowering species as blooms.
   const color = species === 'pine' ? 'deepGreen'
     : species === 'sunflower' || species === 'water_lily' ? 'flower' : 'green';
-  return { lines: [...presentation.lines], color, legacySource: presentation.source };
+  return { lines: [...presentation.lines], color,
+    legacySource: presentation.source, identity: presentation.identity };
 }
 
 function plantArt(object, frame, hovered = false, lod = 'full') {
@@ -1219,7 +1274,7 @@ function resolveAnimalPose(object, frame, lod) {
     for (let index = 0; index < legacy.loopLength; index += 1) {
       poses.push(legacyAnimalPresentation(species, family, index * 64, 0).lines);
     }
-    return { lines: [...legacy.lines], poses };
+    return { lines: [...legacy.lines], poses, identity: legacy.identity };
   }
   const poses = species === 'cat' && lod === 'full'
     ? STARTER_CAT_FULL_POSES[family]
@@ -1234,13 +1289,14 @@ function animalArt(object, frame, lod = 'full') {
   // The authored pose is already a complete silhouette. Appending the same
   // `######` body block underneath every pose made all four species read as
   // inventory icons and doubled their visual weight in the Garden.
-  let lines = resolveAnimalPose(object, frame, lod).lines;
+  const pose = resolveAnimalPose(object, frame, lod);
+  let lines = pose.lines;
   if (/feed/.test(intent)) lines = lines.map((line, index) => index === lines.length - 1 ? `${line} [_]` : line);
   if (state.choreography_locked && frame % 12 < 6) lines = lines.map(line => line.replace('o', 'O'));
   const tier = clamp(Number(state.bond_tier) || 0, 0, 3);
   const bondMark = ['', ' ·', ' *', ' ♥'][tier];
   if (bondMark) lines = lines.map((line, index) => index === 0 ? `${line}${bondMark}` : line);
-  return lines;
+  return { lines, identity: pose.identity ?? null };
 }
 
 /**
@@ -1358,14 +1414,18 @@ export function objectPresentationArt(object, frame, lod = 'full', emphasized = 
   const state = object.semantic_state ?? {};
   if (object.kind === 'plant') {
     const art = plantArt(object, frame, emphasized, lod);
-    return { ...art, lines: art.purposeDrawn
+    return { ...art, identity: art.identity ?? null, lines: art.purposeDrawn
       ? art.lines : presentationLod(art.lines, object.kind, lod), animated: true };
   }
-  if (object.kind === 'animal') return {
-    lines: presentationLod(animalArt(object, frame, lod), object.kind, lod),
-    color: 'creature', animated: true,
-    poseFamily: animalPoseFamily(state.intent ?? state.current_intent, state.choreography_locked),
-  };
+  if (object.kind === 'animal') {
+    const animal = animalArt(object, frame, lod);
+    return {
+      lines: presentationLod(animal.lines, object.kind, lod),
+      identity: animal.identity,
+      color: 'creature', animated: true,
+      poseFamily: animalPoseFamily(state.intent ?? state.current_intent, state.choreography_locked),
+    };
+  }
   if (object.kind === 'fixture') {
     const catalog = String(state.catalog_id ?? 'fixture');
     const canonical = canonicalProportionalArt(`fixture.${catalog}`);
@@ -1762,10 +1822,12 @@ export function drawSky(raster, projection, sky, palette, profile, mode) {
   const projected = projectSkyPoints(sky, observedTime, [raster.width, skyRows]);
   const visible = mode === 'day' ? (sky.astronomical ? [] : projected.slice(0, 3)) :
     mode === 'evening' ? projected.filter((_, index) => index % 2 === 0) : projected;
-  for (const [x, y, glyph] of visible) raster.put(x, y, glyph, palette.star);
+  for (const [x, y, glyph] of visible) raster.put(x, y, glyph, palette.star, false, null,
+    { source: 'recipe.scene.starfield' });
   if (mode === 'night') {
     const art = MOON_ART[lunarPhase(observedTime)];
-    art.forEach((line, row) => raster.text(Math.max(1, Math.floor(raster.width * 0.78)), 1 + row, line, palette.moon));
+    art.forEach((line, row) => raster.text(Math.max(1, Math.floor(raster.width * 0.78)), 1 + row, line, palette.moon,
+      false, null, { source: 'recipe.scene.moon' }));
   }
 }
 
@@ -1822,7 +1884,8 @@ export function drawGround(raster, palette, season, profile) {
   for (const row of [groundY, groundY + 1]) {
     for (let x = 0; x < raster.width; x += 1) {
       const glyph = x % 5 === 0 ? '.' : texture[(x + row * 3) % texture.length];
-      raster.put(x, row, glyph, palette.soil);
+      raster.put(x, row, glyph, palette.soil, false, null,
+        { source: 'recipe.scene.ground_line' });
     }
   }
 }
@@ -1981,8 +2044,13 @@ export function drawWeather(raster, projection, palette, season, horizon, layout
     }
     const glyph = rain ? (index % 3 ? '|' : '/') : snow ? (index % 4 ? '.' : '*') : (index % 2 ? '`' : ',');
     const color = rain ? palette.water : snow ? palette.moon : palette.gold;
+    // Which accepted recipe this particle belongs to. Splash and settle
+    // effects carry their own ids below, because "rain fell" and "rain
+    // splashed off a surface" are different accepted recipes.
+    const particleSource = rain ? 'recipe.weather.rain'
+      : snow ? 'recipe.weather.snow' : 'recipe.weather.falling_leaves';
     if (raster.glyphs[y]?.[x] === ' ') {
-      raster.put(x, y, glyph, color, true);
+      raster.put(x, y, glyph, color, true, null, { source: particleSource });
       continue;
     }
     const objectSurface = layout.some(entry => rectContains(entry.rect, [x, y]));
@@ -1990,7 +2058,8 @@ export function drawWeather(raster, projection, palette, season, horizon, layout
     if (rain && y > 0) {
       for (const [dx, dy, splash] of [[-1, -1, '·'], [0, -1, '^'], [1, -1, '·']]) {
         if (raster.glyphs[y + dy]?.[x + dx] === ' ') {
-          raster.put(x + dx, y + dy, splash, palette.water, true);
+          raster.put(x + dx, y + dy, splash, palette.water, true, null,
+            { source: 'recipe.weather.rain_splashes' });
           if (objectSurface) reactions.splashes += 1;
           else if (groundSurface) reactions.groundSplashes += 1;
         }
@@ -1998,7 +2067,8 @@ export function drawWeather(raster, projection, palette, season, horizon, layout
     } else if (snow && y > 0) {
       for (let rise = 1; rise <= 3; rise += 1) {
         if (raster.glyphs[y - rise]?.[x] === ' ') {
-          raster.put(x, y - rise, rise === 1 && index % 5 === 0 ? '*' : '.', palette.moon, true);
+          raster.put(x, y - rise, rise === 1 && index % 5 === 0 ? '*' : '.', palette.moon, true, null,
+            { source: 'recipe.weather.snow_accumulation' });
           if (objectSurface) reactions.snowCaps += 1;
           else if (groundSurface) reactions.groundSnow += 1;
           break;
@@ -2013,7 +2083,8 @@ export function drawWeather(raster, projection, palette, season, horizon, layout
       if (y < 0) continue;
       for (const [dx, splash] of [[-1, '·'], [0, '^'], [1, '·']]) {
         if (raster.glyphs[y]?.[x + dx] !== ' ') continue;
-        raster.put(x + dx, y, splash, palette.water, true);
+        raster.put(x + dx, y, splash, palette.water, true, null,
+          { source: 'recipe.weather.rain_splashes' });
         reactions.splashes += 1;
       }
     }
@@ -2025,14 +2096,16 @@ export function drawWeather(raster, projection, palette, season, horizon, layout
       for (let x = entry.rect.left; x <= entry.rect.right; x += 1) {
         if (row < 0 || raster.glyphs[row]?.[x] !== ' ' ||
           noise(stringHash(`${projection.world_id}:snow-cap:${entry.object.object_id}:${x}`)) > capDensity) continue;
-        raster.put(x, row, x % 4 === 0 ? '*' : '.', palette.moon, true);
+        raster.put(x, row, x % 4 === 0 ? '*' : '.', palette.moon, true, null,
+          { source: 'recipe.weather.snow_accumulation' });
         reactions.snowCaps += 1;
       }
     }
     for (let x = 0; x < raster.width; x += 3) {
       if (noise(stringHash(`${projection.world_id}:snow-bank:${x}`)) > 0.35 &&
         raster.glyphs[horizon - 1]?.[x] === ' ') {
-        raster.put(x, horizon - 1, x % 2 ? '.' : '*', palette.moon, true);
+        raster.put(x, horizon - 1, x % 2 ? '.' : '*', palette.moon, true, null,
+          { source: 'recipe.weather.snow_accumulation' });
         reactions.groundSnow += 1;
       }
     }
@@ -2047,7 +2120,8 @@ export function drawWeather(raster, projection, palette, season, horizon, layout
       const row = [horizon - 2, horizon - 3, horizon - 1]
         .find(candidate => raster.glyphs[candidate]?.[x] === ' ');
       if (row === undefined) continue;
-      raster.put(x, row, x % 4 ? ',' : '`', palette.gold, true);
+      raster.put(x, row, x % 4 ? ',' : '`', palette.gold, true, null,
+        { source: 'recipe.weather.falling_leaves' });
       reactions.settledLeaves += 1;
     }
   }
@@ -2065,31 +2139,49 @@ export function drawObject(raster, entry, projection, palette, season, view) {
     // A compact viewport may legitimately pack a tall picture against row
     // zero. Focus must remain visible there, so use the top cell rather than
     // silently dropping the marker.
+    // The caret is renderer-authored: no register record draws it, so it
+    // carries no source and stays anonymous -- visible to the runtime gate,
+    // and absent from any composition that enforces an accepted manifest.
     raster.put(x, Math.max(0, entry.rect.top - 1), '⌄', palette.gold, true);
   }
   if (object.kind === 'plant') {
     const art = objectPresentationArt(
       object, view.visualFrame, entry.lod, emphasized,
     );
-    raster.art(x, y, art.lines, paletteColor(palette, art.color, season), { animated: emphasized });
+    // The plant's whole drawing -- foliage, organs and the canonical centre
+    // glyph -- is one picture of one object, so every cell carries the same
+    // identity: the grant-backed archive drawing when the archive draws this
+    // species, and null (honest anonymity) for a placeholder awaiting review.
+    const plantIdentity = { source: art.identity ?? null, objectId: object.object_id };
+    raster.art(x, y, art.lines, paletteColor(palette, art.color, season),
+      { animated: emphasized, source: plantIdentity.source, objectId: plantIdentity.objectId });
     for (const organ of state.visible_organs ?? []) {
       const ox = clamp(Number(organ.offset?.[0] ?? 0), -3, 3);
       const oy = clamp(Number(organ.offset?.[1] ?? 0), 0, Math.max(0, art.lines.length - 1));
       raster.put(x + ox, y - oy,
-        organGlyph(organ.kind, organ.glyph_family), paletteColor(palette, organ.kind === 'bloom' ? 'flower' : 'brightGreen', season));
+        organGlyph(organ.kind, organ.glyph_family), paletteColor(palette, organ.kind === 'bloom' ? 'flower' : 'brightGreen', season),
+        false, null, plantIdentity);
     }
-    raster.put(x, y, glyphForProjection(object), paletteColor(palette, 'brightGreen', season));
+    raster.put(x, y, glyphForProjection(object), paletteColor(palette, 'brightGreen', season),
+      false, null, plantIdentity);
     return;
   }
   if (object.kind === 'animal') {
-    raster.art(x, y, objectPresentationArt(
+    const animalArt = objectPresentationArt(
       object, view.visualFrame, entry.lod, emphasized,
-    ).lines, palette.creature, { animated: true });
-    raster.put(x, y, glyphForProjection(object), palette.creature, true);
+    );
+    // Archived poses carry the grant identity; a placeholder pose carries
+    // null, exactly like a placeholder plant.
+    const animalIdentity = { source: animalArt.identity ?? null, objectId: object.object_id };
+    raster.art(x, y, animalArt.lines, palette.creature,
+      { animated: true, source: animalIdentity.source, objectId: animalIdentity.objectId });
+    raster.put(x, y, glyphForProjection(object), palette.creature, true, null, animalIdentity);
     const memories = Number(state.recent_memories?.length ?? 0);
+    // The memory dot is renderer-authored decoration: anonymous by intent.
     if (memories > 0) raster.put(x + 3, y - 2, memories > 2 ? '*' : '.', palette.flower, true);
     if (Number(state.bond_tier) > 0 && (projection.scene?.absence_summary ?? []).length) {
-      raster.text(x - 1, y + 1, state.species_id === 'bird' ? 'v v' : state.species_id === 'turtle' ? '---' : '. .', palette.dim, true);
+      raster.text(x - 1, y + 1, state.species_id === 'bird' ? 'v v' : state.species_id === 'turtle' ? '---' : '. .', palette.dim, true,
+        null, { source: 'recipe.animal.absence_footprints', objectId: object.object_id });
     }
     return;
   }
@@ -2112,38 +2204,51 @@ export function drawObject(raster, entry, projection, palette, season, view) {
     // outranks meaning.
     const resolvedColor = paletteColor(palette, fixtureColor, season);
     const resolvedAccents = accentColors(presentation.accents, palette, season);
+    const fixtureIdentity = { source: presentation.assetId ?? null, objectId: object.object_id };
     if (presentation.measured) {
       raster.measuredArt(
         object.object_id, x, y, presentation.lines, presentation.assetAnchor,
-        resolvedColor, { animated: emphasized, accents: resolvedAccents },
+        resolvedColor, { animated: emphasized, accents: resolvedAccents,
+          source: fixtureIdentity.source },
       );
     } else {
+      // A fixture the atlas does not own is a placeholder: anonymous, like
+      // every other drawing without an accepted identity to its name.
       raster.art(x, y, presentation.lines, resolvedColor, {
         animated: emphasized, accents: resolvedAccents,
+        source: fixtureIdentity.source, objectId: fixtureIdentity.objectId,
       });
     }
     const renderCells = Array.isArray(state.render_cells) ? state.render_cells : [];
     for (const cell of renderCells) raster.put(x + Number(cell.dx ?? 0), y + Number(cell.dy ?? 0), glyphForProjection(object, {
       connectedMask: state.connected_group && state.presentation_state !== 'open' ? Number(cell.connected_mask ?? 0) : null,
-    }), emphasized || state.presentation_state === 'on' ? palette.gold : palette.stone, emphasized);
+    }), emphasized || state.presentation_state === 'on' ? palette.gold : palette.stone, emphasized,
+    null, fixtureIdentity);
     return;
   }
+  // Collectibles and unknown kinds: their tables are renderer-authored and
+  // unreviewed, so the ink stays anonymous until atlas ownership arrives.
   raster.art(x, y, entry.art.lines,
-    paletteColor(palette, emphasized ? 'flower' : entry.art.color, season), { animated: emphasized });
+    paletteColor(palette, emphasized ? 'flower' : entry.art.color, season),
+    { animated: emphasized, objectId: object.object_id });
 }
 
 export class CanonicalGardenRenderer {
   constructor(element, {
     onSelect = null, onTheme = null, prefersReducedMotion = false, readerRegion = null,
     measurer = null, font = null,
-    // The root product passes true only on localhost, its working review
-    // surface. Keeping the library default true preserves diagnostic and
-    // terminal-style adapter use; release authority is owned by the caller.
-    allowUnacceptedArt = true,
+    // The build-derived accepted-paint manifest (web/garden-accepted-paint.
+    // v1.json in the product; the release artifact embeds the same lists in
+    // garden-release-manifest.json). Null asserts NO authority -- the
+    // diagnostic mode Node adapters use -- and paints everything with its
+    // identity. This replaces `allowUnacceptedArt`, which was a boolean the
+    // viewer minted from the hostname: authority is now data bound to the
+    // registers, identical on every host.
+    paintAuthority = null,
   } = {}) {
     this.element = element; this.onSelect = onSelect; this.onTheme = onTheme;
     this.measurer = measurer; this.font = font;
-    this.allowUnacceptedArt = Boolean(allowUnacceptedArt);
+    this.paintAuthority = paintAuthority;
     this.prefersReducedMotion = Boolean(prefersReducedMotion); this.readerRegion = readerRegion;
     this.projection = null; this.rows = []; this.rowHtml = [];
     this.measuredLayer = null; this.measuredAssetRects = new Map();
@@ -2154,7 +2259,10 @@ export class CanonicalGardenRenderer {
     // there rather than simply resolving against the default cell size.
     this.geometry = null; this.setCellGeometry(this.cellWidth, this.cellHeight);
     this.cellGeometryMeasured = false;
-    this.lastFrame = null; this.visualFrame = 0; this.hoverCell = null; this.clickBursts = [];
+    this.lastFrame = null; this.visualFrame = 0; this.hoverCell = null;
+    // Input events gathered between frames, consumed by the state advance at
+    // the top of render(). The renderer never interprets them itself.
+    this.pendingEvents = []; this.presentationState = null;
     this.presentationTimer = null; this.presentationLast = 0;
     this.presentationWanted = false; this.presentationActive = false; this.themeMode = null;
     this.focusedObjectId = null;
@@ -2163,6 +2271,7 @@ export class CanonicalGardenRenderer {
     this.element.addEventListener('mousemove', event => this._hoverAt(event));
     this.element.addEventListener('mouseleave', () => {
       this.hoverCell = null;
+      this.pendingEvents.push({ kind: 'pointer-leave' });
       if (this.element.style) this.element.style.cursor = 'default';
       if (this.projection && !this.prefersReducedMotion) this.render(this.projection);
     });
@@ -2269,127 +2378,47 @@ export class CanonicalGardenRenderer {
     if (!projection) return null;
     this.projection = projection;
     if (projection.motion_paused || this.prefersReducedMotion) this._cancelPresentationFrame();
-    const viewport = this.measure(), raster = new Raster(viewport[0], viewport[1]);
-    connectedMasks(projection.objects);
-    const sky = resolveBrowserSky({ scene: projection.scene, readerRegion: this.readerRegion });
-    const mode = timeOfDay(projection), season = seasonOf(projection), palette = mode === 'night' ? NIGHT : mode === 'evening' ? EVENING : DAY;
-    if (mode !== this.themeMode) {
-      this.themeMode = mode;
-      this.onTheme?.({ mode, palette: { ...palette } });
-    }
-    const profile = gardenPresentationProfile(viewport), horizon = profile.horizon;
-    const layout = layoutGardenObjects(projection, viewport, this.visualFrame);
-    const depthCohorts = gardenDepthCohorts(layout, profile);
-    let weatherReactions = { rainSplashes: 0, snowCaps: 0, groundSnow: 0, settledLeaves: 0 };
-    if (this.allowUnacceptedArt) {
-      drawSky(raster, projection, sky, palette, profile, mode);
-      // Sky life is drawn straight after the stars so that ground, planting and
-      // objects all paint over it: clouds and distant birds are the backdrop.
-      drawSkyLife(raster, projection, palette, season, profile, mode);
-      drawGround(raster, palette, season, profile);
-    // `_drawGroundCover` was removed on 2026-07-31. It painted two things the
-    // operator rejected on sight: scattered turf clumps, and a seven-character
-    // `__/\___` unit repeated across the entire width at `horizon - 1` with no
-    // variation. Neither was atlas art and neither was ever submitted for
-    // per-asset approval, so the Garden was decorating itself with drawings
-    // nobody had accepted. Nothing replaces it here; the ground composition is
-    // being rebuilt around the "one band / one surface" rule and must be
-    // approved before it is painted again.
-      drawAmbient(raster, projection, palette, season, horizon, profile);
-    // Far, middle and near are painter's cohorts derived from the canonical
-    // ground rows. Plant beds are interleaved with their own cohort so the
-    // foreground can overlap the middle distance without moving any object or
-    // creating a second semantic owner.
-      for (const entries of [
-        depthCohorts.far, depthCohorts.middle, depthCohorts.near,
-      ]) {
-        drawPlantBeds(raster, projection, entries, palette, season, profile);
-        entries.forEach(entry => drawObject(
-          raster, entry, projection, palette, season,
-          // The view slice of renderer state the painter may see. Passed
-          // explicitly because the painter is a module function now: it
-          // can only know what it is handed.
-          {
-            visualFrame: this.visualFrame,
-            hoverCell: this.hoverCell,
-            focusedObjectId: this.focusedObjectId,
-          },
-        ));
-      }
-      weatherReactions = drawWeather(
-        raster, projection, palette, season, horizon, layout, this.visualFrame,
-      );
-      if (projection.scene?.memorial?.active) {
-        const center = Math.floor(viewport[0] / 2);
-        raster.art(center, horizon - 1, ['  @  ', ' @@@ ', '  |  '], palette.flower);
-      }
-    }
-    const motionSuppressed = Boolean(projection.motion_paused || this.prefersReducedMotion);
-    this.clickBursts = motionSuppressed || !this.allowUnacceptedArt ? [] :
-      this.clickBursts.filter(burst => this.visualFrame - burst.frame < 12);
-    for (const burst of this.clickBursts) {
-      const age = this.visualFrame - burst.frame;
-      for (const [dx, dy, glyph, color] of objectBurstPattern(burst, age))
-        raster.put(burst.x + dx, burst.y + dy, glyph, paletteColor(palette, color, season), true);
+    const viewport = this.measure();
+
+    // ---- advance: gathered input events become presentation state. -------
+    // Events accumulated since the previous frame (pointer moves and leaves,
+    // click feedback, focus changes) are consumed exactly once. The composer
+    // never sees an event, only the state the advance derived from it, which
+    // is what keeps composition a pure function of its three inputs.
+    this.presentationState = advancePresentationState(
+      this.presentationState,
+      this.pendingEvents.splice(0, this.pendingEvents.length),
+      { frame: this.visualFrame },
+    );
+
+    // ---- compose: the picture is decided, entirely outside this class. ---
+    // This class contributes measurements and environment facts; it makes no
+    // choice about cells, colours, order, regions or labels. Paint authority
+    // is the build-derived accepted manifest the caller handed the
+    // constructor -- not the hostname, which is no longer consulted anywhere.
+    const frame = composePresentationFrame(projection, this.presentationState, {
+      viewport,
+      profile: 'browser-proportional',
+      presentationGeometry: {
+        cellAdvance: this.cellWidth,
+        lineHeight: this.cellHeight,
+        affineOnly: Boolean(this.geometry?.affineOnly),
+      },
+      acceptedManifest: this.paintAuthority,
+      environment: {
+        readerRegion: this.readerRegion,
+        reducedMotion: this.prefersReducedMotion,
+      },
+    });
+
+    if (frame.theme.mode !== this.themeMode) {
+      this.themeMode = frame.theme.mode;
+      this.onTheme?.({ mode: frame.theme.mode, palette: { ...frame.theme.palette } });
     }
 
-    if (this.element.style) {
-      const groundPct = (profile.groundBack / viewport[1] * 100).toFixed(2);
-      const nearPct = ((horizon + 1) / viewport[1] * 100).toFixed(2);
-      this.element.style.background = this.allowUnacceptedArt
-        ? `linear-gradient(to bottom,${palette.sky} 0%,${palette.sky} ${groundPct}%,` +
-          `${palette.ground} ${groundPct}%,${palette.soil} ${nearPct}%,${palette.ground} 100%)`
-        : palette.sky;
-      this.element.style.color = palette.text;
-    }
-    const lines = Array.from({ length: viewport[1] }, (_, row) => raster.line(row));
-    // Non-asset decoration keeps its world-cell lattice. Atlas pictures are
-    // omitted from these rows and painted below from asset-local cumulative
-    // prefix widths. In the explicit affine/degraded boundary there is no
-    // measurement capability, so the same semantic raster is painted whole.
-    const htmlLines = Array.from({ length: viewport[1] }, (_, row) =>
-      raster.latticeHtml(row, this.cellWidth, !this.geometry.affineOnly));
-    while (this.rows.length < lines.length) {
-      const row = document.createElement('div');
-      row.className = 'garden-lattice-row';
-      row.setAttribute('aria-hidden', 'true');
-      this.element.appendChild(row); this.rows.push(row);
-    }
-    while (this.rows.length > lines.length) this.rows.pop().remove();
-    this.rowHtml.length = lines.length;
-    const changedRows = [];
-    lines.forEach((line, index) => {
-      const html = htmlLines[index];
-      if (this.rows[index].textContent !== line || this.rowHtml[index] !== html) {
-        this.rows[index].textContent = line;
-        if (Object.hasOwn(this.rows[index], 'innerHTML') ||
-          (typeof globalThis.HTMLElement !== 'undefined' && this.rows[index] instanceof globalThis.HTMLElement)) {
-          this.rows[index].innerHTML = html;
-        }
-        this.rowHtml[index] = html;
-        changedRows.push(index);
-      }
-    });
-    this._renderMeasuredAssets(raster.measuredAssets);
-    const sceneLabel = [projection.scene?.weather, projection.scene?.palette, projection.scene?.story_time, projection.scene?.ambience].filter(Boolean).join(' · ');
-    const absence = (projection.scene?.absence_summary ?? []).slice(0, 3), missed = (projection.scene?.missed_event_summaries ?? []).slice(0, 3);
-    const memorial = projection.scene?.memorial?.active ? ` Memorial lasting; ${(projection.scene.memorial.examined_gifts ?? []).length} gifts remembered.` : '';
-    const inventory = projection.scene?.inventory ?? [];
-    const inventoryPreview = inventory.slice(0, 5);
-    const inventoryRemainder = Math.max(0, inventory.length - inventoryPreview.length);
-    const inventoryLabel = inventoryPreview.length
-      ? `${inventoryPreview.join(', ')}${inventoryRemainder ? `; and ${inventoryRemainder} more` : ''}`
-      : 'empty';
-    const counts = Object.fromEntries(['plant', 'fixture', 'animal', 'collectible'].map(kind => [kind,
-      projection.objects.filter(object => object.kind === kind).length]));
-    const contents = [
-      counts.plant ? `${counts.plant} plants` : '', counts.fixture ? `${counts.fixture} fixtures` : '',
-      counts.animal ? `${counts.animal} relationship ${counts.animal === 1 ? 'animal' : 'animals'}` : '',
-      counts.collectible ? `${counts.collectible} collectibles` : '',
-    ].filter(Boolean).join(', ') || 'quiet ground';
-    this.element.setAttribute('aria-label', `${sky.label}. ${sceneLabel || `${season} ${mode}`}. Garden with ${contents}. Inventory: ${inventoryLabel}.${absence.length ? ` Welcome back: ${absence.join(' ')}` : ''}${missed.length ? ` While you were away: ${missed.join(' ')}` : ''}${memorial}`);
-    this.lastFrame = { viewport, lines, changedRows, sky, palette, season, timeOfDay: mode,
-      horizon, profile, layout, depthCohorts, weatherReactions, motionPaused: motionSuppressed };
+    // ---- paint: the decided frame is copied to the DOM. ------------------
+    frame.changedRows = paintPresentationFrame(frame, this);
+    this.lastFrame = frame;
     this._ensurePresentationLoop();
     return this.lastFrame;
   }
@@ -2429,7 +2458,8 @@ export class CanonicalGardenRenderer {
   }
   clear() {
     this._cancelPresentationFrame();
-    this.projection = null; this.lastFrame = null; this.rows = []; this.rowHtml = []; this.clickBursts = [];
+    this.projection = null; this.lastFrame = null; this.rows = []; this.rowHtml = [];
+    this.pendingEvents = []; this.presentationState = null;
     this.measuredLayer = null; this.measuredAssetRects = new Map();
     this.focusedObjectId = null;
     this.themeMode = 'day'; this.onTheme?.({ mode: 'day', palette: { ...DAY } });
@@ -2571,6 +2601,7 @@ export class CanonicalGardenRenderer {
     // does not call back into the viewer: the removed callback existed only to
     // build the rejected textual invitation/card surface.
     this.hoverCell = this._eventCell(event);
+    this.pendingEvents.push({ kind: 'pointer-move', cell: this.hoverCell });
     const candidates = this._layoutCandidatesAt(this._eventPixel(event));
     if (this.element.style) this.element.style.cursor = candidates.length ? 'pointer' : 'default';
     if (this.projection && !this.prefersReducedMotion) this.render(this.projection);
@@ -2580,7 +2611,8 @@ export class CanonicalGardenRenderer {
     // The burst is painted at a cell; the object it reports is chosen in pixels.
     const [x, y] = this._eventCell(event);
     const selected = this._rankedLayoutCandidatesAt(this._eventPixel(event))[0]?.object ?? null;
-    this.clickBursts.push({ x, y, frame: this.visualFrame, kind: selected?.kind,
+    this.pendingEvents.push({ kind: 'burst', x, y,
+      objectKind: selected?.kind,
       species: selected?.semantic_state?.species_id,
       catalog: selected?.semantic_state?.catalog_id,
       objectId: selected?.object_id });
@@ -2595,7 +2627,10 @@ export class CanonicalGardenRenderer {
     this.cellGeometryMeasured = false;
     if (this.projection) this.render(this.projection);
   }
-  setFocusedObject(objectId) { this.focusedObjectId = objectId ? String(objectId) : null; }
+  setFocusedObject(objectId) {
+    this.focusedObjectId = objectId ? String(objectId) : null;
+    this.pendingEvents.push({ kind: 'focus-change', objectId: this.focusedObjectId });
+  }
   setReaderRegion(region) { this.readerRegion = region; if (this.projection) this.render(this.projection); }
   setReducedMotion(value) {
     const next = Boolean(value); if (next === this.prefersReducedMotion) return;
@@ -2618,7 +2653,7 @@ export class CanonicalGardenRenderer {
     const entry = this.lastFrame.layout.find(item => item.object.object_id === animal.object_id);
     if (!entry) return;
     const [x, y] = entry.anchor;
-    this.clickBursts.push({ x, y, frame: this.visualFrame, kind: 'animal',
+    this.pendingEvents.push({ kind: 'burst', x, y, objectKind: 'animal',
       species: animal.semantic_state?.species_id, objectId: animal.object_id });
   }
   animalDebugState() { return 'canonical-rich-projection'; }

@@ -36,26 +36,24 @@ WHAT IT CHECKS
 2. Provenance -- every claim about the deployed artifact is verified against the
    immutable blob and against the operator decision record, rather than being
    checked merely for being a non-empty string.
-3. Paint-site identity -- every cell-emitting call in the browser renderer names
-   a registered visual source.
+3. Runtime frame identity -- an actual frame is composed through the public
+   GardenPresentation interface under the committed accepted-paint authority
+   (``scripts/compose_frame_check.mjs``), and every clause of the executable
+   presentation contract is applied to the primitives that came back.
 4. Active release blockers -- the computed, clearable conditions that must all
    be empty before a root-product deploy.
 
-Point 3 currently reports every paint site as anonymous, because the renderer
-does not yet pass source ids at all.  That is a true finding and a recorded
-release blocker; it is NOT a defect in the register, and it is not this step's
-closure criterion.  Threading ids through the painters is route step 5, and a
-step may not be gated on work its own contract forbids it to do.
-
-HOW THE RENDERER IS READ
-------------------------
-Through the JavaScript tokenizer in ``scripts/prepare_pages_site.py``, never
-through a regular expression over raw text.  That module already learned this
-lesson the expensive way: a regex cannot tell code from things that merely look
-like code, so ``// raster.put(...)`` in a comment, ``"raster.put(...)"`` in a
-string, the same text inside a template literal, and a real call containing
-``f(')')`` were all read wrongly.  One tokenizer, reused -- a second scanner
-would relearn the same bug somewhere else.
+HOW THE RENDERER IS JUDGED
+--------------------------
+By EXECUTION, never by reading its source.  The static writer-graph analyzer
+that used to live here was deleted on 2026-08-03 per SPEC 7.2.2 clause 4:
+eight audit rounds tried to decide "does this cell carry identity" from
+source text, and every round was defeated by an invocation spelling the
+previous round had not imagined.  Whether a run of code puts an identity in a
+cell is a property of execution, so the gate now composes a frame and looks
+at the cells.  The one remaining source-text check is the string presence of
+the gameplay-art tables (``gameplay_art_outside_atlas``), which is a
+route-step ownership fact, not an identity judgement.
 
 USAGE
 -----
@@ -84,7 +82,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from scripts.prepare_pages_site import tokenize_javascript  # noqa: E402
 
 ACCEPTANCE = ROOT / "docs" / "garden-asset-acceptance.json"
 RECIPES = ROOT / "docs" / "garden-presentation-recipes.json"
@@ -179,71 +176,18 @@ RECIPE_FILE_FIELDS = frozenset({
     "presence_requirements",
 })
 
-# The two halves of the raster API, split by whether a call can put a NEW
-# character on the screen.
-#
-# Writers emit cells, so each one is a place where provenance must be supplied.
-# Readers consume cells that were already written -- ``line`` returns a row and
-# ``latticeHtml`` serialises rows to markup.  Demanding a source id from them is
-# not merely unnecessary, it is incoherent: a single row routinely holds cells
-# from many different sources, so no one id could truthfully describe it.
-# Provenance has to be stored per cell when it is WRITTEN and preserved through
-# serialisation, which is why the readers are named here rather than ignored.
-WRITER_METHODS = ("put", "text", "art", "measuredArt")
-READER_METHODS = ("line", "latticeHtml")
-KNOWN_RASTER_METHODS = WRITER_METHODS + READER_METHODS
+# The writer-graph constants that lived here (WRITER_METHODS, READER_METHODS,
+# SOURCE_PROPERTY, PAINT_API_CLASS, and the invocation-form tables) were
+# deleted with the static analyzer on 2026-08-03, per SPEC 7.2.2 clause 4:
+# runtime identity is now judged by composing an actual frame through the
+# public GardenPresentation interface (scripts/compose_frame_check.mjs) and
+# reading the primitives back. Nothing here reads renderer source to decide
+# what a cell carries any more.
 
-# Argument-position property that carries the identity, e.g.
-#     raster.put(x, y, glyph, colour, {source: 'recipe.ground.cover'})
-SOURCE_PROPERTY = "source"
-
-# There is deliberately no TERMINAL_WRITER constant here any more.  It named
-# `put` as the one place an identity could be stored, which was true of today's
-# renderer and was still a fact written down beside the code rather than read
-# out of it.  `writer_identity_positions` now derives the terminal writers --
-# the ones that assign into a per-cell plane -- and solves the delegation graph
-# backward from whichever writers those turn out to be, so moving the store, or
-# having two of them, is answered rather than assumed.
-
-# The one class allowed to call the writer methods on itself without naming a
-# visual source, because it IS the writer methods.  Named explicitly so the
-# exemption cannot widen to any class that happens to define a `put`.
-PAINT_API_CLASS = "Raster"
-
-# Function-object methods that invoke their receiver with an explicitly supplied
-# `this`.  They are the remaining way to reach a writer without writing a plain
-# member call, and they defeat member-call recognition completely:
-# `raster.put.call(raster, ...)` never puts `(` after `put`, and
-# `const paint = raster[method]; paint.call(raster, ...)` does not even mention
-# the raster at the call.  There are ZERO of them in the browser modules today,
-# so refusing the whole family costs nothing and closes the class rather than
-# the examples.
-REFLECTIVE_INVOKERS = ("call", "apply", "bind")
-
-# Matches "1719" or "1719-1725".  Anything else is a malformed range.
+# A provenance line citation: "412" or "412-431". Register validation still
+# verifies every cited range against the immutable blob; that is register
+# integrity, not renderer analysis, so it survives the analyzer's deletion.
 _RANGE_RE = re.compile(r"^(\d+)(?:-(\d+))?$")
-
-
-@dataclass
-class PaintSite:
-    """One call in the renderer that puts characters on the screen.
-
-    receiver:   the object the method was called on, e.g. ``raster``.
-    method:     which raster API was used, e.g. ``put``.
-    line:       1-indexed line number in the renderer, for a clickable ref.
-    source_id:  the visual source id the call declares, or None when it declares
-                nothing -- which is the anonymous-paint case.
-    """
-
-    receiver: str
-    method: str
-    line: int
-    source_id: str | None
-
-    def where(self) -> str:
-        """A human-readable, clickable location for report output."""
-        return f"{RENDERER.name}:{self.line} {self.receiver}.{self.method}"
-
 
 @dataclass
 class Report:
@@ -269,1081 +213,6 @@ def _read(path: Path) -> dict:
 # ── Reading the renderer ────────────────────────────────────────────────────
 
 
-def _line_of(source: str, offset: int) -> int:
-    """Turn a 0-indexed byte offset into a 1-indexed line number."""
-    return source.count("\n", 0, offset) + 1
-
-
-def _method_calls(tokens: list[tuple[str, str, int]]) -> list[tuple[int, str, str]]:
-    """Every ``<name>.<method>(`` call in the token stream.
-
-    :param tokens: output of ``tokenize_javascript``.
-    :returns: tuples of (token index of the method name, receiver, method).
-
-    Because this walks tokens, a call written inside a comment or a string was
-    never a token in the first place and cannot appear here.  That is the whole
-    reason for the tokenizer, and it is why this returns token indices rather
-    than text offsets -- the caller needs to keep walking the stream to find the
-    call's arguments, which raw text cannot do reliably either.
-    """
-    calls: list[tuple[int, str, str]] = []
-    for index in range(2, len(tokens) - 1):
-        kind, value, _offset = tokens[index]
-        if kind != "name":
-            continue
-        if tokens[index - 1][:2] != ("punct", "."):
-            continue
-        if tokens[index - 2][0] != "name":
-            continue
-        if tokens[index + 1][:2] != ("punct", "("):
-            continue
-        calls.append((index, tokens[index - 2][1], value))
-    return calls
-
-
-def _call_argument_span(tokens: list[tuple[str, str, int]], method_index: int) -> tuple[int, int]:
-    """Token indices bounding a call's argument list, exclusive of the parens.
-
-    Depth is tracked over ``(``, ``[`` and ``{`` tokens.  A parenthesis written
-    inside a string is not a punct token, so ``f(')')`` -- which truncated the
-    previous raw-text scanner and made a real, identified call look anonymous --
-    cannot end the span here.
-
-    :param method_index: index of the method-name token; the ``(`` follows it.
-    :returns: (first argument token index, index of the closing paren).
-    """
-    depth = 0
-    index = method_index + 1
-    while index < len(tokens):
-        kind, value, _offset = tokens[index]
-        if kind == "punct":
-            if value in "([{":
-                depth += 1
-            elif value in ")]}":
-                depth -= 1
-                if depth == 0:
-                    return method_index + 2, index
-        index += 1
-    # Unbalanced source: treat the rest of the file as the argument list rather
-    # than silently dropping the call, so a truncated file cannot hide paint.
-    return method_index + 2, len(tokens)
-
-
-def _split_arguments(
-    tokens: list[tuple[str, str, int]], start: int, end: int
-) -> list[tuple[int, int]]:
-    """Token spans of each top-level argument in a call, in order.
-
-    Commas nested inside parentheses, brackets or braces belong to a sub-
-    expression and do not separate arguments, so depth is tracked.  Knowing
-    WHICH argument an object literal is matters: an options object is identified
-    by its position in the method's signature, not by being present somewhere.
-    """
-    spans: list[tuple[int, int]] = []
-    depth = 0
-    limit = min(end, len(tokens))
-    current = start
-    index = start
-    while index < limit:
-        kind, value, _offset = tokens[index]
-        if kind == "punct":
-            if value in "([{":
-                depth += 1
-            elif value in ")]}":
-                depth -= 1
-            elif value == "," and depth == 0:
-                spans.append((current, index))
-                current = index + 1
-        index += 1
-    if current < limit:
-        spans.append((current, limit))
-    return spans
-
-
-def _object_literal_property(
-    tokens: list[tuple[str, str, int]], start: int, end: int, name: str
-) -> str | None:
-    """A string-valued property of an argument that is a BARE object literal.
-
-    The argument must be exactly ``{ ... }`` -- not a call returning an object,
-    not a conditional choosing between two, not a spread of one.  Each of those
-    makes the value decidable only at runtime, and an identity this checker
-    cannot decide is not an identity.  Returns None unless the property sits at
-    the literal's own top level with a string value.
-    """
-    if tokens[start][:2] != ("punct", "{") or tokens[end - 1][:2] != ("punct", "}"):
-        return None
-    depth = 0
-    for index in range(start, end):
-        kind, value, _offset = tokens[index]
-        if kind == "punct":
-            if value in "([{":
-                depth += 1
-            elif value in ")]}":
-                depth -= 1
-            continue
-        # Depth 1 is the literal's own property list.
-        if (
-            depth == 1
-            and (kind, value) == ("name", name)
-            and index + 2 < end
-            and tokens[index + 1][:2] == ("punct", ":")
-            and tokens[index + 2][0] == "string"
-        ):
-            return tokens[index + 2][1]
-    return None
-
-
-def writer_options_index(source: str) -> dict[str, int | None]:
-    """Which argument position carries each writer's options object, if any.
-
-    Derived from the ``Raster`` signatures in the renderer rather than written
-    down here, so the contract cannot drift away from the code it describes.
-    A method whose last parameter is already an options object -- an object
-    pattern, or one named ``options`` -- carries it at that parameter's index.
-
-    A method with NO options parameter maps to ``None``, and no call to it can
-    carry identity.  The previous version synthesised a position one past the
-    declared parameters instead, which invented an argument slot the function
-    does not read: ``raster.put(x, y, g, c, animated, owner, {source: '...'})``
-    hands a seventh argument to a six-parameter function, which discards it
-    silently -- and the checker reported that discarded object as the cell's
-    identity.  A position must be one the code actually reads.
-
-    Today that yields ``art`` -> 4 and ``measuredArt`` -> 6, both real, and
-    ``put``/``text`` -> None until route step 5 gives them one.
-
-    Position is what makes ``source`` an option rather than a coincidence.
-    Without it, ``raster.put({source: '...'}, y, glyph, colour)`` -- where that
-    object is the X COORDINATE -- read as identified paint.
-    """
-    tokens = tokenize_javascript(source)
-    indices: dict[str, int | None] = {}
-    for open_brace, close_brace in _paint_api_class_spans(tokens):
-        depth = 0
-        for index in range(open_brace, close_brace):
-            kind, value, _offset = tokens[index]
-            if kind == "punct" and value == "{":
-                depth += 1
-                continue
-            if kind == "punct" and value == "}":
-                depth -= 1
-                continue
-            if (
-                depth != 1
-                or kind != "name"
-                or value not in WRITER_METHODS
-                or tokens[index + 1][:2] != ("punct", "(")
-                or tokens[index - 1][:2] == ("punct", ".")
-            ):
-                continue
-            first, close = _call_argument_span(tokens, index)
-            params = _split_arguments(tokens, first, close)
-            if not params:
-                indices[value] = None
-                continue
-            last_start, _last_end = params[-1]
-            trailing_is_options = tokens[last_start][:2] in {
-                ("punct", "{"), ("name", "options"),
-            }
-            indices[value] = len(params) - 1 if trailing_is_options else None
-    return indices
-
-
-def _options_source_accessor(
-    tokens: list[tuple[str, str, int]], start: int, end: int
-) -> list[tuple[str, str]] | None:
-    """How this method's options parameter would spell a read of ``source``.
-
-    An options parameter is written one of two ways, and each is read by a
-    different token sequence:
-
-      * an object PATTERN, ``{ baseline, animated, accents, owner }`` -- the
-        properties it names are the only ones that become local variables, so
-        ``source`` is readable only if the pattern lists it.  ``art`` does not
-        list it, which is precisely why a ``{source: '...'}`` handed to ``art``
-        is discarded at the door;
-      * a plain NAME, ``options`` -- the whole object survives, and a read is
-        spelled ``options.source``.  ``measuredArt`` takes this form and reads
-        ``options.accents`` and ``options.animated`` from it, never ``source``.
-
-    :param start: first token of the parameter, inclusive.
-    :param end: one past the parameter's last token.
-    :returns: the token sequence a read would look like, or None when the
-        parameter cannot express a ``source`` read at all.
-    """
-    if tokens[start][:2] == ("punct", "{"):
-        # Object pattern: `source` must be one of its own top-level properties.
-        depth = 0
-        for index in range(start, end):
-            kind, value, _offset = tokens[index]
-            if kind == "punct":
-                if value in "([{":
-                    depth += 1
-                elif value in ")]}":
-                    depth -= 1
-                continue
-            if depth == 1 and (kind, value) == ("name", SOURCE_PROPERTY):
-                # Destructured: the local variable is simply `source`.
-                return [("name", SOURCE_PROPERTY)]
-        return None
-    if tokens[start][0] == "name":
-        # Plain parameter: a read is `<name>.source`.
-        return [
-            ("name", tokens[start][1]),
-            ("punct", "."),
-            ("name", SOURCE_PROPERTY),
-        ]
-    return None
-
-
-def _contains_sequence(
-    tokens: list[tuple[str, str, int]],
-    start: int,
-    end: int,
-    wanted: list[tuple[str, str]],
-) -> bool:
-    """Does the token range contain this exact consecutive token sequence?
-
-    Used to ask "is the identity actually READ here", which a substring search
-    of the source text cannot answer -- ``source`` occurs in comments, in the
-    word ``source_id``, and in unrelated property names.
-    """
-    limit = min(end, len(tokens)) - len(wanted) + 1
-    for index in range(max(start, 0), max(limit, 0)):
-        if all(
-            tokens[index + offset][:2] == pair for offset, pair in enumerate(wanted)
-        ):
-            # A bare `source` that is really `x.source` is a read of something
-            # else's property, not of this method's parameter.
-            if len(wanted) == 1 and tokens[index - 1][:2] == ("punct", "."):
-                continue
-            return True
-    return False
-
-
-def _matching_bracket(
-    tokens: list[tuple[str, str, int]], open_index: int, end: int
-) -> int | None:
-    """Index of the bracket closing the one at ``open_index``, or None."""
-    depth = 0
-    for index in range(open_index, min(end, len(tokens))):
-        if tokens[index][0] != "punct":
-            continue
-        if tokens[index][1] in "([{":
-            depth += 1
-        elif tokens[index][1] in ")]}":
-            depth -= 1
-            if depth == 0:
-                return index
-    return None
-
-
-def _constructor_allocated_planes(
-    tokens: list[tuple[str, str, int]], open_brace: int, close_brace: int
-) -> set[str]:
-    """Which ``this.<name>`` properties the class constructor actually creates.
-
-    Needed because "assigns into ``this.sources[y][x]``" is not storage if
-    ``this.sources`` was never allocated: the first write throws
-    ``TypeError: Cannot set properties of undefined``.  Code that cannot run
-    cannot carry provenance, and crediting it would have let a raster clear the
-    gate by naming a plane it does not have.
-
-    :returns: every property name assigned as ``this.<name> = ...`` inside the
-        constructor body.  Membership is the test; the VALUE is not inspected,
-        because proving the value is a height x width grid is what the executed
-        contract in ``tests/garden_adapters/test_raster_identity_contract.mjs``
-        is for.  Static analysis says "the plane exists"; execution says "the id
-        reaches the cell".
-    """
-    planes: set[str] = set()
-    depth = 0
-    for index in range(open_brace, close_brace):
-        kind, value, _offset = tokens[index]
-        if kind == "punct" and value == "{":
-            depth += 1
-            continue
-        if kind == "punct" and value == "}":
-            depth -= 1
-            continue
-        # A constructor definition is `constructor` `(` at the class body's own
-        # depth -- not a `.constructor` property read somewhere inside a method.
-        if (
-            depth != 1
-            or (kind, value) != ("name", "constructor")
-            or tokens[index + 1][:2] != ("punct", "(")
-            or tokens[index - 1][:2] == ("punct", ".")
-        ):
-            continue
-        _first, close = _call_argument_span(tokens, index)
-        body = _method_body_span(tokens, close, close_brace)
-        if body is None:
-            continue
-        body_start, body_end = body
-        for cursor in range(body_start, body_end - 3):
-            if (
-                tokens[cursor][:2] == ("name", "this")
-                and tokens[cursor + 1][:2] == ("punct", ".")
-                and tokens[cursor + 2][0] == "name"
-                and tokens[cursor + 3][:2] == ("punct", "=")
-                # The tokenizer emits single punctuation characters, so `==`
-                # arrives as two `=` tokens.  A comparison is not an allocation.
-                and tokens[cursor + 4][:2] != ("punct", "=")
-            ):
-                planes.add(tokens[cursor + 2][1])
-    return planes
-
-
-def _is_direct_identity_assignment(
-    tokens: list[tuple[str, str, int]],
-    start: int,
-    end: int,
-    accessor: list[tuple[str, str]],
-) -> bool:
-    """Is this right-hand side the identity itself, and nothing else?
-
-    An ALLOW-LIST, deliberately, and for the same reason the register schemas
-    are exact.  The previous rule asked only whether ``source`` was MENTIONED
-    somewhere in the right-hand side, and mentioning is not storing::
-
-        this.sources[y][x] = source ? null : null;   // mentions it, stores null
-
-    That expression named the identity, discarded it, and cleared the gate.
-    Every rule of the form "the discarding shapes I thought of are refused"
-    leaves the shapes nobody thought of, so the shapes that are ACCEPTED are
-    named instead, and there are exactly three:
-
-        = source                 -- the identity
-        = source ?? <one token>  -- the identity with a fallback
-        = source || <one token>  -- the identity with a fallback
-
-    where ``source`` stands for whichever accessor this writer's options
-    parameter spells (bare ``source`` when destructured, ``options.source``
-    when named).  Anything else -- a ternary, a call, a concatenation, a
-    parenthesised expression -- is refused for not being on the list, and is
-    added deliberately if it is ever genuinely wanted.
-    """
-    span = [token[:2] for token in tokens[start:end]]
-    if span == accessor:
-        return True
-    width = len(accessor)
-    # `??` and `||` are each two single-character punctuation tokens, and the
-    # fallback is one token: a literal, `null`, or a name.
-    if len(span) == width + 3 and span[:width] == accessor:
-        operator = span[width:width + 2]
-        if operator in ([("punct", "?"), ("punct", "?")], [("punct", "|"), ("punct", "|")]):
-            return True
-    return False
-
-
-def _stores_identity_per_cell(
-    tokens: list[tuple[str, str, int]],
-    start: int,
-    end: int,
-    accessor: list[tuple[str, str]],
-    planes: set[str],
-) -> bool:
-    """Does this method write the identity into a per-cell store?
-
-    Three conditions, all required:
-
-      * the target is a doubly-indexed property of the raster --
-        ``this.<plane>[y][x] = ...`` -- because one subscript is a row and two
-        are a cell;
-      * ``<plane>`` is a plane the CONSTRUCTOR allocated, because assigning into
-        an absent plane throws rather than stores;
-      * the right-hand side is the identity itself, per
-        ``_is_direct_identity_assignment``, because mentioning a value is not
-        keeping it.
-
-    ``Raster`` allocates exactly four such planes today (``glyphs``, ``colors``,
-    ``animated``, ``owners``) and none of them holds a visual source, so this
-    returns False for every writer.  ``owners`` is the near miss worth naming:
-    it stores ``asset:<objectId>``, which is the ATLAS chain's gameplay owner,
-    not the presentation identity the SPEC asks each cell to carry.
-    """
-    index = start
-    while index < end - 4:
-        # `this` `.` name `[`
-        if (
-            tokens[index][:2] == ("name", "this")
-            and tokens[index + 1][:2] == ("punct", ".")
-            and tokens[index + 2][0] == "name"
-            and tokens[index + 3][:2] == ("punct", "[")
-            # An unallocated plane cannot hold anything; see
-            # `_constructor_allocated_planes`.
-            and tokens[index + 2][1] in planes
-        ):
-            cursor = _matching_bracket(tokens, index + 3, end)
-            # A second subscript is what makes it per-cell rather than per-row.
-            if cursor is not None and tokens[cursor + 1][:2] == ("punct", "["):
-                cursor = _matching_bracket(tokens, cursor + 1, end)
-                if cursor is not None and tokens[cursor + 1][:2] == ("punct", "="):
-                    # Right-hand side runs to the statement's end.
-                    stop = cursor + 2
-                    depth = 0
-                    while stop < end:
-                        kind, value, _offset = tokens[stop]
-                        if kind == "punct":
-                            if value in "([{":
-                                depth += 1
-                            elif value in ")]}":
-                                depth -= 1
-                            elif value == ";" and depth == 0:
-                                break
-                        stop += 1
-                    if _is_direct_identity_assignment(tokens, cursor + 2, stop, accessor):
-                        return True
-        index += 1
-    return False
-
-
-def _method_body_span(
-    tokens: list[tuple[str, str, int]], params_close: int, limit: int
-) -> tuple[int, int] | None:
-    """Token span of a method body, given the index of its closing paren."""
-    cursor = params_close + 1
-    while cursor < limit and tokens[cursor][:2] != ("punct", "{"):
-        cursor += 1
-    if cursor >= limit:
-        return None
-    end = _matching_bracket(tokens, cursor, limit)
-    return None if end is None else (cursor, end)
-
-
-def _identity_argument_carries(
-    tokens: list[tuple[str, str, int]],
-    start: int,
-    end: int,
-    accessor: list[tuple[str, str]],
-) -> bool:
-    """Is this ONE argument an options object handing the identity on?
-
-    The argument must be an object literal with a top-level ``source`` property
-    -- either the shorthand ``{ source }`` or ``{ source: <expression naming the
-    accessor> }``.  Two separate leaks are refused by insisting on that shape
-    rather than searching the argument for the accessor tokens:
-
-      * ``{ owner: source }`` names the identity under a property the callee
-        does not read, so the callee's destructuring never sees it;
-      * a value handed under the right name to the WRONG argument -- see
-        ``_writer_delegations``, which chooses which argument to pass here --
-        never reaches the options parameter at all.
-
-    :param start: first token of the argument, inclusive.
-    :param end: one past the argument's last token.
-    """
-    if tokens[start][:2] != ("punct", "{"):
-        return False
-    close = _matching_bracket(tokens, start, end)
-    if close is None:
-        return False
-    depth = 0
-    for index in range(start, close):
-        kind, value, _offset = tokens[index]
-        if kind == "punct":
-            if value in "([{":
-                depth += 1
-            elif value in ")]}":
-                depth -= 1
-            continue
-        if depth != 1 or (kind, value) != ("name", SOURCE_PROPERTY):
-            continue
-        # KEY position only.  A property key opens the literal or follows a
-        # comma; anywhere else the name is a VALUE, and `{ owner: source }` is
-        # the identity handed in under a name the callee does not read -- which
-        # was credited while this check looked only at where `source` appeared
-        # rather than at what it was doing there.
-        if tokens[index - 1][:2] not in {("punct", "{"), ("punct", ",")}:
-            continue
-        following = tokens[index + 1][:2]
-        if following in {("punct", ","), ("punct", "}")}:
-            # Shorthand `{ source }`: the key and the value are the same name,
-            # so it carries the identity exactly when the accessor is that name.
-            return accessor == [("name", SOURCE_PROPERTY)]
-        if following != ("punct", ":"):
-            continue
-        # `source: <value>` -- the value runs to the next top-level comma or the
-        # literal's closing brace.
-        stop = index + 2
-        inner = 0
-        while stop < close:
-            next_kind, next_value, _next_offset = tokens[stop]
-            if next_kind == "punct":
-                if next_value in "([{":
-                    inner += 1
-                elif next_value in ")]}":
-                    inner -= 1
-                elif next_value == "," and inner == 0:
-                    break
-            stop += 1
-        if _contains_sequence(tokens, index + 2, stop, accessor):
-            return True
-    return False
-
-
-def _writer_delegations(
-    tokens: list[tuple[str, str, int]], start: int, end: int
-) -> list[tuple[str, list[tuple[int, int]]]]:
-    """Every ``this.<writer>(...)`` call inside a method body.
-
-    Only calls on ``this`` are collected.  Handing the value to some unrelated
-    helper is not propagation into a cell, and counting it would reopen the leak
-    one level out.
-
-    :returns: (callee name, argument spans) for each delegation, in source
-        order.  Every one of them is checked, because a writer that carries the
-        identity down one branch and drops it down another emits cells whose
-        provenance depends on which branch ran -- which is not provenance.
-    """
-    delegations: list[tuple[str, list[tuple[int, int]]]] = []
-    for index in range(start, end - 3):
-        if (
-            tokens[index][:2] == ("name", "this")
-            and tokens[index + 1][:2] == ("punct", ".")
-            and tokens[index + 2][0] == "name"
-            and tokens[index + 2][1] in WRITER_METHODS
-            and tokens[index + 3][:2] == ("punct", "(")
-        ):
-            close = _matching_bracket(tokens, index + 3, end)
-            if close is None:
-                continue
-            delegations.append(
-                (tokens[index + 2][1], _split_arguments(tokens, index + 4, close))
-            )
-    return delegations
-
-
-def writer_identity_positions(source: str) -> dict[str, int | None]:
-    """Which writers can actually give an emitted cell a visual source id.
-
-    This is a DIFFERENT question from ``writer_options_index``, and conflating
-    the two was a hole.  A position in the signature says only that an argument
-    is received.  ``docs/SPEC.md`` requires the emitted CELL to carry the id, so
-    an argument that is received and then dropped identifies nothing -- and both
-    of the renderer's options-taking writers drop it today:
-
-      * ``art(anchorX, anchorY, lines, color, {baseline, animated, accents,
-        owner})`` destructures four properties and ``source`` is not among them,
-        so the value never becomes a variable;
-      * ``measuredArt(..., options)`` keeps the object but reads only
-        ``options.accents`` and ``options.animated`` from it.
-
-    Reporting those calls as identified would have let route step 5 clear every
-    anonymous-paint blocker by adding dead arguments, while not one emitted cell
-    gained provenance.  A position is returned only when the identity survives
-    the whole journey to a cell, which is computed as a WRITER GRAPH solved
-    backward from the terminal emitter:
-
-      * a writer is capable if it stores the identity into a per-cell plane
-        itself -- which today only ``put`` is positioned to do;
-      * otherwise it is capable only if it delegates, and EVERY delegation it
-        makes hands the identity into the callee's own identity ARGUMENT under
-        the property name ``source``, and every one of those callees is itself
-        capable.
-
-    Each of those clauses answers a leak that "the callee's call mentions
-    ``source`` somewhere" did not:
-
-      * ``art`` -> ``text`` -> ``put`` where ``text`` drops it: ``art`` was
-        credited for handing the value to a writer that discards it, so the
-        chain was scored one hop deep instead of all the way down;
-      * ``this.text(source, y, line, ...)``, which passes the identity as the X
-        COORDINATE: the tokens were present in the call, so position-blind
-        matching credited it;
-      * ``this.text(..., { owner: source })``, which passes it under a name the
-        callee does not destructure;
-      * a writer that carries the identity on its plain branch and drops it on
-        its accent branch: ``all`` of the delegations must carry it, not any.
-
-    Today this returns None for all four, which is the true state of the
-    product: 24 writer sites, zero of which can identify a cell.
-    """
-    tokens = tokenize_javascript(source)
-    positions = writer_options_index(source)
-    bodies: dict[str, tuple[int, int]] = {}
-    accessors: dict[str, list[tuple[str, str]]] = {}
-    planes: set[str] = set()
-
-    # --- Collect each writer's options accessor and body span ---------------
-    for open_brace, close_brace in _paint_api_class_spans(tokens):
-        planes |= _constructor_allocated_planes(tokens, open_brace, close_brace)
-        depth = 0
-        for index in range(open_brace, close_brace):
-            kind, value, _offset = tokens[index]
-            if kind == "punct" and value == "{":
-                depth += 1
-                continue
-            if kind == "punct" and value == "}":
-                depth -= 1
-                continue
-            if (
-                depth != 1
-                or kind != "name"
-                or value not in WRITER_METHODS
-                or tokens[index + 1][:2] != ("punct", "(")
-                or tokens[index - 1][:2] == ("punct", ".")
-            ):
-                continue
-            first, close = _call_argument_span(tokens, index)
-            params = _split_arguments(tokens, first, close)
-            options_index = positions.get(value)
-            if options_index is None or options_index >= len(params):
-                continue
-            param_start, param_end = params[options_index]
-            accessor = _options_source_accessor(tokens, param_start, param_end)
-            if accessor is None:
-                continue
-            body = _method_body_span(tokens, close, close_brace)
-            if body is None:
-                continue
-            accessors[value] = accessor
-            bodies[value] = body
-
-    # --- Which writers store the identity themselves? ------------------------
-    # The base case of the graph.  A writer that assigns the identity into a
-    # per-cell plane needs nobody's help; every other writer's capability is
-    # borrowed from one of these, transitively.  Today only ``put`` is even
-    # positioned to be such a writer, and it does not store one.
-    stores = {
-        method: _stores_identity_per_cell(
-            tokens, body_start, body_end, accessors[method], planes
-        )
-        for method, (body_start, body_end) in bodies.items()
-    }
-    delegations = {
-        method: _writer_delegations(tokens, body_start, body_end)
-        for method, (body_start, body_end) in bodies.items()
-    }
-
-    # --- Solve the graph backward from the writers that store ----------------
-    # Iterated to a stable answer rather than decided in one pass, because
-    # capability travels along chains: `put` stores, so `text` may borrow from
-    # `put`, so `art` may borrow from `text`.  A single pass in declaration
-    # order would score `art` against a `text` not yet decided.  At most one
-    # writer resolves per round, so len(bodies) rounds suffice; a delegation
-    # cycle simply never resolves, which is the right answer for a loop that
-    # reaches no cell.
-    capable = dict(stores)
-    for _round in range(len(bodies) + 1):
-        settled = True
-        for method in bodies:
-            if capable[method]:
-                continue
-            calls = delegations[method]
-            if not calls:
-                continue
-            if all(
-                callee in bodies
-                and capable[callee]
-                and positions.get(callee) is not None
-                and positions[callee] < len(arguments)
-                and _identity_argument_carries(
-                    tokens, *arguments[positions[callee]], accessors[method]
-                )
-                for callee, arguments in calls
-            ):
-                capable[method] = True
-                settled = False
-        if settled:
-            break
-
-    return {
-        method: positions[method] if capable.get(method) else None
-        for method in positions
-    }
-
-
-@lru_cache(maxsize=1)
-def _renderer_options_index() -> dict[str, int]:
-    """The live renderer's writer identity positions, read once.
-
-    Note what this currently reports: NONE of the four writers can identify a
-    cell.  ``put`` and ``text`` declare no options parameter at all, and ``art``
-    and ``measuredArt`` declare one but drop ``source`` on the floor -- so no
-    call to any of them can carry a visual source, not even one written in the
-    obvious ``{source: '...'}`` form.  Every such call is anonymous, and
-    reporting it as identified would be inventing a contract the code does not
-    offer.  Route step 5 has to add the parameter, the read, and the per-cell
-    store; adding only the argument changes nothing this checker will credit.
-    """
-    if not RENDERER.exists():
-        return {}
-    return writer_identity_positions(RENDERER.read_text(encoding="utf-8"))
-
-
-def _declared_source(
-    tokens: list[tuple[str, str, int]],
-    start: int,
-    end: int,
-    options_index: int | None,
-) -> str | None:
-    """The ``source: 'id'`` carried in this call's OPTIONS argument.
-
-    Three conditions, and every one of them was a bypass before it was checked:
-
-      * the id must sit in the argument at the method's options position, not
-        anywhere in the argument list -- otherwise an object handed in as a
-        coordinate, or forwarded to another function, counts as identity;
-      * that argument must be a bare object literal, so a conditional like
-        ``flag ? {source: '...'} : {}`` cannot claim an identity it supplies
-        only sometimes;
-      * the value must be a string literal, because ``source: SOME_CONST`` is
-        unresolvable without executing the module.
-
-    :param options_index: the argument position, from ``writer_options_index``.
-        None when the method is unknown, in which case nothing can be claimed.
-    """
-    if options_index is None:
-        return None
-    arguments = _split_arguments(tokens, start, end)
-    if options_index >= len(arguments):
-        return None
-    first, last = arguments[options_index]
-    return _object_literal_property(tokens, first, last, SOURCE_PROPERTY)
-
-
-def unresolvable_writer_calls(source: str) -> list[str]:
-    """Calls written in a form whose identity this checker cannot read.
-
-    The recognised form is a plain member call: ``<receiver>.<writer>(...)``.
-    Everything else that can reach a writer is refused here, and the list is
-    meant to be EXHAUSTIVE rather than illustrative, because two earlier
-    versions of this rule named the shapes they had thought of and leaked the
-    rest.  To invoke a method in JavaScript you must do one of:
-
-      1. name it after a dot -- recognised, and read for its identity;
-      2. name it after an OPTIONAL dot, ``raster?.put(...)`` -- refused;
-      3. invoke it optionally, ``raster.put?.(...)`` -- refused;
-      4. reach it through a computed subscript, ``anything[expr](...)``,
-         ``anything[expr]?.(...)`` -- refused, whatever expression produced the
-         object;
-      5. invoke it reflectively through ``call``/``apply``/``bind``, which also
-         covers a writer extracted into a variable first, since
-         ``const paint = raster[method]`` still has to be invoked somehow and
-         ``paint(...)`` alone loses ``this`` and cannot write to any raster.
-
-    None of forms 2-5 appears anywhere in the browser modules, which is exactly
-    why all of them are refused now: a gate that only handles the forms already
-    present is not a gate.
-
-    Reported rather than silently parsed, because the honest answer is "this
-    call may paint and I cannot tell whether it is identified", and that must
-    block a release rather than resolve to a guess.
-    """
-    tokens = tokenize_javascript(source)
-    found: list[str] = []
-    # Starts at 1, not 2: `raster['put'](...)` puts the subscript bracket at
-    # index 1 when the call opens a file or a fragment, and a scan starting at 2
-    # steps straight over it.
-    for index in range(1, len(tokens) - 1):
-        kind, value, offset = tokens[index]
-        # `receiver?.method(` -- optional chaining. The tokenizer emits single
-        # punctuation characters, so `?.` is two tokens and the `?` sits two
-        # places back from the method name.
-        if (
-            kind == "name"
-            and value in WRITER_METHODS
-            and tokens[index - 1][:2] == ("punct", ".")
-            and tokens[index - 2][:2] == ("punct", "?")
-        ):
-            # Deliberately not conditioned on `(` following the name.  An
-            # optionally-reached writer is opaque however it is then invoked,
-            # and requiring the immediate `(` missed `raster?.put?.(...)` and
-            # `raster?.put.call(raster, ...)` -- the same mistake as scoping a
-            # rule to the shapes already imagined.
-            found.append(f"{RENDERER.name}:{_line_of(source, offset)} optional-chained ?.{value}")
-            continue
-        # `receiver.writer?.(...)` -- a plain member access, invoked optionally.
-        # The member-call reader requires `(` directly after the name, so this
-        # form is not merely unresolved by it, it is INVISIBLE to it.
-        if (
-            kind == "name"
-            and value in WRITER_METHODS
-            and tokens[index - 1][:2] == ("punct", ".")
-            and tokens[index + 1][:2] == ("punct", "?")
-            and tokens[index + 2][:2] == ("punct", ".")
-            and tokens[index + 3][:2] == ("punct", "(")
-        ):
-            found.append(
-                f"{RENDERER.name}:{_line_of(source, offset)} optionally-invoked {value}?.()"
-            )
-            continue
-        # `<anything>.call(...)`, `.apply(...)`, `.bind(...)` -- the receiver of
-        # a reflective invocation is a FUNCTION, and which function it is cannot
-        # be read off the call.  `raster.put.call(raster, ...)` and
-        # `const paint = raster[method]; paint.call(raster, ...)` both land here;
-        # the second is the reason the rule is not scoped to receivers that look
-        # like rasters, because by then the raster is not mentioned at all.
-        if (
-            kind == "name"
-            and value in REFLECTIVE_INVOKERS
-            and tokens[index - 1][:2] == ("punct", ".")
-            and tokens[index + 1][:2] == ("punct", "(")
-        ):
-            receiver = "".join(
-                token[1] for token in tokens[max(0, index - 4):index - 1]
-            )
-            found.append(
-                f"{RENDERER.name}:{_line_of(source, offset)} "
-                f"reflective ...{receiver}.{value}()"
-            )
-            continue
-        # ANY subscript that is immediately invoked -- `<anything>[expr](...)`.
-        #
-        # Two earlier versions of this rule were narrower and both leaked.
-        # Scoping it to the receiver literally named `raster` leaked because a
-        # receiver's NAME is not a fact about the object. Requiring the token
-        # before `[` to be a name or a string leaked for the same reason one
-        # level up: the receiver is an EXPRESSION, and an expression need not
-        # end in a name. All four of these reach the same object:
-        #
-        #     (brush)[method](...)                  -- ends in `)`
-        #     getRaster()[method](...)              -- ends in `)`
-        #     brush?.[method](...)                  -- optional computed access
-        #     (condition ? raster : brush)[method]  -- ends in `)`
-        #
-        # So the trigger is the CALL FORM, not the receiver: a matched `]`
-        # followed immediately by `(` is a computed member call, whatever
-        # produced the object. Alias tracking cannot decide the general case --
-        # a renamed parameter is exactly the undecidable one -- so the
-        # conservative rule is the only sound one: what may be hiding a writer
-        # blocks.
-        #
-        # The renderer currently contains ZERO such forms, so this costs nothing
-        # today. If a legitimate one is ever needed, it must be decided
-        # deliberately rather than admitted by an oversight.
-        if kind == "punct" and value == "[":
-            close = _matching_bracket(tokens, index, len(tokens))
-            # Both invocation spellings of a computed access: `](...)` and the
-            # optional `]?.(...)`.  A reflective `].call(...)` is refused above,
-            # by the rule that refuses reflective invocation outright.
-            trailing = (
-                [token[:2] for token in tokens[close + 1:close + 4]]
-                if close is not None else []
-            )
-            invoked = trailing[:1] == [("punct", "(")] or trailing == [
-                ("punct", "?"), ("punct", "."), ("punct", "("),
-            ]
-            if close is not None and invoked:
-                # Describe the receiver by the tokens leading up to `[`, so the
-                # report names the form a reader will actually find in the file.
-                receiver = "".join(
-                    token[1] for token in tokens[max(0, index - 4):index]
-                )
-                subscript = "".join(token[1] for token in tokens[index + 1:close])
-                found.append(
-                    f"{RENDERER.name}:{_line_of(source, offset)} "
-                    f"computed ...{receiver}[{subscript}]"
-                )
-    return sorted(found)
-
-
-def _paint_api_class_spans(tokens: list[tuple[str, str, int]]) -> list[tuple[int, int]]:
-    """Token span of the ``Raster`` class, when it defines the writer methods.
-
-    Inside the class that implements ``put``/``text``/``art``, a ``this.put(...)``
-    call is the implementation of the paint API delegating to itself, not an
-    independent decision to draw something.  Requiring it to name a visual source
-    would be asking the paintbrush which painting it belongs to.
-
-    The exemption is scoped to the class NAMED ``Raster``, not to any class that
-    happens to define a method called ``put``.  The looser rule was a bypass: a
-    layer defining its own ``put`` helper would have exempted every ``this.put``
-    inside it, which is precisely where anonymous paint would hide.  Both
-    conditions must hold -- the right name AND the writer definitions -- so
-    renaming the class or moving the methods out fails loudly instead of
-    silently widening or narrowing what is exempt.
-
-    :returns: (open-brace token index, matching close-brace token index) pairs.
-    """
-    spans: list[tuple[int, int]] = []
-    for index, (kind, value, _offset) in enumerate(tokens):
-        if kind != "name" or value != "class":
-            continue
-        if tokens[index + 1][:2] != ("name", PAINT_API_CLASS):
-            continue
-        # Walk to the class body's opening brace, skipping the name and any
-        # `extends Base` clause.
-        cursor = index + 1
-        while cursor < len(tokens) and tokens[cursor][:2] != ("punct", "{"):
-            cursor += 1
-        if cursor >= len(tokens):
-            continue
-        # Find the matching close brace.
-        depth = 0
-        end = cursor
-        while end < len(tokens):
-            if tokens[end][0] == "punct":
-                if tokens[end][1] == "{":
-                    depth += 1
-                elif tokens[end][1] == "}":
-                    depth -= 1
-                    if depth == 0:
-                        break
-            end += 1
-        # Does this class body define a writer method?  A method definition is a
-        # name token followed by `(` at the body's own depth; checking membership
-        # in WRITER_METHODS is enough to identify the paint API.
-        body_depth = 0
-        defines_writer = False
-        for probe in range(cursor, min(end, len(tokens))):
-            kind_p, value_p, _o = tokens[probe]
-            if kind_p == "punct" and value_p == "{":
-                body_depth += 1
-            elif kind_p == "punct" and value_p == "}":
-                body_depth -= 1
-            elif (
-                body_depth == 1
-                and kind_p == "name"
-                and value_p in WRITER_METHODS
-                and tokens[probe + 1][:2] == ("punct", "(")
-                and tokens[probe - 1][:2] != ("punct", ".")
-            ):
-                defines_writer = True
-        if defines_writer:
-            spans.append((cursor, end))
-    return spans
-
-
-def _writer_body_spans(tokens: list[tuple[str, str, int]]) -> list[tuple[int, int]]:
-    """Token spans of the FOUR writer method bodies inside ``Raster``.
-
-    The exemption for self-delegation belongs to these bodies alone.  Scoping it
-    to the whole class was still a bypass: ``class Raster { draw() { this.put(...) } }``
-    is a painter like any other, and exempting it would hide anonymous paint
-    behind a method name in the one class nobody re-reads.  ``text`` calling
-    ``put``, and ``art`` calling ``text``, are the implementation; anything else
-    calling them is a decision to draw.
-    """
-    spans: list[tuple[int, int]] = []
-    for open_brace, close_brace in _paint_api_class_spans(tokens):
-        depth = 0
-        for index in range(open_brace, close_brace):
-            kind, value, _offset = tokens[index]
-            if kind == "punct" and value == "{":
-                depth += 1
-                continue
-            if kind == "punct" and value == "}":
-                depth -= 1
-                continue
-            if (
-                depth != 1
-                or kind != "name"
-                or value not in WRITER_METHODS
-                or tokens[index + 1][:2] != ("punct", "(")
-                or tokens[index - 1][:2] == ("punct", ".")
-            ):
-                continue
-            # Step past the parameter list to the method body's opening brace.
-            _first, close = _call_argument_span(tokens, index)
-            cursor = close + 1
-            while cursor < close_brace and tokens[cursor][:2] != ("punct", "{"):
-                cursor += 1
-            if cursor >= close_brace:
-                continue
-            body_depth = 0
-            end = cursor
-            while end < close_brace:
-                if tokens[end][0] == "punct":
-                    if tokens[end][1] == "{":
-                        body_depth += 1
-                    elif tokens[end][1] == "}":
-                        body_depth -= 1
-                        if body_depth == 0:
-                            break
-                end += 1
-            spans.append((cursor, end))
-    return spans
-
-
-def extract_paint_sites(source: str) -> list[PaintSite]:
-    """Find every cell-emitting call and the visual source id it declares.
-
-    The convention this enforces: a paint call declares its origin by passing a
-    ``source`` property naming a registered id, e.g.
-
-        raster.put(row, col, glyph, colour, {source: 'recipe.ground.cover'})
-
-    Only WRITER_METHODS are returned.  ``raster.line`` and ``raster.latticeHtml``
-    read and serialise cells that were already written, so they are not paint
-    sites -- see the comment on READER_METHODS.
-    """
-    tokens = tokenize_javascript(source)
-    delegation_spans = _writer_body_spans(tokens)
-    # A fragment under test defines no Raster of its own; it is a piece of the
-    # renderer, so the renderer's signatures are the ones that govern it.
-    #
-    # IDENTITY positions, not options positions.  An options object the method
-    # receives and then drops -- which is every options-taking writer today --
-    # identifies no cell, so a call handing it one is still anonymous paint.
-    options_index = writer_identity_positions(source) or _renderer_options_index()
-    sites: list[PaintSite] = []
-
-    for method_index, receiver, method in _method_calls(tokens):
-        if method not in WRITER_METHODS:
-            continue
-        # Skip the paint API delegating to itself -- and only there.
-        if receiver == "this" and any(
-            start <= method_index <= end for start, end in delegation_spans
-        ):
-            continue
-        first, close = _call_argument_span(tokens, method_index)
-        sites.append(
-            PaintSite(
-                receiver=receiver,
-                method=method,
-                line=_line_of(source, tokens[method_index][2]),
-                source_id=_declared_source(
-                    tokens, first, close, options_index.get(method)
-                ),
-            )
-        )
-    return sites
-
-
-def extract_reader_sites(source: str) -> list[PaintSite]:
-    """Calls that read or serialise cells rather than emitting them.
-
-    Reported separately so the count of "things that touch cells" stays honest.
-    These are where stored per-cell provenance must be PRESERVED once step 5
-    threads it through; they are not where it is declared.
-    """
-    tokens = tokenize_javascript(source)
-    return [
-        PaintSite(
-            receiver=receiver,
-            method=method,
-            line=_line_of(source, tokens[method_index][2]),
-            source_id=None,
-        )
-        for method_index, receiver, method in _method_calls(tokens)
-        if method in READER_METHODS
-    ]
-
-
-def unlisted_raster_methods(source: str) -> list[str]:
-    """Raster methods called by the renderer that this checker does not classify.
-
-    Without this, adding ``raster.blit(...)`` would create a new anonymous paint
-    path that every check above silently ignores, because none of them would
-    recognise it as paint.  Anything unrecognised is reported so a human decides
-    whether it emits cells, rather than the omission deciding for them.
-    """
-    tokens = tokenize_javascript(source)
-    called = {
-        method
-        for _index, receiver, method in _method_calls(tokens)
-        if receiver == "raster"
-    }
-    return sorted(called - set(KNOWN_RASTER_METHODS))
-
-
-# ── Verifying provenance against the artifact and the decision record ───────
-
-
-@lru_cache(maxsize=None)
 def _git(*args: str) -> tuple[int, str]:
     """Run a git command in the repository and return (exit code, stdout).
 
@@ -1832,7 +701,47 @@ def validate_registers(acceptance: dict, recipes: dict) -> list[str]:
 # ── Release blockers ────────────────────────────────────────────────────────
 
 
-def compute_blockers(acceptance: dict, recipes: dict, renderer_source: str) -> dict[str, list]:
+def runtime_frame_report() -> dict:
+    """Compose an actual frame through the public interface and report on it.
+
+    Shells out to ``scripts/compose_frame_check.mjs``, which generates the
+    starter world, projects it, composes it under the committed accepted-paint
+    authority, and applies every clause of the executable presentation
+    contract.  This is the runtime check that REPLACED the static writer
+    graph: identity is a property of execution, so it is settled by executing.
+
+    A check that cannot run must block a release rather than pass it, so any
+    failure to produce a report -- node missing, script crash, unparsable
+    output -- is returned AS violations instead of being raised past the
+    gate.
+
+    :returns: ``{"violations": [...], "divergent": [...], "stats": {...}}``
+    """
+    try:
+        completed = subprocess.run(
+            ["node", str(ROOT / "scripts" / "compose_frame_check.mjs")],
+            capture_output=True, text=True, timeout=120, check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return {"violations": [{"clause": "gate-execution",
+                                "detail": f"runtime frame check did not run: {error}"}],
+                "divergent": [], "stats": {}}
+    if completed.returncode != 0:
+        return {"violations": [{"clause": "gate-execution",
+                                "detail": "runtime frame check exited "
+                                          f"{completed.returncode}: {completed.stderr[:400]}"}],
+                "divergent": [], "stats": {}}
+    try:
+        return json.loads(completed.stdout)
+    except ValueError as error:
+        return {"violations": [{"clause": "gate-execution",
+                                "detail": f"runtime frame check output unreadable: {error}"}],
+                "divergent": [], "stats": {}}
+
+
+def compute_blockers(
+    acceptance: dict, recipes: dict, renderer_source: str, runtime_report: dict,
+) -> dict[str, list]:
     """Compute the clearable conditions that block a root-product deploy.
 
     Kept strictly apart from ``release_policy`` in the acceptance registry.
@@ -1843,11 +752,21 @@ def compute_blockers(acceptance: dict, recipes: dict, renderer_source: str) -> d
     The KEYS of this dict are the contract: the acceptance registry enumerates
     the same names, and a test asserts the two agree exactly, so a condition
     cannot be added here and left undocumented there.
+
+    Seven static writer-graph blockers were deleted on 2026-08-03 with the
+    analyzer that computed them (anonymous_paint_sites,
+    unknown_visual_source_ids, laws_used_as_cell_sources,
+    unrecognised_paint_methods, unresolvable_paint_call_forms,
+    writers_that_cannot_record_identity, and the source-scan half of
+    divergent_implementations_claiming_approval).  What they guarded is now
+    guarded at RUNTIME by ``runtime_frame_violations``: an anonymous
+    primitive, an unknown or law source id, an authority breach or a hidden
+    second composer all surface as contract violations on a frame that was
+    actually composed.  Divergence keeps its own key because it fails for a
+    different reason (register honesty, not frame identity) and clears at a
+    different step (the legacy-presentation restoration).
     """
     records = recipes["records"]
-    laws = {rid for rid, rec in records.items() if rec.get("kind") == "law"}
-    registered = set(records) | {row["asset_id"] for row in acceptance["assets"]}
-    sites = extract_paint_sites(renderer_source)
 
     return {
         "unaccepted_atlas_assets": sorted(
@@ -1865,56 +784,28 @@ def compute_blockers(acceptance: dict, recipes: dict, renderer_source: str) -> d
             if record.get("presence_requirement") == "required"
             and record.get("candidate_status") in {"absent", "rejected"}
         ),
-        "anonymous_paint_sites": [site.where() for site in sites if site.source_id is None],
-        "unknown_visual_source_ids": sorted({
-            f"{site.source_id} ({site.where()})"
-            for site in sites
-            if site.source_id is not None and site.source_id not in registered
-        }),
-        # A law decides how cells look but emits none of its own, so naming one
-        # as a cell's source hides which recipe actually drew it.
-        "laws_used_as_cell_sources": sorted({
-            f"{site.source_id} ({site.where()})"
-            for site in sites if site.source_id in laws
-        }),
-        # A paint site may only claim a deployed-provenance verdict when the
-        # implementation behind it actually reproduces the deployed one.  A
-        # citation of legacy line numbers is provenance, not approval: if the
-        # candidate's implementation diverges (candidate_status 'different'),
-        # claiming the verdict launders an unreviewed drawing through an
-        # approved id, which is the exact move the register exists to block.
-        "divergent_implementations_claiming_approval": sorted({
-            f"{site.source_id} ({site.where()}) is candidate_status "
-            f"{records[site.source_id].get('candidate_status')!r}, so it may not "
-            f"claim verdict {records[site.source_id]['verdict']!r}"
-            for site in sites
-            if site.source_id in records
-            and records[site.source_id]["verdict"] in PROVENANCE_CLAIMING_VERDICTS
-            and records[site.source_id].get("candidate_status") != "exact"
-        }),
-        "unrecognised_paint_methods": unlisted_raster_methods(renderer_source),
-        # A writer reached through optional chaining or a computed member name
-        # paints while defeating member-call recognition.  Reported rather than
-        # guessed at: "this call paints and I cannot tell whether it is
-        # identified" must block a release, not resolve to an assumption.
-        "unresolvable_paint_call_forms": unresolvable_writer_calls(renderer_source),
+        # The executable presentation contract, applied to a frame the public
+        # interface actually composed: emitted-primitive identity, paint
+        # authority, visible-subset-of-attempted, region ownership,
+        # determinism and hostname independence, plus any suppression -- a
+        # release frame that NEEDED suppression tried to paint something
+        # unaccepted, and hiding it is not a release condition.
+        "runtime_frame_violations": [
+            f"[{item.get('clause', '?')}] {item.get('detail', '')}"
+            for item in runtime_report.get("violations", [])
+        ],
+        # A painted id may only claim a deployed-provenance verdict when the
+        # implementation behind it reproduces the deployed one exactly.  A
+        # citation of legacy line numbers is provenance, not approval.
+        # Reported from the composed frame's painted sources rather than from
+        # a source scan.
+        "divergent_implementations_claiming_approval": list(
+            runtime_report.get("divergent", [])
+        ),
         "gameplay_art_outside_atlas": [
             owner for owner in ("plantArt", "animalArt", "collectibleArt", "fixtureArt")
             if owner in renderer_source
         ],
-        # The structural cause behind every anonymous paint site, reported in
-        # its own right so the two are not confused.  `anonymous_paint_sites`
-        # counts CALLS that declare nothing; this names the writers that could
-        # not record an identity even if every call declared one, because the
-        # emitted cell has nowhere to keep it.  Without this, route step 5 could
-        # look like progress while adding arguments that go nowhere.
-        "writers_that_cannot_record_identity": sorted(
-            method
-            for method, position in (
-                writer_identity_positions(renderer_source) or {}
-            ).items()
-            if position is None
-        ),
         # The STARTER COMPOSITION -- which population the recipient's world opens
         # with -- as distinct from how any single thing in it is drawn. A garden
         # can be made entirely of accepted drawings and still be the wrong
@@ -2110,25 +1001,29 @@ def unaccepted_starter_composition() -> list[str]:
 
 
 def run() -> Report:
-    """Load everything from disk and produce the full report."""
+    """Load everything from disk, compose the gate frame, and report."""
     acceptance = _read(ACCEPTANCE)
     recipes = _read(RECIPES)
     renderer_source = RENDERER.read_text(encoding="utf-8")
+    runtime = runtime_frame_report()
 
     report = Report()
     report.violations = validate_registers(acceptance, recipes) + validate_provenance(recipes)
-    report.blockers = compute_blockers(acceptance, recipes, renderer_source)
+    report.blockers = compute_blockers(acceptance, recipes, renderer_source, runtime)
 
-    sites = extract_paint_sites(renderer_source)
     records = recipes["records"]
+    stats = runtime.get("stats", {})
     report.counts = {
         "recipes": len(records),
         "laws": sum(1 for r in records.values() if r.get("kind") == "law"),
         "paint_records": sum(1 for r in records.values() if r.get("kind") == "paint"),
         "atlas_assets": len(acceptance["assets"]),
-        "cell_writer_sites": len(sites),
-        "cell_reader_sites": len(extract_reader_sites(renderer_source)),
-        "writer_sites_with_identity": sum(1 for s in sites if s.source_id is not None),
+        # Runtime facts from the composed gate frame, replacing the deleted
+        # static site counts: what was actually attempted and shown.
+        "frame_attempted_primitives": stats.get("attempted", 0),
+        "frame_visible_primitives": stats.get("visible", 0),
+        "frame_suppressed_primitives": stats.get("suppressed", 0),
+        "frame_interaction_regions": stats.get("regions", 0),
     }
     return report
 

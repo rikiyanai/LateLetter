@@ -312,7 +312,13 @@ def test_resize_cannot_regenerate_canonical_topology():
     assert "font:gardenMeasurer?gardenFont:null" in source
     assert "GARDEN_ASSET_REVIEW_MODE" not in source
     assert "GARDEN_ASSET_REVIEW_REQUESTED" not in source
-    assert "allowUnacceptedArt:GARDEN_REVIEW_IS_LOCAL" in source
+    # The hostname-minted paint switch is GONE (ownership-transfer patch,
+    # 2026-08-03). Paint authority is now the build-derived accepted-paint
+    # manifest, fetched as data and identical on every host; the hostname
+    # gates only the read-only review accessor.
+    assert "allowUnacceptedArt" not in source
+    assert "paintAuthority:GARDEN_PAINT_AUTHORITY" in source
+    assert "fetch('./web/garden-accepted-paint.v1.json')" in source
     assert "renderGardenAffordances" not in source
     assert "besideObjectPlacement" not in source
     resize = source[source.index("window.addEventListener('resize',()=>{"):]

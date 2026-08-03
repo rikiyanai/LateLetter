@@ -21,6 +21,16 @@
       "scope": "renderer-authored sky decoration",
       "statement": "clouds and distant birds identified in a live frame as unapproved",
       "effect": "Removed from the default scene. See _drawSkyLife in web/garden-renderer.mjs."
+    },
+    {
+      "granted_at": "2026-08-03",
+      "scope": "exact operator-authored rose-bush TXT art asset",
+      "asset_id": "plant.rose",
+      "source": "tracked/LateLetterResearch/transcription-parity/eb861dc84400fc36/accepted.txt",
+      "source_sha256": "04bce501c712fc071523711a3ea1b67a8af302434a66f0e638c2bdc144b0baac",
+      "statement": "eb861dc84400fc36.provisional-not-pipeline.txt is approved rose bush art asset i just authored. log and track and take in and index",
+      "correction": "trailing spaces.NOO DONT INCLUDE TRAILING SPACES",
+      "effect": "The exact six-line, 139-byte operator-authored TXT with trailing spaces excluded is accepted as rose-bush art. This is not a transcription-pipeline verdict and does not approve or release the different renderer-local rose placeholder. Runtime use requires a delete-first transfer into the canonical gameplay-art owner."
     }
   ],
   "withdrawn_acceptances": [],
@@ -350,16 +360,11 @@
       "unaccepted_atlas_assets": "atlas assets whose verdict is not accepted",
       "unaccepted_recipes": "registered recipes whose verdict is not accepted or accepted_as_deployed",
       "required_presentation_absent": "recipes the operator required whose candidate counterpart is absent or rejected; here the DEFECT IS THE ABSENCE, so no amount of correct drawing elsewhere clears it",
-      "anonymous_paint_sites": "renderer calls that emit cells while carrying no visual source id",
-      "unknown_visual_source_ids": "paint calls naming an id that neither register defines",
-      "laws_used_as_cell_sources": "paint calls naming a law as their source, which hides the recipe that actually drew them",
-      "divergent_implementations_claiming_approval": "paint calls citing an accepted_as_deployed id from an implementation that does not reproduce the deployed one, which launders an unreviewed drawing through an approved id",
-      "unrecognised_paint_methods": "raster methods the identity checker does not classify as writer or reader, so a new paint path cannot become exempt by being unrecognised",
+      "divergent_implementations_claiming_approval": "painted frame sources citing an accepted_as_deployed id from an implementation that does not reproduce the deployed one exactly (candidate_status is not 'exact'), which would launder an unreviewed drawing through an approved id. Reported from the composed gate frame's painted sources since 2026-08-03; clears at the legacy-presentation restoration step, whose exit is exact reproduction.",
       "gameplay_art_outside_atlas": "plantArt, animalArt, collectibleArt and the fixtureArt fallback, painted renderer-locally with no per-asset verdict row and not yet versioned atlas assets",
-      "unresolvable_paint_call_forms": "FROZEN DIAGNOSTIC ONLY, not acceptance authority. This is the last retained output of the refused static-analyzer method family: every way of reaching a writer other than a plain member call, refused as a family rather than as a list of examples. It remains only as a conservative stop sign until the runtime PresentationFrame check can read actual emitted primitives. Do not add more invocation forms or treat this as proof of runtime identity. Delete this key in the same patch that installs the public runtime-frame invariant.",
-      "writers_that_cannot_record_identity": "FROZEN DIAGNOSTIC ONLY, not acceptance authority. This is the last retained output of the refused writer-graph/internal-Raster analysis: the current Raster writers could not give a cell a visual source id even if every call declared one. It remains only as a conservative stop sign until identity is checked on emitted PresentationFrame primitives. Do not extend the writer graph, storage-pattern list or synthetic Raster authority. Delete this key in the same patch that installs the public runtime-frame invariant.",
       "operator_review_outstanding": "the four DIRECT ACCEPTANCE verdicts in docs/garden-review-verdicts.json -- assets, composition, motion package, emotional moments -- that the operator has not given. The one gate no machine can clear: every other condition here measures structure, and none of them can say whether the Garden is worth looking at. Blocked separately because they fail for different reasons; collapsing them would let three unexamined judgements ride on the easiest one. No test result, density number, opened screenshot or successful build can clear any of them.",
-      "unaccepted_starter_composition": "the STARTER COMPOSITION -- which population the recipient's world opens with -- when the operator has not accepted it. Distinct from the per-asset verdicts above: a garden can be made entirely of accepted drawings and still be the wrong garden. Cleared only by a matching record in docs/garden-composition-acceptance.json, keyed on the composition revision AND the roster fingerprint together, so re-rostering under the same revision inherits nothing. This is what makes that register live policy instead of a file only tests read."
+      "unaccepted_starter_composition": "the STARTER COMPOSITION -- which population the recipient's world opens with -- when the operator has not accepted it. Distinct from the per-asset verdicts above: a garden can be made entirely of accepted drawings and still be the wrong garden. Cleared only by a matching record in docs/garden-composition-acceptance.json, keyed on the composition revision AND the roster fingerprint together, so re-rostering under the same revision inherits nothing. This is what makes that register live policy instead of a file only tests read.",
+      "runtime_frame_violations": "the public runtime-frame invariant, installed 2026-08-03 in the same patch that deleted the frozen static-analyzer diagnostics it replaces. scripts/compose_frame_check.mjs composes the starter frame through the public GardenPresentation interface under the committed accepted-paint authority and applies every clause of the executable presentation contract to the primitives that come back: emitted-primitive identity, paint authority, visible-subset-of-attempted, region ownership, determinism, hostname independence, and zero suppression -- a release frame that needed suppression tried to paint something unaccepted. Anonymous paint, unknown ids and laws named as sources all surface here, as properties of an actually composed frame rather than of source text."
     }
   },
   "registry_invariants_note": "Invariants this registry asserts about ITSELF, named by ID. The sentences behind the IDs live in scripts/validate_presentation_identity.py (REGISTRY_INVARIANTS), which is the only place they can be changed. There is deliberately no free-form list here: a rule written in prose reads as authority to the next person while no check can tell it apart from the rules that belong. Release conditions are not invariants and are not here -- they live in release_policy (permanent) and active_release_blockers (computed).",
