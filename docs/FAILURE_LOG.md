@@ -6355,3 +6355,35 @@ correction of a wrong diagnosis, and the implementation that follows from the ri
   by the route's mobile and keyboard steps. Garden Node suites 203 of 203; contract and
   acceptance suites 225 of 225; the runtime gate composes with zero violations and zero
   suppression.
+
+### Route step 7: the key map is decided and bound; spatial focus reaches the keyboard
+
+Question:
+The keyboard step requires one explicit key-map decision recorded before implementation, then a
+binding in which navigating objects and panning the camera coexist without one shadowing the
+other.
+
+Type:
+decision recorded, then implementation; one strict xfail corrected into a plain assertion
+
+- **The decision (2026-08-03):** the execution order's recommended map is adopted as written:
+  plain arrows move spatial focus to the nearest object in that compass direction; Shift+Arrow
+  and W/A/S/D pan the camera with the arrows' previous step sizes; `[` and `]` walk the object
+  ring; Enter performs the focused object's declared primary action. Recorded here as the
+  explicit key-map decision the step requires; the map is documented at the binding site in
+  `viewer-bnw.html`.
+
+- **The binding (2026-08-03):** the spatial half of `move_focus` -- implemented and
+  engine-conformant since the earlier correction, but unreachable because the browser sent
+  every arrow to `pan` -- now receives the arrows. Pan stays keyboard-accessible on two routes,
+  and W/A/S/D took four previously unbound letters, so nothing shadows anything. Focus framing
+  is unchanged: moving focus still pans the camera to frame the focused object, which keeps
+  every ring position reachable without a separate gesture.
+
+- **The corrected test (2026-08-03):** `test_keyboard_focus_moves_spatially` holds in real
+  Chrome and its strict-xfail marker is removed; the docstring records both halves of the
+  correction.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 29 passing and 2 strict
+  xfailed; the two that remain are the touch defects owned by the route's mobile step. Viewer
+  contract suite unchanged apart from the four known-red tests.

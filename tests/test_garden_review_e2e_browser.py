@@ -723,31 +723,18 @@ def test_keyboard_focus_reaches_every_accepted_fixture_and_ENTER_performs_its_ac
         assert errors == [], errors
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, HALF CORRECTED on 2026-08-03. `move_focus` used to map "
-        "left/up->previous and right/down->next over `objectIds(state)` order, "
-        "which is id-sorted and unrelated to where anything stands. It now "
-        "resolves the four compass directions to the nearest object that way "
-        "by canonical position, tie-broken on (distance along, distance "
-        "across, object id), identically in both engines across all 28 "
-        "object-direction cases -- proved by "
-        "`test_spatial_focus_agrees_exactly_between_the_two_engines` and by "
-        "mutation. What remains is the BINDING: the browser still sends the "
-        "arrow keys to `pan`, so no direction ever reaches the command from a "
-        "keyboard, and `[`/`]` remain the only focus keys. The execution "
-        "order's keyboard-ownership step owns this, with a recommended map -- "
-        "arrows for spatial focus, Shift+Arrow or WASD for camera pan, `[`/`]` "
-        "for the ring, Enter for the focused primary action -- to be recorded "
-        "as an explicit decision and then implemented, keeping pan reachable "
-        "from the keyboard rather than shadowed. Left strict so it cannot be "
-        "normalised into the baseline, and so that a later correction cannot "
-        "land silently."
-    ),
-)
 def test_keyboard_focus_moves_spatially():
     """Focusing 'right' should reach the object to the right, not the next id.
+
+    CORRECTED 2026-08-03, in two halves. First the COMMAND: `move_focus` used
+    to map every compass direction onto previous/next over id order; it now
+    resolves them against canonical positions, identically in both engines,
+    proved by `test_spatial_focus_agrees_exactly_between_the_two_engines` and
+    by mutation. Then the BINDING: the browser sent the arrow keys to `pan`,
+    so no direction ever reached the command from a keyboard. The key map
+    recorded in the Failure Log (the execution order's recommended map) now
+    binds plain arrows to spatial focus and keeps pan on Shift+Arrow and
+    WASD, so navigating and panning coexist without one shadowing the other.
 
     Asserted against canonical positions, which is the only place 'to the right
     of' is defined -- the painted picture is a projection of them and cannot

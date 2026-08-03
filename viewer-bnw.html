@@ -2378,9 +2378,36 @@ function wire(){
         _renderGardenActions();
         return;
       }
+      // THE KEY MAP, decided 2026-08-03 per the execution order's keyboard
+      // step (its recommended map, adopted as recorded in the Failure Log):
+      //   Arrows        spatial focus -- move to the nearest object that way
+      //   Shift+Arrow   camera pan (the arrows' old job, still reachable)
+      //   W A S D       camera pan, for hands that live on letters
+      //   [ and ]       previous/next around the object ring
+      //   Enter         the focused object's declared primary action
+      // Arrows previously panned, so no direction ever reached `move_focus`
+      // from a keyboard and the spatial half of the command sat unreachable.
+      const spatialDirections={
+        ArrowLeft:'left',ArrowRight:'right',ArrowUp:'up',ArrowDown:'down',
+      };
+      if(spatialDirections[e.key]&&!e.shiftKey){
+        e.preventDefault();
+        await focusGardenObject(spatialDirections[e.key],e,'keyboard-spatial');
+        return;
+      }
+      const panSteps={
+        ArrowLeft:{dx:-1,dy:0},ArrowRight:{dx:1,dy:0},
+        ArrowUp:{dx:0,dy:-20},ArrowDown:{dx:0,dy:20},
+      };
+      if(panSteps[e.key]&&e.shiftKey){
+        e.preventDefault();
+        await dispatchGardenUi('browser_keyboard','pan',{
+          args:panSteps[e.key],metadata:{key:e.key,shift:true,repeat:e.repeat}});
+        return;
+      }
       const bindings={
-        ArrowLeft:['pan',{args:{dx:-1,dy:0}}],ArrowRight:['pan',{args:{dx:1,dy:0}}],
-        ArrowUp:['pan',{args:{dx:0,dy:-20}}],ArrowDown:['pan',{args:{dx:0,dy:20}}],
+        a:['pan',{args:{dx:-1,dy:0}}],d:['pan',{args:{dx:1,dy:0}}],
+        w:['pan',{args:{dx:0,dy:-20}}],s:['pan',{args:{dx:0,dy:20}}],
         g:['inspect',{target_id:focus?.object_id||null}],
         t:['tend',{target_id:focus?.object_id||null,args:{care_action:'water'}}],
         f:['feed',{target_id:focus?.object_id||null}],p:['play',{target_id:focus?.object_id||null}],
