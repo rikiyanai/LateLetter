@@ -5974,3 +5974,68 @@ re-measurement that confirms a defect, and unifies three
 - Status: Implemented (unproven as visual acceptance). Browser E2E 25 passing and 6 strict xfailed.
   Of the six, three are this clamp, one is the arrow-key binding, one is seasonal art with no
   verdict, and one is the ambient bird's rewritten traversal.
+
+### Wayfinder correction: the mobile accounting sold three defects as one decision, and the bird as a decision at all
+
+Question:
+An external verification of commit 471a486 rejected the handoff framing on five grounds. Check
+each against SPEC, the tests and the review package before continuing, and correct the durable
+record where it is wrong.
+
+Type:
+correction of record, seven items; supersedes parts of two earlier entries
+
+- **"Three defects, one clamp" was a cause, not a fix (2026-08-03):** the earlier unification
+  entry was right that the 0.80 `xScale` floor explains why two interactions and both animating
+  plants sit outside the 390x844 frame, and wrong to conclude that the three expected failures
+  wait on one decision. They have three distinct owners: the drag test needs single-pointer touch
+  pan; the tap test needs interaction rectangles for fixtures the camera can bring into view,
+  panned to before the tap; and the motion test needs something that moves inside the mobile
+  frame with NO input, which no camera work can provide. The corrected xfail reasons in
+  `tests/test_garden_review_e2e_browser.py` now name their owners separately.
+
+- **Touch pan is a SPEC requirement, not an operator option (2026-08-03):** SPEC section 7.8.13
+  gate 2 requires pan to pass through touch, mouse, keyboard and terminal with identical state
+  transitions. The earlier entry offered touch pan as one of three products the operator might
+  choose; it is the one already contracted. The three-way-choice framing is withdrawn.
+
+- **The "touch" drag test does not touch (2026-08-03):** `test_touch_can_bring_an_off_screen_
+  fixture_into_reach` drags with `page.mouse`. Today that still proves the defect, because no
+  drag handler of any kind is registered -- mouse or touch -- but once a gesture exists a mouse
+  drag becomes the adjacent signal again. When the gesture lands, the drag here must become a
+  real pointerType=touch gesture. Recorded now so the rewrite cannot be forgotten inside the
+  implementation patch.
+
+- **The ambient bird is implementation work, not a verdict fork (2026-08-03):** the earlier
+  entry said restoring the bird is "one decision away, not one implementation away" -- migrate
+  the legacy traversal exactly, or obtain a verdict on the rewritten one. The first branch needs
+  no verdict at all: goal section 2 names the exact legacy traversal as accepted and required,
+  and what blocks it is that `advancePresentationState`, the presentation-state owner the
+  migrated traversal needs, is specified and unimplemented. A permitted port blocked on unwritten
+  code is executable work. The decision framing is withdrawn; the rewritten-traversal branch
+  stays closed unless the exact port proves materially impossible.
+
+- **The review package cannot honestly obtain all four verdicts (2026-08-03):** its own text
+  records that no plant or animal art is accepted, that mobile is motionless, and that emotional
+  moments cannot be reviewed yet, with every evidence field null. A package that documents its
+  own incompleteness can be inspected or rejected; asking four acceptances of it would invite
+  verdicts on a product the log says is not there. No review request goes out until the
+  presentation-restoration and scenario steps close.
+
+- **The candidate capture is diagnostic, not acceptance evidence (2026-08-03):** the latest
+  capture receipt records dirty=true at f6751d9, not the then-clean 471a486. Section 13
+  acceptance evidence must come from an exact clean commit and the built `_site` artifact;
+  everything under `docs/visual-review/2026-08-03/` is comparison material only and is excluded
+  from any acceptance package.
+
+- **"The end of what I can execute" is withdrawn (2026-08-03):** with the corrections above,
+  touch pan, the exact bird port, seasonal recipes carried with provenance, letter typography
+  and the presentation-state owner are all executable. The localhost-first execution order
+  (paint manifest, presentation-owner transfer, legacy restoration, atlas ownership, mobile,
+  keyboard, scenarios, typography, machine gate, local artifact proof, clean-SHA package,
+  operator verdicts, pre-cutover gate, cutover) is the operative route; `deploy.yml` stays on
+  `prepare_legacy_site.py` until that route's step 14.
+
+- Status: Implemented (unproven). The three corrected xfail reasons and this entry describe the
+  same outstanding work. SPEC needed no change: it already required what the log had made
+  optional.
