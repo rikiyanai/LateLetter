@@ -678,3 +678,105 @@ def _atlas_asset(asset_id: str):
         if asset["id"] == asset_id:
             return asset
     raise AssertionError(f"{asset_id} is not in the atlas")
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
+def test_spatial_focus_agrees_exactly_between_the_two_engines():
+    """`move_focus` left/right/up/down must resolve identically in both engines.
+
+    `move_focus` has always accepted the four compass directions and, until
+    2026-08-03, treated them as aliases for previous/next over id order -- so
+    "left" and "up" were the same operation and neither had anything to do with
+    where an object stood. Making them spatial means introducing a comparison,
+    and a comparison is exactly the kind of thing that can agree on one machine
+    and diverge on another: a tie between two candidates equidistant along the
+    axis must break the same way in Python and in JavaScript or the browser and
+    the terminal disagree about where focus went.
+
+    So this asks BOTH engines the same question from every object in every
+    direction and requires identical answers, including which cases are
+    refusals. Sorting by (distance along, distance across, object id) is what
+    makes that determinable rather than merely likely; the id term exists for
+    the ties, and this test is what proves it does its job.
+    """
+    import dataclasses
+    import json
+
+    from lateletter.garden.world.commands import CommandKind, command
+    from lateletter.garden.world.engine import dispatch
+    from lateletter.garden.world.generation import generate_initial_world
+
+    world_id, seed = "parity:spatial", "parity-seed"
+    directions = ("left", "right", "up", "down")
+
+    state = generate_initial_world(world_id, seed)
+    canonical: dict[str, str] = {}
+    for source in state.object_ids():
+        for direction in directions:
+            seeded = dataclasses.replace(
+                state, ui=dataclasses.replace(state.ui, focus_id=source)
+            )
+            after, result = dispatch(
+                seeded,
+                command(
+                    seeded.world_id, seeded.command_sequence + 1,
+                    CommandKind.MOVE_FOCUS, args={"direction": direction},
+                ),
+            )
+            canonical[f"{source}|{direction}"] = (
+                "REJECT" if not result.accepted else after.ui.focus_id
+            )
+
+    module = (Path(__file__).resolve().parents[2] / "web" / "garden-world.mjs").as_uri()
+    emitted = subprocess.run(
+        [
+            shutil.which("node") or "node", "--input-type=module", "-e",
+            f"""
+            import {{ generateInitialWorld, dispatchGardenCommand }} from '{module}';
+            const state = await generateInitialWorld({world_id!r}, {seed!r});
+            const ids = [
+              ...state.plants.map(item => item.plant_id),
+              ...state.fixtures.map(item => item.fixture_id),
+              ...state.animals.map(item => item.animal_id),
+              ...state.collectibles.filter(item => !item.collected)
+                .map(item => item.collectible_id),
+            ].sort();
+            const out = {{}};
+            for (const source of ids) {{
+              for (const direction of {json.dumps(list(directions))}) {{
+                const seeded = JSON.parse(JSON.stringify(state));
+                seeded.ui.focus_id = source;
+                const [after, result] = await dispatchGardenCommand(seeded, {{
+                  kind: 'move_focus', target_id: null, args: {{direction}},
+                  sequence: seeded.command_sequence + 1,
+                  modality: 'browser_keyboard', metadata: {{}},
+                }});
+                out[`${{source}}|${{direction}}`] =
+                  result.accepted === false ? 'REJECT' : after.ui.focus_id;
+              }}
+            }}
+            console.log(JSON.stringify(out));
+            """.replace("'", '"').replace('"parity:spatial"', "'parity:spatial'")
+               .replace('"parity-seed"', "'parity-seed'"),
+        ],
+        capture_output=True, text=True, check=True,
+    ).stdout
+    browser = json.loads(emitted)
+
+    assert len(canonical) == len(state.object_ids()) * len(directions)
+    assert browser == canonical, (
+        "the browser and canonical engines disagree about spatial focus: "
+        + json.dumps(
+            {
+                key: {"canonical": canonical.get(key), "browser": browser.get(key)}
+                for key in set(canonical) | set(browser)
+                if canonical.get(key) != browser.get(key)
+            },
+            indent=1,
+        )
+    )
+    # A run in which nothing ever moves would satisfy the comparison above while
+    # proving nothing about the rule.
+    assert sum(1 for value in canonical.values() if value != "REJECT") >= 8, (
+        "spatial focus never moved anywhere, so this comparison is vacuous"
+    )

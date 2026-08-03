@@ -726,19 +726,21 @@ def test_keyboard_focus_reaches_every_accepted_fixture_and_ENTER_performs_its_ac
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "DEFECT, found by this test on 2026-08-03. Keyboard focus is a LINEAR "
-        "RING, not spatial. `move_focus` in web/garden-world.mjs maps "
+        "DEFECT, HALF CORRECTED on 2026-08-03. `move_focus` used to map "
         "left/up->previous and right/down->next over `objectIds(state)` order, "
-        "which is id-sorted and unrelated to where anything stands; and the "
-        "browser never sends a direction anyway, because the arrow keys are "
-        "bound to `pan`, leaving only `[`/`]`. Goal section 5 requires keyboard "
-        "navigation to move canonical focus SPATIALLY. Correcting it means "
-        "deciding what the arrow keys do when they can no longer both pan and "
-        "navigate, which is a product decision the operator has not made, so "
-        "nothing is invented here to make this hold. Owned by the "
-        "interaction-mask step of the operator route. Left strict so it cannot "
-        "be normalised into the baseline, and so that a later correction cannot "
-        "land silently."
+        "which is id-sorted and unrelated to where anything stands. It now "
+        "resolves the four compass directions to the nearest object that way "
+        "by canonical position, tie-broken on (distance along, distance "
+        "across, object id), identically in both engines across all 28 "
+        "object-direction cases -- proved by "
+        "`test_spatial_focus_agrees_exactly_between_the_two_engines` and by "
+        "mutation. What remains is the BINDING: the browser still sends the "
+        "arrow keys to `pan`, so no direction ever reaches the command from a "
+        "keyboard, and `[`/`]` remain the only focus keys. Deciding what the "
+        "arrows do when they can no longer both pan and navigate is a product "
+        "decision the operator has not made, so nothing is invented here to "
+        "make this hold. Left strict so it cannot be normalised into the "
+        "baseline, and so that a later correction cannot land silently."
     ),
 )
 def test_keyboard_focus_moves_spatially():

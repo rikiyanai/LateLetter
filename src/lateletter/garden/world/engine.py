@@ -65,6 +65,84 @@ def _occupied(state: WorldState, position: Vec2, *, except_id: str | None = None
     return any(object_id != except_id and current == position for object_id, current in positions)
 
 
+def _object_position(state: WorldState, object_id: str) -> Vec2 | None:
+    """Canonical position of any focusable object, or ``None`` for an unknown id.
+
+    Focus moving "to the right" is a question about where things STAND, and
+    canonical coordinates are the only place that is defined.
+
+    Mirrored by ``objectPosition`` in ``web/garden-world.mjs``.
+
+    :param state: canonical world state
+    :param object_id: a plant, fixture, animal or uncollected collectible id
+    :returns: its position, or ``None``
+    """
+    for items, key in (
+        (state.plants, "plant_id"), (state.fixtures, "fixture_id"),
+        (state.animals, "animal_id"), (state.collectibles, "collectible_id"),
+    ):
+        for item in items:
+            if getattr(item, key) == object_id:
+                return item.position
+    return None
+
+
+def _spatial_focus(
+    state: WorldState, ids: tuple[str, ...], origin_id: str, direction: str,
+) -> str | None:
+    """The nearest focusable object in one compass direction, or ``None``.
+
+    SPATIAL FOCUS.  ``move_focus`` has always accepted ``left``, ``right``,
+    ``up`` and ``down``, and always treated them as aliases for previous/next
+    over id order -- so "left" and "up" were the same operation, and neither had
+    anything to do with where the object was.  The destination requires keyboard
+    navigation to move canonical focus spatially, and a command whose argument
+    names a direction should honour it.
+
+    Candidates are objects strictly beyond the origin on the primary axis.  The
+    winner minimises, in order: distance along that axis, then distance across
+    it, then object id.  The third term is what makes this deterministic rather
+    than merely usually-agreeing, which matters because this engine and the
+    browser implementation are held to identical output.
+
+    ``next`` and ``previous`` keep their ring behaviour: they are what ``[``,
+    ``]`` and the terminal's cycle command mean, and a ring is the correct model
+    for "show me each thing in turn".
+
+    Mirrored by ``spatialFocus`` in ``web/garden-world.mjs``.
+
+    :param state: canonical world state
+    :param ids: focusable ids, already sorted
+    :param origin_id: the id currently focused
+    :param direction: one of ``left``, ``right``, ``up``, ``down``
+    :returns: the id to focus, or ``None`` when nothing lies that way
+    """
+    origin = _object_position(state, origin_id)
+    if origin is None:
+        return None
+    # Screen axes: x grows right, y grows down into the scene.
+    axis = 0 if direction in ("left", "right") else 1
+    sign = 1 if direction in ("right", "down") else -1
+    best: str | None = None
+    best_key: tuple[int, int, str] | None = None
+    for candidate in ids:
+        if candidate == origin_id:
+            continue
+        position = _object_position(state, candidate)
+        if position is None:
+            continue
+        coordinates = (position.x, position.y)
+        anchor = (origin.x, origin.y)
+        along = (coordinates[axis] - anchor[axis]) * sign
+        if along <= 0:
+            continue
+        across = abs(coordinates[1 - axis] - anchor[1 - axis])
+        key = (along, across, candidate)
+        if best_key is None or key < best_key:
+            best, best_key = candidate, key
+    return best
+
+
 def _object_kind(state: WorldState, object_id: str) -> str | None:
     if any(item.plant_id == object_id for item in state.plants):
         return "plant"
@@ -565,8 +643,23 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         else:
             current = ids.index(state.ui.focus_id) if state.ui.focus_id in ids else -1
             direction = str(value.args.get("direction", "next"))
-            delta = -1 if direction in ("previous", "left", "up") else 1
-            focus = ids[(current + delta) % len(ids)]
+            if direction in ("left", "right", "up", "down"):
+                # Spatial. With nothing focused there is no origin to move from,
+                # so the first press enters the world at the first object rather
+                # than rejecting -- the same thing `next` does, and the reader
+                # gets a focus for their keypress either way.
+                moved = (
+                    ids[0] if current < 0
+                    else _spatial_focus(state, ids, ids[current], direction)
+                )
+                if moved is None:
+                    return state, _reject(
+                        f"nothing lies {direction} of the focused object"
+                    )
+                focus = moved
+            else:
+                delta = -1 if direction == "previous" else 1
+                focus = ids[(current + delta) % len(ids)]
         updated = replace(state, ui=replace(state.ui, focus_id=focus, actions_open_for=None))
         return _finish(state, updated, value, f"Focused {focus}.", actions=_available_actions(state, focus))
 

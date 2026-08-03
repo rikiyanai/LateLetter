@@ -1171,6 +1171,85 @@ function objectIds(state) {
   ].sort();
 }
 
+/**
+ * Canonical position of any focusable object, or null if there is no such id.
+ *
+ * Focus moving "to the right" is a question about where things STAND, and
+ * canonical coordinates are the only place that is defined. Kept beside
+ * `objectIds` so the two stay in step: an object that can be focused must be
+ * one this can locate.
+ *
+ * Mirrored by `_object_position` in `src/lateletter/garden/world/engine.py`.
+ *
+ * @param state canonical world state
+ * @param objectId id of a plant, fixture, animal or uncollected collectible
+ * @returns `[x, y]` or null
+ */
+function objectPosition(state, objectId) {
+  for (const [items, key] of [
+    [state.plants, 'plant_id'], [state.fixtures, 'fixture_id'],
+    [state.animals, 'animal_id'], [state.collectibles, 'collectible_id'],
+  ]) {
+    const found = items.find(item => item[key] === objectId);
+    if (found) return [Number(found.position[0]), Number(found.position[1])];
+  }
+  return null;
+}
+
+/**
+ * The nearest focusable object in one compass direction, or null if none.
+ *
+ * SPATIAL FOCUS. `move_focus` has always accepted `left`, `right`, `up` and
+ * `down`, and always treated them as aliases for previous/next over id order --
+ * so "left" and "up" were the same operation, and neither had anything to do
+ * with where the object was. The destination requires keyboard navigation to
+ * move canonical focus spatially, and a command whose argument names a
+ * direction should honour it.
+ *
+ * Candidates are objects strictly beyond the origin on the primary axis. The
+ * winner minimises, in order: distance along that axis, then distance across
+ * it, then object id. The third term is what makes this deterministic rather
+ * than merely usually-agreeing, which matters because the browser and the
+ * canonical Python engine are held to identical output.
+ *
+ * `next` and `previous` keep their ring behaviour: they are what `[`, `]` and
+ * the terminal's cycle command mean, and a ring is the correct model for
+ * "show me each thing in turn".
+ *
+ * Mirrored by `_spatial_focus` in `src/lateletter/garden/world/engine.py`.
+ *
+ * @param state canonical world state
+ * @param ids focusable ids, already sorted
+ * @param from id currently focused
+ * @param direction one of left, right, up, down
+ * @returns the id to focus, or null when nothing lies that way
+ */
+function spatialFocus(state, ids, from, direction) {
+  const origin = objectPosition(state, from);
+  if (!origin) return null;
+  // Screen axes: x grows right, y grows down into the scene.
+  const axis = direction === 'left' || direction === 'right' ? 0 : 1;
+  const sign = direction === 'right' || direction === 'down' ? 1 : -1;
+  let best = null, bestKey = null;
+  for (const candidate of ids) {
+    if (candidate === from) continue;
+    const position = objectPosition(state, candidate);
+    if (!position) continue;
+    const along = (position[axis] - origin[axis]) * sign;
+    if (along <= 0) continue;
+    const across = Math.abs(position[1 - axis] - origin[1 - axis]);
+    const key = [along, across, candidate];
+    if (
+      bestKey === null || key[0] < bestKey[0] ||
+      (key[0] === bestKey[0] && key[1] < bestKey[1]) ||
+      (key[0] === bestKey[0] && key[1] === bestKey[1] && key[2] < bestKey[2])
+    ) {
+      best = candidate; bestKey = key;
+    }
+  }
+  return best;
+}
+
 function objectKind(state, objectId) {
   if (state.plants.some(item => item.plant_id === objectId)) return 'plant';
   if (state.fixtures.some(item => item.fixture_id === objectId)) return 'fixture';
@@ -1806,8 +1885,21 @@ export async function dispatchGardenCommand(sourceState, command) {
     } else {
       const current = ids.includes(state.ui.focus_id) ? ids.indexOf(state.ui.focus_id) : -1;
       const direction = String(command.args.direction ?? 'next');
-      const delta = ['previous', 'left', 'up'].includes(direction) ? -1 : 1;
-      focus = ids[(current + delta + ids.length) % ids.length];
+      if (['left', 'right', 'up', 'down'].includes(direction)) {
+        // Spatial. With nothing focused there is no origin to move from, so
+        // the first press enters the world at the first object rather than
+        // rejecting -- the same thing `next` does, and the reader gets a focus
+        // for their keypress either way.
+        const moved = current < 0
+          ? ids[0] : spatialFocus(state, ids, ids[current], direction);
+        if (moved === null) {
+          return [state, reject(`nothing lies ${direction} of the focused object`)];
+        }
+        focus = moved;
+      } else {
+        const delta = direction === 'previous' ? -1 : 1;
+        focus = ids[(current + delta + ids.length) % ids.length];
+      }
     }
     const updated = clone(state);
     updated.ui.focus_id = focus;

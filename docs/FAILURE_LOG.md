@@ -5847,3 +5847,45 @@ defect, worse than recorded
   one test and none on its neighbour is invisible in a targeted `-k` run and obvious in a full one,
   which is the argument for running the whole file before believing a count. Decorator moved back;
   the file now reads 24 passing and 7 strict xfailed.
+
+### Spatial focus: the command honoured its own argument, and now it does
+
+Question:
+The spatial-keyboard-focus defect was recorded as blocked on a product decision -- what the arrow
+keys should do when they can no longer both pan and navigate. That is true of the BINDING. Check
+whether it is true of the command.
+
+Type:
+defect, half correctable without any decision
+
+- **It was not (2026-08-03):** `move_focus` has always accepted `left`, `right`, `up` and `down`,
+  and mapped them onto previous/next over `objectIds` order -- so "left" and "up" were the same
+  operation, "right" and "down" were the same operation, and none of the four had anything to do
+  with where an object stood. A command whose argument names a direction and then ignores its
+  meaning is wrong independently of who dispatches it. Nothing in the repository sent those four
+  values, so correcting them broke no caller: the terminal sends `next`, the viewer sends
+  `previous`/`next`, and taps send `target_id`.
+
+- **The rule (2026-08-03):** candidates are objects strictly beyond the origin on the primary axis
+  -- x for left/right, y for up/down, y being depth into the scene rather than height. The winner
+  minimises (distance along the axis, distance across it, object id). `next` and `previous` keep
+  their ring behaviour, because that is what `[`, `]` and the terminal's cycle command mean and a
+  ring is the right model for "show me each thing in turn". Nothing lying that way is a refusal, not
+  a wrap-around: wrapping would teleport focus across the Garden in the name of a direction.
+
+- **Why the third tie-break term exists (2026-08-03):** the two engines are held to identical
+  output, and a comparison is exactly the thing that can agree on one machine and diverge on
+  another. Two candidates equidistant along and across the axis must break the same way in Python
+  and in JavaScript or the browser and the terminal disagree about where focus went. Proved rather
+  than assumed: `test_spatial_focus_agrees_exactly_between_the_two_engines` asks both engines the
+  same question from every object in every direction -- 28 cases, 20 moves and 8 refusals -- and
+  requires identical answers including which cases refuse. Mutation-proved by flipping one sign in
+  the Python implementation, which the test reports as a disagreement.
+
+- **What remains, and it is a real decision (2026-08-03):** the browser still binds the arrow keys
+  to `pan`, so no direction ever reaches the command from a keyboard and `[`/`]` are still the only
+  focus keys. The strict xfail stands for that reason and its text now says which half is done.
+
+- Status: Implemented (unproven as visual acceptance). 356 world, adapter, contract and acceptance
+  tests hold; all Garden Node suites 0 failing; browser E2E 24 passing and 7 strict xfailed. Gate 12
+  records spatial focus as half done rather than absent.
