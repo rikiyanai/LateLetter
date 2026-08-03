@@ -1,16 +1,17 @@
 /**
- * The presentation contract, executed.
- * ------------------------------------
+ * The SPEC 7.2.2 presentation contract, executed.
+ * -----------------------------------------------
  *
- * Route step 1 asked for the Garden's presentation contract to be DEFINED
- * rather than inferred from source text. This file is where that definition is
- * exercised: a reference composer is run and required to conform, then each
- * clause is broken on purpose and required to be caught, and finally the live
- * renderer is measured against the same contract without being changed.
+ * The contract module defines what it means to compose a Garden picture
+ * through the split GardenPresentation interface -- advance, compose, paint.
+ * This file is where that definition is exercised: a reference implementation
+ * is run and required to conform, then each clause is broken on purpose and
+ * required to be caught, and finally the live renderer is measured against
+ * the same contract without being changed.
  *
- * The order matters. A checker that has only ever refused things has not been
- * shown to be satisfiable, and a checker that accepts one good case has not
- * been shown to refuse anything. Both halves are here, for every clause.
+ * The order matters. A checker that has only ever refused things has not
+ * been shown to be satisfiable, and a checker that accepts one good case has
+ * not been shown to refuse anything. Both halves are here, for every clause.
  */
 
 import test from 'node:test';
@@ -25,240 +26,296 @@ import {
 } from '../../web/garden-presentation-contract.mjs';
 
 import {
+  REFERENCE_PRESENTATION,
+  advanceReferenceState,
   composeReferenceFrame,
   REFERENCE_MANIFEST,
   REFERENCE_PROJECTION,
-  REFERENCE_VIEWPORT,
+  REFERENCE_CONTEXT,
+  REFERENCE_IDS,
 } from '../garden_contract/fixtures/reference_composer.mjs';
 
 /**
- * Build the five contract inputs.
+ * Build the contract input: projection, prior state, events, tick, context.
  *
  * @param {object} [overrides] - replace any input for a negative control
- * @returns {object} the input object a composer receives
+ * @returns {object} the input `contractViolations` takes
  */
 function referenceInput(overrides = {}) {
   return {
     projection: REFERENCE_PROJECTION,
-    viewport: REFERENCE_VIEWPORT,
-    presentationTime: { seconds: 1000, frame: 8 },
-    presentationState: { snowDepth: 1 },
-    acceptedManifest: REFERENCE_MANIFEST,
+    previousState: null,
+    presentationEvents: [],
+    tick: { frame: 80, seconds: 1000 },
+    context: REFERENCE_CONTEXT,
     ...overrides,
   };
 }
 
 /**
- * Compose a reference frame and then damage it, so a clause can be tested
+ * Advance and compose once, then damage the frame, so a clause can be tested
  * against a frame that is correct in every other respect.
  *
  * @param {(frame: object) => void} damage - mutates the composed frame
  * @returns {object} the damaged frame
  */
 function damagedFrame(damage) {
-  const frame = composeReferenceFrame(referenceInput());
+  const input = referenceInput();
+  const state = advanceReferenceState(input.previousState, input.presentationEvents, input.tick);
+  const frame = composeReferenceFrame(input.projection, state, input.context);
   damage(frame);
   return frame;
+}
+
+/** The frame-check input shape: projection plus context. */
+function frameInput() {
+  return { projection: REFERENCE_PROJECTION, context: REFERENCE_CONTEXT };
 }
 
 // ---------------------------------------------------------------------------
 // The positive control: the contract is satisfiable by code that runs.
 // ---------------------------------------------------------------------------
 
-test('the reference composer satisfies every clause of the contract', () => {
-  assertConforms(composeReferenceFrame, referenceInput(), 'the reference composer');
+test('the reference implementation satisfies every clause of the contract', () => {
+  assertConforms(REFERENCE_PRESENTATION, referenceInput(), 'the reference implementation');
 });
 
-test('the reference composer emits ink, so conformance is not vacuous', () => {
-  // A composer that returns no cells satisfies every per-cell clause by having
-  // nothing to check. Requiring real ink is what keeps the positive control
-  // from being empty.
-  const frame = composeReferenceFrame(referenceInput());
-  const ink = frame.cells.filter(cell => cell.glyph !== ' ' && cell.glyph !== '');
-  assert.ok(ink.length > 10, `only ${ink.length} inked cells`);
-  assert.ok(ink.some(cell => cell.objectId), 'no atlas-chain ink carrying an object id');
-  assert.ok(ink.some(cell => !cell.objectId), 'no recipe-chain ink');
-  assert.equal(frame.interactionRegions.length, 1, 'exactly the one interactive object gets a region');
-  assert.equal(frame.interactionRegions[0].objectId, 'plant-1');
+test('the reference implementation emits ink, so conformance is not vacuous', () => {
+  const input = referenceInput();
+  const state = advanceReferenceState(null, [], input.tick);
+  const frame = composeReferenceFrame(input.projection, state, input.context);
+  assert.ok(frame.visible_primitives.length > 10, 'the reference picture is not empty');
+  assert.ok(frame.interaction_regions.length === 1, 'exactly the interactive object has a region');
+  assert.ok(frame.attempted_primitives.length > frame.visible_primitives.length,
+    'the attempted list demonstrably contains ink the visible list omits');
 });
 
 // ---------------------------------------------------------------------------
-// Clause 1 — identity.
+// Clause 1 — runtime emitted-primitive identity.
 // ---------------------------------------------------------------------------
 
-test('a nonblank cell with no source id is refused', () => {
-  const frame = damagedFrame(f => { f.cells[0].sourceId = null; });
-  const problems = frameViolations(frame, referenceInput());
-  assert.ok(problems.some(p => p.clause === '1-identity' && /carries no sourceId/.test(p.detail)));
+test('a nonblank primitive with no source id is refused', () => {
+  const frame = damagedFrame(f => { f.attempted_primitives[0].source_id = null; });
+  const problems = frameViolations(frame, frameInput());
+  assert.ok(problems.some(p => p.clause === '1-identity' && /carries no source_id/.test(p.detail)));
 });
 
-test('a blank cell needs no source id', () => {
-  // The exemption is about INK, not about who wrote the cell. A composer that
-  // clears a cell has not painted anything that could need review.
+test('a blank primitive needs no source id', () => {
   const frame = damagedFrame(f => {
-    f.cells.push({ x: 11, y: 0, glyph: ' ', color: null, animated: false, sourceId: null, objectId: null });
+    f.attempted_primitives.push({
+      units: 'cell', profile: 'ascii-safe', painter_order: 999,
+      x: 1, y: 0, glyph: ' ', color_role: 'sky', source_id: null, object_id: null,
+    });
   });
-  assert.deepEqual(frameViolations(frame, referenceInput()), []);
+  // The blank primitive is not visible, so exclude it from the subset check
+  // by construction: it was attempted and hidden, which is legitimate.
+  const problems = frameViolations(frame, frameInput());
+  assert.deepEqual(problems, []);
 });
 
-test('a law may not be named as a cell source', () => {
-  const frame = damagedFrame(f => { f.cells[0].sourceId = 'law.reference.density'; });
-  const problems = frameViolations(frame, referenceInput());
+test('a law may not be named as a primitive source', () => {
+  const frame = damagedFrame(f => { f.attempted_primitives[0].source_id = REFERENCE_IDS.densityLaw; });
+  const problems = frameViolations(frame, frameInput());
   assert.ok(problems.some(p => /names the law/.test(p.detail)),
-    'a law id passed as a cell source: anonymity with a respectable id attached');
+    'a law is not a painter, and naming one as a source is anonymity with an id attached');
 });
 
-test('an id in neither register is refused', () => {
-  const frame = damagedFrame(f => { f.cells[0].sourceId = 'recipe.invented.on.the.spot'; });
-  const problems = frameViolations(frame, referenceInput());
-  assert.ok(problems.some(p => /in neither register/.test(p.detail)));
+test('an id the release manifest does not accept is refused', () => {
+  const frame = damagedFrame(f => { f.attempted_primitives[0].source_id = 'recipe.invented'; });
+  const problems = frameViolations(frame, frameInput());
+  assert.ok(problems.some(p => /does not accept/.test(p.detail)));
 });
 
 test('recipe-chain ink may not claim a canonical object', () => {
   const frame = damagedFrame(f => {
-    const ground = f.cells.find(cell => cell.sourceId === 'recipe.reference.ground');
-    ground.objectId = 'plant-1';
+    const groundPrimitive = f.attempted_primitives.find(
+      p => p.source_id === REFERENCE_IDS.groundRecipe,
+    );
+    groundPrimitive.object_id = 'plant-1';
   });
-  const problems = frameViolations(frame, referenceInput());
+  const problems = frameViolations(frame, frameInput());
   assert.ok(problems.some(p => /recipe paint yet claims object/.test(p.detail)));
 });
 
 test('atlas ink may not claim an object the projection does not contain', () => {
   const frame = damagedFrame(f => {
-    const plant = f.cells.find(cell => cell.objectId === 'plant-1');
-    plant.objectId = 'plant-99';
+    const plantPrimitive = f.attempted_primitives.find(
+      p => p.source_id === REFERENCE_IDS.plantAsset,
+    );
+    plantPrimitive.object_id = 'object-nobody-projected';
   });
-  const problems = frameViolations(frame, referenceInput());
+  const problems = frameViolations(frame, frameInput());
   assert.ok(problems.some(p => /absent from the projection/.test(p.detail)));
 });
 
-// ---------------------------------------------------------------------------
-// Clause 2 — release paint authority.
-// ---------------------------------------------------------------------------
-
-test('ink from an unaccepted source is refused', () => {
-  const input = referenceInput({
-    acceptedManifest: {
-      ...REFERENCE_MANIFEST,
-      // The snow recipe is still a known recipe -- it is simply not accepted,
-      // which is a different fact from being unknown and gets a different
-      // sentence.
-      acceptedIds: ['recipe.reference.ground', 'asset.reference.plant'],
-    },
+test('anonymous ink does not become acceptable by being occluded', () => {
+  // Damage an attempted primitive that is NOT in the visible list: identity
+  // is checked over attempts, so hiding anonymous ink must not excuse it.
+  const frame = damagedFrame(f => {
+    const hidden = f.attempted_primitives.find(
+      p => !f.visible_primitives.includes(p),
+    );
+    hidden.source_id = null;
   });
-  const frame = composeReferenceFrame(input);
-  const problems = frameViolations(frame, input);
-  assert.ok(problems.some(p => p.clause === '2-authority' && /not accepted/.test(p.detail)));
-});
-
-test('a composition with no manifest asserts no authority at all', () => {
-  // Diagnostic and authoring compositions legitimately paint unreviewed art.
-  // The clause is skipped rather than failed, and the RELEASE check is the
-  // caller that always supplies the manifest.
-  const input = referenceInput({
-    acceptedManifest: { ...REFERENCE_MANIFEST, acceptedIds: undefined },
-  });
-  const frame = composeReferenceFrame(input);
-  assert.ok(!frameViolations(frame, input).some(p => p.clause === '2-authority'));
+  const problems = frameViolations(frame, frameInput());
+  assert.ok(problems.some(p => p.clause === '1-identity'));
 });
 
 // ---------------------------------------------------------------------------
-// Clause 3 — interaction regions owned by the projection.
+// Visibility — the visible picture is a subset of the attempted one.
+// ---------------------------------------------------------------------------
+
+test('a visible primitive that was never attempted is refused', () => {
+  const frame = damagedFrame(f => {
+    f.visible_primitives.push({
+      units: 'cell', profile: 'ascii-safe', painter_order: 998,
+      x: 2, y: 0, glyph: '!', color_role: 'ink',
+      source_id: REFERENCE_IDS.snowRecipe, object_id: null,
+    });
+  });
+  const problems = frameViolations(frame, frameInput());
+  assert.ok(problems.some(p => p.clause === 'visibility' && /never attempted/.test(p.detail)),
+    'a visible primitive outside the attempt list is a hidden second composer');
+});
+
+// ---------------------------------------------------------------------------
+// Clause 3 — interaction regions are owned by the projection.
 // ---------------------------------------------------------------------------
 
 test('a region for an object the projection does not contain is refused', () => {
   const frame = damagedFrame(f => {
-    f.interactionRegions.push({ objectId: 'ghost-1', x: 0, y: 0, width: 44, height: 44, primary: null });
+    f.interaction_regions.push({
+      object_id: 'invented-target', asset_id: 'a', state_id: 's',
+      units: 'pixel', x: 0, y: 0, width: 44, height: 44,
+    });
   });
-  const problems = frameViolations(frame, referenceInput());
+  const problems = frameViolations(frame, frameInput());
   assert.ok(problems.some(p => /the projection does not contain/.test(p.detail)));
 });
 
 test('visible interactive ink with no region is refused', () => {
-  const frame = damagedFrame(f => { f.interactionRegions.length = 0; });
-  const problems = frameViolations(frame, referenceInput());
+  const frame = damagedFrame(f => { f.interaction_regions.length = 0; });
+  const problems = frameViolations(frame, frameInput());
   assert.ok(problems.some(p => /painted visible ink and declares a primary action/.test(p.detail)),
-    'the picture showed something a person cannot touch');
+    'the picture may not show something a person cannot touch');
+});
+
+test('a region that does not name its asset/state mask is refused', () => {
+  const frame = damagedFrame(f => { f.interaction_regions[0].state_id = null; });
+  const problems = frameViolations(frame, frameInput());
+  assert.ok(problems.some(p => /does not name the asset\/state mask/.test(p.detail)),
+    'a region that cannot say which mask it came from was recovered, not transformed');
 });
 
 test('a region under the 44px floor is refused', () => {
-  const frame = damagedFrame(f => { f.interactionRegions[0].height = 20; });
-  const problems = frameViolations(frame, referenceInput());
-  assert.ok(problems.some(p => p.detail.includes(`${MINIMUM_TARGET_PX}px floor`)));
+  const frame = damagedFrame(f => { f.interaction_regions[0].width = MINIMUM_TARGET_PX - 1; });
+  const problems = frameViolations(frame, frameInput());
+  assert.ok(problems.some(p => new RegExp(`under the ${MINIMUM_TARGET_PX}px floor`).test(p.detail)));
 });
 
 test('a non-interactive projected object gets no region and that is not a defect', () => {
-  // `stone-1` is projected and declares no primary action. The clause must not
-  // demand a target for it, or every scenery object becomes a click surface.
-  const frame = composeReferenceFrame(referenceInput());
-  assert.ok(!frame.interactionRegions.some(region => region.objectId === 'stone-1'));
-  assert.deepEqual(frameViolations(frame, referenceInput()), []);
+  const input = referenceInput();
+  const state = advanceReferenceState(null, [], input.tick);
+  const frame = composeReferenceFrame(input.projection, state, input.context);
+  assert.ok(!frame.interaction_regions.some(region => region.object_id === 'stone-1'));
+  assert.deepEqual(frameViolations(frame, frameInput()), []);
 });
 
 // ---------------------------------------------------------------------------
-// Clause 4 — the composer is a function of its five inputs and nothing else.
+// Clause 2 — state travels through the public advance; the pair is a
+// function of its declared inputs and nothing else.
 // ---------------------------------------------------------------------------
 
 test('presentation state accumulates through the signature, not behind it', () => {
-  // Frame 8 is divisible by four, so depth grows by one. The growth appears in
-  // the RETURNED state; the composer keeps nothing of its own between calls,
-  // which is what makes composing twice from one input reproducible.
-  const first = composeReferenceFrame(referenceInput());
-  assert.equal(first.nextPresentationState.snowDepth, 2);
-  const second = composeReferenceFrame(referenceInput({ presentationState: first.nextPresentationState }));
-  assert.equal(second.nextPresentationState.snowDepth, 3);
-  assert.ok(second.cells.length > first.cells.length, 'deeper snow paints more cells');
+  // Tick 80 is divisible by four, so depth grows by one from null state. The
+  // growth appears in the RETURNED state; the composer keeps nothing of its
+  // own between calls, which is what makes running twice reproducible.
+  const tick = { frame: 80, seconds: 1000 };
+  const first = advanceReferenceState(null, [], tick);
+  assert.equal(first.snowDepth, 1);
+  const second = advanceReferenceState(first, [], tick);
+  assert.equal(second.snowDepth, 2);
+  const shallow = composeReferenceFrame(REFERENCE_PROJECTION, first, REFERENCE_CONTEXT);
+  const deep = composeReferenceFrame(REFERENCE_PROJECTION, second, REFERENCE_CONTEXT);
+  assert.ok(deep.visible_primitives.length > shallow.visible_primitives.length,
+    'deeper snow paints more primitives');
 });
 
-test('a composer that keeps state of its own is refused', () => {
+test('hover enters through presentation events and changes the picture only', () => {
+  const tick = { frame: 1, seconds: 10 };
+  const away = advanceReferenceState(null, [], tick);
+  const over = advanceReferenceState(null, [
+    { kind: 'pointer-move', cell: { x: 4, y: 2 } },
+  ], tick);
+  const awayFrame = composeReferenceFrame(REFERENCE_PROJECTION, away, REFERENCE_CONTEXT);
+  const overFrame = composeReferenceFrame(REFERENCE_PROJECTION, over, REFERENCE_CONTEXT);
+  const emphasis = frame => frame.visible_primitives.filter(p => p.color_role === 'emphasis');
+  assert.equal(emphasis(awayFrame).length, 0);
+  assert.ok(emphasis(overFrame).length > 0, 'hovering the plant emphasized its ink');
+  // The regions do not move under hover: hover changes the picture, not the
+  // targets, and certainly not the world.
+  assert.deepEqual(awayFrame.interaction_regions, overFrame.interaction_regions);
+});
+
+test('an implementation that keeps state of its own is refused', () => {
   let hidden = 0;
-  const drifting = input => {
+  const drifting = (projection, state, context) => {
     hidden += 1;                       // the state that is not in the signature
-    const frame = composeReferenceFrame(input);
-    frame.cells.push({
-      x: hidden, y: 0, glyph: '*', color: '#fff', animated: false,
-      sourceId: 'recipe.reference.snow', objectId: null,
-    });
+    const frame = composeReferenceFrame(projection, state, context);
+    frame.attempted_primitives = [...frame.attempted_primitives, {
+      units: 'cell', profile: 'ascii-safe', painter_order: 900 + hidden,
+      x: hidden, y: 0, glyph: '*', color_role: 'snow',
+      source_id: REFERENCE_IDS.snowRecipe, object_id: null,
+    }];
     return frame;
   };
-  const problems = composerViolations(drifting, referenceInput());
-  assert.ok(problems.some(p => p.clause === '4-determinism'));
+  const problems = composerViolations(advanceReferenceState, drifting, referenceInput());
+  assert.ok(problems.some(p => p.clause === '2-determinism'));
 });
 
-test('a composer that reads the hostname is refused', () => {
+test('an implementation that reads the hostname is refused', () => {
   // This is the mechanism that makes `allowUnacceptedArt` impossible to
-  // reintroduce rather than merely forbidden: paint authority is an input, so
-  // a composer that consults where it is running composes a different picture
-  // when the ground is moved underneath it, and the clause catches that.
-  const hostSniffing = input => {
-    const frame = composeReferenceFrame(input);
+  // reintroduce rather than merely forbidden: paint authority is an input,
+  // so a composer that consults where it is running composes a different
+  // picture when the ground is moved underneath it, and the clause catches
+  // that.
+  const hostSniffing = (projection, state, context) => {
+    const frame = composeReferenceFrame(projection, state, context);
     if (globalThis.location?.hostname !== 'localhost') {
-      frame.cells = frame.cells.filter(cell => cell.sourceId !== 'recipe.reference.snow');
+      const keep = p => p.source_id !== REFERENCE_IDS.snowRecipe;
+      frame.attempted_primitives = frame.attempted_primitives.filter(keep);
+      frame.visible_primitives = frame.visible_primitives.filter(keep);
     }
     return frame;
   };
-  const problems = composerViolations(hostSniffing, referenceInput());
+  const problems = composerViolations(advanceReferenceState, hostSniffing, referenceInput());
   assert.ok(problems.some(p => /hostname changed/.test(p.detail)),
     'a composer decided what to paint from where it was running');
 });
 
 test('a broken frame shape is reported as a sentence, not a TypeError', () => {
-  assert.deepEqual(contractViolations(() => undefined, referenceInput()),
+  const broken = { advance: () => null, compose: () => undefined };
+  assert.deepEqual(contractViolations(broken, referenceInput()),
     [{ clause: 'shape', detail: 'composer returned undefined, not a frame object' }]);
-  const noRegions = contractViolations(() => ({ cells: [], nextPresentationState: null }), referenceInput());
-  assert.ok(noRegions.some(p => /interactionRegions is not an array/.test(p.detail)));
+  const noRegions = contractViolations(
+    { advance: () => null, compose: () => ({ attempted_primitives: [], visible_primitives: [] }) },
+    referenceInput(),
+  );
+  assert.ok(noRegions.some(p => /interaction_regions is not an array/.test(p.detail)));
 });
 
 // ---------------------------------------------------------------------------
 // The live renderer, measured against the contract without being changed.
 // ---------------------------------------------------------------------------
 
-test('the live renderer does not yet expose a composer, and that is the step 1 finding', async () => {
-  // Route step 1 changes no rendering. What it produces is a contract and an
-  // honest measurement against it. `CanonicalGardenRenderer.render(projection)`
-  // composes and paints in one pass and returns nothing, so there is no frame
-  // to apply the contract to -- which is precisely the gap step 4 closes by
-  // splitting composition from painting.
+test('the live renderer does not yet expose the split interface; the transfer step owns that', async () => {
+  // The ownership-transfer step of the execution order moves composition into
+  // a public GardenPresentation module and holds the LIVE product to this
+  // contract. Until that patch lands, `CanonicalGardenRenderer.render`
+  // composes and paints in one pass and returns no frame, so there is
+  // nothing to apply the contract to -- and this test pins that gap so the
+  // transfer cannot half-land: the moment a composer appears in the renderer
+  // module, this file must be re-derived to hold it to the contract.
   const module = await import('../../web/garden-renderer.mjs');
   const renderer = module.CanonicalGardenRenderer;
   assert.ok(typeof renderer === 'function', 'the renderer class is exported');

@@ -6102,3 +6102,44 @@ defect in my own step-2 implementation, found before any consumer existed
   manifest can be perfectly tamper-evident and wrong about what it certifies.
 
 - Status: Implemented (unproven). Builder and manifest suites 32 of 32 holding locally.
+
+### Route step 3, first patch: the presentation contract is now the authoritative SPEC 7.2.2 form
+
+Question:
+SPEC 7.2.2 says the existing contract draft "predates the six blocking findings of 2026-08-02 and
+is not authoritative until updated to this section." Update it before building the owner it will
+judge, so the owner is built against the real gate rather than graded by a stale one.
+
+Type:
+implementation; additive only, no ownership transferred yet
+
+- **What changed (2026-08-03):** `web/garden-presentation-contract.mjs` is rewritten from the
+  withdrawn single-function `compose(input)` shape to the split interface --
+  `advancePresentationState(previousState, presentationEvents, tick)`,
+  `composePresentationFrame(projection, presentationState, context)`, with
+  `paintPresentationFrame` required to decide nothing. The frame checked is SPEC's five-field
+  `PresentationFrame` (`attempted_primitives`, `visible_primitives`, `background`,
+  `interaction_regions`, `diagnostics`); identity is checked over ATTEMPTS, so anonymous ink does
+  not become acceptable by being occluded; visible must be a subset of attempted, which is what
+  makes a hidden second composer visible in the frame; regions must name the `asset_id`/`state_id`
+  mask they came from; and the paint authority consulted is the REAL release manifest vocabulary
+  from `garden-release-manifest.json` (`accepted_assets` / `accepted_recipes` /
+  `accepted_laws`), not the draft's invented one.
+
+- **Both halves, per clause (2026-08-03):** the reference implementation in
+  `tests/garden_contract/fixtures/reference_composer.mjs` now implements the split interface --
+  hover entering through presentation events, snow accumulating as a fold over previous state, a
+  deliberately occluded attempt, regions bound to projected asset/state -- and conforms; and every
+  clause is also broken on purpose and caught, including hostname sniffing under two stubbed
+  hosts, hidden composer state, a law named as a source, and a visible primitive that was never
+  attempted. 21 checks in the rewritten suite; all Garden Node suites 201 of 201 locally.
+
+- **The tripwire stands (2026-08-03):** the final test still pins that
+  `CanonicalGardenRenderer` exposes no composer -- the moment one appears in the renderer module
+  without this suite being re-derived, it fails. The ownership-transfer patch that installs the
+  real `web/garden-presentation.mjs` owner must replace that tripwire with live conformance, and
+  must delete the old composition paths (`allowUnacceptedArt`, the hostname paint permission, the
+  hostname background branch, the static analyzer's release authority) in that same patch.
+
+- Status: Implemented (unproven). No product file changed; the gate the product must pass is now
+  real, executable and mutation-proved.
