@@ -1365,15 +1365,23 @@ def test_the_garden_keeps_moving_without_any_input():
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "DEFECT, found by this test on 2026-08-03. At 390x844 the Garden is "
-        "motionless AND nearly empty: 6 non-blank rows out of 64, 57 glyphs, and "
-        "ONE unique painted-text hash across twelve samples over six seconds. "
-        "Four of those six rows are sky holding one or two characters ('..', "
-        "'.', '*.', '.'). Desktop over the same window paints 300 glyphs across "
-        "58 rows and produces eight distinct hashes. The Garden must visibly "
-        "live without input, and mobile may crop peripheral scenery but may not "
-        "become a still, empty frame. Left strict so it cannot be normalised "
-        "into the baseline, and so that a later correction cannot land silently."
+        "DEFECT, re-measured on 2026-08-03 with a long poll after a sibling "
+        "defect turned out to be my measurement rather than the product. It "
+        "survives: over TWENTY seconds sampled twice a second on the product "
+        "path, the 390x844 Garden produces ONE distinct painted text and ONE "
+        "distinct screenshot. Not a phase artifact -- nothing moves at all. "
+        "The cause is the same one behind the mobile rectangle and touch "
+        "defects: `xScale` is floored at 0.80, so a 120-column world lays out "
+        "roughly twice as wide as a 48-cell phone frame, and BOTH PLANTS -- "
+        "the oak and the sunflower, the only objects in the starter that "
+        "animate -- fall outside it along with the stepping stones and the "
+        "planter. The phone is left with three static fixtures. The Garden "
+        "must visibly live without input, and mobile may crop peripheral "
+        "scenery but may not become a still frame. Correcting it is the same "
+        "unmade choice: a narrower canonical span, a lower scale floor that "
+        "would squash measured art against Contract P, or a touch pan. Left "
+        "strict so it cannot be normalised into the baseline, and so that a "
+        "later correction cannot land silently."
     ),
 )
 def test_the_garden_keeps_moving_on_mobile_too():
@@ -1382,10 +1390,18 @@ def test_the_garden_keeps_moving_on_mobile_too():
         with _chrome(origin, viewport=MOBILE) as (page, errors):
             _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             page.wait_for_timeout(1500)
+            # Polled, like the desktop case, so this cannot fail merely because
+            # two instants landed on the same phase of a slow sway. Twenty
+            # seconds at 2Hz: if the phone Garden moves at all, forty samples
+            # will catch it.
             first = page.locator("#g").inner_text()
-            page.wait_for_timeout(3000)
-            second = page.locator("#g").inner_text()
-            assert first != second, "the mobile Garden was motionless for three seconds"
+            moved = False
+            for _ in range(40):
+                page.wait_for_timeout(500)
+                if page.locator("#g").inner_text() != first:
+                    moved = True
+                    break
+            assert moved, "the mobile Garden was motionless for twenty seconds"
         assert errors == [], errors
 
 

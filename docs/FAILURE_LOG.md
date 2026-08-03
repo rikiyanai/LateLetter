@@ -5934,3 +5934,43 @@ RETRACTION of a defect I recorded, plus one measurement that has to be redone
 - Status: Implemented (unproven as visual acceptance). Browser E2E 25 passing and 6 strict xfailed.
   Hover moves from the defect list to the holding list; the mobile touch defect stays with better
   evidence.
+
+### Mobile: three of the six defects are one defect, and it is a clamp
+
+Question:
+After retracting the hover defect as my own measurement error, re-examine the mobile
+motionlessness claim rather than leave it asserted. It was measured the same way hover was -- two
+instants, a short window -- and the desktop version of the same test had already proved
+phase-fragile.
+
+Type:
+re-measurement that confirms a defect, and unifies three
+
+- **It survives, and more strongly (2026-08-03):** on the product path, polled twice a second for
+  TWENTY seconds, the 390x844 Garden produces ONE distinct painted text and ONE distinct screenshot.
+  Forty samples, no change. Not a phase artifact and not a frozen clock -- this test already used
+  the product query. The test now polls rather than comparing two instants, so it fails for the
+  reason it names.
+
+- **Why it is still (2026-08-03):** the projection at 390x844 gives rectangles to the mailbox,
+  lantern and bench, and to NOTHING ELSE. The stepping stones, the planter, the oak and the
+  sunflower are all outside the frame. Plants are the only objects in the starter that animate. So
+  the phone is left holding three static fixtures, and a Garden made only of static fixtures cannot
+  move.
+
+- **Three defects, one cause (2026-08-03):** the mobile rectangle defect, the mobile touch
+  unreachability, and the mobile motionlessness are not three problems. `xScale` is
+  `clamp((width - 10) / (worldWidth * DEPTH.foreground), 0.80, 1.35)`; a 48-cell phone frame against
+  a 120-column world wants about 0.32, the 0.80 floor binds, and the world is laid out roughly twice
+  as wide as the frame. Everything past the halfway point is simply outside -- two of five
+  interactions, and both of the two things that move. Recorded together because a reader looking at
+  six separate expected failures would reasonably conclude the mobile Garden needs three fixes, and
+  it needs one decision.
+
+- **The decision is unchanged and now better priced (2026-08-03):** a narrower canonical span on
+  small screens, a lower scale floor that would squash measured art against Contract P, or a touch
+  pan gesture. Whichever is chosen resolves three expected failures at once.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 25 passing and 6 strict xfailed.
+  Of the six, three are this clamp, one is the arrow-key binding, one is seasonal art with no
+  verdict, and one is the ambient bird's rewritten traversal.
