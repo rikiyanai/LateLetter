@@ -118,26 +118,33 @@ export function advancePresentationState(previousState, presentationEvents, tick
 }
 
 /**
- * The set of ids the given manifest allows to paint, or null for "no
- * authority asserted".
+ * The set of ids the given manifest allows to paint.
  *
- * Null is a legitimate diagnostic state -- a Node adapter test or an
- * authoring tool composing without a manifest -- and it composes everything
- * WITH its identity, so nothing about provenance is lost by inspecting
- * without authority. What null never is: the release path. The viewer always
- * passes the build-derived manifest, so the product suppresses unaccepted
- * ink on every host equally.
+ * Authority is MANDATORY. An earlier version of this function returned null
+ * for a missing manifest, meaning "no restriction" -- so a slow manifest
+ * fetch briefly painted everything and a failed one painted everything
+ * permanently, while the E2E never noticed because its static server always
+ * served the file. The 2026-08-04 architecture review named that fail-open
+ * seam directly: missing or invalid authority must refuse composition, not
+ * widen it. Diagnostic inspection of unaccepted ink still exists, one level
+ * down: construct a `Raster` without authority and call painters directly.
+ * What no longer exists is a COMPOSED FRAME that was not composed under the
+ * registers.
  *
- * @param {object|null} manifest - the accepted-paint manifest, or null
- * @returns {Set<string>|null}
+ * @param {object} manifest - the build-derived accepted-paint manifest
+ * @returns {Set<string>} every id the manifest allows to paint
+ * @throws {Error} when the manifest is absent or does not carry the three
+ *   accepted-id lists; composition must not proceed on a guess
  */
 function permittedSources(manifest) {
-  if (!manifest) return null;
-  return new Set([
-    ...(manifest.accepted_assets ?? []),
-    ...(manifest.accepted_recipes ?? []),
-    ...(manifest.accepted_legacy_art ?? []),
-  ]);
+  const lists = ['accepted_assets', 'accepted_recipes', 'accepted_legacy_art'];
+  if (!manifest || typeof manifest !== 'object' ||
+      !lists.every(name => Array.isArray(manifest[name]))) {
+    throw new Error('paint authority absent or invalid: composition refused. ' +
+      'Pass the build-derived accepted-paint manifest ' +
+      '(web/garden-accepted-paint.v1.json) as context.acceptedManifest.');
+  }
+  return new Set(lists.flatMap(name => manifest[name].map(String)));
 }
 
 /**
@@ -189,7 +196,9 @@ export function composePresentationFrame(projection, state, context) {
   const cellWidth = Number(geometry.cellAdvance ?? 8);
   const cellHeight = Number(geometry.lineHeight ?? 15);
   const environment = context.environment ?? {};
-  const authority = permittedSources(context.acceptedManifest ?? null);
+  // Throws when context carries no valid manifest: composition is refused
+  // outright rather than proceeding unrestricted (reopened step 1).
+  const authority = permittedSources(context.acceptedManifest);
 
   const raster = new Raster(viewport[0], viewport[1], { authority });
   connectedMasks(projection.objects);

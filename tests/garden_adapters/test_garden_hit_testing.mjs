@@ -28,11 +28,26 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 
 import { CanonicalGardenRenderer } from '../../web/garden-renderer.mjs';
 // Imported so provenance can be asserted, not just matching numbers: see the
 // single-owner test at the end of this file.
 import { createGeometry } from '../../web/garden-geometry.mjs';
+
+// Reopened step 1 (2026-08-04 architecture review): the renderer refuses to
+// construct without the accepted-paint manifest. Hit testing asserts on
+// canonical ids, never painted cells, so the committed product manifest is
+// simply the truthful constructor input here.
+const COMMITTED_PAINT_AUTHORITY = JSON.parse(readFileSync(
+  new URL('../../web/garden-accepted-paint.v1.json', import.meta.url), 'utf8'));
+
+// Constructs a renderer under the committed authority.
+function rendererUnderAuthority(element, options = {}) {
+  return new CanonicalGardenRenderer(element,
+    { paintAuthority: COMMITTED_PAINT_AUTHORITY, ...options });
+}
+
 
 /**
  * DOM stand-ins exposing only what the renderer touches.
@@ -105,7 +120,7 @@ function cellObject(objectId, x, y, depth = 100) {
  */
 function scene(objects, cellWidth = 8, cellHeight = 15) {
   let selected = null;
-  const renderer = new CanonicalGardenRenderer(new FakeElement(), {
+  const renderer = rendererUnderAuthority(new FakeElement(), {
     onSelect: (object) => { selected = object.object_id; },
   });
   renderer.setCellGeometry(cellWidth, cellHeight);
@@ -129,7 +144,7 @@ function scene(objects, cellWidth = 8, cellHeight = 15) {
  */
 function hitScene(entries, cellWidth = 8, cellHeight = 15) {
   let selected = null;
-  const renderer = new CanonicalGardenRenderer(new FakeElement(), {
+  const renderer = rendererUnderAuthority(new FakeElement(), {
     onSelect: (object) => { selected = object.object_id; },
   });
   renderer.setCellGeometry(cellWidth, cellHeight);
@@ -402,7 +417,7 @@ test('a pointer event before any layout is measured still resolves', () => {
   // run. The transform must already exist at that moment -- an absent one would
   // throw rather than simply resolving against the default cell size.
   let selected = null;
-  const renderer = new CanonicalGardenRenderer(new FakeElement(), {
+  const renderer = rendererUnderAuthority(new FakeElement(), {
     onSelect: (object) => { selected = object.object_id; },
   });
   assert.ok(renderer.geometry, 'a geometry exists from construction');

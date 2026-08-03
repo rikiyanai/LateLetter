@@ -6425,3 +6425,331 @@ implementation; the last two strict xfails corrected into plain assertions
   203 of 203; full Python (minus the transcription lane) 836 passing with exactly the four
   known-red tests -- the three letter-typography defects owned by the route's typography step,
   and the deploy-cutover assertion held red until its step 14.
+
+### External verification of the 7f6c816 milestone claim: six findings, three claim errors, three product/test defects (2026-08-04)
+
+An independent verification of my report at commit 7f6c816 returned six findings. All six are
+accepted. The verifier independently reproduced the machine facts (31-test browser suite in real
+Chrome, garden Node suites 203/203, commit exists at HEAD) — the defects are in what I CLAIMED
+those facts establish, and in three places where the underlying work itself falls short.
+
+**Claim errors (corrected here, on the record):**
+
+1. *"Painting approved art only" was false as written.* The executed release validator exits 1 and
+   its frame reports FIVE divergent implementations painting under `accepted_as_deployed` ids:
+   ground line, moon, starfield (candidate_status `different`), snow (`different`), and snow
+   accumulation (`absent`). My report named only the first three — the season repair made the
+   gate's January frame winter, which brought the two snow recipes into the painted set. The
+   register itself states a divergent reimplementation does not inherit the deployed approval.
+   Zero contract violations and zero suppression prove identity PLUMBING — every painted cell
+   carried a permitted id — not approval and not visual equivalence with the deployed art. The
+   starter composition also paints two plant objects that carry no per-asset verdict, and the E2E
+   file records in its own words that the composition is not one that could be accepted as it
+   stands.
+2. *"Full browser E2E" overstated the suite's declared scope.* The suite calls its own result a
+   precondition for visual review, never visual acceptance; five accepted fixtures never enter any
+   real browser scene in it.
+3. *"Full Python" was a filtered run.* The 836 count excluded the transcription lane, and the
+   receipt must say so every time.
+
+**Product/test defects (open, being reworked now):**
+
+4. *The ambient-bird port is not exact, and the register said it was.* The legacy law resamples
+   the respawn threshold EVERY TICK (`_birdT > 250+floor(rand*350)` re-drawn per tick), a growing-
+   hazard distribution with expected first spawn ≈273 ticks; my port drew one uniform wait per
+   spawn, expected ≈425 ticks — a different distribution, roughly 8 seconds later on average.
+   Winter in the legacy law gates SPAWNS only — an active bird finishes its crossing, and the
+   counter accumulates through winter so the first non-winter tick spawns immediately; my port
+   erased active birds at winter onset. Marking `exact` while acknowledging these violates the
+   register's own definition of exact. Status: the record's candidate_status is being corrected
+   and the implementation reworked to the legacy distribution with seeded per-tick entropy.
+5. *"Real touch drag" was overstated.* The drag helper dispatches constructed PointerEvents via
+   `dispatchEvent`, bypassing Chrome's native touch injection, hit testing, implicit pointer
+   capture, gesture arbitration and synthesized-click behaviour; only the tap used real injection.
+   The click-swallow handler in the viewer is exercised by no test — deleting it leaves the suite
+   green. Status: drag moves to CDP `Input.dispatchTouchEvent`; a swallow-path test is being
+   added.
+6. *The recorded key map is proven on one branch only.* The browser suite presses ArrowRight and
+   nothing else: no other arrow, no Shift+Arrow pan, no a/d/w/s pan, no coexistence check.
+
+**The defensible claim, replacing my earlier one:** at 7f6c816 the current 31-test browser review
+suite passes in real Chrome and the garden Node suites pass 203/203. That establishes neither
+approved-only painting, nor exact legacy equivalence, nor native touch-drag behaviour, nor visual
+acceptance, nor release readiness. ComplaintRef: operator-relayed verification of 7f6c816.
+
+- **Status:** RECORDED; REWORK OPEN under route step 4 (divergent recipes, bird exactness), step 6
+  (native touch), step 7 (key-map coverage). Evidence: commit 7f6c816; validator output naming the
+  five divergent ids; legacy blob 59dc49a8 lines 1485-1489.
+
+### Architecture audit after 7f6c816: the PresentationFrame boundary is named but does not yet own the rendered Garden (2026-08-04)
+
+This is lineage on **Wayfinder map: explain why the canonical candidate does not reproduce the
+deployed Garden**, especially **Wayfinder child: restore one coherent presentation plane against
+canonical projection** and the later route-step-3 claim that GardenPresentation owns the picture.
+It does not create a second map. The architecture was reviewed against the current source, the
+frozen deployed implementation in `legacy/viewer-bnw.html`, the failed-attempt history above, and
+the executable presentation contract. No product code changed in this audit.
+
+#### Why the deployed legacy Garden works
+
+Calling it “just a monolith” is a rejected false lead. The deployed file contains a deep, coherent
+runtime boundary even though it is physically one HTML file:
+
+- `GardenEngine` measures the viewport before generation, owns persistent `GardenState`, advances
+  it at the 50 ms/20 fps cadence, clears one `ScreenBuffer`, invokes five layers in one explicit
+  painter order, and performs one final DOM blit (`legacy/viewer-bnw.html:1719-1733`).
+- `BackgroundLayer`, `PlantLayer`, `ParticleLayer`, `CreatureLayer`, and `SpecialLayer` all consume
+  the same `(buffer, state)` interface. Stateful birds, weather, particles, wind, hover feedback,
+  and delivery actors survive from tick to tick rather than being reconstructed from a frame
+  number.
+- The `ScreenBuffer` is the sole final-picture authority. Layers decide cells; the DOM adapter
+  transports those cells. Interaction is derived from the painted collision cells, so its
+  geometry cannot silently drift to a different transform.
+- Layout is viewport-native: the grid is measured before scene generation, placement effort and
+  density scale with measured columns, and the ground is tied to the measured row count. That is
+  why the deployed scene remains dense and grounded instead of projecting a fixed sparse roster
+  into unrelated viewport sizes.
+
+The load-bearing property is therefore not file count. It is one state owner, one coordinate
+authority, one painter interface, one ordered composition, and one final-picture buffer.
+
+#### Why the current candidate architecture still fails that contract
+
+1. **`PresentationFrame` does not contain the complete user-visible picture.** The formal shape
+   checker requires only `attempted_primitives`, `visible_primitives`, `background`,
+   `interaction_regions`, and `diagnostics` (`web/garden-presentation-contract.mjs:108-124`). The
+   composer additionally returns raw `measured_assets`, then `paintPresentationFrame` calls the
+   renderer-private `_renderMeasuredAssets` (`web/garden-presentation.mjs:353-407`). That method
+   invokes `measuredAssetPlacement(this.geometry, asset)` and decides exact pixel positions and DOM
+   spans after composition (`web/garden-renderer.mjs:2395-2422`). The browser therefore has a
+   second final-picture owner outside the frame, and the release contract judges logical cells
+   before the proportional placement the operator actually sees.
+
+2. **The apparent module boundary is shallow and cyclic.** `garden-presentation.mjs` imports
+   `Raster`, the painters, layout/profile/palette/art and placement helpers from
+   `garden-renderer.mjs`; the renderer imports `advancePresentationState`,
+   `composePresentationFrame`, and `paintPresentationFrame` back. Deleting the presentation module
+   removes orchestration, but the renderer still contains the raster, painters, layout laws,
+   object art, geometry, measured placement and cadence. Deleting the renderer makes the
+   presentation module unusable. This is a circular extraction, not yet an ownership transfer.
+
+3. **Conformance does not imply paintability.** The painter also requires `rows.lines`,
+   `rows.html`, `measured_assets`, `aria_label`, `background.css`, `background.text_color`, and a
+   surface exposing row storage, an element and `_renderMeasuredAssets`. Those requirements are
+   absent from the five-field frame contract. The presentation-contract suite composes and checks
+   frames but does not invoke `paintPresentationFrame`; a reference composer can therefore satisfy
+   the declared contract while returning a frame the product painter cannot paint.
+
+4. **Persistent presentation state and temporal ownership are incomplete.**
+   `advancePresentationState` retains the visual frame, hover cell, focused object and click
+   bursts, but not the deployed actors' lifecycles. Birds and weather are rebuilt by painters from
+   a frame number; snow accumulation is absent; the animation loop/cadence remains in
+   `CanonicalGardenRenderer._ensurePresentationLoop` (`web/garden-renderer.mjs:2484-2505`). This
+   cannot reproduce the deployed stochastic bird lifecycle or accumulating weather exactly, and
+   it splits presentation time between the state transition and the DOM renderer.
+
+5. **Accepted-paint authority fails open at boot and on fetch failure.** A null authority means
+   unrestricted diagnostic paint. `viewer-bnw.html:627-637` initializes the authority to null,
+   converts a failed fetch to null, and can construct the renderer before the fetch resolves
+   (`viewer-bnw.html:2525-2533`). A slow request can expose all ink before repaint; a failed request
+   leaves it unrestricted permanently. Hostname permission was removed, but missing release
+   authority still does not fail closed. The successful static-server E2E path does not exercise
+   either state.
+
+6. **Browser and terminal are not adapters at one presentation seam.** The browser consumes a
+   projection through `composePresentationFrame`. The terminal renderer accepts `WorldState`,
+   calls `project_scene` itself, and independently owns terrain, horizon, viewport composition and
+   painting (`src/lateletter/garden/renderer.py:67-77`). Existing conformance asserts roster and
+   nonzero-ink agreement, not that both products consume the same frame or implement the same
+   picture contract.
+
+The canonical gameplay world/projection, visual-source identities, accepted-paint register, and
+the intent to separate composition from transport are the right direction. The defect is that the
+transfer stopped halfway: logical primitives moved into a frame while final placement, time,
+authority failure semantics and one entire adapter remained independently owned.
+
+#### Wayfinder rechart and execution order
+
+- **Destination (unchanged):** localhost must reproduce the approved dense, animated, interactive
+  deployed Garden while canonical gameplay state remains the only gameplay owner. Production
+  stays on legacy until the local artifact, visual review and release gates all hold.
+- **Frontier:** route step 3, “GardenPresentation owns the picture,” is reopened as **PARTIAL**.
+  Downstream recipe/atlas work cannot close the architecture while the final picture can still be
+  decided outside the frame.
+- **Decisions retained:** gameplay state stays viewport-independent; presentation may be
+  viewport-native; source identity is required; the deploy cutover remains last.
+- **Fog:** whether the shared frame stores resolved pixel/grapheme placement or a complete
+  platform-neutral placement primitive; the exact browser/terminal profile interface; and the
+  deterministic representation of persistent presentation entropy.
+- **RQ projection:** not started. The repository lacks the Y9 canon/FL overlay front doors and the
+  codebase-design review is therefore `FRAME_BLOCKED` for source-move authorization. This entry
+  records the route defect; it does not authorize an ownership patch.
+
+Execution order when that frontier is authorized:
+
+1. Require the accepted-paint manifest before Garden construction and fail closed on missing,
+   malformed or failed authority; retain a separately explicit diagnostic composition API rather
+   than giving null release semantics two meanings.
+2. Expand the executable `PresentationFrame` contract to contain every value needed to reproduce
+   the final visible browser picture, including resolved measured-asset placement and the complete
+   paint payload.
+3. Add the interface proof: any conforming frame can be painted without renderer-private decision
+   methods, and the resulting DOM/pixel primitives are identical to the frame.
+4. In one delete-first ownership patch, move measured placement, painter orchestration and final
+   picture decisions to the frame owner; remove `_renderMeasuredAssets` as a deciding renderer
+   path and break the renderer/presentation import cycle. Do not add a third authoritative path.
+5. Move persistent bird/weather/particle lifecycle and the cadence transition into
+   `advancePresentationState`; delete the stateless substitutes in the same patches.
+6. Differentially test deployed laws by lifecycle and distribution, not copied constants alone.
+7. Make browser and terminal consume the same projection-to-presentation interface through
+   explicit platform profiles; neither adapter may project or compose independently.
+8. Only then continue exact recipe ports, atlas ownership, sealed-bundle scenarios, localhost
+   visual review, operator verdicts, and finally the production cutover.
+
+- **Status:** VERIFIED ARCHITECTURE DEFECT; WAYFINDER RECHART RECORDED; IMPLEMENTATION OPEN. The
+  31/31 browser result is useful behavioural coverage, but it does not close presentation
+  ownership or architectural equivalence. ComplaintRefs: Wayfinder map: explain why the canonical
+  candidate does not reproduce the deployed Garden; Route step 3, the ownership patch:
+  GardenPresentation owns the picture.
+
+### Architecture verdict on the presentation seam: REJECTED; route step reopened (2026-08-04)
+
+An operator-relayed architecture review rejected the presentation ownership I reported at
+route step 3 (commit cfa5736 and successors). Six findings, all accepted:
+
+1. **PresentationFrame does not own the final visible picture.** Proportional atlas glyphs are
+   positioned during PAINTING: the composer returns raw `measured_assets`, the DOM renderer then
+   runs `measuredAssetPlacement` and mints pixel-positioned spans, and `paintPresentationFrame`
+   delegates to that private method. The exact Contract-P picture is therefore decided after the
+   authoritative frame and outside the release validator — a second visual owner.
+2. **GardenPresentation is a shallow cyclic wrapper.** The 410-line module imports the raster,
+   all seven painters, layout, palettes and placement from the 2,721-line renderer, which imports
+   the three presentation functions back. Deleting the wrapper removes ordering only; deleting
+   the renderer removes everything. The seam was drawn THROUGH one implementation, not around it.
+3. **The formal interface cannot paint a frame.** The live painter needs `rows.lines`,
+   `rows.html`, `measured_assets`, `aria_label`, `background.css`, private surface fields — none
+   of which the executable contract requires. A conforming reference frame is unpaintable, and no
+   test drives `paintPresentationFrame` through the public interface.
+4. **Stateful presentation evolution has no owner.** The legacy engine ticks persistent actors
+   (particles, creatures, accumulation) and then paints; the candidate's
+   `advancePresentationState` owns only hover/focus/click bursts, and birds/weather are
+   reconstructed procedurally per frame. This is the architectural CAUSE of the non-exact bird
+   port, the unrepresentable snow accumulation, and the recurring lifeless-frame defects — the
+   respawn law was bent to fit stateless recomposition.
+5. **Paint authority does not refuse when absent.** `permittedSources(null)` imposes no
+   restriction, the renderer's `paintAuthority` defaults to null, and the viewer fetches the
+   manifest asynchronously with failure caught as null — a failed fetch paints EVERYTHING,
+   permanently; the E2E never sees it because its static server serves the manifest.
+6. **Browser and terminal are not adapters at one seam.** The terminal path projects and paints
+   independently; parity tests pin roster and nonzero ink, not one presentation interface.
+
+**Route consequence.** The reopened execution order (recorded verbatim in the review) puts
+presentation-frame ownership first; recipe restoration must NOT continue on the current seam.
+The stateless bird rework I had begun minutes earlier (survival-table gap sampling inside the
+composer) was itself a new stateless substitute — the very pattern finding 4 condemns — and was
+discarded uncommitted.
+
+**Fog settlement, required before the delete-first transfer** — what does the shared frame
+store, logical grapheme runs plus resolved placement, or only final platform primitives?
+**Decision: final platform primitives are the sole paint payload; logical grapheme runs live in
+diagnostics only.** The frame carries cell primitives for cell art and pixel-resolved grapheme
+runs for measured atlas assets, every primitive carrying its source identity; the painter
+receives nothing it could re-derive placement from. Rationale: the defect class being cured is
+"placement decided after the authoritative frame", and a painter holding logical runs CAN
+recompose and eventually WILL — that is exactly how this seam eroded. A payload the painter
+cannot recompose enforces single ownership structurally rather than by discipline. The
+validator's need for logical identity is already met by attempted/visible primitives with source
+ids; grapheme-level logical detail goes in `diagnostics`, which the contract forbids the painter
+to read. Each profile (browser pixel metrics, terminal cell metrics) composes its own final
+frame from its own context — one interface, profile-specific adapters, per reopened step 7.
+This is an architecture decision, recorded here and revisable on operator instruction.
+
+- **Status:** RECORDED; SEAM REOPENED. Rework proceeds in the reopened order: (1) authority
+  refusal when absent or invalid, (2) frame owns every final visible primitive including
+  measured pixel placement, (3) interface test painting a conforming frame without
+  renderer-private knowledge, (4) atomic removal of renderer-owned placement/orchestration and
+  the circular import, (5) persistent bird/weather/particle lifecycle into
+  advancePresentationState with the stateless substitutes deleted in the same patches,
+  (6) differential verification of accepted recipes against blob 59dc49a8 including
+  distributions and lifecycle, (7) one projection/presentation interface for browser and
+  terminal, (8) only then atlas ownership, sealed-artifact testing, localhost review, operator
+  verdicts, deployment. ComplaintRef: operator-relayed architecture review of 2026-08-04.
+
+### Reopened step 1: paint authority is mandatory and awaited; absence refuses composition (2026-08-04)
+
+**What changed.** The fail-open authority seam from finding 5 of the architecture review is gone,
+in one patch across the three layers it lived in:
+
+- `web/garden-presentation.mjs` -- `permittedSources` no longer answers null with "no
+  restriction": a manifest that is absent, null, or missing any of its three accepted-id lists
+  throws, and `composePresentationFrame` therefore refuses outright. The diagnostic route for
+  inspecting unaccepted ink is one level down (a bare `Raster` plus the painters); no COMPOSED
+  frame exists outside the registers' authority.
+- `web/garden-renderer.mjs` -- `CanonicalGardenRenderer` requires `paintAuthority` at
+  construction and validates the same three-list shape; the null default is deleted.
+- `viewer-bnw.html` -- the manifest fetch is a promise AWAITED before the renderer is
+  constructed; the install-on-arrival mutation path (`garden.paintAuthority=...` + repaint) is
+  deleted. A missing or malformed manifest stamps `data-paint-refusal="authority-unavailable"`
+  on the garden region and throws into the existing garden catch, so the letter surface boots
+  and the garden simply does not exist.
+
+**Test truth this flushed out.** Node adapter tests had been composing under the old null
+authority, which let them read unaccepted ink off the visible lines. All 45 renderer
+constructions now run under the committed product manifest, and six machinery tests were
+re-derived onto the raster's attempted log (glyph + identity + suppression verdict per write):
+hover retention, resize re-attempt, table footprint, connected masks, animal tiers, collectible
+parallax. Two product truths surfaced and are now pinned rather than hidden:
+
+- the focus caret is anonymous ink, so FOCUS HAS NO VISIBLE MARK in the product; the caret
+  attempt and its suppression are asserted (`semantic focus visibly marks...` test). Giving the
+  mark an accepted identity is register work only the operator can conclude.
+- collectibles and non-atlas fixtures (table_chairs, fence groups, rose, rabbit, turtle) paint
+  anonymously and are therefore product-invisible until atlas ownership lands (route task,
+  step 8 of the reopened order).
+
+**Evidence.** Node garden suites 203/203 after the re-derivation. New refusal pins:
+`composition refuses when the paint authority is absent or malformed` (five broken shapes) and
+`the renderer refuses construction without a valid paint authority` in
+test_presentation_contract.mjs; browser E2E
+`test_a_severed_paint_manifest_refuses_the_garden_and_keeps_the_letter` severs the manifest at
+the network layer in real Chrome and observes the refusal marker, zero lattice rows, zero
+painted glyphs, and a booted letter surface. Viewer contract pins the awaited flow and the
+absence of any post-construction authority install. Known-red Python set unchanged (three
+letter-typography defects, one deploy-cutover assertion).
+
+- **Status:** Implemented (unproven until operator-visible); full-suite receipts recorded at
+  commit time. ComplaintRef: architecture review finding 5, 2026-08-04.
+
+### Findings 3 and 4 rework: native touch injection, the swallow path exercised, the whole key map pressed (2026-08-04)
+
+**Finding 3 (touch).** `_touch_drag` now injects through CDP `Input.dispatchTouchEvent` --
+Chrome's own touch pipeline, with hit testing, implicit pointer capture, gesture arbitration and
+click synthesis -- instead of constructing PointerEvent objects in page JavaScript, which proved
+the handler's wiring and nothing about a finger. Both mobile gestures (the reach-by-pan drag and
+the pan-until-visible tap) run through it.
+
+**The swallow path is now load-bearing.** New test
+`test_a_drag_that_pans_never_performs_the_action_under_the_pointer`: a real mouse drag that
+starts ON an actionable fixture, sized a little over one cell so a pan step fires while the
+content follows the pointer and the browser's synthesised click at release still lands on the
+fixture. Both preconditions are VERIFIED per attempt (camera moved; click coordinates inside the
+fixture's rectangle at release, seen by a document-capture listener that runs before the viewer
+can stop propagation), and only then is the interaction-count vector required to be unchanged.
+Getting here took three attempts, each caught by mutation (disabling the swallow branch):
+(1) ending the drag at the fixture's OLD position -- content follows the finger, so the click hit
+empty ground; (2) a 60px drag -- depth parallax walks the pointer off a 15px fixture;
+(3) a 12px drag -- below one cell (~15px here) no pan dispatches and the viewer RIGHTLY treats
+the gesture as a click that acts. The final form fails under the mutation and holds without it,
+verified in that order in real Chrome.
+
+**Finding 4 (keyboard).** New test
+`test_the_full_recorded_key_map_pans_and_focuses_without_shadowing`: all four arrows judged
+against the canonical spatial rule (minimise along-axis distance, then across, then id) from
+wherever the previous press left focus; a direction with no object that way must leave focus
+unmoved (ArrowDown from the ground row exercises this for real -- every fixture stands at y=51
+with only plants above); Shift+Arrow and a/d/w/s pressed as opposite pairs so an edge-clamped
+camera cannot fake a dead binding; and every pan keystroke must leave focus untouched, which is
+the shadowing defect the recorded map exists to prevent.
+
+- **Status:** Implemented (unproven beyond the suites named); receipts at commit time.
+  ComplaintRef: external verification findings 3 and 4, 2026-08-04.

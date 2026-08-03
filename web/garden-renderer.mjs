@@ -2292,13 +2292,26 @@ export class CanonicalGardenRenderer {
     measurer = null, font = null,
     // The build-derived accepted-paint manifest (web/garden-accepted-paint.
     // v1.json in the product; the release artifact embeds the same lists in
-    // garden-release-manifest.json). Null asserts NO authority -- the
-    // diagnostic mode Node adapters use -- and paints everything with its
-    // identity. This replaces `allowUnacceptedArt`, which was a boolean the
-    // viewer minted from the hostname: authority is now data bound to the
-    // registers, identical on every host.
-    paintAuthority = null,
+    // garden-release-manifest.json). REQUIRED. An earlier version defaulted
+    // this to null as a "diagnostic mode" that painted everything -- the
+    // fail-open seam the 2026-08-04 architecture review rejected: a viewer
+    // constructed before its manifest fetch resolved, or after it failed,
+    // painted unaccepted ink permanently. The constructor now refuses
+    // instead; diagnosing unaccepted ink is done one level down, with a
+    // bare Raster and the painters. This replaces `allowUnacceptedArt`,
+    // which was a boolean the viewer minted from the hostname: authority is
+    // data bound to the registers, identical on every host, and never
+    // optional.
+    paintAuthority,
   } = {}) {
+    const authorityLists = ['accepted_assets', 'accepted_recipes', 'accepted_legacy_art'];
+    if (!paintAuthority || typeof paintAuthority !== 'object' ||
+        !authorityLists.every(name => Array.isArray(paintAuthority[name]))) {
+      throw new Error('CanonicalGardenRenderer requires paintAuthority: the ' +
+        'accepted-paint manifest must be loaded BEFORE the renderer is ' +
+        'constructed, and a missing or invalid manifest refuses garden ' +
+        'painting entirely.');
+    }
     this.element = element; this.onSelect = onSelect; this.onTheme = onTheme;
     this.measurer = measurer; this.font = font;
     this.paintAuthority = paintAuthority;

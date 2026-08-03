@@ -317,8 +317,17 @@ def test_resize_cannot_regenerate_canonical_topology():
     # manifest, fetched as data and identical on every host; the hostname
     # gates only the read-only review accessor.
     assert "allowUnacceptedArt" not in source
-    assert "paintAuthority:GARDEN_PAINT_AUTHORITY" in source
+    # Reopened step 1 (2026-08-04 architecture review): the manifest is
+    # AWAITED before the renderer exists, and a missing or malformed one
+    # refuses garden painting -- there is no null-authority window and no
+    # install-on-arrival repaint path.
+    assert "const gardenPaintAuthority=await GARDEN_PAINT_AUTHORITY_READY" in source
+    assert "paintAuthority:gardenPaintAuthority" in source
     assert "fetch('./web/garden-accepted-paint.v1.json')" in source
+    assert "dataset.paintRefusal='authority-unavailable'" in source
+    assert "garden painting refused" in source
+    assert "garden.paintAuthority=" not in source.replace(
+        "paintAuthority:gardenPaintAuthority", "")
     assert "renderGardenAffordances" not in source
     assert "besideObjectPlacement" not in source
     resize = source[source.index("window.addEventListener('resize',()=>{"):]

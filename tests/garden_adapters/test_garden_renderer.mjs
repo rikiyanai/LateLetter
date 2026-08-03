@@ -37,6 +37,41 @@ import {
   projectGardenScene,
 } from '../../web/garden-world.mjs';
 
+// Reopened step 1 (2026-08-04 architecture review): paint authority is
+// MANDATORY -- the renderer refuses to construct without the accepted-paint
+// manifest, exactly as the product refuses when its manifest fetch fails.
+// Every test renderer therefore composes under the committed product
+// manifest, the same file the viewer fetches, so what these tests see is
+// what a recipient sees. Inspecting unaccepted ink is still possible one
+// level down, with a bare Raster and the painters; what no longer exists is
+// a composed frame outside the registers' authority.
+const COMMITTED_PAINT_AUTHORITY = JSON.parse(readFileSync(
+  new URL('../../web/garden-accepted-paint.v1.json', import.meta.url), 'utf8'));
+
+// Constructs a renderer under the committed authority; an explicit
+// `paintAuthority` in `options` (the empty-authority test) still wins.
+function rendererUnderAuthority(element, options = {}) {
+  return new CanonicalGardenRenderer(element,
+    { paintAuthority: COMMITTED_PAINT_AUTHORITY, ...options });
+}
+
+/**
+ * The attempted ink recorded for one object, as [x, y, glyph, suppressed].
+ *
+ * Reopened step 1 made paint authority mandatory, so a machinery test can no
+ * longer read unaccepted ink off the visible lines -- and should not:
+ * visibility belongs to the registers, while these tests pin the MACHINERY.
+ * The raster's attempted log records every write with its glyph, identity
+ * and suppression verdict, so asserting on it proves the painters did their
+ * exact work independently of what the manifest let through -- and lets the
+ * same test pin that unaccepted ink was in fact suppressed.
+ */
+function attemptedInkOf(frame, objectId) {
+  return frame.attempted_primitives
+    .filter(item => item.object_id === objectId && item.glyph.trim() !== '')
+    .map(item => [item.x, item.y, item.glyph, item.suppressed]);
+}
+
 class FakeRow {
   constructor() { this.textContent = ''; this.innerHTML = ''; this.attributes = {}; }
   setAttribute(key, value) { this.attributes[key] = value; }
@@ -537,7 +572,7 @@ test('restoring the ported plants leaves the authoritative fixture row alone', a
   const columnsOf = (data, viewport) => {
     const element = new FakeElement();
     [element.clientWidth, element.clientHeight] = viewport;
-    const frame = new CanonicalGardenRenderer(element).render(data);
+    const frame = rendererUnderAuthority(element).render(data);
     return new Map(frame.layout
       .filter(entry => entry.object.kind === 'fixture')
       .map(entry => [entry.object.semantic_state?.catalog_id,
@@ -621,7 +656,7 @@ test('focused plant rustles independently from an equal-species neighbor', () =>
   const sequence = focusedObjectId => {
     const element = new FakeElement();
     element.clientWidth = 960; element.clientHeight = 720;
-    const renderer = new CanonicalGardenRenderer(element);
+    const renderer = rendererUnderAuthority(element);
     renderer.setFocusedObject(focusedObjectId);
     const pictures = [];
     for (let frame = 0; frame < 32; frame += 1) {
@@ -772,17 +807,20 @@ test('interaction particles are object-aware rather than a shared four-cell burs
 
 test('real hover and click paths retain the exact semantic object', () => {
   const element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element);
+  const renderer = rendererUnderAuthority(element);
   renderer.setCellGeometry(8, 15);
   const data = projectionCenteredOn('plant:a', { isolate: true });
-  const before = renderer.render(data).lines.join('\n');
+  const before = JSON.stringify(attemptedInkOf(renderer.render(data), 'plant:a'));
   const plant = renderer.lastFrame.layout.find(entry => entry.object.object_id === 'plant:a');
   const event = {
     clientX: plant.hitRect.left * renderer.cellWidth + 1,
     clientY: plant.hitRect.top * renderer.cellHeight + 1,
   };
   renderer._hoverAt(event);
-  const after = renderer.lastFrame.lines.join('\n');
+  // The rose carries no accepted identity, so its ink is recorded and
+  // suppressed rather than shown; hover must still reshape the ATTEMPT.
+  // Identity retention is a machinery fact, not a visibility one.
+  const after = JSON.stringify(attemptedInkOf(renderer.lastFrame, 'plant:a'));
   assert.equal(element.style.cursor, 'pointer');
   assert.notEqual(after, before);
   renderer._burstAt(event);
@@ -818,7 +856,7 @@ test('canonical atlas owns delivery choreography and species fallbacks', () => {
 
 test('resize changes presentation only and partial repaint becomes empty', () => {
   const data = projection(), before = structuredClone(data), element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element, { prefersReducedMotion: true });
+  const renderer = rendererUnderAuthority(element, { prefersReducedMotion: true });
   const first = renderer.render(data);
   assert.ok(first.changedRows.length > 0);
   assert.equal(first.motionPaused, true);
@@ -827,13 +865,17 @@ test('resize changes presentation only and partial repaint becomes empty', () =>
   element.clientWidth = 400;
   renderer.onResize();
   assert.deepEqual(data, before);
-  assert.match(renderer.lastFrame.lines.join('\n'), /[@+\-]/);
+  // The rose and fences carry no accepted identity: their ink is recorded
+  // and suppressed, not shown. Resize must still re-attempt the scene's
+  // objects at the new width -- that is the machinery being pinned.
+  assert.match(renderer.lastFrame.attempted_primitives
+    .map(item => item.glyph).join(''), /[@+\-]/);
 });
 
 test('palette-only transitions repaint rows whose glyphs are unchanged', () => {
   const data = projection(), element = new FakeElement();
   data.scene.story_time = 'day';
-  const renderer = new CanonicalGardenRenderer(element, { prefersReducedMotion: true });
+  const renderer = rendererUnderAuthority(element, { prefersReducedMotion: true });
   const day = renderer.render(data), dayGround = element.children[day.horizon].innerHTML;
   data.scene.story_time = 'night';
   const night = renderer.render(data), nightGround = element.children[night.horizon].innerHTML;
@@ -850,7 +892,7 @@ test('cell geometry is cached until resize invalidates it', () => {
   globalThis.document = { createElement: () => { created += 1; return new FakeRow(); } };
   globalThis.getComputedStyle = () => ({ lineHeight: '15' });
   try {
-    const renderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+    const renderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
     renderer.render(projection());
     const afterFirst = created;
     renderer.render(projection());
@@ -870,7 +912,7 @@ test('presentation loop sleeps without a visible moving Garden', () => {
   globalThis.requestAnimationFrame = () => { scheduled += 1; return scheduled; };
   globalThis.cancelAnimationFrame = () => { cancelled += 1; };
   try {
-    const renderer = new CanonicalGardenRenderer(new FakeElement());
+    const renderer = rendererUnderAuthority(new FakeElement());
     renderer.startPresentation();
     assert.equal(scheduled, 0);
     renderer.setPresentationActive(true);
@@ -895,7 +937,7 @@ test('presentation loop sleeps without a visible moving Garden', () => {
 
 test('click and feed bursts are suppressed or cleared when motion is suppressed', () => {
   const element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element);
+  const renderer = rendererUnderAuthority(element);
   let data = projectionCenteredOn('plant:a', { isolate: true });
   renderer.render(data);
   const plant = renderer.lastFrame.layout.find(entry => entry.object.object_id === 'plant:a');
@@ -934,10 +976,18 @@ test('browser renderer paints every canonical fixture footprint cell', () => {
   };
   data.objects = [table];
   data.camera = [...table.position];
-  const frame = new CanonicalGardenRenderer(new FakeElement()).render(data);
+  const frame = rendererUnderAuthority(new FakeElement()).render(data);
   const [x, y] = frame.layout.find(entry => entry.object.object_id === 'fixture:table').anchor;
-  assert.equal(frame.lines[y].slice(x, x + 2), 'TT');
-  assert.equal(frame.lines[y + 1].slice(x, x + 2), 'TT');
+  // table_chairs has no accepted identity, so its footprint is recorded and
+  // suppressed rather than shown. Every render cell must still have been
+  // attempted with the table glyph at its exact offset, and none of that
+  // unaccepted ink may escape suppression.
+  const ink = attemptedInkOf(frame, 'fixture:table');
+  for (const [cellX, cellY] of [[x, y], [x + 1, y], [x, y + 1], [x + 1, y + 1]]) {
+    assert.ok(ink.some(([atX, atY, glyph]) => atX === cellX && atY === cellY && glyph === 'T'),
+      `no table ink attempted at footprint cell ${cellX},${cellY}`);
+  }
+  assert.ok(ink.every(item => item[3]), 'unaccepted footprint ink escaped suppression');
 });
 
 test('browser renderer covers all connected masks and animal species tiers', () => {
@@ -952,9 +1002,14 @@ test('browser renderer covers all connected masks and animal species tiers', () 
           connected_group: group, connected_mask: mask,
           render_cells: [{ dx: 0, dy: 0, connected_mask: mask }] },
       }];
-      const frame = new CanonicalGardenRenderer(new FakeElement()).render(data);
+      const frame = rendererUnderAuthority(new FakeElement()).render(data);
       const [x, y] = frame.layout[0].anchor;
-      assert.equal(frame.lines[y][x], connectedGlyph(mask, group));
+      // Connected-fixture ink is anonymous (no accepted identity), so the
+      // mask coverage is proven on the attempted log, not the visible lines.
+      const ink = attemptedInkOf(frame, `fixture:${group}:${mask}`);
+      assert.ok(ink.some(([atX, atY, glyph]) =>
+        atX === x && atY === y && glyph === connectedGlyph(mask, group)),
+      `mask ${mask} of ${group} was not attempted with its connected glyph`);
     }
   }
   for (const speciesId of ['bird', 'cat', 'rabbit', 'turtle']) {
@@ -970,11 +1025,15 @@ test('browser renderer covers all connected masks and animal species tiers', () 
           semantic_description: `${speciesId}, bond tier ${tier}; greet; personality playfulness; 1 memories.` },
       };
       const data = { ...projection(), camera: [0, 0], objects: [object] };
-      const frame = new CanonicalGardenRenderer(new FakeElement()).render(data);
+      const frame = rendererUnderAuthority(new FakeElement()).render(data);
       const expected = ATLAS_MANIFEST.semantic_tokens.animal_tier_glyphs[speciesId][tier];
       const [x, y] = frame.layout[0].anchor;
       assert.equal(glyphForProjection(object), expected);
-      assert.equal(frame.lines[y][x], expected);
+      // bird and cat carry accepted identities; rabbit and turtle do not,
+      // so tier coverage is proven on the attempted log for all four alike.
+      const ink = attemptedInkOf(frame, `animal:${speciesId}:${tier}`);
+      assert.ok(ink.some(([atX, atY, glyph]) => atX === x && atY === y && glyph === expected),
+        `${speciesId} tier ${tier} was not attempted with its tier glyph`);
       assert.match(object.semantic_state.semantic_description, new RegExp(`bond tier ${tier}`));
       assert.match(object.semantic_state.semantic_description, /greet; personality playfulness; 1 memories/);
     }
@@ -996,7 +1055,7 @@ test('rich projection restores layered plant animal palette and weather presenta
   const element = new FakeElement();
   element.clientWidth = 960;
   element.clientHeight = 720;
-  const frame = new CanonicalGardenRenderer(element, { prefersReducedMotion: true }).render(data);
+  const frame = rendererUnderAuthority(element, { prefersReducedMotion: true }).render(data);
   const picture = frame.lines.join('\n');
   assert.equal(frame.season, 'autumn');
   assert.equal(frame.timeOfDay, 'day');
@@ -1031,7 +1090,7 @@ test('an empty paint authority suppresses every attempted primitive', () => {
     accepted_assets: [], accepted_recipes: [], accepted_laws: [],
     accepted_legacy_art: [],
   };
-  const frame = new CanonicalGardenRenderer(element, {
+  const frame = rendererUnderAuthority(element, {
     paintAuthority: nothingAccepted,
     prefersReducedMotion: true,
   }).render(projection());
@@ -1041,7 +1100,7 @@ test('an empty paint authority suppresses every attempted primitive', () => {
   assert.equal(frame.diagnostics.authority_asserted, true);
   // The same projection with no authority paints: suppression came from the
   // manifest, not from where the code ran.
-  const diagnostic = new CanonicalGardenRenderer(new FakeElement(), {
+  const diagnostic = rendererUnderAuthority(new FakeElement(), {
     prefersReducedMotion: true,
   }).render(projection());
   assert.ok(diagnostic.lines.some(line => line.trim() !== ''));
@@ -1052,7 +1111,7 @@ test('civil presentation uses canonical observed time, never elapsed simulation 
   data.effective_time = 0;
   data.observed_time = Date.UTC(2026, 9, 22, 12) / 1000;
   data.scene = { sky_mode: 'storybook_fallback' };
-  const frame = new CanonicalGardenRenderer(
+  const frame = rendererUnderAuthority(
     new FakeElement(), { prefersReducedMotion: true },
   ).render(data);
   assert.equal(frame.timeOfDay, 'day');
@@ -1062,14 +1121,14 @@ test('civil presentation uses canonical observed time, never elapsed simulation 
 test('weather reacts at object surfaces with splashes caps and settled leaves', () => {
   const rainy = projectionCenteredOn('plant:a', { isolate: true });
   rainy.scene = { sky_mode: 'storybook_fallback', season: 'summer', weather: 'rain' };
-  const rainRenderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+  const rainRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
   rainRenderer.visualFrame = 40;
   const rain = rainRenderer.render(rainy);
   assert.ok(rain.weatherReactions.splashes > 0);
 
   const snowy = projectionCenteredOn('plant:a', { isolate: true });
   snowy.scene = { sky_mode: 'storybook_fallback', season: 'winter', weather: 'snow' };
-  const snowRenderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+  const snowRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
   snowRenderer.visualFrame = 90;
   const snow = snowRenderer.render(snowy);
   assert.ok(snow.weatherReactions.snowCaps > 0);
@@ -1081,7 +1140,7 @@ test('weather reacts at object surfaces with splashes caps and settled leaves', 
 
   const autumn = projectionCenteredOn('plant:a', { isolate: true });
   autumn.scene = { sky_mode: 'storybook_fallback', season: 'autumn' };
-  const leafRenderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+  const leafRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
   leafRenderer.visualFrame = 150;
   assert.ok(leafRenderer.render(autumn).weatherReactions.settledLeaves > 0);
 });
@@ -1090,31 +1149,42 @@ test('weather reaction counters require semantic object surfaces and plant canop
   const empty = projection();
   empty.objects = [];
   empty.scene = { sky_mode: 'storybook_fallback', season: 'summer', weather: 'rain' };
-  const rainRenderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+  const rainRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
   rainRenderer.visualFrame = 40;
   const rain = rainRenderer.render(empty).weatherReactions;
   assert.equal(rain.splashes, 0);
   assert.ok(rain.groundSplashes > 0);
 
   empty.scene = { sky_mode: 'storybook_fallback', season: 'winter', weather: 'snow' };
-  const snowRenderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+  const snowRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
   snowRenderer.visualFrame = 90;
   const snow = snowRenderer.render(empty).weatherReactions;
   assert.equal(snow.snowCaps, 0);
   assert.ok(snow.groundSnow > 0);
 
   empty.scene = { sky_mode: 'storybook_fallback', season: 'autumn' };
-  const leafRenderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+  const leafRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
   leafRenderer.visualFrame = 150;
   assert.equal(leafRenderer.render(empty).weatherReactions.settledLeaves, 0);
 });
 
 test('semantic focus visibly marks the same canonical object', () => {
-  const renderer = new CanonicalGardenRenderer(new FakeElement(), { prefersReducedMotion: true });
+  const renderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
   renderer.setFocusedObject('plant:a');
   const frame = renderer.render(projectionCenteredOn('plant:a', { isolate: true }));
   const plant = frame.layout.find(entry => entry.object.object_id === 'plant:a');
-  assert.equal(frame.lines[Math.max(0, plant.rect.top - 1)][plant.anchor[0]], '⌄');
+  // The caret is renderer-authored ink with no accepted identity, so under
+  // the mandatory authority it is recorded and suppressed -- in the product
+  // too, which means focus currently has NO visible mark (Failure Log
+  // 2026-08-04; giving the mark an accepted identity is register work the
+  // operator decides, not renderer work). The machinery fact pinned here:
+  // focus places the caret attempt at the marked object's anchor column,
+  // one row above its picture, and that anonymous ink never escapes.
+  const caretRow = Math.max(0, plant.rect.top - 1);
+  const caret = frame.attempted_primitives.filter(item =>
+    item.glyph === '⌄' && item.x === plant.anchor[0] && item.y === caretRow);
+  assert.equal(caret.length, 1, 'the focus caret was not attempted at the focused object');
+  assert.equal(caret[0].suppressed, true, 'anonymous caret ink escaped suppression');
 });
 
 test('night rendering publishes page theme and has no animal-like ambient glyphs', () => {
@@ -1122,7 +1192,7 @@ test('night rendering publishes page theme and has no animal-like ambient glyphs
   data.effective_time = Date.UTC(2026, 9, 22, 2) / 1000;
   data.objects = [];
   const themes = [];
-  const renderer = new CanonicalGardenRenderer(new FakeElement(), {
+  const renderer = rendererUnderAuthority(new FakeElement(), {
     onTheme: theme => themes.push(theme.mode),
   });
   const frame = renderer.render(data);
@@ -1147,7 +1217,7 @@ test('storybook night sky is dense deterministic and stable within a civil day',
   data.observed_time = Date.UTC(2026, 6, 22, 22) / 1000;
   const element = new FakeElement();
   element.clientWidth = 1024; element.clientHeight = 720;
-  const night = new CanonicalGardenRenderer(element, {
+  const night = rendererUnderAuthority(element, {
     prefersReducedMotion: true,
   }).render(data);
   const skyGlyphs = night.lines.slice(0, night.profile.bandTop).join('');
@@ -1171,7 +1241,7 @@ test('nothing the sky draws ever enters canonical layout', () => {
   const data = projection();
   data.effective_time = Date.UTC(2026, 9, 22, 12) / 1000;
   data.objects = [];
-  const frame = new CanonicalGardenRenderer(new FakeElement()).render(data);
+  const frame = rendererUnderAuthority(new FakeElement()).render(data);
   assert.deepEqual(frame.layout, []);
   // And, for now, the sky draws nothing at all: no unaccepted asset may ship.
   assert.doesNotMatch(frame.lines.join('\n'), /\\v\/|_v_|\/v\\/,
@@ -1183,7 +1253,7 @@ test('memorial presentation remains visible without inventing a perch bird', () 
   data.objects = [];
   data.observed_time = Date.UTC(2026, 6, 22, 12) / 1000;
   data.scene = { sky_mode: 'storybook_fallback', season: 'summer', memorial: { active: true } };
-  const frame = new CanonicalGardenRenderer(
+  const frame = rendererUnderAuthority(
     new FakeElement(), { prefersReducedMotion: true },
   ).render(data);
   const picture = frame.lines.join('\n');
@@ -1224,7 +1294,7 @@ test('no unapproved ambient fauna is drawn in the default scene', () => {
   const data = projection();
   data.objects = [];
   data.scene = { sky_mode: 'storybook_fallback', season: 'summer' };
-  const renderer = new CanonicalGardenRenderer(new FakeElement());
+  const renderer = rendererUnderAuthority(new FakeElement());
   renderer.visualFrame = 1;
   for (const [hour, season] of [[12, 'summer'], [23, 'summer'], [23, 'winter']]) {
     data.scene.season = season;
@@ -1242,7 +1312,7 @@ test('browser renderer uses per-object parallax and projection-hotspot hit testi
     semantic_state: { family: 'feather' },
   }] };
   const element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element, {
+  const renderer = rendererUnderAuthority(element, {
     onSelect: object => { selected = object.object_id; },
   });
   const frame = renderer.render(data);
@@ -1253,10 +1323,20 @@ test('browser renderer uses per-object parallax and projection-hotspot hit testi
   // check is that the picture's own last line lands on the anchor row.
   const bottom = entry.art.lines[entry.art.lines.length - 1];
   assert.ok(entry.art.lines.length >= 2, 'collectible art must not be a bare mark');
-  assert.equal(
-    frame.lines[y].slice(x - Math.floor([...bottom].length / 2)).startsWith(bottom), true,
-    'the feather picture is not painted at its anchor',
-  );
+  // Collectible ink stays anonymous until atlas ownership arrives, so under
+  // the mandatory authority it is recorded and suppressed -- the product
+  // shows no feather. The machinery fact: the picture's last line was
+  // attempted on the anchor row, centred on the anchor column, and none of
+  // that anonymous ink escaped suppression.
+  const ink = attemptedInkOf(frame, 'collectible:foreground');
+  const anchorStart = x - Math.floor([...bottom].length / 2);
+  [...bottom].forEach((glyph, index) => {
+    if (glyph === ' ') return;
+    assert.ok(ink.some(([atX, atY, attempted]) =>
+      atX === anchorStart + index && atY === y && attempted === glyph),
+    `feather glyph ${JSON.stringify(glyph)} was not attempted at its anchor cell`);
+  });
+  assert.ok(ink.every(item => item[3]), 'anonymous collectible ink escaped suppression');
   assert.deepEqual(entry.hitRect, {
     left: entry.baseAnchor[0] + entry.anchor[0] - entry.baseAnchor[0],
     right: entry.baseAnchor[0] + entry.anchor[0] - entry.baseAnchor[0],
@@ -1271,7 +1351,7 @@ test('browser renderer uses per-object parallax and projection-hotspot hit testi
 test('browser renderer rejects a missing projection-owned hotspot', () => {
   const data = projection();
   delete data.objects[0].hotspot;
-  assert.throws(() => new CanonicalGardenRenderer(new FakeElement()).render(data),
+  assert.throws(() => rendererUnderAuthority(new FakeElement()).render(data),
     /projection-owned hotspot/);
 });
 
@@ -1279,7 +1359,7 @@ test('browser accessible summary exposes bounded missed-event summaries', () => 
   const data = projection();
   data.scene.missed_event_summaries = ['one waited', 'two waited', 'three waited'];
   const element = new FakeElement();
-  new CanonicalGardenRenderer(element).render(data);
+  rendererUnderAuthority(element).render(data);
   assert.match(element.attributes['aria-label'], /While you were away: one waited two waited three waited/);
 });
 
@@ -1287,14 +1367,14 @@ test('browser accessible summary bounds large inventory announcements', () => {
   const data = projection();
   data.scene.inventory = ['acorn', 'feather', 'flower', 'key', 'leaf', 'snowflake', 'sprig'];
   const element = new FakeElement();
-  new CanonicalGardenRenderer(element).render(data);
+  rendererUnderAuthority(element).render(data);
   assert.match(element.attributes['aria-label'], /Inventory: acorn, feather, flower, key, leaf; and 2 more\./);
   assert.doesNotMatch(element.attributes['aria-label'], /snowflake|sprig/);
 });
 
 test('renderer clear purges authored rows projection and accessible prose', () => {
   const element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element);
+  const renderer = rendererUnderAuthority(element);
   renderer.render(projection());
   assert.ok(renderer.rows.length > 0);
   assert.match(element.attributes['aria-label'], /Garden with 1 plants, 2 fixtures/);
@@ -1310,7 +1390,7 @@ test('raster hit testing consumes the packed canonical hotspot', () => {
   let selected = null;
   const element = new FakeElement();
   element.clientWidth = 330; element.clientHeight = 156;
-  const renderer = new CanonicalGardenRenderer(element, { onSelect: object => { selected = object.object_id; } });
+  const renderer = rendererUnderAuthority(element, { onSelect: object => { selected = object.object_id; } });
   const frame = renderer.render(projectionCenteredOn('plant:a', { isolate: true }));
   const target = frame.layout.find(entry => entry.object.object_id === 'plant:a').hitRect;
   renderer._selectAt({ clientX: target.left * renderer.cellWidth + 1,
@@ -1321,7 +1401,7 @@ test('raster hit testing consumes the packed canonical hotspot', () => {
 test('measured cell geometry API drives canonical-hotspot hit testing', () => {
   let selected = null;
   const element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element, { onSelect: object => { selected = object.object_id; } });
+  const renderer = rendererUnderAuthority(element, { onSelect: object => { selected = object.object_id; } });
   renderer.setCellGeometry(11, 13);
   const frame = renderer.render(projectionCenteredOn('plant:a', { isolate: true }));
   const target = frame.layout.find(entry => entry.object.object_id === 'plant:a').hitRect;
@@ -1332,7 +1412,7 @@ test('measured cell geometry API drives canonical-hotspot hit testing', () => {
 test('normal raster selection gives one-cell objects a 44px minimum target', () => {
   let selected = null;
   const element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element, { onSelect: object => { selected = object.object_id; } });
+  const renderer = rendererUnderAuthority(element, { onSelect: object => { selected = object.object_id; } });
   renderer.setCellGeometry(8, 15);
   const frame = renderer.render(projectionCenteredOn('plant:a', { isolate: true }));
   const plant = frame.layout.find(entry => entry.object.object_id === 'plant:a');
@@ -1352,7 +1432,7 @@ test('feed presentation retains exact canonical animal target identity', () => {
     position: [14, 5], depth: 110, hotspot: { x: 14, y: 5, width: 1, height: 1 },
     semantic_state: { species_id: 'rabbit', bond_tier: 1, intent: 'rest' },
   }];
-  const renderer = new CanonicalGardenRenderer(new FakeElement());
+  const renderer = rendererUnderAuthority(new FakeElement());
   renderer.render(data);
   renderer.triggerAnimalFeedReaction({ objectId: 'animal:rabbit:second' });
   renderer.render(data);
@@ -1410,7 +1490,7 @@ test('browser sky uses the complete canonical 24-star catalog', () => {
 
 test('ten-minute pan simulation keeps initialized scenery and partial row diffs', () => {
   const element = new FakeElement();
-  const renderer = new CanonicalGardenRenderer(element);
+  const renderer = rendererUnderAuthority(element);
   const data = projection();
   renderer.render(data);
   for (let second = 1; second <= 600; second += 1) {
@@ -1445,7 +1525,7 @@ test('every ground-dwelling object rests on a painted soil line', async () => {
     const element = new FakeElement();
     element.clientWidth = pixelWidth;
     element.clientHeight = pixelHeight;
-    const renderer = new CanonicalGardenRenderer(element);
+    const renderer = rendererUnderAuthority(element);
     const state = await generateInitialWorld('ground-paint', 'ground-paint-seed');
     const data = await projectGardenScene(state);
     // Clear weather, so the only thing that can put a glyph on the ground row
@@ -1564,7 +1644,7 @@ test('the authoritative starter row is whole, separate and stable', async () => 
   }
   const element = new FakeElement();
   element.clientWidth = 1600; element.clientHeight = 1000;
-  const renderer = new CanonicalGardenRenderer(element);
+  const renderer = rendererUnderAuthority(element);
   const before = renderer.render(data);
   renderer.setFocusedObject(before.layout[0].object.object_id);
   assert.equal(signature(renderer.render(data).layout), signature(before.layout),
@@ -1582,7 +1662,7 @@ test('an object reports its drawing and its hotspot separately', async () => {
   // the first. Redrawing visible ink must never silently redefine the target.
   const element = new FakeElement();
   element.clientWidth = 1600; element.clientHeight = 1000;
-  const renderer = new CanonicalGardenRenderer(element);
+  const renderer = rendererUnderAuthority(element);
   const state = await generateInitialWorld('art-rect', 'art-rect-seed');
   const frame = renderer.render(await projectGardenScene(state));
 
@@ -1641,7 +1721,7 @@ test('layout does not repack when the frame advances or an object is focused', (
   }
   // Nor may a focus highlight, which is why the renderer keeps focus out of the
   // geometry it packs from.
-  const renderer = new CanonicalGardenRenderer(new FakeElement());
+  const renderer = rendererUnderAuthority(new FakeElement());
   const before = renderer.render(data);
   renderer.focusedObjectId = 'plant:a';
   const after = renderer.render(data);
@@ -1807,7 +1887,7 @@ test('the reserved sky never dwarfs the Garden, and holds no unaccepted art', ()
   data.scene = { sky_mode: 'storybook_fallback', season: 'summer' };
   const element = new FakeElement();
   element.clientWidth = 1600; element.clientHeight = 1000;
-  const renderer = new CanonicalGardenRenderer(element);
+  const renderer = rendererUnderAuthority(element);
   renderer.visualFrame = 5;
   const frame = renderer.render(data);
   assert.ok(frame.profile.bandTop < frame.viewport[1] * 0.5,

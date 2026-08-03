@@ -380,3 +380,62 @@ test('the live GardenPresentation owner conforms, composing real accepted art', 
   assert.equal(frame.diagnostics.suppressed, 0,
     'a scene of accepted art suppresses nothing');
 });
+
+test('composition refuses when the paint authority is absent or malformed', async () => {
+  // Reopened step 1 (2026-08-04 architecture review): a missing manifest
+  // used to mean "no restriction", so a slow or failed fetch painted
+  // everything. The rule now is refusal -- no frame exists that was not
+  // composed under the registers. This pins the refusal for every way the
+  // authority can be wrong: absent, null, and present-but-missing-lists.
+  const live = await import('../../web/garden-presentation.mjs');
+  const projection = {
+    world_id: 'refusal-proof',
+    observed_time: 1750000000,
+    scene: { sky_mode: 'storybook_fallback', season: 'summer', story_time: 'day' },
+    camera: [0, 0],
+    objects: [],
+  };
+  const state = live.advancePresentationState(null, [], { frame: 1, seconds: 1 });
+  const contextWith = manifest => ({
+    viewport: [60, 20],
+    profile: 'browser-proportional',
+    presentationGeometry: { cellAdvance: 8, lineHeight: 15, affineOnly: false },
+    acceptedManifest: manifest,
+    environment: { readerRegion: null, reducedMotion: false },
+  });
+  const broken = [
+    undefined,
+    null,
+    {},
+    { accepted_assets: [], accepted_recipes: [] },       // one list missing
+    { accepted_assets: 'fixture.bench',                  // list is not a list
+      accepted_recipes: [], accepted_legacy_art: [] },
+  ];
+  for (const manifest of broken) {
+    assert.throws(
+      () => live.composePresentationFrame(projection, state, contextWith(manifest)),
+      /composition refused/,
+      `composition proceeded under a broken authority: ${JSON.stringify(manifest)}`,
+    );
+  }
+});
+
+test('the renderer refuses construction without a valid paint authority', async () => {
+  // Same rule at the adapter boundary: the viewer must have AWAITED its
+  // manifest before a renderer can exist, so a construction with nothing to
+  // paint under fails at once instead of composing an ungoverned frame on
+  // its first render.
+  const { CanonicalGardenRenderer } = await import('../../web/garden-renderer.mjs');
+  const element = {
+    clientWidth: 320, clientHeight: 150, children: [], attributes: {}, style: {},
+    setAttribute() {}, addEventListener() {}, appendChild() {},
+    replaceChildren() {}, getBoundingClientRect() { return { left: 0, top: 0 }; },
+  };
+  for (const paintAuthority of [undefined, null, {}, { accepted_assets: [] }]) {
+    assert.throws(
+      () => new CanonicalGardenRenderer(element, { paintAuthority }),
+      /requires paintAuthority/,
+      `a renderer was constructed under ${JSON.stringify(paintAuthority)}`,
+    );
+  }
+});

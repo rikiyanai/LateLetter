@@ -288,6 +288,57 @@ def test_the_review_surface_REFUSES_a_stored_world_and_paints_nothing():
         assert errors == [], f"the refusal was reported as a page error: {errors}"
 
 
+def test_a_severed_paint_manifest_refuses_the_garden_and_keeps_the_letter():
+    """Reopened step 1 (2026-08-04 review): absent authority refuses, never widens.
+
+    The earlier flow started the renderer with a null authority and installed
+    the manifest when the fetch landed, which meant a slow fetch briefly
+    painted everything and a failed fetch painted everything permanently --
+    and this suite never noticed, because its static server always served the
+    file. Here the manifest request is severed at the network layer, the
+    exact shape a broken deploy or CDN would produce. The garden must REFUSE:
+    the region carries the refusal marker, no lattice row ever exists, and
+    the letter surface still boots.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            page.route(
+                "**/garden-accepted-paint.v1.json", lambda route: route.abort()
+            )
+            page.goto(f"{origin}/viewer-bnw.html?{REVIEW_QUERY}", wait_until="networkidle")
+
+            # The refusal is stamped on the garden region itself.
+            page.locator(
+                "#g[data-paint-refusal='authority-unavailable']"
+            ).wait_for(state="attached", timeout=5000)
+
+            # The garden was never constructed: no lattice, no ink, and no
+            # review accessor -- there is nothing to review.
+            assert page.locator("#g .garden-lattice-row").count() == 0, (
+                "a garden painted without any paint authority"
+            )
+            assert _painted_glyph_count(page) == 0
+
+            # The letter surface is intact: the app booted to its opening
+            # screen and the standalone entry is still offered.
+            page.locator("#btn-standalone").wait_for(state="visible")
+        # The refusal is deliberate and logged as such; the aborted fetch and
+        # the garden's refusal notice are the EXPECTED console traffic, and
+        # anything beyond them is a defect.
+        unexpected = [
+            line
+            for line in errors
+            if "garden-accepted-paint" not in line
+            and "garden painting refused" not in line
+            and "[init] garden failed" not in line
+            # Chrome reports the severed request itself without its URL in
+            # the message text; the only aborted request in this test is the
+            # manifest, so this line IS the severing being observed.
+            and "Failed to load resource: net::ERR_FAILED" not in line
+        ]
+        assert unexpected == [], f"the refusal leaked unrelated errors: {unexpected}"
+
+
 def test_the_review_surface_generates_and_paints_when_storage_is_empty():
     """The positive control: a review that can never run is not a review."""
     with _static_server() as origin:
@@ -789,6 +840,109 @@ def test_keyboard_focus_moves_spatially():
         assert errors == [], errors
 
 
+def test_the_full_recorded_key_map_pans_and_focuses_without_shadowing():
+    """Every binding in the recorded key map, exercised in real Chrome.
+
+    ADDED 2026-08-04 (external verification, finding 4): only ArrowRight had
+    browser coverage; the other three arrows, Shift+Arrow panning, a/d/w/s
+    panning, and the modifier boundary were bindings in source that no test
+    had ever pressed. This presses all of them. Arrows are asserted against
+    the canonical spatial rule (minimise distance along the axis, then
+    across it, then object id -- `spatialFocus` in web/garden-world.mjs,
+    mirrored by the Python engine), a direction with no object that way must
+    leave focus where it was, opposite pan keys are pressed in pairs so a
+    clamped edge cannot fake a dead binding, and every pan keystroke must
+    leave focus untouched -- the shadowing failure this map was designed
+    against.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+
+            layout = {
+                item["id"]: tuple(item["position"])
+                for item in page.evaluate("() => window.__gardenReview.positions()")
+            }
+
+            def focus():
+                return page.evaluate("() => window.__gardenReview.focus()")
+
+            def camera():
+                return page.evaluate("() => window.__gardenReview.camera()")
+
+            page.keyboard.press("]")
+            page.wait_for_timeout(200)
+            assert focus(), "']' left the Garden with nothing focused"
+
+            # All four arrows, from wherever the previous move left focus:
+            # each press is judged against the canonical rule from that
+            # origin, so the walk composes into real navigation rather than
+            # four isolated presses from a hand-picked spot.
+            for key, axis, sign in (
+                ("ArrowRight", 0, +1),
+                ("ArrowDown", 1, +1),
+                ("ArrowLeft", 0, -1),
+                ("ArrowUp", 1, -1),
+            ):
+                current = focus()["id"]
+                origin_pos = layout[current]
+                candidates = {
+                    cid: pos
+                    for cid, pos in layout.items()
+                    if cid != current and sign * (pos[axis] - origin_pos[axis]) > 0
+                }
+                page.keyboard.press(key)
+                page.wait_for_timeout(250)
+                after = focus()
+                assert after, f"{key} left the Garden with nothing focused"
+                if not candidates:
+                    assert after["id"] == current, (
+                        f"{key} moved focus to {after['id']} although nothing "
+                        "lies in that direction"
+                    )
+                    continue
+                expected = min(
+                    candidates,
+                    key=lambda cid: (
+                        sign * (layout[cid][axis] - origin_pos[axis]),
+                        abs(layout[cid][1 - axis] - origin_pos[1 - axis]),
+                        cid,
+                    ),
+                )
+                assert after["id"] == expected, (
+                    f"{key} from {current} {origin_pos} focused {after['id']} "
+                    f"instead of {expected} {layout[expected]}"
+                )
+
+            # Every pan binding. Opposite keys are pressed as a pair so a
+            # camera already clamped at one edge cannot make a live binding
+            # look dead; at least one of the pair must move it. No pan
+            # keystroke may touch focus.
+            for first, second in (
+                ("Shift+ArrowLeft", "Shift+ArrowRight"),
+                ("Shift+ArrowUp", "Shift+ArrowDown"),
+                ("a", "d"),
+                ("w", "s"),
+            ):
+                focused_before = focus()["id"]
+                moved_any = False
+                for key in (first, second):
+                    camera_before = camera()
+                    page.keyboard.press(key)
+                    page.wait_for_timeout(250)
+                    if camera() != camera_before:
+                        moved_any = True
+                    assert focus()["id"] == focused_before, (
+                        f"{key} changed focus; panning is shadowing spatial "
+                        "navigation"
+                    )
+                assert moved_any, (
+                    f"neither {first} nor {second} moved the camera; the "
+                    "binding is dead"
+                )
+        assert errors == [], errors
+
+
 def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
     """Say plainly which accepted art this file does not exercise.
 
@@ -892,31 +1046,41 @@ def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
 
 
 def _touch_drag(page, start_x: int, start_y: int, end_x: int, end_y: int, steps: int = 14):
-    """One single-finger drag, delivered as real pointerType='touch' events.
+    """One single-finger drag, injected through Chrome's NATIVE touch pipeline.
 
-    An earlier version of the drag test used `page.mouse`, which proves a
-    MOUSE drag and nothing about touch -- the exact adjacent-signal mistake
-    this file keeps having to unlearn. The product's pan handler listens to
-    pointer events, so the gesture is delivered as the same PointerEvent
-    sequence a phone produces, pointerType and primary-pointer flags
-    included, against the Garden element itself.
+    CORRECTED 2026-08-04 (external verification, finding 3): the previous
+    version constructed PointerEvent objects in page JavaScript and called
+    `dispatchEvent`, which bypasses Chrome's input pipeline entirely -- no
+    hit testing, no implicit pointer capture, no gesture arbitration, no
+    slop detection, no synthesized click. That proved the handler's wiring,
+    not the gesture. `Input.dispatchTouchEvent` over CDP is the browser's
+    own injection path: Chrome performs the same touch-to-pointer
+    translation and gesture decisions a finger on a phone produces, and the
+    page cannot tell the difference.
     """
-    page.evaluate(
-        """([sx, sy, ex, ey, steps]) => {
-            const garden = document.getElementById('g');
-            const fire = (type, x, y) => garden.dispatchEvent(new PointerEvent(type, {
-                pointerId: 7, pointerType: 'touch', isPrimary: true,
-                clientX: x, clientY: y, bubbles: true, cancelable: true,
-            }));
-            fire('pointerdown', sx, sy);
-            for (let step = 1; step <= steps; step += 1) {
-                fire('pointermove',
-                    sx + (ex - sx) * step / steps, sy + (ey - sy) * step / steps);
-            }
-            fire('pointerup', ex, ey);
-        }""",
-        [start_x, start_y, end_x, end_y, steps],
-    )
+    cdp = page.context.new_cdp_session(page)
+    try:
+        cdp.send(
+            "Input.dispatchTouchEvent",
+            {"type": "touchStart", "touchPoints": [{"x": start_x, "y": start_y, "id": 1}]},
+        )
+        for step in range(1, steps + 1):
+            cdp.send(
+                "Input.dispatchTouchEvent",
+                {
+                    "type": "touchMove",
+                    "touchPoints": [
+                        {
+                            "x": start_x + (end_x - start_x) * step / steps,
+                            "y": start_y + (end_y - start_y) * step / steps,
+                            "id": 1,
+                        }
+                    ],
+                },
+            )
+        cdp.send("Input.dispatchTouchEvent", {"type": "touchEnd", "touchPoints": []})
+    finally:
+        cdp.detach()
     page.wait_for_timeout(250)
 
 
@@ -1019,6 +1183,118 @@ def test_a_single_tap_performs_the_primary_action_on_touch():
                 assert interactions(target["id"]) == before + 1, (
                     f"the first tap on {verb!r} did not perform its primary action"
                 )
+        assert errors == [], errors
+
+
+def test_a_drag_that_pans_never_performs_the_action_under_the_pointer():
+    """Releasing a pan over a fixture must not act on it.
+
+    ADDED 2026-08-04 (external verification, finding 3): the click-swallow
+    handler in the viewer was exercised by no test -- deleting it left the
+    whole suite intact, because no test ever generated the post-drag click
+    the handler exists to suppress. A browser DOES generate one: a mouse
+    drag that starts and ends inside the same element fires a click at
+    button-release regardless of distance travelled. So this drags across
+    the Garden with the real mouse, ends the drag ON an actionable fixture,
+    proves the browser really synthesised the click (a document-level
+    capture listener sees it before the viewer can stop propagation), and
+    requires that the fixture's action count did NOT move. Delete the
+    swallow handler and the released pan performs whatever sat under the
+    pointer -- exactly the defect this pins out.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            page.wait_for_timeout(500)
+
+            target = page.evaluate(
+                """() => {
+                    const review = window.__gardenReview;
+                    for (const object of review.state().objects) {
+                        if (!object.id.startsWith('fixture') || !object.primary_action) continue;
+                        const rect = review.objectRectPixels(object.id);
+                        if (rect) return {id: object.id, rect};
+                    }
+                    return null;
+                }"""
+            )
+            assert target is not None, "no actionable fixture is on screen to drag onto"
+
+            # The document-capture listener runs before the garden element's
+            # own capture handler, so it records the synthesised click even
+            # though the viewer swallows it on the way down.
+            page.evaluate(
+                """() => {
+                    window.__clicksSeen = [];
+                    document.addEventListener('click', event => {
+                        window.__clicksSeen.push({x: event.clientX, y: event.clientY});
+                    }, {capture: true});
+                }"""
+            )
+
+            def counts() -> list:
+                return page.evaluate(
+                    "() => window.__gardenReview.state().fixtures"
+                    ".map(row => [row.id, row.interaction_count])"
+                )
+
+            # Start the drag ON the fixture, sized to a little over ONE CELL.
+            # Below a cell no pan is dispatched and the viewer rightly treats
+            # the gesture as a click, which ACTS -- that is a tap with
+            # jitter, not a pan. Just over a cell, one pan step fires, the
+            # content follows the pointer to within a few pixels, and the
+            # synthesised click at release still lands on the fixture. The
+            # cell size varies with the measured font, so several sizes are
+            # tried and each attempt is judged ONLY against itself: counts
+            # are captured immediately before the drag, and the swallow is
+            # asserted on the first attempt that really panned AND really
+            # released its click on the fixture -- both verified, never
+            # assumed. (Two earlier versions assumed containment and let the
+            # deleted-handler mutation survive; the diagnosis is in the
+            # Failure Log, 2026-08-04.)
+            exercised = False
+            for drag_px in (16, 20, 24, 12):
+                rect = page.evaluate(
+                    "(id) => window.__gardenReview.objectRectPixels(id)", target["id"]
+                )
+                if rect is None:
+                    continue
+                start_x = rect["x"] + rect["width"] / 2
+                start_y = rect["y"] + rect["height"] / 2
+                before_counts = counts()
+                before_camera = page.evaluate("() => window.__gardenReview.camera()")
+                page.evaluate("() => { window.__clicksSeen = []; }")
+
+                page.mouse.move(start_x, start_y)
+                page.mouse.down()
+                page.mouse.move(start_x + drag_px, start_y, steps=4)
+                page.mouse.up()
+                page.wait_for_timeout(400)
+
+                clicks = page.evaluate("() => window.__clicksSeen")
+                rect_after = page.evaluate(
+                    "(id) => window.__gardenReview.objectRectPixels(id)", target["id"]
+                )
+                camera_moved = (
+                    page.evaluate("() => window.__gardenReview.camera()") != before_camera
+                )
+                landed = rect_after is not None and any(
+                    rect_after["x"] <= click["x"] <= rect_after["x"] + rect_after["width"]
+                    and rect_after["y"] <= click["y"] <= rect_after["y"] + rect_after["height"]
+                    for click in clicks
+                )
+                if not (camera_moved and landed):
+                    continue
+                exercised = True
+                assert counts() == before_counts, (
+                    f"releasing a {drag_px}px pan over the fixture performed "
+                    "its primary action instead of being swallowed"
+                )
+                break
+            assert exercised, (
+                "no drag both panned the camera and released its synthesised "
+                "click on the fixture, so the swallow path was never exercised"
+            )
         assert errors == [], errors
 
 
