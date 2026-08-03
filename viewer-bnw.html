@@ -1282,6 +1282,41 @@ function installGardenReviewAccessor(){
       const rect=garden?.objectRectPixels?.(id);
       return rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null;
     },
+    // The keyboard reader's CURRENT CANONICAL FOCUS, read off the runtime.
+    //
+    // The destination's review package (goal §13) requires "keyboard focus and
+    // Enter" to be demonstrated on the real product path. Without this accessor
+    // the only observable a test has is the painted picture, and a focus that
+    // moved but dispatched nothing looks exactly like a focus that never moved
+    // -- the same adjacent-signal mistake that has already been made six times
+    // in this lane. Focus is world state, so it is read from world state.
+    //
+    // Diagnostic only: it deep-copies the declaration and dispatches nothing,
+    // so a review cannot accidentally play the game through this surface.
+    focus:()=>{
+      const object=gardenRuntime?.focusedObject?.();
+      if(!object)return null;
+      return {
+        id:object.object_id,
+        name:object.semantic_name,
+        primary_action:object.primary_action
+          ?JSON.parse(JSON.stringify(object.primary_action)):null,
+      };
+    },
+    // Canonical integer positions of every projected object.
+    //
+    // "Move focus to the right" is a question about where things STAND, and
+    // canonical world coordinates are the only place that is defined -- the
+    // painted picture is an affine projection of them and cannot settle it.
+    // A review that had to infer position from pixel rectangles would be
+    // measuring the projection while asking about the world.
+    //
+    // Diagnostic only: positions are copied out, and nothing here dispatches
+    // or sets focus, so a test cannot arrange the state it then measures.
+    positions:()=>gardenRuntime?.projection
+      ?gardenRuntime.projection.objects.map(object=>({
+        id:object.object_id,position:[object.position[0],object.position[1]],
+      })):[],
     // Where the open world came from, read off the runtime rather than
     // inferred from the picture. A review that cannot ask this has to guess,
     // and guessing is how a persisted 13/22/4/8 world was once reviewed as the

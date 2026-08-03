@@ -5266,3 +5266,100 @@ task
   fixed row became `/\\_フ`; `フ` had a separate top-band heuristic but no narrow-painted-span
   check. Apply the shared wide-glyph footprint rule to `フ` as well, keeping its top-band evidence
   for real Japanese rows.
+
+### Garden E2E: the keyboard half of the review package, and two gate-matrix claims that were mine
+
+Question:
+Goal §13 lists "keyboard focus and Enter" as a distinct line of the acceptance package, and §10
+requires keyboard-complete play. `tests/test_garden_review_e2e_browser.py` proved neither: every
+interaction assertion in it went through `page.mouse`, so a Garden whose keyboard path dispatched
+nothing would have satisfied the whole file. Close that, and reconcile gate 12 with what the
+browser actually does.
+
+Type:
+defect + correction
+
+- **Keyboard focus and Enter hold on the product path (2026-08-03):** `]`/`[` walk canonical focus
+  through a stable ring containing all five accepted starter fixtures, and Enter performs each
+  one's declared primary action. Measured against canonical world state
+  (`interaction_count`/`last_interaction`), not against the painted picture: a focus that moves but
+  dispatches nothing is invisible in the text, which is the adjacent-signal mistake this lane has
+  now made six times. Proved load-bearing by three mutations of `viewer-bnw.html`, each reverted:
+  disabling the Enter dispatch fails with "Enter on the focused 'walk' fixture changed nothing";
+  disabling the `[`/`]` branch fails with "']' left the Garden with nothing focused"; and making
+  Enter always act on the first fixture rather than the focused one fails on the second fixture.
+  Two read-only diagnostics were added to `window.__gardenReview` to make this observable at all --
+  `focus()` and `positions()` -- neither of which dispatches, so a test cannot arrange the state it
+  then measures. Status: Implemented (unproven as visual acceptance; this is a machine check).
+
+- **Keyboard focus is a linear ring, not spatial (2026-08-03):** goal §5 requires keyboard
+  navigation to move canonical focus spatially. `move_focus` in `web/garden-world.mjs` maps
+  left/up->previous and right/down->next over `objectIds(state)` order, which is id-sorted and
+  unrelated to where anything stands; and the browser never sends a direction at all, because the
+  arrow keys are bound to `pan`. Recorded as a fourth strict xfail. Not corrected here: deciding
+  what the arrow keys do once they can no longer both pan and navigate is a product decision the
+  operator has not made, and inventing one would be exactly the prohibited move. Owned by the
+  interaction-mask step of the operator route.
+
+- **Gate 12 understated the product for a full review cycle (2026-08-03):** its blocker read
+  "keyboard play is impossible -- #g carries no tabindex and the arrow keys pan the camera rather
+  than moving canonical focus, so Enter reaches no action", and "every interaction rectangle is
+  15x17 or 30x17 CSS pixels against the 44px floor". Both were my own measurement errors, and both
+  were already disproved by tests in the same file the gate cites. The binding check that exists to
+  stop this could not see it, because it compared blockers only against FAILING tests -- an
+  overstated gate was catchable, an understated one was not. An understated gate blocks a release
+  for a reason that is not real, at the same cost in credibility. The check now also compares each
+  blocker against named tests the suite expects to hold, and both directions are mutation-proved.
+
+- **The staleness check flagged its own retraction (2026-08-03):** correcting gate 12 made
+  `test_the_gate_matrix_agrees_with_the_browser_e2e_defects` fail, because the correction note
+  quotes the retracted wording verbatim -- as a correction note must -- and the check grepped the
+  whole blocker. Any such check will report every honestly retracted claim as still being made.
+  Blockers are now split at `(Corrected`, and only the part still being asserted is scanned.
+
+- Status: Executed. `tests/test_garden_review_e2e_browser.py` is 20 passing and 4 strict xfailed
+  in real Chrome. The four xfails are: mobile loses the stepping-stones and planter interaction
+  rectangles at 390x844; the mobile Garden yields one unique painted hash over twelve seconds;
+  spring, summer and winter are byte-identical at midday; keyboard focus is not spatial. Clauses 3
+  and 4 of §7.8.13 remain BLOCKED on the four operator verdicts in
+  `docs/garden-review-verdicts.json`, which no test and no assistant may write.
+
+### Garden geometry: the placement rectangle used a different anchor than the painter
+
+Question:
+`node tests/garden_adapters/test_garden_renderer.mjs` failed on "every ground-dwelling object
+rests on a painted soil line": at 1600x1000 the ground row held `")"` at column 67, a bare glyph
+standing on nothing. Goal §14 step 1 names this class of failure explicitly -- "stepping-stones
+soil/rectangle geometry" -- as something that must clear before any release build.
+
+Type:
+defect
+
+- **Two anchor conventions for one drawing (2026-08-03):** `GardenRaster.measuredArt` paints an
+  atlas asset at `anchorX - assetAnchor[0]`, using the anchor the atlas authored. `footprintRect`,
+  which produces the placement rectangle, used `anchor[0] - floor(width/2)` -- the centred
+  convention `GardenRaster.art` uses for non-asset decoration. When an asset's authored anchor is
+  not the middle of its own box the two disagree. Stepping stones author `[5,1]` in a 12-wide box
+  against a centred `[6,1]`, so every stepping-stones rectangle was one column left of its own ink.
+
+- **Why a one-column error is not cosmetic (2026-08-03):** the rectangle is what collision packs
+  against, what the ground painter treats as already covered, what hit testing turns into a target,
+  and what the terminal reads. One column out means the object is clickable one column off its own
+  drawing, and the ground line goes unpainted under a cell an object is genuinely standing on --
+  which is what the failing assertion saw. Goal §5 requires interaction geometry to "follow exactly
+  the same transform as the art"; §2 forbids the "mismatch between painted ink and interaction
+  geometry" that having two conventions guarantees.
+
+- **Correction (2026-08-03):** `stableArtFootprint` now carries the authored anchor alongside the
+  bounding box, `authoredArtAnchor` reads it from the resolved presentation art and falls back to
+  the centred default only when the atlas authored none, and `footprintRect` derives the rectangle
+  by the same subtraction the painter performs. Animals keep the centred default explicitly rather
+  than by omission, so the two conventions are visible side by side instead of one being implied.
+
+- Status: Implemented (unproven as visual acceptance). The renderer suite is 68 passing, 0 failing,
+  where it was 67/1; the failing assertion is the one that measured the defect, so its reversal is
+  the proof. Every Garden Node suite is now green at 199 passing, 0 failing, and
+  `tests/test_viewer_contract.py::test_behavioral_browser_modules_pass_node_contracts` -- which
+  runs those contracts from the Python side and had been failing -- holds as a result. The browser
+  E2E is unchanged at 20 passing and 4 strict xfailed: the mobile missing-rectangle defect is
+  cropping, not anchoring, and this does not touch it.

@@ -502,12 +502,18 @@ def _accepted_fixture_target(page):
 
 
 def test_clicking_one_accepted_fixture_reaches_the_canonical_world():
-    """The positive control, kept separate so the defect below is not vacuous.
+    """The single-fixture positive control for the pointer path.
 
-    Stepping stones is the one fixture whose click currently reaches the world.
-    Asserting it here proves the dispatch path exists and works, which is what
-    makes "the other four do nothing" a defect in those four rather than a
-    broken test.
+    Kept after the five-fixture test below superseded it, because it is the
+    smallest thing that can fail: one click, one fixture, one canonical
+    counter. If this goes red the dispatch path itself is gone, and the larger
+    test's failure would be ambiguous between "dispatch is broken" and "the
+    rectangles were read wrongly" -- an ambiguity that once produced four wrong
+    descriptions of a defect that did not exist.
+
+    Its earlier docstring claimed the other four fixtures did nothing. That was
+    my measurement error, not the product's: see the retraction in
+    docs/FAILURE_LOG.md and commit 0fb7bec.
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
@@ -606,6 +612,183 @@ def test_clicking_EVERY_accepted_fixture_reaches_the_canonical_world():
                     f"{fixtures()[target['id']][1]!r} instead"
                 )
                 _assert_no_action_chrome(page)
+        assert errors == [], errors
+
+
+def test_keyboard_focus_reaches_every_accepted_fixture_and_ENTER_performs_its_action():
+    """The keyboard half of the review package, on the same product path.
+
+    Goal §13 lists "keyboard focus and Enter" as its own line of the acceptance
+    package, and §10 requires keyboard-complete play. Until now this file proved
+    only the pointer: every interaction assertion above went through
+    `page.mouse`, so a Garden whose keyboard path was wired to nothing would
+    still have satisfied every assertion in this file.
+
+    What is asserted, and why each part is needed:
+
+    1. Focus starts as nothing. A ring that silently pre-selects an object would
+       let step 2 succeed without any key ever having moved anything.
+    2. `]` walks a stable ring that contains all five accepted fixtures. Read
+       from canonical world state via `__gardenReview.focus()`, not from the
+       picture -- a focus that moved but dispatched nothing is invisible in the
+       painted text, which is exactly the adjacent-signal mistake this lane has
+       made before.
+    3. Enter on each focused fixture increments THAT fixture's canonical
+       interaction count and records ITS action. Same signal, same tolerance
+       loop as the pointer test above, so "Enter does what the click does" is a
+       comparison of like with like rather than of two different observables.
+    4. None of it paints action chrome, and the console stays clean.
+
+    The keyboard reader never touches the mouse here. `activeElement` is BODY
+    after the standalone button is dismissed, which is what lets the document
+    level `keydown` handler see the keys at all; if that regressed to leaving
+    focus on a BUTTON, `Enter` would be swallowed as native button activation
+    and step 3 would fail rather than quietly test nothing.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+
+            # Nobody has pressed anything yet, so nothing is focused. This also
+            # pins that the ring is entered BY the key, not by page load.
+            assert page.evaluate("() => window.__gardenReview.focus()") is None, (
+                "something was already focused before any key was pressed"
+            )
+
+            def fixtures():
+                return {
+                    row["id"]: (row["interaction_count"], row["last_interaction"])
+                    for row in page.evaluate("() => window.__gardenReview.state().fixtures")
+                }
+
+            # One full lap of the ring. Bounded at twice the object count so a
+            # ring that never closes fails instead of looping forever.
+            object_count = page.evaluate(
+                "() => window.__gardenReview.state().objects.length"
+            )
+            reached: dict[str, str] = {}
+            for _ in range(object_count * 2):
+                page.keyboard.press("]")
+                page.wait_for_timeout(150)
+                focus = page.evaluate("() => window.__gardenReview.focus()")
+                assert focus, "']' left the Garden with nothing focused"
+                if focus["primary_action"]:
+                    reached[focus["primary_action"]["args"]["fixture_action"]] = focus["id"]
+
+            assert sorted(reached) == ["observe", "open", "sit", "tend", "walk"], (
+                f"the keyboard ring does not reach all five accepted fixtures: {sorted(reached)}"
+            )
+
+            # Now walk the ring again and press Enter on each fixture as it is
+            # reached, so the key that acts is pressed against the focus the
+            # previous key actually produced -- no id is re-targeted from a
+            # stale reading, which is the mistake that produced four wrong
+            # descriptions of the pointer path.
+            performed: dict[str, str] = {}
+            for _ in range(object_count * 2):
+                page.keyboard.press("]")
+                page.wait_for_timeout(150)
+                focus = page.evaluate("() => window.__gardenReview.focus()")
+                if not focus or not focus["primary_action"]:
+                    continue
+                action = focus["primary_action"]["args"]["fixture_action"]
+                if action in performed:
+                    continue
+                before = fixtures()
+                page.keyboard.press("Enter")
+                landed = False
+                for _ in range(30):
+                    page.wait_for_timeout(100)
+                    if fixtures()[focus["id"]] != before[focus["id"]]:
+                        landed = True
+                        break
+                assert landed, f"Enter on the focused {action!r} fixture changed nothing"
+                count, last = fixtures()[focus["id"]]
+                assert last == action, (
+                    f"Enter on the {action!r} fixture recorded {last!r} instead"
+                )
+                assert count == before[focus["id"]][0] + 1, (
+                    f"Enter on the {action!r} fixture did not increment its count once"
+                )
+                performed[action] = focus["id"]
+                _assert_no_action_chrome(page)
+
+            assert sorted(performed) == ["observe", "open", "sit", "tend", "walk"], (
+                f"Enter did not perform every accepted fixture's action: {sorted(performed)}"
+            )
+            assert performed == reached, (
+                "the fixture Enter acted on is not the one focus reported"
+            )
+        assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. Keyboard focus is a LINEAR "
+        "RING, not spatial. `move_focus` in web/garden-world.mjs maps "
+        "left/up->previous and right/down->next over `objectIds(state)` order, "
+        "which is id-sorted and unrelated to where anything stands; and the "
+        "browser never sends a direction anyway, because the arrow keys are "
+        "bound to `pan`, leaving only `[`/`]`. Goal section 5 requires keyboard "
+        "navigation to move canonical focus SPATIALLY. Correcting it means "
+        "deciding what the arrow keys do when they can no longer both pan and "
+        "navigate, which is a product decision the operator has not made, so "
+        "nothing is invented here to make this hold. Owned by the "
+        "interaction-mask step of the operator route. Left strict so it cannot "
+        "be normalised into the baseline, and so that a later correction cannot "
+        "land silently."
+    ),
+)
+def test_keyboard_focus_moves_spatially():
+    """Focusing 'right' should reach the object to the right, not the next id.
+
+    Asserted against canonical positions, which is the only place 'to the right
+    of' is defined -- the painted picture is a projection of them and cannot
+    settle the question on its own.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+
+            # Canonical positions, read once. `]` and ArrowRight are the only
+            # things that touch focus below -- the harness never sets it, so
+            # what is measured is the product's own navigation and not a state
+            # this test arranged.
+            layout = {
+                item["id"]: tuple(item["position"])
+                for item in page.evaluate("() => window.__gardenReview.positions()")
+            }
+
+            # Walk the ring with `]` until standing on an object that HAS a
+            # right-hand neighbour, so "move right" is a question with an
+            # answer. Bounded by the ring size.
+            origin_id = None
+            for _ in range(len(layout) + 1):
+                page.keyboard.press("]")
+                page.wait_for_timeout(150)
+                focus = page.evaluate("() => window.__gardenReview.focus()")
+                assert focus, "']' left the Garden with nothing focused"
+                if any(x > layout[focus["id"]][0] for x, _ in layout.values()):
+                    origin_id = focus["id"]
+                    break
+            assert origin_id, "no object in the starter has a right-hand neighbour"
+
+            start_x = layout[origin_id][0]
+            nearest = min(
+                (item for item, (x, _) in layout.items() if x > start_x),
+                key=lambda item: layout[item][0] - start_x,
+            )
+
+            page.keyboard.press("ArrowRight")
+            page.wait_for_timeout(400)
+            moved = page.evaluate("() => window.__gardenReview.focus()")
+            assert moved, "ArrowRight left the Garden with nothing focused"
+            assert moved["id"] == nearest, (
+                f"ArrowRight from {origin_id} (x={start_x}) focused {moved['id']} "
+                f"instead of its right-hand neighbour {nearest} "
+                f"(x={layout[nearest][0]})"
+            )
         assert errors == [], errors
 
 

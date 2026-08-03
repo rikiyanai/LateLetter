@@ -1438,10 +1438,14 @@ function stableArtFootprint(object, lod) {
     // a placeholder pose are measured on identical terms.
     const { poses } = resolveAnimalPose(object, 0, lod);
     const sizes = poses.map(pose => measure(presentationLod(pose, object.kind, lod)));
-    return {
+    const size = {
       width: Math.max(...sizes.map(size => size.width)),
       height: Math.max(...sizes.map(size => size.height)),
     };
+    // Animal poses are not atlas assets with authored anchors, so they keep the
+    // centred-on-feet default. Stated explicitly rather than left to a fallback
+    // so the two conventions are visible side by side.
+    return { ...size, anchor: centredArtAnchor(size) };
   }
   // Fixtures and collectibles are static, so one frame is representative.
   //
@@ -1452,15 +1456,75 @@ function stableArtFootprint(object, lod) {
   // of an archived sequence to the sequence's own bounding box before the
   // renderer ever sees it: the ink moves inside a box that does not. Frame 0 is
   // used so the result is stable.
-  return measure(objectPresentationArt(object, 0, lod).lines);
+  const art = objectPresentationArt(object, 0, lod);
+  const size = measure(art.lines);
+  return { ...size, anchor: authoredArtAnchor(art, size) };
 }
 
-/** Rectangle a footprint occupies when its feet rest on `anchor`. */
+/**
+ * Where inside its own drawing an object's anchor cell sits, by default.
+ *
+ * Horizontally centred, vertically on the last row -- "the feet". This is the
+ * convention `GardenRaster.art` has always used for non-asset decoration, and
+ * it stays the default for anything the atlas did not author an anchor for.
+ *
+ * @param {{width: number, height: number}} size the drawing's bounding box
+ * @returns {[number, number]} column and row within the drawing
+ */
+function centredArtAnchor(size) {
+  return [Math.floor(size.width / 2), size.height - 1];
+}
+
+/**
+ * The anchor an atlas asset authored, or the centred default.
+ *
+ * WHY THIS EXISTS. Measured atlas pictures are painted by
+ * `GardenRaster.measuredArt`, which places them at `anchorX - assetAnchor[0]`.
+ * The placement rectangle was computed separately at `anchorX - width/2`. When
+ * an asset's authored anchor is not the middle of its own box, those two
+ * disagree, and the rectangle stops describing the picture it is supposed to
+ * describe.
+ *
+ * That is not cosmetic. The rectangle is what collision packs, what the ground
+ * painter treats as covered, what hit testing turns into a target, and what the
+ * terminal reads -- so a one-column error means an object is clickable one
+ * column off its own ink, and the ground line goes unpainted under a cell an
+ * object is genuinely standing on. Stepping stones authored `[5,1]` inside a
+ * 12-wide box against a centred `[6,1]`, and the ground row showed the result:
+ * a bare `)` sitting on nothing at column 67.
+ *
+ * Goal section 5 states the rule this restores -- interaction geometry must
+ * "follow exactly the same transform as the art" -- and section 2 forbids the
+ * "mismatch between painted ink and interaction geometry" that the two
+ * conventions produced.
+ *
+ * @param {{assetAnchor?: [number, number]}} art the resolved presentation art
+ * @param {{width: number, height: number}} size its bounding box
+ * @returns {[number, number]} the anchor to lay the drawing out from
+ */
+function authoredArtAnchor(art, size) {
+  const authored = art?.assetAnchor;
+  if (Array.isArray(authored) && authored.length === 2 &&
+    Number.isFinite(Number(authored[0])) && Number.isFinite(Number(authored[1]))) {
+    return [Number(authored[0]), Number(authored[1])];
+  }
+  return centredArtAnchor(size);
+}
+
+/**
+ * Rectangle a footprint occupies when it is placed at `anchor`.
+ *
+ * `size.anchor` says where inside the drawing that cell falls, so the rectangle
+ * is derived by the same subtraction the painter performs. Objects whose art
+ * anchors on its last row still get `bottom === anchor[1]`, which is what
+ * "its feet rest on the anchor" meant before the anchor became explicit.
+ */
 function footprintRect(anchor, size) {
-  const left = anchor[0] - Math.floor(size.width / 2);
+  const origin = size.anchor ?? centredArtAnchor(size);
+  const left = anchor[0] - origin[0], top = anchor[1] - origin[1];
   return {
     left, right: left + size.width - 1,
-    top: anchor[1] - size.height + 1, bottom: anchor[1],
+    top, bottom: top + size.height - 1,
   };
 }
 

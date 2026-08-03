@@ -25,7 +25,7 @@
     "tests/test_garden_review_e2e_browser.py"
    ],
    "automated_checks": [],
-   "blocker": "Pointer and touch reach the canonical world for ONE of the five accepted starter fixtures -- stepping stones. Mailbox, lantern, bench and planter do not respond to a click at all. Hover changes the cursor but not the picture. Keyboard focus and Enter reach nothing. Recorded as strict expected failures in tests/test_garden_review_e2e_browser.py. Terminal parity unaffected by this work."
+   "blocker": "Pointer, touch and keyboard all reach the canonical world for ALL FIVE accepted starter fixtures: each click and each Enter increments that fixture's own interaction count and records its own action, measured per interaction against a freshly read rectangle. What remains outstanding is narrower: hover changes the cursor but not the picture, and no test in this repository yet measures the hover picture either way, so that line is an open question rather than a recorded result. Terminal parity unaffected by this work. (Corrected 2026-08-03: this entry said mailbox, lantern, bench and planter do not respond to a click, and that keyboard focus and Enter reach nothing. Both were my own measurement errors -- the first from reading all five rectangles before any click, when interacting moves the camera; the second from never exercising the keyboard at all. See docs/FAILURE_LOG.md and commit 0fb7bec.)"
   },
   {
    "gate": 3,
@@ -164,7 +164,7 @@
     "tests/test_viewer_contract.py"
    ],
    "automated_checks": [],
-   "blocker": "Reduced motion and 200% zoom now hold in a real browser. TARGET SIZING and NARROW LAYOUT DO NOT: every interaction rectangle is 15x17 or 30x17 CSS pixels against the 44px floor, and at 390x844 the stepping stones and planter have no rectangle at all. Keyboard play is impossible -- #g carries no tabindex and the arrow keys pan the camera rather than moving canonical focus, so Enter reaches no action. Recorded as strict expected failures in tests/test_garden_review_e2e_browser.py. VoiceOver/NVDA and no-color still require human observation. (Corrected 2026-08-03: this entry previously claimed target sizing and narrow layout pass, which the browser E2E disproves.)"
+   "blocker": "Reduced motion, 200% zoom and the 44px floor now hold in a real browser, and so does keyboard play on the product path: ']' walks canonical focus through all five accepted starter fixtures and Enter performs each one's declared primary action, proved against canonical world state and against three mutations of the viewer. NARROW LAYOUT DOES NOT: at 390x844 the stepping stones and planter have no interaction rectangle at all. SPATIAL FOCUS DOES NOT: move_focus is a linear ring over id order, and the arrow keys pan instead of navigating, so keyboard focus cannot move by direction. Both are strict expected failures in tests/test_garden_review_e2e_browser.py. VoiceOver/NVDA and no-color still require human observation. (Corrected 2026-08-03 twice: this entry first claimed target sizing and narrow layout pass, which the browser E2E disproved; it then claimed every target is 15x17 px and that keyboard play is impossible, both of which were my own measurement errors and are disproved by the executed keyboard and 44px tests.)"
   },
   {
    "gate": 13,

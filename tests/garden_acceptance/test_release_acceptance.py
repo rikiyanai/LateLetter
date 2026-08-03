@@ -539,6 +539,24 @@ def test_gate_status_matrix_never_converts_proxy_evidence_into_release_claims():
             assert f"def {function}(" in source
 
 
+def _claim_only(blocker: str) -> str:
+    """Strip a gate blocker's trailing correction note.
+
+    Gate blockers end with an optional parenthesised history -- "(Corrected
+    2026-08-03: this entry previously claimed ...)" -- which exists so a reader
+    can see what an entry used to assert and why it changed. That note quotes
+    the retracted wording verbatim, so any check that greps a whole blocker for
+    retracted wording will keep finding it forever and will report a corrected
+    gate as an uncorrected one.
+
+    :param blocker: the gate's full blocker prose
+    :returns: everything before the first ``(Corrected``, which is the part
+        that is still being asserted
+    """
+    head, _, _ = blocker.partition("(Corrected")
+    return head
+
+
 def test_the_gate_matrix_agrees_with_the_browser_e2e_defects():
     """The matrix must not claim what the executed review disproves.
 
@@ -561,20 +579,53 @@ def test_the_gate_matrix_agrees_with_the_browser_e2e_defects():
     # Each defect the E2E records as a strict expected failure, with the phrase
     # a gate must therefore not be claiming.
     for marker, forbidden_claim in (
-        ("under the 44px floor", "target sizing"),
         ("no interaction rectangle", "narrow layout"),
+        ("not spatial", "spatial focus"),
     ):
-        assert marker in recorded or "44px floor" in recorded, (
+        assert marker in recorded, (
             f"the E2E no longer records {marker!r}; this check needs rewriting"
         )
         for gate in matrix["gates"]:
-            blocker = gate.get("blocker", "")
+            # Only the CLAIM is scanned, not the correction note after it. A
+            # correction records what the entry used to say, so it quotes the
+            # old wording on purpose; scanning it for that wording flags every
+            # honestly retracted claim as if it were still being made, which it
+            # promptly did to this very gate.
+            blocker = _claim_only(gate.get("blocker", ""))
             claims_pass = f"{forbidden_claim} and" in blocker or f"and {forbidden_claim}" in blocker
             if claims_pass:
                 assert "DO NOT" in blocker or "do not" in blocker, (
                     f"gate {gate['gate']} claims {forbidden_claim!r} passes while "
                     "the browser E2E records it as a defect"
                 )
+
+    # The opposite direction, which the check above cannot see: a gate calling
+    # something broken that the E2E proves works. This is not symmetry for its
+    # own sake. Gate 12 read "keyboard play is impossible" and "every
+    # interaction rectangle is 15x17 px" for a whole review cycle after the
+    # browser tests measuring both were already holding, because nothing
+    # compared a blocker against a SUCCEEDING test -- only against failing
+    # ones. An understated gate blocks a release for a reason that is not real,
+    # which costs exactly as much credibility as an overstated one.
+    for test_name, forbidden_denial in (
+        ("def test_keyboard_focus_reaches_every_accepted_fixture", "keyboard play is impossible"),
+        ("def test_the_44px_floor_is_applied_where_it_decides_a_click", "under the 44px floor"),
+    ):
+        assert test_name in recorded, (
+            f"the E2E no longer contains {test_name!r}; this check needs rewriting"
+        )
+        # The test must be one the suite expects to hold: an xfail marker
+        # immediately above it would make citing it as proof meaningless.
+        preceding = recorded.split(test_name)[0]
+        assert not preceding.rstrip().endswith(")"), (
+            f"{test_name} now carries a decorator; this check must be rewritten "
+            "to confirm it is not an expected failure"
+        )
+        for gate in matrix["gates"]:
+            assert forbidden_denial not in _claim_only(gate.get("blocker", "")), (
+                f"gate {gate['gate']} says {forbidden_denial!r} while "
+                f"{test_name} holds in a real browser"
+            )
 
     accessibility = next(g for g in matrix["gates"] if g["name"] == "Accessibility")
     parity = next(g for g in matrix["gates"] if g["name"] == "Input parity")
