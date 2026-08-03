@@ -5547,3 +5547,53 @@ coverage gap
   delivery, each animal and bond tier, item discovery and the post-completion memorial all require
   art or recipes carrying no verdict, and the four slots in `docs/garden-review-verdicts.json` are
   an operator's judgement that no test and no assistant may write.
+
+### Garden E2E: hover had lost its test, a motion test was phase-fragile, and gate 2 was wrong again
+
+Question:
+An external verification of this branch reported three things worth acting on: hover-picture
+behaviour is specified and no longer tested at all; gate 2 claims touch reaches all five starter
+fixtures while the touch expected failure says two are unreachable on mobile; and
+`test_the_garden_keeps_moving_without_any_input` failed inside a full-suite run while passing on its
+own. All three were correct.
+
+Type:
+coverage gap + flake + my own false gate claim
+
+- **Hover re-measured, not assumed (2026-08-03):** the behaviour had been recorded as a defect
+  earlier, lost its test, and was then described in gate 2 as "uncovered", which was the wrong
+  answer -- the right one was to go and measure it. Hovering an accepted fixture's ink changes the
+  CURSOR to `pointer` and changes nothing else: over a clip wide enough to hold the whole drawing,
+  every rendering seen while hovering is one the Garden also produces with the pointer parked in the
+  corner. Goal §5 requires hovering visible ink to change the PICTURE and lists the cursor as a
+  separate affordance, not a substitute. Recorded as a sixth strict xfail with a PASSING control
+  beside it asserting the cursor does change, so "no visual response" cannot be confused with "the
+  hover never landed".
+
+- **Why the earlier hover reading needed pixels (2026-08-03):** two traps. `objectRectPixels`
+  returns the canonical HOTSPOT -- 15x17 for the stepping stones, whose art is twelve cells across
+  -- so a clip sized to it misses almost all of the picture it is asking about; the first probe made
+  exactly that mistake and had to be redone at a 160px pad. And emphasis is colour, which lives in
+  markup and CSS, so no text reading could have seen a response even if one were arriving.
+
+- **A motion test that was fragile for a documented reason (2026-08-03):**
+  `test_the_garden_keeps_moving_without_any_input` read the frame, waited exactly three seconds, and
+  read again. The candidate's only motion is the oak trunk and the sunflower stem alternating
+  between `/`, `\` and `|`, so two instants three seconds apart can land on the same phase, and
+  under full-suite load they did. Now polled to a ten-second bound: the same claim, without the
+  sensitivity to which two instants are compared. The fragility is itself evidence for the ambient
+  defect recorded above -- a motion test is only as robust as the motion it watches, and this one
+  watches two glyphs.
+
+- **Gate 2 corrected a third time (2026-08-03):** it first said four of five fixtures ignore a click
+  and that keyboard focus and Enter reach nothing; my replacement claimed pointer, touch AND
+  keyboard reach all five, which the mobile expected failure directly contradicts; and it called
+  hover uncovered. Three wrong statements from me in one entry across one day. The entry now
+  separates desktop pointer/keyboard (holding) from touch and hover (both strict expected
+  failures), and names all three corrections.
+
+- Status: Implemented (unproven as visual acceptance). `tests/test_garden_review_e2e_browser.py` is
+  23 passing and 6 strict xfailed. The six: spatial keyboard focus, mobile interaction rectangles,
+  mobile motionlessness, seasonal sameness, the absent ambient bird, and hover changing nothing but
+  the cursor. Five accepted fixtures -- arbor, birdbath, bridge, pond, trellis -- still never enter
+  this review, which the file asserts by name rather than leaving to inference.

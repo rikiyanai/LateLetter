@@ -862,6 +862,105 @@ def test_a_single_tap_performs_the_primary_action_on_touch():
         assert errors == [], errors
 
 
+def _hovered_and_unhovered_renderings(page) -> tuple[set[str], set[str], str]:
+    """Pictures of one accepted fixture with the pointer away, then over it.
+
+    Measured in PIXELS over a region wide enough to hold the whole drawing, not
+    just the hotspot: `objectRectPixels` returns the canonical hotspot, which
+    for the stepping stones is 15x17 while the art is twelve cells across. A
+    clip sized to the hotspot would miss almost all of the picture it is asking
+    about. Colour emphasis also lives in markup and CSS rather than in the
+    painted text, so a text reading could not see a response even if there were
+    one.
+
+    Several samples on each side, because the Garden changes slightly on its own
+    and one sample each way could not tell ambient change from a hover response.
+
+    :param page: an open Garden with the review accessor available
+    :returns: (renderings with pointer away, renderings with pointer over,
+        the CSS cursor while over)
+    """
+    target = page.evaluate(
+        """() => {
+            const review = window.__gardenReview;
+            const object = review.state().objects.find(item => item.primary_action);
+            return object
+              ? {id: object.id, rect: review.objectRectPixels(object.id)} : null;
+        }"""
+    )
+    assert target and target["rect"], "no accepted fixture was projected to hover"
+    rect, pad = target["rect"], 160
+    clip = {
+        "x": max(0, rect["x"] - pad), "y": max(0, rect["y"] - pad),
+        "width": rect["width"] + pad * 2, "height": rect["height"] + pad * 2,
+    }
+
+    def shot() -> str:
+        return hashlib.sha256(page.screenshot(clip=clip)).hexdigest()
+
+    page.mouse.move(5, 5)
+    page.wait_for_timeout(800)
+    away = {shot() for _ in range(4)}
+    page.mouse.move(rect["x"] + rect["width"] / 2, rect["y"] + rect["height"] / 2)
+    page.wait_for_timeout(800)
+    over = {shot() for _ in range(4)}
+    cursor = page.evaluate(
+        "() => getComputedStyle(document.getElementById('g')).cursor"
+    )
+    return away, over, cursor
+
+
+def test_hovering_accepted_ink_is_received_by_the_garden():
+    """The control: the pointer reaching the ink is registered at all.
+
+    Without this, the expected failure below would be ambiguous between "hover
+    produces no visual response" and "the hover never landed on the object", and
+    only the first is a defect in the product.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            _, _, cursor = _hovered_and_unhovered_renderings(page)
+            assert cursor == "pointer", (
+                f"the cursor over accepted fixture ink is {cursor!r}, so the "
+                "hover is not being received and the test below proves nothing"
+            )
+        assert errors == [], errors
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, re-measured on 2026-08-03 after this behaviour lost its test. "
+        "Hovering an accepted fixture's ink changes the CURSOR to 'pointer' and "
+        "changes nothing else: over a clip wide enough to hold the whole "
+        "drawing, every rendering seen while hovering is one the Garden also "
+        "produces with the pointer parked in the corner. Goal section 5 allows "
+        "and requires the opposite -- 'hovering visible object ink changes the "
+        "picture: rustle, pose change, emphasis, or another approved visual "
+        "response' -- and lists cursor change as a SEPARATE affordance, not a "
+        "substitute for it. The renderer does compute an `emphasized` flag from "
+        "the hover cell, so the response is designed and not arriving; which "
+        "approved visual form it should take is a decision the operator has not "
+        "made, so nothing is invented here. Left strict so it cannot be "
+        "normalised into the baseline, and so that a later correction cannot "
+        "land silently."
+    ),
+)
+def test_hovering_accepted_ink_changes_the_picture():
+    """Cursor feedback is not picture feedback; the destination asks for both."""
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            _enter_standalone_garden(page, origin, REVIEW_QUERY)
+            away, over, _ = _hovered_and_unhovered_renderings(page)
+            assert over - away, (
+                "every picture seen while hovering the fixture is one the Garden "
+                "also paints with the pointer elsewhere, so hovering changed "
+                "nothing but the cursor"
+            )
+        assert errors == [], errors
+
+
 def test_the_44px_floor_is_applied_where_it_decides_a_click(tmp_path):
     """Probe the expanded target, do not read the raw rectangle.
 
@@ -1059,14 +1158,30 @@ def test_the_garden_keeps_moving_without_any_input():
     Compared as painted text over real elapsed time. `garden_review_time` is
     deliberately NOT used for this one: it freezes disposable motion, which is
     exactly what is being measured.
+
+    Polled rather than sampled twice, after this failed inside a full-suite run
+    while passing on its own. It used to read the frame, wait exactly three
+    seconds, and read again -- and the only motion in the candidate is the oak
+    trunk and the sunflower stem alternating between '/', '\\' and '|', so two
+    instants three seconds apart can land on the same phase of that sway, and
+    under load they did. The claim is unchanged: the Garden changes without
+    input. Only the sensitivity to WHICH two instants are compared is gone.
+
+    That fragility is itself evidence for the expected failure above. A motion
+    test is only as robust as the motion it watches, and this one watches two
+    glyphs.
     """
     with _static_server() as origin:
         with _chrome(origin) as (page, errors):
             _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             first = page.locator("#g").inner_text()
-            page.wait_for_timeout(3000)
-            second = page.locator("#g").inner_text()
-            assert first != second, "the Garden was motionless for three seconds"
+            moved = False
+            for _ in range(20):
+                page.wait_for_timeout(500)
+                if page.locator("#g").inner_text() != first:
+                    moved = True
+                    break
+            assert moved, "the Garden was motionless for ten seconds"
         assert errors == [], errors
 
 
