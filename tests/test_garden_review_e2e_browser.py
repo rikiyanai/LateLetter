@@ -1155,6 +1155,43 @@ def test_the_plain_product_url_grants_no_debug_or_review_permission():
         assert errors == [], errors
 
 
+def test_nothing_installs_a_cache_that_could_go_stale():
+    """Goal §13's "no stale browser cache", asserted rather than assumed.
+
+    Every test in this file opens a fresh Chrome context, so what it sees is
+    never a cached build. That is a property of the HARNESS, and a reviewer has
+    no reason to trust it about the PRODUCT: if the viewer registered a service
+    worker or filled Cache Storage, a recipient could sit on an old Garden
+    indefinitely while every run here looked current, and the review would be
+    describing a build nobody is being served.
+
+    Today nothing does -- there is no service worker, no cache manifest and no
+    Cache-Control handling anywhere in the viewer or the site builder -- so this
+    guards that rather than proving something new. Adding one later is a
+    legitimate thing to do; doing it without revisiting what "fresh review"
+    means is not, and this fails when it happens.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
+            page.locator("#btn-standalone").click()
+            page.locator("#hud.vis").wait_for(state="visible")
+            page.wait_for_timeout(1000)
+
+            workers = page.evaluate(
+                "async () => 'serviceWorker' in navigator"
+                " ? (await navigator.serviceWorker.getRegistrations())"
+                ".map(entry => entry.scope) : []"
+            )
+            assert workers == [], f"the viewer registered a service worker: {workers}"
+
+            stores = page.evaluate(
+                "async () => 'caches' in window ? await caches.keys() : []"
+            )
+            assert stores == [], f"the viewer filled Cache Storage: {stores}"
+        assert errors == [], errors
+
+
 def test_the_deployed_legacy_sky_lives_which_is_how_the_measurement_is_known_to_work():
     """The positive control for the expected failure below.
 

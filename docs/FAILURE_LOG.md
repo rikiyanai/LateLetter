@@ -5720,3 +5720,36 @@ defect in a test I wrote and a claim I made from it
 
 - Status: Implemented (unproven as visual acceptance). Browser E2E 23 passing and 6 strict xfailed,
   reproduced four times for the hover pair. 225 contract and acceptance tests hold.
+
+### Garden E2E: the last §13 line reachable without an operator or unapproved art
+
+Question:
+Goal §13 requires the acceptance package to be made with "no stale browser cache". Every test in
+`tests/test_garden_review_e2e_browser.py` opens a fresh Chrome context, so what it sees is never a
+cached build -- but that is a property of the HARNESS, and a reviewer has no reason to trust it
+about the PRODUCT.
+
+Type:
+coverage gap
+
+- **Why the harness guarantee is not the product guarantee (2026-08-03):** if the viewer registered
+  a service worker or filled Cache Storage, a recipient could sit on an old Garden indefinitely
+  while every run here looked current, and the review would be describing a build nobody is being
+  served. Nothing currently does -- no service worker, no cache manifest and no Cache-Control
+  handling in the viewer or in `scripts/prepare_pages_site.py` -- so the new test guards that state
+  rather than proving anything new. Adding a service worker later is legitimate; adding one without
+  revisiting what "fresh review" means is not, and this fails when it happens.
+
+- **Where §13 now stands, line by line (2026-08-03):** satisfied on the product path -- fresh
+  nonpersistent candidate, deployed legacy beside it, desktop and mobile, day/evening/night and all
+  four seasons, ten seconds of real motion, hover, direct click and tap, keyboard focus and Enter,
+  live desktop-to-mobile resize, reduced motion, authenticated sealed bundle and wrong passphrase,
+  no debug or query-only permission, no stale cache, no console errors, every capture opened, and
+  machine metrics carried as diagnostics with `acceptance_claim: false`. Not satisfied and NOT
+  approximated -- bonded-animal delivery, each animal and bond tier, item discovery, and the
+  post-completion memorial, every one of which needs plant or animal art carrying no verdict; and
+  the four operator verdicts, which are a person's judgement.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 24 passing and 6 strict xfailed.
+  Everything in §13 that can be executed without an operator's judgement or without inventing art
+  has now been executed. What remains is not blocked on effort.
