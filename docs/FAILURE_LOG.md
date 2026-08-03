@@ -6387,3 +6387,41 @@ decision recorded, then implementation; one strict xfail corrected into a plain 
 - Status: Implemented (unproven as visual acceptance). Browser E2E 29 passing and 2 strict
   xfailed; the two that remain are the touch defects owned by the route's mobile step. Viewer
   contract suite unchanged apart from the four known-red tests.
+
+### Route step 6: single-pointer pan; the phone reaches the whole Garden, and the browser E2E carries zero expected failures
+
+Question:
+The mobile step's two requirements: touch reachability through a real gesture, and life without
+input. Life landed with the ambient bird; implement the gesture, prove it with a REAL touch drag
+rather than page.mouse, and pan-to-reach the two fixtures the initial phone frame cannot show.
+
+Type:
+implementation; the last two strict xfails corrected into plain assertions
+
+- **The gesture (2026-08-04):** the viewer now pans on a single pointer of any type. Dragging
+  dispatches the SAME canonical `pan` command the keyboard uses -- the gesture is an input
+  route, never a second camera owner -- quantised to whole cells with the residue held in the
+  gesture, and the content follows the finger. A drag that moved the camera swallows the click
+  Chrome fires at pointerup, so releasing a pan can never also perform whatever primary action
+  sits under the finger. `touch-action: none` on the Garden element keeps the browser's own
+  scrolling out of the gesture.
+
+- **Proved by touch, not by mouse (2026-08-04):** the drag test now delivers the PointerEvent
+  sequence a phone produces -- pointerType 'touch', primary pointer, stepped moves -- against
+  the Garden element, and asserts the CAMERA moved, the signal ambient motion cannot fake. The
+  tap test pans BY TOUCH until the stepping stones and then the planter present interaction
+  rectangles -- the two fixtures the 390x844 frame cannot show at once -- and requires the
+  first tap on each to perform its declared primary action. Probing during the rewrite showed
+  the pan revealing the stepping stones' rectangle on the first frame-width drag, camera 60 to
+  36 to 0, which is the reachability the goal requires: mobile may crop peripheral scenery; it
+  may not lose reachable interactions.
+
+- **The suite (2026-08-04):** with these two corrections the browser E2E carries ZERO xfail
+  markers: 31 passing, 0 expected failures, in real Chrome, on the product path. Phone-sized
+  viewports now run with a real touchscreen in the harness (`has_touch`), so touch taps and
+  gestures exercise the surface a phone presents.
+
+- Status: Implemented (unproven as visual acceptance). Browser E2E 31 of 31; Garden Node suites
+  203 of 203; full Python (minus the transcription lane) 836 passing with exactly the four
+  known-red tests -- the three letter-typography defects owned by the route's typography step,
+  and the deploy-cutover assertion held red until its step 14.

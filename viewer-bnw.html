@@ -2551,6 +2551,48 @@ async function init(){
       },
     });
     garden.startPresentation();
+    // ── Single-pointer pan (SPEC 7.8.13 gate 2: pan passes through touch, ──
+    // ── mouse, keyboard and terminal with identical state transitions). ────
+    //
+    // One pointer, any type. Dragging moves the camera through the SAME
+    // canonical `pan` command the keyboard uses -- the gesture is an input
+    // route, never a second camera owner. The content follows the finger:
+    // dragging left brings the Garden's right side into view. Cell-quantised
+    // so each dispatched step is exactly one canonical camera unit, and the
+    // residue stays in the gesture, not in the world.
+    //
+    // A drag that moved the camera swallows the click that Chrome fires at
+    // pointerup, so releasing a pan cannot ALSO perform whatever primary
+    // action happens to sit under the finger -- panning must never act.
+    let gardenDrag=null;
+    gardenElement.style.touchAction='none';
+    gardenElement.addEventListener('pointerdown',e=>{
+      if(!e.isPrimary)return;
+      gardenDrag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};
+    });
+    gardenElement.addEventListener('pointermove',async e=>{
+      if(!gardenDrag||e.pointerId!==gardenDrag.id)return;
+      const cellW=garden?.cellWidth||8,cellH=garden?.cellHeight||15;
+      const dx=Math.trunc((gardenDrag.x-e.clientX)/cellW);
+      const dy=Math.trunc((gardenDrag.y-e.clientY)/cellH);
+      if(!dx&&!dy)return;
+      gardenDrag.x-=dx*cellW;gardenDrag.y-=dy*cellH;gardenDrag.moved=true;
+      await dispatchGardenUi(inputModalityFromBrowserEvent(e),'pan',{
+        args:{dx,dy},metadata:{gesture:'drag',pointer_type:e.pointerType},
+      });
+    });
+    const endGardenDrag=()=>{
+      // The moved flag survives until the click event so it can be swallowed;
+      // it is cleared there, or on the next pointerdown.
+      if(gardenDrag&&!gardenDrag.moved)gardenDrag=null;
+    };
+    gardenElement.addEventListener('pointerup',endGardenDrag);
+    gardenElement.addEventListener('pointercancel',()=>{gardenDrag=null;});
+    gardenElement.addEventListener('click',e=>{
+      if(gardenDrag&&gardenDrag.moved){
+        e.stopImmediatePropagation();e.preventDefault();gardenDrag=null;
+      }
+    },{capture:true});
     installGardenReviewAccessor();
     syncAmbientMotion();
   }catch(e){console.error('[init] garden failed:',e);}

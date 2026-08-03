@@ -150,6 +150,10 @@ def _chrome(origin: str, viewport=DESKTOP, seed_world: str | None = None):
             pytest.skip(f"system Google Chrome is unavailable: {failure}")
         context = browser.new_context(
             viewport={"width": viewport[0], "height": viewport[1]},
+            # Phone-sized viewports get a real touchscreen, so `touchscreen.
+            # tap` and dispatched pointerType='touch' gestures exercise the
+            # same input surface a phone presents.
+            has_touch=viewport[0] <= 500,
         )
         page = context.new_page()
         page.on("pageerror", lambda error: errors.append(f"pageerror: {error}"))
@@ -887,103 +891,134 @@ def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, found on 2026-08-03 while checking how bad the mobile "
-        "rectangle defect actually is. The two accepted fixtures that fall "
-        "outside the 390x844 frame are not merely off-screen -- they are "
-        "UNREACHABLE. Dragging right across the full width of the phone frame "
-        "leaves the painted picture byte-identical and every interaction "
-        "rectangle unchanged, because the viewer registers no touchstart, "
-        "touchmove, pointerdown or drag handler on the Garden at all: the only "
-        "pan is the arrow keys, which a phone does not have. Goal section 10 "
-        "requires touch-complete primary interaction and reachable actions at "
-        "320 CSS pixels. CORRECTED OWNERSHIP (2026-08-03): an earlier version "
-        "of this reason called the fix an unmade operator choice between three "
-        "products. That was wrong. SPEC section 7.8.13 gate 2 already requires "
-        "pan to pass through touch, mouse, keyboard and terminal with "
-        "identical state transitions, so single-pointer touch pan is "
-        "implementation work owned by the mobile-reachability step of the "
-        "execution order, with the existing camera model and Contract P "
-        "legibility preserved. Two more corrections of record: this test "
-        "currently drags with page.mouse, which exercises a mouse drag and not "
-        "touch -- when the gesture is implemented the drag here must become a "
-        "real pointerType=touch gesture; and touch pan clears only THIS test "
-        "-- it cannot satisfy the unpanned tap test or no-input mobile motion, "
-        "which have their own owners. Left strict so it cannot be normalised "
-        "into the baseline, and so that a later correction cannot land silently."
-    ),
-)
+def _touch_drag(page, start_x: int, start_y: int, end_x: int, end_y: int, steps: int = 14):
+    """One single-finger drag, delivered as real pointerType='touch' events.
+
+    An earlier version of the drag test used `page.mouse`, which proves a
+    MOUSE drag and nothing about touch -- the exact adjacent-signal mistake
+    this file keeps having to unlearn. The product's pan handler listens to
+    pointer events, so the gesture is delivered as the same PointerEvent
+    sequence a phone produces, pointerType and primary-pointer flags
+    included, against the Garden element itself.
+    """
+    page.evaluate(
+        """([sx, sy, ex, ey, steps]) => {
+            const garden = document.getElementById('g');
+            const fire = (type, x, y) => garden.dispatchEvent(new PointerEvent(type, {
+                pointerId: 7, pointerType: 'touch', isPrimary: true,
+                clientX: x, clientY: y, bubbles: true, cancelable: true,
+            }));
+            fire('pointerdown', sx, sy);
+            for (let step = 1; step <= steps; step += 1) {
+                fire('pointermove',
+                    sx + (ex - sx) * step / steps, sy + (ey - sy) * step / steps);
+            }
+            fire('pointerup', ex, ey);
+        }""",
+        [start_x, start_y, end_x, end_y, steps],
+    )
+    page.wait_for_timeout(250)
+
+
 def test_touch_can_bring_an_off_screen_fixture_into_reach():
     """A phone with no keyboard must still be able to reach the whole Garden.
 
-    Asserted as "the picture moved", not "the fixture became hittable": if a
-    drag cannot move the camera at all then no amount of dragging will reveal
-    anything, and that is the smaller, more certain claim.
+    CORRECTED 2026-08-03: this was a strict expected failure -- the viewer
+    registered no drag handler of any kind, so the two fixtures outside the
+    phone frame were unreachable by any means a touch device has.
+    Single-pointer pan now dispatches the same canonical `pan` command the
+    keyboard uses, and this asserts it with a REAL touch gesture. The camera
+    is the signal, not the painted text: ambient motion repaints the Garden
+    on its own, so text comparison would report success for a dead gesture.
     """
     with _static_server() as origin:
         with _chrome(origin, viewport=MOBILE) as (page, errors):
             _enter_standalone_garden(page, origin, PRODUCT_QUERY)
             page.wait_for_timeout(3000)
 
-            # The CAMERA, not the painted text. The Garden repaints on its own,
-            # so a frame taken after a drag differs from one taken before it
-            # whether or not the drag did anything -- an earlier version of this
-            # test compared painted text and would have reported success from
-            # ambient motion alone.
             before = page.evaluate("() => window.__gardenReview.camera()")
             assert before is not None, "the review surface exposes no camera"
 
-            # A long horizontal drag across the middle of the frame, stepped so
-            # it reads as a gesture rather than a teleport.
-            page.mouse.move(320, 400)
-            page.mouse.down()
-            for x in range(320, 40, -20):
-                page.mouse.move(x, 400)
-                page.wait_for_timeout(20)
-            page.mouse.up()
-            page.wait_for_timeout(800)
+            _touch_drag(page, 320, 400, 40, 400)
 
             assert page.evaluate("() => window.__gardenReview.camera()") != before, (
-                "dragging across the whole phone frame did not move the camera, "
-                "so the fixtures outside it cannot be reached by touch at all"
+                "a full-width touch drag did not move the camera, so the "
+                "fixtures outside the phone frame cannot be reached by touch"
             )
         assert errors == [], errors
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "DEFECT, found by this test on 2026-08-03. At 390x844 two of the five "
-        "accepted starter fixtures -- stepping_stones (world x=31) and planter "
-        "(x=88) -- have no interaction rectangle at all: they fall outside the "
-        "cropped mobile width. Mobile may crop peripheral scenery; it may not "
-        "lose reachable interactions. Owned by the interaction-mask step of the "
-        "operator route, which gives every interactive asset state a "
-        "projection/atlas-owned mask. Left strict so it cannot be normalised "
-        "into the baseline, and so that a later correction cannot land silently."
-    ),
-)
 def test_a_single_tap_performs_the_primary_action_on_touch():
-    """One tap, not a hover-equivalent first tap and a second to confirm."""
+    """One tap acts -- including on the fixtures that start off-screen.
+
+    CORRECTED 2026-08-03: this was a strict expected failure -- at 390x844
+    the stepping stones and the planter had no interaction rectangle at all,
+    because they fell outside the cropped mobile width and no gesture could
+    bring them in. With single-pointer touch pan, the phone can now reach
+    them: this test pans the camera BY TOUCH until each of the two
+    previously unreachable fixtures presents a rectangle, then taps it once
+    and requires that first tap to perform the declared primary action.
+    Mobile may crop peripheral scenery; it may not lose reachable
+    interactions -- and now it does not.
+    """
     with _static_server() as origin:
         with _chrome(origin, viewport=MOBILE) as (page, errors):
             _enter_standalone_garden(page, origin, REVIEW_QUERY)
-            target = _accepted_fixture_target(page)
-            assert target is not None
+            page.wait_for_timeout(500)
 
-            def interactions() -> int:
+            def reachable_target(verb: str) -> dict | None:
+                """The fixture declaring `verb`, with its rectangle -- or None
+                while the camera has not brought it on screen."""
+                return page.evaluate(
+                    """(verb) => {
+                        const review = window.__gardenReview;
+                        const object = review.state().objects.find(
+                          item => item.id.startsWith('fixture') &&
+                                  item.primary_action &&
+                                  item.primary_action.args?.fixture_action === verb,
+                        );
+                        if (!object) return null;
+                        const rect = review.objectRectPixels(object.id);
+                        return rect ? {id: object.id, rect} : null;
+                    }""",
+                    verb,
+                )
+
+            def interactions(fixture_id: str) -> int:
                 rows = page.evaluate("() => window.__gardenReview.state().fixtures")
-                return next(row["interaction_count"] for row in rows if row["id"] == target["id"])
+                return next(row["interaction_count"] for row in rows if row["id"] == fixture_id)
 
-            before = interactions()
-            page.touchscreen.tap(
-                target["rect"]["x"] + target["rect"]["width"] / 2,
-                target["rect"]["y"] + target["rect"]["height"] / 2,
-            )
-            page.wait_for_timeout(400)
-            assert interactions() == before + 1, "the first tap did not act"
+            # The two fixtures the initial frame cannot show: walk is the
+            # stepping stones (world x=31, left of the start camera) and tend
+            # is the planter (x=88, right of it).
+            for verb, direction in (("walk", +1), ("tend", -1)):
+                target = reachable_target(verb)
+                for _ in range(12):
+                    if target is not None:
+                        break
+                    # Drag a frame-width in the direction that reveals the
+                    # target: content follows the finger, so dragging RIGHT
+                    # (direction +1) brings the world's left side into view.
+                    middle = 420
+                    if direction > 0:
+                        _touch_drag(page, 60, middle, 330, middle)
+                    else:
+                        _touch_drag(page, 330, middle, 60, middle)
+                    target = reachable_target(verb)
+                assert target is not None, (
+                    f"panning a dozen frame-widths never gave {verb!r} an "
+                    "interaction rectangle; the fixture is still unreachable"
+                )
+
+                before = interactions(target["id"])
+                page.touchscreen.tap(
+                    target["rect"]["x"] + target["rect"]["width"] / 2,
+                    target["rect"]["y"] + target["rect"]["height"] / 2,
+                )
+                page.wait_for_timeout(400)
+                assert interactions(target["id"]) == before + 1, (
+                    f"the first tap on {verb!r} did not perform its primary action"
+                )
         assert errors == [], errors
 
 
