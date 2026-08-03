@@ -320,8 +320,16 @@ def test_resize_cannot_regenerate_canonical_topology():
     # Reopened step 1 (2026-08-04 architecture review): the manifest is
     # AWAITED before the renderer exists, and a missing or malformed one
     # refuses garden painting -- there is no null-authority window and no
-    # install-on-arrival repaint path.
-    assert "const gardenPaintAuthority=await GARDEN_PAINT_AUTHORITY_READY" in source
+    # install-on-arrival repaint path. The wait is BOUNDED (claim
+    # verification finding 1: an unbounded await ahead of the letter wiring
+    # let one stalled request hang the whole application), and shape
+    # validation is the single owner in web/garden-paint-authority.mjs
+    # (finding 3: three hand-rolled partial schemas drifting apart).
+    assert "const gardenPaintAuthority=await Promise.race([" in source
+    assert "GARDEN_PAINT_AUTHORITY_READY," in source
+    assert "GARDEN_PAINT_AUTHORITY_WAIT_MS" in source
+    assert "import { isValidPaintAuthority } from './web/garden-paint-authority.mjs';" in source
+    assert "isValidPaintAuthority(manifest)?manifest:null" in source
     assert "paintAuthority:gardenPaintAuthority" in source
     assert "fetch('./web/garden-accepted-paint.v1.json')" in source
     assert "dataset.paintRefusal='authority-unavailable'" in source

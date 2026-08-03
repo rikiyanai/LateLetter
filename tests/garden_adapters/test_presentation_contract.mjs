@@ -403,13 +403,31 @@ test('composition refuses when the paint authority is absent or malformed', asyn
     acceptedManifest: manifest,
     environment: { readerRegion: null, reducedMotion: false },
   });
+  // Every way the authority can be wrong, including the PARTIAL object the
+  // first version of this refusal accepted: three lists with no schema, no
+  // registers, no accepted_laws (claim verification, 2026-08-04). The
+  // validator is the single owner in web/garden-paint-authority.mjs and
+  // mirrors the generator's full shape.
   const broken = [
     undefined,
     null,
     {},
-    { accepted_assets: [], accepted_recipes: [] },       // one list missing
-    { accepted_assets: 'fixture.bench',                  // list is not a list
-      accepted_recipes: [], accepted_legacy_art: [] },
+    { accepted_assets: [], accepted_recipes: [] },       // lists missing
+    { accepted_assets: [], accepted_recipes: [],         // the old partial
+      accepted_legacy_art: [] },                         // three-list shape
+    { schema: 2,                                         // wrong schema
+      registers: { asset_register: { path: '', sha256: '' },
+        recipe_register: { path: '', sha256: '' } },
+      accepted_assets: [], accepted_recipes: [],
+      accepted_laws: [], accepted_legacy_art: [] },
+    { schema: 1,                                         // registers absent
+      accepted_assets: [], accepted_recipes: [],
+      accepted_laws: [], accepted_legacy_art: [] },
+    { schema: 1,                                         // list is not a list
+      registers: { asset_register: { path: '', sha256: '' },
+        recipe_register: { path: '', sha256: '' } },
+      accepted_assets: 'fixture.bench', accepted_recipes: [],
+      accepted_laws: [], accepted_legacy_art: [] },
   ];
   for (const manifest of broken) {
     assert.throws(

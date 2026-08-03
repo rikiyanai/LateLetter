@@ -512,6 +512,7 @@ import {
   validateBundleIdentityShape,
 } from './web/garden-program.mjs';
 import { CanonicalGardenRenderer } from './web/garden-renderer.mjs';
+import { isValidPaintAuthority } from './web/garden-paint-authority.mjs';
 import { createPreTextMeasurer } from './web/garden-geometry.mjs';
 import { requestRoughSkyLocation } from './web/garden-sky.mjs';
 import { deliveryFramesFor } from './web/garden-atlas.mjs';
@@ -629,16 +630,21 @@ const GARDEN_REVIEW_IS_LOCAL=(()=>{
 // the 2026-08-04 architecture review rejected that as fail-open -- a slow
 // fetch briefly painted everything and a failed fetch painted everything
 // permanently. Resolves to the manifest object, or null on any failure.
+// Validation is the shared single-owner check in garden-paint-authority.mjs
+// (the claim verification found this file re-declaring a partial three-list
+// schema of its own).
 const GARDEN_PAINT_AUTHORITY_READY=fetch('./web/garden-accepted-paint.v1.json')
   .then(response=>response.ok?response.json():null)
   .catch(()=>null)
-  .then(manifest=>{
-    // The same three-list shape the renderer constructor demands; a manifest
-    // missing its lists refuses exactly like a missing manifest.
-    const lists=['accepted_assets','accepted_recipes','accepted_legacy_art'];
-    return manifest&&typeof manifest==='object'&&
-      lists.every(name=>Array.isArray(manifest[name]))?manifest:null;
-  });
+  .then(manifest=>isValidPaintAuthority(manifest)?manifest:null);
+// How long the garden may WAIT for its authority before refusing. The await
+// below sits ahead of the letter wiring, so an unbounded hang here would
+// hang the whole application on one stalled request (claim verification,
+// 2026-08-04). Refusal after the bound is the same refusal as a failed
+// fetch: the garden does not exist, the letter still does. There is no
+// install-on-arrival path, so a manifest landing after the bound changes
+// nothing until the next load.
+const GARDEN_PAINT_AUTHORITY_WAIT_MS=5000;
 
 let bundle=null,isDevFixture=false,decoded={};
 let readIds=new Set(),giftDiscovered={};
@@ -2514,11 +2520,17 @@ async function init(){
     // any later would measure a substitute and place every glyph slightly off.
     const gardenElement=document.getElementById('g');
     // Authority FIRST: the garden must not exist at all without the
-    // accepted-paint manifest. A failed or malformed fetch marks the region
-    // and refuses -- the thrown error lands in this function's garden catch,
-    // so the letter itself keeps working while nothing unaccepted can ever
-    // paint. The marker is what the E2E asserts when it severs the manifest.
-    const gardenPaintAuthority=await GARDEN_PAINT_AUTHORITY_READY;
+    // accepted-paint manifest. A failed, malformed, or STALLED fetch marks
+    // the region and refuses -- the thrown error lands in this function's
+    // garden catch, so the letter itself keeps working while nothing
+    // unaccepted can ever paint. The race bounds the wait: a request that
+    // never resolves must not hold the letter hostage behind this await.
+    // The marker is what the E2E asserts when it severs or stalls the
+    // manifest.
+    const gardenPaintAuthority=await Promise.race([
+      GARDEN_PAINT_AUTHORITY_READY,
+      new Promise(resolve=>setTimeout(()=>resolve(null),GARDEN_PAINT_AUTHORITY_WAIT_MS)),
+    ]);
     if(!gardenPaintAuthority){
       gardenElement.dataset.paintRefusal='authority-unavailable';
       throw new Error('accepted-paint manifest unavailable: garden painting refused');

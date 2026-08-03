@@ -1086,7 +1086,17 @@ test('an empty paint authority suppresses every attempted primitive', () => {
   // any host -- while each suppressed attempt keeps its identity, so the
   // frame can still say what WOULD have painted and under which id.
   const element = new FakeElement();
+  // Structurally VALID (the single validator demands the generator's full
+  // shape) while accepting nothing: the register records are present but
+  // vouch for nothing, which the runtime never re-derives anyway -- digest
+  // truth is the build-time drift test's job.
   const nothingAccepted = {
+    schema: 1,
+    purpose: 'test authority accepting nothing',
+    registers: {
+      asset_register: { path: 'docs/garden-asset-acceptance.json', sha256: '' },
+      recipe_register: { path: 'docs/garden-presentation-recipes.json', sha256: '' },
+    },
     accepted_assets: [], accepted_recipes: [], accepted_laws: [],
     accepted_legacy_art: [],
   };

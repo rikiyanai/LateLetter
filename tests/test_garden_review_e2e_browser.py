@@ -319,9 +319,13 @@ def test_a_severed_paint_manifest_refuses_the_garden_and_keeps_the_letter():
             )
             assert _painted_glyph_count(page) == 0
 
-            # The letter surface is intact: the app booted to its opening
-            # screen and the standalone entry is still offered.
-            page.locator("#btn-standalone").wait_for(state="visible")
+            # The letter is WIRED, not merely painted: the demo letter opens
+            # through the real fetch/decode/screen path and reaches its HUD.
+            # (The first version of this test only looked at a pre-existing
+            # button, which proves markup and nothing about wiring -- claim
+            # verification, 2026-08-04.)
+            page.locator("#btn-demo").click()
+            page.locator("#hud.vis").wait_for(state="visible", timeout=10000)
         # The refusal is deliberate and logged as such; the aborted fetch and
         # the garden's refusal notice are the EXPECTED console traffic, and
         # anything beyond them is a defect.
@@ -337,6 +341,47 @@ def test_a_severed_paint_manifest_refuses_the_garden_and_keeps_the_letter():
             and "Failed to load resource: net::ERR_FAILED" not in line
         ]
         assert unexpected == [], f"the refusal leaked unrelated errors: {unexpected}"
+
+
+def test_a_stalled_paint_manifest_cannot_hold_the_letter_hostage():
+    """A request that never resolves refuses within the bound; the letter runs.
+
+    ADDED 2026-08-04 (claim verification, finding 1): the awaited fetch sits
+    AHEAD of the letter wiring in init, so before the bound existed a hung
+    manifest request -- a stalled CDN, a captive portal -- would hang the
+    entire application, not just the garden. Fast failure was proved; the
+    hang was not. Here the manifest request is answered with silence: the
+    route neither fulfils nor aborts, the exact shape of a stalled server.
+    The garden must refuse within its declared bound and the demo letter
+    must then open through the real wiring.
+    """
+    with _static_server() as origin:
+        with _chrome(origin) as (page, errors):
+            # Holding the route without fulfilling or aborting leaves the
+            # request pending forever, which is the point.
+            page.route("**/garden-accepted-paint.v1.json", lambda route: None)
+            page.goto(f"{origin}/viewer-bnw.html?{REVIEW_QUERY}", wait_until="domcontentloaded")
+
+            # The refusal must arrive on the viewer's own clock (a 5s bound;
+            # the wait here is deliberately longer so a hang fails HERE, not
+            # flakily).
+            page.locator(
+                "#g[data-paint-refusal='authority-unavailable']"
+            ).wait_for(state="attached", timeout=15000)
+            assert page.locator("#g .garden-lattice-row").count() == 0
+            assert _painted_glyph_count(page) == 0
+
+            # And the letter is not hostage: the demo letter opens fully.
+            page.locator("#btn-demo").click()
+            page.locator("#hud.vis").wait_for(state="visible", timeout=10000)
+        unexpected = [
+            line
+            for line in errors
+            if "garden-accepted-paint" not in line
+            and "garden painting refused" not in line
+            and "[init] garden failed" not in line
+        ]
+        assert unexpected == [], f"the stall leaked unrelated errors: {unexpected}"
 
 
 def test_the_review_surface_generates_and_paints_when_storage_is_empty():
@@ -874,34 +919,23 @@ def test_the_full_recorded_key_map_pans_and_focuses_without_shadowing():
             page.wait_for_timeout(200)
             assert focus(), "']' left the Garden with nothing focused"
 
-            # All four arrows, from wherever the previous move left focus:
-            # each press is judged against the canonical rule from that
-            # origin, so the walk composes into real navigation rather than
-            # four isolated presses from a hand-picked spot.
-            for key, axis, sign in (
-                ("ArrowRight", 0, +1),
-                ("ArrowDown", 1, +1),
-                ("ArrowLeft", 0, -1),
-                ("ArrowUp", 1, -1),
-            ):
-                current = focus()["id"]
+            # All four arrows, each proved to MOVE focus. For every
+            # direction the ring (`]`) walks to an object that really has a
+            # neighbour that way, so the press has a canonical answer; a
+            # direction exercised only where nothing lies that way would
+            # pass with a dead binding (claim verification, 2026-08-04).
+            # ArrowDown gets its no-neighbour case too, from the ground row,
+            # so both branches of the binding are exercised for real.
+            def neighbor_of(current, axis, sign):
                 origin_pos = layout[current]
                 candidates = {
                     cid: pos
                     for cid, pos in layout.items()
                     if cid != current and sign * (pos[axis] - origin_pos[axis]) > 0
                 }
-                page.keyboard.press(key)
-                page.wait_for_timeout(250)
-                after = focus()
-                assert after, f"{key} left the Garden with nothing focused"
                 if not candidates:
-                    assert after["id"] == current, (
-                        f"{key} moved focus to {after['id']} although nothing "
-                        "lies in that direction"
-                    )
-                    continue
-                expected = min(
+                    return None
+                return min(
                     candidates,
                     key=lambda cid: (
                         sign * (layout[cid][axis] - origin_pos[axis]),
@@ -909,15 +943,62 @@ def test_the_full_recorded_key_map_pans_and_focuses_without_shadowing():
                         cid,
                     ),
                 )
+
+            for key, axis, sign in (
+                ("ArrowRight", 0, +1),
+                ("ArrowDown", 1, +1),
+                ("ArrowLeft", 0, -1),
+                ("ArrowUp", 1, -1),
+            ):
+                # Walk the ring until this direction has an answer.
+                expected = neighbor_of(focus()["id"], axis, sign)
+                for _ in range(len(layout) + 1):
+                    if expected is not None:
+                        break
+                    page.keyboard.press("]")
+                    page.wait_for_timeout(150)
+                    expected = neighbor_of(focus()["id"], axis, sign)
+                assert expected is not None, (
+                    f"no object anywhere has a neighbour for {key}, so the "
+                    "binding cannot be proved on this starter"
+                )
+                current = focus()["id"]
+                page.keyboard.press(key)
+                page.wait_for_timeout(250)
+                after = focus()
+                assert after, f"{key} left the Garden with nothing focused"
                 assert after["id"] == expected, (
-                    f"{key} from {current} {origin_pos} focused {after['id']} "
-                    f"instead of {expected} {layout[expected]}"
+                    f"{key} from {current} {layout[current]} focused "
+                    f"{after['id']} instead of {expected} {layout[expected]}"
                 )
 
-            # Every pan binding. Opposite keys are pressed as a pair so a
-            # camera already clamped at one edge cannot make a live binding
-            # look dead; at least one of the pair must move it. No pan
-            # keystroke may touch focus.
+            # The no-neighbour branch, exercised where it is REAL: every
+            # fixture stands on the ground row, so from a fixture with only
+            # sky-row plants above it, ArrowDown has no answer and focus
+            # must hold still.
+            for _ in range(len(layout) + 1):
+                if neighbor_of(focus()["id"], 1, +1) is None:
+                    break
+                page.keyboard.press("]")
+                page.wait_for_timeout(150)
+            bottom = focus()["id"]
+            assert neighbor_of(bottom, 1, +1) is None, (
+                "no object without a downward neighbour exists, so the "
+                "no-neighbour branch cannot be proved on this starter"
+            )
+            page.keyboard.press("ArrowDown")
+            page.wait_for_timeout(250)
+            assert focus()["id"] == bottom, (
+                "ArrowDown moved focus although nothing lies below"
+            )
+
+            # Every pan binding, each proved INDIVIDUALLY. Opposite keys
+            # alternate over a few rounds: a key that found the camera
+            # clamped at an edge gets another chance after its opposite has
+            # pulled the camera inward, so clamping cannot hide a dead
+            # binding and a dead binding cannot hide behind its partner
+            # (claim verification, 2026-08-04). No pan keystroke may touch
+            # focus.
             for first, second in (
                 ("Shift+ArrowLeft", "Shift+ArrowRight"),
                 ("Shift+ArrowUp", "Shift+ArrowDown"),
@@ -925,21 +1006,24 @@ def test_the_full_recorded_key_map_pans_and_focuses_without_shadowing():
                 ("w", "s"),
             ):
                 focused_before = focus()["id"]
-                moved_any = False
-                for key in (first, second):
-                    camera_before = camera()
-                    page.keyboard.press(key)
-                    page.wait_for_timeout(250)
-                    if camera() != camera_before:
-                        moved_any = True
-                    assert focus()["id"] == focused_before, (
-                        f"{key} changed focus; panning is shadowing spatial "
-                        "navigation"
-                    )
-                assert moved_any, (
-                    f"neither {first} nor {second} moved the camera; the "
-                    "binding is dead"
-                )
+                moved = {first: False, second: False}
+                for _ in range(3):
+                    for key in (first, second):
+                        if moved[key]:
+                            continue
+                        camera_before = camera()
+                        page.keyboard.press(key)
+                        page.wait_for_timeout(250)
+                        if camera() != camera_before:
+                            moved[key] = True
+                        assert focus()["id"] == focused_before, (
+                            f"{key} changed focus; panning is shadowing "
+                            "spatial navigation"
+                        )
+                    if all(moved.values()):
+                        break
+                dead = [key for key, alive in moved.items() if not alive]
+                assert not dead, f"pan keys never moved the camera: {dead}"
         assert errors == [], errors
 
 

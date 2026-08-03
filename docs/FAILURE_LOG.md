@@ -6753,3 +6753,47 @@ the shadowing defect the recorded map exists to prevent.
 
 - **Status:** Implemented (unproven beyond the suites named); receipts at commit time.
   ComplaintRef: external verification findings 3 and 4, 2026-08-04.
+
+### Claim verification of e0afab8: four findings, all accepted and reworked (2026-08-04)
+
+The verification of my e0afab8 report returned "partially valid" with four findings. All four
+are accepted; the rework landed in one patch on top of e0afab8.
+
+1. **A stalled manifest request could hang the whole application.** The awaited fetch sat ahead
+   of the letter wiring with no bound, so fast failure refused safely but a hanging request held
+   the letter hostage indefinitely -- and my "the letter boots regardless" claim was unproved:
+   the severed-manifest E2E only looked at a pre-existing button, which proves markup, not
+   wiring. Rework: the await is a `Promise.race` against a declared 5-second bound
+   (`GARDEN_PAINT_AUTHORITY_WAIT_MS`); refusal after the bound is the same refusal as a failed
+   fetch. New E2E `test_a_stalled_paint_manifest_cannot_hold_the_letter_hostage` answers the
+   manifest request with silence (route held, never fulfilled, never aborted), requires the
+   refusal marker on the viewer's own clock, and then OPENS THE DEMO LETTER through the real
+   fetch/decode/screen path to its HUD. The severed test now does the same letter proof.
+2. **The key map was not fully proved.** The pan test accepted one live key per opposite pair,
+   so a dead binding could hide behind its partner; and an arrow exercised only where no
+   neighbour exists proves nothing about the binding. Rework: every one of the eight pan keys
+   must move the camera INDIVIDUALLY, with opposite keys alternating over rounds so edge
+   clamping cannot hide a dead key; every arrow is walked (via the `]` ring) to an origin that
+   really has a neighbour in its direction and must move focus to the canonical answer; the
+   no-neighbour branch is exercised where it is real (ArrowDown from the ground row) as an
+   addition, never as a substitute.
+3. **"Malformed manifest" was overstated and the schema had three owners.** The runtime checks
+   in the viewer, composer and renderer each hand-rolled a three-list shape, all missing
+   `schema`, `registers` and `accepted_laws` -- a partial object was accepted, and the three
+   copies were free to drift. Rework: `web/garden-paint-authority.mjs` is the single validator
+   owner mirroring the generator's full shape (`paint_authority()` in
+   scripts/prepare_pages_site.py: schema 1, both register records with digests, four accepted-id
+   lists); the viewer, composer and renderer all import it, their inline checks are deleted in
+   the same patch, and the refusal matrix now includes the old partial three-list shape as a
+   refused case. Validation is structural: digest TRUTH stays with the build-time drift test,
+   which is the only place the registers exist to compare against.
+4. **My Node receipt was stale.** The commit message says 203/203; the committed tree produces
+   205/205 (the two refusal tests I added last were not in the number I quoted). The commit
+   message is immutable; this entry is the correction. After this rework the garden adapter
+   suites hold at 205/205.
+
+- **Status:** Implemented (unproven beyond the suites named); full receipts recorded at commit
+  time. The verification also noted the dirty transcription lane prevented an isolated
+  full-Python check without a worktree -- the no-worktree rule stands, so the full-Python
+  receipt remains "minus the transcription lane" until that lane commits.
+  ComplaintRef: claim verification of e0afab8, 2026-08-04.

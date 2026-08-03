@@ -16,6 +16,7 @@ import {
   advancePresentationState, composePresentationFrame, paintPresentationFrame,
 } from './garden-presentation.mjs';
 import { canonicalProportionalArt } from './garden-atlas-art.mjs';
+import { isValidPaintAuthority } from './garden-paint-authority.mjs';
 import { projectSkyPoints, resolveBrowserSky } from './garden-sky.mjs';
 // Plant and animal drawings transcribed from the legacy archive, together with
 // the whole-frame sway the archive animates them with. These are the only
@@ -2304,9 +2305,10 @@ export class CanonicalGardenRenderer {
     // optional.
     paintAuthority,
   } = {}) {
-    const authorityLists = ['accepted_assets', 'accepted_recipes', 'accepted_legacy_art'];
-    if (!paintAuthority || typeof paintAuthority !== 'object' ||
-        !authorityLists.every(name => Array.isArray(paintAuthority[name]))) {
+    // One validator owns the manifest's shape (web/garden-paint-authority.
+    // mjs, mirroring the generator); this adds only the construction-time
+    // framing so the error names the fix.
+    if (!isValidPaintAuthority(paintAuthority)) {
       throw new Error('CanonicalGardenRenderer requires paintAuthority: the ' +
         'accepted-paint manifest must be loaded BEFORE the renderer is ' +
         'constructed, and a missing or invalid manifest refuses garden ' +

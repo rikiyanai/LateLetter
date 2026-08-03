@@ -44,6 +44,7 @@
  */
 
 import { resolveBrowserSky } from './garden-sky.mjs';
+import { validatePaintAuthority } from './garden-paint-authority.mjs';
 import {
   Raster,
   drawSky, drawSkyLife, drawGround, drawAmbient, drawPlantBeds,
@@ -131,20 +132,23 @@ export function advancePresentationState(previousState, presentationEvents, tick
  * What no longer exists is a COMPOSED FRAME that was not composed under the
  * registers.
  *
+ * Validation itself lives in ONE place -- `validatePaintAuthority` in
+ * web/garden-paint-authority.mjs, mirroring the generator's full shape --
+ * because the first version of this refusal re-declared a three-list schema
+ * of its own and accepted a partial manifest (claim verification,
+ * 2026-08-04). Laws are validated as present but are NEVER paint sources,
+ * so the permitted set is built from the other three lists only.
+ *
  * @param {object} manifest - the build-derived accepted-paint manifest
  * @returns {Set<string>} every id the manifest allows to paint
- * @throws {Error} when the manifest is absent or does not carry the three
- *   accepted-id lists; composition must not proceed on a guess
+ * @throws {Error} when the manifest is absent or not the generator's shape
  */
 function permittedSources(manifest) {
-  const lists = ['accepted_assets', 'accepted_recipes', 'accepted_legacy_art'];
-  if (!manifest || typeof manifest !== 'object' ||
-      !lists.every(name => Array.isArray(manifest[name]))) {
-    throw new Error('paint authority absent or invalid: composition refused. ' +
-      'Pass the build-derived accepted-paint manifest ' +
-      '(web/garden-accepted-paint.v1.json) as context.acceptedManifest.');
-  }
-  return new Set(lists.flatMap(name => manifest[name].map(String)));
+  validatePaintAuthority(manifest);
+  return new Set(
+    ['accepted_assets', 'accepted_recipes', 'accepted_legacy_art']
+      .flatMap(name => manifest[name]),
+  );
 }
 
 /**
