@@ -268,6 +268,23 @@ export function composeReferenceFrame(projection, state, context) {
     });
   }
 
+  // --- the paint payload ---------------------------------------------------
+  // Reopened step 2 (frame ownership): the frame carries everything the
+  // painter emits, as finished platform primitives. The reference derives
+  // its painted rows from the visible primitives -- one string per row --
+  // and, having no measured atlas art, declares the measured overlay
+  // explicitly EMPTY rather than absent: an empty overlay is a decision the
+  // composer made; a missing field would be a hole a painter had to fill.
+  const rowGlyphs = Array.from({ length: viewport.cellsHigh },
+    () => Array(viewport.cellsWide).fill(' '));
+  for (const primitive of visible) {
+    if (primitive.y >= 0 && primitive.y < viewport.cellsHigh &&
+        primitive.x >= 0 && primitive.x < viewport.cellsWide) {
+      rowGlyphs[primitive.y][primitive.x] = primitive.glyph;
+    }
+  }
+  const lines = rowGlyphs.map(row => row.join(''));
+
   return {
     attempted_primitives: attempted,
     visible_primitives: visible,
@@ -278,8 +295,15 @@ export function composeReferenceFrame(projection, state, context) {
         { from_row: ground, to_row: ground, color_role: 'soil' },
       ],
       source_id: REFERENCE_IDS.groundRecipe,
+      // The finished platform form of the two bands above; roles are for
+      // inspection, these strings are what a painter assigns.
+      css: 'linear-gradient(to bottom, #bfe3ff 0%, #bfe3ff 90%, #b58a5f 90%, #b58a5f 100%)',
+      text_color: '#243329',
     },
     interaction_regions: regions,
+    rows: { lines, html: lines.map(() => '') },
+    measured_asset_placements: [],
+    aria_label: `Reference garden with ${(projection.objects ?? []).length} objects.`,
     diagnostics: {
       attempted: attempted.length,
       visible: visible.length,

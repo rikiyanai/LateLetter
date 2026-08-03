@@ -6797,3 +6797,109 @@ are accepted; the rework landed in one patch on top of e0afab8.
   full-Python check without a worktree -- the no-worktree rule stands, so the full-Python
   receipt remains "minus the transcription lane" until that lane commits.
   ComplaintRef: claim verification of e0afab8, 2026-08-04.
+
+**Validation of the 2026-08-04 Wayfinder lifecycle audit — every checked citation holds
+(2026-08-04, at fb7e71f).**
+
+Independent validation against branch `restore/pre-jul19-viewer` at fb7e71f (branch verified with
+`git branch --show-current && git rev-parse HEAD`, not the session header):
+
+- **HTML author blocked at boot: CONFIRMED.** author.html:771 is
+  `<script type="module" src="./web/author-app.mjs">`; `web/author-app.mjs` is absent from the
+  tree. The raw Garden timeline JSON textarea is author.html:672–685 (a `<details>` element
+  "write the garden's timeline directly" wrapping `#f-program-json`), contradicting §7.8.10.
+- **Terminal author PARTIAL: CONFIRMED.** src/lateletter/author.py:1572 ends export with "Give
+  the .lateletter file to {recipient_name}"; nothing generates the §15.1 handoff folder (viewer
+  closure, README, notifier, packaged app). tests/test_author.py carries 11 mock/monkeypatch
+  sites.
+- **Artifact lineage BLOCKED: CONFIRMED.** Across tests/, only tests/test_author.py,
+  tests/test_cli.py and the gate matrix reference the author flow; no recipient-side test consumes
+  author-emitted bytes. tests/test_garden_review_e2e_browser.py:1898 `_sealed_bundle` builds
+  `Bundle(messages=[message], garden_gifts=[])` in test code — the bundle has no garden_program.
+- **Browser sealed flow PARTIAL: CONFIRMED.** The sealed section runs exactly three measurements
+  (tests/test_garden_review_e2e_browser.py:1940–2010): pre-auth secrecy, accepted passphrase
+  (prompt gone, `#pp-err` off), wrong-passphrase secrecy. Nothing reaches delivery, reading,
+  nurturing, discovery or memorial.
+- **Gate 8 FALSE PASS: CONFIRMED.** tests/garden_acceptance/gate_matrix.json:113–125 records
+  "Author control" status PASS whose only automated_check is
+  test_release_acceptance.py::test_normal_sealed_v2_bundle_drives_authored_arc_with_exact_preview_trace;
+  that test (tests/garden_acceptance/test_release_acceptance.py:163) hand-constructs `BeatCard`s
+  and calls `compile_timeline` directly — no author interface is exercised.
+- **Gate 1 false claim: CONFIRMED.** docs/GARDEN_PARITY.md:39 asserts "Yes locally" for the
+  normal sealed production bundle row while the underlying bundle is manufactured by test code, so
+  no author-to-recipient lineage backs the claim.
+- **Terminal recipient, legacy-baseline and human-gate findings:** consistent with the record
+  already in this log (divergent recipe register entries, outstanding operator verdicts); no
+  contradicting evidence found.
+
+**Ordering note requiring the operator.** Two operator-issued routes now coexist. The 2026-08-04
+architecture verdict (REJECTED) orders the presentation-seam rework (frame ownership → stateful
+lifecycle → recipe restoration) and forbids recipe restoration on the current seam. This Wayfinder
+map places the first product-E2E frontier at the accepted author surface producing the sealed
+handoff artifact. They govern different layers; the next executable step for this lane needs the
+operator's pick: (a) continue the reopened presentation steps 2–4 (frame ownership) as previously
+ordered, or (b) divert to the author-surface frontier first. No code was changed during this
+validation.
+
+**Reopened steps 2–4 implemented (unproven visually): the frame owns every final visible
+primitive, the painter loses renderer-private knowledge, the circular import is gone
+(2026-08-04, garden lane).**
+
+Route: the 2026-08-04 architecture verdict, steps 2–4, executed as one atomic patch on top of
+fb7e71f.
+
+What changed:
+
+- **Step 2 — measured pixel placement is composed, not painted.** `composePresentationFrame`
+  resolves every measured atlas asset to final platform primitives — pixel-positioned glyphs
+  with colour, plus object and source identity — in the new frame field
+  `measured_asset_placements`. The context's `presentationGeometry` is the adapter's whole
+  geometry object (the public `measureAsset`/`worldToPixel`/`offsetOfGrapheme` surface), no
+  longer a three-number summary. The logical grapheme runs (row strings, anchors, accents)
+  moved to `diagnostics.measured_asset_runs`, per the recorded fog settlement: final platform
+  primitives are the sole paint payload, and the painter is forbidden the diagnostics.
+- **Authority bypass found during the transfer, ended in the same patch.**
+  `Raster.measuredArt` recorded its measured paint plan unconditionally, so an unaccepted or
+  anonymous atlas asset had its lattice cells suppressed and then painted anyway on the
+  measured pixel overlay. The plan now obeys the same authority rule as the cells; per-cell
+  attempts still record every suppression verdict.
+- **Step 3 — the interface test exists.** tests/garden_adapters/test_presentation_contract.mjs
+  gains two: a hand-authored conforming frame painted onto a BARE surface (`{element, rows,
+  rowHtml}` — not a renderer) with `frame.diagnostics` behind a read-recording proxy required
+  to stay at zero reads; and the live composer, handed a real measuring geometry through the
+  public context, resolving the bench to one placement whose finished pixels then paint bare
+  with span count equal to glyph count. `paintPresentationFrame` manages the measured overlay
+  itself from frame data (creates the layer, writes escaped spans, records the rects) and
+  calls no surface method.
+- **Step 4 — atomic removal.** `_renderMeasuredAssets` (paint-time placement from private
+  geometry) is deleted from the renderer class. The circular import is gone by module split:
+  web/garden-painting.mjs (new) holds the pure painting layer — palettes, `Raster`, art
+  tables, layout, painters, `measuredAssetPlacement` — and imports no presentation or surface
+  code; garden-presentation.mjs imports only it; garden-renderer.mjs is the adapter class,
+  imports both, and re-exports the painting module so every existing importer keeps its
+  surface.
+- **Contract extended.** `paintPayloadViolations` in web/garden-presentation-contract.mjs
+  requires the finished rows, background css/text_color, aria label, and the pixel-resolved
+  placements (pixel units, finite positions, an accepted atlas source per placement) inside
+  the frame; wired into `frameViolations`, with negative tests for each refusal. The
+  reference composer emits the payload, declaring its empty overlay rather than omitting it.
+- **Blocker scans over the pair.** `compute_blockers` in
+  scripts/validate_presentation_identity.py and the source scans in
+  tests/garden_contract/test_asset_acceptance.py and
+  tests/garden_adapters/test_garden_atlas_ownership.mjs read renderer + painting
+  concatenated, so the unmigrated paint owners (plantArt, animalArt, collectibleArt,
+  fixtureArt) remain release blockers and no table can clear by moving between the files.
+
+Receipts: node garden adapters 210/210 (205 prior + 5 new); python
+tests/test_viewer_contract.py + garden_contract + garden_acceptance + garden_world: 337 with
+exactly the known-red deploy-cutover test (deploy.yml unchanged until step 14); browser E2E
+35/35 in real Chrome (219s); scripts/compose_frame_check.mjs exit 0 with zero violations and
+the same five divergent recipe records; scripts/validate_presentation_identity.py reports the
+same known blocker landscape it reported before the split; the deploy closure build includes
+web/garden-painting.mjs automatically. viewer-bnw.html and the terminal renderer untouched.
+Visual acceptance remains operator-only.
+
+Next in the reopened route: step 5 — persistent bird/weather/particle lifecycle in
+`advancePresentationState`, deleting the stateless substitutes in the same patches and
+correcting the bird register record's false 'exact' — then step 6, differential recipe
+restoration on this seam.

@@ -92,6 +92,20 @@ def _recipes() -> dict:
     return json.loads(RECIPES.read_text(encoding="utf-8"))
 
 
+
+def _paint_owner_sources() -> str:
+    """The renderer and its split-out painting layer, as one scan target.
+
+    The reopened frame-ownership transfer (step 4) moved the painters and the
+    local gameplay-art tables into web/garden-painting.mjs; the renderer is
+    the adapter class that re-exports it.  Blocker computation scans the pair
+    so an unmigrated paint owner cannot clear by moving between the files.
+    """
+    return "\n".join(
+        (ROOT / "web" / name).read_text(encoding="utf-8")
+        for name in ("garden-renderer.mjs", "garden-painting.mjs")
+    )
+
 def test_registry_is_well_formed_and_every_verdict_is_legal():
     registry = _registry()
     assert registry["schema"] == 1
@@ -301,7 +315,7 @@ def test_the_documented_blockers_are_exactly_the_computed_ones():
     computed = set(compute_blockers(
         _registry(),
         _recipes(),
-        (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8"),
+        _paint_owner_sources(),
         NO_RUNTIME_FINDINGS,
     ))
     assert documented == computed, (
@@ -358,7 +372,7 @@ def test_a_root_deploy_requires_every_computed_blocker_to_clear():
     blockers = compute_blockers(
         _registry(),
         _recipes(),
-        (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8"),
+        _paint_owner_sources(),
         # The REAL runtime report, not the empty stub: this is the deploy
         # gate's own assertion, so it must judge the frame the product
         # actually composes -- a node subprocess is the price of honesty here.
@@ -811,7 +825,7 @@ def test_the_legacy_port_does_not_quietly_clear_the_release_blockers():
     blockers = compute_blockers(
         registry,
         _recipes(),
-        (ROOT / "web" / "garden-renderer.mjs").read_text(encoding="utf-8"),
+        _paint_owner_sources(),
         NO_RUNTIME_FINDINGS,
     )["gameplay_art_outside_atlas"]
     assert "plantArt" in blockers, (

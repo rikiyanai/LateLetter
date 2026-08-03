@@ -222,6 +222,194 @@ test('a non-interactive projected object gets no region and that is not a defect
 });
 
 // ---------------------------------------------------------------------------
+// Paint payload — the frame carries every final visible primitive, including
+// exact measured pixel placement (reopened step 2).
+// ---------------------------------------------------------------------------
+
+test('a frame without the measured-placement payload is refused', () => {
+  const frame = damagedFrame(f => { delete f.measured_asset_placements; });
+  const problems = frameViolations(frame, frameInput());
+  assert.ok(problems.some(p => p.clause === 'paint-payload' &&
+    /measured_asset_placements is not an array/.test(p.detail)),
+    'a frame that leaves placement to the painter re-opens the second visual owner');
+});
+
+test('a frame without painted rows, background strings or a label is refused', () => {
+  for (const [damage, expect] of [
+    [f => { delete f.rows; }, /rows must carry lines/],
+    [f => { f.background = { kind: 'bands' }; }, /background must carry css and text_color/],
+    [f => { f.aria_label = ''; }, /aria_label is not a nonempty string/],
+  ]) {
+    const frame = damagedFrame(damage);
+    const problems = frameViolations(frame, frameInput());
+    assert.ok(problems.some(p => p.clause === 'paint-payload' && expect.test(p.detail)),
+      `expected ${expect} from ${damage}`);
+  }
+});
+
+test('a measured placement that is not finished pixels is refused', () => {
+  for (const [placement, expect] of [
+    [{ object_id: 'o', source_id: REFERENCE_IDS.plantAsset, units: 'cell',
+      left: 0, top: 0, width: 1, height: 1, glyphs: [] }, /must declare pixel units/],
+    [{ object_id: 'o', source_id: null, units: 'pixel',
+      left: 0, top: 0, width: 1, height: 1, glyphs: [] }, /carries no source_id/],
+    [{ object_id: 'o', source_id: 'asset.invented', units: 'pixel',
+      left: 0, top: 0, width: 1, height: 1, glyphs: [] }, /asset lists do not accept/],
+    [{ object_id: 'o', source_id: REFERENCE_IDS.plantAsset, units: 'pixel',
+      left: Number.NaN, top: 0, width: 1, height: 1, glyphs: [] }, /no finite pixel position/],
+    [{ object_id: 'o', source_id: REFERENCE_IDS.plantAsset, units: 'pixel',
+      left: 0, top: 0, width: 1, height: 1,
+      glyphs: [{ glyph: 'x', x: 4, y: 'seven' }] }, /finite pixel position/],
+  ]) {
+    const frame = damagedFrame(f => { f.measured_asset_placements.push(placement); });
+    const problems = frameViolations(frame, frameInput());
+    assert.ok(problems.some(p => p.clause === 'paint-payload' && expect.test(p.detail)),
+      `expected ${expect} for ${JSON.stringify(placement)}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// The interface test (reopened step 3): ANY conforming frame can be painted
+// with no renderer-private knowledge — a bare surface, and the frame alone.
+// ---------------------------------------------------------------------------
+
+/** A DOM-node stand-in with exactly what a painted element must support. */
+function bareNode() {
+  return {
+    style: {}, attributes: {}, children: [],
+    className: '', textContent: '', innerHTML: '',
+    setAttribute(key, value) { this.attributes[key] = value; },
+    appendChild(child) { this.children.push(child); child.parentNode = this; },
+    remove() {},
+  };
+}
+
+/** Run a callback with `document.createElement` stubbed to bare nodes. */
+function withBareDocument(callback) {
+  const saved = globalThis.document;
+  globalThis.document = { createElement: () => bareNode() };
+  try { return callback(); } finally {
+    if (saved === undefined) delete globalThis.document;
+    else globalThis.document = saved;
+  }
+}
+
+test('a conforming frame paints on a bare surface, and diagnostics stay unread', async () => {
+  const live = await import('../../web/garden-presentation.mjs');
+  // A hand-authored frame carrying the complete paint payload -- built from
+  // the field set alone, with no composer and no renderer anywhere. If the
+  // painter needs anything this object does not carry, the frame was not
+  // the complete picture and this test fails.
+  let diagnosticsRead = 0;
+  const frame = {
+    attempted_primitives: [], visible_primitives: [], interaction_regions: [],
+    background: { css: 'linear-gradient(red, blue)', text_color: '#123456' },
+    rows: { lines: ['ab', 'cd'], html: ['<span>ab</span>', '<span>cd</span>'] },
+    measured_asset_placements: [{
+      object_id: 'fixture:probe', source_id: 'fixture.bench', units: 'pixel',
+      left: 10, top: 20, width: 30, height: 15,
+      glyphs: [
+        { glyph: '&', x: 10, y: 20, color: '#c00' },
+        { glyph: 'M', x: 17.5, y: 20, color: null },
+      ],
+    }],
+    aria_label: 'A bare-surface garden.',
+    // The painter is FORBIDDEN from the diagnostics (that is where the
+    // logical grapheme runs live). A proxy records any read.
+    diagnostics: new Proxy({}, { get() { diagnosticsRead += 1; return undefined; } }),
+  };
+  const surface = { element: bareNode(), rows: [], rowHtml: [] };
+  const changed = withBareDocument(() => live.paintPresentationFrame(frame, surface));
+
+  assert.deepEqual(changed, [0, 1], 'both rows were painted and reported changed');
+  assert.deepEqual(surface.rows.map(row => row.textContent), ['ab', 'cd']);
+  assert.equal(surface.element.style.background, frame.background.css);
+  assert.equal(surface.element.style.color, '#123456');
+  assert.equal(surface.element.attributes['aria-label'], 'A bare-surface garden.');
+  assert.ok(surface.measuredLayer, 'the painter created the measured overlay itself');
+  assert.ok(surface.measuredLayer.innerHTML.includes('left:10.00px;top:20.00px;color:#c00'));
+  assert.ok(surface.measuredLayer.innerHTML.includes('left:17.50px;top:20.00px'));
+  assert.ok(surface.measuredLayer.innerHTML.includes('&amp;'),
+    'overlay glyphs are escaped from frame data, not trusted as markup');
+  assert.deepEqual(surface.measuredAssetRects.get('fixture:probe'),
+    { x: 10, y: 20, width: 30, height: 15 });
+  assert.equal(diagnosticsRead, 0,
+    'the painter read the diagnostics: placement is being re-decided at paint time');
+});
+
+test('the live composer resolves measured pixel placement, and its frame paints bare', async () => {
+  const live = await import('../../web/garden-presentation.mjs');
+  const { readFileSync } = await import('node:fs');
+  const { createGeometry } = await import('../../web/garden-geometry.mjs');
+  const authority = JSON.parse(readFileSync(
+    new URL('../../web/garden-accepted-paint.v1.json', import.meta.url), 'utf8',
+  ));
+  // A REAL measuring geometry (the same construction the browser uses), fed
+  // by a deterministic measurer, handed to composition through the public
+  // context -- the knowledge that used to be renderer-private.
+  const widths = new Map([['i', 3], ['M', 11]]);
+  const measurer = {
+    ensureFont: font => ({ ready: true, font }),
+    advance: text => [...text].reduce((sum, glyph) => sum + (widths.get(glyph) ?? 7), 0),
+    prefixWidths(text) {
+      let sum = 0;
+      return [...text].map(glyph => (sum += widths.get(glyph) ?? 7));
+    },
+    fontSize: () => 15,
+    clearCaches() {},
+  };
+  const geometry = createGeometry({
+    measurer, font: "400 15px 'LateLetter Garden'", lineHeight: 15,
+  });
+  const projection = {
+    world_id: 'placement-proof',
+    observed_time: 1750000000,
+    scene: { sky_mode: 'storybook_fallback', season: 'summer', story_time: 'day' },
+    camera: [0, 0],
+    objects: [{
+      object_id: 'fixture:bench', kind: 'fixture', semantic_name: 'bench',
+      position: [20, 30], depth: 100, hotspot: { x: 20, y: 30, width: 5, height: 2 },
+      primary_action: { verb: 'sit', target: 'fixture:bench' },
+      semantic_state: { catalog_id: 'bench', presentation_state: 'idle',
+        connected_group: null, connected_mask: 0, render_cells: [] },
+    }],
+  };
+  const context = {
+    viewport: [90, 34],
+    profile: 'browser-proportional',
+    presentationGeometry: geometry,
+    acceptedManifest: authority,
+    environment: { readerRegion: null, reducedMotion: false },
+  };
+  const state = live.advancePresentationState(null, [], { frame: 24 });
+  const frame = live.composePresentationFrame(projection, state, context);
+
+  // The frame owns the placement: pixel-resolved glyphs with identity.
+  const placements = frame.measured_asset_placements;
+  assert.equal(placements.length, 1, 'the bench resolved to exactly one placement');
+  const bench = placements[0];
+  assert.equal(bench.object_id, 'fixture:bench');
+  assert.equal(bench.source_id, 'fixture.bench');
+  assert.equal(bench.units, 'pixel');
+  assert.ok(bench.glyphs.length > 5, 'the bench drawing is real, not a token');
+  for (const glyph of bench.glyphs) {
+    assert.ok(Number.isFinite(glyph.x) && Number.isFinite(glyph.y),
+      'every overlay glyph carries its finished pixel position');
+  }
+  // And the extended contract holds over this measured frame.
+  assert.deepEqual(frameViolations(frame, { projection, context }), []);
+
+  // Painting it needs the frame and a bare surface -- nothing else. The spans
+  // painted are exactly the placement's glyph count.
+  const surface = { element: bareNode(), rows: [], rowHtml: [] };
+  withBareDocument(() => live.paintPresentationFrame(frame, surface));
+  const spanCount = (surface.measuredLayer.innerHTML.match(/<span /g) ?? []).length;
+  assert.equal(spanCount, bench.glyphs.length);
+  assert.deepEqual(surface.measuredAssetRects.get('fixture:bench'),
+    { x: bench.left, y: bench.top, width: bench.width, height: bench.height });
+});
+
+// ---------------------------------------------------------------------------
 // Clause 2 — state travels through the public advance; the pair is a
 // function of its declared inputs and nothing else.
 // ---------------------------------------------------------------------------

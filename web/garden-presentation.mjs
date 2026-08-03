@@ -23,16 +23,17 @@
  * WHERE THE DRAWING CODE LIVES
  *
  * The painters themselves (`drawSky`, `drawGround`, `drawWeather`,
- * `drawObject`, ...) remain in `web/garden-renderer.mjs` as module-level pure
- * functions -- they were extracted from the class in the preceding patch.
+ * `drawObject`, ...) live in `web/garden-painting.mjs` as pure functions.
  * This module is their only orchestrator: it decides what is drawn, in what
- * order, under which authority, and what the resulting frame IS. The
- * renderer's class keeps measurement, event capture and the paint step, and
- * calls back into this module for everything visual. The import cycle this
- * creates (renderer -> presentation for the interface, presentation ->
- * renderer for the painters) is call-time only -- no module reads the other
- * during evaluation -- and it is the honest shape of the split: laws and
- * painters live beside the surface, decisions live here.
+ * order, under which authority, and what the resulting frame IS -- including
+ * the exact measured pixel placement of every atlas asset, resolved here at
+ * composition from the geometry the context carries. The renderer's class
+ * contributes measurement and event capture and consumes the interface; it
+ * decides nothing visual. The earlier import cycle (renderer -> presentation
+ * for the interface, presentation -> renderer for the painters) is gone: the
+ * 2026-08-04 architecture review named it as the wrapper shape that kept the
+ * renderer the real owner, and the painting layer now stands alone so this
+ * module depends only on it.
  *
  * DETERMINISM
  *
@@ -52,8 +53,8 @@ import {
   gardenPresentationProfile, layoutGardenObjects, gardenDepthCohorts,
   timeOfDay, seasonOf, DAY, NIGHT, EVENING, paletteColor,
   objectBurstPattern, connectedMasks, objectPresentationArt,
-  measuredAssetPlacement,
-} from './garden-renderer.mjs';
+  measuredAssetPlacement, escapeHtml,
+} from './garden-painting.mjs';
 
 /**
  * How long a click burst stays alive, in presentation frames.
@@ -199,6 +200,14 @@ export function composePresentationFrame(projection, state, context) {
   const geometry = context.presentationGeometry ?? {};
   const cellWidth = Number(geometry.cellAdvance ?? 8);
   const cellHeight = Number(geometry.lineHeight ?? 15);
+  // Whether the context's geometry can actually measure text. The adapter
+  // passes its whole geometry object; a context built from bare cell numbers
+  // has no `measureAsset`, and measured atlas placement is then composed as
+  // absent rather than guessed from a column pitch. This flag decides BOTH
+  // the pixel placements below and whether the lattice HTML omits
+  // measured-owned cells -- one decision, so an asset is painted by exactly
+  // one layer.
+  const canMeasure = !geometry.affineOnly && typeof geometry.measureAsset === 'function';
   const environment = context.environment ?? {};
   // Throws when context carries no valid manifest: composition is refused
   // outright rather than proceeding unrestricted (reopened step 1).
@@ -295,12 +304,39 @@ export function composePresentationFrame(projection, state, context) {
     });
   }
 
+  // ---- measured pixel placement, resolved AT COMPOSITION -----------------
+  // Reopened step 2: the frame contains every final visible primitive,
+  // including the exact measured pixel placement of atlas assets. Before
+  // this, the frame carried the raw asset descriptors (lines, anchors) and
+  // the SURFACE resolved their pixels at paint time with its private
+  // geometry -- a second visual owner deciding placement after composition.
+  // The raster's measured plan is already authority-gated, so everything
+  // resolved here is accepted ink with its source identity attached.
+  const measuredAssetPlacements = canMeasure
+    ? raster.measuredAssets.map(asset => {
+      const placed = measuredAssetPlacement(geometry, asset);
+      return {
+        object_id: placed.objectId,
+        source_id: asset.source ?? null,
+        units: 'pixel',
+        left: placed.left, top: placed.top,
+        width: placed.width, height: placed.height,
+        // Final platform primitives only: glyph, pixel position, colour.
+        // The logical row/column each glyph came from is diagnostic
+        // provenance, not paint data, and lives in `diagnostics` below.
+        glyphs: placed.glyphs.map(glyph => ({
+          glyph: glyph.glyph, x: glyph.x, y: glyph.y, color: glyph.color ?? null,
+        })),
+      };
+    })
+    : [];
+
   // The painted rows, exactly as the painter must emit them. Text and
   // lattice HTML are both decided here; the paint step copies them into the
   // DOM and decides nothing.
   const lines = Array.from({ length: viewport[1] }, (_, row) => raster.line(row));
   const htmlLines = Array.from({ length: viewport[1] }, (_, row) =>
-    raster.latticeHtml(row, cellWidth, !geometry.affineOnly));
+    raster.latticeHtml(row, cellWidth, canMeasure));
 
   // The background: the accepted sky-to-ground gradient, always. This
   // replaces the deleted hostname-conditioned branch -- there is one
@@ -356,6 +392,13 @@ export function composePresentationFrame(projection, state, context) {
       visible: visible.length,
       suppressed: attempted.filter(entry => entry.suppressed).length,
       authority_asserted: authority !== null,
+      // The LOGICAL grapheme runs of measured assets (row strings, anchors,
+      // accents), kept for inspection only. The paint payload is the
+      // pixel-resolved `measured_asset_placements` above; a painter reading
+      // these runs would be re-deciding placement, which the interface test
+      // in tests/garden_adapters/test_presentation_contract.mjs forbids by
+      // proving a frame paints with `diagnostics` never touched.
+      measured_asset_runs: raster.measuredAssets,
     },
     // ---- painter payload and adapter-compat surface ----------------------
     // Everything below is decided data the paint step and the existing
@@ -363,7 +406,7 @@ export function composePresentationFrame(projection, state, context) {
     // side channel: the paint step copies `rows`; adapter consumers read the
     // named fields the class has always exposed.
     rows: { lines, html: htmlLines },
-    measured_assets: raster.measuredAssets,
+    measured_asset_placements: measuredAssetPlacements,
     aria_label: ariaLabel,
     theme: { mode, palette },
     viewport, lines, sky, palette, season, timeOfDay: mode,
@@ -373,19 +416,29 @@ export function composePresentationFrame(projection, state, context) {
 }
 
 /**
- * Copy a decided frame onto a renderer surface.
+ * Copy a decided frame onto a surface.
  *
  * This function MAY NOT decide anything. If a change here can alter which
  * cells are visible, what colour anything is, where a region sits or what
  * the label says, the frame was incomplete and the defect is in
  * `composePresentationFrame`. Everything below is transport: DOM row
- * management, style assignment from frame data, and the measured-asset
- * pixel layer.
+ * management, style assignment from frame data, and copying the
+ * pixel-resolved measured placements into the overlay layer.
+ *
+ * The surface is GENERIC: any object carrying `element` (a DOM node),
+ * `rows` (array) and `rowHtml` (array) can be painted -- it does not have to
+ * be a `CanonicalGardenRenderer`, and no method of the surface is called.
+ * The painter reads only the frame's paint payload; `diagnostics` (where the
+ * logical grapheme runs live) is out of bounds, and the interface test
+ * proves a frame paints with diagnostics never touched. The earlier version
+ * called back into `surface._renderMeasuredAssets`, which re-measured the
+ * assets with the renderer's private geometry at paint time -- placement
+ * decided after composition, on knowledge only the renderer had. That
+ * method is gone; placement arrives inside the frame.
  *
  * @param {object} frame - the composed PresentationFrame
- * @param {object} surface - the `CanonicalGardenRenderer` instance acting as
- *   the DOM adapter; it owns `element`, `rows`, `rowHtml` and the measured
- *   layer machinery
+ * @param {object} surface - `{element, rows, rowHtml}` plus the painter-owned
+ *   `measuredLayer` and `measuredAssetRects` it maintains across paints
  */
 export function paintPresentationFrame(frame, surface) {
   const element = surface.element;
@@ -417,7 +470,38 @@ export function paintPresentationFrame(frame, surface) {
       changedRows.push(index);
     }
   });
-  surface._renderMeasuredAssets(frame.measured_assets);
+  // ---- measured overlay: finished pixels in, spans out -------------------
+  // Every number here was decided at composition. The rects map is kept for
+  // the adapter's `objectArtRectPixels`, which reports where a drawing IS --
+  // a fact of the frame, recorded as it is painted.
+  const placements = frame.measured_asset_placements;
+  surface.measuredAssetRects = new Map();
+  if (!placements.length) {
+    if (surface.measuredLayer) surface.measuredLayer.innerHTML = '';
+  } else {
+    if (!surface.measuredLayer) {
+      surface.measuredLayer = document.createElement('div');
+      surface.measuredLayer.className = 'garden-measured-layer';
+      surface.measuredLayer.setAttribute('aria-hidden', 'true');
+      element.appendChild(surface.measuredLayer);
+    } else if (surface.measuredLayer.parentNode === element) {
+      // Keep the overlay after the lattice rows when a resize adds rows.
+      element.appendChild(surface.measuredLayer);
+    }
+    const spans = [];
+    for (const placement of placements) {
+      surface.measuredAssetRects.set(placement.object_id, {
+        x: placement.left, y: placement.top,
+        width: placement.width, height: placement.height,
+      });
+      for (const glyph of placement.glyphs) {
+        spans.push(`<span style="left:${glyph.x.toFixed(2)}px;top:${glyph.y.toFixed(2)}px` +
+          (glyph.color ? `;color:${glyph.color}` : '') +
+          `">${escapeHtml(glyph.glyph)}</span>`);
+      }
+    }
+    surface.measuredLayer.innerHTML = spans.join('');
+  }
   element.setAttribute('aria-label', frame.aria_label);
   return changedRows;
 }

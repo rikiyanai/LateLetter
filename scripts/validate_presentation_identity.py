@@ -86,6 +86,11 @@ sys.path.insert(0, str(ROOT))
 ACCEPTANCE = ROOT / "docs" / "garden-asset-acceptance.json"
 RECIPES = ROOT / "docs" / "garden-presentation-recipes.json"
 RENDERER = ROOT / "web" / "garden-renderer.mjs"
+# The painting layer split out of the renderer by the reopened
+# frame-ownership transfer (step 4). The local gameplay-art owners
+# (plantArt, animalArt, ...) live there now, so every source scan is
+# over the PAIR: a blocker may not clear by moving between the files.
+PAINTING = ROOT / "web" / "garden-painting.mjs"
 DECISION_RECORD = ROOT / "docs" / "operator-decision-record.md"
 # The operator's four direct-acceptance verdicts. Kept in its own file because a
 # judgement made by a person after watching the product is a different kind of
@@ -1004,7 +1009,9 @@ def run() -> Report:
     """Load everything from disk, compose the gate frame, and report."""
     acceptance = _read(ACCEPTANCE)
     recipes = _read(RECIPES)
-    renderer_source = RENDERER.read_text(encoding="utf-8")
+    renderer_source = "\n".join(
+        path.read_text(encoding="utf-8") for path in (RENDERER, PAINTING)
+    )
     runtime = runtime_frame_report()
 
     report = Report()

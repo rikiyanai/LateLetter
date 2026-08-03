@@ -31,8 +31,16 @@ import {
   canonicalProportionalArt,
 } from '../../web/garden-atlas-art.mjs';
 
-const rendererUrl = new URL('../../web/garden-renderer.mjs', import.meta.url);
-const rendererSource = await readFile(rendererUrl, 'utf8');
+// The painting layer was split out of the renderer by the reopened
+// frame-ownership transfer (step 4): the local art tables and `fixtureArt`
+// now live in web/garden-painting.mjs, and web/garden-renderer.mjs is the
+// adapter class that re-exports it. The single-owner invariant is over the
+// pair, so both sources are scanned -- a table reappearing in EITHER file is
+// the two-owner defect this file exists to prevent.
+const rendererSource = [
+  await readFile(new URL('../../web/garden-renderer.mjs', import.meta.url), 'utf8'),
+  await readFile(new URL('../../web/garden-painting.mjs', import.meta.url), 'utf8'),
+].join('\n');
 
 /**
  * Extract the top-level keys of a `const NAME = Object.freeze({ ... })` table.

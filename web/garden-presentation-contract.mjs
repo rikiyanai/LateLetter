@@ -19,7 +19,14 @@
  * Only the first two are judged here. `paintPresentationFrame` is REQUIRED to
  * decide nothing, and "decides nothing" is proved by the frame being complete
  * -- every check below is over the frame, so anything the painter could add
- * would be a violation visible before painting ever happens.
+ * would be a violation visible before painting ever happens. The reopened
+ * frame-ownership transfer (2026-08-04, step 2) made that completeness
+ * checkable for the whole picture: `paintPayloadViolations` requires the
+ * painted rows, the background, the accessible label AND the pixel-resolved
+ * `measured_asset_placements` to be inside the frame, because the earlier
+ * frame carried raw measured-asset descriptors that the SURFACE resolved to
+ * pixels at paint time with private geometry -- a second visual owner this
+ * contract could not see.
  *
  * WHY IT IS CODE AND NOT PROSE
  *
@@ -241,6 +248,97 @@ export function identityViolations(frame, input) {
 }
 
 /**
+ * The frame's PAINT PAYLOAD is complete: everything the painter emits is in
+ * the frame, as final platform primitives.
+ *
+ * This is the checkable form of reopened step 2 ("the PresentationFrame
+ * contains every final visible primitive, including exact measured pixel
+ * placement"):
+ *
+ *   - `rows.lines` / `rows.html` are the painted lattice, one string per row;
+ *   - `background` carries the finished `css` and `text_color` strings;
+ *   - `aria_label` is the finished accessible sentence;
+ *   - `measured_asset_placements` is the ENTIRE measured overlay: pixel
+ *     units, finite left/top per placement, and per glyph a string and a
+ *     finite pixel position. A placement names the `object_id` it draws and
+ *     the accepted `source_id` it came from -- measured art is atlas-chain
+ *     ink, and anonymous pixels on the overlay would be exactly the
+ *     unaccountable paint clause 1 forbids on the lattice.
+ *
+ * A frame that satisfies this check can be painted by a transport that
+ * measures nothing and knows nothing about any renderer -- which the
+ * interface test proves by painting one onto a bare surface.
+ *
+ * @param {object} frame - the composed frame
+ * @param {{context?: object}} [input] - when given, placement sources are
+ *   checked against the manifest's accepted asset lists
+ * @returns {Array<{clause: string, detail: string}>}
+ */
+export function paintPayloadViolations(frame, input = {}) {
+  const problems = [];
+  if (!frame.rows || !Array.isArray(frame.rows.lines) || !Array.isArray(frame.rows.html)) {
+    problems.push(violation('paint-payload', 'frame.rows must carry lines[] and html[]'));
+  } else {
+    frame.rows.lines.forEach((line, index) => {
+      if (typeof line !== 'string') {
+        problems.push(violation('paint-payload', `rows.lines[${index}] is not a string`));
+      }
+    });
+    frame.rows.html.forEach((line, index) => {
+      if (typeof line !== 'string') {
+        problems.push(violation('paint-payload', `rows.html[${index}] is not a string`));
+      }
+    });
+  }
+  if (typeof frame.background?.css !== 'string' ||
+      typeof frame.background?.text_color !== 'string') {
+    problems.push(violation('paint-payload', 'frame.background must carry css and text_color strings'));
+  }
+  if (typeof frame.aria_label !== 'string' || !frame.aria_label.length) {
+    problems.push(violation('paint-payload', 'frame.aria_label is not a nonempty string'));
+  }
+  if (!Array.isArray(frame.measured_asset_placements)) {
+    problems.push(violation('paint-payload', 'frame.measured_asset_placements is not an array'));
+    return problems;
+  }
+  const manifest = input.context?.acceptedManifest;
+  const assetIds = manifest ? new Set([
+    ...(manifest.accepted_assets ?? []),
+    ...(manifest.accepted_legacy_art ?? []),
+  ]) : null;
+  frame.measured_asset_placements.forEach((placement, index) => {
+    const at = `measured[${index}] (${placement.object_id ?? '?'})`;
+    if (placement.units !== 'pixel') {
+      problems.push(violation('paint-payload', `${at} must declare pixel units`));
+    }
+    if (!placement.object_id) {
+      problems.push(violation('paint-payload', `${at} names no object_id`));
+    }
+    if (!placement.source_id) {
+      problems.push(violation('paint-payload', `${at} carries no source_id`));
+    } else if (assetIds && !assetIds.has(placement.source_id)) {
+      problems.push(violation('paint-payload',
+        `${at} names ${placement.source_id}, which the manifest's asset lists do not accept`));
+    }
+    if (!Number.isFinite(placement.left) || !Number.isFinite(placement.top)) {
+      problems.push(violation('paint-payload', `${at} has no finite pixel position`));
+    }
+    if (!Array.isArray(placement.glyphs)) {
+      problems.push(violation('paint-payload', `${at} carries no glyphs array`));
+      return;
+    }
+    placement.glyphs.forEach((glyph, glyphIndex) => {
+      if (typeof glyph.glyph !== 'string' ||
+          !Number.isFinite(glyph.x) || !Number.isFinite(glyph.y)) {
+        problems.push(violation('paint-payload',
+          `${at} glyph[${glyphIndex}] lacks a string glyph or a finite pixel position`));
+      }
+    });
+  });
+  return problems;
+}
+
+/**
  * Deep structural equality, used to compare frames and states.
  *
  * Written here rather than imported so the contract has no dependency that
@@ -381,6 +479,7 @@ export function frameViolations(frame, input) {
   if (shape.length) return shape;   // later clauses would only throw on a broken shape
   return [
     ...primitiveShapeViolations(frame),
+    ...paintPayloadViolations(frame, input),
     ...identityViolations(frame, input),
     ...visibilityViolations(frame),
     ...interactionViolations(frame, input),
