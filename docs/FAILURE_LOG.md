@@ -5840,3 +5840,10 @@ defect, worse than recorded
 
 - Status: Recorded, not implemented. Browser E2E 24 passing and 7 strict xfailed. The severity of
   the mobile defect is corrected upward: it was written down as cropping and it is unreachability.
+- **Editing error in the same patch, caught by the suite (2026-08-03):** inserting the new xfail
+  immediately above `test_a_single_tap_performs_the_primary_action_on_touch` stacked that test's
+  ORIGINAL decorator onto the new one and left the old test undecorated. The full run reported it as
+  a plain failure -- `1 failed, 24 passed, 6 xfailed` -- rather than an expected one. Two markers on
+  one test and none on its neighbour is invisible in a targeted `-k` run and obvious in a full one,
+  which is the argument for running the whole file before believing a count. Decorator moved back;
+  the file now reads 24 passing and 7 strict xfailed.

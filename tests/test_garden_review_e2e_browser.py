@@ -898,19 +898,6 @@ def test_five_of_the_ten_accepted_assets_never_enter_this_review_at_all():
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "DEFECT, found by this test on 2026-08-03. At 390x844 two of the five "
-        "accepted starter fixtures -- stepping_stones (world x=31) and planter "
-        "(x=88) -- have no interaction rectangle at all: they fall outside the "
-        "cropped mobile width. Mobile may crop peripheral scenery; it may not "
-        "lose reachable interactions. Owned by the interaction-mask step of the "
-        "operator route, which gives every interactive asset state a "
-        "projection/atlas-owned mask. Left strict so it cannot be normalised "
-        "into the baseline, and so that a later correction cannot land silently."
-    ),
-)
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
         "DEFECT, found on 2026-08-03 while checking how bad the mobile "
         "rectangle defect actually is. The two accepted fixtures that fall "
         "outside the 390x844 frame are not merely off-screen -- they are "
@@ -961,6 +948,19 @@ def test_touch_can_bring_an_off_screen_fixture_into_reach():
         assert errors == [], errors
 
 
+@pytest.mark.xfail(
+    strict=True,
+    reason=(
+        "DEFECT, found by this test on 2026-08-03. At 390x844 two of the five "
+        "accepted starter fixtures -- stepping_stones (world x=31) and planter "
+        "(x=88) -- have no interaction rectangle at all: they fall outside the "
+        "cropped mobile width. Mobile may crop peripheral scenery; it may not "
+        "lose reachable interactions. Owned by the interaction-mask step of the "
+        "operator route, which gives every interactive asset state a "
+        "projection/atlas-owned mask. Left strict so it cannot be normalised "
+        "into the baseline, and so that a later correction cannot land silently."
+    ),
+)
 def test_a_single_tap_performs_the_primary_action_on_touch():
     """One tap, not a hover-equivalent first tap and a second to confirm."""
     with _static_server() as origin:
