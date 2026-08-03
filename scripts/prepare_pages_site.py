@@ -8,6 +8,8 @@ from html import escape
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import quote, urlsplit
+import hashlib
+import json
 import re
 import shutil
 import sys
@@ -16,6 +18,40 @@ import sys
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 ENTRYPOINT = Path("viewer-bnw.html")
 THIRD_PARTY_NOTICES = (Path("web/vendor/pretext/LICENSE"),)
+
+# ---------------------------------------------------------------------------
+# Release paint authority
+# ---------------------------------------------------------------------------
+#
+# The two verdict registers the paint manifest is derived from. They live in
+# the repository, not in the artifact: the artifact carries the DERIVED
+# manifest, and verification recomputes it from these sources so that editing
+# either register after a build makes the built artifact fail verification
+# rather than silently keep its stale authority.
+ASSET_REGISTER = Path("docs/garden-asset-acceptance.json")
+RECIPE_REGISTER = Path("docs/garden-presentation-recipes.json")
+
+# The files whose bytes define the profile/font/geometry identity: the
+# versioned atlas (which owns measured art, profiles and connected tiles) and
+# the bundled Garden font (which decides what every glyph physically looks
+# like). A paint acceptance is only meaningful against the exact art and the
+# exact font the reviewer saw, so both are pinned by content hash.
+PAINT_IDENTITY_SOURCES = (
+    Path("src/lateletter/garden/data/atlas.v2.json"),
+    Path("web/fonts/lateletter-garden.woff"),
+)
+
+# Where the manifest lands inside the built site. It is excluded from its own
+# artifact hash map, because a file cannot contain its own digest.
+PAINT_MANIFEST_NAME = "garden-release-manifest.json"
+
+# The verdict vocabulary shared by both registers. Only the two accepted
+# verdicts grant release paint permission; `rejected` and `not_reviewed` are
+# excluded from the manifest BY CONSTRUCTION, which is what makes the manifest
+# usable as a release authority. Any verdict outside this vocabulary is a
+# register corruption and fails the build loudly instead of being guessed at.
+_ACCEPTED_VERDICTS = frozenset({"accepted", "accepted_as_deployed"})
+_KNOWN_VERDICTS = _ACCEPTED_VERDICTS | {"not_reviewed", "rejected"}
 _CSS_ASSET_RE = re.compile(r"\burl\(\s*['\"]?([^)'\"\s]+)", re.IGNORECASE)
 _CSS_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
 _SCANNED_SUFFIXES = frozenset({".html", ".htm", ".mjs", ".js", ".css"})
@@ -492,8 +528,20 @@ def browser_dependency_closure(entrypoint: Path, root: Path) -> tuple[set[Path],
 
 
 def verify_pages_site(site_root: Path) -> None:
+    """Verify a built site: dependency reachability AND paint authority.
+
+    Both checks run and both must hold. The dependency walk catches a file
+    that fell out of the bundle; the paint-manifest check catches an artifact
+    whose authority no longer matches the registers or whose files were
+    altered after the build. They are reported together so one failure cannot
+    mask the other.
+
+    :param site_root: The built artifact directory.
+    :raises RuntimeError: listing every dependency and paint-authority error.
+    """
     site_root = site_root.resolve()
     _, errors = browser_dependency_closure(site_root / "index.html", site_root)
+    errors.extend(verify_paint_manifest(site_root))
     if errors:
         raise RuntimeError("Pages artifact is not closed:\n" + "\n".join(sorted(errors)))
 
@@ -509,6 +557,298 @@ def _write_letter_route(output: Path, route: str, bundle_name: str) -> None:
         f'<a href="{escape(target, quote=True)}">open your letter</a>\n',
         encoding="utf-8",
     )
+
+
+# ---------------------------------------------------------------------------
+# Release paint manifest
+# ---------------------------------------------------------------------------
+#
+# What this is
+# ------------
+# The build-time accepted-paint authority required by the execution order's
+# paint-manifest step. Until it existed, "which art may be painted in a
+# release" was decided at RUNTIME by whatever flags reached the renderer --
+# hostname checks, query parameters, `allowUnacceptedArt` -- which meant the
+# authority travelled with the caller instead of with the artifact. This
+# manifest inverts that: it is a pure function of the two verdict registers
+# and the built files, computed once at build time, carrying no knowledge of
+# hostnames, queries, review mode or any caller-created permission.
+#
+# What it guarantees
+# ------------------
+# * Only IDs whose register verdict is accepted appear. Rejected and
+#   not-reviewed paint is absent by construction, not by a runtime check.
+# * Every guarantee is pinned to exact bytes: the registers, the atlas, the
+#   font and every built file are content-hashed, and the manifest carries
+#   a digest of itself. Mutating any of them makes verification fail.
+
+
+def _sha256_bytes(data: bytes) -> str:
+    """The lowercase hex SHA-256 of `data`.
+
+    :param data: Raw bytes to digest.
+    :returns: 64 hex characters. SHA-256 because it is the digest every other
+        acceptance record in this repository already uses; mixing digest
+        algorithms would make receipts incomparable.
+    """
+    return hashlib.sha256(data).hexdigest()
+
+
+def _sha256_path(path: Path) -> str:
+    """The SHA-256 of a file's exact bytes on disk.
+
+    :param path: File to digest. A missing file raises, deliberately: a paint
+        authority derived from a file that is not there would be a fabricated
+        authority.
+    :returns: 64 hex characters.
+    """
+    return _sha256_bytes(path.read_bytes())
+
+
+def _checked_verdict(verdict: object, owner: str) -> str:
+    """Validate one verdict value against the shared vocabulary.
+
+    :param verdict: The raw value found in a register record.
+    :param owner: Human-readable identity of the record, for the error text.
+    :returns: The verdict, known-good.
+    :raises RuntimeError: if the verdict is not in the shared vocabulary --
+        an unknown verdict means the register changed shape underneath this
+        builder, and guessing whether "pending" grants paint permission is
+        exactly the kind of silent decision this manifest exists to forbid.
+    """
+    if not isinstance(verdict, str) or verdict not in _KNOWN_VERDICTS:
+        raise RuntimeError(
+            f"unknown verdict {verdict!r} on {owner}; the register vocabulary "
+            f"is {sorted(_KNOWN_VERDICTS)} and this build refuses to guess"
+        )
+    return verdict
+
+
+def _accepted_asset_ids(register: dict) -> list[str]:
+    """Every asset ID the asset register currently accepts.
+
+    :param register: Parsed ``docs/garden-asset-acceptance.json``.
+    :returns: Sorted accepted IDs. Sorted so the manifest is byte-stable
+        across builds of the same inputs -- identity hashes require it.
+    """
+    accepted = []
+    for record in register["assets"]:
+        asset_id = record["asset_id"]
+        if _checked_verdict(record["verdict"], f"asset {asset_id!r}") in _ACCEPTED_VERDICTS:
+            accepted.append(asset_id)
+    return sorted(accepted)
+
+
+def _accepted_recipe_ids(register: dict) -> list[str]:
+    """Every recipe ID the presentation-recipe register currently accepts.
+
+    :param register: Parsed ``docs/garden-presentation-recipes.json``.
+    :returns: Sorted accepted IDs, for the same byte-stability reason as
+        :func:`_accepted_asset_ids`.
+    """
+    accepted = []
+    for recipe_id, record in register["records"].items():
+        if _checked_verdict(record["verdict"], f"recipe {recipe_id!r}") in _ACCEPTED_VERDICTS:
+            accepted.append(recipe_id)
+    return sorted(accepted)
+
+
+def _artifact_file_hashes(site_root: Path) -> dict[str, str]:
+    """Content hashes for every file in the built site, keyed by POSIX relpath.
+
+    :param site_root: The built artifact directory.
+    :returns: ``{relative_path: sha256}`` for every file except the manifest
+        itself, which is excluded because a file cannot contain its own digest.
+        Paths are POSIX-form so the map is identical across platforms.
+    """
+    hashes: dict[str, str] = {}
+    for path in sorted(site_root.rglob("*")):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(site_root).as_posix()
+        if relative == PAINT_MANIFEST_NAME:
+            continue
+        hashes[relative] = _sha256_path(path)
+    return hashes
+
+
+def _canonical_json_bytes(payload: dict) -> bytes:
+    """The one canonical byte encoding of a JSON payload.
+
+    Sorted keys and pinned separators, because two builds of the same inputs
+    must produce the same digest -- a hash over an unstable encoding would
+    report drift where there is none.
+
+    :param payload: JSON-serialisable mapping.
+    :returns: UTF-8 bytes of the canonical encoding.
+    """
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROOT) -> dict:
+    """Compute the release paint manifest for a built site.
+
+    A pure function of the two verdict registers, the identity sources and the
+    built files. It reads no environment, no hostname, no query string and no
+    review flag -- that independence is the entire point, so nothing here may
+    grow a parameter that carries caller intent.
+
+    :param site_root: The built artifact directory whose files are pinned.
+    :param repository_root: Where the registers and identity sources are read
+        from. Parameterised (rather than hard-coded) so the mutation tests can
+        point verification at a deliberately altered register and prove the
+        build fails; production callers always pass the real repository.
+    :returns: The manifest mapping, including its own ``manifest_identity``.
+    :raises RuntimeError: on an unknown verdict in either register.
+    """
+    asset_register_bytes = (repository_root / ASSET_REGISTER).read_bytes()
+    recipe_register_bytes = (repository_root / RECIPE_REGISTER).read_bytes()
+    asset_register = json.loads(asset_register_bytes)
+    recipe_register = json.loads(recipe_register_bytes)
+
+    # The atlas is also parsed (not only hashed) so the manifest can name the
+    # atlas id/version a reviewer would recognise, next to the exact bytes.
+    atlas_path = repository_root / PAINT_IDENTITY_SOURCES[0]
+    font_path = repository_root / PAINT_IDENTITY_SOURCES[1]
+    atlas = json.loads(atlas_path.read_bytes())
+
+    files = _artifact_file_hashes(site_root)
+    # The artifact identity digests the (path, hash) lines rather than the
+    # files again: it is an identity over the MAP, so adding, removing or
+    # editing any file changes it.
+    artifact_identity = _sha256_bytes(
+        "\n".join(f"{name}:{digest}" for name, digest in sorted(files.items())).encode("utf-8")
+    )
+
+    body = {
+        "schema": 1,
+        "purpose": (
+            "Build-time accepted-paint authority for the Garden release "
+            "artifact. Only IDs listed here may be painted by a release "
+            "build. Derived solely from the verdict registers and the built "
+            "files; hostname, query parameters, review mode and "
+            "caller-created permissions are not inputs and must never become "
+            "inputs."
+        ),
+        "registers": {
+            "asset_register": {
+                "path": ASSET_REGISTER.as_posix(),
+                "sha256": _sha256_bytes(asset_register_bytes),
+            },
+            "recipe_register": {
+                "path": RECIPE_REGISTER.as_posix(),
+                "sha256": _sha256_bytes(recipe_register_bytes),
+            },
+        },
+        "accepted_assets": _accepted_asset_ids(asset_register),
+        "accepted_recipes": _accepted_recipe_ids(recipe_register),
+        "profile_identity": {
+            "atlas": {
+                "path": PAINT_IDENTITY_SOURCES[0].as_posix(),
+                "sha256": _sha256_path(atlas_path),
+                # The human-recognisable identity beside the bytes, so a
+                # reviewer can tell WHICH atlas without re-hashing anything.
+                "id": atlas.get("id"),
+                "version": atlas.get("version"),
+            },
+            "font": {
+                "path": PAINT_IDENTITY_SOURCES[1].as_posix(),
+                "sha256": _sha256_path(font_path),
+            },
+        },
+        "artifact": {
+            "identity": artifact_identity,
+            "files": files,
+        },
+    }
+    # The manifest's own identity: a digest of everything above. Editing any
+    # field by hand -- including quietly adding an ID to an accepted list --
+    # breaks this digest and fails verification.
+    body["manifest_identity"] = _sha256_bytes(_canonical_json_bytes(body))
+    return body
+
+
+def write_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROOT) -> Path:
+    """Generate the paint manifest into a built site.
+
+    :param site_root: The built artifact directory.
+    :param repository_root: See :func:`build_paint_manifest`.
+    :returns: The path of the written manifest. Written with an indent (unlike
+        the canonical digest encoding) because humans read this file during
+        review; the digest is computed over the canonical encoding, so the
+        pretty form does not participate in any identity.
+    """
+    manifest = build_paint_manifest(site_root, repository_root)
+    destination = site_root / PAINT_MANIFEST_NAME
+    destination.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return destination
+
+
+def verify_paint_manifest(
+    site_root: Path, repository_root: Path = REPOSITORY_ROOT
+) -> list[str]:
+    """Recompute the paint manifest and report every disagreement.
+
+    This is the teeth of the authority: the build wrote a manifest, and this
+    recomputes the same pure function from the CURRENT registers and the
+    CURRENT files. Any drift -- an edited register, a tampered file, a
+    hand-modified manifest -- surfaces as a named error instead of reaching
+    a deploy.
+
+    :param site_root: The built artifact directory to verify.
+    :param repository_root: Where the registers are read from now.
+    :returns: Error strings; empty means the artifact's paint authority is
+        exactly what the registers currently grant.
+    """
+    manifest_path = site_root / PAINT_MANIFEST_NAME
+    if not manifest_path.is_file():
+        return [f"missing release paint manifest: {PAINT_MANIFEST_NAME}"]
+    try:
+        stored = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        return [f"unreadable release paint manifest: {exc}"]
+
+    errors: list[str] = []
+
+    # Self-consistency first: the stored body must match its stored digest.
+    # This catches hand edits even when they happen to agree with the current
+    # registers, because an edited file no longer matches its own identity.
+    claimed_identity = stored.get("manifest_identity")
+    body = {key: value for key, value in stored.items() if key != "manifest_identity"}
+    if _sha256_bytes(_canonical_json_bytes(body)) != claimed_identity:
+        errors.append(
+            "release paint manifest identity does not match its content; "
+            "the manifest was edited after it was generated"
+        )
+
+    # Then recompute the whole manifest from current sources and compare
+    # field-by-field, so each kind of drift gets an error naming its cause.
+    expected = build_paint_manifest(site_root, repository_root)
+    for register_name in ("asset_register", "recipe_register"):
+        stored_digest = stored.get("registers", {}).get(register_name, {}).get("sha256")
+        if stored_digest != expected["registers"][register_name]["sha256"]:
+            errors.append(
+                f"{register_name} has changed since the manifest was "
+                "generated; the artifact's paint authority is stale"
+            )
+    for list_name in ("accepted_assets", "accepted_recipes"):
+        if stored.get(list_name) != expected[list_name]:
+            errors.append(
+                f"{list_name} in the manifest does not match what the "
+                "registers currently accept"
+            )
+    if stored.get("profile_identity") != expected["profile_identity"]:
+        errors.append("profile/font identity has changed since the manifest was generated")
+
+    stored_files = stored.get("artifact", {}).get("files", {})
+    expected_files = expected["artifact"]["files"]
+    for name in sorted(set(stored_files) | set(expected_files)):
+        if stored_files.get(name) != expected_files.get(name):
+            errors.append(f"artifact file does not match its manifest hash: {name}")
+    if stored.get("artifact", {}).get("identity") != expected["artifact"]["identity"]:
+        errors.append("artifact identity does not match the built files")
+
+    return errors
 
 
 def prepare_pages_site(output: Path) -> None:
@@ -543,6 +883,11 @@ def prepare_pages_site(output: Path) -> None:
             name = source.stem
             _write_letter_route(output, name, name)
 
+    # The paint manifest is written LAST, after every other file exists, so
+    # its artifact map covers the whole build. Verification then recomputes
+    # it immediately: a build whose own authority does not verify never
+    # reaches a caller.
+    write_paint_manifest(output)
     verify_pages_site(output)
 
 

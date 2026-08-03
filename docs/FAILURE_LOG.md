@@ -6039,3 +6039,36 @@ correction of record, seven items; supersedes parts of two earlier entries
 - Status: Implemented (unproven). The three corrected xfail reasons and this entry describe the
   same outstanding work. SPEC needed no change: it already required what the log had made
   optional.
+
+### Route step 2: the release paint authority is now built into the artifact
+
+Question:
+The execution order's paint-manifest step requires a build-time accepted-paint manifest,
+independent of hostname, query parameters, caller permissions, `allowUnacceptedArt` and review
+mode, whose mutation in any input fails the build. Implement it in `prepare_pages_site.py`.
+
+Type:
+implementation, with mutation proofs
+
+- **What was built (2026-08-03):** `prepare_pages_site.py` now derives `garden-release-manifest.
+  json` into the built site as a pure function of the two verdict registers, the atlas, the font
+  and the built files. It carries the register hashes, the sorted accepted asset and recipe IDs
+  (verdicts `accepted`/`accepted_as_deployed` only -- `rejected` and `not_reviewed` are absent by
+  construction), the atlas/font profile identity, a per-file artifact hash map, an artifact
+  identity over that map, and a digest of itself. `verify_pages_site` now verifies the manifest
+  alongside the dependency walk, and the build verifies its own output before returning.
+
+- **Proved by mutation, not asserted (2026-08-03):** `tests/garden_acceptance/
+  test_release_paint_manifest.py` -- nine checks. Altering a built file, hand-editing an accepted
+  list, and flipping one register verdict each make verification fail with an error naming the
+  cause; a verdict outside the shared vocabulary refuses the build rather than guessing; the
+  manifest is byte-deterministic across recomputation; and its data fields carry none of the
+  runtime permission vocabulary.
+
+- **What this does not claim (2026-08-03):** the runtime does not yet CONSULT this manifest --
+  paint decisions still live in the renderer until the presentation-owner transfer lands. This
+  step establishes the authority the new owner will read; it does not retire the old paths.
+
+- Status: Implemented (unproven). New suite 9 of 9 holding locally alongside the existing
+  builder and viewer-contract suites; the only red tests remain the three letter-typography
+  defects and the deploy-cutover assertion the route keeps red until its step 14.
