@@ -5363,3 +5363,60 @@ defect
   runs those contracts from the Python side and had been failing -- holds as a result. The browser
   E2E is unchanged at 20 passing and 4 strict xfailed: the mobile missing-rectangle defect is
   cropping, not anchoring, and this does not touch it.
+
+### Garden review package: the deployed legacy now sits beside the candidate
+
+Question:
+Goal §13 requires the acceptance package to contain a fresh nonpersistent canonical candidate AND
+"deployed legacy beside it", and requires every captured PNG and video to be opened and visually
+inspected before presentation. The 2026-08-03 package contained the candidate only. A reviewer
+comparing two separate files by flipping between them is comparing memories, and the question being
+asked -- does the candidate preserve the approved deployed visual language -- is a visual one.
+
+Type:
+task + observation
+
+- **The capture tool could not reach the baseline (2026-08-03):** `capture_html_garden_review.py`
+  hardcoded `#btn-standalone`. The deployed legacy predates standalone mode and opens from
+  `#btn-demo`, so the tool could capture the candidate and nothing to compare it against. Now an
+  `--entry-selector` argument; it is still a click on a real visible control in a real browser, and
+  only which control has become an argument.
+
+- **Legacy captured, and it exposes no accessible object counts (2026-08-03):** the legacy package
+  captured cleanly -- ten-second desktop and mobile WebM, stills, GIF, ten unique painted-text
+  hashes on both sizes, no console errors, no bad responses -- and failed exactly one receipt check:
+  ARIA object counts, observed `{}`. That is not a capture fault. The deployed Garden publishes no
+  accessible object summary at all, where the candidate publishes "Garden with 2 plants, 5
+  fixtures". The check was left alone; weakening a check so a baseline can satisfy it is how a
+  baseline stops measuring anything.
+
+- **What I saw, having opened every still (2026-08-03):** recorded as an observation, NOT a verdict;
+  §13 reserves that for the operator. Desktop: the candidate places seven objects along one line
+  with wide even gaps, a single dotted soil row, and a flat untextured band filling the lower third
+  beneath a hard horizontal edge; roughly the upper 40% is empty sky holding three dots. The legacy
+  carries vegetation across the entire measured width -- three canopies, many small plants at
+  varying heights, a continuous textured ground band at the very bottom. Against §1 the legacy
+  "reads immediately as one inhabited place"; the candidate reads as props on a rule. §1's
+  prohibitions on a "hard bottom band" and on "large dead regions above or below a tiny scene"
+  appear to be met by the candidate rather than avoided. Mobile: the candidate keeps three of seven
+  objects -- bench, mailbox, lantern -- and loses both plants along with the stepping stones and
+  planter, which is §1's "may crop peripheral scenery but may not lose the essential Garden".
+
+- **Not attributable (2026-08-03):** the earlier candidate still `02-` shows no continuous soil row
+  and the new `04-` does. They differ by more than the code -- `02-` is summer EVENING at
+  `5fdd182`, `04-` is summer DAY at `f6751d9` -- so the difference cannot be credited to the
+  rectangle-anchor correction from these two images, and is not.
+
+- **The sheet's own captions were illegible first (2026-08-03):** `build_garden_comparison_sheet.py`
+  drew both banners at one size, so on the 390px-wide mobile panels the candidate's label ran
+  straight through the legacy's. A comparison sheet whose captions cannot be read fails at its only
+  job. Labels are now measured against their own panel and step down in size; source lines elide
+  from the left below the size floor, keeping the digest. The two illegible sheets were moved to the
+  session scratch area rather than deleted.
+
+- Status: Implemented (unproven as visual acceptance). §13's "deployed legacy beside it" and "every
+  captured PNG/video opened and visually inspected before presentation" are now satisfied for the
+  still images. Still uncovered in §13, and deliberately not approximated: bonded-animal delivery,
+  each animal and bond tier, item discovery, and the post-completion memorial, all of which need art
+  or recipes carrying no verdict. The four operator verdicts in `docs/garden-review-verdicts.json`
+  remain unwritten and are not mine to write.

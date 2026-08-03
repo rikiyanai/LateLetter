@@ -439,6 +439,7 @@ def _capture_viewport(
     warmup_seconds: float,
     sample_count: int,
     timeout_ms: int,
+    entry_selector: str,
 ) -> tuple[Path, dict[str, Any]]:
     context = browser.new_context(
         viewport={"width": dimensions.width, "height": dimensions.height},
@@ -480,9 +481,18 @@ def _capture_viewport(
 
     try:
         page.goto(url, wait_until="networkidle")
-        standalone = page.locator("#btn-standalone")
-        standalone.wait_for(state="visible")
-        standalone.click()
+        # The real visible button, whichever one this viewer offers.
+        #
+        # The candidate opens its Garden from `#btn-standalone`. The DEPLOYED
+        # LEGACY has no such button -- it predates standalone mode and opens
+        # from `#btn-demo` -- so a tool hardcoded to the candidate's selector
+        # could never capture the baseline the goal file requires the candidate
+        # to be compared against (goal section 13, "deployed legacy beside
+        # it"). This is still a click on a real visible control in a real
+        # browser; only which control it is has become an argument.
+        entry = page.locator(entry_selector)
+        entry.wait_for(state="visible")
+        entry.click()
         page.locator("#hud.vis").wait_for(state="visible")
         page.locator("#g div").first.wait_for(state="attached")
         page.wait_for_timeout(round(warmup_seconds * 1000))
@@ -685,6 +695,7 @@ def capture_package(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
                     warmup_seconds=args.warmup,
                     sample_count=args.samples,
                     timeout_ms=args.timeout_ms,
+                    entry_selector=args.entry_selector,
                 )
                 raw_mobile, mobile_details = _capture_viewport(
                     browser,
@@ -697,6 +708,7 @@ def capture_package(args: argparse.Namespace) -> tuple[dict[str, Any], bool]:
                     warmup_seconds=args.warmup,
                     sample_count=args.samples,
                     timeout_ms=args.timeout_ms,
+                    entry_selector=args.entry_selector,
                 )
             finally:
                 browser.close()
@@ -852,6 +864,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=30,
         help="minimum unique decoded GIF frames",
+    )
+    parser.add_argument(
+        "--entry-selector",
+        default="#btn-standalone",
+        help=(
+            "CSS selector of the visible button that opens the Garden. "
+            "The candidate uses #btn-standalone; the deployed legacy viewer "
+            "has no standalone mode and uses #btn-demo."
+        ),
     )
     parser.add_argument(
         "--timeout-ms",
