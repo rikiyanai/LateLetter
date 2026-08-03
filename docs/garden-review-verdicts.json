@@ -10,7 +10,14 @@
     "the assistant's opinion of a capture it opened"
   ],
   "how_a_verdict_is_recorded": "Watch the package named in `evidence`, at both required sizes, all the way through. Then set `verdict` to accepted or rejected, `decided_by` to the operator, `decided_at_utc`, and for a rejection say what is wrong in `notes`. A verdict binds to the exact evidence sha256 it was given: re-rendering the product produces new artifacts and inherits nothing, because approval attaches to what was actually watched.",
-  "vocabulary": ["accepted", "rejected", "not_reviewed"],
+  "vocabulary": [
+    "accepted",
+    "rejected",
+    "not_reviewed"
+  ],
+  "operator": null,
+  "who_the_operator_is": "The person whose judgement these four verdicts record, written here once so that `decided_by` can be checked against something instead of merely being non-empty. While this is null NO verdict can be accepted, which is the intended state: an approval by nobody in particular is not an approval, and only the operator can say who the operator is. The assistant must not fill this in.",
+  "where_evidence_must_live": "docs/visual-review/ -- a verdict binds to an artifact that was watched. A registry file or a JSON document whose digest happens to match is not evidence of having watched anything, and the checker now refuses it.",
   "verdicts": {
     "assets": {
       "question": "Is each individual drawing right -- glyph forms, palette, the states each object can be in?",

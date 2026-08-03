@@ -69,6 +69,7 @@ Exit code is 0 when there are no violations and no active blockers, 1 otherwise.
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import json
 import re
@@ -94,6 +95,16 @@ DECISION_RECORD = ROOT / "docs" / "operator-decision-record.md"
 # fact from anything this validator computes, and must never be derivable from
 # the things it computes.
 _REVIEW_VERDICTS = ROOT / "docs" / "garden-review-verdicts.json"
+
+# Where a review package lives, and therefore the only place a verdict may cite
+# its evidence from.
+#
+# Without this the checker verified that cited bytes had not changed and nothing
+# else, so `docs/garden-asset-acceptance.json` -- a registry file -- could stand
+# as the evidence for the MOTION verdict. Its digest matched, so the gate was
+# satisfied by a document nobody could watch. Evidence integrity without
+# evidence relevance is a gate that checks its own paperwork.
+_REVIEW_PACKAGE_ROOT = ROOT / "docs" / "visual-review"
 
 # Verdicts that permit a source to appear in a released frame.  Everything else
 # -- not_reviewed, rejected, or an unrecognised string -- blocks a release.
@@ -1957,6 +1968,51 @@ def outstanding_operator_verdicts() -> list[str]:
             if not record.get(field):
                 outstanding.append(f"{name} is accepted but records no {field}")
 
+        # WHO. A non-empty `decided_by` used to be enough, so "operator", "me"
+        # or "ok" all counted as an author. An approval by nobody in particular
+        # is not an approval, so the register must declare who the operator is
+        # and the verdict must match that declaration. While `operator` is null
+        # -- which it is, and which only the operator can change -- no
+        # acceptance can clear this gate at all. That is the intended state: the
+        # identity has to be established before it can be checked against.
+        operator = register.get("operator")
+        author = record.get("decided_by")
+        if not operator:
+            outstanding.append(
+                f"{name} cannot be accepted until the register declares who the "
+                "operator is in its top-level `operator` field"
+            )
+        elif author and author != operator:
+            outstanding.append(
+                f"{name} was decided by {author!r}, not by the declared "
+                f"operator {operator!r}"
+            )
+
+        # WHEN. A non-empty timestamp used to be enough, so the word "soon"
+        # would clear it. Parsed as a real instant, and refused if it is in the
+        # future, because a verdict dated after the moment it is read was not
+        # given by watching anything.
+        stamped = record.get("decided_at_utc")
+        if stamped:
+            try:
+                moment = datetime.datetime.fromisoformat(
+                    str(stamped).replace("Z", "+00:00")
+                )
+            except ValueError:
+                outstanding.append(
+                    f"{name} records {stamped!r}, which is not an ISO-8601 instant"
+                )
+            else:
+                if moment.tzinfo is None:
+                    outstanding.append(
+                        f"{name} records {stamped!r} with no timezone; the field "
+                        "is decided_at_UTC and must say so"
+                    )
+                elif moment > datetime.datetime.now(datetime.timezone.utc):
+                    outstanding.append(
+                        f"{name} is dated {stamped!r}, which is in the future"
+                    )
+
         evidence = record.get("evidence")
         if not evidence:
             continue
@@ -1970,6 +2026,21 @@ def outstanding_operator_verdicts() -> list[str]:
                 outstanding.append(f"{name} evidence entry needs a path and a sha256")
                 continue
             located = ROOT / path
+            # WHAT. Evidence must be something a person can watch, which means
+            # it must come from a review package. Before this, any repository
+            # file whose digest matched would do, and the satisfiable case in
+            # the mutation test used `docs/garden-asset-acceptance.json` -- a
+            # registry -- as the evidence for the MOTION verdict. The digest
+            # matched, so the gate was cleared by a document nobody could watch.
+            try:
+                located.resolve().relative_to(_REVIEW_PACKAGE_ROOT.resolve())
+            except ValueError:
+                outstanding.append(
+                    f"{name} cites {path}, which is not in the review package at "
+                    f"{_REVIEW_PACKAGE_ROOT.relative_to(ROOT)}; a verdict binds to "
+                    "an artifact that was watched, not to a repository file"
+                )
+                continue
             if not located.exists():
                 outstanding.append(f"{name} cites missing evidence {path}")
                 continue

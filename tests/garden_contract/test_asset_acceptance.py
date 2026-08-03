@@ -1396,8 +1396,9 @@ def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
 
     register = _json.loads(_REVIEW_VERDICTS.read_text(encoding="utf-8"))
 
-    def _with(verdict_patch: dict) -> list[str]:
+    def _with(verdict_patch: dict, register_patch: dict | None = None) -> list[str]:
         mutated = copy.deepcopy(register)
+        mutated.update(register_patch or {})
         for name in mutated["verdicts"]:
             mutated["verdicts"][name].update(verdict_patch)
         original = _REVIEW_VERDICTS.read_text(encoding="utf-8")
@@ -1407,43 +1408,107 @@ def test_mutation_an_operator_verdict_cannot_be_accepted_without_evidence():
         finally:
             _REVIEW_VERDICTS.write_text(original, encoding="utf-8")
 
+    # The declared operator every satisfiable case below must be signed by. The
+    # real register carries `operator: null` on purpose, so nothing here can be
+    # cleared without saying who is clearing it.
+    DECLARED = {"operator": "the-operator"}
+
     # Bare "accepted" with nothing behind it.
     problems = _with({"verdict": "accepted"})
     assert problems, "four words cleared the operator acceptance gate"
     assert any("records no evidence" in problem for problem in problems)
 
-    # Evidence named but absent from disk.
+    # Evidence named but absent from disk. Inside the review package, so this
+    # fails for absence rather than for location.
     problems = _with({
         "verdict": "accepted",
-        "evidence": [{"path": "docs/no-such-capture.png", "sha256": "0" * 64}],
-        "decided_by": "operator",
+        "evidence": [
+            {"path": "docs/visual-review/no-such-capture.png", "sha256": "0" * 64}
+        ],
+        "decided_by": "the-operator",
         "decided_at_utc": "2026-08-03T00:00:00Z",
-    })
+    }, DECLARED)
     assert any("missing evidence" in problem for problem in problems)
-
-    # Evidence that exists but is not the artifact that was watched.
-    # Deliberately NOT the verdict register itself: this helper rewrites that
-    # file, so citing it would compare a digest against bytes the test just
-    # changed and fail for a reason that has nothing to do with the gate.
-    real = ROOT / "docs" / "garden-asset-acceptance.json"
-    problems = _with({
-        "verdict": "accepted",
-        "evidence": [{"path": "docs/garden-asset-acceptance.json", "sha256": "1" * 64}],
-        "decided_by": "operator",
-        "decided_at_utc": "2026-08-03T00:00:00Z",
-    })
-    assert any("has changed since it was accepted" in problem for problem in problems)
 
     # A word nobody defined is not an acceptance.
     problems = _with({"verdict": "approved-ish"})
     assert any("unknown verdict" in problem for problem in problems)
 
-    # The satisfiable case: a real artifact, its real digest, an author and a
-    # time. A gate that can never be cleared teaches nothing about the gate.
-    digest = _hashlib.sha256(real.read_bytes()).hexdigest()
-    assert _with({
+    # A repository file whose digest matches is not something anybody watched.
+    # This is the hole the gate had: `docs/garden-asset-acceptance.json` is a
+    # registry, and it stood as the evidence for the MOTION verdict purely
+    # because its sha256 was correct.
+    registry = ROOT / "docs" / "garden-asset-acceptance.json"
+    problems = _with({
         "verdict": "accepted",
-        "evidence": [{"path": "docs/garden-asset-acceptance.json", "sha256": digest}],
-        "decided_by": "operator",
+        "evidence": [{
+            "path": "docs/garden-asset-acceptance.json",
+            "sha256": _hashlib.sha256(registry.read_bytes()).hexdigest(),
+        }],
+        "decided_by": "the-operator",
         "decided_at_utc": "2026-08-03T00:00:00Z",
-    }) == []
+    }, DECLARED)
+    assert any("not in the review package" in problem for problem in problems)
+
+    # A real review artifact, correctly cited, but signed by somebody who is not
+    # the declared operator.
+    package = ROOT / "docs" / "visual-review" / ".acceptance-gate-probe"
+    package.mkdir(parents=True, exist_ok=True)
+    watched = package / "probe.txt"
+    watched.write_text("stand-in for a capture the operator watched\n", encoding="utf-8")
+    try:
+        cited = [{
+            "path": "docs/visual-review/.acceptance-gate-probe/probe.txt",
+            "sha256": _hashlib.sha256(watched.read_bytes()).hexdigest(),
+        }]
+        problems = _with({
+            "verdict": "accepted", "evidence": cited,
+            "decided_by": "somebody-else",
+            "decided_at_utc": "2026-08-03T00:00:00Z",
+        }, DECLARED)
+        assert any("not by the declared operator" in problem for problem in problems)
+
+        # Nobody has said who the operator is, so nobody can accept anything.
+        # This is the register's real state.
+        problems = _with({
+            "verdict": "accepted", "evidence": cited,
+            "decided_by": "the-operator",
+            "decided_at_utc": "2026-08-03T00:00:00Z",
+        })
+        assert any("declares who the operator is" in problem for problem in problems)
+
+        # "soon" is not a time.
+        problems = _with({
+            "verdict": "accepted", "evidence": cited,
+            "decided_by": "the-operator", "decided_at_utc": "soon",
+        }, DECLARED)
+        assert any("not an ISO-8601 instant" in problem for problem in problems)
+
+        # A verdict cannot be given for a capture that has not been made yet.
+        problems = _with({
+            "verdict": "accepted", "evidence": cited,
+            "decided_by": "the-operator", "decided_at_utc": "2999-01-01T00:00:00Z",
+        }, DECLARED)
+        assert any("in the future" in problem for problem in problems)
+
+        # Digest bound to bytes: change the artifact and the verdict lapses.
+        watched.write_text("re-rendered, so nothing was inherited\n", encoding="utf-8")
+        problems = _with({
+            "verdict": "accepted", "evidence": cited,
+            "decided_by": "the-operator",
+            "decided_at_utc": "2026-08-03T00:00:00Z",
+        }, DECLARED)
+        assert any("has changed since it was accepted" in problem for problem in problems)
+
+        # The satisfiable case: a watched artifact in the review package, its
+        # real digest, the declared operator, and a real past instant. A gate
+        # that can never be cleared teaches nothing about the gate.
+        cited[0]["sha256"] = _hashlib.sha256(watched.read_bytes()).hexdigest()
+        assert _with({
+            "verdict": "accepted", "evidence": cited,
+            "decided_by": "the-operator",
+            "decided_at_utc": "2026-08-03T00:00:00Z",
+        }, DECLARED) == []
+    finally:
+        watched.unlink(missing_ok=True)
+        package.rmdir()

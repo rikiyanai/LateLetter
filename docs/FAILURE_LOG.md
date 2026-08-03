@@ -5597,3 +5597,43 @@ coverage gap + flake + my own false gate claim
   mobile motionlessness, seasonal sameness, the absent ambient bird, and hover changing nothing but
   the cursor. Five accepted fixtures -- arbor, birdbath, bridge, pond, trellis -- still never enter
   this review, which the file asserts by name rather than leaving to inference.
+
+### Verdict authentication: integrity was enforced, relevance and identity were not
+
+Question:
+An external verification reported that `outstanding_operator_verdicts` verifies evidence hashes but
+accepts any non-empty `decided_by`, any non-empty `decided_at_utc` without parsing it, and any
+hash-matched repository file regardless of what it is. Its evidence: the satisfiable case in my own
+mutation test cited `docs/garden-asset-acceptance.json` -- a registry -- as the evidence for the
+MOTION verdict. That was correct.
+
+Type:
+defect in a gate I built and reported as working
+
+- **Three holes, all in the same shape (2026-08-03):** the checker verified that cited bytes had not
+  changed and nothing else. WHO: any non-empty string was an author, so "ok" signed a verdict. WHEN:
+  any non-empty string was a time, so "soon" dated one. WHAT: any repository file would do, so a
+  JSON registry was evidence of having watched ten seconds of motion. Each is the same error --
+  checking that a field is filled rather than what it is filled with -- and the mutation test I
+  wrote to prove the gate worked demonstrated the third one while asserting the gate held.
+
+- **Correction (2026-08-03):** `decided_by` must equal the register's own top-level `operator`
+  declaration; `decided_at_utc` must parse as an ISO-8601 instant, carry a timezone, and not be in
+  the future; every evidence path must resolve inside `docs/visual-review/`, the review package
+  root. The register now carries `operator: null` and says plainly that while it is null NO verdict
+  can be accepted and that the assistant must not fill it in. That is the intended state: an
+  approval by nobody in particular is not an approval, and only the operator can say who the
+  operator is.
+
+- **The mutation test now exercises all of it (2026-08-03):** eight mutations against a satisfiable
+  control -- bare acceptance, absent evidence, unknown vocabulary, a registry cited as a capture, a
+  signature from somebody other than the declared operator, an acceptance while no operator is
+  declared, "soon" as a timestamp, a timestamp in the future, and an artifact edited after it was
+  cited. The satisfiable case writes a stand-in artifact inside the review package and removes it
+  afterwards, so the control proves the gate can be cleared without leaving anything behind that
+  could be mistaken for real evidence.
+
+- Status: Implemented (unproven as visual acceptance). 225 contract and acceptance tests hold. The
+  validator still refuses, and now refuses for a better reason: all four verdicts are `not_reviewed`
+  AND the register declares no operator, so there is currently no way for any acceptance to be
+  recorded by anyone but the person who fills in that field.
