@@ -28,7 +28,7 @@ import { compareCodePoints } from './garden-world.mjs';
 import { createGeometry } from './garden-geometry.mjs';
 
 const DEPTH = Object.freeze({ stars: 0.02, distant: 0.20, far: 0.55, world: 1, foreground: 1.15 });
-const DAY = Object.freeze({
+export const DAY = Object.freeze({
   sky: '#f5efe3', ground: '#e6ddc8', soil: '#d3c3a2', dim: '#958875',
   green: '#436c2d', brightGreen: '#5f913a', deepGreen: '#2f501c', brown: '#76502b',
   flower: '#9e367f', flower2: '#b64a34', gold: '#b7811d', water: '#416f8f',
@@ -37,14 +37,14 @@ const DAY = Object.freeze({
   flag: '#b3241c',
   creature: '#68472d', stone: '#6f695f', star: '#817b6b', moon: '#aaa184', text: '#443d35',
 });
-const NIGHT = Object.freeze({
+export const NIGHT = Object.freeze({
   sky: '#0b0e16', ground: '#13181e', soil: '#28302a', dim: '#606058',
   green: '#5a9858', brightGreen: '#78b870', deepGreen: '#41703e', brown: '#a08868',
   flower: '#d068b8', flower2: '#e87868', gold: '#e0b848', water: '#7898b8',
   flag: '#e2564a',
   creature: '#c0a078', stone: '#a0a098', star: '#b8b8a8', moon: '#e8e4d0', text: '#d0ccc0',
 });
-const EVENING = Object.freeze({ ...DAY, sky: '#ecd6b6', ground: '#d8bea2', star: '#766979' });
+export const EVENING = Object.freeze({ ...DAY, sky: '#ecd6b6', ground: '#d8bea2', star: '#766979' });
 const MOON_ART = Object.freeze([
   [], ['  _', ' ) ', ' ‾ '], [' _ ', '|) ', ' ‾ '], [' __ ', '(O) ', ' ‾‾ '],
   [' __ ', '(  )', ' ‾‾ '], [' __ ', ' (O)', ' ‾‾ '], [' _ ', ' (|', ' ‾ '], [' _ ', ' ( ', ' ‾ '],
@@ -933,13 +933,13 @@ export function measuredAssetPlacement(geometry, asset) {
   };
 }
 
-function presentationTime(projection) {
+export function presentationTime(projection) {
   const observed = Number(projection.observed_time);
   return Number.isFinite(observed) && observed >= 0
     ? observed : Math.max(0, Number(projection.effective_time) || 0);
 }
 
-function timeOfDay(projection) {
+export function timeOfDay(projection) {
   const authored = String(projection.scene?.story_time ?? projection.scene?.palette ?? '').toLowerCase();
   if (authored.includes('night')) return 'night';
   if (authored.includes('evening') || authored.includes('sunset') || authored.includes('dusk')) return 'evening';
@@ -947,7 +947,7 @@ function timeOfDay(projection) {
   const hour = new Date(presentationTime(projection) * 1000).getUTCHours();
   return hour >= 21 || hour < 5 ? 'night' : hour >= 18 ? 'evening' : 'day';
 }
-function seasonOf(projection) {
+export function seasonOf(projection) {
   const authored = String(projection.scene?.season ?? projection.scene?.palette ?? '').toLowerCase();
   for (const season of ['spring', 'summer', 'autumn', 'winter']) if (authored.includes(season)) return season;
   const month = new Date(presentationTime(projection) * 1000).getUTCMonth() + 1;
@@ -1344,7 +1344,7 @@ const ACCENT_ROLES = Object.freeze({ signal: 'flag' });
  *   nothing to accent. An unknown role is dropped rather than guessed at, so a
  *   typo in an atlas asset loses the accent instead of inventing a colour.
  */
-function accentColors(accents, palette, season) {
+export function accentColors(accents, palette, season) {
   if (!accents) return null;
   const resolved = {};
   for (const [cell, role] of Object.entries(accents)) {
@@ -1354,7 +1354,7 @@ function accentColors(accents, palette, season) {
   return Object.keys(resolved).length ? resolved : null;
 }
 
-function objectPresentationArt(object, frame, lod = 'full', emphasized = false) {
+export function objectPresentationArt(object, frame, lod = 'full', emphasized = false) {
   const state = object.semantic_state ?? {};
   if (object.kind === 'plant') {
     const art = plantArt(object, frame, emphasized, lod);
@@ -1692,7 +1692,7 @@ export function layoutGardenObjects(projection, viewport, frame = 0) {
  * The cohorts only establish a painter's order so near planting can overlap the
  * feet of the middle distance while far silhouettes remain behind it.
  */
-function gardenDepthCohorts(layout, profile) {
+export function gardenDepthCohorts(layout, profile) {
   const cohorts = { far: [], middle: [], near: [] };
   const span = Math.max(1, profile.groundFront - profile.groundBack);
   for (const entry of layout) {
@@ -1707,7 +1707,7 @@ function gardenDepthCohorts(layout, profile) {
   return cohorts;
 }
 
-function paletteColor(palette, key, season) {
+export function paletteColor(palette, key, season) {
   if (season === 'autumn' && ['green', 'brightGreen'].includes(key)) return key === 'green' ? '#a66d25' : '#c18a2f';
   if (season === 'winter' && key === 'brightGreen') return palette.stone;
   return palette[key] ?? palette.text;
@@ -1739,6 +1739,397 @@ export function objectBurstPattern(burst, age = 0) {
   if (kind === 'animal')
     return [[-1, -2, '·', 'flower'], [0, -3, '*', 'flower'], [1, -2, '·', 'flower']];
   return [[0, -1, '·', 'gold']];
+}
+
+// ---------------------------------------------------------------------------
+// Composition painters, extracted from the renderer class 2026-08-03.
+// ---------------------------------------------------------------------------
+//
+// These were `CanonicalGardenRenderer` methods. They are module-level pure
+// functions now -- every input is a parameter, none reads `this` -- so the
+// GardenPresentation owner can call them without owning a renderer. This
+// extraction changes NO behaviour: the class calls the same functions with
+// the same values, and the ownership transfer that retires the class's
+// orchestration is the following patch, not this one.
+
+export function drawSky(raster, projection, sky, palette, profile, mode) {
+  const observedTime = presentationTime(projection);
+  // Project the catalogue into the region the sky actually owns rather than
+  // over the whole frame. Stars projected into the Garden band are painted
+  // and then immediately covered by ground, planting and objects, so they
+  // were doing nothing except thinning the visible sky.
+  const skyRows = Math.max(2, profile.bandTop);
+  const projected = projectSkyPoints(sky, observedTime, [raster.width, skyRows]);
+  const visible = mode === 'day' ? (sky.astronomical ? [] : projected.slice(0, 3)) :
+    mode === 'evening' ? projected.filter((_, index) => index % 2 === 0) : projected;
+  for (const [x, y, glyph] of visible) raster.put(x, y, glyph, palette.star);
+  if (mode === 'night') {
+    const art = MOON_ART[lunarPhase(observedTime)];
+    art.forEach((line, row) => raster.text(Math.max(1, Math.floor(raster.width * 0.78)), 1 + row, line, palette.moon));
+  }
+}
+
+
+/**
+ * Paint the receding ground plane.
+ *
+ * Objects now stand on soil lines anywhere between `profile.groundBack` and
+ * `profile.groundFront`, so every one of those lines has to look like ground
+ * or the things standing on them still read as floating. Three painted lines
+ * under a plane that spans eight is exactly the mismatch that made a bridge
+ * look airborne.
+ *
+ * Density rises toward the viewer: sparse specks at the back where the plane
+ * is furthest away, continuous soil at the front. That gradient is what makes
+ * a flat character grid read as a surface going away from you rather than as
+ * a stripe of noise.
+ */
+export function drawGround(raster, palette, season, profile) {
+  // `profile.horizon` is deliberately NOT read here. It is the sky boundary,
+  // not the ground, and reading it was the defect: see `gardenGroundY`.
+  const texture = season === 'winter' ? '.*.' :
+    season === 'autumn' ? ',`.' : '.,';
+  // ONE SURFACE. Two rows of soil at the horizon, and nothing else.
+  //
+  // What used to be here: a far contour line, a ~30-row speckle field whose
+  // density rose toward the viewer, and a pale path receding into it. The
+  // intent was perspective -- make a flat character grid read as a plane
+  // going away from you. On review it read as scattered debris, and the
+  // reason is now clear: perspective needs things AT different depths to
+  // sell it, and the approved roster is five fixtures that all stand on the
+  // same line. The receding field was a stage built for a scene that does
+  // not exist.
+  //
+  // A single band asks less of the art and gives the fixtures one line to
+  // sit on, which is what "one band / one surface" means. `groundBack` and
+  // `groundFront` remain in the presentation profile: they still bound where
+  // ambient life may fly and where weather may settle, and a later
+  // composition may use the space again -- but nothing paints there now.
+  //
+  // This is UNDER REVIEW, not approved. It is the surface the vertical slice
+  // is being reviewed on, so it deliberately does the least a ground can do.
+  //
+  // The rows are `groundFront` -- the line objects' feet actually land on --
+  // and the one below it. Painting `horizon` and `horizon + 1` instead, as
+  // the first attempt did, put the whole band one row BELOW every object,
+  // which is why the capture showed fixtures standing on nothing.
+  // `profile.groundFront` is the single field that answers "where is the
+  // ground". The compositor puts feet on it and `gardenGroundY` reports it,
+  // so paint and feet cannot move independently. `+ 1` is the near lip of
+  // the band, giving the line a little thickness without making it a second
+  // surface.
+  const groundY = profile.groundFront;
+  for (const row of [groundY, groundY + 1]) {
+    for (let x = 0; x < raster.width; x += 1) {
+      const glyph = x % 5 === 0 ? '.' : texture[(x + row * 3) % texture.length];
+      raster.put(x, row, glyph, palette.soil);
+    }
+  }
+}
+
+
+
+/**
+ * EMPTIED 2026-08-01, on the same rule that emptied `_drawSkyLife`.
+ *
+ * WHAT THIS DREW
+ * --------------
+ * A scatter of `;` `'` `,` `*` `/` `\` across a radius of up to fifteen
+ * columns either side of every plant, plus a shallow mound of `.` `:` `,`
+ * beneath it, coloured from the foliage palette and reseeded per plant.
+ *
+ * WHY IT IS GONE
+ * --------------
+ * It was renderer-authored decoration. Not a canonical object, not an atlas
+ * asset, not from the archive -- glyphs this module invented to give the
+ * ground "the dense botanical rhythm the Garden needs", which is a visual
+ * judgement no one made but this file.
+ *
+ * The operator's rule admits no exception: nothing they have not approved may
+ * appear. Ground-cover scatter is specifically something they have already
+ * looked at and rejected once, in the round that removed the ground-cover
+ * band. It came back the moment the legacy art port put plants into the
+ * default scene again, because it is drawn per plant -- thirty-one columns of
+ * unapproved glyphs arriving as a side effect of restoring two approved
+ * drawings. That is exactly the failure mode the acceptance registry exists
+ * to catch, and here it was caught by the ground contract test rather than by
+ * a capture, which is the improvement.
+ *
+ * The method is kept rather than deleted so this reasoning stays attached to
+ * the thing it is about. It draws nothing. If a planted bed is wanted, it has
+ * to be drawn as canonical objects or archived art and reviewed per asset.
+ */
+export function drawPlantBeds(raster, projection, layout, palette, season, profile) {
+  void raster; void projection; void layout; void palette; void season; void profile;
+}
+
+
+export function drawAmbient(raster, projection, palette, season, horizon, profile) {
+  const mode = timeOfDay(projection);
+  // Small ambient life belongs among the planting, not scattered through the
+  // whole airspace. The band runs from a little above the far edge of the
+  // ground plane down to just above the near soil line, which is where the
+  // flowers and grass are.
+  const lifeBand = profile
+    ? [Math.max(1, profile.groundBack - 4), Math.max(1, profile.groundFront - 1)]
+    : null;
+  // EMPTIED 2026-07-31, pending per-asset visual approval.
+  //
+  // Three ambient populations used to be drawn here: seven `⋈`/`⋊`
+  // butterflies in daylight coloured `flower` and `gold`, `·`/`✦` fireflies
+  // in the evening, and `·`/`.` winter drift. None of that art was ever
+  // submitted for acceptance, and in the live capture the butterflies were
+  // exactly what the operator had already rejected twice -- scattered
+  // multicolour marks, sitting in the ground region rather than the sky.
+  //
+  // The band is computed above and left unused rather than deleted, and the
+  // time-of-day and season branches are gone rather than commented out,
+  // because a dead branch that still runs is how unapproved art returns by
+  // accident. Restoring a population means drawing it, having that drawing
+  // accepted under SPEC 7.10, and only then writing the code back.
+  //
+  // SPEC 7.8.4 does list ambience as required before the CATALOG is complete.
+  // That is a catalog obligation, not a licence to ship unreviewed marks in
+  // the default scene -- the same distinction 7.8.4 now records for fixtures.
+  void lifeBand;
+}
+
+
+/**
+ * Inhabit the sky.
+ *
+ * Everything below the object band is ground and planting; everything above
+ * it was, until now, reserved space with nothing in it — more than half the
+ * frame left blank in daylight, because stars and the moon only appear at
+ * night. Clouds and distant birds are what that reserved space is for.
+ *
+ * Both are presentation only. They never enter the layout array, own no
+ * canonical object, and cannot be focused or clicked, which is exactly what
+ * keeps them from impersonating a relationship animal.
+ */
+/**
+ * Sky life. Currently draws NOTHING, and that is the correct state.
+ *
+ * REMOVED 2026-08-01, on operator instruction, after the clouds and distant
+ * birds were identified in a live product frame as content that had never
+ * been individually accepted.
+ *
+ * What was here: two to five drifting `CLOUD_SHAPES` by day and evening, and
+ * three to ten one-cell birds on the archived `\v/ _v_ /v\ _v_` flap cycle.
+ * Both were authored inside this renderer. Neither has an `accepted` verdict
+ * in `docs/garden-asset-acceptance.json`, and SPEC 7.10.1 is explicit that
+ * passing every automated check while never having been looked at leaves an
+ * asset `not_reviewed` — it does not make it shippable.
+ *
+ * This is the same removal already made for the butterflies and fireflies on
+ * 2026-07-31, applied to the rest of the renderer's self-authored decoration.
+ * The Garden now paints its sky empty rather than filling it with drawings
+ * nobody approved. An empty sky is an honest gap; unapproved decoration is
+ * not.
+ *
+ * `skyCloudPresentation` and `ambientBirdPresentation` are deliberately KEPT
+ * and still exported. They are pure trajectory functions with their own
+ * tests, they encode the archived motion language, and the operator has
+ * accepted the legacy animations as art. When sky life returns it should
+ * return as accepted atlas assets driven by these same trajectories, not as
+ * new renderer-local drawings.
+ *
+ * @param raster     Frame being painted; untouched while this is dormant.
+ * @param projection Canonical scene; read for nothing at present.
+ * @param palette    Active theme colours.
+ * @param season     Canonical season name.
+ * @param profile    Presentation profile; `bandTop` bounds the sky.
+ * @param mode       'day' | 'evening' | 'night'.
+ */
+export function drawSkyLife(raster, projection, palette, season, profile, mode) {
+  // The sky band is still computed, because the boundary is real geometry and
+  // the next accepted asset will need it. Nothing is drawn into it.
+  const skyTop = 1;
+  const skyBottom = Math.max(skyTop + 1, profile.bandTop - 1);
+  void raster; void projection; void palette; void season; void mode;
+  void skyTop; void skyBottom;
+}
+
+
+export function drawWeather(raster, projection, palette, season, horizon, layout, visualFrame) {
+  const weather = String(projection.scene?.weather ?? '').toLowerCase();
+  const rain = weather.includes('rain') || weather.includes('storm');
+  const snow = weather.includes('snow') || (season === 'winter' && weather.includes('weather'));
+  const leaves = season === 'autumn' && !snow;
+  const plants = layout.filter(entry => entry.object.kind === 'plant');
+  const count = rain ? 70 : snow ? 45 : leaves && plants.length ? 16 : 0;
+  const kind = rain ? 'rain' : snow ? 'snow' : 'leaves';
+  const reactions = {
+    splashes: 0, snowCaps: 0, settledLeaves: 0,
+    groundSplashes: 0, groundSnow: 0,
+  };
+  for (let index = 0; index < count; index += 1) {
+    let [x, y] = weatherParticlePosition(
+      projection.world_id, index, visualFrame, raster.width, horizon, kind,
+    );
+    if (leaves && plants.length) {
+      const plant = plants[index % plants.length];
+      const seed = stringHash(`${projection.world_id}:canopy-leaf:${index}`);
+      const fallSpan = Math.max(2, horizon - plant.rect.top);
+      const fall = Math.floor(Math.max(0, visualFrame) / 4);
+      x = clamp(
+        plant.rect.left + Math.floor(noise(seed) * Math.max(1, plant.rect.right - plant.rect.left + 1)) +
+          (Math.floor((fall + index) / 4) % 3) - 1,
+        0, raster.width - 1,
+      );
+      y = plant.rect.top + wrap(Math.floor(noise(seed + 71) * fallSpan) + fall, fallSpan);
+    }
+    const glyph = rain ? (index % 3 ? '|' : '/') : snow ? (index % 4 ? '.' : '*') : (index % 2 ? '`' : ',');
+    const color = rain ? palette.water : snow ? palette.moon : palette.gold;
+    if (raster.glyphs[y]?.[x] === ' ') {
+      raster.put(x, y, glyph, color, true);
+      continue;
+    }
+    const objectSurface = layout.some(entry => rectContains(entry.rect, [x, y]));
+    const groundSurface = y >= horizon - 1;
+    if (rain && y > 0) {
+      for (const [dx, dy, splash] of [[-1, -1, '·'], [0, -1, '^'], [1, -1, '·']]) {
+        if (raster.glyphs[y + dy]?.[x + dx] === ' ') {
+          raster.put(x + dx, y + dy, splash, palette.water, true);
+          if (objectSurface) reactions.splashes += 1;
+          else if (groundSurface) reactions.groundSplashes += 1;
+        }
+      }
+    } else if (snow && y > 0) {
+      for (let rise = 1; rise <= 3; rise += 1) {
+        if (raster.glyphs[y - rise]?.[x] === ' ') {
+          raster.put(x, y - rise, rise === 1 && index % 5 === 0 ? '*' : '.', palette.moon, true);
+          if (objectSurface) reactions.snowCaps += 1;
+          else if (groundSurface) reactions.groundSnow += 1;
+          break;
+        }
+      }
+    }
+  }
+  if (rain) {
+    for (const entry of layout.filter(item => ['plant', 'fixture'].includes(item.object.kind))) {
+      const x = clamp(entry.anchor[0], 1, raster.width - 2);
+      const y = entry.rect.top - 1;
+      if (y < 0) continue;
+      for (const [dx, splash] of [[-1, '·'], [0, '^'], [1, '·']]) {
+        if (raster.glyphs[y]?.[x + dx] !== ' ') continue;
+        raster.put(x + dx, y, splash, palette.water, true);
+        reactions.splashes += 1;
+      }
+    }
+  }
+  if (snow) {
+    const capDensity = Math.min(0.72, 0.18 + visualFrame / 180);
+    for (const entry of layout.filter(item => ['plant', 'fixture'].includes(item.object.kind))) {
+      const row = entry.rect.top - 1;
+      for (let x = entry.rect.left; x <= entry.rect.right; x += 1) {
+        if (row < 0 || raster.glyphs[row]?.[x] !== ' ' ||
+          noise(stringHash(`${projection.world_id}:snow-cap:${entry.object.object_id}:${x}`)) > capDensity) continue;
+        raster.put(x, row, x % 4 === 0 ? '*' : '.', palette.moon, true);
+        reactions.snowCaps += 1;
+      }
+    }
+    for (let x = 0; x < raster.width; x += 3) {
+      if (noise(stringHash(`${projection.world_id}:snow-bank:${x}`)) > 0.35 &&
+        raster.glyphs[horizon - 1]?.[x] === ' ') {
+        raster.put(x, horizon - 1, x % 2 ? '.' : '*', palette.moon, true);
+        reactions.groundSnow += 1;
+      }
+    }
+  }
+  if (leaves && plants.length) {
+    const settleDensity = Math.min(0.60, 0.08 + visualFrame / 240);
+    for (let x = 1; x < raster.width - 1; x += 2) {
+      if (noise(stringHash(`${projection.world_id}:settled-leaf:${x}`)) > settleDensity) continue;
+      // The planted verge deliberately occupies the soil line. A fallen leaf
+      // rests on top of that verge instead of requiring the Garden beneath
+      // it to be blank.
+      const row = [horizon - 2, horizon - 3, horizon - 1]
+        .find(candidate => raster.glyphs[candidate]?.[x] === ' ');
+      if (row === undefined) continue;
+      raster.put(x, row, x % 4 ? ',' : '`', palette.gold, true);
+      reactions.settledLeaves += 1;
+    }
+  }
+  return reactions;
+}
+
+
+export function drawObject(raster, entry, projection, palette, season, view) {
+  const { object } = entry, [x, y] = entry.anchor;
+  const state = object.semantic_state ?? {};
+  const focused = object.object_id === view.focusedObjectId;
+  const hovered = view.hoverCell && rectContains(expandedRect(entry.hitRect, [3, 2]), view.hoverCell);
+  const emphasized = Boolean(hovered || focused);
+  if (focused) {
+    // A compact viewport may legitimately pack a tall picture against row
+    // zero. Focus must remain visible there, so use the top cell rather than
+    // silently dropping the marker.
+    raster.put(x, Math.max(0, entry.rect.top - 1), '⌄', palette.gold, true);
+  }
+  if (object.kind === 'plant') {
+    const art = objectPresentationArt(
+      object, view.visualFrame, entry.lod, emphasized,
+    );
+    raster.art(x, y, art.lines, paletteColor(palette, art.color, season), { animated: emphasized });
+    for (const organ of state.visible_organs ?? []) {
+      const ox = clamp(Number(organ.offset?.[0] ?? 0), -3, 3);
+      const oy = clamp(Number(organ.offset?.[1] ?? 0), 0, Math.max(0, art.lines.length - 1));
+      raster.put(x + ox, y - oy,
+        organGlyph(organ.kind, organ.glyph_family), paletteColor(palette, organ.kind === 'bloom' ? 'flower' : 'brightGreen', season));
+    }
+    raster.put(x, y, glyphForProjection(object), paletteColor(palette, 'brightGreen', season));
+    return;
+  }
+  if (object.kind === 'animal') {
+    raster.art(x, y, objectPresentationArt(
+      object, view.visualFrame, entry.lod, emphasized,
+    ).lines, palette.creature, { animated: true });
+    raster.put(x, y, glyphForProjection(object), palette.creature, true);
+    const memories = Number(state.recent_memories?.length ?? 0);
+    if (memories > 0) raster.put(x + 3, y - 2, memories > 2 ? '*' : '.', palette.flower, true);
+    if (Number(state.bond_tier) > 0 && (projection.scene?.absence_summary ?? []).length) {
+      raster.text(x - 1, y + 1, state.species_id === 'bird' ? 'v v' : state.species_id === 'turtle' ? '---' : '. .', palette.dim, true);
+    }
+    return;
+  }
+  if (object.kind === 'fixture') {
+    const catalog = String(state.catalog_id ?? 'fixture');
+    const presentation = objectPresentationArt(
+      object, view.visualFrame, entry.lod, emphasized,
+    );
+    const fixtureColor = emphasized ? 'gold' : presentation.color;
+    // Accents SURVIVE focus. They used to be dropped while an object was
+    // emphasized, on the reasoning that focus recolours the whole drawing and
+    // a part keeping its own colour would look half-applied.
+    //
+    // That reasoning was backwards. An accent is not decoration: the `signal`
+    // role means "this part is telling you something" -- the mailbox flag is
+    // up because there is something in the mailbox. Suppressing it during
+    // focus deletes that information at the exact moment the reader has
+    // turned their attention to the object, which is the worst possible
+    // moment to delete it. Focus is emphasis; it is not a repaint that
+    // outranks meaning.
+    const resolvedColor = paletteColor(palette, fixtureColor, season);
+    const resolvedAccents = accentColors(presentation.accents, palette, season);
+    if (presentation.measured) {
+      raster.measuredArt(
+        object.object_id, x, y, presentation.lines, presentation.assetAnchor,
+        resolvedColor, { animated: emphasized, accents: resolvedAccents },
+      );
+    } else {
+      raster.art(x, y, presentation.lines, resolvedColor, {
+        animated: emphasized, accents: resolvedAccents,
+      });
+    }
+    const renderCells = Array.isArray(state.render_cells) ? state.render_cells : [];
+    for (const cell of renderCells) raster.put(x + Number(cell.dx ?? 0), y + Number(cell.dy ?? 0), glyphForProjection(object, {
+      connectedMask: state.connected_group && state.presentation_state !== 'open' ? Number(cell.connected_mask ?? 0) : null,
+    }), emphasized || state.presentation_state === 'on' ? palette.gold : palette.stone, emphasized);
+    return;
+  }
+  raster.art(x, y, entry.art.lines,
+    paletteColor(palette, emphasized ? 'flower' : entry.art.color, season), { animated: emphasized });
 }
 
 export class CanonicalGardenRenderer {
@@ -1873,379 +2264,6 @@ export class CanonicalGardenRenderer {
     return [Math.max(20, Math.floor(this.element.clientWidth / this.cellWidth)), Math.max(10, Math.floor(this.element.clientHeight / this.cellHeight))];
   }
 
-  _drawSky(raster, projection, sky, palette, profile, mode) {
-    const observedTime = presentationTime(projection);
-    // Project the catalogue into the region the sky actually owns rather than
-    // over the whole frame. Stars projected into the Garden band are painted
-    // and then immediately covered by ground, planting and objects, so they
-    // were doing nothing except thinning the visible sky.
-    const skyRows = Math.max(2, profile.bandTop);
-    const projected = projectSkyPoints(sky, observedTime, [raster.width, skyRows]);
-    const visible = mode === 'day' ? (sky.astronomical ? [] : projected.slice(0, 3)) :
-      mode === 'evening' ? projected.filter((_, index) => index % 2 === 0) : projected;
-    for (const [x, y, glyph] of visible) raster.put(x, y, glyph, palette.star);
-    if (mode === 'night') {
-      const art = MOON_ART[lunarPhase(observedTime)];
-      art.forEach((line, row) => raster.text(Math.max(1, Math.floor(raster.width * 0.78)), 1 + row, line, palette.moon));
-    }
-  }
-
-  /**
-   * Paint the receding ground plane.
-   *
-   * Objects now stand on soil lines anywhere between `profile.groundBack` and
-   * `profile.groundFront`, so every one of those lines has to look like ground
-   * or the things standing on them still read as floating. Three painted lines
-   * under a plane that spans eight is exactly the mismatch that made a bridge
-   * look airborne.
-   *
-   * Density rises toward the viewer: sparse specks at the back where the plane
-   * is furthest away, continuous soil at the front. That gradient is what makes
-   * a flat character grid read as a surface going away from you rather than as
-   * a stripe of noise.
-   */
-  _drawGround(raster, palette, season, profile) {
-    // `profile.horizon` is deliberately NOT read here. It is the sky boundary,
-    // not the ground, and reading it was the defect: see `gardenGroundY`.
-    const texture = season === 'winter' ? '.*.' :
-      season === 'autumn' ? ',`.' : '.,';
-    // ONE SURFACE. Two rows of soil at the horizon, and nothing else.
-    //
-    // What used to be here: a far contour line, a ~30-row speckle field whose
-    // density rose toward the viewer, and a pale path receding into it. The
-    // intent was perspective -- make a flat character grid read as a plane
-    // going away from you. On review it read as scattered debris, and the
-    // reason is now clear: perspective needs things AT different depths to
-    // sell it, and the approved roster is five fixtures that all stand on the
-    // same line. The receding field was a stage built for a scene that does
-    // not exist.
-    //
-    // A single band asks less of the art and gives the fixtures one line to
-    // sit on, which is what "one band / one surface" means. `groundBack` and
-    // `groundFront` remain in the presentation profile: they still bound where
-    // ambient life may fly and where weather may settle, and a later
-    // composition may use the space again -- but nothing paints there now.
-    //
-    // This is UNDER REVIEW, not approved. It is the surface the vertical slice
-    // is being reviewed on, so it deliberately does the least a ground can do.
-    //
-    // The rows are `groundFront` -- the line objects' feet actually land on --
-    // and the one below it. Painting `horizon` and `horizon + 1` instead, as
-    // the first attempt did, put the whole band one row BELOW every object,
-    // which is why the capture showed fixtures standing on nothing.
-    // `profile.groundFront` is the single field that answers "where is the
-    // ground". The compositor puts feet on it and `gardenGroundY` reports it,
-    // so paint and feet cannot move independently. `+ 1` is the near lip of
-    // the band, giving the line a little thickness without making it a second
-    // surface.
-    const groundY = profile.groundFront;
-    for (const row of [groundY, groundY + 1]) {
-      for (let x = 0; x < raster.width; x += 1) {
-        const glyph = x % 5 === 0 ? '.' : texture[(x + row * 3) % texture.length];
-        raster.put(x, row, glyph, palette.soil);
-      }
-    }
-  }
-
-
-  /**
-   * EMPTIED 2026-08-01, on the same rule that emptied `_drawSkyLife`.
-   *
-   * WHAT THIS DREW
-   * --------------
-   * A scatter of `;` `'` `,` `*` `/` `\` across a radius of up to fifteen
-   * columns either side of every plant, plus a shallow mound of `.` `:` `,`
-   * beneath it, coloured from the foliage palette and reseeded per plant.
-   *
-   * WHY IT IS GONE
-   * --------------
-   * It was renderer-authored decoration. Not a canonical object, not an atlas
-   * asset, not from the archive -- glyphs this module invented to give the
-   * ground "the dense botanical rhythm the Garden needs", which is a visual
-   * judgement no one made but this file.
-   *
-   * The operator's rule admits no exception: nothing they have not approved may
-   * appear. Ground-cover scatter is specifically something they have already
-   * looked at and rejected once, in the round that removed the ground-cover
-   * band. It came back the moment the legacy art port put plants into the
-   * default scene again, because it is drawn per plant -- thirty-one columns of
-   * unapproved glyphs arriving as a side effect of restoring two approved
-   * drawings. That is exactly the failure mode the acceptance registry exists
-   * to catch, and here it was caught by the ground contract test rather than by
-   * a capture, which is the improvement.
-   *
-   * The method is kept rather than deleted so this reasoning stays attached to
-   * the thing it is about. It draws nothing. If a planted bed is wanted, it has
-   * to be drawn as canonical objects or archived art and reviewed per asset.
-   */
-  _drawPlantBeds(raster, projection, layout, palette, season, profile) {
-    void raster; void projection; void layout; void palette; void season; void profile;
-  }
-
-  _drawAmbient(raster, projection, palette, season, horizon, profile) {
-    const mode = timeOfDay(projection);
-    // Small ambient life belongs among the planting, not scattered through the
-    // whole airspace. The band runs from a little above the far edge of the
-    // ground plane down to just above the near soil line, which is where the
-    // flowers and grass are.
-    const lifeBand = profile
-      ? [Math.max(1, profile.groundBack - 4), Math.max(1, profile.groundFront - 1)]
-      : null;
-    // EMPTIED 2026-07-31, pending per-asset visual approval.
-    //
-    // Three ambient populations used to be drawn here: seven `⋈`/`⋊`
-    // butterflies in daylight coloured `flower` and `gold`, `·`/`✦` fireflies
-    // in the evening, and `·`/`.` winter drift. None of that art was ever
-    // submitted for acceptance, and in the live capture the butterflies were
-    // exactly what the operator had already rejected twice -- scattered
-    // multicolour marks, sitting in the ground region rather than the sky.
-    //
-    // The band is computed above and left unused rather than deleted, and the
-    // time-of-day and season branches are gone rather than commented out,
-    // because a dead branch that still runs is how unapproved art returns by
-    // accident. Restoring a population means drawing it, having that drawing
-    // accepted under SPEC 7.10, and only then writing the code back.
-    //
-    // SPEC 7.8.4 does list ambience as required before the CATALOG is complete.
-    // That is a catalog obligation, not a licence to ship unreviewed marks in
-    // the default scene -- the same distinction 7.8.4 now records for fixtures.
-    void lifeBand;
-  }
-
-  /**
-   * Inhabit the sky.
-   *
-   * Everything below the object band is ground and planting; everything above
-   * it was, until now, reserved space with nothing in it — more than half the
-   * frame left blank in daylight, because stars and the moon only appear at
-   * night. Clouds and distant birds are what that reserved space is for.
-   *
-   * Both are presentation only. They never enter the layout array, own no
-   * canonical object, and cannot be focused or clicked, which is exactly what
-   * keeps them from impersonating a relationship animal.
-   */
-  /**
-   * Sky life. Currently draws NOTHING, and that is the correct state.
-   *
-   * REMOVED 2026-08-01, on operator instruction, after the clouds and distant
-   * birds were identified in a live product frame as content that had never
-   * been individually accepted.
-   *
-   * What was here: two to five drifting `CLOUD_SHAPES` by day and evening, and
-   * three to ten one-cell birds on the archived `\v/ _v_ /v\ _v_` flap cycle.
-   * Both were authored inside this renderer. Neither has an `accepted` verdict
-   * in `docs/garden-asset-acceptance.json`, and SPEC 7.10.1 is explicit that
-   * passing every automated check while never having been looked at leaves an
-   * asset `not_reviewed` — it does not make it shippable.
-   *
-   * This is the same removal already made for the butterflies and fireflies on
-   * 2026-07-31, applied to the rest of the renderer's self-authored decoration.
-   * The Garden now paints its sky empty rather than filling it with drawings
-   * nobody approved. An empty sky is an honest gap; unapproved decoration is
-   * not.
-   *
-   * `skyCloudPresentation` and `ambientBirdPresentation` are deliberately KEPT
-   * and still exported. They are pure trajectory functions with their own
-   * tests, they encode the archived motion language, and the operator has
-   * accepted the legacy animations as art. When sky life returns it should
-   * return as accepted atlas assets driven by these same trajectories, not as
-   * new renderer-local drawings.
-   *
-   * @param raster     Frame being painted; untouched while this is dormant.
-   * @param projection Canonical scene; read for nothing at present.
-   * @param palette    Active theme colours.
-   * @param season     Canonical season name.
-   * @param profile    Presentation profile; `bandTop` bounds the sky.
-   * @param mode       'day' | 'evening' | 'night'.
-   */
-  _drawSkyLife(raster, projection, palette, season, profile, mode) {
-    // The sky band is still computed, because the boundary is real geometry and
-    // the next accepted asset will need it. Nothing is drawn into it.
-    const skyTop = 1;
-    const skyBottom = Math.max(skyTop + 1, profile.bandTop - 1);
-    void raster; void projection; void palette; void season; void mode;
-    void skyTop; void skyBottom;
-  }
-
-  _drawWeather(raster, projection, palette, season, horizon, layout) {
-    const weather = String(projection.scene?.weather ?? '').toLowerCase();
-    const rain = weather.includes('rain') || weather.includes('storm');
-    const snow = weather.includes('snow') || (season === 'winter' && weather.includes('weather'));
-    const leaves = season === 'autumn' && !snow;
-    const plants = layout.filter(entry => entry.object.kind === 'plant');
-    const count = rain ? 70 : snow ? 45 : leaves && plants.length ? 16 : 0;
-    const kind = rain ? 'rain' : snow ? 'snow' : 'leaves';
-    const reactions = {
-      splashes: 0, snowCaps: 0, settledLeaves: 0,
-      groundSplashes: 0, groundSnow: 0,
-    };
-    for (let index = 0; index < count; index += 1) {
-      let [x, y] = weatherParticlePosition(
-        projection.world_id, index, this.visualFrame, raster.width, horizon, kind,
-      );
-      if (leaves && plants.length) {
-        const plant = plants[index % plants.length];
-        const seed = stringHash(`${projection.world_id}:canopy-leaf:${index}`);
-        const fallSpan = Math.max(2, horizon - plant.rect.top);
-        const fall = Math.floor(Math.max(0, this.visualFrame) / 4);
-        x = clamp(
-          plant.rect.left + Math.floor(noise(seed) * Math.max(1, plant.rect.right - plant.rect.left + 1)) +
-            (Math.floor((fall + index) / 4) % 3) - 1,
-          0, raster.width - 1,
-        );
-        y = plant.rect.top + wrap(Math.floor(noise(seed + 71) * fallSpan) + fall, fallSpan);
-      }
-      const glyph = rain ? (index % 3 ? '|' : '/') : snow ? (index % 4 ? '.' : '*') : (index % 2 ? '`' : ',');
-      const color = rain ? palette.water : snow ? palette.moon : palette.gold;
-      if (raster.glyphs[y]?.[x] === ' ') {
-        raster.put(x, y, glyph, color, true);
-        continue;
-      }
-      const objectSurface = layout.some(entry => rectContains(entry.rect, [x, y]));
-      const groundSurface = y >= horizon - 1;
-      if (rain && y > 0) {
-        for (const [dx, dy, splash] of [[-1, -1, '·'], [0, -1, '^'], [1, -1, '·']]) {
-          if (raster.glyphs[y + dy]?.[x + dx] === ' ') {
-            raster.put(x + dx, y + dy, splash, palette.water, true);
-            if (objectSurface) reactions.splashes += 1;
-            else if (groundSurface) reactions.groundSplashes += 1;
-          }
-        }
-      } else if (snow && y > 0) {
-        for (let rise = 1; rise <= 3; rise += 1) {
-          if (raster.glyphs[y - rise]?.[x] === ' ') {
-            raster.put(x, y - rise, rise === 1 && index % 5 === 0 ? '*' : '.', palette.moon, true);
-            if (objectSurface) reactions.snowCaps += 1;
-            else if (groundSurface) reactions.groundSnow += 1;
-            break;
-          }
-        }
-      }
-    }
-    if (rain) {
-      for (const entry of layout.filter(item => ['plant', 'fixture'].includes(item.object.kind))) {
-        const x = clamp(entry.anchor[0], 1, raster.width - 2);
-        const y = entry.rect.top - 1;
-        if (y < 0) continue;
-        for (const [dx, splash] of [[-1, '·'], [0, '^'], [1, '·']]) {
-          if (raster.glyphs[y]?.[x + dx] !== ' ') continue;
-          raster.put(x + dx, y, splash, palette.water, true);
-          reactions.splashes += 1;
-        }
-      }
-    }
-    if (snow) {
-      const capDensity = Math.min(0.72, 0.18 + this.visualFrame / 180);
-      for (const entry of layout.filter(item => ['plant', 'fixture'].includes(item.object.kind))) {
-        const row = entry.rect.top - 1;
-        for (let x = entry.rect.left; x <= entry.rect.right; x += 1) {
-          if (row < 0 || raster.glyphs[row]?.[x] !== ' ' ||
-            noise(stringHash(`${projection.world_id}:snow-cap:${entry.object.object_id}:${x}`)) > capDensity) continue;
-          raster.put(x, row, x % 4 === 0 ? '*' : '.', palette.moon, true);
-          reactions.snowCaps += 1;
-        }
-      }
-      for (let x = 0; x < raster.width; x += 3) {
-        if (noise(stringHash(`${projection.world_id}:snow-bank:${x}`)) > 0.35 &&
-          raster.glyphs[horizon - 1]?.[x] === ' ') {
-          raster.put(x, horizon - 1, x % 2 ? '.' : '*', palette.moon, true);
-          reactions.groundSnow += 1;
-        }
-      }
-    }
-    if (leaves && plants.length) {
-      const settleDensity = Math.min(0.60, 0.08 + this.visualFrame / 240);
-      for (let x = 1; x < raster.width - 1; x += 2) {
-        if (noise(stringHash(`${projection.world_id}:settled-leaf:${x}`)) > settleDensity) continue;
-        // The planted verge deliberately occupies the soil line. A fallen leaf
-        // rests on top of that verge instead of requiring the Garden beneath
-        // it to be blank.
-        const row = [horizon - 2, horizon - 3, horizon - 1]
-          .find(candidate => raster.glyphs[candidate]?.[x] === ' ');
-        if (row === undefined) continue;
-        raster.put(x, row, x % 4 ? ',' : '`', palette.gold, true);
-        reactions.settledLeaves += 1;
-      }
-    }
-    return reactions;
-  }
-
-  _drawObject(raster, entry, projection, palette, season) {
-    const { object } = entry, [x, y] = entry.anchor;
-    const state = object.semantic_state ?? {};
-    const focused = object.object_id === this.focusedObjectId;
-    const hovered = this.hoverCell && rectContains(expandedRect(entry.hitRect, [3, 2]), this.hoverCell);
-    const emphasized = Boolean(hovered || focused);
-    if (focused) {
-      // A compact viewport may legitimately pack a tall picture against row
-      // zero. Focus must remain visible there, so use the top cell rather than
-      // silently dropping the marker.
-      raster.put(x, Math.max(0, entry.rect.top - 1), '⌄', palette.gold, true);
-    }
-    if (object.kind === 'plant') {
-      const art = objectPresentationArt(
-        object, this.visualFrame, entry.lod, emphasized,
-      );
-      raster.art(x, y, art.lines, paletteColor(palette, art.color, season), { animated: emphasized });
-      for (const organ of state.visible_organs ?? []) {
-        const ox = clamp(Number(organ.offset?.[0] ?? 0), -3, 3);
-        const oy = clamp(Number(organ.offset?.[1] ?? 0), 0, Math.max(0, art.lines.length - 1));
-        raster.put(x + ox, y - oy,
-          organGlyph(organ.kind, organ.glyph_family), paletteColor(palette, organ.kind === 'bloom' ? 'flower' : 'brightGreen', season));
-      }
-      raster.put(x, y, glyphForProjection(object), paletteColor(palette, 'brightGreen', season));
-      return;
-    }
-    if (object.kind === 'animal') {
-      raster.art(x, y, objectPresentationArt(
-        object, this.visualFrame, entry.lod, emphasized,
-      ).lines, palette.creature, { animated: true });
-      raster.put(x, y, glyphForProjection(object), palette.creature, true);
-      const memories = Number(state.recent_memories?.length ?? 0);
-      if (memories > 0) raster.put(x + 3, y - 2, memories > 2 ? '*' : '.', palette.flower, true);
-      if (Number(state.bond_tier) > 0 && (projection.scene?.absence_summary ?? []).length) {
-        raster.text(x - 1, y + 1, state.species_id === 'bird' ? 'v v' : state.species_id === 'turtle' ? '---' : '. .', palette.dim, true);
-      }
-      return;
-    }
-    if (object.kind === 'fixture') {
-      const catalog = String(state.catalog_id ?? 'fixture');
-      const presentation = objectPresentationArt(
-        object, this.visualFrame, entry.lod, emphasized,
-      );
-      const fixtureColor = emphasized ? 'gold' : presentation.color;
-      // Accents SURVIVE focus. They used to be dropped while an object was
-      // emphasized, on the reasoning that focus recolours the whole drawing and
-      // a part keeping its own colour would look half-applied.
-      //
-      // That reasoning was backwards. An accent is not decoration: the `signal`
-      // role means "this part is telling you something" -- the mailbox flag is
-      // up because there is something in the mailbox. Suppressing it during
-      // focus deletes that information at the exact moment the reader has
-      // turned their attention to the object, which is the worst possible
-      // moment to delete it. Focus is emphasis; it is not a repaint that
-      // outranks meaning.
-      const resolvedColor = paletteColor(palette, fixtureColor, season);
-      const resolvedAccents = accentColors(presentation.accents, palette, season);
-      if (presentation.measured) {
-        raster.measuredArt(
-          object.object_id, x, y, presentation.lines, presentation.assetAnchor,
-          resolvedColor, { animated: emphasized, accents: resolvedAccents },
-        );
-      } else {
-        raster.art(x, y, presentation.lines, resolvedColor, {
-          animated: emphasized, accents: resolvedAccents,
-        });
-      }
-      const renderCells = Array.isArray(state.render_cells) ? state.render_cells : [];
-      for (const cell of renderCells) raster.put(x + Number(cell.dx ?? 0), y + Number(cell.dy ?? 0), glyphForProjection(object, {
-        connectedMask: state.connected_group && state.presentation_state !== 'open' ? Number(cell.connected_mask ?? 0) : null,
-      }), emphasized || state.presentation_state === 'on' ? palette.gold : palette.stone, emphasized);
-      return;
-    }
-    raster.art(x, y, entry.art.lines,
-      paletteColor(palette, emphasized ? 'flower' : entry.art.color, season), { animated: emphasized });
-  }
 
   render(projection) {
     if (!projection) return null;
@@ -2264,11 +2282,11 @@ export class CanonicalGardenRenderer {
     const depthCohorts = gardenDepthCohorts(layout, profile);
     let weatherReactions = { rainSplashes: 0, snowCaps: 0, groundSnow: 0, settledLeaves: 0 };
     if (this.allowUnacceptedArt) {
-      this._drawSky(raster, projection, sky, palette, profile, mode);
+      drawSky(raster, projection, sky, palette, profile, mode);
       // Sky life is drawn straight after the stars so that ground, planting and
       // objects all paint over it: clouds and distant birds are the backdrop.
-      this._drawSkyLife(raster, projection, palette, season, profile, mode);
-      this._drawGround(raster, palette, season, profile);
+      drawSkyLife(raster, projection, palette, season, profile, mode);
+      drawGround(raster, palette, season, profile);
     // `_drawGroundCover` was removed on 2026-07-31. It painted two things the
     // operator rejected on sight: scattered turf clumps, and a seven-character
     // `__/\___` unit repeated across the entire width at `horizon - 1` with no
@@ -2277,7 +2295,7 @@ export class CanonicalGardenRenderer {
     // nobody had accepted. Nothing replaces it here; the ground composition is
     // being rebuilt around the "one band / one surface" rule and must be
     // approved before it is painted again.
-      this._drawAmbient(raster, projection, palette, season, horizon, profile);
+      drawAmbient(raster, projection, palette, season, horizon, profile);
     // Far, middle and near are painter's cohorts derived from the canonical
     // ground rows. Plant beds are interleaved with their own cohort so the
     // foreground can overlap the middle distance without moving any object or
@@ -2285,13 +2303,21 @@ export class CanonicalGardenRenderer {
       for (const entries of [
         depthCohorts.far, depthCohorts.middle, depthCohorts.near,
       ]) {
-        this._drawPlantBeds(raster, projection, entries, palette, season, profile);
-        entries.forEach(entry => this._drawObject(
+        drawPlantBeds(raster, projection, entries, palette, season, profile);
+        entries.forEach(entry => drawObject(
           raster, entry, projection, palette, season,
+          // The view slice of renderer state the painter may see. Passed
+          // explicitly because the painter is a module function now: it
+          // can only know what it is handed.
+          {
+            visualFrame: this.visualFrame,
+            hoverCell: this.hoverCell,
+            focusedObjectId: this.focusedObjectId,
+          },
         ));
       }
-      weatherReactions = this._drawWeather(
-        raster, projection, palette, season, horizon, layout,
+      weatherReactions = drawWeather(
+        raster, projection, palette, season, horizon, layout, this.visualFrame,
       );
       if (projection.scene?.memorial?.active) {
         const center = Math.floor(viewport[0] / 2);

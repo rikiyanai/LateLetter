@@ -6177,3 +6177,38 @@ implementation; additive, no ownership transferred yet
 
 - Status: Implemented (unproven). Builder/manifest suites 34 of 34 and Garden Node suites 201 of
   201 locally. The composer itself is still unbuilt; this patch settles the authority it reads.
+
+### Route step 3, third patch: the seven painters are module functions, and behaviour did not move
+
+Question:
+The ownership transfer needs the composition painters callable without owning a renderer. Extract
+them from the class with NO behaviour change, so the transfer patch that follows changes ownership
+and only ownership.
+
+Type:
+mechanical extraction, proved behaviour-preserving
+
+- **What moved (2026-08-03):** `_drawSky`, `_drawGround`, `_drawPlantBeds`, `_drawAmbient`,
+  `_drawSkyLife`, `_drawWeather` and `_drawObject` are now exported module-level functions in
+  `web/garden-renderer.mjs`. Only two ever read instance state: `drawWeather` takes
+  `visualFrame` as a parameter and `drawObject` takes an explicit view slice
+  (`visualFrame`, `hoverCell`, `focusedObjectId`). `render()` calls the same functions with the
+  same values; the emptied `_drawAmbient`/`_drawSkyLife` bodies moved verbatim with their
+  removal reasoning attached. Also exported for the coming owner: `presentationTime`,
+  `timeOfDay`, `seasonOf`, `paletteColor`, `gardenDepthCohorts`, `accentColors`,
+  `objectPresentationArt` and the three palettes.
+
+- **A tripwire fired and was obeyed (2026-08-03):** exporting `Raster` broke
+  `test_raster_identity_contract.mjs`, whose loader reaches the private class by appending its
+  own export to the module text -- a duplicate-export error by design. That test's live arm is
+  the guard that fails the day the raster gains identity, forcing the static gate to be
+  re-derived in the same patch. `Raster` therefore stays private until the ownership patch does
+  exactly that.
+
+- **Proof it moved nothing (2026-08-03):** Garden Node suites 201 of 201; full browser E2E 25
+  passing and 6 strict xfailed, byte-for-byte the same set as before the extraction; the Python
+  builder, viewer-contract and acceptance suites show only the four known-red tests -- the three
+  letter-typography defects and the deploy-cutover assertion held red until the route's step 14.
+
+- Status: Implemented (unproven). Ownership has not moved yet; the class still orchestrates.
+  What changed is that it now orchestrates through functions anyone can call.
