@@ -101,8 +101,40 @@ def test_rejected_and_unreviewed_paint_is_absent_from_the_authority(built_site):
         recipe_id
         for recipe_id, record in recipes["records"].items()
         if record["verdict"] in {"accepted", "accepted_as_deployed"}
+        and record["kind"] == "paint"
     }
     assert set(manifest["accepted_recipes"]) == expected_recipes
+
+
+def test_laws_are_never_paint_permission(built_site):
+    """SPEC 7.2.2 clause 1: a `kind: "law"` record is never a `source_id`.
+
+    Found as a defect in the first build of this manifest: the accepted-recipe
+    list was derived from verdicts alone, so all nineteen accepted LAW records
+    -- wind, cadence, density, painter order -- were granted paint permission
+    they must never have. Laws decide what the painters are given; they emit
+    nothing, so an authority that lists one as a paintable source would let a
+    composer stamp `recipe.motion.wind_law` on anonymous ink and verify.
+    """
+    manifest = json.loads((built_site / PAINT_MANIFEST_NAME).read_text(encoding="utf-8"))
+    recipes = json.loads((REPOSITORY_ROOT / RECIPE_REGISTER).read_text(encoding="utf-8"))
+    law_ids = {
+        recipe_id
+        for recipe_id, record in recipes["records"].items()
+        if record["kind"] == "law"
+    }
+    assert law_ids, "the register no longer contains laws; this proof went vacuous"
+    # No law may appear in either paint-permission list.
+    assert not set(manifest["accepted_recipes"]) & law_ids
+    assert not set(manifest["accepted_assets"]) & law_ids
+    # And accepted laws are carried separately, so a frame checker can tell
+    # "names a law" apart from "names an unknown id".
+    expected_laws = {
+        recipe_id
+        for recipe_id in law_ids
+        if recipes["records"][recipe_id]["verdict"] in {"accepted", "accepted_as_deployed"}
+    }
+    assert set(manifest["accepted_laws"]) == expected_laws
 
 
 def test_the_manifest_is_a_pure_function_of_its_inputs(built_site):

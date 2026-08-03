@@ -6072,3 +6072,33 @@ implementation, with mutation proofs
 - Status: Implemented (unproven). New suite 9 of 9 holding locally alongside the existing
   builder and viewer-contract suites; the only red tests remain the three letter-typography
   defects and the deploy-cutover assertion the route keeps red until its step 14.
+
+### Route step 2 correction: the first manifest granted paint permission to nineteen laws
+
+Question:
+While updating the presentation contract to SPEC 7.2.2, check the freshly built manifest against
+clause 1 -- "a `kind: 'law'` record is never a `source_id`" -- before any consumer reads it.
+
+Type:
+defect in my own step-2 implementation, found before any consumer existed
+
+- **The defect (2026-08-03):** `_accepted_recipe_ids` selected on verdict alone, and the recipe
+  register holds 19 accepted `kind: "law"` records among its 48 -- wind, cadence, density,
+  painter order, phase selection. The built `garden-release-manifest.json` therefore listed every
+  accepted law inside `accepted_recipes`, i.e. as paint permission. A composer could have stamped
+  `recipe.motion.wind_law` on anonymous ink and passed the authority check, which is exactly the
+  "anonymity with a respectable id attached" failure the register vocabulary exists to prevent.
+
+- **The correction (2026-08-03):** paint permission now requires `kind: "paint"` AND an accepted
+  verdict; accepted laws are carried in a separate `accepted_laws` list so a frame checker can
+  tell "names a law" apart from "names an unknown id" -- different defects, different causes. An
+  unknown record kind refuses the build rather than guessing, the same posture as an unknown
+  verdict. Proved by `test_laws_are_never_paint_permission`, which fails if any law enters either
+  paint list and goes loud (rather than vacuously holding) if the register stops containing laws.
+
+- **Why it was caught now (2026-08-03):** not by the mutation suite -- all nine mutation proofs
+  held over the defective derivation, because they proved tamper-detection, not derivation
+  correctness. It was caught by reading the consumer's clause before building the consumer. A
+  manifest can be perfectly tamper-evident and wrong about what it certifies.
+
+- Status: Implemented (unproven). Builder and manifest suites 32 of 32 holding locally.

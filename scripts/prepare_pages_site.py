@@ -640,14 +640,54 @@ def _accepted_asset_ids(register: dict) -> list[str]:
 
 
 def _accepted_recipe_ids(register: dict) -> list[str]:
-    """Every recipe ID the presentation-recipe register currently accepts.
+    """Every PAINT recipe ID the presentation-recipe register accepts.
+
+    Only ``kind: "paint"`` records grant paint permission. A ``kind: "law"``
+    record decides what the painters are GIVEN -- density, wind, cadence --
+    and emits nothing itself, so SPEC 7.2.2 clause 1 forbids a law as any
+    primitive's ``source_id``. Including laws here would let a composer name
+    `recipe.motion.wind_law` as ink provenance and still verify, which is
+    anonymity with a respectable id attached. Laws are carried separately by
+    :func:`_accepted_law_ids`.
 
     :param register: Parsed ``docs/garden-presentation-recipes.json``.
-    :returns: Sorted accepted IDs, for the same byte-stability reason as
-        :func:`_accepted_asset_ids`.
+    :returns: Sorted accepted paint-recipe IDs, for the same byte-stability
+        reason as :func:`_accepted_asset_ids`.
+    :raises RuntimeError: on a record kind outside the register vocabulary,
+        because guessing whether a new kind grants paint permission is the
+        silent decision this manifest exists to forbid.
     """
     accepted = []
     for recipe_id, record in register["records"].items():
+        kind = record.get("kind")
+        if kind not in {"paint", "law"}:
+            raise RuntimeError(
+                f"unknown record kind {kind!r} on recipe {recipe_id!r}; the "
+                "register vocabulary is ['law', 'paint'] and this build "
+                "refuses to guess whether it grants paint permission"
+            )
+        if kind != "paint":
+            continue
+        if _checked_verdict(record["verdict"], f"recipe {recipe_id!r}") in _ACCEPTED_VERDICTS:
+            accepted.append(recipe_id)
+    return sorted(accepted)
+
+
+def _accepted_law_ids(register: dict) -> list[str]:
+    """Every accepted LAW ID -- carried so consumers can refuse them as sources.
+
+    A contract checker needs the law set explicitly: a `source_id` naming a
+    law must be reported as "names a law", which is a different defect from
+    "names an id in neither register", and telling those apart requires
+    knowing which accepted IDs are laws.
+
+    :param register: Parsed ``docs/garden-presentation-recipes.json``.
+    :returns: Sorted accepted law IDs.
+    """
+    accepted = []
+    for recipe_id, record in register["records"].items():
+        if record.get("kind") != "law":
+            continue
         if _checked_verdict(record["verdict"], f"recipe {recipe_id!r}") in _ACCEPTED_VERDICTS:
             accepted.append(recipe_id)
     return sorted(accepted)
@@ -742,6 +782,11 @@ def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROO
         },
         "accepted_assets": _accepted_asset_ids(asset_register),
         "accepted_recipes": _accepted_recipe_ids(recipe_register),
+        # Accepted laws are NOT paint permission. They are listed so a frame
+        # checker can tell "names a law" apart from "names an unknown id" --
+        # both are defects, but they are different defects with different
+        # causes, and conflating them hides which one happened.
+        "accepted_laws": _accepted_law_ids(recipe_register),
         "profile_identity": {
             "atlas": {
                 "path": PAINT_IDENTITY_SOURCES[0].as_posix(),
@@ -831,7 +876,7 @@ def verify_paint_manifest(
                 f"{register_name} has changed since the manifest was "
                 "generated; the artifact's paint authority is stale"
             )
-    for list_name in ("accepted_assets", "accepted_recipes"):
+    for list_name in ("accepted_assets", "accepted_recipes", "accepted_laws"):
         if stored.get(list_name) != expected[list_name]:
             errors.append(
                 f"{list_name} in the manifest does not match what the "
