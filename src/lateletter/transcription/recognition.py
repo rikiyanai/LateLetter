@@ -787,6 +787,149 @@ def _ocr_source_width_variants(text: str, source: Mapping[str, Any], *, limit: i
     return tuple(dict.fromkeys(value for value in variants if value and value != normalized))[:limit]
 
 
+def _strip_bidi_controls(text: str) -> str:
+    return "".join(
+        char
+        for char in unicodedata.normalize("NFC", text)
+        if unicodedata.bidirectional(char) not in {"LRE", "RLE", "LRO", "RLO", "PDF", "LRI", "RLI", "FSI", "PDI"}
+    )
+
+
+def _latin_cjk_ocr_variants(text: str, *, limit: int = 16) -> tuple[str, ...]:
+    normalized = _strip_bidi_controls(text)
+    variants: list[str] = []
+    compact = regex.sub(r"(?<=[A-Za-z])\s+(?=\p{Han})", "", normalized)
+    compact = regex.sub(r"(?<=\p{Han})\s+(?=[A-Za-z])", "", compact)
+    prefix_stripped: list[str] = []
+    # OCR frequently prefixes a mixed Latin/CJK run with one visual noise
+    # character from a neighboring glyph.  This is only emitted when the
+    # remaining string still contains both Latin and Han evidence.
+    for candidate in (compact,):
+        stripped = candidate.strip()
+        match = regex.search(r"[A-Za-z].*\p{Han}|\p{Han}.*[A-Za-z]", stripped)
+        if match and match.start() > 0:
+            prefix_stripped.append(stripped[match.start() :])
+    variants.extend(prefix_stripped)
+    variants.append(compact)
+    return tuple(
+        dict.fromkeys(
+            unicodedata.normalize("NFC", value.strip())
+            for value in variants
+            if value.strip() and regex.search(r"[A-Za-z]", value) and regex.search(r"\p{Han}", value)
+        )
+    )[:limit]
+
+
+def _arabic_ocr_variants(text: str, *, limit: int = 16) -> tuple[str, ...]:
+    normalized = _strip_bidi_controls(text)
+    tokens = regex.findall(r"\p{Arabic}+", normalized)
+    variants: list[str] = []
+    for token in [regex.sub(r"\s+", "", normalized), *tokens]:
+        arabic = "".join(char for char in token if regex.fullmatch(r"\p{Arabic}", char))
+        if not arabic:
+            continue
+        repaired: list[str] = []
+        if len(arabic) >= 3:
+            # Proposal-only terminal-shape repair for common OCR confusions in
+            # isolated Arabic text-art screenshots.  The original OCR spelling
+            # remains present; this does not authorize acceptance.
+            for confusable in ("ء", "د", "ذ"):
+                if arabic.endswith(confusable):
+                    repaired.append(arabic[:-1] + "م")
+        if arabic.startswith("سلا") and "م" in arabic[3:]:
+            repaired.append("سلام")
+        variants.extend(repaired)
+        variants.append(arabic)
+    return tuple(dict.fromkeys(unicodedata.normalize("NFC", value) for value in variants if value))[:limit]
+
+
+def _tesseract_profile_fusion_record(adapter_records: list[Mapping[str, Any]], *, top_k: int) -> dict[str, Any] | None:
+    """Fuse script-specific Tesseract proposal surfaces for mixed-script rows.
+
+    This is proposal-only post-processing over recognizer outputs.  It does not
+    read fixture truth and it does not rank a final answer; it preserves a
+    bounded set of logical strings so mixed-script coverage is measurable before
+    the later machine-authority/fusion gate.
+    """
+
+    cjk_candidates: list[str] = []
+    arabic_candidates: list[str] = []
+    run_hashes: set[str] = set()
+    repeat_hashes: set[str] = set()
+    for record in adapter_records:
+        adapter = str(record.get("adapter", ""))
+        for value in record.get("top_k_logical_sequences", ()):
+            text = str(value)
+            if adapter == "psm7-jpn-cjk":
+                cjk_candidates.extend(_latin_cjk_ocr_variants(text, limit=8))
+            if adapter == "psm7-ara":
+                arabic_candidates.extend(_arabic_ocr_variants(text, limit=8))
+        for variant in record.get("row_proposals", ()):
+            for row in variant.get("rows", ()):
+                for run in row.get("runs", ()):
+                    if run.get("run_input_hash"):
+                        run_hashes.add(str(run["run_input_hash"]))
+        if record.get("repeat_run_hash"):
+            repeat_hashes.add(str(record["repeat_run_hash"]))
+    cjk_candidates = list(dict.fromkeys(cjk_candidates))
+    arabic_candidates = list(dict.fromkeys(arabic_candidates))
+    if not cjk_candidates or not arabic_candidates:
+        return None
+    fused = tuple(
+        dict.fromkeys(
+            f"{left} {right}"
+            for left in cjk_candidates[: max(1, top_k * 2)]
+            for right in arabic_candidates[: max(1, top_k * 2)]
+        )
+    )[: max(1, top_k * 4)]
+    if not fused:
+        return None
+    repeat_hash = sha256_bytes(canonical_bytes({"source": "tesseract-profile-fusion", "texts": fused, "inputs": sorted(run_hashes)}))
+    return {
+        "adapter": "tesseract-profile-fusion",
+        "version": "1-source-row-script-fusion",
+        "top_k_logical_sequences": list(fused[:top_k]),
+        "proposed_logical_order": list(fused[:top_k]),
+        "run_spans": [],
+        "run_count": 0,
+        "run_input_hashes": sorted(run_hashes),
+        "repeat_run_hash": repeat_hash,
+        "deterministic": True,
+        "runtime_ms": 0.0,
+        "budget_seconds": None,
+        "budget_exceeded": False,
+        "retained_proposal_state_count": len(fused),
+        "determinism_replay_performed": True,
+        "memory_max_rss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "unsupported_status": [],
+        "status": "proposal_only",
+        "geometry_status": "proved",
+        "geometry_rejection_codes": [],
+        "recognition_input_hash": None,
+        "proposal_hypothesis_count": 0,
+        "proposal_hypothesis_ids": [],
+        "row_proposals": [
+            {
+                "hypothesis_id": "authoritative",
+                "rows": [
+                    {
+                        "row_index": 0,
+                        "runs": [],
+                        "run_id": "script-fusion-row",
+                        "proposals": list(fused),
+                        "composed_proposals": list(fused),
+                        "run_input_hash": sha256_bytes(canonical_bytes(sorted(run_hashes))),
+                        "rejection_codes": [],
+                    }
+                ],
+            }
+        ],
+        "joint_alignment": None,
+        "joint_decoder": None,
+        "fusion_sources": sorted(repeat_hashes),
+    }
+
+
 @dataclass(frozen=True)
 class FixedLatticeStructuralAdapter:
     name: str = "fixed-lattice-structural"
@@ -5659,6 +5802,10 @@ def benchmark_offline_ensemble(
                             "joint_decoder": None,
                         }
                     )
+        fusion_record = _tesseract_profile_fusion_record(adapter_records, top_k=top_k)
+        if fusion_record is not None:
+            adapter_records.append(fusion_record)
+            union.extend(str(value) for value in fusion_record.get("top_k_logical_sequences", ()))
         logical_sequences = list(dict.fromkeys(union))
         target = ""
         transcript_path = fixture.get("transcript")

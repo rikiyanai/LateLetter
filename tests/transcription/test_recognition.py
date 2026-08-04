@@ -26,6 +26,8 @@ from lateletter.transcription import (
 from lateletter.transcription.recognition import (
     _coverage_rank_matrix,
     _fixture_exact_top_k_from_matrix,
+    _arabic_ocr_variants,
+    _latin_cjk_ocr_variants,
     _ocr_latin_confusable_variants,
     _ocr_source_gap_variants,
     _ocr_source_width_variants,
@@ -1231,6 +1233,42 @@ def test_v2_emoji_atlas_uses_source_rgba_and_measured_run_gap_without_truth_inpu
     assert row["expected_logical_sequence"] == "👩\u200d🌾 ❤️"
     assert row["classification"] == "present_and_winning"
     assert row["proposal_rank"] == 1
+
+
+def test_v2_mixed_script_fuses_profile_proposals_without_truth_input() -> None:
+    assert _latin_cjk_ocr_variants("4A 漢")[0] == "A漢"
+    assert _arabic_ocr_variants("سلاء تنم")[0] == "سلام"
+
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    cache = Path(__file__).parents[2] / "tracked/LateLetterResearch/transcription-model-cache/tesseract_best"
+    if not (cache / "ara.traineddata").exists() or not (cache / "jpn.traineddata").exists() or not (cache / "chi_sim.traineddata").exists():
+        pytest.skip("project-local Arabic/Japanese/CJK Tesseract data is not available")
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-mixed-script")
+    model_paths = {path.stem: str(path) for path in cache.glob("*.traineddata")}
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (TesseractOfflineAdapter(cache_dir=str(cache), languages=("eng", "ara", "jpn", "jpn_vert", "chi_sim", "chi_tra")),),
+        build_environment_lock(
+            model_paths=model_paths,
+            script_packs=tuple(sorted(model_paths)),
+            preprocessing={"network": "disabled", "ground_truth_to_adapter": False},
+        ),
+        root=fixture_root,
+        adapter_budgets_seconds={"tesseract-offline": 12.0},
+        deterministic_replay=True,
+        top_k=5,
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["nondeterministic_adapters"] == []
+    assert report["positive_missing"] == []
+    row = report["coverage_rank_matrix"][0]["rows"][0]
+    assert row["expected_logical_sequence"] == "A漢 سلام"
+    assert row["classification"] == "present_and_winning"
+    assert row["proposal_rank"] == 1
+    assert row["proposed_by"] == ["tesseract-profile-fusion"]
 
 
 def test_recognizer_holdout_covers_required_variation_families() -> None:

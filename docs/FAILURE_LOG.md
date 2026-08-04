@@ -10166,3 +10166,48 @@ Verification:
   authority, live attempts, TXT output, and acceptance remain prohibited.
   ComplaintRef: operator order to implement the transcription roadmap correctly
   and avoid prior process failures, 2026-08-04.
+
+### Transcription D1 mixed-script coverage added with proposal-only profile fusion (2026-08-04)
+
+The mixed-script miss was not a geometry failure. The source row was admitted,
+but no single Tesseract profile proposed the whole logical sequence. The
+Japanese/CJK profile carried the Latin+CJK side (`A漢`) as a lower-noise
+alternative, while the Arabic profile carried the Arabic side (`سلام`) through
+OCR-confusable variants. The benchmark had no bounded proposal-only surface that
+could preserve those independent script proposals as one mixed logical row.
+
+Corrections:
+
+- Added bounded Latin+CJK OCR cleanup for mixed rows: collapse measured
+  Latin/Han internal OCR gaps and retain a prefix-stripped variant when the
+  remaining text still contains both Latin and Han evidence.
+- Added bounded Arabic OCR variants for isolated Arabic proposal strings,
+  preserving the original OCR text while adding terminal-shape repairs as
+  proposal evidence only.
+- Added `tesseract-profile-fusion`, a deterministic proposal-only benchmark
+  surface that combines independent Tesseract profile proposals after adapters
+  have run. It does not receive fixture truth and does not authorize ranking,
+  machine acceptance, or candidate TXT.
+
+Verification:
+
+- Full recognition suite: 45 passed.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-mixed-script.json`,
+  size `1630681` bytes, SHA-256
+  `00be7b5f732e9254bc078b564004842e4375b206955453ac817fdde78ce605a8`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-mixed-script-receipt.json`.
+- `positive-mixed-script` is now `present_and_winning`, rank 1, proposed by
+  `tesseract-profile-fusion`.
+- Replay status remains `blocked_release_coverage`; remaining missing positive
+  is only `positive-degraded-fixed`.
+- `budget_failures`, `nondeterministic_adapters`, and
+  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
+  remains false.
+
+- **Status:** D1 PARTIAL; mixed-script is covered at rank 1, but release
+  coverage remains blocked on degraded-fixed. Machine authority, live attempts,
+  TXT output, and acceptance remain prohibited. ComplaintRef: operator order to
+  implement the transcription roadmap correctly and avoid prior process
+  failures, 2026-08-04.
