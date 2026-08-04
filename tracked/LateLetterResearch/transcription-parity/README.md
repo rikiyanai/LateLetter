@@ -286,11 +286,20 @@ Current records:
 - Fresh full v10 coverage/rank receipt:
   `tests/fixtures/transcription-v2/recognizer-benchmark-v10.json`,
   SHA-256 `a530986a7f5a31bfb0f01ab32f2e8864406d4c3c848eabe2c03b4dfc221afa1b`.
+- D1 fixed-ASCII replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii.json`,
+  SHA-256 `c5a5c71f675475fe68dee0d274b0dfdf222a86381adf32b01992325e6faa66b0`.
 
 The full v10 status is `blocked_release_coverage`, with zero budget failures, deterministic
 replay enabled, and ground truth not passed to adapters. The exact NFC target remains absent
 from top-k for nine positive fixtures: fixed ASCII, proportional Latin, kana, Kanji, combining,
 width mixture, emoji ZWJ, mixed script, and degraded fixed-cell.
+
+D1 has repaired fixed structural ASCII coverage only. `positive-fixed-ascii` now has rank-1
+exact proposals from `fixed-lattice-structural`, but remains visual-collision evidence rather
+than acceptance because other adapters still emit colliding alternatives. The full replay is
+still `blocked_release_coverage`; remaining missing positives are proportional Latin, kana,
+Kanji, combining, width mixture, emoji ZWJ, mixed script, and degraded fixed-cell.
 
 Current execution frontier:
 

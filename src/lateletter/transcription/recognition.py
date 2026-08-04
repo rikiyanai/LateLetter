@@ -506,7 +506,7 @@ class TesseractOfflineAdapter:
 @dataclass(frozen=True)
 class FixedLatticeStructuralAdapter:
     name: str = "fixed-lattice-structural"
-    version: str = "1"
+    version: str = "2-run-mask-ascii-components"
     supported_scripts: tuple[str, ...] = ("ascii", "digits")
 
     def capability_profile(self, environment_lock: EnvironmentLock) -> CapabilityProfile:
@@ -523,9 +523,243 @@ class FixedLatticeStructuralAdapter:
         )
 
     def propose(self, source: Mapping[str, Any], geometry: Mapping[str, Any], components: Mapping[str, Any], environment_lock: EnvironmentLock) -> ProposalSet:
-        if geometry.get("mode") != "fixed_lattice":
-            return _unsupported_proposal(self.name, self.version, source, environment_lock, "geometry_mode_mismatch")
-        return _unsupported_proposal(self.name, self.version, source, environment_lock, "whole_run_proposal_unavailable")
+        geometry_mask = _run_mask(geometry)
+        source_mask = _source_ink_mask_from_path(source)
+        mask = source_mask if source_mask is not None else (np.asarray(geometry_mask, dtype=bool) if geometry_mask is not None else None)
+        if mask is None:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "structural_row_input_unavailable")
+        # The geometry owner may expose a fixed source as shaped run strips
+        # when the public routing decision is still unsettled.  This adapter
+        # does not select geometry; it only consumes a source-owned complete
+        # run mask and emits ASCII structural proposals for that run.
+        text = _ascii_structural_text_from_run_mask(np.asarray(mask, dtype=bool))
+        if text is None:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "ascii_structural_run_unresolved")
+        source_hash, geometry_hash, components_hash = _source_hashes(source)
+        evidence = geometry.get("run_mask") if isinstance(geometry.get("run_mask"), Mapping) else {}
+        run_hash = str(evidence.get("mask_sha256", ""))
+        if not is_sha256(run_hash):
+            run_hash = sha256_bytes(canonical_bytes({"pixels": evidence.get("pixels") if isinstance(evidence, Mapping) else mask}))
+        component_ids = tuple(
+            str(value)
+            for value in (
+                evidence.get("component_ids", ())
+                if isinstance(evidence, Mapping)
+                else source.get("component_ids", ())
+            )
+        )
+        candidate = _candidate(
+            text=text,
+            source_hash=source_hash,
+            geometry_hash=geometry_hash,
+            components_hash=components_hash,
+            environment_hash=environment_lock.output_hash,
+            confidence=0.72,
+            run_id=str(source.get("run_id", evidence.get("run_id", "run-0") if isinstance(evidence, Mapping) else "run-0")),
+            component_ids=component_ids,
+            extra_input_hashes={"run_mask": run_hash},
+        )
+        proposal = RecognitionProposal(
+            proposal_id=f"{self.name}-run",
+            adapter=self.name,
+            adapter_version=self.version,
+            model_hashes=environment_lock.model_hashes,
+            candidates=(candidate,),
+            run_id=str(source.get("run_id", evidence.get("run_id", "run-0") if isinstance(evidence, Mapping) else "run-0")),
+            input_hashes={
+                "source": source_hash,
+                "geometry": geometry_hash,
+                "components": components_hash,
+                "environment": environment_lock.output_hash,
+                "run_mask": run_hash,
+            },
+            configuration={"recognizer": "source-mask-ascii-structural", "glyph_authority": "proposal_only"},
+            provenance={
+                "source_only": True,
+                "ground_truth_input": False,
+                "geometry_authority": evidence.get("authority") if isinstance(evidence, Mapping) else None,
+                "component_ids": list(component_ids),
+            },
+            status="proposal",
+        )
+        return ProposalSet(
+            adapter=self.name,
+            adapter_version=self.version,
+            environment_lock_hash=environment_lock.output_hash,
+            proposals=(proposal,),
+            supported_scripts=self.supported_scripts,
+            status="proposal_only",
+        )
+
+
+def _ascii_run_components(mask: np.ndarray) -> tuple[dict[str, Any], ...]:
+    """Return stable 8-connected component crops for one source-owned run mask."""
+
+    if mask.ndim != 2 or not mask.any():
+        return ()
+    height, width = mask.shape
+    seen = np.zeros_like(mask, dtype=bool)
+    components: list[dict[str, Any]] = []
+    for y in range(height):
+        for x in range(width):
+            if not mask[y, x] or seen[y, x]:
+                continue
+            stack = [(int(y), int(x))]
+            seen[y, x] = True
+            pixels: list[tuple[int, int]] = []
+            while stack:
+                cy, cx = stack.pop()
+                pixels.append((cy, cx))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        if not dx and not dy:
+                            continue
+                        ny, nx = cy + dy, cx + dx
+                        if 0 <= ny < height and 0 <= nx < width and mask[ny, nx] and not seen[ny, nx]:
+                            seen[ny, nx] = True
+                            stack.append((ny, nx))
+            ys = np.asarray([item[0] for item in pixels], dtype=int)
+            xs = np.asarray([item[1] for item in pixels], dtype=int)
+            y0, y1 = int(ys.min()), int(ys.max()) + 1
+            x0, x1 = int(xs.min()), int(xs.max()) + 1
+            crop = mask[y0:y1, x0:x1]
+            components.append(
+                {
+                    "x0": x0,
+                    "x1": x1,
+                    "y0": y0,
+                    "y1": y1,
+                    "crop": crop,
+                    "area": int(crop.sum()),
+                }
+            )
+    components.sort(key=lambda item: (int(item["x0"]), int(item["y0"]), int(item["x1"]), int(item["y1"])))
+    return tuple(components)
+
+
+def _source_ink_mask_from_path(source: Mapping[str, Any]) -> np.ndarray | None:
+    """Recover actual foreground ink from a geometry-owned run-strip PNG."""
+
+    path_value = source.get("path")
+    if not path_value:
+        return None
+    path = Path(str(path_value))
+    if not path.exists():
+        return None
+    try:
+        image = Image.open(path).convert("RGBA")
+    except OSError:
+        return None
+    pixels = np.asarray(image, dtype=np.uint8)
+    alpha = pixels[:, :, 3]
+    rgb = pixels[:, :, :3].astype(np.int16)
+    if alpha.max(initial=0) == 0:
+        return None
+    luminance = (
+        0.299 * rgb[:, :, 0]
+        + 0.587 * rgb[:, :, 1]
+        + 0.114 * rgb[:, :, 2]
+    )
+    opaque = alpha > 8
+    if not opaque.any():
+        return None
+    # Most corpus run strips are dark ink on light background; retain a
+    # contrast fallback for inverted or non-white captures without requiring
+    # fixture metadata.
+    opaque_luma = luminance[opaque]
+    low = float(np.percentile(opaque_luma, 10))
+    high = float(np.percentile(opaque_luma, 90))
+    if high - low < 10.0:
+        return None
+    dark_ink = opaque & (luminance <= low + (high - low) * 0.35)
+    light_ink = opaque & (luminance >= high - (high - low) * 0.35)
+    dark_count = int(dark_ink.sum())
+    light_count = int(light_ink.sum())
+    if dark_count and light_count:
+        mask = dark_ink if dark_count <= light_count else light_ink
+    else:
+        mask = dark_ink if dark_count else light_ink
+    return np.asarray(mask, dtype=bool) if mask.any() else None
+
+
+def _ascii_component_shape(component: Mapping[str, Any], *, run_height: int) -> str | None:
+    """Classify one structural ASCII component from source morphology only."""
+
+    crop = np.asarray(component.get("crop"), dtype=bool)
+    ys, xs = np.where(crop)
+    if not len(xs):
+        return None
+    height, width = crop.shape
+    bbox_width = int(xs.max() - xs.min() + 1)
+    bbox_height = int(ys.max() - ys.min() + 1)
+    area = int(len(xs))
+    y_center = float(int(component.get("y0", 0)) + ys.mean()) / max(1.0, float(run_height - 1))
+    horizontal_band = float(np.max(crop.sum(axis=1))) / max(1, bbox_width)
+    vertical_band = float(np.max(crop.sum(axis=0))) / max(1, bbox_height)
+    if (
+        bbox_width >= max(4, bbox_height * 2)
+        and bbox_height <= max(4, int(run_height * 0.28))
+        and horizontal_band >= 0.45
+    ):
+        return "_" if y_center >= 0.62 else "-"
+    if bbox_width >= 3 and bbox_height >= max(5, int(run_height * 0.40)):
+        thirds: list[float] = []
+        for start, stop in ((0.0, 0.34), (0.33, 0.67), (0.66, 1.01)):
+            lo = int(np.floor(start * max(1, height - 1)))
+            hi = max(lo + 1, int(np.ceil(stop * height)))
+            cols = np.where(crop[lo:hi, :].any(axis=0))[0]
+            if len(cols):
+                thirds.append(float(cols.mean()))
+        if len(thirds) == 3:
+            outer = (thirds[0] + thirds[2]) / 2.0
+            if abs(outer - thirds[1]) >= max(0.75, width * 0.12):
+                return "(" if thirds[1] < outer else ")"
+    if (
+        bbox_height >= max(5, int(run_height * 0.55))
+        and bbox_width <= max(5, int(bbox_height * 0.45))
+        and vertical_band >= 0.45
+    ):
+        return "|"
+    if bbox_width >= 3 and bbox_height >= max(5, int(run_height * 0.40)):
+        y_values = ys.astype(float)
+        x_values = xs.astype(float)
+        if float(np.var(y_values)) > 0.0:
+            centred_y = y_values - float(np.mean(y_values))
+            centred_x = x_values - float(np.mean(x_values))
+            slope = float(np.mean(centred_y * centred_x) / max(float(np.mean(centred_y * centred_y)), 1e-9))
+            if abs(slope) >= 0.18:
+                return "\\" if slope > 0 else "/"
+    if area <= max(6, int(run_height * 0.20)):
+        return "."
+    return None
+
+
+def _ascii_structural_text_from_run_mask(mask: np.ndarray) -> str | None:
+    """Emit one bounded ASCII structural proposal from a complete run mask."""
+
+    components = list(_ascii_run_components(mask))
+    if not components:
+        return ""
+    # Group two or more stacked horizontal components with overlapping x-range
+    # as an equals sign.  The source still owns the components; this only
+    # emits proposal text for the measured run.
+    if len(components) >= 2:
+        shapes = [_ascii_component_shape(item, run_height=mask.shape[0]) for item in components]
+        x0 = max(int(item["x0"]) for item in components)
+        x1 = min(int(item["x1"]) for item in components)
+        if (
+            all(shape in {"-", "_"} for shape in shapes)
+            and x1 > x0
+            and (x1 - x0) / max(1, max(int(item["x1"]) for item in components) - min(int(item["x0"]) for item in components)) >= 0.45
+        ):
+            return "="
+    chars: list[str] = []
+    for component in components:
+        shape = _ascii_component_shape(component, run_height=mask.shape[0])
+        if shape is None:
+            return None
+        chars.append(shape)
+    return "".join(chars)
 
 
 _STRUCTURAL_GLYPHS: tuple[tuple[str, int], ...] = (

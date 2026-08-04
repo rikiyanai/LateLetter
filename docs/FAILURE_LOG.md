@@ -9664,3 +9664,53 @@ absent.
 - **Status:** A2-A5 RUNTIME ADMISSION COMPLETE; C COVERAGE MEASUREMENT
   COMPLETE BUT BLOCKED; proceed to D1 recognizer coverage only. ComplaintRef:
   operator order to log and execute the transcription plan E2E, 2026-08-04.
+
+### Transcription D1 begins: fixed structural ASCII source-owned proposals land (2026-08-04)
+
+The first D1 coverage addition replaces the live `fixed-lattice-structural`
+stub with a proposal-only ASCII structural run recognizer. It consumes only
+geometry-owned run-strip evidence and the source run PNG pixels; it does not
+select geometry, write candidate TXT, set acceptance flags, use the expected
+transcript, or alter ranking. The previous live behavior was
+`whole_run_proposal_unavailable`/`geometry_mode_mismatch` even for the v2
+`positive-fixed-ascii` source, because the public geometry router supplied
+source-owned shaped-run strips with no useful fixed-lattice base advance.
+
+Implementation boundary:
+
+- The adapter now classifies actual run-strip foreground ink, not the
+  `binary_run_mask` rectangle. The latter is retained as geometry provenance
+  and bounds evidence only.
+- Foreground polarity is selected from source pixels by the smaller
+  high-contrast side; the earlier attempt accidentally selected white
+  background as foreground.
+- The recognizer is deliberately narrow: ASCII structural punctuation only,
+  component-morphology proposal evidence only. It is not a Unicode recognizer
+  and does not expand the 32-symbol structural table into general coverage.
+
+Targeted v2 fixed-ASCII replay with only `FixedLatticeStructuralAdapter`
+completed with `status=passed`, no budget failures, and exact target in top-k:
+row `/\\_|` present-and-winning at rank 1; row `(=)` present-and-winning at
+rank 1. This proves the adapter can recover the small fixed ASCII family from
+source pixels without evaluation-truth input.
+
+Fresh full D1 replay:
+`tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii.json`,
+size 115,712,800 bytes, SHA-256
+`c5a5c71f675475fe68dee0d274b0dfdf222a86381adf32b01992325e6faa66b0`.
+Status remains `blocked_release_coverage`; `budget_failures` is empty;
+`determinism_replay_performed=true`; `ground_truth_passed_to_adapters=false`;
+`false_unique` is empty/null. `positive-fixed-ascii` is no longer in
+`positive_missing`. Its rows are rank-1 exact proposals, but the matrix marks
+them `visual_collision` because other adapters still expose colliding proposal
+evidence. That is not an acceptance pass; it is a coverage repair.
+
+Remaining missing positives after this D1 slice:
+`positive-proportional-latin`, `positive-kana`, `positive-kanji`,
+`positive-combining`, `positive-width-mixture`, `positive-emoji-zwj`,
+`positive-mixed-script`, and `positive-degraded-fixed`.
+
+- **Status:** D1 PARTIAL; fixed structural ASCII coverage added. Continue D1
+  on absent/unsupported Unicode/proportional/emoji/degraded families. Ranking
+  changes remain prohibited until exact targets exist in top-k. ComplaintRef:
+  operator order to log and execute the transcription plan E2E, 2026-08-04.

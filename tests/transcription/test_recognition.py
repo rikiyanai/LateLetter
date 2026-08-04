@@ -178,6 +178,30 @@ def test_offline_ensemble_records_top_k_without_passing_ground_truth_to_adapter(
     assert report["status"] == "blocked_release_coverage"
 
 
+def test_v2_fixed_ascii_structural_adapter_recovers_exact_rows_without_truth_input() -> None:
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    import json
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-fixed-ascii")
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (FixedLatticeStructuralAdapter(),),
+        build_environment_lock(script_packs=("ascii",)),
+        root=fixture_root,
+        adapter_budgets_seconds={"fixed-lattice-structural": 5.0},
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["positive_missing"] == []
+    assert report["results"][0]["exact_nfc_target_in_top_k"] is True
+    rows = report["coverage_rank_matrix"][0]["rows"]
+    assert [(row["expected_logical_sequence"], row["classification"], row["proposal_rank"]) for row in rows] == [
+        ("/\\_|", "present_and_winning", 1),
+        ("(=)", "present_and_winning", 1),
+    ]
+
+
 def test_fixed_ascii_source_png_recovers_both_rows_without_canvas_tail() -> None:
     """The terminal-width guard must preserve the literal structural rows."""
 
