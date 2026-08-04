@@ -28,6 +28,7 @@ from lateletter.transcription.recognition import (
     _fixture_exact_top_k_from_matrix,
     _ocr_latin_confusable_variants,
     _ocr_source_gap_variants,
+    _ocr_source_width_variants,
     _tesseract_profile_runs,
 )
 
@@ -226,6 +227,22 @@ def test_ocr_source_gap_variants_use_measured_run_count_only() -> None:
     assert _ocr_source_gap_variants("春花", {"anchor_evidence": {"source_run_count": 1}}) == ()
 
 
+def test_ocr_source_width_variants_use_run_masks_and_advances_without_truth_input() -> None:
+    from lateletter.transcription.geometry import build_recognition_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[1] / "fixtures/transcription-v2/positive/positive-width-mixture/source.png"
+    geometry_bundle, decision = route_raster_geometry(source_path)
+    assert decision.status == "proved"
+    inputs = build_recognition_inputs(source_path, geometry_bundle, mode=decision.mode)
+    rows = _tesseract_profile_runs(source_path, inputs)
+    assert rows[0]["anchor_evidence"]["source_run_count"] == 3
+
+    variants = _ocr_source_width_variants("AB が", {"anchor_evidence": rows[0]["anchor_evidence"]}, limit=16)
+
+    assert "ＡB ｶﾅ" in variants
+    assert all("positive-width-mixture" not in value for value in variants)
+
+
 def test_v2_proportional_latin_tesseract_variants_cover_target_without_truth_input() -> None:
     fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
     cache = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-model-cache" / "tesseract_best"
@@ -355,6 +372,41 @@ def test_v2_tesseract_row_context_covers_kana_kanji_and_combining_without_truth_
     assert rows_by_fixture["positive-kana"]["proposal_rank"] <= 8
     assert rows_by_fixture["positive-kanji"]["proposal_rank"] <= 8
     assert rows_by_fixture["positive-combining"]["proposal_rank"] == 1
+
+
+def test_v2_tesseract_width_mixture_uses_source_run_anchors_without_truth_input() -> None:
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    cache = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-model-cache"
+    tessdata = cache / "tesseract_best"
+    cjk_font = cache / "fonts/NotoSansCJKjp-Regular.otf"
+    if not (tessdata / "jpn.traineddata").exists() or not (tessdata / "chi_sim.traineddata").exists() or not cjk_font.exists():
+        pytest.skip("project-local Tesseract jpn/chi_sim data and CJK template font are not available")
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-width-mixture")
+    model_paths = {path.stem: str(path) for path in tessdata.glob("*.traineddata")}
+    model_paths["unicode-template-kana.font"] = str(cjk_font)
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (TesseractOfflineAdapter(cache_dir=str(tessdata), languages=("eng", "ara", "jpn", "jpn_vert", "chi_sim", "chi_tra")),),
+        build_environment_lock(
+            model_paths=model_paths,
+            script_packs=tuple(sorted(model_paths)),
+            preprocessing={"network": "disabled", "ground_truth_to_adapter": False},
+        ),
+        root=fixture_root,
+        adapter_budgets_seconds={"tesseract-offline": 12.0},
+        deterministic_replay=True,
+        top_k=5,
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["nondeterministic_adapters"] == []
+    assert report["positive_missing"] == []
+    row = report["coverage_rank_matrix"][0]["rows"][0]
+    assert row["expected_logical_sequence"] == "ＡB ｶﾅ"
+    assert row["classification"] == "present_but_losing"
+    assert row["proposal_rank"] <= 5
 
 
 def test_fixture_exact_top_k_uses_row_matrix_not_adapter_union_order() -> None:

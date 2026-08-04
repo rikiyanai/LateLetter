@@ -10079,3 +10079,48 @@ pass.
   measurement, release coverage remains blocked on four recognizer families.
   ComplaintRef: operator order to implement the PNG-to-logical-Unicode
   transcription roadmap correctly, 2026-08-04.
+
+### Transcription D1 width-mixture coverage added with source-owned run anchors (2026-08-04)
+
+The width-mixture miss was not a geometry or runtime failure. The source row
+already contained three geometry-owned runs with measured advances and masks,
+but the OCR proposal repair path only used large source text gaps. Rows such as
+`AB が` therefore retained no source-owned way to express that the first Latin
+run was fullwidth and the final Japanese OCR token covered two halfwidth-kana
+components.
+
+Corrections:
+
+- Tesseract row OCR evidence now carries source-run advances and source-run
+  masks for the row strips it owns.
+- Gap repair remains based on measured text groups; it was not converted into a
+  raw-run splitter.
+- A separate width/run repair consumes only source-owned run anchors, measured
+  advances, and a hash-pinned NotoSansCJKjp font. It can emit fullwidth ASCII
+  for visibly wide Latin runs and bounded halfwidth-kana component sequences
+  when OCR collapses adjacent kana into one Japanese token.
+- The adapter still emits proposal evidence only. No transcript truth, fixture
+  ID, candidate TXT, attempt, or acceptance is passed into recognition or
+  created by this slice.
+
+Verification:
+
+- Focused width/source-run regression passes.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-width-mixture.json`,
+  size `7255800` bytes, SHA-256
+  `948d1aa1b59d1c85a3757f06ba93c5e8bfb9efa6b0c24260d52bad8f84195c67`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-width-mixture-receipt.json`.
+- Replay status remains `blocked_release_coverage`, but the missing positives
+  dropped from four to three. `positive-width-mixture` is now
+  `present_but_losing`, rank 2, proposed by `psm7-jpn-cjk`.
+- `budget_failures`, `nondeterministic_adapters`, and
+  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
+  remains false.
+
+- **Status:** D1 PARTIAL; width-mixture is covered in top-k, but release
+  coverage remains blocked on emoji-ZWJ, mixed-script, and degraded-fixed.
+  Ranking/fusion, machine authority, live attempts, TXT output, and acceptance
+  remain prohibited. ComplaintRef: operator order to implement the transcription
+  roadmap correctly and avoid prior process failures, 2026-08-04.

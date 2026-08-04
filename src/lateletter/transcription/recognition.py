@@ -479,6 +479,7 @@ class TesseractOfflineAdapter:
                 [
                     *_ocr_latin_confusable_variants(text, limit=16),
                     *_ocr_source_gap_variants(text, source, limit=16),
+                    *_ocr_source_width_variants(text, source, limit=16),
                 ]
             )
         )[:16]
@@ -598,8 +599,8 @@ def _ocr_source_gap_variants(text: str, source: Mapping[str, Any], *, limit: int
             variants.append(" ".join(groups))
             if len(variants) >= limit:
                 break
-    elif len(tokens) == 1:
-        graphemes = regex.findall(r"\X", tokens[0])
+    else:
+        graphemes = regex.findall(r"\X", "".join(tokens))
         for widths in _partitions(len(graphemes), run_count):
             groups = []
             cursor = 0
@@ -610,6 +611,180 @@ def _ocr_source_gap_variants(text: str, source: Mapping[str, Any], *, limit: int
             if len(variants) >= limit:
                 break
     return tuple(dict.fromkeys(unicodedata.normalize("NFC", value) for value in variants if value and value != normalized))[:limit]
+
+
+def _source_run_masks(evidence: Mapping[str, Any]) -> tuple[np.ndarray | None, ...]:
+    masks = evidence.get("source_run_masks")
+    if not isinstance(masks, (list, tuple)):
+        return ()
+    return tuple(
+        np.asarray(mask, dtype=bool) if mask is not None else None
+        for mask in (_mask_from_pixels(item) for item in masks)
+    )
+
+
+def _connected_component_boxes(mask: np.ndarray) -> tuple[tuple[int, int, int, int, int], ...]:
+    if mask.ndim != 2 or not mask.any():
+        return ()
+    height, width = mask.shape
+    seen = np.zeros(mask.shape, dtype=bool)
+    boxes: list[tuple[int, int, int, int, int]] = []
+    for y in range(height):
+        for x in range(width):
+            if not bool(mask[y, x]) or bool(seen[y, x]):
+                continue
+            stack = [(y, x)]
+            seen[y, x] = True
+            xs: list[int] = []
+            ys: list[int] = []
+            while stack:
+                cy, cx = stack.pop()
+                xs.append(cx)
+                ys.append(cy)
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        if dy == 0 and dx == 0:
+                            continue
+                        ny = cy + dy
+                        nx = cx + dx
+                        if 0 <= ny < height and 0 <= nx < width and bool(mask[ny, nx]) and not bool(seen[ny, nx]):
+                            seen[ny, nx] = True
+                            stack.append((ny, nx))
+            if xs:
+                boxes.append((min(xs), min(ys), max(xs) + 1, max(ys) + 1, len(xs)))
+    return tuple(sorted(boxes, key=lambda item: (item[0], item[1], item[4])))
+
+
+def _halfwidth_kana_sequences_from_mask(
+    mask: np.ndarray,
+    *,
+    font_path: str,
+    max_per_component: int = 3,
+    limit: int = 16,
+) -> tuple[str, ...]:
+    """Return source-mask halfwidth-kana sequence proposals.
+
+    This is a bounded template recognizer for the case OCR collapses adjacent
+    halfwidth kana into one Japanese glyph.  It uses only source pixels plus a
+    hash-pinned font; no transcript strings or fixture IDs enter the adapter.
+    """
+
+    boxes = tuple(box for box in _connected_component_boxes(np.asarray(mask, dtype=bool)) if box[4] >= 8)
+    if len(boxes) < 2 or not Path(font_path).is_file():
+        return ()
+    halfwidth = tuple(
+        grapheme
+        for grapheme in _unicode_repertoire("kana")
+        if len(grapheme) == 1 and 0xFF61 <= ord(grapheme) < 0xFFA0 and unicodedata.category(grapheme).startswith(("L", "M"))
+    )
+    per_component: list[tuple[tuple[float, str], ...]] = []
+    for x0, y0, x1, y1, _pixels in boxes[:4]:
+        crop = np.asarray(mask[y0:y1, x0:x1], dtype=bool)
+        scored: list[tuple[float, str]] = []
+        for grapheme in halfwidth:
+            template = _render_unicode_template(font_path, grapheme, crop.shape[1], crop.shape[0])
+            residual, union, _rendered_pixels = _unicode_template_residual(crop, template)
+            if union and residual <= 0.74:
+                scored.append((float(residual), grapheme))
+        if not scored:
+            return ()
+        per_component.append(tuple(sorted(scored, key=lambda item: (item[0], item[1]))[: max(1, max_per_component)]))
+    sequences: list[tuple[float, str]] = [(0.0, "")]
+    for choices in per_component:
+        next_sequences: list[tuple[float, str]] = []
+        for prior_cost, prefix in sequences:
+            for cost, grapheme in choices:
+                next_sequences.append((prior_cost + cost, prefix + grapheme))
+        sequences = sorted(next_sequences, key=lambda item: (item[0], item[1]))[: max(1, limit)]
+    return tuple(dict.fromkeys(text for _cost, text in sequences))[:limit]
+
+
+def _fullwidth_ascii_variant(char: str) -> str:
+    if len(char) == 1 and 0x21 <= ord(char) <= 0x7E:
+        return chr(ord(char) - 0x21 + 0xFF01)
+    return char
+
+
+def _ocr_source_width_variants(text: str, source: Mapping[str, Any], *, limit: int = 32) -> tuple[str, ...]:
+    evidence = source.get("anchor_evidence")
+    if not isinstance(evidence, Mapping):
+        return ()
+    try:
+        run_count = int(evidence.get("source_run_count", 0))
+    except (TypeError, ValueError):
+        return ()
+    if run_count <= 1:
+        return ()
+    advances = [
+        float(value)
+        for value in evidence.get("source_run_advances", evidence.get("measured_advances", ()))
+        if isinstance(value, (int, float)) or str(value).replace(".", "", 1).isdigit()
+    ]
+    if len(advances) < run_count:
+        return ()
+    masks = _source_run_masks(evidence)
+    font_path = str(evidence.get("source_template_font_path", ""))
+    if font_path:
+        expected_hash = str(evidence.get("source_template_font_sha256", ""))
+        if not is_sha256(expected_hash) or not Path(font_path).is_file() or sha256_file(font_path) != expected_hash:
+            font_path = ""
+    normalized = unicodedata.normalize("NFC", text).strip()
+    tokens = normalized.split()
+    if not tokens or len(tokens) > run_count:
+        return ()
+    narrow_base = min(value for value in advances[:run_count] if value > 0)
+    variants: list[str] = []
+    partitions = sorted(
+        _partitions(run_count, len(tokens)),
+        key=lambda widths: (
+            sum(abs(len(regex.findall(r"\X", token)) - width) for token, width in zip(tokens, widths)),
+            widths,
+        ),
+    )
+    for token_run_widths in partitions:
+        run_cursor = 0
+        token_options: list[tuple[str, ...]] = []
+        for token, token_width in zip(tokens, token_run_widths):
+            run_indexes = tuple(range(run_cursor, min(run_count, run_cursor + token_width)))
+            run_cursor += token_width
+            graphemes = regex.findall(r"\X", token)
+            options: list[str] = []
+            if len(graphemes) == len(run_indexes):
+                rebuilt: list[str] = []
+                changed = False
+                for grapheme, run_index in zip(graphemes, run_indexes):
+                    replacement = grapheme
+                    if regex.fullmatch(r"[A-Za-z0-9!-/:-@\\[-`{-~]", grapheme) and advances[run_index] >= narrow_base * 1.25:
+                        replacement = _fullwidth_ascii_variant(grapheme)
+                    rebuilt.append(replacement)
+                    changed = changed or replacement != grapheme
+                if changed:
+                    options.append("".join(rebuilt))
+            if (
+                len(graphemes) == 1
+                and font_path
+                and run_indexes
+                and len(run_indexes) == 1
+                and len(masks) > run_indexes[0]
+                and masks[run_indexes[0]] is not None
+                and any("HIRAGANA" in unicodedata.name(ch, "") or "KATAKANA" in unicodedata.name(ch, "") for ch in token)
+            ):
+                kana_sequences = _halfwidth_kana_sequences_from_mask(masks[run_indexes[0]], font_path=font_path, limit=8)
+                options.extend(kana_sequences)
+            options.append(token)
+            token_options.append(tuple(dict.fromkeys(options)))
+        combined = [""]
+        for index, options in enumerate(token_options):
+            next_combined: list[str] = []
+            separator = " " if index else ""
+            for prefix in combined:
+                for option in options:
+                    next_combined.append(prefix + separator + option)
+            combined = list(dict.fromkeys(next_combined))[: max(1, limit)]
+        variants.extend(combined)
+        if len(variants) >= limit:
+            break
+    return tuple(dict.fromkeys(value for value in variants if value and value != normalized))[:limit]
 
 
 @dataclass(frozen=True)
@@ -3885,6 +4060,8 @@ def _tesseract_profile_runs(source_path: Path, variant_input: Mapping[str, Any])
         component_ids: list[str] = []
         measured_advances: list[float] = []
         run_ids: list[str] = []
+        source_run_advances: list[float] = []
+        source_run_masks: list[list[str] | None] = []
         gaps = [
             max(0, int(sorted_bounds[index + 1][0]) - int(sorted_bounds[index][2]))
             for index in range(len(sorted_bounds) - 1)
@@ -3915,7 +4092,15 @@ def _tesseract_profile_runs(source_path: Path, variant_input: Mapping[str, Any])
                     mask[max(0, dst_y0):dst_y1, max(0, dst_x0):dst_x1] |= local[: dst_y1 - max(0, dst_y0), : dst_x1 - max(0, dst_x0)]
             component_ids.extend(str(value) for value in item.get("component_ids", ()) if str(value))
             measured_advances.extend(float(value) for value in item.get("measured_advances", ()) if float(value) > 0)
+            item_advances = [float(value) for value in item.get("measured_advances", ()) if float(value) > 0]
+            if item_advances:
+                source_run_advances.append(float(sum(item_advances)))
+            elif isinstance(bound, (list, tuple)) and len(bound) == 4:
+                source_run_advances.append(float(max(1, int(bound[2]) - int(bound[0]))))
+            item_mask = item.get("binary_run_mask")
+            source_run_masks.append(list(item_mask) if isinstance(item_mask, list) else None)
             run_ids.append(str(item.get("run_id", "")))
+        cjk_font = Path("tracked/LateLetterResearch/transcription-model-cache/fonts/NotoSansCJKjp-Regular.otf")
         binary_rows = ["".join("1" if value else "0" for value in row) for row in mask]
         row_runs.append(
             {
@@ -3945,10 +4130,14 @@ def _tesseract_profile_runs(source_path: Path, variant_input: Mapping[str, Any])
                     "source_run_count": len(row_items),
                     "source_text_group_count": text_group_count,
                     "source_gaps_px": gaps,
+                    "source_run_advances": source_run_advances,
+                    "source_run_masks": source_run_masks,
                     "significant_gap_threshold_px": significant_gap_threshold,
                     "source_bounds": crop_bounds,
                     "mask_sha256": _mask_hash(mask),
                     "component_ids": sorted(set(component_ids)),
+                    "source_template_font_path": str(cjk_font) if cjk_font.is_file() else "",
+                    "source_template_font_sha256": sha256_file(cjk_font) if cjk_font.is_file() else "",
                 },
             }
         )
