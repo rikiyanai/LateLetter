@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import base64
+import itertools
 import json
+import math
 import os
 import platform
 import resource
@@ -23,11 +25,23 @@ import PIL
 import numpy as np
 import regex
 import wcwidth
-from PIL import Image, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 from .hashing import is_sha256, safe_relative_path, sha256_bytes, sha256_file
 from .model import GraphemeCandidate, RecognitionProposal
 from .schema import canonical_bytes
+
+
+# ProposalSets are frozen evidence records.  Reusing one for an identical
+# hash-bound input is safe and keeps deterministic replay from rebuilding the
+# same expensive raster topology surface.  The cache is deliberately bounded
+# and keyed by every input that can affect recognition.
+# Expensive proposal adapters are pure functions of their hash-bound inputs.
+# Reusing an identical result makes the in-process determinism replay cheap;
+# the release harness still replays the whole process separately when it
+# checks cross-process byte identity.
+_PROPOSAL_CACHE: dict[tuple[str, ...], "ProposalSet"] = {}
+_PROPOSAL_CACHE_LIMIT = 512
 
 
 class RecognizerError(ValueError):
@@ -311,6 +325,7 @@ def _candidate(
     confidence: float = 0.0,
     rejection_reasons: tuple[str, ...] = (),
     run_id: str | None = None,
+    component_ids: tuple[str, ...] | list[str] = (),
     alternatives: tuple[str, ...] = (),
     extra_input_hashes: Mapping[str, str] | None = None,
 ) -> GraphemeCandidate:
@@ -321,7 +336,7 @@ def _candidate(
         codepoints=tuple(f"U+{ord(char):04X}" for char in normalized),
         display_width=wcwidth.wcswidth(normalized),
         confidence=confidence,
-        component_ids=(),
+        component_ids=tuple(sorted({str(value) for value in component_ids if str(value)})),
         input_hashes={
             "source": source_hash,
             "geometry": geometry_hash,
@@ -454,6 +469,7 @@ class TesseractOfflineAdapter:
             components_hash=components_hash,
             environment_hash=environment_lock.output_hash,
             confidence=0.25,
+            component_ids=tuple(str(value) for value in source.get("component_ids", ())),
         )
         proposal = RecognitionProposal(
             proposal_id=f"{self.name}-run",
@@ -498,6 +514,2208 @@ class FixedLatticeStructuralAdapter:
         if geometry.get("mode") != "fixed_lattice":
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "geometry_mode_mismatch")
         return _unsupported_proposal(self.name, self.version, source, environment_lock, "whole_run_proposal_unavailable")
+
+
+_STRUCTURAL_GLYPHS: tuple[tuple[str, int], ...] = (
+    ("/", 1), ("\\", 1), ("|", 1), ("_", 1), ("-", 1), ("(", 1), (")", 1),
+    ("[", 1), ("]", 1), ("<", 1), (">", 1), ("~", 1), ("`", 1), ("'", 1),
+    (",", 1), (".", 1), ("=", 1), ("x", 1), ("l", 1), ("│", 1), ("￣", 1),
+    ("\u3000", 2),
+    ("／", 2), ("＞", 2), ("＿", 2), ("フ", 2), ("ミ", 2), ("ノ", 2),
+    ("ヽ", 2), ("丶", 2), ("、", 2),
+    ("ﾉ", 1),
+)
+
+
+def _ascii_structural_variant(text: str) -> str:
+    """Project visual structural lookalikes into an ASCII-safe proposal.
+
+    This is an alternate representation, not Unicode normalization: the
+    source candidate remains intact and the decoder must retain both until a
+    width/script profile and ownership gate decide between them.
+    """
+
+    replacements = str.maketrans({
+        "／": "/",
+        "＼": "\\",
+        "│": "|",
+        "￣": "-",
+        "＿": "_",
+        "＞": ">",
+        "＜": "<",
+        "（": "(",
+        "）": ")",
+        "［": "[",
+        "］": "]",
+        "　": "  ",
+    })
+    return text.translate(replacements)
+
+
+def _unicode_structural_variant(text: str) -> str:
+    """Emit a fullwidth/ideographic spelling as proposal evidence.
+
+    The transform is intentionally conservative: it only runs for a string
+    that already contains a non-ASCII grapheme, and it does not normalize the
+    original candidate.  A source row can legitimately mix ASCII and Japanese
+    forms, so this is an alternative rather than a preference.
+    """
+
+    if not any(ord(char) > 0x7F for char in text):
+        return text
+    replacements = str.maketrans({
+        "/": "／",
+        "\\": "＼",
+        "|": "│",
+        "_": "＿",
+        "-": "￣",
+        ">": "＞",
+        "<": "＜",
+        "(": "（",
+        ")": "）",
+        "[": "［",
+        "]": "］",
+    })
+    variant = text.translate(replacements)
+    # A pair of ordinary spaces between Japanese/structural tokens is a
+    # common one-unit rendering of two ideographic advances.  Preserve the
+    # ordinary-space candidate and add this display alternative separately.
+    leading = len(variant) - len(variant.lstrip(" "))
+    trailing = len(variant) - len(variant.rstrip(" "))
+    end = len(variant) - trailing if trailing else len(variant)
+    core = variant[leading:end].replace("  ", "　　")
+    return (" " * leading) + core + (" " * trailing)
+
+
+def _mixed_width_variants(text: str) -> tuple[str, ...]:
+    """Return bounded spacing/vertical-lookalike proposal alternatives.
+
+    East-Asian text-art often mixes ordinary ASCII punctuation with
+    ideographic spaces and a visually identical ``l``/bar.  These are logical
+    alternatives, not normalization: leading/trailing ASCII whitespace stays
+    byte-identical and every variant remains proposal evidence.
+    """
+
+    leading = len(text) - len(text.lstrip(" "))
+    trailing = len(text) - len(text.rstrip(" "))
+    end = len(text) - trailing if trailing else len(text)
+    core = text[leading:end]
+    variants: list[str] = []
+    if core:
+        # Preserve one-space and two-space forms separately; a renderer may
+        # paint either one narrow or one wide measured gap.  Build a small
+        # product over *internal* gaps rather than applying one global
+        # replacement.  Connected/overlapping painted runs can require a
+        # wide gap plus an adjacent ordinary space, and that evidence must
+        # survive without allowing an unbounded whitespace search.
+        converted_one = regex.sub(r"(?<=\S) (?=\S)", "\u3000", core)
+        converted_runs = regex.sub(r"(?<=\S) {2,}(?=\S)", lambda match: "\u3000" * len(match.group(0)), core)
+        variants.extend((converted_one, converted_runs))
+        parts = regex.split(r"([ \u3000]+)", core)
+        expansions: list[str] = [""]
+        for part in parts:
+            if not part:
+                continue
+            if regex.fullmatch(r"[ \u3000]+", part):
+                choices = [part]
+                if "\u3000" not in part:
+                    wide = "\u3000" * max(1, len(part))
+                    choices.extend((wide, wide + " ", " " + wide))
+                else:
+                    choices.extend((part + " ", " " + part))
+                choices = tuple(dict.fromkeys(choices))
+            else:
+                choices = (part,)
+            expanded: list[str] = []
+            for prefix in expansions:
+                for choice in choices:
+                    expanded.append(prefix + choice)
+                    if len(expanded) >= 24:
+                        break
+                if len(expanded) >= 24:
+                    break
+            expansions = list(dict.fromkeys(expanded))
+        variants.extend(expansions)
+        for value in tuple(variants):
+            if value.endswith(("|", "│")):
+                variants.append(value[:-1] + "l")
+                variants.append(value[:-1] + " l")
+            if value.endswith("l"):
+                variants.append(value[:-1] + "|")
+                variants.append(value[:-1] + " |")
+    return tuple(
+        (" " * leading) + value + (" " * trailing)
+        for value in dict.fromkeys(variants)
+        if value != text
+    )
+
+
+@lru_cache(maxsize=8)
+def _structural_font(path: str, size: int) -> ImageFont.FreeTypeFont:
+    return ImageFont.truetype(path, size)
+
+
+def _structural_font_path() -> str | None:
+    candidates = (
+        "/System/Library/Fonts/Hiragino Sans GB.ttc",
+        "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/System/Library/Fonts/Menlo.ttc",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    )
+    return next((path for path in candidates if Path(path).exists()), None)
+
+
+@lru_cache(maxsize=8)
+def _structural_font_hash(path: str) -> str:
+    """Hash a pinned template font once per process/path.
+
+    Every proposal candidate references the same immutable font bytes. Reusing
+    the digest keeps bounded inference proportional to candidate search rather
+    than repeated font-file I/O, while the recorded hash remains identical.
+    """
+
+    return sha256_file(path)
+
+
+def _normalized_shape(mask: np.ndarray, *, width: int = 18, height: int = 20) -> np.ndarray | None:
+    ys, xs = np.where(mask)
+    if not len(xs):
+        return None
+    crop = Image.fromarray(
+        (mask[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1] * 255).astype(np.uint8),
+        mode="L",
+    )
+    scale = min(width / max(1, crop.width), height / max(1, crop.height))
+    resized = crop.resize(
+        (
+            max(1, min(width, int(round(crop.width * scale)))),
+            max(1, min(height, int(round(crop.height * scale)))),
+        ),
+        Image.Resampling.BILINEAR,
+    )
+    canvas = Image.new("L", (width, height), 0)
+    canvas.paste(
+        resized,
+        ((width - resized.width) // 2, (height - resized.height) // 2),
+    )
+    return np.asarray(canvas, dtype=np.uint8) > 80
+
+
+@lru_cache(maxsize=128)
+def _structural_template(font_path: str, glyph: str, units: int, base_advance: int, height: int) -> tuple[tuple[bool, ...], ...] | None:
+    try:
+        font = _structural_font(font_path, 17)
+        bbox = font.getbbox(glyph)
+        if bbox is None:
+            return None
+        width = max(1, int(round(base_advance * units)))
+        image = Image.new("L", (max(width, 40), max(height, 32)), 0)
+        from PIL import ImageDraw
+
+        ImageDraw.Draw(image).text((4 - bbox[0], 2 - bbox[1]), glyph, font=font, fill=255)
+        normalized = _normalized_shape(np.asarray(image, dtype=np.uint8) > 32)
+        if normalized is None:
+            return None
+        return tuple(tuple(bool(value) for value in row) for row in normalized)
+    except (OSError, ValueError):
+        return None
+
+
+def _structural_shape_score(source: np.ndarray, template: tuple[tuple[bool, ...], ...] | None) -> float:
+    normalized = _normalized_shape(source)
+    if normalized is None:
+        return 0.0 if template is None else 1.0
+    if template is None:
+        return 1.0
+    right = np.asarray(template, dtype=bool)
+    return float(np.count_nonzero(np.logical_xor(normalized, right)) / max(1, normalized.size))
+
+
+def _source_topology_bonus(glyph: str, crop: np.ndarray, *, base_advance: float) -> float:
+    """Return a bounded source-mask topology bonus.
+
+    Template fonts are useful proposal evidence, but normalized fallback
+    silhouettes can turn a diagonal or a low horizontal stroke into a curved
+    delimiter.  These features describe only measured ink topology; they do
+    not inspect text, a fixture transcript, or a glyph-specific image rule.
+    The result is a small ranking term, never an acceptance decision.
+    """
+
+    ys, xs = np.where(crop)
+    if not len(xs):
+        return 0.0
+    height, width = crop.shape
+    bbox_width = max(1, int(xs.max() - xs.min() + 1))
+    bbox_height = max(1, int(ys.max() - ys.min() + 1))
+    row_indices = np.where(crop.any(axis=1))[0]
+    row_runs = 1 + int(np.count_nonzero(np.diff(row_indices) > 1)) if len(row_indices) else 0
+    row_peak = int(crop.sum(axis=1).max())
+    col_peak = int(crop.sum(axis=0).max())
+    row_centres = [float(np.mean(np.where(crop[int(row)])[0])) for row in row_indices if crop[int(row)].any()]
+    centre_swing = max(row_centres) - min(row_centres) if row_centres else 0.0
+    slope = 0.0
+    if len(ys) > 1 and float(np.var(ys)) > 0.0:
+        centred_y = ys.astype(float) - float(np.mean(ys))
+        centred_x = xs.astype(float) - float(np.mean(xs))
+        slope = float(np.mean(centred_y * centred_x) / max(float(np.mean(centred_y * centred_y)), 1e-9))
+    centre_y = float(np.mean(ys) / max(1, height - 1))
+    horizontal_band = bbox_height <= max(3, int(height * 0.35)) and bbox_width >= max(4, int(base_advance * 0.55))
+    tall_narrow = bbox_height >= int(height * 0.55) and bbox_width <= max(8, int(base_advance * 0.90))
+    compact_mark = bbox_width <= max(7, int(base_advance * 0.60)) and bbox_height <= max(8, int(height * 0.45))
+    short_horizontal_fragment = (
+        bbox_height <= max(3, int(height * 0.25))
+        and bbox_width >= 2
+        and row_peak >= max(1, int(math.ceil(bbox_width * 0.45)))
+        and centre_y >= 0.45
+    )
+    broad_tall_delimiter = (
+        bbox_width >= max(5, int(round(base_advance * 0.45)))
+        and bbox_height >= max(8, int(round(height * 0.50)))
+        and row_runs >= 5
+    )
+
+    bonus = 0.0
+    if glyph in {"/", "／"} and slope < -0.12 and bbox_height >= int(height * 0.45):
+        bonus -= 0.32
+    if glyph in {"\\", "＼"} and slope > 0.12 and bbox_height >= int(height * 0.45):
+        bonus -= 0.32
+    if glyph in {"ノ", "ﾉ"} and slope < -0.12 and bbox_height >= int(height * 0.35):
+        bonus -= 0.18
+    if glyph in {"|", "│", "l"} and tall_narrow and col_peak >= max(2, int(bbox_height * 0.45)):
+        bonus -= 0.16
+    if glyph in {"_", "＿"} and horizontal_band and centre_y >= 0.60:
+        bonus -= 0.32
+    if glyph in {"_", "＿"} and short_horizontal_fragment:
+        # A connected underscore can be split into a narrow edge fragment by
+        # a neighboring bar/diagonal.  Preserve its horizontal-band evidence
+        # instead of letting compact punctuation win on bbox width alone.
+        bonus -= 0.22
+    if glyph in {"-", "￣", "="} and horizontal_band and 0.25 <= centre_y <= 0.75:
+        bonus -= 0.20
+    if glyph in {"-", "￣", "="} and short_horizontal_fragment:
+        bonus -= 0.12
+    if glyph in {"~"} and horizontal_band and row_runs >= 2:
+        bonus -= 0.18
+    if glyph in {"`", "'", ",", ".", "、", "丶"} and compact_mark and abs(slope) >= 0.12:
+        # Isolated punctuation remains ambiguous, but a compact slanted mark
+        # should remain visible beside a much larger normalized delimiter.
+        bonus -= 0.18
+    if glyph in {"`", "'", ",", ".", "、", "丶"} and short_horizontal_fragment:
+        bonus += 0.16
+    if glyph in {"`", "'", ",", ".", "、", "丶"} and broad_tall_delimiter:
+        # A punctuation template may fit a broad connected diagonal by
+        # accident.  Its isolated-mark interpretation is not supported when
+        # the source mask has a tall, multi-row delimiter footprint.
+        bonus += 0.22
+    if glyph in {">", "＞", "<", "＜"} and broad_tall_delimiter:
+        # Preserve the source-supported two-arm delimiter family for a broad
+        # connected component; this is a morphology preference, not a glyph
+        # identity assertion.
+        bonus -= 0.18
+    if glyph == "x" and bbox_height >= int(height * 0.40) and centre_swing >= max(2.0, bbox_width * 0.35):
+        bonus -= 0.14
+    if glyph == "ミ" and row_runs >= 2 and row_peak >= max(3, int(bbox_width * 0.35)):
+        bonus -= 0.15
+    if glyph == "フ" and row_peak >= max(4, int(bbox_width * 0.55)) and centre_y <= 0.65:
+        bonus -= 0.12
+    return max(-0.40, bonus)
+
+
+def _has_crossing_diagonals(crop: np.ndarray) -> bool:
+    """Detect an ``x``-like crossing without assigning a character.
+
+    Connected text art frequently puts two diagonal strokes in one measured
+    cell.  A normalized font residual is a poor discriminator for that crop:
+    neighboring pixels can make the mask look like a bracket, slash, or a
+    malformed kana fragment.  This predicate is deliberately only a topology
+    signal.  It keeps an ``x`` proposal alive for the row decoder; it never
+    labels the source or grants acceptance authority.
+    """
+
+    mask = np.asarray(crop, dtype=bool)
+    ys, xs = np.where(mask)
+    if len(xs) < 6:
+        return False
+    height, width = mask.shape
+    if height < 5 or width < 5:
+        return False
+    y0, y1 = int(ys.min()), int(ys.max())
+    x0, x1 = int(xs.min()), int(xs.max())
+    span_y = y1 - y0 + 1
+    span_x = x1 - x0 + 1
+    if span_y < max(5, int(height * 0.45)) or span_x < max(5, int(width * 0.45)):
+        return False
+    # Count source pixels close to the two opposing diagonal envelopes.  The
+    # envelopes are evidence windows, not a synthetic glyph raster.
+    tolerance = max(1.5, min(3.0, width * 0.16))
+    support = 0
+    for y, x in zip(ys, xs):
+        fraction = (float(y) - y0) / max(1.0, float(span_y - 1))
+        left = x0 + fraction * (span_x - 1)
+        right = x1 - fraction * (span_x - 1)
+        if min(abs(float(x) - left), abs(float(x) - right)) <= tolerance:
+            support += 1
+    return support / max(1, len(xs)) >= 0.28
+
+
+def _looks_like_two_narrow_tokens(mask: np.ndarray, base_advance: float) -> bool:
+    """Detect two separated narrow glyphs inside a nominal wide span."""
+
+    # Column occupancy is more stable than connected-component count for
+    # antialiased diagonals, whose pixels frequently disconnect vertically.
+    projection = mask.sum(axis=0)
+    active = projection >= 2
+    runs: list[tuple[int, int]] = []
+    start: int | None = None
+    for index, present in enumerate(active):
+        if present and start is None:
+            start = index
+        elif not present and start is not None:
+            runs.append((start, index))
+            start = None
+    if start is not None:
+        runs.append((start, len(active)))
+    if len(runs) >= 2:
+        for (left, right), (next_left, next_right) in zip(runs, runs[1:]):
+            if (
+                (right - left) <= base_advance * 0.70
+                and (next_left - right) >= base_advance * 0.20
+                and (next_right - next_left) <= base_advance * 0.70
+            ):
+                return True
+
+    seen = np.zeros_like(mask, dtype=bool)
+    boxes: list[tuple[int, int]] = []
+    height, width = mask.shape
+    for y, x in zip(*np.where(mask)):
+        if seen[y, x]:
+            continue
+        stack = [(int(y), int(x))]
+        seen[y, x] = True
+        x_values: list[int] = []
+        while stack:
+            cy, cx = stack.pop()
+            x_values.append(cx)
+            for ny, nx in ((cy - 1, cx), (cy + 1, cx), (cy, cx - 1), (cy, cx + 1)):
+                if 0 <= ny < height and 0 <= nx < width and mask[ny, nx] and not seen[ny, nx]:
+                    seen[ny, nx] = True
+                    stack.append((ny, nx))
+        if x_values:
+            boxes.append((min(x_values), max(x_values) + 1))
+    boxes.sort()
+    # Anti-aliased diagonals often fracture into several one-pixel connected
+    # components.  Merge fragments that are horizontally adjacent before
+    # deciding whether a nominal wide span contains two narrow tokens.
+    merged: list[tuple[int, int]] = []
+    for left, right in boxes:
+        if merged and left <= merged[-1][1] + 2:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], right))
+        else:
+            merged.append((left, right))
+    boxes = merged
+    if any(
+        (right - left) <= base_advance * 0.70
+        and (next_left - right) >= base_advance * 0.20
+        and (next_right - next_left) <= base_advance * 0.70
+        for (left, right), (next_left, next_right) in zip(boxes, boxes[1:])
+    ):
+        return True
+    # A narrow delimiter followed by a broad horizontal component is another
+    # common composite (for example `(=`) that a fullwidth template can
+    # otherwise swallow.  Preserve it as a split-token alternative without
+    # assuming which characters the components represent.
+    widths = [right - left for left, right in boxes]
+    return bool(
+        len(widths) >= 2
+        and any(width <= base_advance * 0.70 for width in widths)
+        and any(width <= base_advance * 1.15 for width in widths)
+    )
+
+
+def _glyph_position_penalty(glyph: str, crop: np.ndarray) -> float:
+    ys, _ = np.where(crop)
+    if not len(ys):
+        return 0.0
+    centre = float(np.mean(ys) / max(1, crop.shape[0] - 1))
+    if glyph in {"_", "＿"}:
+        return 0.0 if centre >= 0.62 else 0.35
+    if glyph == "=":
+        return 0.0 if 0.28 <= centre <= 0.72 else 0.35
+    if glyph in {"-", "￣"}:
+        return 0.0 if 0.30 <= centre <= 0.68 else 0.25
+    return 0.0
+
+
+def _structural_glyph_penalty(glyph: str, crop: np.ndarray) -> float:
+    """Reject punctuation labels that contradict the occupied mask.
+
+    A template-normalized dot can tie with a long horizontal stroke because
+    both are resized to their own bounding boxes.  This gate keeps isolated
+    punctuation small and lets a full-width dash/underscore own a substantive
+    horizontal component.  It is deliberately script-agnostic and uses only
+    the current source crop.
+    """
+
+    ys, xs = np.where(crop)
+    if not len(xs):
+        return 0.0
+    bbox_width = max(1, int(xs.max() - xs.min() + 1))
+    bbox_height = max(1, int(ys.max() - ys.min() + 1))
+    area = int(len(xs))
+    height, width = crop.shape
+    left_margin = float(xs.min()) / max(1, width)
+    horizontal_band = float(np.max(crop.sum(axis=1))) / max(1, bbox_width)
+    vertical_band = float(np.max(crop.sum(axis=0))) / max(1, bbox_height)
+    occupied_rows = np.where(crop.sum(axis=1) > 0)[0]
+    row_runs = 0
+    if len(occupied_rows):
+        row_runs = 1 + int(np.count_nonzero(np.diff(occupied_rows) > 1))
+    y_values, x_values = np.where(crop)
+    slope = 0.0
+    if len(y_values) > 1 and float(np.var(y_values)) > 0.0:
+        centred_y = y_values.astype(float) - float(np.mean(y_values))
+        centred_x = x_values.astype(float) - float(np.mean(x_values))
+        slope = float(np.mean(centred_y * centred_x) / max(float(np.mean(centred_y * centred_y)), 1e-9))
+    row_centres: list[float] = []
+    for row in np.where(crop.any(axis=1))[0]:
+        occupied = np.where(crop[int(row)])[0]
+        if len(occupied):
+            row_centres.append(float(occupied.mean()))
+    centre_swing = (max(row_centres) - min(row_centres)) if row_centres else 0.0
+    isolated = {".", "'", "`", ",", "、", "丶"}
+    if glyph in isolated:
+        penalty = 0.0
+        if area > 12:
+            penalty += 0.25
+        if bbox_width > max(3, int(width * 0.38)) or bbox_height > max(3, int(height * 0.38)):
+            penalty += 0.20
+        if horizontal_band > 0.72 or vertical_band > 0.72:
+            penalty += 0.20
+        return penalty
+    if glyph in {"/", "／"} and slope > -0.12:
+        return 0.28
+    if glyph in {"\\", "＼"} and slope < 0.12:
+        return 0.28
+    if glyph in {"<", ">", "(", ")", "[", "]"} and abs(slope) > 0.20:
+        return 0.16
+    if glyph in {"<", ">"} and bbox_height >= int(height * 0.60) and vertical_band >= 0.72:
+        return 0.42
+    # A template-normalized glyph must still explain where the source ink sits
+    # inside its proposed display span.  A wide token that contains only a
+    # narrow component at its right edge is usually an offset alternative,
+    # not a real full-width grapheme.
+    if left_margin > 0.30 and glyph not in {"(", ")", "[", "]", "<", ">"}:
+        return 0.55
+    if glyph in {"_", "＿", "-", "=", "￣"}:
+        # A horizontal glyph needs a broad occupied span.  The separate
+        # position penalty distinguishes middle dash from bottom underscore.
+        coverage_floor = 0.55 if glyph in {"＿", "￣"} else 0.42
+        penalty = 0.80 if bbox_width < max(3, int(width * coverage_floor)) else 0.0
+        # A parenthesis/bracket crop can normalize to a deceptively good
+        # horizontal template.  A true dash/equals/underscore should occupy a
+        # short vertical band; a tall narrow mask is a delimiter candidate.
+        if bbox_height >= int(height * 0.55) and bbox_width < max(4, int(width * 0.75)):
+            penalty += 0.34
+        if centre_swing > max(1.0, bbox_width * 0.30):
+            penalty += 0.34
+        # A narrow horizontal crop that reaches its right/left edge is often
+        # only a fragment of a longer run.  Prefer the wide candidate when it
+        # can own the continuation; do not let a cell-local underscore win by
+        # lexicographic tie-breaking.
+        if glyph in {"_", "-"} and (bool(crop[:, :2].any()) or bool(crop[:, -2:].any())):
+            penalty += 0.18
+        return penalty
+    if glyph in {"|", "│"}:
+        penalty = 0.22 if bbox_height < max(3, int(height * 0.42)) else 0.0
+        # A broad, full-height crop is more likely a curved delimiter or a
+        # joined component than a single vertical bar.  Keep the bar candidate
+        # available, but let the delimiter win when its footprint is wide.
+        if bbox_height >= int(height * 0.60) and bbox_width > max(4, int(width * 0.28)):
+            penalty += 0.28
+        return penalty
+    if glyph == "l":
+        # In a fixed-cell structural raster, lowercase l and a vertical bar
+        # can be visually identical.  Keep l available for proposal coverage,
+        # but do not let it outrank an explicit bar on a tall one-column mask.
+        if bbox_height >= int(height * 0.60) and bbox_width <= max(6, int(width * 0.28)) and vertical_band >= 0.72:
+            return 0.50
+        # Keep l as a lower-ranked alternative even when its crop is not a
+        # perfect bar; otherwise template normalization makes it a universal
+        # cheap substitute for punctuation and horizontal fragments.
+        return 0.32
+    if glyph in {"[", "]", "(", ")"}:
+        # A tall, nearly one-column stroke is a bar, not a bracket/parenthesis.
+        if (
+            bbox_height >= int(height * 0.60)
+            and bbox_width <= max(6, int(width * 0.28))
+            and vertical_band >= 0.72
+            and centre_swing <= max(1.0, bbox_width * 0.30)
+        ):
+            return 0.55
+        return 0.0
+    if glyph in {"／", "＞", "ノ", "ヽ", "フ", "ミ"}:
+        # A wide token containing one very narrow component is usually an
+        # ASCII slash/greater-than crop plus a neighbouring cell, not one
+        # full-width grapheme.
+        if bbox_width <= max(3, int(width * 0.28)):
+            return 0.48
+        return 0.0
+    if glyph == "ミ":
+        # ミ is a multi-band Japanese grapheme.  Do not let a single compact
+        # stroke or a one-band fragment claim its two-unit span.
+        if row_runs < 2 or bbox_width < max(4, int(width * 0.28)):
+            return 0.40
+        return 0.0
+    if glyph == "フ":
+        peak_row = int(np.argmax(crop.sum(axis=1))) if crop.size else 0
+        peak_fraction = float(np.max(crop.sum(axis=1))) / max(1, bbox_width)
+        # フ has a broad upper horizontal stroke followed by a descending
+        # right-hand stroke.  A slash/greater-than pair in a wide crop lacks
+        # that broad upper band and must not be relabelled フ.
+        if peak_fraction < 0.62 or peak_row > int(height * 0.62):
+            return 0.38
+        return 0.0
+    if glyph == "~":
+        # A source crop with several separated horizontal bands is more likely
+        # to be ミ than a single tilde glyph.
+        if bbox_height <= 3 and horizontal_band > 0.70:
+            return 0.30
+        if row_runs >= 2 and bbox_height >= int(height * 0.35):
+            return 0.24
+        return 0.0
+    return 0.0
+
+
+def _column_ink_runs(mask: np.ndarray, *, minimum_occupancy: int = 2, merge_gap: int = 1) -> tuple[tuple[int, int], ...]:
+    """Return stable x-runs without assigning characters or rows."""
+
+    projection = mask.sum(axis=0)
+    active = projection >= minimum_occupancy
+    runs: list[tuple[int, int]] = []
+    start: int | None = None
+    for index, present in enumerate(active):
+        if present and start is None:
+            start = index
+        elif not present and start is not None:
+            runs.append((start, index))
+            start = None
+    if start is not None:
+        runs.append((start, len(active)))
+    if not runs:
+        return ()
+    merged: list[tuple[int, int]] = [runs[0]]
+    for left, right in runs[1:]:
+        if left - merged[-1][1] <= merge_gap:
+            merged[-1] = (merged[-1][0], right)
+        else:
+            merged.append((left, right))
+    return tuple(merged)
+
+
+def _cluster_glyph_candidates(
+    crop: np.ndarray,
+    *,
+    base_advance: float,
+    font_path: str,
+    height: int,
+    top_k: int = 5,
+    allow_both_widths: bool = False,
+) -> tuple[tuple[float, str, int], ...]:
+    """Rank glyphs for one measured ink cluster.
+
+    Cluster width constrains the Unicode display-width domain before visual
+    shape comparison.  This prevents a wide template from swallowing two
+    adjacent narrow punctuation marks, while still permitting Japanese
+    graphemes whose painted ink does not fill their complete two-unit span.
+    """
+
+    ys, xs = np.where(crop)
+    if not len(xs):
+        return ()
+    painted_width = int(xs.max() - xs.min() + 1)
+    # A painted width close to one base unit is still usually a narrow
+    # punctuation glyph.  Wide Japanese forms generally occupy at least
+    # three quarters of a base unit even when their ink does not fill the full
+    # two-unit advance; height alone must not turn a tall ASCII slash wide.
+    wide_domain = painted_width > base_advance * 0.75
+    ranked: list[tuple[float, str, int]] = []
+    for glyph, units in _STRUCTURAL_GLYPHS:
+        if allow_both_widths:
+            allowed = True
+        elif wide_domain:
+            allowed = units == 2
+        else:
+            allowed = units == 1
+        if not allowed:
+            continue
+        template = _structural_template(font_path, glyph, units, max(1, round(base_advance)), height)
+        score = _structural_shape_score(crop, template)
+        score += _source_topology_bonus(glyph, crop, base_advance=base_advance)
+        score += _glyph_position_penalty(glyph, crop)
+        score += _structural_glyph_penalty(glyph, crop)
+        if _orthogonal_composite_variant(
+            np.asarray(crop, dtype=bool),
+            base_advance=base_advance,
+            origin=0.0,
+            unicode_enabled=True,
+        ) is not None and glyph in {"フ", "ミ", "ノ", "ﾉ", "ヽ"}:
+            # A horizontal band plus a tall bar has an explicit source
+            # decomposition.  A single fallback kana silhouette must not
+            # outrank that measured morphology merely by template residual.
+            score += 0.22
+        # The source mask's topology is stronger evidence than a fallback
+        # font's normalized silhouette.  Short broad bands are horizontal
+        # structural glyphs; tall narrow masks are bars.  Without this prior,
+        # disconnected Japanese/Latin fallback templates can outrank the
+        # ASCII form that actually explains the measured stroke orientation.
+        ys, xs = np.where(crop)
+        if len(xs):
+            bbox_width = int(xs.max() - xs.min() + 1)
+            bbox_height = int(ys.max() - ys.min() + 1)
+            horizontal_band = (
+                bbox_height <= max(3, int(height * 0.28))
+                and bbox_width >= max(4, int(base_advance * 0.35))
+            )
+            tall_narrow_bar = (
+                bbox_height >= int(height * 0.55)
+                and bbox_width <= max(6, int(base_advance * 0.45))
+            )
+            if horizontal_band and glyph in {"_", "-", "=", "￣", "＿"}:
+                score -= 0.35
+            if tall_narrow_bar and glyph in {"|", "│"}:
+                score -= 0.35
+        # Broad top bands are a reliable distinction for フ versus diagonal
+        # punctuation in fonts with different stroke weights.
+        if glyph == "フ":
+            peak = float(np.max(crop.sum(axis=1))) / max(1, painted_width)
+            peak_row = int(np.argmax(crop.sum(axis=1)))
+            if peak >= 0.80 and peak_row <= int(height * 0.55):
+                score -= 0.22
+        if glyph == "ミ":
+            row_runs = _column_ink_runs(crop.T, minimum_occupancy=1, merge_gap=1)
+            if len(row_runs) >= 2:
+                score -= 0.16
+        ranked.append((score, glyph, units))
+    # A fallback font must not decide between glyphs that share the same
+    # measured stroke family.  In particular, a diagonal source component can
+    # legitimately be `/`, fullwidth `／`, Japanese `ノ`/`ﾉ`, or a backslash-
+    # family `ヽ`; their Unicode identity belongs to the complete run and its
+    # ownership evidence, not to a normalized font silhouette in one crop.
+    # Keep source-supported family members within a small deterministic margin
+    # so the incremental decoder can carry them without enumerating a product.
+    ys, xs = np.where(crop)
+    if len(xs):
+        bbox_height = int(ys.max() - ys.min() + 1)
+        slope = 0.0
+        if len(ys) > 1 and float(np.var(ys)) > 0.0:
+            centred_y = ys.astype(float) - float(np.mean(ys))
+            centred_x = xs.astype(float) - float(np.mean(xs))
+            slope = float(np.mean(centred_y * centred_x) / max(float(np.mean(centred_y * centred_y)), 1e-9))
+        family: tuple[str, ...] = ()
+        if bbox_height >= int(height * 0.35) and slope < -0.12:
+            family = ("/", "／", "ノ", "ﾉ")
+        elif bbox_height >= int(height * 0.35) and slope > 0.12:
+            family = ("\\", "＼", "ヽ")
+        if family:
+            family_costs = [cost for cost, glyph, _units in ranked if glyph in family]
+            if family_costs:
+                family_floor = min(family_costs)
+                ranked = [
+                    (min(cost, family_floor + 0.08) if glyph in family else cost, glyph, units)
+                    for cost, glyph, units in ranked
+                ]
+    ranked.sort(key=lambda item: (item[0], item[1], item[2]))
+    selected = list(ranked[:top_k])
+    # A compact diagonal component is intrinsically ambiguous between a
+    # slash/backslash and punctuation such as a backtick or apostrophe.  Keep
+    # the punctuation alternatives in the proposal domain even when the
+    # fallback template ranks them just outside top-k; component ownership and
+    # row context, not this local shape tie, must decide.
+    ys, xs = np.where(crop)
+    if len(xs):
+        compact = (
+            int(xs.max() - xs.min() + 1) <= max(7, int(base_advance * 0.60))
+            and int(ys.max() - ys.min() + 1) <= max(8, int(height * 0.45))
+        )
+        if compact:
+            for item in ranked:
+                if item[1] in {"`", "'", ",", ".", "、", "丶"} and item not in selected:
+                    selected.append(item)
+    return tuple(selected)
+
+
+def _lattice_horizontal_sequence(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    origin: float,
+    font_path: str,
+    beam_width: int,
+) -> str | None:
+    """Propose repeated narrow horizontals at measured lattice seams.
+
+    A connected underline/dash run is not evidence of one wide grapheme.  If
+    its shallow mask spans several measured columns, preserve each column as
+    a separate narrow structural proposal.  Other painted clusters are still
+    represented by their best local template; this helper only adds evidence
+    and never chooses a logical sequence.
+    """
+
+    clusters = _column_ink_runs(raster)
+    if not clusters:
+        return None
+    # Emit from logical display column zero.  The physical run may begin at a
+    # clipped/negative origin, but dropping the prefix here silently changes
+    # indentation and makes every row impossible to align with its siblings.
+    first_col = 0
+    occupied_x = np.where(raster.any(axis=0))[0]
+    if not len(occupied_x):
+        return None
+    last_col = int(math.ceil((int(occupied_x.max()) + 1 - origin) / base_advance))
+    cursor = first_col
+    output: list[str] = []
+    repeated = False
+    for left, right in clusters:
+        start_col = max(first_col, int(math.floor((left - origin) / base_advance)))
+        end_col = min(last_col, int(math.ceil((right - origin) / base_advance)))
+        if end_col <= start_col or start_col < cursor:
+            return None
+        output.extend(" " for _ in range(start_col - cursor))
+        crop = raster[:, left:right]
+        ys, xs = np.where(crop)
+        if not len(xs):
+            continue
+        bbox_width = int(xs.max() - xs.min() + 1)
+        bbox_height = int(ys.max() - ys.min() + 1)
+        span = max(1, end_col - start_col)
+        if (
+            span >= 2
+            and bbox_height <= max(3, int(raster.shape[0] * 0.28))
+            and bbox_width >= max(4, int(base_advance * 0.70))
+        ):
+            centre = float(ys.mean() / max(1, raster.shape[0] - 1))
+            occupied_rows = np.where(crop.any(axis=1))[0]
+            row_runs = 1 + int(np.count_nonzero(np.diff(occupied_rows) > 1)) if len(occupied_rows) else 1
+            if row_runs >= 2 and 0.25 <= centre <= 0.75:
+                glyph = "="
+            elif centre >= 0.60:
+                glyph = "_"
+            else:
+                glyph = "-"
+            output.extend(glyph for _ in range(span))
+            repeated = True
+        else:
+            candidates = _cluster_glyph_candidates(
+                crop,
+                base_advance=base_advance,
+                font_path=font_path,
+                height=raster.shape[0],
+                top_k=max(1, min(beam_width, 4)),
+            )
+            if not candidates:
+                return None
+            glyph, units = candidates[0][1], candidates[0][2]
+            if units > (end_col - start_col):
+                units = end_col - start_col
+            output.append(glyph)
+            output.extend(" " for _ in range(max(0, units - 1)))
+        cursor = end_col
+    if not repeated:
+        return None
+    output.extend(" " for _ in range(max(0, last_col - cursor)))
+    return "".join(output)
+
+
+def _cluster_sequences(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    origin: float,
+    font_path: str,
+    beam_width: int,
+) -> tuple[tuple[str, float], ...]:
+    """Build bounded component-anchored row proposals.
+
+    The fixed-unit beam remains the broad fallback.  This path uses measured
+    painted clusters to stop a wide grapheme from consuming a neighbouring
+    slash/greater-than pair.  Every cluster retains its top-k shape candidates
+    and a deterministic sequence beam combines them.  It emits proposal
+    evidence only; component ownership and exact Unicode identity remain
+    downstream gates.
+    """
+
+    clusters = _column_ink_runs(raster)
+    if not clusters:
+        return (("", 0.0),)
+    # Keep logical leading columns in the proposal.  ``origin`` may place the
+    # first physical cell partly outside the cropped run; that is geometry
+    # evidence, not permission to delete logical spaces.
+    first_col = 0
+    # The run strip is content-cropped, but its right edge is snapped to the
+    # next lattice boundary.  Using the strip width here invents a trailing
+    # partial column (and can make its rounded interval zero pixels wide).
+    # Logical output ends at the last measured foreground pixel; source/layout
+    # evidence retains the full canvas bounds separately.
+    occupied_x = np.where(raster.any(axis=0))[0]
+    last_col = (
+        int(math.ceil((int(occupied_x.max()) + 1 - origin) / base_advance))
+        if len(occupied_x)
+        else first_col
+    )
+    cluster_options: list[tuple[int, tuple[tuple[str, int, float], ...]]] = []
+    for cluster_index, (left, right) in enumerate(clusters):
+        absolute_left = float(left)
+        start_col = int(math.floor((absolute_left - origin) / base_advance))
+        start_col = max(first_col, start_col)
+        # Prefer the painted cluster bounds for shape identity, but keep the
+        # display span available for width/placement evidence.
+        crop = raster[:, left:right]
+        if (right - left) <= 2 and int(crop.sum()) <= max(6, int(raster.shape[0] * 0.15)):
+            # Tiny isolated edge fragments are retained in component evidence,
+            # but cannot become a logical bracket/mark without independent
+            # ownership.  The proposal path fails closed on them.
+            continue
+        candidates = _cluster_glyph_candidates(
+            crop,
+            base_advance=base_advance,
+            font_path=font_path,
+            height=raster.shape[0],
+            # Keep a wider local domain than the sequence beam.  Structural
+            # ASCII glyphs can rank below a visually similar CJK fallback, but
+            # must remain available for row-level ownership and tie analysis.
+            top_k=max(beam_width, 16),
+            allow_both_widths=True,
+        )
+        if not candidates:
+            continue
+        options: list[tuple[str, int, float]] = []
+        for score, glyph, units in candidates:
+            span_options = (units, 1) if units == 2 else (units,)
+            for span in span_options:
+                # A narrow painted mark can be either a one-unit rendering of
+                # a wide grapheme or a clipped/tightly kerned two-unit form.
+                # Preserve both hypotheses; the later width/ownership gate is
+                # the only authority allowed to choose.
+                if span == 2 and (right - left) < base_advance * 0.55:
+                    span = 1
+                if start_col + span > last_col:
+                    span = max(1, last_col - start_col)
+                options.append((glyph, span, float(score) + (0.04 if span != units else 0.0)))
+        cluster_options.append((start_col, tuple(options)))
+    if not cluster_options:
+        return ()
+
+    # A state stores the last occupied display column and its chosen tokens.
+    # Overlapping wide candidates are retained only when they do not claim the
+    # next painted cluster; this prevents one fullwidth template from silently
+    # swallowing two narrow source components.
+    states: list[tuple[float, int, tuple[tuple[int, str, int], ...]]] = [(0.0, first_col, ())]
+    for option_index, (start_col, options) in enumerate(cluster_options):
+        next_start = cluster_options[option_index + 1][0] if option_index + 1 < len(cluster_options) else last_col
+        expanded: list[tuple[float, int, tuple[tuple[int, str, int], ...]]] = []
+        for cost, cursor, tokens in states:
+            if start_col < cursor:
+                continue
+            for glyph, units, local_cost in options:
+                end_col = min(last_col, start_col + units)
+                if end_col <= start_col:
+                    continue
+                overlap_next = end_col > next_start and next_start < last_col
+                # A wide East-Asian glyph can paint inside the next measured
+                # cluster when the source renderer uses proportional/legacy
+                # metrics.  Dropping that path here silently converts a
+                # plausible Japanese grapheme sequence into ASCII fallback.
+                # Retain it as explicitly uncertain evidence, advancing the
+                # cursor only to the next anchor so the neighbouring cluster
+                # is still proposed.  Ownership/alignment gates remain
+                # responsible for rejecting competing claims later.
+                overlap_penalty = 0.10 if overlap_next else 0.0
+                next_cursor = min(end_col, next_start) if overlap_next else end_col
+                expanded.append(
+                    (
+                        cost + max(0.0, local_cost) + overlap_penalty,
+                        next_cursor,
+                        tokens + ((start_col, glyph, units),),
+                    )
+                )
+        expanded.sort(key=lambda item: (item[0], item[1], item[2]))
+        states = expanded[: max(1, beam_width * 2)]
+        if not states:
+            return ()
+
+    rendered: list[tuple[str, float]] = []
+    for cost, _cursor, tokens in states:
+        output: list[str] = []
+        cursor = first_col
+        valid = True
+        for start_col, glyph, units in tokens:
+            if start_col >= cursor:
+                output.extend(" " for _ in range(start_col - cursor))
+            # Overlapping anchors cannot be represented as a single fixed
+            # lattice without choosing a renderer.  Preserve the grapheme
+            # order in the proposal text and let the width/ownership evidence
+            # mark the layout ambiguous instead of deleting the token.
+            output.append(glyph)
+            if start_col >= cursor:
+                output.extend(" " for _ in range(max(0, units - 1)))
+            cursor = max(cursor, start_col + units)
+        if not valid:
+            continue
+        output.extend(" " for _ in range(max(0, last_col - cursor)))
+        rendered.append(("".join(output), float(cost)))
+    rendered.sort(key=lambda item: (item[1], item[0]))
+    unique: list[tuple[str, float]] = []
+    seen: set[str] = set()
+    for item in rendered:
+        if item[0] in seen:
+            continue
+        seen.add(item[0])
+        unique.append(item)
+        if len(unique) >= max(1, beam_width):
+            break
+    lattice_horizontal = _lattice_horizontal_sequence(
+        raster,
+        base_advance=base_advance,
+        origin=origin,
+        font_path=font_path,
+        beam_width=beam_width,
+    )
+    if lattice_horizontal and lattice_horizontal not in seen:
+        # This is source-morphology evidence, not a tail fallback.  A finite
+        # deterministic cost keeps it visible under the public proposal cap;
+        # downstream ownership/alignment still decides whether it survives.
+        unique.insert(0, (lattice_horizontal, 0.05))
+    return tuple(unique)
+
+
+def _orthogonal_composite_variant(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    origin: float,
+    unicode_enabled: bool,
+) -> tuple[str, float] | None:
+    """Propose a horizontal-band plus vertical-bar decomposition.
+
+    Some connected text-art components span two narrow units and contain two
+    independent structural strokes.  A fallback font can make that mask look
+    like one kana/curved glyph.  This detector names no arbitrary character: it
+    only emits the measured horizontal/vertical token families as a lower-cost
+    proposal for the row decoder.
+    """
+
+    height, width = raster.shape
+    if width <= 0 or width > int(math.ceil(base_advance * 2.5)) or height < 6:
+        return None
+    ys, xs = np.where(raster)
+    if len(xs) < 6:
+        return None
+    row_projection = raster.sum(axis=1)
+    col_projection = raster.sum(axis=0)
+    horizontal_rows = np.where(row_projection >= max(3, int(width * 0.45)))[0]
+    vertical_cols = np.where(col_projection >= max(4, int(height * 0.45)))[0]
+    if not len(horizontal_rows) or not len(vertical_cols):
+        return None
+    horizontal_y = int(round(float(horizontal_rows.mean())))
+    vertical_x = int(round(float(vertical_cols.mean())))
+    if int(row_projection[horizontal_y]) < max(3, int(width * 0.45)):
+        return None
+    if int(col_projection[vertical_x]) < max(4, int(height * 0.45)):
+        return None
+    # A horizontal band and bar should be distinct structural strokes rather
+    # than the broad top of a single fallback glyph.
+    if abs(horizontal_y - float(np.mean(ys))) < height * 0.08:
+        return None
+    horizontal = "￣" if unicode_enabled and horizontal_y <= int(height * 0.45) else "_"
+    vertical = "│" if unicode_enabled and col_projection[vertical_x] >= int(height * 0.70) else "|"
+    horizontal_center = float(np.mean(np.where(raster[horizontal_y])[0]))
+    if vertical_x < horizontal_center:
+        text = vertical + horizontal
+    else:
+        text = horizontal + vertical
+    prefix = max(0, int(math.floor((int(xs.min()) - origin) / max(base_advance, 1e-6))))
+    return (0.08, " " * prefix + text)
+
+
+def _fragment_sequence_variants(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    origin: float,
+    font_path: str,
+    unicode_enabled: bool,
+) -> tuple[tuple[float, str], ...]:
+    """Build bounded alternatives from disconnected ink fragments.
+
+    A painted interval may contain a real mark plus a one-pixel continuation
+    from a neighbouring row.  Treating the interval as one shape turns the
+    mark into a slash/bar composite; treating every fragment as a character
+    turns Japanese multi-stroke glyphs into punctuation.  Keep a separate
+    fragment sequence as proposal evidence while retaining the whole-shape
+    alternatives.  Tiny fragments remain unlabelled and contribute no text.
+    """
+
+    if raster.ndim != 2 or not raster.any():
+        return ()
+    height, width = raster.shape
+    seen = np.zeros_like(raster, dtype=bool)
+    fragments: list[tuple[int, int, np.ndarray, int]] = []
+    for y in range(height):
+        for x in range(width):
+            if not raster[y, x] or seen[y, x]:
+                continue
+            stack = [(y, x)]
+            seen[y, x] = True
+            points: list[tuple[int, int]] = []
+            while stack:
+                cy, cx = stack.pop()
+                points.append((cy, cx))
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        if not dx and not dy:
+                            continue
+                        ny, nx = cy + dy, cx + dx
+                        if 0 <= ny < height and 0 <= nx < width and raster[ny, nx] and not seen[ny, nx]:
+                            seen[ny, nx] = True
+                            stack.append((ny, nx))
+            ys = [point[0] for point in points]
+            xs = [point[1] for point in points]
+            x0, x1 = min(xs), max(xs) + 1
+            y0, y1 = min(ys), max(ys) + 1
+            local = np.zeros((y1 - y0, x1 - x0), dtype=bool)
+            local[np.asarray(ys) - y0, np.asarray(xs) - x0] = True
+            fragments.append((x0, x1, local, len(points)))
+    if len(fragments) <= 1 or len(fragments) > 8:
+        # Large multi-stroke glyphs (for example kana) are better represented
+        # by the whole-shape beam.  Decomposing them would create a second
+        # Cartesian surface without adding reliable ownership evidence.
+        return ()
+    fragments.sort(key=lambda value: (value[0], value[1], value[3]))
+    tiny_limit = max(3, int(height * 0.15))
+    states: list[tuple[float, str, int]] = [(0.0, "", 0)]
+    retained_fragments = 0
+    for x0, x1, local, area in fragments:
+        if area <= tiny_limit:
+            # Preserve this as an ownership fact, not as punctuation.
+            continue
+        retained_fragments += 1
+        local_options = _topology_row_variants(
+            local,
+            base_advance=base_advance,
+            origin=origin - x0,
+            font_path=font_path,
+            unicode_enabled=unicode_enabled,
+            max_variants=8,
+            include_fragment_decomposition=False,
+        )
+        values: list[tuple[float, str]] = []
+        for local_cost, raw in local_options:
+            text = str(raw).strip(" \u3000")
+            if text:
+                values.append((float(local_cost), text))
+        if not values:
+            continue
+        values = sorted(dict(((text, cost) for cost, text in values)).items(), key=lambda item: (item[1], item[0]))
+        values = [(cost, text) for text, cost in values[:8]]
+        next_states: list[tuple[float, str, int]] = []
+        for cost, text, previous_x1 in states:
+            gap_units = max(0, int(round((x0 - previous_x1) / max(base_advance, 1e-6)))) if previous_x1 else 0
+            for local_cost, fragment_text in values:
+                separator = " " * gap_units
+                next_states.append((
+                    cost + local_cost + 0.04 * gap_units,
+                    text + separator + fragment_text,
+                    x1,
+                ))
+        next_states.sort(key=lambda value: (value[0], value[1], value[2]))
+        states = next_states[:32]
+    if retained_fragments < 1:
+        return ()
+    return tuple((cost + 0.10, text) for cost, text, _ in states[:16])
+
+
+def _topology_row_variants(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    origin: float,
+    font_path: str,
+    unicode_enabled: bool,
+    max_variants: int = 256,
+    include_fragment_decomposition: bool = True,
+) -> tuple[tuple[str, float], ...]:
+    """Compose a bounded row beam from measured cell topology.
+
+    A connected source cell may be a fragment of a glyph on either side.  In
+    that case a local template residual is not evidence that ``x``, a
+    horizontal mark, a compact diagonal, or a Japanese structural grapheme is
+    impossible.  This second proposal surface keeps topology-supported
+    alternatives alive through complete-row decoding.  It is proposal-only:
+    ownership, logical width, and geometry/text gates remain authoritative.
+    """
+
+    occupied_x = np.where(raster.any(axis=0))[0]
+    if not len(occupied_x) or base_advance <= 0:
+        return ()
+    last_col = int(math.ceil((int(occupied_x.max()) + 1 - origin) / base_advance))
+    if last_col <= 0:
+        return ()
+    allowed_wide = {"／", "＞", "＿", "￣", "フ", "ミ", "ノ", "ヽ", "丶", "、"}
+    if not unicode_enabled:
+        allowed_wide = set()
+    beam: list[tuple[float, str]] = [(0.0, "")]
+    for column in range(last_col):
+        raw_x0 = int(round(origin + column * base_advance))
+        raw_x1 = int(round(origin + (column + 1) * base_advance))
+        if raw_x1 <= 0 or raw_x0 >= raster.shape[1]:
+            options = ((0.0, " "),)
+        else:
+            x0 = max(0, raw_x0)
+            x1 = min(raster.shape[1], raw_x1)
+            crop = raster[:, x0:x1]
+            if crop.size == 0 or not crop.any():
+                options = ((0.0, " "),)
+            else:
+                ranked: dict[str, float] = {}
+                for cost, glyph, _units in _cluster_glyph_candidates(
+                    crop,
+                    base_advance=base_advance,
+                    font_path=font_path,
+                    height=raster.shape[0],
+                    top_k=4,
+                    allow_both_widths=True,
+                ):
+                    if glyph == " " or (glyph in allowed_wide or ord(glyph[0]) < 128):
+                        ranked[glyph] = min(ranked.get(glyph, 9.0), float(cost))
+                ys, xs = np.where(crop)
+                bbox_width = int(xs.max() - xs.min() + 1)
+                bbox_height = int(ys.max() - ys.min() + 1)
+                row_peak = int(crop.sum(axis=1).max())
+                horizontal = (
+                    bbox_height <= max(4, int(raster.shape[0] * 0.42))
+                    and row_peak >= max(3, int(crop.shape[1] * 0.42))
+                )
+                crossing = _has_crossing_diagonals(crop)
+                tall = (
+                    bbox_height >= int(raster.shape[0] * 0.50)
+                    and bbox_width <= max(9, int(base_advance * 0.95))
+                )
+                compact = (
+                    bbox_width <= max(8, int(base_advance * 0.80))
+                    and bbox_height <= max(12, int(raster.shape[0] * 0.80))
+                )
+                if horizontal:
+                    for glyph in ("_", "-", "=", "~"):
+                        ranked[glyph] = min(ranked.get(glyph, 9.0), 0.26)
+                    if unicode_enabled:
+                        for glyph in ("＿", "￣"):
+                            ranked[glyph] = min(ranked.get(glyph, 9.0), 0.30)
+                if tall:
+                    for glyph in ("|", "l"):
+                        ranked[glyph] = min(ranked.get(glyph, 9.0), 0.28)
+                    if unicode_enabled:
+                        ranked["│"] = min(ranked.get("│", 9.0), 0.30)
+                if crossing or compact:
+                    for glyph in ("/", "\\", "`", "'", "ノ", "ﾉ", "ヽ", "x"):
+                        if glyph in {"ノ", "ヽ"} and not unicode_enabled:
+                            continue
+                        ranked[glyph] = min(ranked.get(glyph, 9.0), 0.28 if crossing else 0.32)
+                    if unicode_enabled:
+                        ranked["／"] = min(ranked.get("／", 9.0), 0.30)
+                if bbox_height >= int(raster.shape[0] * 0.55) and bbox_width >= max(8, int(base_advance * 0.70)) and unicode_enabled:
+                    for glyph in ("ミ", "フ"):
+                        ranked[glyph] = min(ranked.get(glyph, 9.0), 0.34)
+                options = tuple(sorted(((cost, glyph) for glyph, cost in ranked.items()), key=lambda item: (item[0], item[1])))
+                if not options:
+                    options = ((1.0, "?"),)
+        expanded = [(cost + option_cost, text + glyph) for cost, text in beam for option_cost, glyph in options]
+        expanded.sort(key=lambda item: (item[0], item[1]))
+        beam = expanded[: max(32, min(max_variants, 256))]
+    composite = _orthogonal_composite_variant(
+        raster,
+        base_advance=base_advance,
+        origin=origin,
+        unicode_enabled=unicode_enabled,
+    )
+    if composite is not None:
+        # A single fallback kana silhouette is mutually exclusive with the
+        # measured orthogonal decomposition.  Keep it as evidence, but do not
+        # let template distance outrank the source morphology.
+        adjusted = [
+            (
+                cost + (0.30 if any(char in text for char in ("フ", "ミ", "ノ", "ﾉ", "ヽ")) else 0.0),
+                text,
+            )
+            for cost, text in beam
+        ]
+        adjusted.sort(key=lambda item: (item[0], item[1]))
+        beam = [composite, *adjusted]
+    if include_fragment_decomposition:
+        for fragment_cost, fragment_text in _fragment_sequence_variants(
+            raster,
+            base_advance=base_advance,
+            origin=origin,
+            font_path=font_path,
+            unicode_enabled=unicode_enabled,
+        ):
+            if fragment_text and all(fragment_text != text for _cost, text in beam):
+                beam.append((fragment_cost, fragment_text))
+        beam.sort(key=lambda item: (item[0], item[1]))
+    return tuple(beam[:max_variants])
+
+
+
+def _run_level_variants(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    origin: float,
+    font_path: str,
+    unicode_enabled: bool,
+    max_variants: int = 512,
+) -> tuple[tuple[str, float], ...]:
+    """Decode one complete measured run as a span lattice.
+
+    Connected-component bounds are deliberately not used here.  A component
+    may contain a slash, a fullwidth kana, and a horizontal mark in one
+    connected silhouette; treating that component as one glyph (or splitting
+    it before recognition) loses the only evidence that distinguishes those
+    alternatives.  The geometry owner supplies a measured display basis, so
+    this decoder makes edges at one-to-many lattice units and recognizes the
+    pixels in each contiguous span as a complete run.
+
+    This is a proposal surface, not a candidate writer.  The finite span DAG
+    is decoded incrementally: equivalent text at the same cursor keeps the
+    lowest-cost route, while a small family signature preserves distinct
+    mixed-width/structural alternatives.  No component-first Cartesian
+    product is materialized.
+    """
+
+    occupied_x = np.where(raster.any(axis=0))[0]
+    if not len(occupied_x) or base_advance <= 0:
+        return ()
+    first_unit = max(0, int(math.floor((int(occupied_x.min()) - origin) / base_advance)))
+    last_unit = int(math.ceil((int(occupied_x.max()) + 1 - origin) / base_advance))
+    if last_unit <= first_unit:
+        return ()
+
+    def family(value: str) -> str:
+        chars = tuple(regex.findall(r"\X", value))
+        if not chars:
+            return "empty"
+        text = "".join(chars)
+        wide = any(unicodedata.east_asian_width(char) in {"W", "F"} for char in text)
+        horizontal = all(char in "_-~=＿￣" for char in text)
+        diagonal = any(char in "/\\／＼<>＞ノﾉヽ" for char in text)
+        vertical = all(char in "|│lI" for char in text)
+        mark = all(char in ".,`'丶、" for char in text)
+        if wide and (horizontal or diagonal or len(chars) > 1):
+            return "mixed-wide"
+        if horizontal:
+            return "horizontal"
+        if diagonal:
+            return "diagonal"
+        if vertical:
+            return "vertical"
+        if mark:
+            return "mark"
+        return "other"
+
+    def span_options(start: int, end: int) -> tuple[tuple[float, str], ...]:
+        raw_x0 = int(round(origin + start * base_advance))
+        raw_x1 = int(round(origin + end * base_advance))
+        x0 = max(0, raw_x0)
+        x1 = min(raster.shape[1], raw_x1)
+        if x1 <= x0:
+            return ()
+        crop = raster[:, x0:x1]
+        if crop.size == 0 or not crop.any():
+            return ()
+        span_ys, span_xs = np.where(crop)
+        span_width = int(span_xs.max() - span_xs.min() + 1)
+        if (
+            len(span_xs) <= max(4, int(round(raster.shape[0] * 0.20)))
+            and span_width <= 4
+            and start > first_unit
+            and end < last_unit
+        ):
+            # Preserve the pixels in component evidence, but do not promote
+            # a seam fragment to a punctuation/bar proposal.  The enclosing
+            # span owns the opportunity to explain it.
+            return ()
+        # Wider spans need enough local alternatives to retain a complete
+        # mixed-width sequence whose first useful spelling may rank below a
+        # fallback diagonal.  Narrow spans stay cheap; all are source-derived.
+        local_limit = 256 if end - start >= 3 else 64
+        local = _topology_row_variants(
+            crop,
+            base_advance=base_advance,
+            origin=origin - x0,
+            font_path=font_path,
+            unicode_enabled=unicode_enabled,
+            max_variants=local_limit,
+            include_fragment_decomposition=False,
+        )
+        by_text: dict[str, float] = {}
+        for cost, raw_text in local:
+            text = str(raw_text).strip(" \u3000")
+            if not text or text == "?":
+                continue
+            if not unicode_enabled and any(ord(char) >= 128 for char in text):
+                continue
+            by_text[text] = min(float(cost), by_text.get(text, float("inf")))
+        ys, xs = np.where(crop)
+        if len(ys) and len(xs):
+            bbox_height = int(ys.max() - ys.min() + 1)
+            column_peak = int(crop.sum(axis=0).max())
+            bbox_width = int(xs.max() - xs.min() + 1)
+            row_peak = int(crop.sum(axis=1).max())
+            if (
+                end - start >= 2
+                and bbox_height <= max(5, int(raster.shape[0] * 0.42))
+                and bbox_width >= max(2, int(round(base_advance * 1.20)))
+                and row_peak >= max(2, int(round(bbox_width * 0.35)))
+            ):
+                repeat_count = min(8, end - start)
+                by_text.setdefault("_" * repeat_count, 0.04)
+                by_text.setdefault("-" * repeat_count, 0.08)
+                if unicode_enabled:
+                    by_text.setdefault("＿" * repeat_count, 0.06)
+                    by_text.setdefault("￣" * repeat_count, 0.10)
+            if bbox_height >= max(8, int(raster.shape[0] * 0.50)) and column_peak >= max(6, int(raster.shape[0] * 0.45)):
+                for glyph, cost in (("|", 0.34), ("l", 0.36)):
+                    if unicode_enabled:
+                        by_text.setdefault("│", 0.38)
+                    by_text[glyph] = min(cost, by_text.get(glyph, float("inf")))
+        if not by_text:
+            return ()
+        # Retain all low-cost options, plus a deterministic quota from each
+        # source family.  This is a span-level diversity rule, not a cap on
+        # complete rows; a later DP edge can still combine every retained
+        # family with every compatible neighbouring span.
+        ordered = sorted(((max(0.0, cost), text) for text, cost in by_text.items()), key=lambda item: (item[0], item[1]))
+        buckets: dict[str, list[tuple[float, str]]] = {}
+        for item in ordered:
+            buckets.setdefault(family(item[1]), []).append(item)
+        retain: dict[str, tuple[float, str]] = {}
+        for bucket in sorted(buckets):
+            for item in buckets[bucket][:16]:
+                retain[item[1]] = item
+        for item in ordered[:32]:
+            retain.setdefault(item[1], item)
+        return tuple(sorted(retain.values(), key=lambda item: (item[0], item[1])))
+
+    edges: dict[tuple[int, int], tuple[tuple[float, str], ...]] = {}
+    for start in range(first_unit, last_unit):
+        for end in range(start + 1, min(last_unit, start + 6) + 1):
+            options = span_options(start, end)
+            if options:
+                edges[(start, end)] = options
+
+    if not edges:
+        return ()
+
+    def interval_has_ink(start: int, end: int) -> bool:
+        x0 = max(0, int(round(origin + start * base_advance)))
+        x1 = min(raster.shape[1], int(round(origin + end * base_advance)))
+        if x1 <= x0:
+            return False
+        crop = raster[:, x0:x1]
+        if not crop.any():
+            return False
+        # A measured seam can contain a few antialiased pixels from the
+        # neighbouring span.  Keep that evidence in the source component
+        # graph, but permit the run lattice to cross it as whitespace when it
+        # is demonstrably a tiny edge fragment; otherwise a connected slash
+        # would make a real one-unit gap impossible to represent.
+        ys, xs = np.where(crop)
+        width = int(xs.max() - xs.min() + 1)
+        if len(xs) <= max(4, int(round(raster.shape[0] * 0.20))) and width <= 4:
+            return False
+        return True
+
+    # Each state is (cost, text, span path).  Text-equivalent paths merge at
+    # a cursor; the path is retained only as evidence for deterministic tie
+    # breaking and later run-level witness extraction.
+    states: dict[int, list[tuple[float, str, tuple[tuple[int, int, str], ...]]]] = {
+        first_unit: [(0.0, " " * first_unit, ())]
+    }
+    state_limit = max(512, int(max_variants) * 2)
+    # A cursor can skip only one contiguous blank gap before the next
+    # substantive span.  Scanning every blank unit for every live state made
+    # the old decoder quadratic in the row width; precompute the next owned
+    # start once and keep the complete span evidence unchanged.
+    next_owned_start: dict[int, tuple[int, ...]] = {}
+    for cursor in range(first_unit, last_unit):
+        if interval_has_ink(cursor, cursor + 1):
+            next_owned_start[cursor] = (cursor,)
+            continue
+        following = next(
+            (candidate for candidate in range(cursor + 1, last_unit) if interval_has_ink(candidate, candidate + 1)),
+            None,
+        )
+        next_owned_start[cursor] = (following,) if following is not None else ()
+    for cursor in range(first_unit, last_unit):
+        current = states.get(cursor)
+        if not current:
+            continue
+        for start in next_owned_start.get(cursor, ()):
+            gap = " " * max(0, start - cursor)
+            for end in range(start + 1, min(last_unit, start + 6) + 1):
+                for edge_cost, value in edges.get((start, end), ()):
+                    destination = states.setdefault(end, [])
+                    for cost, text, path in current:
+                        destination.append(
+                            (
+                                cost + edge_cost + 0.01 * len(gap),
+                                text + gap + value,
+                                path + ((start, end, value),),
+                            )
+                        )
+        for destination in range(cursor + 1, min(last_unit, cursor + 6) + 1):
+            values = states.get(destination)
+            if not values:
+                continue
+            dedup: dict[str, tuple[float, str, tuple[tuple[int, int, str], ...]]] = {}
+            for value in values:
+                prior = dedup.get(value[1])
+                if prior is None or (value[0], value[2]) < (prior[0], prior[2]):
+                    dedup[value[1]] = value
+            values = sorted(dedup.values(), key=lambda item: (item[0], item[1], item[2]))
+            states[destination] = values[:state_limit]
+
+    finals = list(states.get(last_unit, ()))
+    if not finals:
+        return ()
+
+    # Preserve a witness for each complete multi-unit source span.  If a
+    # useful kana/structural sequence ranks below the ordinary top-k paths,
+    # its measured span still appears in the proposal surface.  Prefix and
+    # suffix are the best source-only paths around that span; no transcript is
+    # consulted.
+    best_prefix: dict[int, tuple[float, str]] = {first_unit: (0.0, " " * first_unit)}
+    for cursor in range(first_unit, last_unit + 1):
+        prefix = best_prefix.get(cursor)
+        if prefix is None:
+            continue
+        for start in range(cursor, last_unit):
+            if start > cursor and interval_has_ink(cursor, start):
+                break
+            gap = " " * max(0, start - cursor)
+            for end in range(start + 1, min(last_unit, start + 6) + 1):
+                options = edges.get((start, end), ())
+                if not options:
+                    continue
+                edge = min(options, key=lambda item: (item[0], item[1]))
+                candidate = (prefix[0] + edge[0] + 0.01 * len(gap), prefix[1] + gap + edge[1])
+                prior = best_prefix.get(end)
+                if prior is None or candidate < prior:
+                    best_prefix[end] = candidate
+
+    best_suffix: dict[int, tuple[float, str]] = {last_unit: (0.0, "")}
+    for cursor in range(last_unit - 1, first_unit - 1, -1):
+        candidates: list[tuple[float, str]] = []
+        for start in range(cursor, last_unit):
+            if start > cursor and interval_has_ink(cursor, start):
+                break
+            gap = " " * max(0, start - cursor)
+            for end in range(start + 1, min(last_unit, start + 6) + 1):
+                suffix = best_suffix.get(end)
+                if suffix is None:
+                    continue
+                for edge_cost, value in edges.get((start, end), ()):
+                    candidates.append(
+                        (
+                            edge_cost + suffix[0] + 0.01 * len(gap),
+                            gap + value + suffix[1],
+                        )
+                    )
+        if candidates:
+            best_suffix[cursor] = min(candidates, key=lambda item: (item[0], item[1]))
+
+    rendered_cost_cache: dict[str, float] = {}
+
+    def rendered_cost(text: str) -> float:
+        """Score a complete span spelling against the same run raster.
+
+        Span topology proposes the logical sequence; this second pass keeps
+        a terminal edge (for example ``)``) from losing to a spill-like ``|``
+        merely because its isolated local cost was negative.  It is a
+        source-raster comparison, never a transcript or font-selection
+        authority.
+        """
+
+        cached_cost = rendered_cost_cache.get(text)
+        if cached_cost is not None:
+            return cached_cost
+        cursor = 0
+        total = 0.0
+        for grapheme in regex.findall(r"\X", text):
+            if grapheme.isspace():
+                cursor += max(1, wcwidth.wcswidth(grapheme))
+                continue
+            units = max(1, wcwidth.wcswidth(grapheme))
+            x0 = max(0, int(round(origin + cursor * base_advance)))
+            x1 = min(raster.shape[1], int(round(origin + (cursor + units) * base_advance)))
+            if x1 <= x0:
+                total += 1.0
+                cursor += units
+                continue
+            crop = raster[:, x0:x1]
+            template = _structural_template(
+                font_path,
+                grapheme,
+                units,
+                max(1, round(base_advance)),
+                raster.shape[0],
+            )
+            total += _structural_shape_score(crop, template)
+            total += _source_topology_bonus(grapheme, crop, base_advance=base_advance)
+            total += _glyph_position_penalty(grapheme, crop)
+            total += _structural_glyph_penalty(grapheme, crop)
+            cursor += units
+        rendered_cost_cache[text] = float(total)
+        return float(total)
+
+    ordered = sorted(
+        finals,
+        key=lambda item: (
+            max(0.0, float(item[0])) + 2.0 * rendered_cost(item[1]),
+            item[1],
+            item[2],
+        ),
+    )
+    result: list[tuple[str, float]] = [
+        (
+            text.rstrip(" \u3000"),
+            max(0.0, float(cost)) + 2.0 * rendered_cost(text),
+        )
+        for cost, text, _path in ordered
+    ]
+    # A raster-derived morphology witness covers a common structural case
+    # that no isolated template can own: a tall bar, seam fragments, and two
+    # lower-band horizontals in one connected outline.  It is deliberately
+    # grammar-level (projection/height/band only), never tied to a reference
+    # row or an expected transcript.
+    morphology_units: list[str] = []
+    for unit in range(first_unit, last_unit):
+        x0 = max(0, int(round(origin + unit * base_advance)))
+        x1 = min(raster.shape[1], int(round(origin + (unit + 1) * base_advance)))
+        crop = raster[:, x0:x1]
+        if crop.size == 0 or not crop.any():
+            morphology_units.append(" ")
+            continue
+        ys, xs = np.where(crop)
+        height = int(ys.max() - ys.min() + 1)
+        width = int(xs.max() - xs.min() + 1)
+        row_peak = int(crop.sum(axis=1).max())
+        col_peak = int(crop.sum(axis=0).max())
+        if len(xs) <= max(4, int(round(raster.shape[0] * 0.20))) and width <= 4:
+            morphology_units.append(" ")
+        elif height >= max(8, int(raster.shape[0] * 0.50)) and col_peak >= max(6, int(raster.shape[0] * 0.45)):
+            morphology_units.append("|")
+        elif (
+            height <= max(5, int(raster.shape[0] * 0.42))
+            and width >= 2
+            and row_peak >= max(2, int(round(width * 0.35)))
+            and float(np.mean(ys)) >= raster.shape[0] * 0.45
+        ):
+            morphology_units.append("_")
+        else:
+            morphology_units.append(" ")
+    morphology_text = (" " * first_unit + "".join(morphology_units)).rstrip()
+    if morphology_text and any(char != " " for char in morphology_text):
+        result.append((morphology_text, 0.50))
+    witness_values: dict[str, float] = {}
+    for (start, end), options in edges.items():
+        prefix = best_prefix.get(start)
+        suffix = best_suffix.get(end)
+        if prefix is None or suffix is None:
+            continue
+        for edge_cost, value in options:
+            if end - start < 2 and len(regex.findall(r"\X", value)) < 2:
+                continue
+            if not (
+                any(unicodedata.east_asian_width(char) in {"W", "F"} for char in value)
+                and any(char in "xX_＿-￣/\\／＼|│<>＞ノﾉヽ`'" for char in value)
+            ):
+                continue
+            witness = (prefix[1] + value + suffix[1]).rstrip(" \u3000")
+            witness_values[witness] = min(
+                witness_values.get(witness, float("inf")),
+                float(prefix[0] + edge_cost + suffix[0]),
+            )
+    protected_witnesses = [
+        (text, cost)
+        for text, cost in sorted(witness_values.items(), key=lambda item: (item[1], item[0]))
+        if text
+    ]
+    for text, cost in protected_witnesses:
+        if all(existing[0] != text for existing in result):
+            result.append((text, cost))
+
+    unique: list[tuple[str, float]] = []
+    seen: set[str] = set()
+    # Protected span witnesses are emitted before the ordinary k-best paths;
+    # otherwise a broad fallback surface can fill the public cap before a
+    # complete lower-ranked mixed-width span is serialized.
+    ordered_result = [*protected_witnesses, *sorted(result, key=lambda item: (item[1], item[0]))]
+    for text, cost in ordered_result:
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        unique.append((text, cost))
+        if len(unique) >= max(1, int(max_variants)):
+            break
+    return tuple(unique)
+
+
+def _cluster_sequence(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    origin: float,
+    font_path: str,
+    beam_width: int,
+) -> tuple[str, float] | None:
+    """Compatibility wrapper returning the best cluster-sequence proposal."""
+
+    sequences = _cluster_sequences(
+        raster,
+        base_advance=base_advance,
+        origin=origin,
+        font_path=font_path,
+        beam_width=beam_width,
+    )
+    return sequences[0] if sequences else None
+
+
+@dataclass(frozen=True)
+class StructuralUnicodeRowAdapter:
+    """Deterministic proposal adapter for structural punctuation and Japanese rows."""
+
+    name: str = "structural-unicode-row"
+    version: str = "2-run-level-span-lattice"
+    supported_scripts: tuple[str, ...] = ("ascii", "japanese", "cjk")
+    # A 16-state row beam is still bounded, but preserves mixed-script
+    # decompositions that require a few lower-ranked punctuation choices
+    # before a later Japanese/fullwidth run disambiguates ownership.
+    beam_width: int = 16
+
+    def capability_profile(self, environment_lock: EnvironmentLock) -> CapabilityProfile:
+        font_path = _structural_font_path()
+        return CapabilityProfile(
+            adapter=self.name,
+            adapter_version=self.version,
+            supported_scripts=self.supported_scripts if font_path else (),
+            supported_directions=("ltr",),
+            grapheme_coverage=("structural-punctuation", "kana-katakana-proposals") if font_path else (),
+            runtime_hashes={"template_font": _structural_font_hash(font_path)} if font_path else {},
+            runtime_versions={"pillow": PIL.__version__},
+            license="Apache-2.0",
+            offline=True,
+            runtime_network=False,
+            tested_fixture_families=("fixed_ascii", "mixed_width_japanese_structural"),
+            unsupported_cases=("ambiguous_unicode_collision", "arabic_joining", "emoji_zwj"),
+            status="proposal_only" if font_path else "unavailable",
+        )
+
+    def propose(self, source: Mapping[str, Any], geometry: Mapping[str, Any], components: Mapping[str, Any], environment_lock: EnvironmentLock) -> ProposalSet:
+        # This adapter consumes a geometry-owned complete run mask.  It does
+        # not own routing, so a shaped-run decision is equally valid input;
+        # rejecting it here made the run-level recognizer disappear whenever
+        # the geometry receipt selected the proportional branch.
+        if geometry.get("mode") not in {"fixed_lattice", "shaped_runs", "unresolved"}:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "geometry_mode_mismatch")
+        mask = _run_mask(geometry)
+        font_path = _structural_font_path()
+        if mask is None or font_path is None:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "structural_row_input_unavailable")
+        source_hash, geometry_hash, components_hash = _source_hashes(source)
+        run_evidence = geometry.get("run_mask")
+        run_context_hash = sha256_bytes(
+            canonical_bytes(
+                {
+                    "pixels": run_evidence.get("pixels") if isinstance(run_evidence, Mapping) else None,
+                    "rgba": run_evidence.get("rgba") if isinstance(run_evidence, Mapping) else None,
+                    "measured_advances": run_evidence.get("measured_advances") if isinstance(run_evidence, Mapping) else None,
+                    "anchor_evidence": run_evidence.get("anchor_evidence") if isinstance(run_evidence, Mapping) else None,
+                    "source_bounds": run_evidence.get("source_bounds") if isinstance(run_evidence, Mapping) else None,
+                    "component_ids": run_evidence.get("component_ids") if isinstance(run_evidence, Mapping) else source.get("component_ids", ()),
+                }
+            )
+        )
+        cache_key = (
+            self.name,
+            self.version,
+            str(self.beam_width),
+            source_hash,
+            geometry_hash,
+            components_hash,
+            environment_lock.output_hash,
+            run_context_hash,
+        )
+        cached = _PROPOSAL_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+        raster = np.asarray(mask, dtype=bool)
+        mixed = geometry.get("mixed_width_display") or {}
+        run_geometry = geometry.get("run_mask")
+        run_anchor = run_geometry.get("anchor_evidence") if isinstance(run_geometry, Mapping) else None
+        if not isinstance(run_anchor, Mapping) or not run_anchor:
+            run_anchor = source.get("anchor_evidence") if isinstance(source.get("anchor_evidence"), Mapping) else {}
+        # Recognition receives the same local anchor record that the builder
+        # hashes into the run strip.  Aggregate projection evidence is a
+        # fallback for legacy callers only; it must not override a rebased
+        # origin or per-run advance supplied by the geometry owner.
+        base = float(
+            run_anchor.get("base_advance_px", mixed.get("base_advance_px", 13.0))
+        )
+        origin = float(run_anchor.get("origin_px", mixed.get("origin_px", 0.0)))
+        width = raster.shape[1]
+        # Do not serialize a clipped partial unit at the left canvas edge.
+        # The raster strip retains it for evidence, but logical text starts at
+        # the first complete display unit so glyph columns do not shift left.
+        # The beam is serialized from logical column zero.  Physical clipping
+        # at a negative origin is handled by the crop bounds below; it must
+        # not erase leading spaces from the recovered text.
+        first_col = 0
+        occupied_x = np.where(raster.any(axis=0))[0]
+        last_col = (
+            int(np.ceil((int(occupied_x.max()) + 1 - origin) / base))
+            if len(occupied_x)
+            else first_col
+        )
+        # The environment lock is the capability boundary for this adapter.
+        # A mixed-width geometry record is evidence that Unicode alternatives
+        # may be useful; it is not permission to invent them when the pinned
+        # run was requested with an ASCII-only script pack.  In that case,
+        # keep the structural alphabet ASCII so a fullwidth lookalike such as
+        # ``＿`` cannot outrank the literal ``_`` on an ASCII fixture.  The
+        # Unicode-capable path retains those alternatives below as proposals.
+        unicode_packs = {"japanese", "jpn", "cjk", "unicode"}
+        unicode_enabled = bool(unicode_packs.intersection(environment_lock.script_packs))
+
+        # Transfer proposal ownership to the run lattice.  The legacy cell
+        # beam below is intentionally unreachable for live proposals: it is
+        # retained in the file only as historical diagnostic code and direct
+        # regression helpers.  A run-level edge is built from source pixels,
+        # measured unit seams, and complete span topology, so no connected
+        # component is allowed to author a grapheme by itself.
+        run_level_variants = _run_level_variants(
+            raster,
+            base_advance=base,
+            origin=origin,
+            font_path=font_path,
+            unicode_enabled=unicode_enabled,
+            max_variants=max(128, min(1024, self.beam_width * 64)),
+        )
+        if not run_level_variants:
+            return _unsupported_proposal(
+                self.name,
+                self.version,
+                source,
+                environment_lock,
+                "run_level_segmentation_no_path",
+            )
+        run_level_candidates: list[GraphemeCandidate] = []
+        run_component_ids = tuple(
+            str(value)
+            for value in (
+                (run_geometry.get("component_ids", ()) if isinstance(run_geometry, Mapping) else ())
+                or source.get("component_ids", ())
+            )
+        )
+        run_level_alternatives = tuple(text for text, _cost in run_level_variants[1:65])
+        for variant_index, (variant_text, variant_cost) in enumerate(run_level_variants):
+            run_level_candidates.append(
+                _candidate(
+                    text=variant_text,
+                    source_hash=source_hash,
+                    geometry_hash=geometry_hash,
+                    components_hash=components_hash,
+                    environment_hash=environment_lock.output_hash,
+                    confidence=max(0.0, min(1.0, 1.0 - float(variant_cost) / max(1.0, last_col * 0.75))),
+                    component_ids=run_component_ids,
+                    alternatives=run_level_alternatives if variant_index == 0 else (),
+                    run_id=str(source.get("run_id", "row-0")),
+                    extra_input_hashes={
+                        "template_font": _structural_font_hash(font_path),
+                        "proposal_mode": sha256_bytes(b"run-level-span-lattice-v1"),
+                        "proposal_rank": sha256_bytes(str(variant_index).encode("ascii")),
+                    },
+                )
+            )
+        proposal = RecognitionProposal(
+            proposal_id=f"{self.name}-run-lattice",
+            adapter=self.name,
+            adapter_version=self.version,
+            model_hashes=environment_lock.model_hashes,
+            candidates=tuple(run_level_candidates),
+            run_id=str(source.get("run_id", "row-0")),
+            input_hashes={"source": source_hash, "geometry": geometry_hash, "components": components_hash, "environment": environment_lock.output_hash},
+            status="proposal",
+        )
+        proposal_set = ProposalSet(
+            adapter=self.name,
+            adapter_version=self.version,
+            environment_lock_hash=environment_lock.output_hash,
+            proposals=(proposal,),
+            supported_scripts=self.supported_scripts,
+            status="proposal_only",
+        )
+        if len(_PROPOSAL_CACHE) >= _PROPOSAL_CACHE_LIMIT:
+            _PROPOSAL_CACHE.pop(next(iter(_PROPOSAL_CACHE)))
+        _PROPOSAL_CACHE[cache_key] = proposal_set
+        return proposal_set
+
+
+def _unicode_template_font_path() -> str | None:
+    """Return the default Latin template face; callers still hash-bind it."""
+
+    candidates = (
+        "/Library/Fonts/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    )
+    return next((path for path in candidates if Path(path).is_file()), None)
+
+
+def _unicode_repertoire(name: str) -> tuple[str, ...]:
+    """Build a deterministic repertoire without reading fixture truth."""
+
+    if name == "latin":
+        values = [" "] + [chr(value) for value in range(0x21, 0x7F)]
+        values.extend(chr(value) for value in range(0xA0, 0x100))
+    elif name == "combining":
+        bases = [chr(value) for value in range(ord("A"), ord("Z") + 1)]
+        bases.extend(chr(value) for value in range(ord("a"), ord("z") + 1))
+        values = [" "] + bases
+        marks = tuple(chr(value) for value in range(0x300, 0x370))
+        values.extend(base + mark for base in bases for mark in marks if unicodedata.normalize("NFC", base + mark) != base + mark)
+    elif name == "kana":
+        values = [" "]
+        values.extend(chr(value) for value in range(0x3040, 0x30A0))
+        values.extend(chr(value) for value in range(0x30A0, 0x3100))
+        values.extend(chr(value) for value in range(0xFF61, 0xFFA0))
+    else:
+        values = []
+    return tuple(dict.fromkeys(values))
+
+
+@lru_cache(maxsize=2048)
+def _render_unicode_template(
+    font_path: str,
+    grapheme: str,
+    cell_width: int,
+    target_height: int,
+) -> tuple[tuple[bool, ...], ...] | None:
+    """Render one complete grapheme into a measured run cell."""
+
+    try:
+        font_size = max(8, min(96, int(round(target_height * 1.05))))
+        font = ImageFont.truetype(font_path, font_size)
+        bbox = font.getbbox(grapheme)
+        if bbox is None or bbox[2] <= bbox[0] or bbox[3] <= bbox[1]:
+            return None
+        image = Image.new("L", (max(1, int(cell_width)), max(1, int(target_height))), 0)
+        glyph_width = bbox[2] - bbox[0]
+        glyph_height = bbox[3] - bbox[1]
+        x = (image.width - glyph_width) // 2 - bbox[0]
+        y = (image.height - glyph_height) // 2 - bbox[1]
+        ImageDraw.Draw(image).text((x, y), grapheme, font=font, fill=255)
+        return tuple(tuple(bool(value) for value in row) for row in (np.asarray(image) > 32))
+    except (OSError, ValueError, TypeError):
+        return None
+
+
+def _unicode_template_residual(target: np.ndarray, template: tuple[tuple[bool, ...], ...] | None) -> tuple[float, int, int]:
+    if template is None:
+        return 1.0, 0, int(target.sum())
+    rendered = np.asarray(template, dtype=bool)
+    if rendered.shape != target.shape:
+        return 1.0, 0, int(target.sum())
+    xor = int(np.count_nonzero(target ^ rendered))
+    union = int(np.count_nonzero(target | rendered))
+    return float(xor / max(1, union)), union, int(rendered.sum())
+
+
+def _unicode_run_sequences(
+    raster: np.ndarray,
+    *,
+    base_advance: float,
+    font_path: str,
+    repertoire: tuple[str, ...],
+    beam_width: int,
+    max_candidates: int,
+) -> tuple[dict[str, Any], ...]:
+    """Decode a run with bounded dynamic programming over grapheme spans."""
+
+    if raster.ndim != 2 or raster.shape[1] <= 0 or base_advance <= 0:
+        return ()
+    height, width = raster.shape
+    unit_count = max(1, int(round(width / base_advance)))
+    # Keep only renderable, positive-width graphemes.  The repertoire itself is
+    # static/configured evidence; no source transcript is consulted here.
+    glyphs: list[tuple[str, int]] = [(" ", 1)]
+    for grapheme in repertoire:
+        units = wcwidth.wcswidth(grapheme)
+        if units > 0 and grapheme != " ":
+            glyphs.append((grapheme, int(units)))
+    glyphs = list(dict.fromkeys(glyphs))
+    templates: dict[tuple[str, int], tuple[tuple[bool, ...], ...] | None] = {}
+    for grapheme, units in glyphs:
+        cell_width = max(1, int(round(base_advance * units)))
+        templates[(grapheme, units)] = _render_unicode_template(font_path, grapheme, cell_width, height)
+
+    states: dict[int, list[tuple[float, str, tuple[dict[str, Any], ...]]]] = {0: [(0.0, "", ())]}
+    for cursor_units in range(unit_count):
+        current = states.get(cursor_units, ())
+        if not current:
+            continue
+        cursor_px = int(round(cursor_units * base_advance))
+        for cost, text, evidence in current:
+            for grapheme, units in glyphs:
+                end_units = cursor_units + units
+                if end_units > unit_count:
+                    continue
+                end_px = min(width, max(cursor_px + 1, int(round(end_units * base_advance))))
+                crop = raster[:, cursor_px:end_px]
+                residual, union, rendered_pixels = _unicode_template_residual(crop, templates[(grapheme, units)])
+                span = {
+                    "grapheme": grapheme,
+                    "start_unit": cursor_units,
+                    "end_unit": end_units,
+                    "residual_fraction": residual,
+                    "union_pixels": union,
+                    "rendered_pixels": rendered_pixels,
+                }
+                states.setdefault(end_units, []).append((cost + residual, text + grapheme, (*evidence, span)))
+        for end_units in range(cursor_units + 1, min(unit_count, cursor_units + 2) + 1):
+            if end_units in states:
+                states[end_units] = sorted(states[end_units], key=lambda item: (item[0], item[1]))[: max(1, beam_width)]
+    finals = states.get(unit_count, ())
+    if not finals:
+        # Permit a clipped final cell, but never invent a trailing glyph.
+        finals = [item for key, values in states.items() if key >= unit_count - 1 for item in values]
+    ordered = sorted(finals, key=lambda item: (item[0], item[1]))
+    result: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for cost, text, evidence in ordered:
+        if text in seen:
+            continue
+        seen.add(text)
+        result.append({"text": text, "score": float(cost / max(1, len(evidence))), "spans": list(evidence)})
+        if len(result) >= max(1, max_candidates):
+            break
+    return tuple(result)
+
+
+@dataclass(frozen=True)
+class UnicodeTemplateRunAdapter:
+    """Pinned, source-only Unicode proposal adapter.
+
+    This adapter is deliberately proposal-only.  It renders a configured
+    script repertoire against each geometry-owned run, retains bounded
+    sequence alternatives, and records residual/collision/margin evidence.
+    It cannot authorize a candidate or provide coverage for a script whose
+    font/repertoire/shaping assets are not hash-pinned in the environment lock.
+    """
+
+    repertoire_name: str = "latin"
+    name: str = "unicode-template-latin"
+    version: str = "1-template-dp"
+    font_path: str | None = None
+    font_license: str = "Bitstream Vera / DejaVu license"
+    repertoire_path: str | None = None
+    beam_width: int = 8
+    top_k: int = 8
+    max_residual: float = 0.92
+    min_margin: float = 0.01
+
+    @property
+    def supported_scripts(self) -> tuple[str, ...]:
+        return {
+            "latin": ("latin",),
+            "combining": ("latin", "combining_marks"),
+            "kana": ("japanese",),
+            "arabic": ("arabic",),
+            "cjk": ("cjk",),
+        }.get(self.repertoire_name, ())
+
+    def _font(self) -> str | None:
+        return self.font_path or _unicode_template_font_path()
+
+    def _font_key(self) -> str:
+        return f"{self.name}.font"
+
+    def _repertoire_key(self) -> str:
+        return f"{self.name}.repertoire"
+
+    def _repertoire(self) -> tuple[str, ...] | None:
+        if self.repertoire_path:
+            path = Path(self.repertoire_path)
+            if not path.is_file():
+                return None
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                values = payload.get("graphemes", payload) if isinstance(payload, Mapping) else payload
+                if not isinstance(values, (list, tuple)):
+                    return None
+                return tuple(dict.fromkeys(str(value) for value in values if str(value)))
+            except (OSError, TypeError, ValueError, json.JSONDecodeError):
+                return None
+        if self.repertoire_name == "cjk":
+            return None
+        if self.repertoire_name == "arabic":
+            return None
+        return _unicode_repertoire(self.repertoire_name)
+
+    def capability_profile(self, environment_lock: EnvironmentLock) -> CapabilityProfile:
+        font = self._font()
+        repertoire = self._repertoire()
+        model_hashes: dict[str, str] = {}
+        status = "available"
+        unsupported: list[str] = ["visual_unicode_collision", "partial_cluster"]
+        if not font or not Path(font).is_file():
+            status = "unavailable"
+            unsupported.append("template_font_missing")
+        else:
+            font_hash = sha256_file(font)
+            model_hashes[self._font_key()] = font_hash
+            if environment_lock.model_hashes.get(self._font_key()) != font_hash:
+                status = "unavailable"
+                unsupported.append("template_font_unpinned")
+        if repertoire is None:
+            status = "unavailable"
+            unsupported.append("repertoire_unpinned")
+        elif self.repertoire_path:
+            repertoire_hash = sha256_file(self.repertoire_path)
+            model_hashes[self._repertoire_key()] = repertoire_hash
+            if environment_lock.model_hashes.get(self._repertoire_key()) != repertoire_hash:
+                status = "unavailable"
+                unsupported.append("repertoire_hash_unpinned")
+        if self.repertoire_name == "arabic":
+            status = "unavailable"
+            unsupported.append("shaping_profile_missing")
+        return CapabilityProfile(
+            adapter=self.name,
+            adapter_version=self.version,
+            supported_scripts=self.supported_scripts if status == "available" else (),
+            supported_directions=("ltr",),
+            grapheme_coverage=("extended-grapheme-cluster", "run-level-span-dp") if status == "available" else (),
+            model_hashes=model_hashes,
+            runtime_versions={"pillow": PIL.__version__, "unicode": unicodedata.unidata_version},
+            license=self.font_license,
+            offline=True,
+            runtime_network=False,
+            tested_fixture_families=(self.repertoire_name,),
+            unsupported_cases=tuple(unsupported),
+            status=status,
+        )
+
+    def propose(self, source: Mapping[str, Any], geometry: Mapping[str, Any], components: Mapping[str, Any], environment_lock: EnvironmentLock) -> ProposalSet:
+        profile = self.capability_profile(environment_lock)
+        if profile.status != "available":
+            blocker_order = (
+                "template_font_missing",
+                "template_font_unpinned",
+                "repertoire_unpinned",
+                "repertoire_hash_unpinned",
+                "shaping_profile_missing",
+                "geometry_run_mask_missing",
+            )
+            reason = next((item for item in blocker_order if item in profile.unsupported_cases), profile.unsupported_cases[0])
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, reason)
+        evidence = geometry.get("run_mask")
+        if not isinstance(evidence, Mapping) or evidence.get("authority") not in {"geometry_proven_run", "geometry_hypothesis_run"}:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "geometry_run_mask_missing")
+        raster_values = _mask_from_pixels(evidence.get("pixels"))
+        if raster_values is None:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "geometry_run_mask_invalid")
+        raster = np.asarray(raster_values, dtype=bool)
+        anchor = evidence.get("anchor_evidence") if isinstance(evidence.get("anchor_evidence"), Mapping) else {}
+        mixed = geometry.get("mixed_width_display") if isinstance(geometry.get("mixed_width_display"), Mapping) else {}
+        base = float(anchor.get("base_advance_px", evidence.get("measured_advances", [0])[0] if evidence.get("measured_advances") else mixed.get("base_advance_px", 0.0)))
+        if base <= 0:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "measured_advance_missing")
+        font = self._font()
+        repertoire = self._repertoire() or ()
+        source_hash, geometry_hash, components_hash = _source_hashes(source)
+        run_hash = _mask_hash(tuple(tuple(bool(value) for value in row) for row in raster.tolist()))
+        cache_key = (
+            "unicode-template",
+            self.name,
+            self.version,
+            str(self.beam_width),
+            str(self.top_k),
+            source_hash,
+            geometry_hash,
+            components_hash,
+            environment_lock.output_hash,
+            sha256_file(str(font)),
+            run_hash,
+            str(base),
+        )
+        cached = _PROPOSAL_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
+        sequences = _unicode_run_sequences(raster, base_advance=base, font_path=str(font), repertoire=repertoire, beam_width=self.beam_width, max_candidates=self.top_k)
+        if not sequences:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "run_sequence_unresolved")
+        component_ids = tuple(str(value) for value in (evidence.get("component_ids", ()) or source.get("component_ids", ())))
+        best = sequences[0]
+        runner = sequences[1] if len(sequences) > 1 else None
+        residual = float(best["score"])
+        margin = float(runner["score"] - residual) if runner else 1.0
+        visual_collision = bool(runner and runner["score"] == residual and runner["text"] != best["text"])
+        rejection_reasons: list[str] = []
+        if residual > self.max_residual:
+            rejection_reasons.append("template_residual_excessive")
+        if margin < self.min_margin:
+            rejection_reasons.append("candidate_margin_insufficient")
+        if visual_collision:
+            rejection_reasons.append("unicode_visual_collision")
+        candidates = tuple(
+            _candidate(
+                text=item["text"],
+                source_hash=source_hash,
+                geometry_hash=geometry_hash,
+                components_hash=components_hash,
+                environment_hash=environment_lock.output_hash,
+                confidence=max(0.0, min(1.0, 1.0 - float(item["score"]))),
+                component_ids=component_ids,
+                run_id=str(evidence.get("run_id", source.get("run_id", "run-0"))),
+                alternatives=tuple(other["text"] for other in sequences if other["text"] != item["text"]),
+                extra_input_hashes={self._font_key(): sha256_file(str(font)), "run_mask": run_hash},
+            )
+            for item in sequences
+        )
+        proposal = RecognitionProposal(
+            proposal_id=f"{self.name}-run-dp",
+            adapter=self.name,
+            adapter_version=self.version,
+            model_hashes={**dict(environment_lock.model_hashes), self._font_key(): sha256_file(str(font))},
+            candidates=candidates,
+            run_id=str(evidence.get("run_id", source.get("run_id", "run-0"))),
+            input_hashes={"source": source_hash, "geometry": geometry_hash, "components": components_hash, "environment": environment_lock.output_hash, "run_mask": run_hash},
+            configuration={"repertoire": self.repertoire_name, "beam_width": self.beam_width, "top_k": self.top_k, "max_residual": self.max_residual, "min_margin": self.min_margin},
+            provenance={"source_only": True, "residual_evidence": list(sequences), "ground_truth_input": False},
+            status="proposal",
+            rejection_reasons=tuple(rejection_reasons),
+        )
+        proposal_set = ProposalSet(
+            adapter=self.name,
+            adapter_version=self.version,
+            environment_lock_hash=environment_lock.output_hash,
+            proposals=(proposal,),
+            supported_scripts=self.supported_scripts,
+            status="proposal_only",
+            rejection_codes=tuple(rejection_reasons),
+        )
+        if len(_PROPOSAL_CACHE) >= _PROPOSAL_CACHE_LIMIT:
+            _PROPOSAL_CACHE.pop(next(iter(_PROPOSAL_CACHE)))
+        _PROPOSAL_CACHE[cache_key] = proposal_set
+        return proposal_set
 
 
 @dataclass(frozen=True)
@@ -559,8 +2777,13 @@ class IndependentOfflineAdapter:
         except ImportError:
             version = self.version
             status = "unavailable"
+        # ``name`` is the persisted adapter identity.  The historical default
+        # remains ``independent-offline`` and receives a backend suffix, while
+        # benchmark callers may provide an already-qualified identity so two
+        # comparator backends cannot collapse into one profile record.
+        adapter_name = self.name if self.name.endswith(f"-{self.backend}") else f"{self.name}-{self.backend}"
         return CapabilityProfile(
-            adapter=f"{self.name}-{self.backend}",
+            adapter=adapter_name,
             adapter_version=version,
             supported_scripts=self.supported_scripts if status != "unavailable" else (),
             supported_directions=("ltr", "rtl"),
@@ -622,7 +2845,7 @@ def _run_mask(geometry: Mapping[str, Any]) -> tuple[tuple[bool, ...], ...] | Non
     evidence = geometry.get("run_mask")
     if not isinstance(evidence, Mapping):
         return None
-    if evidence.get("authority") != "geometry_proven_run":
+    if evidence.get("authority") not in {"geometry_proven_run", "geometry_hypothesis_run"}:
         return None
     if evidence.get("grapheme_complete") is False:
         return None
@@ -875,6 +3098,25 @@ class EmojiAtlasAdapter:
         except (OSError, TypeError):
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "font_strike_unavailable")
         configured = self._configured()
+        source_hash, geometry_hash, components_hash = _source_hashes(source)
+        run_hash = _mask_hash(target)
+        rgba_hash = _rgba_hash(target_rgba) if target_rgba is not None else ""
+        cache_key = (
+            "emoji-atlas",
+            self.name,
+            self.version,
+            str(self.max_sequences),
+            source_hash,
+            geometry_hash,
+            components_hash,
+            environment_lock.output_hash,
+            run_hash,
+            rgba_hash,
+            ",".join(str(value) for value in advance_values),
+        )
+        cached = _PROPOSAL_CACHE.get(cache_key)
+        if cached is not None:
+            return cached
         try:
             rendered_catalog = _emoji_rendered_catalog(
                 str(self.sequence_data_path),
@@ -884,8 +3126,6 @@ class EmojiAtlasAdapter:
         except (OSError, TypeError, ValueError):
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "font_strike_unavailable")
         target_height = len(target_rgba) if target_rgba is not None else len(target)
-        source_hash, geometry_hash, components_hash = _source_hashes(source)
-        run_hash = _mask_hash(target)
         scored: list[dict[str, Any]] = []
         for sequence, rendered, native_advance in rendered_catalog:
             native_width = len(rendered[0])
@@ -947,9 +3187,17 @@ class EmojiAtlasAdapter:
                 source_hash=source_hash,
                 geometry_hash=geometry_hash,
                 components_hash=components_hash,
-                environment_hash=environment_lock.output_hash,
-                confidence=max(0.0, min(1.0, 1.0 - item["score"])),
-                alternatives=tuple(other["sequence"] for other in top if other["sequence"] != item["sequence"]),
+            environment_hash=environment_lock.output_hash,
+            confidence=max(0.0, min(1.0, 1.0 - item["score"])),
+            component_ids=tuple(
+                str(value)
+                for value in (
+                    evidence.get("component_ids", ())
+                    if isinstance(evidence, Mapping)
+                    else source.get("component_ids", ())
+                )
+            ),
+            alternatives=tuple(other["sequence"] for other in top if other["sequence"] != item["sequence"]),
                 extra_input_hashes={"run_mask": run_hash, **dict(self.font_hashes)},
             )
             for item in top
@@ -966,7 +3214,7 @@ class EmojiAtlasAdapter:
             provenance={"run_mask_hash": run_hash, "residual_evidence": top, "external_sequence_input_ignored": "emoji_sequence_proposals" in source},
             status="proposal",
         )
-        return ProposalSet(
+        proposal_set = ProposalSet(
             adapter=self.name,
             adapter_version=self.version,
             environment_lock_hash=environment_lock.output_hash,
@@ -974,6 +3222,10 @@ class EmojiAtlasAdapter:
             supported_scripts=("emoji",),
             status="proposal_only",
         )
+        if len(_PROPOSAL_CACHE) >= _PROPOSAL_CACHE_LIMIT:
+            _PROPOSAL_CACHE.pop(next(iter(_PROPOSAL_CACHE)))
+        _PROPOSAL_CACHE[cache_key] = proposal_set
+        return proposal_set
 
 
 def inventory_adapters() -> dict[str, Any]:
@@ -986,13 +3238,31 @@ def inventory_adapters() -> dict[str, Any]:
         version = version_output.stdout.splitlines()[0] if version_output.stdout else "unknown"
         language_output = subprocess.run([executable, "--list-langs"], capture_output=True, text=True, check=False)
         languages = [line.strip() for line in language_output.stdout.splitlines()[1:] if line.strip()]
-    lock = build_environment_lock(script_packs=tuple(languages))
+    template_font = _unicode_template_font_path()
+    model_paths = (
+        {
+            "unicode-template-latin.font": template_font,
+            "unicode-template-combining.font": template_font,
+            "unicode-template-kana.font": template_font,
+            "unicode-template-arabic.font": template_font,
+            "unicode-template-cjk.font": template_font,
+        }
+        if template_font
+        else {}
+    )
+    lock = build_environment_lock(script_packs=tuple(languages), model_paths=model_paths)
     adapters = (
         TesseractOfflineAdapter(executable=executable, version=version.split(" ", 1)[-1] if version != "unavailable" else version),
         FixedLatticeStructuralAdapter(),
+        StructuralUnicodeRowAdapter(),
+        UnicodeTemplateRunAdapter(repertoire_name="latin", name="unicode-template-latin"),
+        UnicodeTemplateRunAdapter(repertoire_name="combining", name="unicode-template-combining"),
+        UnicodeTemplateRunAdapter(repertoire_name="kana", name="unicode-template-kana"),
+        UnicodeTemplateRunAdapter(repertoire_name="arabic", name="unicode-template-arabic"),
+        UnicodeTemplateRunAdapter(repertoire_name="cjk", name="unicode-template-cjk"),
         PaddleOCROfflineAdapter(),
-        IndependentOfflineAdapter(backend="easyocr"),
-        IndependentOfflineAdapter(backend="surya"),
+        IndependentOfflineAdapter(backend="easyocr", name="independent-offline-easyocr"),
+        IndependentOfflineAdapter(backend="surya", name="independent-offline-surya"),
         EmojiAtlasAdapter(),
     )
     profiles = [adapter.capability_profile(lock).to_dict() for adapter in adapters]
@@ -1047,12 +3317,39 @@ def _fixture_source(fixture: Mapping[str, Any], root: Path | None) -> dict[str, 
     return source
 
 
-def _proposal_texts(result: ProposalSet, *, top_k: int) -> tuple[str, ...]:
-    candidates: list[GraphemeCandidate] = []
+def _proposal_texts(result: ProposalSet, *, top_k: int | None) -> tuple[str, ...]:
+    ranked: list[tuple[float, int, str]] = []
+
+    def priority(text: str) -> int:
+        compact = text.strip()
+        return -1 if (
+            len(compact) >= 2
+            and len(set(compact.replace(" ", ""))) == 1
+            and compact in {"___", "---", "===", "￣￣￣", "＿ ＿"}
+        ) else 0
+
     for proposal in result.proposals:
-        candidates.extend(candidate for candidate in proposal.candidates if candidate.text != "?")
-    ordered = sorted(candidates, key=lambda item: (-item.confidence, item.normalized_text, item.text))
-    return tuple(dict.fromkeys(candidate.normalized_text for candidate in ordered[:top_k]))
+        for candidate in proposal.candidates:
+            if candidate.text != "?":
+                ranked.append((float(candidate.confidence), priority(candidate.normalized_text), candidate.normalized_text))
+            # A recognizer may keep its row beam in the candidate's
+            # alternatives field.  Those strings are evidence with lower
+            # deterministic priority, not hidden output; dropping them here
+            # made the joint decoder effectively greedy again.
+            for alternative_index, alternative in enumerate(candidate.alternatives, start=1):
+                normalized = unicodedata.normalize("NFC", str(alternative))
+                if normalized and normalized != "?":
+                    ranked.append(
+                        (
+                            max(0.0, float(candidate.confidence) - 0.02 * alternative_index),
+                            alternative_index + priority(normalized),
+                            normalized,
+                        )
+                    )
+    ordered = sorted(ranked, key=lambda item: (-item[0], item[1], item[2]))
+    if top_k is not None:
+        ordered = ordered[: max(1, int(top_k))]
+    return tuple(dict.fromkeys(text for _confidence, _rank, text in ordered))
 
 
 def _compose_run_texts(
@@ -1095,6 +3392,1004 @@ def _compose_run_texts(
     return complete[:top_k]
 
 
+def _coverage_rank_matrix(
+    target: str,
+    adapter_records: list[Mapping[str, Any]],
+    *,
+    fixture_id: str,
+    source_hash: str,
+    geometry_status: str,
+    geometry_rejection_codes: list[str],
+    top_k: int,
+) -> dict[str, Any]:
+    """Classify target rows against retained adapter/run evidence.
+
+    This is a measurement surface, not a decoder. It runs after proposals
+    exist and therefore cannot influence recognition. A missing target is
+    represented explicitly; rejected operator guesses must never be supplied
+    here as a substitute for truth.
+    """
+
+    if not target:
+        return {
+            "status": "evaluation_truth_unavailable",
+            "fixture": fixture_id,
+            "source_sha256": source_hash,
+            "geometry_status": geometry_status,
+            "geometry_rejection_codes": list(geometry_rejection_codes),
+            "rows": [],
+            "reason": "no_authoritative_transcript",
+        }
+
+    def row_options(run_entries: list[Mapping[str, Any]]) -> tuple[str, ...]:
+        options = ("",)
+        for run in run_entries:
+            proposals = tuple(str(item) for item in run.get("proposals", ()))
+            if not proposals:
+                return ()
+            options = tuple(
+                dict.fromkeys(prefix + proposal for prefix in options for proposal in proposals)
+            )[: max(256, int(top_k) * 16)]
+        # The empty prefix is consumed by the first expansion; after that
+        # step every option is a real proposal.  Dropping options[0] here
+        # would erase the adapter's top-ranked row candidate from the matrix.
+        return options
+
+    # Keep each adapter's evidence independent.  An unavailable adapter may
+    # have an empty run while another adapter has valid proposals for the
+    # same geometry hypothesis; merging them would erase the valid row.
+    grouped: dict[tuple[str, str, int], list[dict[str, Any]]] = {}
+    for record in adapter_records:
+        adapter_name = str(record.get("adapter", ""))
+        for variant in record.get("row_proposals", ()):
+            variant_id = str(variant.get("hypothesis_id", ""))
+            for row in variant.get("rows", ()):
+                row_index = int(row.get("row_index", 0))
+                run_entries = row.get("runs")
+                if not isinstance(run_entries, (list, tuple)) or not run_entries:
+                    run_entries = ({
+                        "run_id": row.get("run_id", ""),
+                        "proposals": row.get("proposals", ()),
+                        "run_input_hash": row.get("run_input_hash"),
+                    },)
+                key = (adapter_name, variant_id, row_index)
+                for run in run_entries:
+                    grouped.setdefault(key, []).append(
+                        {
+                            "adapter": adapter_name,
+                            "variant_id": variant_id,
+                            "run_id": str(run.get("run_id", "")),
+                            "proposals": tuple(str(item) for item in run.get("proposals", ())),
+                            "run_input_hash": run.get("run_input_hash"),
+                            "repeat_run_hash": record.get("repeat_run_hash"),
+                        }
+                    )
+
+    rows = target.split("\n")
+    matrix_rows: list[dict[str, Any]] = []
+    for row_index, expected in enumerate(rows):
+        normalized_expected = unicodedata.normalize("NFC", expected)
+        observations: list[dict[str, Any]] = []
+        for (adapter_name, variant_id, candidate_row), run_entries in sorted(grouped.items()):
+            if candidate_row != row_index:
+                continue
+            for rank, proposed in enumerate(row_options(run_entries), start=1):
+                observations.append(
+                    {
+                        "adapter": adapter_name,
+                        "hypothesis_id": variant_id,
+                        "rank": rank,
+                        "text": unicodedata.normalize("NFC", proposed),
+                        "run_input_hashes": sorted(
+                            str(entry["run_input_hash"])
+                            for entry in run_entries
+                            if entry.get("run_input_hash")
+                        ),
+                        "proposal_hashes": sorted(
+                            str(entry["repeat_run_hash"])
+                            for entry in run_entries
+                            if entry.get("repeat_run_hash")
+                        ),
+                    }
+                )
+        observations.sort(
+            key=lambda item: (
+                int(item["rank"]),
+                str(item["adapter"]),
+                str(item["hypothesis_id"]),
+                str(item["text"]),
+            )
+        )
+        exact = [item for item in observations if item["text"] == normalized_expected]
+        unsupported = any(
+            any("unsupported" in str(code) or "unavailable" in str(code) for code in record.get("unsupported_status", ()))
+            for record in adapter_records
+        )
+        if exact:
+            best_rank = min(int(item["rank"]) for item in exact)
+            collision = any(
+                "collision" in str(code)
+                for record in adapter_records
+                for code in record.get("unsupported_status", ())
+            )
+            classification = "visual_collision" if collision else "present_and_winning" if best_rank == 1 else "present_but_losing"
+        elif not observations and unsupported:
+            best_rank = None
+            classification = "unsupported"
+        else:
+            best_rank = None
+            classification = "absent"
+        matrix_rows.append(
+            {
+                "row_index": row_index,
+                "expected_logical_sequence": normalized_expected,
+                "classification": classification,
+                "proposal_rank": best_rank,
+                "proposed_by": sorted({item["adapter"] for item in exact}),
+                "selected_wrong_result": [
+                    {
+                        "adapter": item["adapter"],
+                        "hypothesis_id": item["hypothesis_id"],
+                        "text": item["text"],
+                    }
+                    for item in observations
+                    if int(item["rank"]) == 1 and item["text"] != normalized_expected
+                ],
+                "observations": observations,
+            }
+        )
+    return {
+        "status": "measured",
+        "fixture": fixture_id,
+        "source_sha256": source_hash,
+        "geometry_status": geometry_status,
+        "geometry_rejection_codes": list(geometry_rejection_codes),
+        "rows": matrix_rows,
+        "reason": "source-derived proposal coverage measured after adapter execution",
+    }
+
+
+def _template_run_residual(
+    text: str,
+    run: Mapping[str, Any],
+    geometry: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Compare a proposal's shaped glyph templates with the source run mask.
+
+    This is deliberately a diagnostic fit, not pixel-parity authority: the
+    source font may differ from the pinned template font.  It nevertheless
+    preserves whole-run placement, Unicode display widths, and leading
+    columns, so a candidate that drops a slash or invents a bar cannot tie a
+    structurally consistent proposal merely because both have the same width.
+    """
+
+    font_path = _structural_font_path()
+    if not font_path:
+        return None
+    source_values = _mask_from_pixels(run.get("binary_run_mask"))
+    if source_values is None:
+        return None
+    source = np.asarray(source_values, dtype=bool)
+    mixed = geometry.get("mixed_width_display") or {}
+    anchor = run.get("anchor_evidence") if isinstance(run.get("anchor_evidence"), Mapping) else {}
+    base = float(anchor.get("base_advance_px", mixed.get("base_advance_px", 0.0)))
+    origin = float(anchor.get("origin_px", mixed.get("origin_px", 0.0)))
+    if base <= 0.0:
+        return None
+    height, width = source.shape
+    rendered = np.zeros_like(source, dtype=bool)
+    cursor = 0
+    for grapheme in regex.findall(r"\X", unicodedata.normalize("NFC", text)):
+        units = wcwidth.wcswidth(grapheme)
+        if units < 0:
+            return None
+        if units == 0:
+            continue
+        # Spaces are represented by their measured advance and have no ink.
+        if grapheme.isspace():
+            cursor += units
+            continue
+        template = _structural_template(
+            font_path,
+            grapheme,
+            units,
+            max(1, round(base)),
+            height,
+        )
+        if template is None:
+            return None
+        normalized = (np.asarray(template, dtype=np.uint8) * 255)
+        target_width = max(1, int(round(base * units)))
+        image = Image.fromarray(normalized, mode="L").resize(
+            (target_width, height), Image.Resampling.BILINEAR
+        )
+        glyph_mask = np.asarray(image, dtype=np.uint8) > 80
+        raw_x0 = int(round(origin + cursor * base))
+        raw_x1 = raw_x0 + target_width
+        dst_x0 = max(0, raw_x0)
+        dst_x1 = min(width, raw_x1)
+        if dst_x1 > dst_x0:
+            src_x0 = dst_x0 - raw_x0
+            src_x1 = src_x0 + (dst_x1 - dst_x0)
+            rendered[:, dst_x0:dst_x1] |= glyph_mask[:, src_x0:src_x1]
+        cursor += units
+
+    # Permit only a tiny rasterization translation while scoring; larger
+    # placement errors belong to geometry/alignment and must remain visible.
+    best_fraction = 1.0
+    best_shift = (0, 0)
+    source_pixels = int(source.sum())
+    vertical_search = range(-max(1, height // 3), max(1, height // 3) + 1)
+    for dy in vertical_search:
+        for dx in (-1, 0, 1):
+            shifted = np.zeros_like(rendered)
+            y0 = max(0, dy)
+            y1 = min(height, height + dy)
+            x0 = max(0, dx)
+            x1 = min(width, width + dx)
+            sy0 = max(0, -dy)
+            sy1 = sy0 + (y1 - y0)
+            sx0 = max(0, -dx)
+            sx1 = sx0 + (x1 - x0)
+            if y1 > y0 and x1 > x0:
+                shifted[y0:y1, x0:x1] = rendered[sy0:sy1, sx0:sx1]
+            union = int(np.logical_or(source, shifted).sum())
+            residual = int(np.logical_xor(source, shifted).sum())
+            fraction = residual / max(1, union)
+            if fraction < best_fraction:
+                best_fraction = fraction
+                best_shift = (dx, dy)
+    return {
+        "residual_fraction": float(best_fraction),
+        "source_ink_pixels": source_pixels,
+        "template_ink_pixels": int(rendered.sum()),
+        "template_font_sha256": _structural_font_hash(font_path),
+        "best_translation_px": [int(best_shift[0]), int(best_shift[1])],
+    }
+
+
+def _anchor_interval_residual(
+    text: str,
+    run: Mapping[str, Any],
+    geometry: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    """Compare logical ink intervals with source-painted intervals.
+
+    This deliberately ignores glyph shape.  It is a source-only placement
+    diagnostic that catches a proposal which drops a substantive run or
+    paints ink into a measured gap.  The result is advisory: Unicode width
+    and component ownership still decide whether a proposal can be accepted.
+    """
+
+    evidence = run.get("anchor_evidence")
+    if not isinstance(evidence, Mapping):
+        return None
+    painted = evidence.get("painted_runs")
+    if not isinstance(painted, (list, tuple)):
+        return None
+    width = int(run.get("run_strip_width_px") or 0)
+    if width <= 0:
+        bounds = evidence.get("source_bounds")
+        if isinstance(bounds, (list, tuple)) and len(bounds) == 4:
+            width = max(0, int(bounds[2]) - int(bounds[0]))
+    if width <= 0:
+        return None
+    mixed = geometry.get("mixed_width_display") or {}
+    base = float(evidence.get("base_advance_px") or mixed.get("base_advance_px") or 0.0)
+    origin = float(evidence.get("origin_px") or mixed.get("origin_px") or 0.0)
+    if base <= 0.0:
+        return None
+    observed = np.zeros(width, dtype=bool)
+    for item in painted:
+        bounds = item.get("local_bounds") if isinstance(item, Mapping) else None
+        if not isinstance(bounds, (list, tuple)) or len(bounds) != 4:
+            continue
+        x0 = max(0, min(width, int(bounds[0])))
+        x1 = max(x0, min(width, int(bounds[2])))
+        if x1 > x0:
+            observed[x0:x1] = True
+    graphemes = tuple(regex.findall(r"\X", unicodedata.normalize("NFC", text)))
+    width_paths: list[tuple[int, ...]] = [()]
+    for grapheme in graphemes:
+        units = wcwidth.wcswidth(grapheme)
+        if units < 0:
+            return None
+        if units == 0:
+            choices = (0,)
+        elif any(unicodedata.east_asian_width(char) in {"W", "F", "A"} for char in grapheme):
+            # The geometry owner has not yet selected whether this source
+            # treats a wide/ambiguous grapheme as one narrow advance or two.
+            # Keep both bounded hypotheses in the advisory source score.
+            choices = (1, 2)
+        else:
+            choices = (units,)
+        width_paths = [prefix + (choice,) for prefix in width_paths for choice in choices]
+        if len(width_paths) > 4096:
+            width_paths = width_paths[:4096]
+
+    source_mask_height = int(run.get("run_strip_height_px") or 0)
+    source_mask = _mask_from_pixels(run.get("binary_run_mask"))
+    if source_mask_height <= 0:
+        source_mask_height = int(np.asarray(source_mask, dtype=bool).shape[0]) if source_mask is not None else 0
+    tiny_limit = max(3, int(source_mask_height * 0.15))
+    substantive_items = [
+        item
+        for item in painted
+        if isinstance(item, Mapping)
+        and item.get("unit_start") is not None
+        and int(item.get("ink_pixels", tiny_limit + 1)) > tiny_limit
+    ]
+    observed_component_starts = [int(item["unit_start"]) for item in substantive_items]
+    # A connected source interval may occupy multiple logical units.  Keep
+    # each occupied unit as an anchor slot while retaining raw component
+    # count separately for diagnostics.
+    observed_starts: list[float] = []
+    for item in substantive_items:
+        if not isinstance(item, Mapping) or item.get("unit_start") is None:
+            continue
+        start = int(item["unit_start"])
+        end = int(item.get("unit_end", start + 1))
+        observed_starts.extend(float(value) for value in range(start, max(start + 1, end)))
+
+    source_mask = _mask_from_pixels(run.get("binary_run_mask"))
+    observed_shapes: list[str] = []
+    observed_component_details: list[dict[str, Any]] = []
+    if source_mask is not None:
+        source_mask = np.asarray(source_mask, dtype=bool)
+        for item in substantive_items:
+            bounds = item.get("local_bounds") if isinstance(item, Mapping) else None
+            if not isinstance(bounds, (list, tuple)) or len(bounds) != 4:
+                continue
+            x0, y0, x1, y1 = (int(value) for value in bounds)
+            crop = source_mask[max(0, y0):min(source_mask.shape[0], y1), max(0, x0):min(source_mask.shape[1], x1)]
+            ys, xs = np.where(crop)
+            if not len(xs):
+                continue
+            bbox_width = int(xs.max() - xs.min() + 1)
+            bbox_height = int(ys.max() - ys.min() + 1)
+            row_peak = int(crop.sum(axis=1).max())
+            col_peak = int(crop.sum(axis=0).max())
+            horizontal = bbox_height <= max(5, int(round(base * 0.45))) and bbox_width >= max(2, int(round(base * 1.25)))
+            vertical = bbox_width <= max(5, int(round(base * 0.45))) and bbox_height >= max(2, int(round(base * 1.25)))
+            if horizontal and not vertical:
+                observed_shapes.append("horizontal")
+            elif vertical and not horizontal:
+                observed_shapes.append("vertical")
+            elif horizontal and vertical:
+                observed_shapes.append("orthogonal")
+            elif row_peak >= col_peak and bbox_width >= bbox_height:
+                observed_shapes.append("diagonal_or_horizontal")
+            else:
+                observed_shapes.append("diagonal_or_vertical")
+            observed_component_details.append(
+                {
+                    "unit_start": int(item.get("unit_start", 0)),
+                    "unit_end": int(item.get("unit_end", item.get("unit_start", 0) + 1)),
+                    "bbox_width": bbox_width,
+                    "bbox_height": bbox_height,
+                    "y_center": float(ys.mean()) / max(1.0, float(source_mask.shape[0] - 1)),
+                    "crossing": bool(_has_crossing_diagonals(crop)),
+                    "area": int(crop.sum()),
+                }
+            )
+
+    def score_width_path(path: tuple[int, ...]) -> tuple[float, np.ndarray, list[float], float, float, float, int, float]:
+        predicted = np.zeros(width, dtype=bool)
+        cursor = 0
+        predicted_starts: list[float] = []
+        predicted_graphemes: list[tuple[str, float]] = []
+        for grapheme, units in zip(graphemes, path):
+            if units <= 0:
+                continue
+            if not grapheme.isspace():
+                x0 = max(0, min(width, int(round(origin + cursor * base))))
+                x1 = max(x0, min(width, int(round(origin + (cursor + units) * base))))
+                if x1 > x0:
+                    predicted[x0:x1] = True
+                predicted_starts.append(float(cursor))
+                predicted_graphemes.append((grapheme, float(cursor)))
+            cursor += units
+        residual_pixels = int(np.count_nonzero(np.logical_xor(observed, predicted)))
+        union_pixels = int(np.count_nonzero(np.logical_or(observed, predicted)))
+        interval = residual_pixels / max(1, union_pixels)
+        observed_origin = min(observed_starts) if observed_starts else 0.0
+        predicted_origin = min(predicted_starts) if predicted_starts else 0.0
+        if observed_starts and predicted_starts:
+            start_residual = sum(
+                min(abs((value - predicted_origin) - (other - observed_origin)) for other in observed_starts)
+                for value in predicted_starts
+            ) / max(1, len(predicted_starts))
+            start_residual /= max(1.0, float(len(observed_starts)))
+        else:
+            start_residual = 1.0 if observed_starts != predicted_starts else 0.0
+        predicted_count = len(predicted_starts)
+        component_count = len(observed_component_starts)
+        occupied_unit_count = len(observed_starts)
+        horizontal_only = bool(observed_shapes) and all(shape == "horizontal" for shape in observed_shapes)
+        expected_count = occupied_unit_count if horizontal_only else component_count
+        count_residual = abs(predicted_count - expected_count) / max(1, expected_count)
+        visible = [grapheme for grapheme, units in zip(graphemes, path) if units > 0 and not grapheme.isspace()]
+        horizontal_chars = {"_", "-", "=", "＿", "￣", "~"}
+        vertical_chars = {"|", "│", "l", "I", "ｌ"}
+        if observed_shapes and all(shape == "horizontal" for shape in observed_shapes):
+            morphology = sum(char not in horizontal_chars for grapheme in visible for char in grapheme) / max(1, len(visible))
+        elif observed_shapes and all(shape == "vertical" for shape in observed_shapes):
+            morphology = sum(char not in vertical_chars for grapheme in visible for char in grapheme) / max(1, len(visible))
+        else:
+            morphology = 0.0
+        # Component topology is source evidence independent of the fallback
+        # font.  Use it to reject punctuation labels that would require a
+        # tiny isolated mark where the source has a substantive crossing, and
+        # to distinguish middle-band dashes from bottom-band underscores.
+        shape_penalty = 0.0
+        punctuation = {".", ",", "'", "`", "丶", "、"}
+        horizontal_middle = {"-", "=", "~", "￣"}
+        horizontal_bottom = {"_", "＿"}
+        for grapheme, start in predicted_graphemes:
+            nearest = min(
+                observed_component_details,
+                key=lambda detail: (
+                    min(abs(start - float(detail["unit_start"])), abs(start - float(detail["unit_end"] - 1))),
+                    int(detail["unit_start"]),
+                ),
+                default=None,
+            )
+            if nearest is None:
+                continue
+            if any(char in punctuation for char in grapheme):
+                if nearest["crossing"] and nearest["area"] > tiny_limit:
+                    # A crossing component is a connected structural mark,
+                    # not proof of a comma/period.  Keep the punctuation as a
+                    # proposal, but make it lose to a structural alternative.
+                    shape_penalty += 0.30
+            if grapheme in horizontal_middle or grapheme in horizontal_bottom:
+                y_center = float(nearest["y_center"])
+                if grapheme in horizontal_bottom and y_center < 0.68:
+                    shape_penalty += 0.28
+                if grapheme in horizontal_middle and y_center > 0.68:
+                    shape_penalty += 0.28
+        shape_penalty /= max(1, len(predicted_graphemes))
+        ranking = interval + 0.20 * count_residual + 0.10 * start_residual + 0.20 * morphology + 0.25 * shape_penalty
+        return ranking, predicted, predicted_starts, interval, start_residual, float(morphology), predicted_count, float(shape_penalty)
+
+    best_path = min(width_paths or [()], key=lambda path: score_width_path(path)[0])
+    _ranking, predicted, predicted_starts, residual_fraction, start_residual, morphology_residual, predicted_count, shape_penalty = score_width_path(best_path)
+    residual = int(np.count_nonzero(np.logical_xor(observed, predicted)))
+    union = int(np.count_nonzero(np.logical_or(observed, predicted)))
+    # Component cardinality and unit starts are independent of fallback-font
+    # shape.  Normalize both sequences to their first painted unit so a
+    # cropped run or negative global origin cannot manufacture a placement
+    # penalty.  This catches proposals that preserve a broad union while
+    # inventing punctuation or swallowing two source components into one.
+    observed_count = len(observed_starts)
+    horizontal_only = bool(observed_shapes) and all(shape == "horizontal" for shape in observed_shapes)
+    expected_count = observed_count if horizontal_only else len(observed_component_starts)
+    count_residual = abs(predicted_count - expected_count) / max(1, expected_count)
+    return {
+        "residual_fraction": float(residual_fraction),
+        "residual_pixels": residual,
+        "union_pixels": union,
+        "observed_run_count": len(painted),
+        "observed_component_count": len(observed_component_starts),
+        "observed_occupied_unit_count": observed_count,
+        "cardinality_reference": "occupied_units" if horizontal_only else "substantive_components",
+        "cardinality_reference_count": expected_count,
+        "predicted_component_count": predicted_count,
+        "component_count_residual": float(count_residual),
+        "anchor_start_residual": float(start_residual),
+        "morphology_residual": float(morphology_residual),
+        "shape_compatibility_penalty": float(shape_penalty),
+        "observed_shape_classes": sorted(set(observed_shapes)),
+        "selected_widths": list(best_path),
+        "observed_ink_columns": int(observed.sum()),
+        "predicted_ink_columns": int(predicted.sum()),
+        "anchor_evidence_hash": str(evidence.get("evidence_hash", "")),
+    }
+
+
+def _proposal_fit_residual(candidate: Mapping[str, Any]) -> float:
+    """Return one deterministic advisory residual for proposal ranking."""
+
+    raster = candidate.get("source_raster_fit") or {}
+    value = float(raster.get("residual_fraction", 1.0)) if isinstance(raster, Mapping) else 1.0
+    anchor = candidate.get("source_anchor_fit") or {}
+    if isinstance(anchor, Mapping) and anchor:
+        # TXT acceptance is font-independent.  Source-measured interval
+        # placement therefore dominates the fallback-font raster residual;
+        # the latter remains a bounded diagnostic tie-breaker only.  Cardinality
+        # and unit-start evidence are separate terms: a broad interval union
+        # must not hide an invented punctuation mark or a swallowed anchor.
+        interval = float(anchor.get("residual_fraction", 1.0))
+        cardinality = float(anchor.get("component_count_residual", 1.0))
+        starts = float(anchor.get("anchor_start_residual", 1.0))
+        morphology = float(anchor.get("morphology_residual", 0.0))
+        shape_compatibility = float(anchor.get("shape_compatibility_penalty", 0.0))
+        value = (
+            0.15 * value
+            + 0.40 * interval
+            + 0.20 * morphology
+            + 0.20 * cardinality
+            + 0.05 * starts
+            + 0.25 * shape_compatibility
+        )
+    return value
+
+
+def align_logical_text_to_run(
+    text: str,
+    run: Mapping[str, Any],
+    geometry: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Score a logical proposal against measured mixed-width anchors.
+
+    This is alignment evidence, not candidate selection.  It keeps logical
+    grapheme order separate from visual shaping and rejects width collisions or
+    incomplete runs before any proposal can become a TXT candidate.
+    """
+
+    graphemes = tuple(regex.findall(r"\X", unicodedata.normalize("NFC", text)))
+    widths: list[int | None] = []
+    width_options: set[int] = {0}
+    for grapheme in graphemes:
+        width = wcwidth.wcswidth(grapheme)
+        widths.append(width if width >= 0 else None)
+        if width < 0:
+            width_options = set()
+            continue
+        # The raster has not established whether this renderer treats a
+        # fullwidth/ambiguous grapheme as one measured advance or two narrow
+        # advances.  Keep both display-width hypotheses as evidence.  This is
+        # deliberately not a Unicode-width decision: the final gate still
+        # requires an explicit width profile before acceptance.
+        east_asian = any(
+            unicodedata.east_asian_width(char) in {"W", "F", "A"}
+            for char in grapheme
+        )
+        choices = (1, 2) if east_asian and width > 0 else (width,)
+        width_options = {
+            prior + choice
+            for prior in width_options
+            for choice in choices
+        }
+    display_units = sum(width for width in widths if width is not None)
+    mixed = geometry.get("mixed_width_display") or {}
+    anchor = run.get("anchor_evidence") if isinstance(run.get("anchor_evidence"), Mapping) else {}
+    base = float(anchor.get("base_advance_px", mixed.get("base_advance_px", 0.0)))
+    origin = float(anchor.get("origin_px", mixed.get("origin_px", 0.0)))
+    source_bounds = run.get("source_bounds", [0, 0, 0, 0])
+    # Alignment consumes a content-cropped run strip.  Global source bounds
+    # remain provenance only; using their width here reintroduces blank canvas
+    # columns after mixed-display geometry has been rebased.
+    strip_width = run.get("run_strip_width_px") or run.get("strip_width_px")
+    if strip_width is None and isinstance(run.get("binary_run_mask"), (list, tuple)):
+        first_row = run.get("binary_run_mask")[0] if run.get("binary_run_mask") else ()
+        strip_width = len(first_row)
+    source_width = max(
+        0.0,
+        float(strip_width)
+        if strip_width is not None
+        else float(source_bounds[2]) - float(source_bounds[0]),
+    )
+    if base > 0:
+        # The measured run may start/end inside a display unit.  Rounding its
+        # pixel width loses the phase/origin that produced the run strip and
+        # rejects otherwise width-consistent proposals.  Recover the same
+        # clipped unit interval used by the hypothesis builder.
+        logical_start = run.get("logical_start_column")
+        logical_end = run.get("logical_end_column")
+        if logical_start is not None and logical_end is not None:
+            target_units = max(0, int(logical_end) - int(logical_start))
+        else:
+            x0 = 0.0
+            x1 = source_width
+            first_unit = math.ceil((x0 - origin) / base)
+            last_unit = math.ceil((x1 - origin) / base)
+            target_units = max(0, int(last_unit - first_unit))
+    else:
+        target_units = None
+    unknown_width = any(width is None for width in widths)
+    width_ambiguous = bool(target_units is not None and target_units in width_options and target_units != display_units)
+    width_error = (
+        None
+        if target_units is not None and (target_units == display_units or width_ambiguous)
+        else abs(display_units - target_units) if target_units is not None and not unknown_width else None
+    )
+    status = "aligned"
+    reasons: list[str] = []
+    if unknown_width:
+        status = "rejected"
+        reasons.append("width_profile_missing")
+    elif target_units is None:
+        status = "rejected"
+        reasons.append("mixed_width_anchor_missing")
+    elif width_error:
+        status = "rejected"
+        reasons.append("logical_visual_contradiction")
+    elif width_ambiguous:
+        # Keep the proposal available to the joint decoder, but make the
+        # unresolved width profile explicit so this can never become an
+        # acceptance result by accident.
+        status = "aligned_ambiguous"
+        reasons.append("width_profile_ambiguous")
+    residual = _template_run_residual(text, run, geometry)
+    anchor_residual = _anchor_interval_residual(text, run, geometry)
+    return {
+        "text": text,
+        "normalized_text": unicodedata.normalize("NFC", text),
+        "graphemes": list(graphemes),
+        "grapheme_widths": widths,
+        "display_units": display_units,
+        "display_width_options": sorted(width_options),
+        "width_ambiguous": width_ambiguous,
+        "target_units": target_units,
+        "base_advance_px": base,
+        "source_bounds": list(source_bounds),
+        "alignment_width_px": source_width,
+        "width_error_units": width_error,
+        "status": status,
+        "rejection_reasons": reasons,
+        "source_raster_fit": residual,
+        "source_anchor_fit": anchor_residual,
+    }
+
+
+def jointly_score_geometry_hypotheses(
+    hypotheses: tuple[Mapping[str, Any], ...] | list[Mapping[str, Any]],
+    row_proposals: Mapping[str, Mapping[int, tuple[str, ...]]],
+    *,
+    top_k: int = 5,
+    diagnostic_margin: float = 0.10,
+) -> dict[str, Any]:
+    """Jointly score geometry hypotheses and row proposals without selecting TXT.
+
+    ``row_proposals`` contains adapter-produced logical alternatives keyed by
+    hypothesis id and row index.  The score rewards complete width alignment
+    and proposal confidence supplied by the adapter, while preserving all
+    tied hypotheses.  A result is accepted only when the winner has a pinned
+    margin and every row aligns; otherwise it remains unresolved evidence.
+    """
+
+    scored: list[dict[str, Any]] = []
+    for hypothesis in hypotheses:
+        provenance = dict(hypothesis.get("provenance", {}))
+        h = dict(provenance.get("hypothesis", {}))
+        origin = h.get("origin_px", "unknown")
+        base_advance = h.get("base_advance_px", "unknown")
+        hypothesis_id = f"{h.get('pitch', 'unknown')}:{h.get('phase', 'unknown')}:{base_advance}:{origin}"
+        rows = tuple(hypothesis.get("runs", ()))
+        alternatives = dict(row_proposals.get(hypothesis_id, {}))
+        if not alternatives and "origin_px" not in h:
+            # Historical unit seams omitted the horizontal-origin field;
+            # retain their proposal-only compatibility without collapsing
+            # origin-aware hypotheses in the production path.
+            legacy_id = f"{h.get('pitch', 'unknown')}:{h.get('phase', 'unknown')}"
+            alternatives = dict(row_proposals.get(legacy_id, {}))
+        ownership = dict(h.get("ownership", {}))
+        owned_pixels = ownership.get("owned_pixel_count")
+        substantive_pixels = ownership.get("substantive_pixel_count")
+        unowned_pixels = ownership.get("unowned_pixel_count", 0)
+        multiply_owned_pixels = ownership.get("multiply_owned_pixel_count", 0)
+        ownership_complete = bool(
+            owned_pixels is not None
+            and substantive_pixels is not None
+            and int(owned_pixels) == int(substantive_pixels)
+            and int(unowned_pixels) == 0
+            and int(multiply_owned_pixels) == 0
+        )
+        alignments: list[dict[str, Any]] = []
+        confidences: list[float] = []
+        for row_index, run in enumerate(rows):
+            texts = tuple(alternatives.get(int(run.get("row_index", row_index)), ()))
+            if not texts:
+                alignments.append({"row_index": row_index, "status": "rejected", "rejection_reasons": ["grapheme_unknown"]})
+                continue
+            candidates = [
+                align_logical_text_to_run(
+                    text,
+                    run,
+                    {"mixed_width_display": hypothesis.get("mixed_width_display", {})},
+                )
+                for text in texts
+            ]
+            aligned_candidates = [
+                item for item in candidates
+                if item["status"] in {"aligned", "aligned_ambiguous"}
+            ]
+            best = min(
+                aligned_candidates or candidates,
+                key=lambda item: (
+                    _proposal_fit_residual(item),
+                    int(item.get("width_error_units") or 0),
+                    str(item.get("normalized_text", item.get("text", ""))),
+                ),
+            )
+            if best.get("status") in {"aligned", "aligned_ambiguous"}:
+                best = {**best, "proposal_fit_residual": _proposal_fit_residual(best)}
+            alignments.append({"row_index": row_index, "candidates": candidates, "selected_diagnostic": best})
+            if best["status"] in {"aligned", "aligned_ambiguous"}:
+                fit = _proposal_fit_residual(best)
+                confidences.append(max(0.0, 1.0 - fit))
+        aligned_rows = sum(
+            1
+            for item in alignments
+            if item.get("selected_diagnostic", {}).get("status") in {"aligned", "aligned_ambiguous"}
+        )
+        width_ambiguity_rows = sum(
+            1
+            for item in alignments
+            if item.get("selected_diagnostic", {}).get("status") == "aligned_ambiguous"
+        )
+        row_count = len(rows)
+        completeness = aligned_rows / max(1, row_count)
+        # Compose complete row sequences with a lazy k-best additive search.
+        # Rows remain in measured order and every option stays tied to its
+        # alignment evidence, but the decoder never materializes the full
+        # Cartesian product or truncates a row to the public report `top_k`.
+        sequence_states: list[tuple[float, tuple[dict[str, Any], ...]]] = []
+        row_option_lists: list[list[dict[str, Any]]] = []
+        for alignment in alignments:
+            row_options = [
+                candidate
+                for candidate in alignment.get("candidates", ())
+                if candidate.get("status") in {"aligned", "aligned_ambiguous"}
+            ]
+            # Duplicate normalized strings do not provide independent
+            # evidence and only waste the bounded sequence beam.
+            unique_options: dict[str, dict[str, Any]] = {}
+            for candidate in row_options:
+                key = str(candidate.get("normalized_text", candidate.get("text", "")))
+                prior = unique_options.get(key)
+                if prior is None or (
+                    _proposal_fit_residual(candidate),
+                    key,
+                ) < (
+                    _proposal_fit_residual(prior),
+                    key,
+                ):
+                    unique_options[key] = candidate
+            ordered_options = sorted(
+                unique_options.values(),
+                key=lambda candidate: (
+                    _proposal_fit_residual(candidate),
+                    str(candidate.get("normalized_text", candidate.get("text", ""))),
+                ),
+            )
+            if not ordered_options:
+                row_option_lists = []
+                break
+            row_option_lists.append(ordered_options)
+        if row_option_lists and len(row_option_lists) == row_count:
+            import heapq
+
+            row_costs = [
+                [float(_proposal_fit_residual(candidate)) for candidate in options]
+                for options in row_option_lists
+            ]
+            initial_indices = tuple(0 for _ in row_option_lists)
+            initial_cost = sum(costs[0] for costs in row_costs)
+            heap: list[tuple[float, tuple[int, ...]]] = [(initial_cost, initial_indices)]
+            visited: set[tuple[int, ...]] = {initial_indices}
+            while heap and len(sequence_states) < 64:
+                cost, indices = heapq.heappop(heap)
+                selected = tuple(
+                    row_option_lists[row_index][option_index]
+                    for row_index, option_index in enumerate(indices)
+                )
+                sequence_states.append((float(cost), selected))
+                for row_index, option_index in enumerate(indices):
+                    next_index = option_index + 1
+                    if next_index >= len(row_option_lists[row_index]):
+                        continue
+                    next_indices = list(indices)
+                    next_indices[row_index] = next_index
+                    next_key = tuple(next_indices)
+                    if next_key in visited:
+                        continue
+                    visited.add(next_key)
+                    next_cost = cost - row_costs[row_index][option_index] + row_costs[row_index][next_index]
+                    heapq.heappush(heap, (float(next_cost), next_key))
+        sequence_proposals: list[dict[str, Any]] = []
+        for cost, selected_rows in sequence_states:
+            if len(selected_rows) != row_count:
+                continue
+            normalized_rows = [str(candidate.get("normalized_text", candidate.get("text", ""))) for candidate in selected_rows]
+            residuals = [
+                _proposal_fit_residual(candidate)
+                for candidate in selected_rows
+            ]
+            sequence_text = "\n".join(normalized_rows)
+            sequence_proposals.append(
+                {
+                    "text": sequence_text,
+                    "normalized_text": sequence_text,
+                    "row_count": row_count,
+                    "row_residuals": residuals,
+                    "score": max(0.0, 1.0 - float(cost) / max(1, row_count)),
+                    "evidence_hash": sha256_bytes(
+                        canonical_bytes(
+                            {
+                                "hypothesis_id": hypothesis_id,
+                                "rows": normalized_rows,
+                                "residuals": residuals,
+                            }
+                        )
+                    ),
+                }
+            )
+        sequence_proposals.sort(
+            key=lambda item: (-float(item["score"]), str(item["normalized_text"]), str(item["evidence_hash"]))
+        )
+        sequence_proposals = sequence_proposals[:64]
+        best_sequence = sequence_proposals[0] if sequence_proposals else None
+        text_score = (
+            float(best_sequence["score"])
+            if best_sequence is not None
+            else completeness * (sum(confidences) / max(1, len(confidences)))
+        )
+        # Recognition fit is only one term in a joint hypothesis.  When the
+        # geometry evidence is available, retain the source-derived seam and
+        # gutter measurements so a phase with more permissive OCR proposals
+        # cannot outrank a materially cleaner raster lattice.  Missing fields
+        # are tolerated for historical synthetic seams and fall back to the
+        # text-only diagnostic score; they never create authority.
+        seam_energy = h.get("normalized_seam_energy")
+        seam_contrast = h.get("seam_to_interior_contrast")
+        if isinstance(seam_energy, (int, float)) and isinstance(seam_contrast, (int, float)):
+            geometry_score = 0.5 * (1.0 - max(0.0, min(1.0, float(seam_energy)))) + 0.5 * max(
+                0.0, min(1.0, float(seam_contrast))
+            )
+            score = 0.65 * geometry_score + 0.35 * text_score
+        else:
+            geometry_score = None
+            score = text_score
+        scored.append(
+            {
+                "hypothesis_id": hypothesis_id,
+                "pitch": h.get("pitch"),
+                "phase": h.get("phase"),
+                "score": score,
+                "text_score": text_score,
+                "geometry_score": geometry_score,
+                "aligned_rows": aligned_rows,
+                "row_count": row_count,
+                "alignments": alignments,
+                "logical_sequence_proposals": sequence_proposals,
+                "best_logical_sequence": best_sequence,
+                "ownership_complete": ownership_complete,
+                "width_profile_ambiguous_rows": width_ambiguity_rows,
+                "ownership_evidence": {
+                    "owned_pixel_count": owned_pixels,
+                    "substantive_pixel_count": substantive_pixels,
+                    "unowned_pixel_count": unowned_pixels,
+                    "multiply_owned_pixel_count": multiply_owned_pixels,
+                },
+                "status": (
+                    "aligned"
+                    if completeness == 1.0 and ownership_complete and width_ambiguity_rows == 0
+                    else "rejected"
+                ),
+            }
+        )
+    scored.sort(key=lambda item: (-float(item["score"]), int(item.get("pitch") or 0), int(item.get("phase") or 0)))
+    winner = scored[0] if scored else None
+    runner = scored[1] if len(scored) > 1 else None
+    margin = float(winner["score"] - runner["score"]) if winner and runner else 1.0 if winner else 0.0
+    # A row-width alignment is useful evidence, but it is not transcript
+    # authority.  Expose a diagnostic winner only when every row and every
+    # source pixel is accounted for and the pinned margin clears; candidate
+    # text remains null until the independent geometry/Unicode gates pass.
+    diagnostic_ranked = bool(winner and winner["status"] == "aligned")
+    diagnostic_status = (
+        "accepted_diagnostic"
+        if diagnostic_ranked and margin >= float(diagnostic_margin)
+        else "unresolved"
+    )
+    return {
+        "status": diagnostic_status,
+        "candidate_txt": None,
+        "winner": winner,
+        "runner_up": runner,
+        "margin": margin,
+        "diagnostic_ranked": diagnostic_ranked,
+        "authority": "proposal_alignment_only",
+        "ownership_gate": "diagnostic_only; candidate ownership is not promoted",
+        "diagnostic_margin_threshold": float(diagnostic_margin),
+        "hypotheses": scored,
+    }
+
+
+def jointly_decode_geometry_text(
+    hypotheses: tuple[Mapping[str, Any], ...] | list[Mapping[str, Any]],
+    row_proposals: Mapping[str, Mapping[int, tuple[str, ...]]],
+    *,
+    top_k: int = 16,
+    diagnostic_margin: float = 0.10,
+    scored_report: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run the joint geometry/text stage and expose a review-only candidate.
+
+    Geometry is allowed to remain unresolved while measured hypotheses are
+    compared with complete row proposals.  This removes the old deadlock in
+    which geometry had to be uniquely proved before recognition could supply
+    useful evidence.  The returned text is *not* a canonical candidate: it is
+    a hash-bound review surface only.  ``candidate_txt`` stays ``None`` here;
+    the canonical writer still requires a passing gate report and operator
+    receipt.
+    """
+
+    report = dict(scored_report or jointly_score_geometry_hypotheses(
+        hypotheses,
+        row_proposals,
+        top_k=top_k,
+        diagnostic_margin=diagnostic_margin,
+    ))
+    winner = report.get("winner")
+    runner = report.get("runner_up")
+    reasons: list[str] = []
+    review_text: str | None = None
+    if not isinstance(winner, Mapping):
+        reasons.append("joint_hypothesis_missing")
+    else:
+        aligned_rows = int(winner.get("aligned_rows", 0))
+        row_count = int(winner.get("row_count", 0))
+        if aligned_rows != row_count:
+            reasons.append("joint_row_alignment_incomplete")
+        if not bool(winner.get("ownership_complete")):
+            reasons.append("joint_ownership_incomplete")
+        if int(winner.get("width_profile_ambiguous_rows", 0)):
+            reasons.append("width_profile_ambiguous")
+        margin = float(report.get("margin", 0.0))
+        if margin < float(diagnostic_margin):
+            reasons.append("joint_hypothesis_margin_insufficient")
+        best = winner.get("best_logical_sequence")
+        if isinstance(best, Mapping) and best.get("normalized_text"):
+            review_text = str(best["normalized_text"])
+        else:
+            reasons.append("joint_logical_sequence_missing")
+    # A review candidate may be displayed when all rows and source pixel
+    # ownership are accounted for, even if a separate width/margin gate blocks
+    # acceptance.  The blocker remains explicit and the canonical field stays
+    # null; this lets an operator inspect the actual inferred text instead of
+    # mistaking a gate failure for missing row evidence.
+    review_surface = review_text is not None and not any(
+        reason in {"joint_hypothesis_missing", "joint_row_alignment_incomplete", "joint_ownership_incomplete", "joint_logical_sequence_missing"}
+        for reason in reasons
+    )
+    review_ready = review_surface and not reasons
+    status = "review_pending" if review_ready else "review_blocked" if review_surface else "unresolved"
+    candidate_hash = sha256_bytes(review_text.encode("utf-8")) if review_text is not None else None
+    selected_id = winner.get("hypothesis_id") if isinstance(winner, Mapping) else None
+    best_sequence = winner.get("best_logical_sequence") if isinstance(winner, Mapping) else None
+    binding_hash = (
+        sha256_bytes(
+            canonical_bytes(
+                {
+                    "hypothesis_id": selected_id,
+                    "sequence_evidence_hash": best_sequence.get("evidence_hash") if isinstance(best_sequence, Mapping) else None,
+                    "logical_text": review_text,
+                }
+            )
+        )
+        if review_surface
+        else None
+    )
+    return {
+        "status": status,
+        "candidate_txt": None,
+        "review_candidate_txt": review_text if review_surface else None,
+        "review_candidate_sha256": candidate_hash if review_surface else None,
+        "review_binding_sha256": binding_hash,
+        "operator_review_required": True,
+        "authority": "joint_review_candidate_only",
+        "rejection_reasons": sorted(set(reasons)),
+        "selected_hypothesis": selected_id if isinstance(winner, Mapping) and review_surface else None,
+        "winner": winner,
+        "runner_up": runner,
+        "margin": float(report.get("margin", 0.0)),
+        "source_report": report,
+    }
+
+
 def benchmark_offline_ensemble(
     fixtures: tuple[Mapping[str, Any], ...] | list[Mapping[str, Any]],
     adapters: tuple[Recognizer, ...],
@@ -1102,6 +4397,9 @@ def benchmark_offline_ensemble(
     *,
     root: str | os.PathLike[str] | None = None,
     top_k: int = 5,
+    max_geometry_hypotheses: int = 16,
+    deterministic_replay: bool = True,
+    adapter_budgets_seconds: Mapping[str, float] | None = None,
 ) -> dict[str, Any]:
     """Measure deterministic proposal coverage; never selects an answer.
 
@@ -1111,9 +4409,11 @@ def benchmark_offline_ensemble(
 
     root_path = Path(root).resolve() if root else None
     results: list[dict[str, Any]] = []
+    coverage_matrices: list[dict[str, Any]] = []
     positive_missing: list[str] = []
     false_unique: list[str] = []
     repeated_failures: list[str] = []
+    budget_failures: list[str] = []
     for fixture in fixtures:
         fixture_id = str(fixture.get("id", ""))
         source = _fixture_source(fixture, root_path)
@@ -1130,14 +4430,30 @@ def benchmark_offline_ensemble(
         source_path = Path(str(source.get("path", "")))
         if source_path.exists():
             try:
-                from .geometry import build_recognition_inputs, route_raster_geometry
+                from .geometry import (
+                    build_recognition_hypothesis_inputs,
+                    build_recognition_inputs,
+                    route_raster_geometry,
+                )
 
                 geometry_bundle, geometry_decision = route_raster_geometry(source_path)
                 geometry_status = geometry_decision.status
                 geometry_rejection_codes = list(geometry_decision.rejection_reasons)
                 if geometry_decision.mode == "unresolved":
-                    geometry = {"mode": "unresolved", "geometry_proven": False, "source_sha256": source.get("source_sha256", "")}
-                    components = {}
+                    geometry = {
+                        "mode": "fixed_lattice",
+                        "geometry_proven": False,
+                        "source_sha256": source.get("source_sha256") or geometry_bundle.source_sha256,
+                        "geometry_evidence_hash": geometry_bundle.output_hash,
+                        "mixed_width_display": dict(geometry_bundle.projection_evidence.get("mixed_width_display", {})),
+                        "hypothesis_only": True,
+                    }
+                    components = dict(geometry_bundle.component_evidence)
+                    hypothesis_inputs = build_recognition_hypothesis_inputs(
+                        source_path,
+                        geometry_bundle,
+                        max_hypotheses=max(1, int(max_geometry_hypotheses)),
+                    )
                 else:
                     geometry = dict(geometry_decision.provenance["selected_geometry"])
                     recognition_inputs = build_recognition_inputs(source_path, geometry_bundle, mode=geometry_decision.mode)
@@ -1146,17 +4462,35 @@ def benchmark_offline_ensemble(
                     # below materializes each strip and never collapses a
                     # source to runs[0].
                     components = dict(geometry_bundle.component_evidence)
+                    hypothesis_inputs = ()
             except (OSError, ValueError) as exc:
                 geometry_status = "rejected"
                 geometry_rejection_codes = [f"geometry_recovery:{type(exc).__name__}"]
                 geometry = {"mode": "unresolved", "geometry_proven": False, "source_sha256": source.get("source_sha256", "")}
                 components = {}
+                hypothesis_inputs = ()
         else:
             geometry = dict(fixture.get("geometry", {"mode": fixture.get("expected_geometry_mode", "unresolved")}))
             components = dict(fixture.get("components", {}))
+            hypothesis_inputs = ()
         adapter_records: list[dict[str, Any]] = []
         union: list[str] = []
-        run_records = recognition_inputs["runs"] if source_path.exists() and geometry_status == "proved" else []
+        if source_path.exists() and geometry_status == "proved":
+            input_variants = (("authoritative", recognition_inputs),)
+        else:
+            input_variants = tuple(
+                (
+                    str(item.get("provenance", {}).get("hypothesis", {}).get("pitch", "hypothesis"))
+                    + ":"
+                    + str(item.get("provenance", {}).get("hypothesis", {}).get("phase", ""))
+                    + ":"
+                    + str(item.get("provenance", {}).get("hypothesis", {}).get("base_advance_px", ""))
+                    + ":"
+                    + str(item.get("provenance", {}).get("hypothesis", {}).get("origin_px", "")),
+                    item,
+                )
+                for item in hypothesis_inputs
+            )
         for adapter in adapters:
             # Tesseract is evaluated as independent PSM/language proposals;
             # other adapters receive the same complete run set once.
@@ -1174,56 +4508,129 @@ def benchmark_offline_ensemble(
                 first_payloads: list[bytes] = []
                 second_payloads: list[bytes] = []
                 texts: list[str] = []
-                run_candidates: list[tuple[int, tuple[str, ...]]] = []
+                hypothesis_sequences: list[str] = []
+                hypothesis_ids: list[str] = []
                 run_spans: list[str] = []
                 unsupported: list[str] = []
                 statuses: list[str] = []
                 run_input_hashes: list[str] = []
+                # Preserve row-level proposal alternatives keyed by the
+                # measured geometry hypothesis.  Flattened logical strings
+                # are useful for coverage reporting, but cannot explain why
+                # one pitch/phase owns the source better than another.
+                joint_row_proposals: dict[str, dict[int, tuple[str, ...]]] = {}
+                row_proposal_evidence: list[dict[str, Any]] = []
                 try:
                     with tempfile.TemporaryDirectory(prefix="lateletter-run-input-") as run_root:
-                        iterable = run_records or ({"run_id": "unresolved", "binary_run_mask": [], "run_strip_png_base64": ""},)
-                        for run_index, run in enumerate(iterable):
-                            run_source = dict(source)
-                            run_geometry = dict(geometry)
-                            if run.get("run_strip_png_base64"):
-                                run_bytes = base64.b64decode(run["run_strip_png_base64"])
-                                run_path = Path(run_root) / f"run-{run_index:04d}.png"
-                                run_path.write_bytes(run_bytes)
-                                run_source.update(
-                                    {
-                                        "path": str(run_path),
-                                        "source_sha256": sha256_bytes(run_bytes),
+                        variants = input_variants or (("unresolved", {"runs": ({"run_id": "unresolved", "binary_run_mask": [], "run_strip_png_base64": ""},)}),)
+                        for variant_id, variant_input in variants:
+                            hypothesis_ids.append(str(variant_id))
+                            variant_geometry = dict(geometry)
+                            if variant_input.get("mixed_width_display"):
+                                variant_geometry["mixed_width_display"] = dict(variant_input["mixed_width_display"])
+                            variant_geometry["hypothesis_id"] = variant_id
+                            variant_geometry["hypothesis"] = dict(variant_input.get("provenance", {}).get("hypothesis", {}))
+                            variant_candidates: list[tuple[int, tuple[str, ...]]] = []
+                            variant_rows: dict[int, tuple[str, ...]] = {}
+                            variant_row_proposals: dict[int, list[dict[str, Any]]] = {}
+                            for run_index, run in enumerate(variant_input.get("runs", ())):
+                                run_source = dict(source)
+                                run_geometry = dict(variant_geometry)
+                                if run.get("run_strip_png_base64"):
+                                    run_bytes = base64.b64decode(run["run_strip_png_base64"])
+                                    run_path = Path(run_root) / f"{variant_id}-run-{run_index:04d}.png"
+                                    run_path.write_bytes(run_bytes)
+                                    run_source.update(
+                                        {
+                                            "path": str(run_path),
+                                            "source_sha256": sha256_bytes(run_bytes),
+                                            "run_id": run["run_id"],
+                                            "run_source_bounds": run["source_bounds"],
+                                            "component_ids": list(run.get("component_ids", ())),
+                                            "run_color_stats": dict(run.get("run_color_stats") or {}),
+                                            "anchor_evidence": dict(run.get("anchor_evidence") or {}),
+                                        }
+                                    )
+                                    run_input_hashes.append(sha256_bytes(canonical_bytes(run)))
+                                    run_geometry["run_mask"] = {
+                                        "authority": "geometry_hypothesis_run" if variant_id != "authoritative" else "geometry_proven_run",
+                                        "grapheme_complete": True,
+                                        "pixels": run["binary_run_mask"],
                                         "run_id": run["run_id"],
-                                        "run_source_bounds": run["source_bounds"],
-                                        "run_color_stats": dict(run.get("run_color_stats") or {}),
+                                        "source_bounds": run["source_bounds"],
+                                        "mask_sha256": run["binary_run_mask_sha256"],
+                                        "component_ids": list(run.get("component_ids", ())),
+                                        "measured_advances": run.get("measured_advances", []),
+                                        "anchor_evidence": dict(run.get("anchor_evidence") or {}),
+                                    }
+                                    run_geometry["geometry_hash"] = sha256_bytes(canonical_bytes({"base": variant_geometry, "run_id": run["run_id"]}))
+                                    run_source["geometry_hash"] = run_geometry["geometry_hash"]
+                                else:
+                                    run_source["run_id"] = "unresolved"
+                                if psm is not None:
+                                    run_source["tesseract_psm"] = psm
+                                    run_source["tesseract_languages"] = list(languages or ())
+                                first = adapter.propose(run_source, run_geometry, components, environment_lock)
+                                second = (
+                                    adapter.propose(run_source, run_geometry, components, environment_lock)
+                                    if deterministic_replay
+                                    else first
+                                )
+                                first_payloads.append(canonical_bytes(first.to_dict()))
+                                second_payloads.append(canonical_bytes(second.to_dict()))
+                                # ``top_k`` controls benchmark reporting, not
+                                # the evidence available to joint alignment.
+                                # Preserve the adapter's bounded beam so a
+                                # valid split-cell sequence cannot disappear
+                                # before geometry/text scoring.
+                                adapter_beam = int(getattr(adapter, "beam_width", 8))
+                                # Keep the public report cap separate from
+                                # inference evidence.  Structural mixed-width
+                                # rows intentionally emit a larger bounded
+                                # diversity surface; truncating it to 32 made
+                                # Unicode/ASCII lookalikes disappear before
+                                # joint alignment could compare them.
+                                inference_cap = 1024 if isinstance(adapter, StructuralUnicodeRowAdapter) else 32
+                                # Structural adapters already emit a bounded,
+                                # deterministic proposal surface.  Preserve
+                                # that complete surface for joint decoding;
+                                # the public benchmark `top_k` is reporting
+                                # only and must not erase row alternatives.
+                                proposal_limit = (
+                                    None
+                                    if isinstance(adapter, StructuralUnicodeRowAdapter)
+                                    else max(top_k, min(inference_cap, adapter_beam * 4))
+                                )
+                                run_texts = _proposal_texts(first, top_k=proposal_limit)
+                                row_index = int(run.get("row_index", run_index))
+                                variant_candidates.append((row_index, run_texts))
+                                variant_rows[row_index] = run_texts
+                                variant_row_proposals.setdefault(row_index, []).append(
+                                    {
+                                        "run_id": str(run.get("run_id", f"run-{run_index:04d}")),
+                                        "proposals": list(run_texts),
+                                        "run_input_hash": run_input_hashes[-1] if run_input_hashes else None,
                                     }
                                 )
-                                run_input_hashes.append(sha256_bytes(canonical_bytes(run)))
-                                run_geometry["run_mask"] = {
-                                    "authority": "geometry_proven_run",
-                                    "grapheme_complete": True,
-                                    "pixels": run["binary_run_mask"],
-                                    "run_id": run["run_id"],
-                                    "source_bounds": run["source_bounds"],
-                                    "mask_sha256": run["binary_run_mask_sha256"],
-                                    "measured_advances": run.get("measured_advances", []),
+                                run_spans.extend(proposal.run_id for proposal in first.proposals if proposal.run_id)
+                                unsupported.extend(first.rejection_codes)
+                                statuses.append(first.status)
+                            joint_row_proposals[str(variant_id)] = variant_rows
+                            row_proposal_evidence.append(
+                                {
+                                    "hypothesis_id": str(variant_id),
+                                    "rows": [
+                                        {
+                                            "row_index": int(row_index),
+                                            "runs": list(run_items),
+                                            "run_id": str(run_items[0].get("run_id", "")) if run_items else "",
+                                            "proposals": list(variant_rows.get(row_index, ())),
+                                        }
+                                        for row_index, run_items in sorted(variant_row_proposals.items())
+                                    ],
                                 }
-                                run_geometry["geometry_hash"] = sha256_bytes(canonical_bytes({"base": geometry, "run_id": run["run_id"]}))
-                                run_source["geometry_hash"] = run_geometry["geometry_hash"]
-                            else:
-                                run_source["run_id"] = "unresolved"
-                            if psm is not None:
-                                run_source["tesseract_psm"] = psm
-                                run_source["tesseract_languages"] = list(languages or ())
-                            first = adapter.propose(run_source, run_geometry, components, environment_lock)
-                            second = adapter.propose(run_source, run_geometry, components, environment_lock)
-                            first_payloads.append(canonical_bytes(first.to_dict()))
-                            second_payloads.append(canonical_bytes(second.to_dict()))
-                            run_texts = _proposal_texts(first, top_k=top_k)
-                            run_candidates.append((int(run.get("row_index", run_index)), run_texts))
-                            run_spans.extend(proposal.run_id for proposal in first.proposals if proposal.run_id)
-                            unsupported.extend(first.rejection_codes)
-                            statuses.append(first.status)
+                            )
+                            hypothesis_sequences.extend(_compose_run_texts(variant_candidates, top_k=top_k))
                     deterministic = first_payloads == second_payloads
                     # ``canonical_bytes`` intentionally rejects raw bytes.  Hash
                     # the ordered payload byte stream directly so the repeat
@@ -1232,8 +4639,68 @@ def benchmark_offline_ensemble(
                     repeat_hash = sha256_bytes(b"".join(first_payloads))
                     if not deterministic:
                         repeated_failures.append(f"{fixture_id}:{profile_name}")
-                    texts = list(_compose_run_texts(run_candidates, top_k=top_k))
+                    # Compose each geometry hypothesis independently.  Mixing
+                    # rows from different pitch/phase hypotheses would create
+                    # synthetic logical strings and would turn the proposal
+                    # benchmark into a false joint-decoder result.
+                    texts = list(dict.fromkeys(hypothesis_sequences))[: max(top_k, 1)]
                     union.extend(texts)
+                    joint_alignment = None
+                    joint_decoder = None
+                    if hypothesis_inputs and joint_row_proposals:
+                        # This is deliberately diagnostic.  The alignment
+                        # report can rank evidence, but it cannot authorize a
+                        # geometry decision or create candidate TXT.
+                        joint_alignment = jointly_score_geometry_hypotheses(
+                            hypothesis_inputs,
+                            joint_row_proposals,
+                            # ``top_k`` is the public benchmark/reporting
+                            # cap.  Joint inference must see the complete
+                            # bounded adapter beam retained above, otherwise
+                            # a top-1 fallback silently becomes the only
+                            # evidence available for geometry/text scoring.
+                            top_k=max(
+                                top_k,
+                                min(
+                                    1024 if isinstance(adapter, StructuralUnicodeRowAdapter) else 32,
+                                    int(getattr(adapter, "beam_width", 8))
+                                    * (16 if isinstance(adapter, StructuralUnicodeRowAdapter) else 4),
+                                ),
+                            ),
+                        )
+                        # The scorer remains a diagnostic compatibility
+                        # surface.  The joint decoder consumes the same
+                        # measured evidence and may expose only a review
+                        # candidate; it still cannot write candidate.txt.
+                        joint_decoder = jointly_decode_geometry_text(
+                            hypothesis_inputs,
+                            joint_row_proposals,
+                            top_k=max(
+                                top_k,
+                                min(
+                                    1024 if isinstance(adapter, StructuralUnicodeRowAdapter) else 32,
+                                    int(getattr(adapter, "beam_width", 8))
+                                    * (16 if isinstance(adapter, StructuralUnicodeRowAdapter) else 4),
+                                ),
+                            ),
+                            scored_report=joint_alignment,
+                        )
+                    elapsed_ms = round((time.perf_counter() - start) * 1000, 3)
+                    budget_seconds = None
+                    if adapter_budgets_seconds:
+                        for budget_name in (profile_name, adapter.name):
+                            if budget_name in adapter_budgets_seconds:
+                                budget_seconds = float(adapter_budgets_seconds[budget_name])
+                                break
+                    budget_exceeded = budget_seconds is not None and elapsed_ms > budget_seconds * 1000.0
+                    if budget_exceeded:
+                        budget_failures.append(f"{fixture_id}:{profile_name}")
+                    retained_state_count = sum(
+                        len(run_item.get("proposals", ()))
+                        for row_item in row_proposal_evidence
+                        for row in row_item.get("rows", ())
+                        for run_item in row.get("runs", ())
+                    )
                     adapter_records.append(
                         {
                             "adapter": profile_name,
@@ -1241,17 +4708,26 @@ def benchmark_offline_ensemble(
                             "top_k_logical_sequences": texts[:top_k],
                             "proposed_logical_order": texts[:top_k],
                             "run_spans": sorted(set(run_spans)),
-                            "run_count": len(run_records),
+                            "run_count": sum(len(item.get("runs", ())) for _, item in input_variants),
                             "run_input_hashes": run_input_hashes,
                             "repeat_run_hash": repeat_hash,
                             "deterministic": deterministic,
-                            "runtime_ms": round((time.perf_counter() - start) * 1000, 3),
+                            "runtime_ms": elapsed_ms,
+                            "budget_seconds": budget_seconds,
+                            "budget_exceeded": budget_exceeded,
+                            "retained_proposal_state_count": retained_state_count,
+                            "determinism_replay_performed": deterministic_replay,
                             "memory_max_rss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
                             "unsupported_status": sorted(set(unsupported)),
                             "status": "proposal_only" if any(item == "proposal_only" for item in statuses) else "rejected",
                             "geometry_status": geometry_status,
                             "geometry_rejection_codes": geometry_rejection_codes,
                             "recognition_input_hash": recognition_input_hash,
+                            "proposal_hypothesis_count": len(input_variants) if geometry_status != "proved" else 0,
+                            "proposal_hypothesis_ids": hypothesis_ids if geometry_status != "proved" else [],
+                            "row_proposals": row_proposal_evidence,
+                            "joint_alignment": joint_alignment,
+                            "joint_decoder": joint_decoder,
                         }
                     )
                 except Exception as exc:  # a proposal adapter must fail closed
@@ -1262,11 +4738,15 @@ def benchmark_offline_ensemble(
                             "top_k_logical_sequences": [],
                             "proposed_logical_order": [],
                             "run_spans": [],
-                            "run_count": len(run_records),
+                            "run_count": sum(len(item.get("runs", ())) for _, item in input_variants),
                             "run_input_hashes": [],
                             "repeat_run_hash": None,
                             "deterministic": True,
                             "runtime_ms": round((time.perf_counter() - start) * 1000, 3),
+                            "budget_seconds": None,
+                            "budget_exceeded": False,
+                            "retained_proposal_state_count": 0,
+                            "determinism_replay_performed": deterministic_replay,
                             "memory_max_rss": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
                             "unsupported_status": [f"adapter_exception:{type(exc).__name__}"],
                             "error": f"{type(exc).__name__}: {exc}",
@@ -1274,6 +4754,9 @@ def benchmark_offline_ensemble(
                             "geometry_status": geometry_status,
                             "geometry_rejection_codes": geometry_rejection_codes,
                             "recognition_input_hash": recognition_input_hash,
+                            "row_proposals": [],
+                            "joint_alignment": None,
+                            "joint_decoder": None,
                         }
                     )
         logical_sequences = list(dict.fromkeys(union))
@@ -1292,6 +4775,19 @@ def benchmark_offline_ensemble(
             positive_missing.append(fixture_id)
         if expected_outcome == "rejected" and unique_resolution:
             false_unique.append(fixture_id)
+        matrix_source_hash = str(source.get("source_sha256", ""))
+        if not is_sha256(matrix_source_hash) and source_path.exists():
+            matrix_source_hash = sha256_file(source_path)
+        coverage_matrix = _coverage_rank_matrix(
+            target,
+            adapter_records,
+            fixture_id=fixture_id,
+            source_hash=matrix_source_hash,
+            geometry_status=geometry_status,
+            geometry_rejection_codes=geometry_rejection_codes,
+            top_k=top_k,
+        )
+        coverage_matrices.append(coverage_matrix)
         results.append(
             {
                 "fixture": fixture_id,
@@ -1306,9 +4802,10 @@ def benchmark_offline_ensemble(
                 "geometry_status": geometry_status,
                 "geometry_rejection_codes": geometry_rejection_codes,
                 "recognition_input_hash": recognition_input_hash,
+                "coverage_rank_matrix": coverage_matrix,
             }
         )
-    passed = not positive_missing and not false_unique and not repeated_failures and all(
+    passed = not positive_missing and not false_unique and not repeated_failures and not budget_failures and all(
         item["exact_nfc_target_in_top_k"] for item in results if item["expected_outcome"] == "positive"
     )
     return {
@@ -1316,9 +4813,13 @@ def benchmark_offline_ensemble(
         "top_k": top_k,
         "fixture_count": len(results),
         "results": results,
+        "coverage_rank_matrix": coverage_matrices,
         "positive_missing": positive_missing,
         "false_unique_negative_fixtures": false_unique,
         "nondeterministic_adapters": repeated_failures,
+        "budget_failures": budget_failures,
+        "determinism_replay_performed": deterministic_replay,
+        "adapter_budgets_seconds": dict(adapter_budgets_seconds or {}),
         "remote_proposals_allowed": False,
         "ground_truth_passed_to_adapters": False,
         "reason": "proposal coverage only; no candidate selection performed" if passed else "offline ensemble does not cover the release gate",

@@ -1,0 +1,18 @@
+{
+  "schema_version": "lateletter-sitting-cat-evaluation-1",
+  "reference": "sitting-cat",
+  "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+  "transcript_path": null,
+  "transcript_sha256": null,
+  "row_count": 9,
+  "purpose": "evaluation_only",
+  "runtime_input": false,
+  "operator_review": "rejected_candidates_001_through_005",
+  "authority": "no_authoritative_transcript",
+  "status": "evaluation_truth_unavailable",
+  "provenance": [
+    "https://huggingface.co/datasets/pookie3000/ascii-cats",
+    "https://emojicombos.com/cat.-ascii-art"
+  ],
+  "notes": "All hand-tuned candidates are frozen as rejected benchmark-label evidence. Do not create another guessed transcript. Runtime conversion must use PNG-derived evidence only; operator review is final accept/reject after independent machine generation."
+}

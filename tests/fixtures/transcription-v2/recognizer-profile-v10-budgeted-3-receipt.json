@@ -1,0 +1,18 @@
+{
+  "artifact": "recognizer-profile-v10-budgeted-3.json",
+  "artifact_sha256": "b23ad9ca4755f0401831f6aef60cd0eb38c632f556ce04662cb0818caa268c53",
+  "authority": "diagnostic_only",
+  "budget_failures": [
+    "positive-degraded-fixed:tesseract-offline",
+    "positive-degraded-fixed:structural-unicode-row",
+    "positive-emoji-zwj:structural-unicode-row",
+    "positive-emoji-zwj:emoji-grapheme-atlas"
+  ],
+  "capability_identity_count": 10,
+  "completed_fixture_records_per_adapter": 10,
+  "determinism_replay_performed": false,
+  "ground_truth_passed_to_adapters": false,
+  "status": "profile_only_blocked_budget",
+  "timestamp": "2026-08-04",
+  "v10_coverage_authorized": false
+}

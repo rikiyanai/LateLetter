@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "reference_id": "eb861dc84400fc36",
+  "asset_id": "plant.rose",
+  "status": "operator_authored_approved_art_asset",
+  "transcript": "accepted.txt",
+  "transcript_sha256": "04bce501c712fc071523711a3ea1b67a8af302434a66f0e638c2bdc144b0baac",
+  "transcript_state": "Operator-authored bytes approved on 2026-08-03 after excluding trailing spaces; not a machine candidate and not a pipeline conversion.",
+  "accepted": true,
+  "acceptance_receipt": "acceptance-receipt.json",
+  "recognition_pipeline": "not_run",
+  "runtime_integration": "pending_delete_first_owner_transfer"
+}

@@ -2849,12 +2849,12 @@ Notes:
   ASCII, proportional Latin, kana, Kanji and partial/cropped ideographs, Arabic joining and bidi,
   combining sequences, fullwidth/halfwidth mixtures, emoji/variation-selector/ZWJ clusters,
   mixed-script rows, degraded screenshots, ambiguous widths, and known visual-collision pairs.
-- Current owners are `calibrate_monospace_grid.py` (fixed-lattice calibration),
-  `ocr_monospace_cells.py` (legacy isolated-cell geometry/OCR), `decode_monospace_rows.py`
-  (row-joint ASCII decoding), `unicode_run_decoder.py` (validation of already-known Unicode
-  strings), and `render_transcription_parity.py` (comparison artifacts). The per-glyph isolated-
-  cell classifier is the suspected stale recognition owner. No replacement may become
-  authoritative until the old ownership boundary is explicitly removed.
+- Current owners are the canonical records under `src/lateletter/transcription/`, the raster-owned
+  geometry router and recognition-input builder under `geometry/`, proposal adapters in
+  `recognition.py`, and the hash-bound candidate/comparison boundaries. The older calibration,
+  isolated-cell OCR, row-joint ASCII, Unicode validation, and parity-render scripts remain legacy
+  evidence/proposal tools and cannot author canonical candidates. The live structural span lattice
+  owns mixed-width composition but remains proposal-only.
 - Existing grounding: SPEC 7.10.5/7.10.6, `row-joint-decoder-design.md`,
   `unicode-run-decoder-design.md`, the accepted `bbbb-flowers` and `a8283c5cdb63b130` packages,
   and rejected horse attempts through 064. These are inputs and regression evidence, not a claim
@@ -2865,20 +2865,44 @@ Decisions so far:
   screenshots only; exclusive geometry routing; logical-order TXT plus visual-layout sidecar;
   offline pinned authority; fail-closed ambiguity; machine-only candidates; operator acceptance;
   and a positive/negative multi-script golden corpus. See the resolved child below.
+- Slices 1–5 established canonical-IR, writer-boundary, corpus, raster-evidence, and component
+  mechanics. The 2026-08-04 architecture audit reopened Slice 4's *admission/ownership* claim:
+  the public router can reject a source while returning all four proof flags true, or prove a
+  source while returning pitch/phase/ownership false. Slice 6 recognition coverage remains open,
+  and the production orchestrator still does not exist.
+- The structural span lattice owns mixed-width spacing and one-to-many-unit composition. It is not
+  a universal glyph recognizer. A finite hand-authored glyph/template vocabulary may remain an
+  ASCII structural proposal source but cannot support the all-Unicode destination.
+- Proposal coverage and proposal ranking are separate gates. Benchmark truth may measure whether
+  an expected row is present, but it is runtime-ineligible and may never alter proposal generation
+  or scoring.
+- The 2026-08-04 identity-pinned geometry replay completed as measurement evidence (26/26: 12
+  proved, 14 rejected, no timeout/error), the production `transcribe()`/`accept()` owners now exist
+  fail-closed, and run candidates preserve component IDs. The current Slice 6 frontier is the
+  complete ten-adapter v10 profile: four fixture/adapter pairs exceed their pinned budgets, so no
+  full v10 coverage benchmark or scorer work is authorized. See the bounded-runtime children below.
+- The same profile already proves broad proposal failure rather than leaving accuracy wholly
+  unknown: its 96 non-budget fixture/adapter records correspond to 96 `positive_missing` entries,
+  including all completed Latin, combining, and Kana template-adapter records. Runtime admission
+  remains first, but new recognizer coverage is expected after the complete matrix; timeout repair
+  alone is not expected to satisfy Slice 6. Peak process RSS reached 2,420,146,176 bytes. That value
+  is a process high-water mark repeated on later records, so cost attribution must identify its
+  actual owner before assigning it to one adapter.
 
 Not yet specified:
-- The canonical intermediate-representation schema and which module owns each transition.
-- The exact evidence test that proves fixed-cell geometry versus shaped-run geometry.
-- The pinned offline recognizer/model ensemble, supported script packs, licensing, and resource
-  budgets.
-- The shaping/font-fallback profiles and how vertical text, ruby, ligatures, and mixed-direction
-  runs are represented without changing logical TXT order.
-- The component-to-run optimization and falsifiers that distinguish owned glyph ink from
-  antialiasing, clipping, neighbouring-row spill, decoration, and screenshot UI.
-- Corpus source/provenance, ground-truth production, mutation generation, coverage thresholds,
-  and the minimum passing matrix for the first operational release.
-- The single CLI/orchestrator, immutable attempt schema, resumability rules, review package, and
-  migration/deletion sequence for the existing overlapping scripts.
+- The source-only bounded algorithms that bring the four v10 profile failures under their pinned
+  per-fixture ceilings without hiding evidence, followed by the pinned recognizer/model ensemble
+  that supplies exact top-k coverage for the still-uncovered release and holdout families.
+- Which of the 14 live-corpus geometry rejections are supported text-art profiles versus declared
+  fail-closed exclusions, and which generic admission evidence is required to prove every supported
+  source. Sitting-cat is one explicit supported target whose current public geometry remains
+  rejected/unresolved and therefore cannot reach recognition or attempt 004.
+- The final source-derived ranking features and winner margins after exact expected sequences are
+  proved present in proposal evidence.
+- The complete shaping/bidi/font-fallback and exactly-once ownership exit gates across Arabic,
+  combining, vertical, CJK-width, and emoji/ZWJ profiles.
+- The live-reference review UX and final release hardening around the implemented fail-closed
+  `transcribe()` / `accept()` owners. Existing immutable attempt/package rules remain binding.
 
 Out of scope:
 - Generating plausible text art from arbitrary drawings, photographs, or prompts.
@@ -2887,9 +2911,10 @@ Out of scope:
 - Manual repair of emitted TXT or accepting a candidate solely because an OCR/model says it is
   correct.
 
-- Status: OPEN / CHARTED. Planning only; no recognizer, transcript, attempt, or acceptance state
-  changed. The first frontier is the ownership/IR child. No RQ projection exists yet because the
-  route has not been sliced into implementation tasks.
+- Status: IN PROGRESS / SLICE 6 RUNTIME FRONTIER. Geometry replay and orchestration prerequisites
+  now exist as measurement/fail-closed evidence. The ten-adapter recognizer profile is complete but
+  four fixture/adapter invocations exceed budget; coverage, ranking, live attempts, and acceptance
+  remain blocked. SPEC §7.10.7 remains the authority chain.
 
 ### Wayfinder child: confirm the Unicode transcription destination and authority boundary
 
@@ -2928,8 +2953,9 @@ authoritative for the same component set.
 Type:
 research
 
-- Status: OPEN / FIRST FRONTIER. Independent and executable now. ComplaintRef: Wayfinder map:
-  build deterministic PNG-to-logical-Unicode text-art recovery.
+- Status: RESOLVED FOR CURRENT ARCHITECTURE. Slices 1–2 established the canonical records and
+  delete-first writer/ownership boundary; later adapters remain proposal-only. ComplaintRef:
+  Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Wayfinder child: prove the exclusive geometry-authority router
 
@@ -2943,8 +2969,16 @@ authoritative emission impossible.
 Type:
 prototype
 
-- Status: OPEN. Depends on the canonical evidence IR. ComplaintRef: Wayfinder map: build
-  deterministic PNG-to-logical-Unicode text-art recovery.
+- Current evidence: the single-owner/public-proof contradiction has been corrected and the
+  identity-pinned replay terminates coherently for all 26 sources, but only 12 prove geometry; 14
+  remain rejected/unresolved. Sitting-cat is among the rejected supported targets, with all proof
+  flags false. The child now owns live-corpus admission coverage as well as authority coherence.
+- Exit evidence: classify every rejected source by expected geometry profile, add only generic
+  source-derived evidence for supported classes, retain explicit expected-fail exclusions, and rerun
+  one identity-pinned 26-source receipt with coherent proof/status invariants. Sitting-cat must prove
+  a geometry mode before attempt 004 or authoritative recognition input can exist.
+- Status: REOPENED / SCHEDULED CO-EQUAL TO SLICE 6. ComplaintRef: Wayfinder map: build deterministic
+  PNG-to-logical-Unicode text-art recovery; identity-pinned 26-source geometry replay, 2026-08-04.
 
 ### Wayfinder child: select the pinned offline whole-run recognition stack
 
@@ -2958,9 +2992,99 @@ model becoming an acceptance oracle.
 Type:
 prototype
 
-- Status: OPEN. Can research tools now; final selection depends on the evidence IR and corpus
-  license/provenance child. ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
-  Unicode text-art recovery.
+- Status: IN PROGRESS / DECOMPOSED INTO BOUNDED-RUNTIME CHILDREN. Ten distinct adapter identities
+  now have a complete source-only profile. Four invocations exceed budget: Tesseract on degraded
+  fixed art; structural Unicode on degraded fixed and emoji-ZWJ art; and EmojiAtlas on emoji-ZWJ.
+  No complete v10 coverage result exists. ComplaintRef: Wayfinder map: build deterministic PNG-to-
+  logical-Unicode text-art recovery.
+
+### Wayfinder child: attribute the four v10 budget failures to internal cost owners
+
+Question:
+For each over-budget adapter/fixture pair, which source-only stage consumes the budget, how do run,
+span, glyph, atlas, subprocess, proposal-state, and cache counts grow, and what admissible bound can
+stop that growth without truncating final evidence or consulting expected text?
+
+Type:
+research
+
+- Entry evidence: `recognizer-profile-v10-budgeted-3.json` and its receipt. The 100 terminal records
+  contain four budget failures and 96 completed records; `positive_missing` totals exactly 96, so no
+  completed adapter/fixture pair recovered its positive target. This includes every completed
+  Unicode template record. Peak recorded process RSS is 2,420,146,176 bytes; because the high-water
+  mark repeats after it is reached, its causal adapter/stage remains to be attributed. Exit evidence:
+  a fresh-process stage/counter/memory trace for all four failures, paired non-failing controls, and
+  one selected generic time and memory bound per cost owner. No scorer, candidate, TXT, attempt, or
+  acceptance change.
+- Status: OPEN / CURRENT FRONTIER. ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
+  Unicode text-art recovery; fresh ten-adapter budget profile is complete but blocked.
+
+### Wayfinder child: make degraded-fixture Tesseract execution bounded
+
+Question:
+Can capability-derived language/PSM scheduling, subprocess reuse, or another source-only execution
+bound make the degraded fixture terminate within 12 seconds while returning either complete proposal
+evidence or an explicit unsupported/rejected result, without reading truth or silently dropping a
+configured profile?
+
+Type:
+prototype
+
+- Entry condition: cost attribution child resolved. Exit evidence: degraded plus paired normal
+  fixtures complete below 12 seconds in fresh processes with deterministic hashes and no hidden
+  subprocess. Raising the ceiling alone is not a resolution.
+- Status: BLOCKED ON COST ATTRIBUTION. ComplaintRef: Wayfinder map: build deterministic PNG-to-
+  logical-Unicode text-art recovery.
+
+### Wayfinder child: bound structural span-lattice expansion on degraded and emoji runs
+
+Question:
+Which source-derived dominance rule, topology constraint, capability refusal, or dynamic-programming
+state merge bounds structural Unicode expansion for degraded-fixed and emoji-ZWJ fixtures without
+removing a potentially correct complete sequence or converting final-report truncation into fake
+speed?
+
+Type:
+prototype
+
+- Entry condition: cost attribution child resolved. Exit evidence: both failures and paired controls
+  complete below 90 seconds; retained states and component IDs are recorded; repeated fresh-process
+  proposal hashes match; over-complex input fails closed with a typed reason.
+- Status: BLOCKED ON COST ATTRIBUTION. ComplaintRef: Wayfinder map: build deterministic PNG-to-
+  logical-Unicode text-art recovery.
+
+### Wayfinder child: index the emoji atlas for bounded full-cluster matching
+
+Question:
+Can the pinned Unicode 17 emoji repertoire be indexed by source-derived cluster geometry, advance,
+component topology, and coarse mask features so emoji-ZWJ matching completes below 30 seconds while
+still retaining VS/ZWJ full-cluster alternatives, visual collisions, residuals, and winner margins?
+
+Type:
+prototype
+
+- Entry condition: cost attribution child resolved. Exit evidence: emoji-ZWJ plus collision/negative
+  controls complete below 30 seconds with deterministic hashes; partial clusters and unsupported
+  sequences remain rejected. Raising the ceiling or enumerating injected truth is forbidden.
+- Status: BLOCKED ON COST ATTRIBUTION. ComplaintRef: Wayfinder map: build deterministic PNG-to-
+  logical-Unicode text-art recovery.
+
+### Wayfinder child: produce the first complete budget-passing v10 coverage authority
+
+Question:
+After every adapter terminates within budget, does the complete pinned ensemble place each positive
+fixture's exact logical sequence in deterministic top-k while every expected-fail fixture remains
+unresolved, and which remaining misses are absent, unsupported, collision, or present-but-losing?
+
+Type:
+task
+
+- Entry condition: all three bounded-runtime prototypes pass a fresh ten-adapter profile. Exit
+  evidence: immutable complete v10 benchmark plus source-hash-bound coverage/rank matrix, two
+  fresh-process deterministic replays, zero budget failures, zero false-unique negatives, and
+  bounded peak resources. Only this child may authorize subsequent coverage or ranking work.
+- Status: BLOCKED ON BOUNDED RUNTIME. ComplaintRef: Wayfinder map: build deterministic PNG-to-
+  logical-Unicode text-art recovery.
 
 ### Wayfinder child: specify logical-Unicode and visual-shaping evidence
 
@@ -2974,8 +3098,9 @@ visually indistinguishable non-equivalent sequences.
 Type:
 prototype
 
-- Status: OPEN. Depends on the canonical evidence IR. ComplaintRef: Wayfinder map: build
-  deterministic PNG-to-logical-Unicode text-art recovery.
+- Status: CONTRACT SPECIFIED / IMPLEMENTATION BLOCKED ON SLICE 6. SPEC §7.10.7 fixes logical-versus-
+  visual order and pinned shaping evidence; execution follows recognizer coverage. ComplaintRef:
+  Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Wayfinder child: define component-to-grapheme ownership and ambiguity gates
 
@@ -2990,7 +3115,8 @@ machine conflicts independently of confidence scores.
 Type:
 research
 
-- Status: OPEN. Depends on the canonical evidence IR and geometry router. ComplaintRef: Wayfinder
+- Status: PARTIALLY IMPLEMENTED / EXIT GATE OPEN. Glyph-free components and conflict records exist;
+  complete grapheme ownership across the release profiles is not proved. ComplaintRef: Wayfinder
   map: build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Wayfinder child: build the positive and expected-fail-closed golden corpus
@@ -3006,8 +3132,9 @@ templates and threshold tuning cannot validate on their own fixtures.
 Type:
 task
 
-- Status: OPEN. Corpus schema depends on the canonical evidence IR; provenance inventory can begin
-  now. ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.
+- Status: IMPLEMENTED BUT RELEASE GATE BLOCKED. Corpus v2 corrects fallback-box positives and
+  preserves fail-closed collisions, but benchmark coverage does not pass. ComplaintRef: Wayfinder
+  map: build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Wayfinder child: specify immutable orchestration, machine gates, and operator review
 
@@ -3022,8 +3149,11 @@ ownership, unknown graphemes, layout contradictions, or transcript/evidence drif
 Type:
 research
 
-- Status: OPEN. Depends on the evidence IR; review-surface requirements can be inventoried now.
-  ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.
+- Status: CONTRACT SPECIFIED / IMPLEMENTATION ABSENT. Immutable record and comparison helpers
+  exist, but no production `transcribe()` or `accept()` owner calls them. The capture script always
+  stops proposal-only with exit 2, the canonical candidate writer has no production caller, and
+  accepted packages are not products of a coded acceptance path. ComplaintRef: Wayfinder map:
+  build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Wayfinder child: derive execution slices and migrate the existing queue
 
@@ -3037,9 +3167,10 @@ before declaring the future queue operational.
 Type:
 task
 
-- Status: BLOCKED on the preceding decision children. RQ projection belongs here only after their
-  answers make implementation slices sharp. ComplaintRef: Wayfinder map: build deterministic PNG-
-  to-logical-Unicode text-art recovery.
+- Status: SUPERSEDED BY THE VERIFIED 2026-08-04 RECHART BELOW. SPEC §7.10.7 still owns the
+  authority chain, but the prior order understated the reopened geometry and absent orchestrator
+  blockers. Sitting-cat attempt 004, horse attempt 065, and later queue activation remain blocked.
+  ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Queued reference `a8283c5cdb63b130` required expanded calibration and join-aware boundary scoring
 - **Symptom (2026-08-02):** the next queued source, `a8283c5cdb63b130`, is a 271×619 sparse fixed-cell drawing whose recorded visual estimate is approximately 18×33 px. Attempt 001 searched only the old x=9–14 px continuous range and y=14–24 px autocorrelation range, selected 13.5×18, and visibly cut through strokes. Attempt 002 expanded the search to x=14–22 and y=28–40, found 17.95×33, but rejected it because 76 boundary pixels were counted as cuts.
@@ -5267,6 +5398,929 @@ task
   check. Apply the shared wide-glyph footprint rule to `フ` as well, keeping its top-band evidence
   for real Japanese rows.
 
+- **Fullwidth `ミ` swallowed narrow terminal bar (2026-08-03):** The fixed row then became
+  `/\\_ミ`; `ミ` had multi-band validation but no shared narrow-painted-span penalty. Extend the
+  generic footprint check to `ミ`; its multi-band evidence remains available for real wide glyphs.
+
+- **Clipped wide terminal token was admitted (2026-08-03):** The fixed row reverted to `/\\_ヽ`
+  because the beam allowed a two-unit candidate whose right span was clipped to one source cell
+  at the crop edge. Wide graphemes require a measured minimum span (or explicit clipping
+  evidence); otherwise the candidate must be rejected so a narrow terminal glyph can own the
+  ink.
+
+- **Terminal-width guard removed all fixed-row paths (2026-08-03):** The first implementation
+  of the clipped-wide-token guard rejected every two-unit candidate whose interval reached the
+  measured content edge. The fixed-ASCII regression consequently returned
+  `structural_decode_no_path` for both rows, even though each row has a valid narrow-glyph
+  explanation. Clipping rejection must be scoped to a wide candidate's occupied raster span;
+  it must not make the whole row undecodable or reject narrow terminal glyphs and blank tails.
+
+- **Cluster beam truncated a required ASCII alternative (2026-08-03):** The mixed structural
+  row retained only eight local shape candidates per painted cluster. A narrow underscore in a
+  connected row ranked below Japanese/fullwidth fallback templates and was discarded before
+  sequence decoding, so the proposal set could not retain the known `| _ _|` structural
+  alternative. Proposal pruning must retain a bounded, script-aware candidate domain (including
+  lower-ranked ASCII structural forms); this expands evidence only and does not grant any
+  recognizer authority.
+
+- **Template distance overruled source morphology (2026-08-03):** In the same row, two masks
+  were short horizontal bands and the terminal mask was a tall narrow bar, but normalized-font
+  distance ranked `ﾉ`/`￣` above the structurally supported `_`/`|` labels. A proposal adapter may
+  use the measured mask topology as a prior; otherwise fallback-font artifacts displace the
+  screenshot's own horizontal-versus-vertical evidence before row decoding.
+
+- **Fixed-row recovery lacked a literal output gate (2026-08-03):** Direct checks showed the
+  terminal-width and morphology corrections recover `/\\_|` and `(=)`, but the regression suite
+  only asserted that proposal artifacts existed. Add a source-PNG-only exact row assertion so
+  future geometry or template changes cannot pass while silently replacing either structural
+  row with a fallback glyph or blank tail.
+
+- **Continuous narrow run collapsed into one wide fallback (2026-08-03):** The top sitting-cat
+  row contains a connected horizontal run spanning three measured lattice columns. Painted
+  cluster recognition treated that run as one two-unit `＿` candidate, losing the three logical
+  underscores. Component connectivity cannot override measured seam ownership; the proposal
+  layer needs a lattice-aware repeated-horizontal alternative before Unicode template ranking.
+
+- **Joint alignment mixed global and strip coordinates (2026-08-03):** Proposal geometry is
+  rebased to each content-cropped run strip, but `align_logical_text_to_run` measured target
+  display units from the run's global source bounds. The resulting width verdicts could reject
+  a geometrically valid sequence or align text against blank canvas tails. Alignment must use
+  strip-local raster width while retaining global bounds only as provenance.
+
+- **Fixed-lattice alternatives were hidden inside one candidate (2026-08-03):** The row beam
+  retained bounded complete-sequence alternatives internally, but emitted only its winner as a
+  `GraphemeCandidate`; the rest survived only as an opaque string tuple. Joint geometry/text
+  scoring therefore could not bind or inspect those row hypotheses. Every retained sequence
+  must be a separately hash-bound proposal record, while acceptance remains downstream.
+
+- **Overlapping wide cluster killed every row sequence (2026-08-03):** The painted-cluster beam
+  applied a soft penalty when a two-unit candidate crossed the next cluster's lattice start,
+  but still advanced its cursor past that cluster. The following state was then discarded, so
+  connected lower rows produced zero cluster proposals. Conflicting ownership must reject the
+  wide option (or split it), never keep a state that cannot consume the next cluster.
+
+- **Wide-domain filtering removed the split fallback (2026-08-03):** After rejecting the
+  overlapping two-unit option, a cluster whose painted width resembled a fullwidth glyph had no
+  narrow candidates left to split across measured seams. Width class is evidence, not an
+  exclusive classifier at a connected boundary; both narrow and wide proposals must survive
+  until row-level ownership resolves them.
+
+- **Benchmark top-k truncated joint evidence (2026-08-03):** The benchmark passed its public
+  reporting `top_k` directly into `_proposal_texts`, so a small coverage top-k discarded the
+  adapter's bounded row beam before geometry/text alignment. The joint decoder must consume the
+  complete deterministic proposal beam; top-k may limit display/reporting only.
+
+- **Joint scorer had no diagnostic outcome state (2026-08-03):** Even when a hypothesis had all
+  rows aligned and complete source ownership, `jointly_score_geometry_hypotheses` always returned
+  `unresolved`. Conversely, there was no explicit distinction between a unique diagnostic rank
+  and final geometry/TXT authority. Add an `accepted_diagnostic` state only for a pinned margin;
+  keep candidate text null until the independent final gates pass.
+
+- **Threshold replay mistook antialias erosion for a terminal sliver (2026-08-03):** At the
+  selected threshold the 23px row lattice reaches the source's lower ink envelope, but stricter
+  replay thresholds erase the faint terminal pixels and shorten the measured extent. The replay
+  then rejects the same phase for a five-pixel final residual and changes the winning pitch to
+  22px. Clipping/extent evidence must be anchored to the selected source mask (or an explicit
+  grayscale envelope), not recomputed as if every threshold were a new canvas crop.
+
+- **Raw ownership hash made stable phase look unstable (2026-08-03):** After clipping was
+  anchored to the selected envelope, thresholds 12/25/50 all chose 23px, but their ownership
+  hashes differed because antialiased pixel counts and seam contacts changed. Stability must
+  compare a geometry/topology signature (pitch, phase, row bounds and seam relationships) while
+  retaining raw pixel ownership hashes as per-threshold evidence.
+
+- **Geometry signature still included a threshold-dependent residual (2026-08-03):** The first
+  topology signature also serialized observed terminal baseline residuals, so threshold 25/50
+  differed from threshold 12 despite identical 23px phase seams. Geometry stability must use
+  nominal pitch/phase/row bounds only; measured residuals remain diagnostics and validity gates.
+
+- **Geometry regression encoded obsolete threshold instability (2026-08-03):** After the
+  topology/clipping corrections, the sitting-cat evidence consistently selects 23px across all
+  retained thresholds, but the old test still required winners `{22, 23}` and `stable=false`.
+  The regression must assert stable 23px evidence while continuing to require unresolved final
+  authority until baseline and phase margins are independently proven.
+
+- **Periodic baseline proof was still vetoed by blank-gap diagnostics (2026-08-03):** The source
+  now has stable, valid nine-row 23px evidence, but `row_baselines_undersegmented` remained an
+  unconditional rejection and `_assess_periodic_authority` required
+  `not undersegmented` for pitch proof. This left a real periodic baseline detector unable to
+  promote its own measured result. Blank-gap undersegmentation must remain diagnostic; periodic
+  baseline proof needs its own source-only predicate, with phase ambiguity still independent.
+
+- **Baseline-promotion regression still asserted the obsolete geometry contract (2026-08-03):**
+  After periodic evidence promoted the stable nine-row family, the cat regression continued to
+  require `pitch_proven=false` and `row_baselines_undersegmented` as a rejection. That assertion
+  conflated blank-gap diagnostics with periodic authority. The test must preserve the cat's
+  unresolved phase/ownership verdict while asserting `undersegmented=true` and
+  `periodic_baselines_proven=true`.
+
+- **Single-threshold replay now reaches the full authority gate (2026-08-03):** The updated
+  periodic proof correctly promotes pitch, phase, and ownership when the caller pins one
+  foreground threshold whose phase margin clears the gate. The old regression still expected
+  every one-threshold replay to remain unresolved; that expectation no longer matches the
+  source-only authority contract. The default multi-threshold cat run remains unresolved.
+
+- **Mixed-width origin was reduced modulo one period and leading columns were discarded
+  (2026-08-03):** The cat's measured 13.65px narrow advance was retained, but the display
+  origin was stored only as a positive phase (`3px`) even though an equivalent negative origin
+  is required to recover the source's logical indentation. The recognizer then initialized its
+  beam at the first occupied physical column and emitted no logical leading columns. Every row
+  was therefore shifted left before grapheme evidence could be aligned. Origin alternatives
+  must remain hash-bound geometry hypotheses, and row proposals must serialize columns from the
+  logical origin rather than silently dropping the prefix.
+
+- **Origin hypothesis expansion initially ranked physically over-negative phases first
+  (2026-08-03):** The first expanded candidate set started at `phase-3*advance`, so bounded
+  proposal runs selected a crop with several fully clipped leading units and the row beam had
+  no valid path. Origin alternatives must include the nearest negative equivalent first, then
+  preserve farther alternatives as evidence; a bounded cap must not accidentally exclude the
+  usable display origin.
+
+- **Leading logical cells fully outside a cropped run caused structural beam dead-end
+  (2026-08-03):** After retaining the correct negative origin, the first three display cells lay
+  outside the content-cropped pixel strip. The beam treated their empty physical intervals as
+  invalid for every glyph, including spaces, so no row sequence could reach visible ink. Fully
+  clipped intervals must admit only zero-cost spaces while continuing to reject nonblank glyphs.
+
+- **Structural lattice alternatives were emitted after the public proposal cap (2026-08-03):**
+  The source-only horizontal-run decoder produced the correct three-underscore proposal, but
+  appended it after the beam's CJK/ASCII alternatives. A bounded top-k benchmark therefore
+  never received the strongest morphology-preserving evidence. Lattice-aware alternatives must
+  be first-class ranked proposals, not tail records hidden beyond the adapter beam.
+
+- **Joint alignment used the all-row canvas width instead of each row's logical ink end
+  (2026-08-03):** Content cropping correctly preserved leading indentation, but every row strip
+  still shared the global x extent. Short rows such as the top `___` line were compared against
+  blank trailing cells and rejected as width contradictions. The run builder must derive a
+  hash-bound logical end column from that row's source mask; alignment may trim trailing blanks
+  but must never trim leading logical columns.
+
+- **Origin alternatives were not rebased with the selected run origin (2026-08-03):** The
+  hypothesis run correctly carried its selected origin into the content-cropped coordinate
+  system, but `origin_candidates_px` remained in source-global coordinates. A downstream adapter
+  could therefore compare a selected origin and its alternatives in different frames. All
+  origin evidence must undergo the same source-offset transform, with the global source bounds
+  retained separately for provenance.
+
+- **Proposal confidence reordered a stronger source-morphology sequence out of top-k
+  (2026-08-03):** The repeated-horizontal decoder correctly emitted `___` first in proposal
+  order, but its generic normalized-template confidence was slightly lower than a one-glyph
+  underscore path. The benchmark sorted only by that confidence and discarded the structural
+  alternative. Repeated-run morphology needs a bounded priority signal in the proposal evidence;
+  it remains non-authoritative but cannot be erased by a generic fallback score.
+
+- **Hypothesis provenance kept the pre-rebase origin (2026-08-03):** Recognition inputs rebased
+  `mixed_width_display.origin_px` into the cropped run frame, but copied the hypothesis record
+  before that transform. The run therefore advertised `-40.65px` while its hypothesis ID
+  retained `-10.65px`. Joint geometry/text alignment must bind the selected origin in the same
+  local frame as the run mask, while source-global bounds remain provenance only.
+
+- **Geometry regression assumed every hypothesis varied only vertical phase (2026-08-03):**
+  Origin-aware expansion intentionally retains four horizontal-origin alternatives for the
+  leading 23/8 candidate before advancing to another pitch/phase. The old assertion required
+  four distinct `(pitch, phase)` pairs and rejected valid origin evidence. The regression must
+  assert distinct bound origins and preserve the vertical candidate identity separately.
+
+- **Joint row alignment remained width-only (2026-08-03):** Origin and logical-end corrections
+  made row widths measurable, but `jointly_score_geometry_hypotheses` still selected the first
+  width-aligned proposal. Wrong `/`, `>`, bar, and Japanese fallback sequences therefore tied
+  with structurally plausible alternatives and no source mask residual was recorded. Add a
+  deterministic run-mask/template residual as diagnostic evidence and rank aligned proposals by
+  that residual; it must remain proposal-only and never create candidate TXT.
+
+- **Template residual assumed a NumPy run mask (2026-08-03):** Public alignment inputs may carry
+  the canonical tuple-of-tuples mask or serialized row strings. The first residual implementation
+  accessed `.shape` on the tuple form and broke the existing alignment seam. The fit helper must
+  normalize every hash-bound mask representation before measuring residuals.
+
+- **Glyph template normalization stretched narrow strokes into filled blocks (2026-08-03):**
+  `_normalized_shape` resized each cropped glyph bbox directly to its target rectangle. A one-
+  row underscore therefore became a solid 20-row template, while a bar and punctuation lost
+  their aspect ratios. The residual ranker then preferred wrong glyphs and could not distinguish
+  repeated horizontals. Template normalization must preserve aspect ratio with deterministic
+  letterboxing; placement remains a separate geometry measurement.
+
+- **Centered curved delimiters were penalized as misplaced fragments (2026-08-03):** The generic
+  left-margin penalty ran before the parenthesis/bracket topology rule. A centered `(` crop in
+  the fixed-ASCII regression therefore received a large penalty and `/` won after aspect-ratio
+  normalization. Curved delimiters must be evaluated by their curvature/edge contacts, not
+  rejected merely because their ink does not touch the crop's left edge.
+
+- **Default row beam pruned a valid mixed-script decomposition (2026-08-03):** The row's
+  bounded beam retained `/>  ＞` and several bar variants but discarded the independently
+  plausible `/>  フ` sequence that survived with a wider beam. This was search truncation, not
+  source evidence. Keep an explicit bounded expansion factor for active row states while
+  retaining the public proposal cap and deterministic ordering.
+
+- **Template residual used a one-pixel vertical search despite baseline-normalized templates
+  (2026-08-03):** Aspect-ratio letterboxing preserved glyph shape, but its normalized vertical
+  placement is not the source baseline. A one-row underscore template consequently had zero
+  overlap with the source's lower baseline and every candidate scored residual `1.0`. The
+  diagnostic fit may search a bounded row-relative vertical offset; it must record that offset
+  and remain separate from authoritative baseline geometry.
+
+- **Joint hypothesis enumeration remained one-dimensional (2026-08-03):** The unresolved-geometry
+  path expanded the first valid vertical pitch/phase candidate across several horizontal-origin
+  alternatives and consumed the entire hypothesis budget before any competing pitch or phase was
+  proposed. The downstream scorer therefore compared identical `23:8` geometry variants, could
+  not use recognition evidence to break the geometry deadlock, and reported a false “joint”
+  diagnostic with no meaningful runner-up. Hypothesis enumeration must preserve competing
+  vertical families and origin alternatives as separate evidence, using a deterministic
+  round-robin/budget allocation; it must never let one origin basin hide all other measured
+  raster hypotheses.
+
+- **Joint ranking over-weighted recognizer fit against measured seams (2026-08-03):** After
+  exposing competing pitch/phase families, the diagnostic scorer ranked `23:7` above the
+  source-cleaner `23:8` phase because it aligned two more rows with low-quality structural
+  proposals. Text fit may contribute to a joint hypothesis score, but it cannot erase measured
+  seam energy and gutter contrast. Geometry evidence must be carried into each proposal
+  hypothesis and combined with text/ownership evidence; the result remains proposal-only until
+  all independent authority gates pass.
+
+- **Joint alignment discarded the adapter beam (2026-08-03):** The benchmark retained up to the
+  adapter's bounded row proposal beam, but then passed the public reporting `top_k` (often `1`)
+  into `jointly_score_geometry_hypotheses`, which sliced every row back to its first string. A
+  valid alternative could therefore never repair one malformed row or provide ownership
+  evidence, while the report claimed the joint path had seen the proposal set. Reporting caps
+  and inference evidence must be separate: benchmark output may remain top-k, but joint alignment
+  must consume the full bounded adapter beam.
+
+- **Raster router still fabricated fixed/shaped criteria (2026-08-03):** Sparse multiline art
+  forced fixed-lattice row periodicity, advance stability, and fullwidth scores to minimum values,
+  while the same `sparse_multiline` flag forced shaped-run variable advances to `0.35`. This
+  circularly made the fixed branch look plausible and the shaped branch fail before any measured
+  anchor comparison. Geometry mode must be scored from measured seam/gutter evidence, mixed-width
+  consistency, and run-anchor variance; sparse artwork may be a diagnostic feature but cannot
+  manufacture or suppress a proof criterion.
+
+- **Measured shaped score promoted unproven cross-row ownership (2026-08-03):** Removing the
+  sparse-art penalty allowed sitting-cat's periodic nine-row bands and variable component widths
+  to pass shaped-run routing even though the phase/ownership authority was still unresolved. The
+  shaped branch reused periodic row bands but had no proof that connected strokes belonged to one
+  row/run exactly once. Shaped geometry must carry an explicit cross-row ownership gate; measured
+  width variance alone cannot authorize recognition inputs for connected multiline art.
+
+- **Joint scorer stopped at per-row diagnostics (2026-08-03):** Even after geometry hypotheses
+  and full adapter beams reached the scorer, it retained only one selected diagnostic per row and
+  never composed a complete logical sequence. That made “whole-image” ranking a collection of
+  local scores rather than a line-sequence recognizer, so row-order contradictions and cross-row
+  alternatives could not be evaluated together. Add bounded, deterministic row-sequence
+  composition with per-row evidence and keep the composed sequence proposal-only until ownership,
+  Unicode, and geometry gates authorize a candidate writer.
+
+- **Mixed-width base harmonic was discarded before recognition (2026-08-03):** The source-only
+  display probe selected a clean 13.65px seam period but discarded its plausible half-period
+  (~6.8px). Fullwidth Japanese rows therefore entered alignment with a base that made their
+  logical widths appear contradictory, so complete sequences could never reach the composer.
+  Preserve measured harmonic/subharmonic base advances as separate proposal hypotheses; do not
+  promote one horizontal period or let Unicode width rejection select it implicitly.
+
+- **Mixed-width hypothesis regression retained a single-base origin assumption (2026-08-03):**
+  After the measured 13.65px and 6.825px display bases were interleaved into the bounded
+  hypothesis budget, the existing regression still required the first vertical-family basin to
+  have one physical origin. That assertion erased the very harmonic evidence the prior failure
+  required. The invariant is now that each retained vertical pitch/phase family reaches every
+  measured base family before additional origin alternatives consume the budget; origins remain
+  separate evidence and must not be collapsed merely because their vertical identity matches.
+
+- **Joint width alignment dropped a complete bottom row (2026-08-03):** The row-sequence
+  composer had all nine source rows and a deterministic proposal beam, but it treated the
+  renderer's East-Asian width convention as globally known. The bottom row's source mask was
+  therefore rejected when its Japanese/fullwidth candidates measured one unit differently from
+  the canonical ``wcwidth`` value. Width must remain a per-grapheme hypothesis until a pinned
+  renderer/profile proves it: retain one/two-unit alternatives in alignment evidence, compose
+  the complete sequence, and keep the result rejected with an explicit width-profile ambiguity
+  rather than deleting the row or accepting a guessed width.
+
+- **Overlapping wide-grapheme proposals were pruned before the row beam (2026-08-03):** A
+  fullwidth/legacy-rendered grapheme may have its painted cluster inside the next measured anchor.
+  The structural adapter initially rejected that overlap; the replacement path retained it but
+  assigned a penalty large enough that the bounded beam still discarded it. The decoder must keep
+  overlap candidates as explicitly uncertain proposal evidence with a bounded, lower penalty;
+  ownership and width gates—not local beam ordering—decide whether they can survive.
+
+- **Structural lookalike alternatives were not emitted as independent proposals (2026-08-03):**
+  The row beam retained a source-supported `| ＿ _|` candidate, but consumers that need an
+  ASCII-safe rendering could not inspect the equivalent `| _ _|` sequence because fullwidth/box
+  lookalikes were left embedded in one candidate. Add a deterministic Unicode-lookalike projection
+  as a separate, hash-bound proposal; preserve the original Unicode candidate and do not treat the
+  projection as a normalization or acceptance decision.
+
+- **Joint inference still received only the public report cap (2026-08-03):** The benchmark's
+  ``proposal_limit`` used the adapter's nominal beam width rather than its emitted expansion
+  (``beam_width * 4``). A width-ambiguous row could therefore be present in the adapter evidence
+  but absent from joint alignment, yielding an 8/9-row diagnostic while the report still looked
+  complete. Keep a bounded full inference beam (capped independently) and apply ``top_k`` only
+  when serializing benchmark display fields.
+
+- **Wide grapheme span was forced to two units before mixed-width decoding (2026-08-03):** The
+  cat's painted フ/／/＞ marks are narrow enough to occupy one measured advance even though their
+  Unicode East-Asian width is two. The cluster decoder only reduced a two-unit candidate when its
+  painted bbox was below a hard half-base threshold, so valid one-unit renderings were discarded
+  before row composition. Emit both one- and two-unit span proposals for wide graphemes; retain
+  the width ambiguity in alignment evidence and keep acceptance blocked until a width profile is
+  proven.
+
+- **Mixed-script row lost its Unicode-width spelling after structural recovery (2026-08-03):**
+  Source morphology produced an ASCII structural sequence such as ``/>  フ`` and preserved a
+  Japanese grapheme, but the proposal surface never emitted the corresponding fullwidth/ideographic
+  spelling. This was proposal loss, not evidence that the ASCII form was authoritative. For rows
+  containing script graphemes, retain a deterministic fullwidth/lookalike variant alongside the
+  ASCII proposal; width and Unicode gates still decide whether either can be accepted.
+
+- **Unicode proposal transform changed logical indentation (2026-08-03):** The first fullwidth
+  spelling pass converted every pair of spaces, including the ordinary leading indentation that
+  anchors the drawing. Internal ambiguous gaps may receive an ideographic-space alternative, but
+  leading and trailing ASCII whitespace must remain byte-identical in the alternate proposal.
+
+- **Run inputs exposed only one aggregate advance (2026-08-03):** The raster-to-recognition seam
+  carried a complete row strip and a single measured advance, but not the source-painted intervals
+  that establish where substantive ink actually occurs. A row decoder could therefore score a
+  width-consistent sequence without evidence that it preserved each painted run or gap. The fix
+  adds hash-bound, source-only ``anchor_evidence`` per run with local/global bounds, measured-unit
+  spans, mask hashes, and component IDs. It remains diagnostic/proposal evidence; it does not name
+  characters, choose Unicode widths, or authorize a TXT.
+
+- **Wide painted clusters lost source-empty-tail alternatives (2026-08-03):** A fullwidth/CJK
+  proposal could occupy one measured pixel unit while its nominal two-unit span left a blank final
+  unit. The adapter serialized only the padded spelling, so a logically correct row could never
+  appear in proposal coverage. The adapter now retains a trimmed source-empty-tail spelling beside
+  the padded one; neither is authoritative and trailing cells are not deleted from machine evidence.
+
+- **Adapter seam dropped run anchor evidence (2026-08-03):** The builder emitted painted-run
+  intervals, but the benchmark materialized only the binary mask into each adapter's geometry.
+  Adapters and the joint scorer therefore consumed different evidence surfaces. The benchmark now
+  forwards the same hash-bound ``anchor_evidence`` to both run geometry and source metadata; it
+  remains source-only and proposal-only.
+
+- **Fallback-template ranking overruled source topology (2026-08-03):** Normalized template-font
+  residuals ranked a measured diagonal as a parenthesis, a compact diagonal fragment as an equals
+  sign, and a low horizontal band as a tilde. The recognizer now adds a bounded source-mask
+  topology term for orientation, band position, vertical-bar structure, and compact-mark evidence.
+  It only changes proposal ordering; all competing graphemes remain retained and no transcript is
+  authorized by the score.
+
+- **Compact punctuation and edge spill were pruned as labels (2026-08-03):** A local proposal
+  beam discarded backtick/apostrophe alternatives when a compact diagonal ranked as slash-like,
+  and treated edge-touching ink as proof that a cell was nonblank. The adapter now retains compact
+  punctuation alternatives and a low-cost blank/spill hypothesis. Both are explicitly unresolved
+  evidence; no source ink is removed and no blank or punctuation is promoted by local geometry.
+
+- **Fixed row beam forced wide graphemes to two physical units (2026-08-03):** The cluster
+  decoder preserved one-unit painted spans, but the complete row beam advanced every wide Unicode
+  token by two units. Mixed Japanese/structural rows could therefore never compose their measured
+  source placement. The row beam now emits one- and two-unit span proposals with a bounded
+  uncertainty cost; width and ownership gates remain authoritative.
+
+- **Mixed-width ASCII proposals lost spacing/bar alternatives (2026-08-03):** Rows containing
+  measured East-Asian width ambiguity could still emit only ordinary-space and bar spellings when
+  the first candidate happened to be ASCII. The proposal adapter now retains ideographic-spacing
+  and terminal ``l``/bar alternatives under the measured width profile, with leading/trailing
+  whitespace preserved and no normalization or acceptance decision.
+
+- **Inference reused the public top-k cap (2026-08-03):** The structural adapter emitted a broad,
+  bounded proposal surface, but benchmark code reduced it to 32 strings and joint decoding kept
+  only eight row options. This made reporting policy decide which Unicode/ASCII alternatives could
+  participate in whole-image inference. Structural joint decoding now receives a separate bounded
+  cap (256 proposals/16 row options); serialized reports still honor the requested top-k and no
+  candidate gains authority from rank alone.
+
+- **Topology scoring became beam-hot (2026-08-03):** The source-only topology term used
+  ``numpy.cov`` for every glyph/state, so expanding the bounded mixed-width beam multiplied a
+  costly allocation and made benchmark runtime grow without improving evidence. Both topology
+  slopes now use the algebraically equivalent scalar covariance calculation; proposal ordering and
+  hashes remain deterministic.
+
+- **Unicode lookalike proposals leaked into an ASCII-only capability lock (2026-08-03):** The
+  mixed-width evidence path retained fullwidth ``＿`` beside ASCII ``_`` even when the environment
+  explicitly installed only the ``ascii`` script pack. The fullwidth candidate then won the local
+  beam on a fixed ASCII fixture, changing logical text without any Unicode capability evidence.
+  Proposal expansion must honor the pinned capability profile: ASCII-only locks may emit ASCII
+  structural proposals, while Unicode/mixed-script locks retain the wider lookalike alternatives
+  as separate evidence.
+
+- **Capability-filtered glyph domain was overwritten by a legacy assignment (2026-08-03):** The
+  ASCII capability filter built the correct restricted glyph tuple, but the old unconditional beam
+  initialization immediately reassigned the complete Unicode structural alphabet. This made the
+  filter appear ineffective and allowed the same fullwidth lookalike to leak back into the first
+  proposal. There must be one authoritative glyph-domain assignment per adapter invocation.
+
+- **Mixed-width gap evidence was collapsed to one replacement spelling (2026-08-03):** The source
+  anchor map can show overlapping painted runs and empty measured units, but the proposal adapter
+  only substituted each ASCII gap with one ideographic gap. It therefore lost bounded combinations
+  where an overlap requires both a wide gap and an adjacent ordinary space (including a terminal
+  bar gap). Gap spelling alternatives must be generated from the existing row text as a bounded
+  product, preserving leading/trailing whitespace and leaving all variants proposal-only.
+
+- **Run anchor evidence stopped at the benchmark seam (2026-08-03):** The benchmark attached the
+  source-derived local ``base_advance_px`` and ``origin_px`` to each run, but the structural adapter
+  continued to read only the aggregate mixed-width record. The adapter and joint alignment could
+  therefore score one strip under different local lattices, especially for rebased or alternate
+  geometry hypotheses. Run-local anchor evidence must be the adapter's first spacing authority, with
+  aggregate geometry retained only as a fallback diagnostic.
+
+- **Joint alignment and template diagnostics still used aggregate spacing (2026-08-03):** Binding
+  the adapter to run-local anchors fixed proposal generation, but ``align_logical_text_to_run`` and
+  the advisory template residual still read the hypothesis-wide origin/advance. A candidate could
+  therefore be generated at one local lattice and ranked at another. Every downstream run fit must
+  resolve the same anchor precedence: run evidence, then source evidence, then aggregate geometry.
+
+- **Proposal expansion rehashed the immutable template font for every candidate (2026-08-03):** A
+  read-only cat benchmark spent more than eight minutes hashing the same pinned font once per
+  proposal, before joint scoring ran. This made bounded hypothesis expansion appear to hang and
+  prevented measurement of the actual decoder. The font byte hash is immutable for the process and
+  must be cached by path; caching changes no evidence or authority, only removes repeated I/O.
+
+- **Fixed-row proposal cap erased valid connected-art sequences (2026-08-03):** The structural
+  adapter's glyph domain contained the source-supported punctuation and Japanese candidates, but
+  the fixed-lattice beam retained only 32 completed strings before mixed-width expansion. Rows with
+  connected ``ミ＿xノ``/body components required a lower-ranked local decomposition and therefore
+  never exposed their exact sequence to joint alignment. The proposal cap must be widened within a
+  pinned bounded budget; reporting ``top_k`` remains separate and no wider beam grants authority.
+
+- **Ambiguous source fragments were scored as impossible glyphs (2026-08-03):** The row beam treated
+  a connected diagonal crop as strong evidence against backtick/apostrophe-like marks and treated
+  compact kana/diagonal/horizontal fragments as unrelated spill. Their candidates were therefore
+  pruned before whole-row context could assign ownership. Fragment ambiguity must lower confidence
+  but retain a bounded candidate cost for punctuation, diagonal kana variants, and horizontal
+  marks; downstream ownership and sequence evidence remain responsible for rejection.
+
+- **Fragment uncertainty cap remained outside the useful sequence frontier (2026-08-03):** After
+  retaining ambiguous classes, the complete row beam still omitted the source-supported backtick,
+  ``x`` and horizontal/diagonal Japanese sequences. The cap must be low enough to preserve a
+  plausible fragment path while marking it low-confidence; ambiguity and ownership gates, not the
+  local residual, decide whether it can survive.
+
+- **Geometry-first authority deadlocked joint recovery (2026-08-03):** The raster path can now
+  retain multiple measured pitch/phase hypotheses and run row proposals, but its only public
+  result is still ``proposal_alignment_only`` with ``candidate_txt: null`` whenever periodic
+  geometry is unresolved. This makes the pipeline require a unique grid before using the very
+  row-sequence evidence needed to distinguish grids. The failure is architectural, not a missing
+  margin: geometry hypotheses must remain non-authoritative inputs to one joint geometry/text/
+  ownership decoder. That decoder may emit a hash-bound review candidate only after all source
+  components, row coverage, logical widths, and competing-hypothesis margins pass; it must never
+  promote an unresolved hypothesis, accept a recognizer alone, or write ``candidate.txt`` before
+  operator review.
+
+- **Whole-row beam pruned crossing strokes before joint decoding (2026-08-03):** On the
+  nine-row sitting-cat hypothesis, source-supported diagonal crossings and horizontal fragments
+  were present in the measured cell masks, but the row beam discarded their ``x``/underscore
+  alternatives because isolated template residuals treated connected neighboring ink as a bad
+  glyph. The missing sequence evidence was therefore caused by local pruning, not by absent
+  Unicode capability. The recognizer must retain topology-supported alternatives through the
+  complete row beam with lowered diagnostic confidence; only joint ownership/alignment may reject
+  them. This is a general connected-text-art failure, not a sitting-cat rule.
+
+- **Topology fallback multiplied template work across every row (2026-08-03):** The corrective
+  source-topology beam retained the needed alternatives, but initially recomputed a broad local
+  glyph domain for every measured cell and allowed 256 complete row variants. The evidence was
+  correct but made the full recognition suite CPU-bound for several minutes. Keep the topology
+  surface bounded independently of the public proposal cap: a small local seed set plus a pinned
+  row beam is sufficient, and broad alternatives remain available in the existing template
+  evidence rather than requiring an unbounded Cartesian expansion.
+
+- **Joint review evidence stopped at the benchmark report (2026-08-03):** The capture harness
+  invoked proposal generation for unresolved geometry but exposed only the legacy rejected gate;
+  operators could not see whether the new joint stage had a review candidate, its selected
+  hypothesis, or its explicit blockers. The harness must materialize a separate hash-bound
+  ``joint-review.json`` report while preserving the no-TXT rule. This is a presentation/diagnostic
+  gap, not permission to promote the review candidate.
+
+- **Joint decoder conflated width blocking with missing rows (2026-08-03):** The first review
+  decoder treated a winner marked ``rejected`` for ``width_profile_ambiguous`` as though row
+  alignment itself had failed. A complete nine-row sequence was therefore hidden from the review
+  surface even when all rows aligned and ownership was complete. Review output must distinguish
+  row coverage, ownership, width, and hypothesis-margin gates; a blocked width profile may show a
+  labeled review candidate, but it can never produce canonical TXT.
+
+- **SPEC execution order still described geometry as a hard precondition (2026-08-03):** The
+  implementation now retains raster geometry hypotheses and runs row proposals through a joint
+  review decoder, but §7.10.6 still read as ``unique grid → recognize → emit``. That wording
+  recreates the deadlock the failure log identifies. The contract must distinguish measured
+  geometry candidates from final geometry authority and require joint geometry/text/ownership
+  proof before any canonical candidate writer is enabled.
+
+- **Joint review hash covered text but not its winning evidence (2026-08-03):** The new blocked
+  cat review exposed a text digest, but that digest alone could be copied between competing
+  pitch/phase hypotheses. Review evidence must carry both the candidate-byte hash and a binding
+  hash over the selected hypothesis ID, sequence evidence hash, and logical text. This remains
+  review-only; it does not relax the canonical writer gate.
+
+- **Fixed-cell alternatives could not compose overlapping painted runs (2026-08-03):** The source
+  component evidence already separated the cat's overlapping slash, compact mark, and body runs,
+  but the adapter only composed whole-cell/whole-column beams. That made the correct sequence
+  ``／` ミ＿xノ`` unavailable even though each component's topology proposal contained its needed
+  graphemes. The recognizer needs a bounded painted-run sequence surface that preserves component
+  order, measured gaps, overlap uncertainty, and rank diversity; it must remain proposal-only and
+  must not discard tiny components without recording them as continuation evidence.
+
+- **Painted-run composer omitted script-aware diagonal alternatives (2026-08-03):** A source-painted
+  run can end in a diagonal raster that is compatible with ASCII ``/``/``\\`` and with Japanese
+  ``ノ``/``ﾉ``/``ヽ``. The local topology beam retained the slash form and the composer could trim it,
+  but it did not retain the bounded script-aware substitutions. This made a complete mixed-script
+  row impossible even though the run sequence and component ownership were source-derived. Such
+  alternatives must be generated from the measured run mask, remain proposal-only, and be bounded
+  by the capability profile; they must never be selected from an expected transcript.
+
+- **Painted-run rank-sum pruning erased distinct alternatives (2026-08-03):** After adding bounded
+  script-aware substitutions, the composer sorted the Cartesian expansion by one global rank sum.
+  A large number of cheaper slash variants from a later painted run displaced the lower-ranked
+  terminal-kana choice, even though the prefix choice and the kana choice were independently
+  retained. The composer needs a deterministic per-component rank-stratified beam; cost remains
+  diagnostic, but cannot erase an entire component-choice stratum before joint ownership/text
+  decoding sees it.
+
+- **First rank-stratified implementation had no component-rank key (2026-08-03):** The initial
+  beam patch attempted to derive strata from the accumulated rank sum, which is not the rank of
+  the newly expanded component and therefore cannot preserve the intended alternatives. The
+  state record must carry the last component option rank explicitly; otherwise the purported
+  diversity beam is only an arbitrary modulo partition.
+
+- **Last-option strata still merged distinct painted-run histories (2026-08-03):** Carrying only
+  the most recent option rank was insufficient: ``／`` + backtick and many slash histories ended
+  in the same final rank bucket, so the correct mixed-script path was still pruned. The bounded
+  state must retain its complete option-rank path and stratify by that path, preserving component
+  choice history without reading a transcript or making the search unbounded.
+
+- **Rank-path beam still lost alternatives during separator expansion (2026-08-03):** Even with
+  complete option-rank paths, multiple separator spellings and equal-rank glyph alternatives can
+  crowd a path before the final state cap. A bounded source-run coverage surface is required in
+  parallel with the cost beam: enumerate only the top measured alternatives per painted run and
+  a small measured-gap separator set, then merge those proposals deterministically. This remains
+  proposal evidence and does not bypass ownership, width, or operator gates.
+
+- **Coverage product fixed one separator spelling (2026-08-03):** The bounded component product
+  preserved complete grapheme sequences but collapsed each measured gap to its first rounded
+  separator count. A one-column source gap therefore could not produce the adjacent ordinary-space
+  spelling required by a valid logical row. Coverage must enumerate the small measured separator
+  set together with component alternatives; it must not infer spaces from an expected transcript.
+
+- **Coverage product omitted ideographic gap spellings (2026-08-03):** Mixed-width source runs can
+  express a measured gap as one or more U+3000 spaces. The run composer’s primary beam retained
+  those forms, but the independent coverage product emitted only ASCII spaces, so ``／＞　　フ``
+  could not reach joint alignment. Separator alternatives must include measured ordinary and
+  ideographic spellings in a bounded, source-derived set.
+
+- **Run spelling alternatives stopped at fullwidth topology forms (2026-08-03):** Source-painted
+  horizontal and vertical fragments frequently produce ``＿``/``│``/``／`` candidates even when
+  the logical row uses ASCII ``_``/``|``/``/``. Spill trimming was source-derived, but no bounded
+  lookalike spelling was retained, so valid mixed ASCII/fullwidth rows remained absent from the
+  proposal surface. Every such conversion stays a proposal alternative; it cannot choose a
+  logical form without whole-row ownership and Unicode gates.
+
+- **Cross-run overhang trimming handled only diagonals (2026-08-03):** Connected row components can
+  end with a vertical or horizontal stroke that belongs to a neighboring logical glyph. The
+  painted-run composer trimmed only slash-family tails, so a source proposal such as ``(|`` could
+  not expose its valid ``/`` alternative. Structural bars and horizontal marks need the same bounded
+  trim alternatives, with the compound proposal retained for ownership comparison.
+
+- **Measured wide gaps exceeded the separator bound (2026-08-03):** Some source runs place two
+  logical marks across a long overhang interval whose spelling contains several U+3000 spaces and
+  ordinary spaces. Limiting every gap to at most two ideographic spaces made valid rows such as
+  ``/　　　．　|`` unreachable. The separator grammar must scale to a capped, measured count and
+  retain mixed ordinary/ideographic spellings without becoming an unbounded whitespace search.
+
+- **Bracket overhangs were not decomposed (2026-08-03):** A connected component can propose a
+  bracket-plus-slash/bar sequence such as ``]/`` or ``(|`` when the bracket belongs to a neighboring
+  row/run. Diagonal trimming did not consider bracket delimiters, so the inner slash spelling was
+  absent. Brackets must be retained as proposals while also allowing bounded leading/trailing
+  overhang decomposition; ownership decides which survives.
+
+- **Three-run coverage cap hid a script terminal (2026-08-03):** In a short row, the final
+  ``ﾉ``/``ヽ`` alternative can rank below eight local topology proposals while the leading run’s
+  slash decomposition is already retained. The generic product therefore emitted ``/`` plus a
+  bar but not the complete row. Short painted-run sequences can afford a wider per-run proposal
+  cap; the cap must shrink as run count grows so total work remains bounded.
+
+- **Coverage early-return erased primary origin offsets (2026-08-03):** The coverage product
+  reached its output limit before the primary painted-run beam contributed its measured ±1/±2
+  origin offsets. Rows whose logical leading whitespace differs by one column were therefore
+  absent despite a valid source anchor. Merge the two bounded surfaces with a reserved primary
+  share; neither surface is authoritative alone.
+
+- **Coverage phase variants stopped at the base origin (2026-08-03):** Reserving primary states
+  exposed some origin alternatives, but coverage sequences still had a single leading-space phase.
+  A valid source run can differ by one or two columns because of crop/anchor quantization. Leading
+  phase alternatives must be retained as bounded source geometry evidence, not inferred from a
+  transcript.
+
+- **Short-run lookalike expansion crowded the coverage cap (2026-08-03):** Adding fullwidth/ASCII
+  alternatives and overhang trims creates several entries at the same measured rank. A three-run
+  row therefore lost the standalone slash and terminal ``ﾉ`` just beyond the first sixteen option
+  slots. Short products need a wider local option budget, while longer rows retain the smaller cap
+  to keep total combinations bounded.
+
+- **Lookalike spelling penalty displaced complete paths (2026-08-03):** ASCII/fullwidth alternatives
+  generated from the same source mask were assigned an additional rank step, so a valid `/` + `ﾉ`
+  path lost to many unrelated separator variants before joint comparison. These alternatives must
+  inherit the source option’s rank (their residual penalty remains diagnostic), otherwise rank
+  order falsely encodes a preference for one Unicode spelling.
+
+- **Inference cap hid source-supported row sequences (2026-08-03):** The painted-run coverage
+  surface exposed a complete mixed-script row, but the benchmark reduced the adapter evidence to
+  256 strings before joint alignment. A valid sequence ranked below that report cap was therefore
+  absent from geometry/text comparison even though it was in the bounded proposal set. Public
+  reporting limits and inference coverage must be separate; the joint stage needs a larger pinned
+  proposal budget while its report may still show a short top-k view.
+
+- **Coverage merge still hid complete component paths (2026-08-03):** The sitting-cat row-4
+  source evidence contains a slash alternative in the first painted run and a vertical-bar
+  alternative in the terminal run, but the coverage Cartesian product orders thousands of
+  separator spellings before that complete path reaches the adapter cap. This is a generic
+  proposal-surface loss: measured component choices must be retained by path before whitespace
+  variants are expanded. A joint decoder cannot score a sequence that the composer discarded;
+  no transcript or row-specific rule may be used to force it back.
+
+- **Coverage option cap favored compound overhangs (2026-08-03):** The row-4 slash was present
+  as a source-derived one-grapheme decomposition of ``]/``, but rank ordering filled the short
+  component cap with compound forms such as ``]|`` and ``(|`` before that decomposition. The
+  cap therefore removed a valid atomic alternative before separator composition. Coverage must
+  reserve space for atomic decompositions as well as ranked compound evidence; this is a generic
+  ownership-preserving rule, not a cat-specific glyph exception.
+
+- **Mixed separator grammar truncated measured wide runs (2026-08-03):** After preserving
+  atomic component alternatives, the row-4 path still could not be composed because the
+  separator grammar only attached continuation ideographs to one- or two-wide prefixes. The
+  measured gap can require a wider ideographic prefix followed by an ordinary-space/ideographic
+  continuation. Separator generation must remain bounded by measured width while covering the
+  full mixed-width family; otherwise the joint stage loses valid spacing before ownership can
+  evaluate it.
+
+- **Primary rank beam consumed the coverage budget (2026-08-03):** The composer reserved a
+  fraction of its output for the cell/template beam before emitting painted-run coverage. On
+  short rows the coverage sequence ``/`` + measured whitespace + ``|`` was therefore delayed
+  behind unrelated primary spellings even after its component choices were retained. The merge
+  must reserve a bounded per-nonspace-sequence coverage surface, while still retaining a
+  separate primary share for anchor/phase evidence.
+
+- **Separator variants were sampled by insertion order (2026-08-03):** Within the retained
+  ``/|`` component sequence, the required long mixed-width whitespace spelling was evidence
+  item 785 of 1,400 because ordinary, short and duplicate-offset spellings were emitted first.
+  A per-sequence cap must preserve separator-shape signatures (runs of ordinary versus
+  ideographic whitespace), not merely the first N strings. This remains source-derived proposal
+  evidence; it does not encode the evaluation transcript.
+
+- **Separator signature ordering favored maximal whitespace (2026-08-03):** The first signature
+  pass sorted by descending run count/length, so long separator strings displaced the measured
+  six-code-point mixed gap needed by the cat row. Signature diversity must be ordered around the
+  measured inter-run gap (while retaining mixed ordinary/ideographic forms), not by an arbitrary
+  preference for larger whitespace.
+
+- **Coverage Cartesian product regressed runtime (2026-08-03):** Expanding mixed-width separator
+  signatures and retaining every component path made the transcription suite reach 41 passing
+  tests and then stall in proposal generation until interrupted at about 155 seconds. The
+  proposal surface must use a pinned global work budget and lazy/early-bounded separator
+  enumeration; correctness evidence cannot be purchased with an unbounded Cartesian product.
+
+- **Variant alias expansion became quadratic (2026-08-03):** The adapter appended ASCII and
+  Unicode lookalike proposals while checking membership with ``any(...)`` over the growing
+  proposal list. The expanded painted-run surface made this O(n²), stalling recognition after
+  otherwise passing tests. Alias expansion must use a deterministic text set and a pinned output
+  cap; proposal diversity cannot make each row's runtime grow quadratically.
+
+- **Determinism replay recomputed identical rows (2026-08-03):** The benchmark intentionally
+  calls each offline adapter twice, but the structural row adapter rebuilt the same raster
+  topology/template surface on the second call. With nine cat rows and multiple geometry
+  hypotheses this doubled the expensive proposal work. A bounded hash-keyed memo may reuse an
+  immutable ProposalSet for identical source/geometry/component/environment inputs; it must not
+  relax hashes or share evidence across distinct runs.
+
+- **Incremental decoder was not the remaining runtime bottleneck (2026-08-03):** The painted-run
+  decoder now advances component states incrementally and merges equivalent logical text states,
+  but the adapter still invoked the full template/topology/painted-run pipeline on deterministic
+  replay. The benchmark therefore paid for the same hash-identical row twice (about 25 seconds
+  for the two sitting-cat hypotheses before replay was included). A proposal cap cannot correct
+  this: it only hides alternatives after the repeated work has already happened. The immutable
+  hash-keyed ProposalSet cache declared for replay must be wired into the adapter, keyed by source,
+  geometry, components, environment, adapter version, and beam configuration; cache hits must
+  return the exact frozen evidence object and must never share across distinct input hashes.
+
+- **Replay cache needed a content guard for legacy placeholder hashes (2026-08-03):** A few
+  historical/unit callers provide the same placeholder source or geometry hash for different
+  in-memory run masks. Keying only those declared hashes could return a proposal for a different
+  raster even though the production builder normally supplies correct hashes. The memo key must
+  also include a canonical digest of the geometry-owned run mask, measured advances and local
+  anchor evidence; identical replay remains reusable, while distinct raster content cannot share
+  a ProposalSet through a stale placeholder hash.
+
+- **Painted-run state identity omitted ownership (2026-08-03):** The incremental decoder merged
+  states by logical text alone. Its measured component order made most routes equivalent in
+  practice, but that key could collapse two routes with the same string and different source
+  component ownership. The weighted state identity must include the immutable painted-component
+  IDs already assigned; text-equivalent routes may merge only when their ownership signatures also
+  match. This preserves ownership alternatives without reintroducing a Cartesian product.
+
+- **Disposable cat probe was initially given a pre-existing directory (2026-08-03):** The
+  reference-attempt helper intentionally refuses an existing output path to preserve immutability;
+  the first ad-hoc probe passed the directory created by `mktemp -d` itself and therefore never
+  entered geometry or recognition. No tracked attempt or TXT was written. The retry must pass a
+  non-existent child path so the helper owns directory creation.
+
+- **Disposable cat probe used the unbounded default hypothesis count (2026-08-03):** The capture
+  helper's unresolved branch passes all 16 measured hypotheses to the benchmark. With nine runs,
+  deterministic replay and the structural adapter, that expands to hundreds of expensive first
+  passes; the probe was interrupted in topology scoring before producing a report. This did not
+  create tracked evidence or a TXT. A bounded diagnostic must explicitly use the two-hypothesis
+  regression budget; changing the production capture default requires a separate reviewed slice.
+
+- **Bounded cat diagnostic recovered nine rows but not the transcript (2026-08-03):** The current
+  two-hypothesis run reaches `row_count=9` and `aligned_rows=9`, but geometry remains rejected with
+  `periodic_authority_unresolved`, `phase_authority_unresolved`, and
+  `ownership_authority_unresolved`. Joint review is `review_blocked` for
+  `width_profile_ambiguous` and `joint_hypothesis_margin_insufficient`; `candidate_txt` remains
+  null. The leading row proposals still substitute fullwidth/curved alternatives (`＿`, `／`,
+  `ミ`, `ヽ`) for visible structural punctuation, while the review candidate turns several rows
+  into `/`/quote and bracket mixtures. This is evidence that the state search is no longer
+  exploding, but its source-to-grapheme scoring and width/ownership gates still do not recover the
+  cat. No tracked attempt or TXT was created.
+
+- **Default structural beam retained the wrong cat glyph family (2026-08-03):** Raising the
+  structural adapter from beam 3 to its default beam 16 did not recover the missing transcript.
+  After 134 seconds, the nine-row proposal surface still emitted `-＿'`, `／>  フ`, `| ＿ _|`,
+  `'/    |`, and `|ミ￣\￣ミヽ/\/`-style alternatives; the joint review remained blocked by
+  `width_profile_ambiguous` and `joint_hypothesis_margin_insufficient`. Wider enumeration is
+  therefore not the correction. The remaining defect is source-to-grapheme scoring/ownership,
+  especially repeated horizontals, diagonal/quote fragments, and Japanese/fullwidth versus ASCII
+  width choices. No tracked attempt or TXT was created.
+
+- **Post-proposal coverage isolates a missing run-level recognizer (2026-08-03):** Comparing the
+  proposal records to the review-only sidecar *after* recognition showed the exact nine-row form
+  survives only for row 1 (`___`). Rows 2–9 have zero exact logical-sequence records even with the
+  beam-3 adapter surface: row 2 lacks the fullwidth `＞`/ideographic spacing combination; rows 3–9
+  lack their mixed-width punctuation, bars, diagonals, and lower-body sequences. This is not merely
+  joint ranking. The current per-component/template proposal generator cannot compose the source's
+  complete runs, so increasing the beam or changing the final selector cannot recover them. The
+  evaluation sidecar was used only for post-proposal measurement and remains runtime-ineligible.
+
+- **Narrow-width hypothesis does not explain the missing rows (2026-08-03):** The source-derived
+  6.825px half-advance / 23px phase-8 hypothesis was run through the same adapter without any
+  transcript input. It produced denser, over-segmented strings (`/~ヽ`, punctuation fragments,
+  repeated bars) and zero exact sidecar-row matches, while the 13.65px hypothesis retained exact
+  rows 1–2 after trailing-space normalization. The width failure is therefore not fixed by simply
+  switching to the narrow harmonic; the decoder needs a run-level segmentation/ownership model
+  that can represent mixed narrow/fullwidth spans on the 13.65px display basis.
+
+- **Local topology caps deleted a source-supported run before joint decoding (2026-08-03):** On
+  row 4, the source-only topology decoder emits the complete `ミ＿xノ` sequence at local rank 53.
+  The live painted-run composer iterated `local[:48]`, then retained only `options[:24]`, so the
+  valid run never entered the ownership-aware state search. This is precisely the earlier cap
+  failure mode: a complete sequence can be correct while its local spelling ranks below unrelated
+  fallback variants. Local variants must flow into the incremental state frontier; insertion-order
+  truncation is not evidence.
+
+- **Fallback-template distance split visually equivalent stroke families (2026-08-03):** In the
+  same row-4 component, the source topology supports both a diagonal slash and Japanese `ノ`, but
+  the fallback-font residual assigned `ノ` a substantially worse local cost. The complete
+  `ミ＿xノ` path was therefore pruned even after local variant caps were removed. Glyph-family
+  ambiguity must be retained from source topology (direction, band, and span) rather than resolved
+  by a font silhouette before run-level ownership; the rule remains proposal-only and cannot name
+  an accepted Unicode sequence.
+
+- **Incremental frontier still pruned a source-supported sequence (2026-08-03):** Removing the
+  local `[:48]`/`[:24]` slices admitted `ミ＿xノ` (local rank 20 after family balancing), but the
+  painted-run frontier still returned only 512 lower-cost combinations and omitted that sequence
+  from the emitted row surface. This is not evidence that the glyph is absent; it is a second-stage
+  search-surface loss. Increasing the cap would repeat the same failure mode. The composer needs a
+  deterministic k-best/diversity-preserving frontier that expands additive paths lazily and retains
+  source-supported family alternatives without materializing or truncating a Cartesian product.
+
+- **Bounded cat replay remains diagnostic-only after frontier repair (2026-08-03):** The current
+  read-only replay now exposes the source-supported `ミ＿xノ` family in the row-4 proposal surface,
+  and the full transcription suite passes 53 tests. The bounded two-hypothesis cat report still
+  has nine rows/18 run strips but remains `geometry_status: rejected`, `authority:
+  proposal_alignment_only`, and `candidate_txt: null`; its displayed top sequences are not an
+  accepted transcription. This is the correct fail-closed result: the family repair improved
+  evidence coverage but did not manufacture geometry, width, or Unicode authority.
+
+- **Short horizontal fragments were ranked as punctuation (2026-08-03):** The cat's row-3
+  source mask contains lower-band underscore fragments split by connected neighboring strokes.
+  The topology prior required a wide horizontal bbox before favoring `_`/`＿`, while the compact
+  punctuation prior still favored `.`/`,` on the same two- or three-pixel fragments. The row
+  proposal therefore emitted visible dots and malformed wide marks. Horizontal-band evidence
+  must remain valid for short edge fragments; punctuation cannot win solely because the fragment
+  is narrow.
+
+- **Painted-run composition discarded measured unit anchors (2026-08-03):** Row-level variants
+  were composed from pixel gaps between connected components. That preserves visual spacing for
+  isolated clusters but loses the source-derived `unit_start`/`unit_end` ownership when components
+  overlap a lattice seam. Rows 3, 8, and 9 consequently became wide fallback runs (`＿`, `ミ`,
+  and repeated punctuation) instead of independently anchored narrow tokens. A second proposal
+  surface must compose tokens at measured display-unit anchors, resolving overlap by source
+  morphology and retaining the existing gap-based surface as evidence.
+
+- **Connected orthogonal composites had no decomposition proposal (2026-08-03):** The row-8
+  source component contains a short upper horizontal stroke and a tall right-hand bar, the
+  topology of `￣|`. The local row beam only compared whole fallback-font glyphs and emitted
+  `フ\\`/`ミ\\`; no candidate represented the measured horizontal-plus-vertical structure. A
+  bounded orthogonal decomposition must be emitted as proposal evidence when one component spans
+  at most two narrow units; it must not replace or authorize the existing alternatives.
+
+- **Multi-token component alternatives swallowed later anchors (2026-08-03):** In the lower cat
+  rows, one connected interval produced local sequences such as `￣ミ` and `ミ-`. The anchored
+  composer retained only the whole sequence or edge-trimmed forms, so its cursor advanced over
+  the following `ヽ`, `＿`, and `)` components. Component-local token decomposition must retain
+  each measured grapheme as a separate proposal alongside the complete sequence; the row decoder
+  can then test ownership without inventing a second component or deleting later anchors.
+
+- **Anchored frontier lost early-token families after later expansion (2026-08-03):** Keeping
+  diversity only by the most recently selected token preserved the final diagonal families but
+  discarded an earlier source-supported `(`/`￣` before the lower components were composed. The
+  frontier identity must retain a bounded prefix morphology signature as well as the terminal
+  family, so later alternatives cannot erase a valid early ownership path by cost alone.
+
+- **Orthogonal decomposition was still outranked by a fallback kana template (2026-08-03):**
+  The source-derived row-8 component now emits `￣|`, but the normalized template residual and
+  broad-top `フ` prior still make `フ\\` the top candidate. A measured orthogonal component must
+  penalize mutually exclusive single-kana explanations before proposal confidence is calculated;
+  otherwise the new decomposition remains invisible in the joint surface.
+
+- **Joint scorer still truncated the complete structural proposal surface (2026-08-03):** The
+  benchmark preserved larger row evidence, but `jointly_score_geometry_hypotheses()` sliced each
+  row back to `top_k`/16 and expanded a truncated Cartesian beam. The cat's lower-ranked anchored
+  alternatives therefore could not participate in geometry/text comparison. Joint inference now
+  needs a lazy additive k-best product over all bounded row proposals; the public `top_k` remains
+  reporting-only and cannot decide which evidence exists.
+
+- **Joint diagnostics still over-weighted fallback-font residuals (2026-08-03):** The structural
+  contract accepts logical TXT by rows, spacing, glyph identity, and source component coverage;
+  exact source-font pixels are not authoritative. `_proposal_fit_residual()` nevertheless made
+  normalized fallback-font raster distance the dominant term, so the cat review candidate favored
+  punctuation/kana silhouettes over better source-measured anchors. Font residual must remain a
+  bounded advisory term; anchor interval placement and retained source morphology must dominate
+  diagnostic ranking.
+
+- **Anchor residual ignored component cardinality (2026-08-03):** The source interval score only
+  compared a union of painted columns. A proposal could therefore add punctuation or split a
+  connected lower component repeatedly while preserving nearly the same union, and the joint
+  decoder would not see the extra ownership claims. Record observed-versus-predicted nonblank
+  component counts and nearest anchor-start residuals as advisory source morphology evidence.
+
+- **Sitting-cat replay remains proposal-only after source-morphology repair (2026-08-03):** The
+  read-only joint replay now preserves a source-spanning horizontal component as three occupied
+  display units, evaluates one-versus-two-unit East Asian width assignments, and records
+  horizontal/vertical/diagonal morphology. The joint best diagnostic is still rejected with
+  `geometry_status=rejected`, `joint_alignment.status=unresolved`, and zero hypothesis margin;
+  it is not a conversion candidate. The current nine-row review text is materially closer at the
+  top line (`___`) but still substitutes punctuation/ASCII fragments for the Japanese and lower
+  structural rows. No attempt, candidate TXT, renderer artifact, or acceptance receipt was
+  created. The remaining defect is run-level Unicode/structural ownership and proposal ranking,
+  not a font-parity problem. Focused recognition tests (7) and the complete transcription suite
+  (53) pass; those are regression results, not a cat conversion approval.
+
+- **Wide-run preservation improved coverage but not joint identity (2026-08-03):** The same
+  source-only replay now retains the wide slash/greater/フ family and score improved to `0.8106`,
+  but the joint result remains `geometry_status=rejected`, `joint_alignment.status=unresolved`,
+  and zero hypothesis margin. The review text still contains substitutions such as `/'`, `＿`,
+  and bracket/diagonal composites. This confirms that retaining proposal families is working;
+  the remaining error is identity/ownership ranking across connected components, not proposal
+  absence. A subsequent replay also retained the family after ignoring one-pixel spill in
+  cardinality and preserving wide/one-unit overlap alternatives, but still produced a rejected
+  nine-row diagnostic. No TXT or attempt was emitted.
+
+- **Live sitting-cat conversion remains rejected under the current proposal surface (2026-08-03):**
+  A read-only replay used the source PNG, the measured 23 px/phase-8 geometry hypothesis, and
+  the structural Unicode adapter. It recovered nine rows and produced bounded per-row proposal
+  evidence, but the joint result remained `status=unresolved` with `winner.status=rejected`.
+  The review-only sequence was visibly wrong (`_＿`, `/>  フ`, `| - ＿|`, and lower-row kana/
+  punctuation substitutions), so it was not serialized as candidate TXT, not rendered, and not
+  accepted. The earlier full benchmark path also exceeded the safe diagnostic memory/time budget
+  while retaining every adapter candidate; this is evidence of proposal-surface materialization,
+  not conversion success. The temporary review JSON is outside the repository; no tracked attempt
+  or accepted artifact was created. The next fix must reduce the proposal representation lazily
+  while preserving source-supported morphology and ownership alternatives; it must not cap away
+  the correct sequence or add cat-specific rules.
+
+- **Source-supported cat rows are present but the joint rank still chooses punctuation (2026-08-03):**
+  A bounded replay with the complete origin-aware hypothesis key (`23:8:13.65:-40.65`) recovered
+  nine rows and retained the source-supported `/ >  フ` and `／＞　　フ` alternatives. The review
+  surface nevertheless selected `/'  ,` for that row and `／=＼　　／` for the connected lower
+  row because `_proposal_fit_residual()` still treats fallback-font/template distance and broad
+  interval unions as sufficient tie-breakers. The result remains `review_blocked` with
+  `width_profile_ambiguous`; no candidate TXT, attempt, render, or acceptance receipt was made.
+  This is a general component-morphology ranking defect: punctuation fragments and middle/bottom
+  horizontal bands need source-shape compatibility penalties before row-level k-best scoring, while
+  all alternatives remain proposal evidence. The replay also confirms that the current adapter
+  materializes hundreds of complete row strings, so the next correction must preserve a lazy bounded
+  morphology lattice rather than increase a global cap.
+
+- **Morphology penalties removed comma/dash preference but the live row beam still loses compound paths (2026-08-03):**
+  The source-only shape score now penalizes punctuation on crossing components and distinguishes bottom-band
+  underscores from middle-band dashes. A beam-4 replay consequently reaches `accepted_diagnostic`/`review_pending`
+  with nine aligned rows and no width ambiguity, but its review text still substitutes `x`, kana fragments, and
+  bracket/diagonal composites for the connected lower forms. The correct compound paths exist in the component
+  proposal surface but are pruned by the exact-family frontier before final row ranking; raising the beam to the
+  default materializes hundreds of strings and exceeds the safe resource budget. The next general fix is a
+  bucketed, rank-aware frontier/lattice that preserves structural families without materializing a Cartesian row
+  product. No candidate TXT or attempt was created.
+
+- **Bucketed frontier still drops the terminal mixed-script witness (2026-08-03):** The first
+  bucketed/rank-aware frontier replay completed within the resource budget, but the regression
+  source row no longer surfaced its measured `ミ＿xノ` component alternative in the final 512
+  proposals. The local component proposal existed; final family retention erased it. This is a
+  proposal-lattice preservation defect, not evidence that the source glyph is absent. The next
+  change must retain a bounded terminal witness from the measured component option without
+  materializing the full Cartesian product; the witness remains proposal-only and cannot write TXT.
+
 ### Garden E2E: the keyboard half of the review package, and two gate-matrix claims that were mine
 
 Question:
@@ -5840,6 +6894,7 @@ defect, worse than recorded
 
 - Status: Recorded, not implemented. Browser E2E 24 passing and 7 strict xfailed. The severity of
   the mobile defect is corrected upward: it was written down as cropping and it is unreachability.
+
 - **Editing error in the same patch, caught by the suite (2026-08-03):** inserting the new xfail
   immediately above `test_a_single_tap_performs_the_primary_action_on_touch` stacked that test's
   ORIGINAL decorator onto the new one and left the old test undecorated. The full run reported it as
@@ -5975,6 +7030,25 @@ re-measurement that confirms a defect, and unifies three
   Of the six, three are this clamp, one is the arrow-key binding, one is seasonal art with no
   verdict, and one is the ambient bird's rewritten traversal.
 
+### Transcription: component-first proposal generation cannot represent mixed-width runs (2026-08-03)
+
+Question:
+Why does the sitting-cat replay have source-supported nine row strips but still fail before joint alignment?
+
+Type:
+Implementation slice — replacement of the live proposal surface
+
+- **Failure:** The live structural adapter still generates proposals per connected component and then composes
+  them. That representation cannot express a single measured run containing connected narrow/fullwidth spans such
+  as Japanese graphemes beside ASCII diagonals and horizontal marks. Frontier caps and family balancing only move the
+  omission; they cannot create a missing span candidate.
+- **Required correction:** Segment the complete raster-derived run on the measured 13.65 px display basis. Generate
+  proposals for contiguous one-to-many-unit spans, then decode those span edges with incremental ownership-aware
+  dynamic programming. The component-first surface must remain diagnostic only and cannot feed the live candidate set.
+- **Scope guard:** This slice must not read the operator sidecar, create attempt 004, write candidate.txt, or promote
+  any proposal to accepted evidence. Geometry remains proposal-alignment-only until its four authority proofs pass.
+- **Status:** Open. The next implementation is the run-level lattice recognizer and its source-only regression tests.
+
 ### Wayfinder correction: the mobile accounting sold three defects as one decision, and the bird as a decision at all
 
 Question:
@@ -6103,6 +7177,124 @@ defect in my own step-2 implementation, found before any consumer existed
 
 - Status: Implemented (unproven). Builder and manifest suites 32 of 32 holding locally.
 
+### Run-level replacement still loses the complete mixed-width witness (2026-08-03)
+
+Question:
+Does the new span lattice actually expose the complete lower-row sequence, rather than merely changing which
+component-first candidates rank first?
+
+Type:
+failed implementation slice; successor required
+
+- **Failure:** Source-only run-level proposals now own the live adapter, but the regression over sitting-cat row 4
+  still finds no emitted candidate containing the complete `ミ＿xノ` span. The row-level path is therefore incomplete
+  even though it represents the measured 13.65 px basis and recovers the lower horizontal/bar witness on row 3.
+- **Required correction:** Delete the obsolete component-first implementation, retain one run-level span-lattice
+  owner, and preserve span witnesses independently of the top-cost frontier so a lower-ranked complete mixed-width
+  sequence cannot disappear during final proposal serialization.
+- **Scope guard:** Attempts 002–003 remain immutable; attempt 004, candidate.txt, and accepted evidence remain blocked.
+- **Status:** Open. This slice is rejected until all nine source rows have independently inspectable run-level
+  proposal coverage.
+
+- **Follow-up failure:** A bounded replay exposed a second run-level defect: the span decoder started its logical
+  text at the first occupied unit instead of preserving the measured leading blank columns. Eight of nine rows then
+  failed alignment even though their span proposals existed; only the final row happened to align. The fix must bind
+  the run-level prefix to the source lattice, not repair alignment downstream.
+
+- **Bounded replay after prefix repair (2026-08-03):** All 9/9 rows now align (rows 1, 2, 3, 7, and 8 remain
+  `aligned_ambiguous`), but the diagnostic sequence is still visibly wrong against the screenshot. The generated
+  rows are `___`, `/│  x`, `x|／ _／`, `'\\ミ~x／`, `/    l`, `/ ヽ  ])`, `|  || |`, `／]\\  ((\\|`, and
+  `|]￣\\￣ミx/\\/`. Per-row raster residual fractions are approximately 0.540, 0.735, 0.888, 0.784, 0.710,
+  0.832, 0.850, 0.885, and 0.818 respectively; the proposal path has no exact nine-row transcript and remains
+  `geometry_status=rejected`, `authority=proposal_alignment_only`, `candidate_txt=null`. This is explicit
+  coverage evidence, not acceptance. Attempt 004 remains blocked.
+
+- **Operator side-by-side verdict (2026-08-03): REJECTED.** The operator explicitly rejected the
+  bounded machine replay after direct source/generated comparison. This is not a marginal font or
+  antialiasing disagreement: the head and face use substituted glyphs; middle-row bars, diagonals,
+  horizontals, and spaces do not reproduce the source; and the lower body is replaced by unrelated
+  brackets, bars, kana, and punctuation. Geometric row alignment cannot weaken this verdict. The
+  replay has rejected human visual parity and rejected glyph/structural parity. Because it was a
+  diagnostic replay rather than an immutable attempt, no attempt 004 or rejected candidate TXT is
+  manufactured retroactively. This verdict does not approve or reject the separate evaluation-only
+  expected transcript; that benchmark artifact remains pending and runtime-ineligible.
+
+### Transcription failure-family audit and executor roadmap correction (2026-08-03)
+
+Question:
+What did the preserved bbbb-flowers, horse, sitting-cat, corpus, and bounded-replay failures prove,
+and what exact order prevents the executor from repeating them?
+
+Type:
+Wayfinder map update and failed-attempt audit; documentation-only successor definition
+
+- **Audit scope:** Reviewed the accepted `bbbb-flowers` lineage through attempt 021; the horse
+  lineage through immutable rejected attempt 064; sitting-cat attempts 001–003 plus the read-only
+  nine-row replays; the invalid v1/v4 and blocked v5 benchmark history; the current structural
+  adapter boundary; and the queue state. No attempt artifact, machine TXT, accepted TXT, or runtime
+  code was changed by this audit.
+- **Calibration family:** Early bbbb, horse, and sitting-cat runs repeatedly selected a wrong
+  harmonic, omitted rows, cut through strokes, or treated a first-valid grid as authority. A
+  complete or zero-unknown decode over invalid geometry is rejected evidence. Geometry must retain
+  defensible pitch/phase/origin alternatives and prove one authority from source pixels.
+- **Recognition family:** Isolated-cell OCR, local templates, repeated silhouettes, row windows,
+  and the new span lattice can preserve spacing/topology evidence, but they do not constitute a
+  general Unicode recognizer. The live structural vocabulary is finite. Adding kana/Kanji/Arabic/
+  emoji cases to that table would repeat the horse-local heuristic failure and cannot satisfy the
+  destination.
+- **Coverage-versus-ranking correction:** The earlier statement that row 4's complete `ミ＿xノ`
+  witness was absent is superseded by the current source-only regression, which proves it is now
+  serialized. Its loss in the displayed replay is therefore ranking. Exact complete-row coverage
+  for the other incorrect sitting-cat rows is still unproved and must be measured before any scorer
+  change. `aligned` means display-width placement only; it is not a glyph-identity verdict.
+- **Renderer family:** Horse font searches, nonzero pixel diffs, and the rejected source-stencil
+  zero did not resolve TXT correctness. Raster residuals remain structural diagnostics unless the
+  original font/renderer is pinned; source-copy/stencil output is never parity evidence.
+- **Process family:** Zero unknown/conflict counts, passing regression totals, deterministic hashes,
+  and immutable manifests prove their named mechanics only. Attempt 046/052 drift, mutated horse
+  063, invalid positive fallback boxes, `runs[0]` benchmark truncation, and proposal-only candidate
+  writing show why every transition needs content hashes and one writer boundary.
+
+**Dependency-ordered execution:**
+
+1. Obtain operator approval or rejection of the sitting-cat evaluation transcript and bind its
+   exact bytes/hash as benchmark-only truth; keep it inaccessible to runtime stages.
+2. Add benchmark-only per-row proposal coverage/rank reporting. Classify every miss as absent
+   proposal, present-but-losing proposal, unresolved visual collision, or unsupported adapter.
+3. Implement and pin real offline whole-run Unicode proposal adapters for the uncovered release
+   families, with model/dictionary/runtime/license/resource receipts. Do not add a second text owner
+   or grow the finite structural glyph table into a fake Unicode recognizer.
+4. Generate a new immutable release plus holdout benchmark. Require exact deterministic top-k
+   coverage for every positive, zero false-unique negative resolutions, stable replay hashes, and
+   bounded runtime/memory before leaving Slice 6.
+5. Complete logical grapheme decoding and visual-only NFC/UAX #29/bidi/shaping/width evidence.
+   Logical TXT order must remain separate from visual comparison order.
+6. Complete exactly-once component ownership, unexplained/multiply-owned ink rejection, Unicode
+   collision handling, and source-derived ranking with a pinned winner margin. Font residuals remain
+   bounded advisory evidence.
+7. Complete the single immutable orchestrator and machine bundle gate. Proposal capture and blocked
+   diagnostics cannot write candidate or accepted TXT.
+8. Run a bounded source-only sitting-cat replay. Require all nine rows to be visually correct, exact
+   benchmark coverage to be accounted for, and every machine authority proof to pass before creating
+   attempt 004.
+9. Create sitting-cat attempt 004 only after step 8, render its structural review package without
+   source pixels, and wait for operator accept/reject. Only acceptance may create `accepted.txt`.
+10. Rerun horse as fresh attempt 065 through the accepted general pipeline without importing any
+    rejected horse TXT or renderer choice. Resume the remaining reference queue only after that
+    active reference is accepted or explicitly reprioritized.
+
+- **Spent lanes:** More undifferentiated beam width, more renderer/font search before TXT review,
+  isolated-cell glyph rules for connected art, transcript-specific priors, source-stencil copying,
+  hand-edited candidates, evaluation text as runtime input, and declaring success from test counts
+  are all falsified or prohibited successors.
+- **Durable surfaces:** SPEC §7.10.7 now owns the complete authority chain and exit gates; the
+  transcription-parity README owns the active queue summary; sitting-cat and horse attempt logs own
+  their per-reference audit conclusions. The repository does not provide the numbered FL/overlay
+  CLI front doors expected by the generic documentation skill, so this legacy Markdown failure-log
+  entry is the available canonical write path.
+- **Status:** OPEN / EXECUTOR FRONTIER IS SLICE 6 RECOGNIZER COVERAGE. Attempt 004, horse 065,
+  Slices 7+, and the remaining queue stay blocked.
+
 ### Route step 3, first patch: the presentation contract is now the authoritative SPEC 7.2.2 form
 
 Question:
@@ -6212,6 +7404,112 @@ mechanical extraction, proved behaviour-preserving
 
 - Status: Implemented (unproven). Ownership has not moved yet; the class still orchestrates.
   What changed is that it now orchestrates through functions anyone can call.
+
+### Queued-reference visual replay remains diagnostic-only and visibly wrong (2026-08-03)
+
+Question:
+Does the current run-level conversion produce a reviewable TXT for every queued PNG, rather than
+only producing a cat-specific diagnostic?
+
+Type:
+failed diagnostic replay; no candidate or acceptance evidence created
+
+- **Queue scope:** the durable queue contains `horse-animation-sheet`, `sitting-cat`
+  (`570f8131c83cdafded2c3b5be78d4df8`), and `eb861dc84400fc36`. The accepted `bbbb-flowers` and
+  `a8283c5cdb63b130` references were not rerun.
+- **Geometry result:** the current raster router rejected all three as unresolved. Horse was rejected
+  for row-periodicity/vertical-text evidence; sitting-cat was rejected for row-periodicity,
+  fullwidth-multiple, connected-run, periodic-authority, phase-authority, and ownership-authority
+  gaps; `eb861dc84400fc36` was rejected for a geometry-authority tie. No geometry proof exists for
+  any queue item.
+- **Horse:** the only opened TXT is the byte-preserved machine row output from immutable rejected
+  attempt 064. It contains many `?` cells and is visibly not a recovered horse transcript.
+- **Sitting cat:** the current run-level bounded replay yields nine aligned diagnostic rows, but they
+  remain visibly wrong and high-residual; the geometry decision is rejected and `candidate_txt` is
+  null. The opened TXT is review-only output, not a candidate.
+- **`eb861dc84400fc36`:** the queue item has not entered the canonical decoder. The opened TXT is
+  the pre-existing provisional source-folder transcription and is explicitly labelled
+  `provisional-not-pipeline`; it is not evidence of current conversion success.
+- **Artifact handling:** source PNGs were opened in Preview and the three review TXT files in
+  TextEdit from a temporary directory under `/tmp`. No tracked attempt, `candidate.txt`,
+  `accepted.txt`, or acceptance receipt was created or modified.
+- **Conclusion:** the outputs are not “somewhat close” as a release conversion. Horse and cat are
+  clearly rejected; the third item has only an unvalidated provisional TXT. The queue remains
+  blocked until geometry and run-level recognition produce source-explained rows.
+
+- Status: Open. Visual replay is diagnostic evidence only; successor work must improve the general
+  geometry/run decoder rather than promote any of these TXT files.
+
+### Normalized-source batch replay: 26 images, no new canonical transcripts (2026-08-03)
+
+Question:
+What happens when the complete normalized PNG set in `STRUCTURAL ASCII ART EXAMPLES` is reviewed,
+rather than only the durable three-item queue?
+
+Type:
+batch diagnostic; no source or existing TXT was modified
+
+- **Inventory:** 26 `*.normalized.png` sources were processed. The ten non-normalized PNGs in the
+  folder were treated as companion originals and were not duplicated.
+- **Geometry:** 7 sources returned `proved` geometry (six `shaped_runs`, one `fixed_lattice`); 19
+  returned `rejected/unresolved`. The rejected set includes the sitting cat, horse source, the
+  approved `eb861dc84400fc36` image, and most Stone Story/scene references.
+- **TXT coverage:** 22 sources already had a TXT beside the source. Those files were copied
+  byte-for-byte into a temporary review directory only; they remain provisional/historical unless
+  separately accepted. Four sources had no TXT and received explicit `NO_CANDIDATE` markers rather
+  than guessed text: `starlit-sky-ascii-art-v0-yen1svc4afuf1`,
+  `stonestoryCross_River_Banner`, `stonestorycrypt_shop`, and
+  `stonestoryranting_tree_rework`.
+- **Operator decision:** the operator approves `eb861dc84400fc36.png!cover_jpg.txt` as visually
+  correct. This is recorded as operator-approved provisional evidence; it is not promoted to a
+  canonical `accepted.txt` because its source receipt, candidate bundle, and acceptance hash are
+  not yet present.
+- **Review surface:** all 26 normalized PNGs and the 22 copied TXT/provisional files plus four
+  fail-closed markers are opened for side-by-side review from the temporary batch directory. No
+  tracked attempt, candidate, machine transcript, or accepted transcript was created.
+- **Conclusion:** this batch is not a successful conversion pass. Existing TXT quality varies;
+  the current authoritative pipeline still refuses most images at geometry, and it emitted no new
+  canonical text. The batch output is review evidence and a per-source failure inventory, not a
+  release claim.
+
+- Status: Open. The next implementation slice must make the general geometry/run decoder handle
+  the unresolved sources before any provisional TXT is promoted.
+
+### Operator-authored rose-bush TXT accepted and removed from the conversion queue (2026-08-03)
+
+Question:
+What authority now applies to `eb861dc84400fc36.provisional-not-pipeline.txt` after the operator
+identified it as newly authored art and explicitly approved it?
+
+Type:
+operator decision; immutable art intake; queue correction
+
+- **Exact operator statement:** “eb861dc84400fc36.provisional-not-pipeline.txt is approved rose
+  bush art asset i just authored. log and track and take in and index”.
+- **Accepted bytes:** six ASCII rows, 139 bytes, SHA-256
+  `04bce501c712fc071523711a3ea1b67a8af302434a66f0e638c2bdc144b0baac`. The accepted asset excludes
+  trailing spaces per the operator's correction, “trailing spaces.NOO DONT INCLUDE TRAILING SPACES”.
+  The exact bytes are tracked
+  at `tracked/LateLetterResearch/transcription-parity/eb861dc84400fc36/accepted.txt`; the adjacent
+  `acceptance-receipt.json` records operator authorship and approval, and `manifest.json` indexes
+  the package as `plant.rose`.
+- **Correction to the immediately preceding replay record:** at replay time the TXT was only a
+  provisional external file and could not evidence pipeline success. The operator has now supplied
+  a different authority: direct authorship plus explicit approval. It is therefore accepted art,
+  but it is still not recognizer output. No candidate, attempt, geometry proof, raster-parity result,
+  or pipeline success is claimed.
+- **Reference provenance retained:** the earlier queued PNG remains recorded as 394×192 with
+  SHA-256 `725949a5a44ce353100f56f6afc4494c3554a1da3505d02bfd1f33edc3ce25d1`; it is provenance only and
+  is not allowed to overwrite the TXT's authorship authority.
+- **Garden acceptance indexed:** `docs/garden-asset-acceptance.json` records the exact statement,
+  `plant.rose`, tracked source path and TXT hash. This does not add the art to
+  `accepted_legacy_art`: it is operator-authored, not a legacy transcription.
+- **Runtime boundary remains closed:** the current renderer-local rose placeholder is different
+  art and does not inherit this approval. Runtime integration must delete that old paint owner and
+  install this exact asset through the canonical gameplay-art owner in one ownership-transfer patch.
+  This intake performs no renderer change and grants no hostname/query/review bypass.
+- **Status:** ACCEPTED AND INDEXED as an exact operator-authored art asset. Runtime integration is
+  OPEN and must satisfy the delete-first ownership boundary before the asset can ship.
 
 ### Route step 3, the ownership patch: GardenPresentation owns the picture, and the static analyzer is gone
 
@@ -6425,6 +7723,183 @@ implementation; the last two strict xfails corrected into plain assertions
   203 of 203; full Python (minus the transcription lane) 836 passing with exactly the four
   known-red tests -- the three letter-typography defects owned by the route's typography step,
   and the deploy-cutover assertion held red until its step 14.
+
+### Wayfinder/codebase-design verification: converter safety surrounds missing correctness owners (2026-08-04)
+
+Question:
+Does the current tree actually support the audit verdict that the PNG text-art recovery lane is
+fail-closed around evidence while geometry admission, glyph identity/ranking, and the executable
+PNG→TXT product path remain architecturally incomplete; and what dependency order supersedes the
+Slice-6-only roadmap?
+
+Type:
+Wayfinder map rechart; codebase-design ownership/depth/interface audit; failure-log intake
+
+#### Grounding and verification method
+
+- **Requirement:** SPEC §7.10.7 requires deterministic offline recovery of logical UTF-8 from
+  screenshots of rendered text art, with visual layout stored separately and acceptance owned by
+  hash-bound gates plus operator review. SPEC lines 2636–2640 explicitly make corpus conversion
+  outcomes, expected fail-closed outcomes, deterministic replay, resource bounds, and reviewed
+  live references the release surface; passing test counts are not a substitute.
+- **Failure history checked before this write:** the original Wayfinder map at this log's
+  `Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery`; the Slice 1–6
+  records; the geometry-first deadlock and sitting-cat correction chain; the 2026-08-03
+  failure-family audit; the 26-source replay; the bbbb, horse, sitting-cat, and a828 attempt logs;
+  and the current transcription-parity README.
+- **External audit checked in full:** `audit-geometry.md`, `audit-recognition.md`,
+  `audit-orchestration.md`, and `audit-canon.md` from the supplied audit scratch directory. Their
+  claims were rechecked against the current dirty working tree rather than copied from the named
+  commit.
+- **Empirical falsifier:** two read-only calls to the public `route_raster_geometry` interface over
+  the tracked accepted bbbb and a828 source PNGs. No attempt, TXT, source, candidate, acceptance
+  receipt, or runtime file was created or changed.
+
+#### Verified finding A: geometry admission is a contradictory multi-owner gate
+
+- Accepted bbbb currently produces `bundle=rejected`, `decision=unresolved/rejected`, and
+  `geometry_unresolved`, yet the same public decision reports `candidate_valid=true`,
+  `pitch_proven=true`, `phase_proven=true`, and `ownership_proven=true`. Its periodic evidence has
+  winning pitch 19 px, normalized pitch margin 0.5395683453, phase margin 1.0, and one blank-gap
+  band from y=1 to 264. The fixed branch is killed by `row_periodicity=0.0` and
+  `horizontal_advance_stability=0.7996129602`; the shaped branch is killed only by
+  `vertical_text_candidates=0.0`.
+- Accepted a828 currently produces `bundle=proved`, `decision=fixed_lattice/proved`, but the same
+  decision reports `pitch_proven=false`, `phase_proven=false`, and `ownership_proven=false`.
+  Therefore the defect is not merely that accepted sources reject: status and proof authority can
+  contradict in either direction.
+- The mechanisms are present at the cited live surfaces: every required criterion is conjunctive
+  at `geometry/evidence.py:2142–2151`; a second all-criteria plausibility gate exists at
+  `geometry/evidence.py:1470–1519`; the bundle-status veto is at `geometry/router.py:140–161`;
+  one-band fixed evidence is hard-zeroed at `geometry/evidence.py:1195`; portrait shaped evidence
+  is hard-zeroed at `geometry/evidence.py:1389`; and the undersegmentation detector requires at
+  least three blank-gap bands at `geometry/evidence.py:1105–1110`.
+- Authority is not single-owner: `compact_authority` bypasses normal margin/stability proof at
+  `geometry/evidence.py:714–758`; `route_geometry` writes proof flags from score selection at
+  `geometry/router.py:71–74`, then `route_raster_geometry` overwrites them at lines 156–177;
+  `RecognitionInputBuilder._mapping` re-routes and defaults to shaped runs at
+  `geometry/evidence.py:1555–1598`; horizontal advance consumers use `or`-fallback owner chains at
+  lines 1769, 1796, and 1823; and branch acceptance is rewritten in both the evidence bundle and
+  router. The 23-line `fixed_lattice.py` and 19-line `shaped_runs.py` are criteria tuples, not deep
+  geometry adapters.
+
+#### Verified finding B: glyph coverage is closed and ranking favors listed punctuation
+
+- The live structural vocabulary at `recognition.py:513–521` has exactly 31 entries, including an
+  ideographic space. It omits almost all letters and digits, most kana, all Kanji, Arabic,
+  combining sequences, bidi text, and emoji. The audit's “under 1%” phrase is retained only as an
+  informal scale illustration, not a measured release metric; the authoritative fact is that the
+  finite table cannot represent required corpus families.
+- `FixedLatticeStructuralAdapter` returns `whole_run_proposal_unavailable` at lines 507–510.
+  PaddleOCR and the EasyOCR/Surya comparator return unavailable/model-not-pinned proposals at
+  lines 2369–2412. Tesseract returns one whole-run candidate at fixed confidence 0.25 and declares
+  joined text-art unsupported at lines 405–467. The ensemble therefore does not supply the open
+  repertoire required by SPEC.
+- Ranking cancels its own shape evidence: topology floors use `min(..., 0.26–0.32)` at lines
+  1701–1721; source-topology bonuses are glyph whitelists; the cross-hypothesis fit at lines
+  3297–3322 is dominated by placement/cardinality rather than identity; and the final selection
+  uses normalized-text/codepoint order as the last tie-break at lines 3505–3511. This explains a
+  present correct alternative losing to visually wrong ASCII punctuation; no scorer can recover a
+  target absent from every proposal.
+- Width-consistent text receives `aligned`/`aligned_ambiguous` at
+  `align_logical_text_to_run`, while candidate emission remains blocked. This is fail-closed for
+  acceptance but not an accuracy signal for the operator-facing ranking surface. Component
+  extraction has stable IDs, yet `_candidate` hard-codes `component_ids=()` at line 334, so
+  per-glyph ownership evidence is severed rather than resolved.
+- `EmojiAtlasAdapter` is the existing deep pattern: pinned repertoire, source-mask residual,
+  collision, and margin gates. It remains unavailable to hypothesis-only runs because the adapter
+  requires proved run authority. Future text recognition may copy this architecture, not its emoji
+  vocabulary.
+
+#### Verified finding C: no operational PNG→TXT or coded acceptance path exists
+
+- `scripts/capture_reference_attempt.py` is the only automated intake command. Every terminal
+  branch writes proposal/geometry diagnostics, retains `candidate_sha256: null`, and returns 2;
+  its module contract explicitly forbids candidate TXT.
+- `src/lateletter/transcription/attempts.py:46` says candidate bytes come from a “future
+  orchestrator.” `write_candidate_bundle` is the enforced canonical writer but has no production
+  caller. The current scripts instead write a parallel `lateletter-reference-attempt-1` JSON
+  dialect through bare `Path.write_text`.
+- Of the 15 canonical IR record classes, production code constructs only `GeometryDecision`,
+  `InkComponent`, `GraphemeCandidate`, and `RecognitionProposal`; the other 11 are test-only.
+  `EvidenceRecord.status` remains a free string, `GateReport` permits `passed=true` with rejection
+  codes, and `write_candidate_bundle` does not require either a holding gate report or an approved
+  operator receipt.
+- `src/lateletter/cli.py` exposes no transcription command. Repo-wide source search finds no coded
+  owner for `accepted.txt` or `acceptance-receipt.json`. Existing accepted packages retain their
+  historical/operator authority, but they do not prove that the current converter can reproduce
+  them.
+
+#### Codebase-design verdict
+
+- **Current owners:** raster measurements are fused into
+  `geometry/evidence.py`; admission is split between that file and `geometry/router.py`; glyph
+  identity, ranking, adapter execution, benchmark orchestration, and diagnostic joint decoding are
+  fused into the 4,156-line `recognition.py`; immutable bundle persistence lives in `attempts.py`
+  but is unreachable from production.
+- **Stale/overlapping owners:** score-derived route authority, the second plausibility veto, compact
+  authority, `_mapping` re-routing, fallback advance chains, duplicated proof rewrites,
+  adapter-specific benchmark branches, closed-vocabulary heuristic ranking, and script-local JSON
+  writers. A replacement patch must delete the corresponding old owner in the same patch; no
+  parallel authoritative path may land.
+- **Candidate deep modules:** one geometry recovery owner that emits one coherent decision; one
+  open-repertoire proposal adapter boundary with evidence-based residual/collision/margin gates;
+  one calibrated ranking owner; and `pipeline.py` with separate `transcribe()` and `accept()`
+  functions. `accept()` is the sole future `accepted.txt` writer and must require an approved,
+  hash-bound `OperatorReviewReceipt` plus a holding machine gate.
+- **Interface/test surface:** current tests strongly protect hashing, immutability, fail-closed
+  capture, and historical artifacts, but no caller-level regression requires both accepted sources
+  to produce coherent geometry authority and no test exercises a successful PNG→candidate→review
+  path. Internal float/beam/artifact pins cannot serve as the product acceptance surface.
+
+#### Recharted sharp children and execution order
+
+1. **Grilling / HITL:** obtain the operator verdict on
+   `sitting-cat/evaluation/expected-transcript-candidate.txt`; bind approved bytes as benchmark-only
+   truth and keep them inaccessible to runtime generation/ranking.
+2. **Task:** emit the per-row coverage/rank matrix; label each miss absent, present-but-losing,
+   collision, or unsupported before changing a scorer.
+3. **Prototype:** make one geometry owner evaluate model-specific source proof—periodic/ownership
+   for fixed lattices and run/anchor/ownership for shaped text; demote branch-plausibility criteria
+   to diagnostics and remove class-eliminating gates. Exit requires coherent public results on
+   bbbb, a828, and the 26-source expected-mode replay.
+4. **Task, delete-first:** consolidate geometry ownership. Remove `route_geometry` from production,
+   compact authority, `_mapping` re-routing, fallback advance owners, duplicated acceptance/proof
+   rewrites, and stub adapter facades as their replacements land atomically.
+5. **Prototype, Slice 6 frontier:** implement the open-repertoire pinned recognizer on the atlas
+   residual/collision/margin pattern. It must move exact release/holdout proposal coverage without
+   becoming an acceptance oracle.
+6. **Task:** rebuild ranking after the matrix. Delete cost floors, glyph-whitelist bonuses,
+   duplicate rescoring, and codepoint tie-breaks; use one identity-sensitive objective calibrated
+   only on training/development evidence, with a pinned winner margin.
+7. **Task:** add `pipeline.py` and CLI `transcribe()` / `accept()` paths using canonical IR. Make
+   them the first production callers of the canonical writers; enum-constrain statuses and enforce
+   cross-record gate/receipt invariants in code.
+8. **Task:** repin tests at the public geometry, recognition, transcribe, and accept interfaces.
+   Accepted references must remain coherent; expected failures must remain unresolved for their
+   recorded reason; historical artifacts remain provenance tests, not capability tests.
+9. **Continuation only after children 1–8:** revalidate/complete logical grapheme, bidi/shaping,
+   width, collision, and exactly-once ownership gates; run immutable release/holdout benchmarks;
+   then require a nine-row visually correct sitting-cat replay before attempt 004, fresh horse 065,
+   or queue continuation.
+
+#### Corrections and limits
+
+- The supplied phrase “every one of the 12 failure-history items reproduces” is not promoted as a
+  literal count because the repository has no stable numbered twelve-item taxonomy. The named
+  mechanisms above are individually verified and are sufficient for the architecture verdict.
+- The audit scratch files cite the commit they inspected; this entry binds conclusions to the
+  current working tree. Line numbers are diagnostic anchors, not immutable IDs.
+- The repository does not contain the numbered FL/overlay CLI front doors required by the generic
+  FL skill (`scripts/analyze_failure_log.py` and `scripts/analyze_runs.py` are absent). The existing
+  legacy Markdown map is therefore updated in place instead of manufacturing standalone ADR/map
+  documents. No Git worktree was created and no source fix was attempted in this audit.
+
+- **Status:** VERIFIED AND RECHARTED; IMPLEMENTATION OPEN. The safety/immutability shell is real,
+  but correct geometry authority, open-repertoire glyph identity/ranking, and the production
+  `transcribe()` / `accept()` owner are not implemented. Attempt 004, horse 065, and queue
+  continuation remain blocked. ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
+  Unicode text-art recovery.
 
 ### External verification of the 7f6c816 milestone claim: six findings, three claim errors, three product/test defects (2026-08-04)
 
@@ -6720,6 +8195,23 @@ letter-typography defects, one deploy-cutover assertion).
 - **Status:** Implemented (unproven until operator-visible); full-suite receipts recorded at
   commit time. ComplaintRef: architecture review finding 5, 2026-08-04.
 
+### Sitting-cat evaluation candidate rejected; successor review required (2026-08-04)
+
+The operator reviewed `tracked/LateLetterResearch/transcription-parity/sitting-cat/evaluation/expected-transcript-candidate.txt`
+beside the immutable normalized source and explicitly rejected the candidate. The candidate
+remains frozen byte-for-byte with SHA-256
+`74334de57a948970f7eb91948ebc63d3d6fce4c06a1b4ecf8d0b975e5b83aba5`; it is not benchmark truth
+and remains inaccessible to runtime geometry, recognition, and ranking.
+
+This rejection is evaluation-only. It does not mutate attempts 001–003, does not create attempt
+004, and does not authorize a conversion or queue advance. A successor evaluation candidate must
+be stored under a new path and receive a separate operator verdict before the per-row coverage
+matrix can begin. The source hash remains
+`e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275`.
+
+- **Status:** REJECTED; successor evaluation candidate pending operator review. ComplaintRef:
+  operator verdict on sitting-cat evaluation transcript, 2026-08-04.
+
 ### Findings 3 and 4 rework: native touch injection, the swallow path exercised, the whole key map pressed (2026-08-04)
 
 **Finding 3 (touch).** `_touch_drag` now injects through CDP `Input.dispatchTouchEvent` --
@@ -6753,6 +8245,247 @@ the shadowing defect the recorded map exists to prevent.
 
 - **Status:** Implemented (unproven beyond the suites named); receipts at commit time.
   ComplaintRef: external verification findings 3 and 4, 2026-08-04.
+
+### Sitting-cat evaluation candidate 002 rejected: eye alignment offset (2026-08-04)
+
+The operator reviewed `evaluation/expected-transcript-candidate-002.txt` beside the source and
+rejected it as close but visibly misaligned in the eye glyphs. Candidate 002 is frozen unchanged
+with SHA-256 `fbbab93a69bb8b5e85b5d787a03d2a29a07e675e81be2d09a9822b86fd4cecd5`. This is an
+evaluation-truth rejection only; it does not authorize runtime use, attempt 004, or queue
+conversion. Candidate 003 must be a new immutable file and receive a separate operator verdict.
+
+- **Status:** REJECTED; successor candidate required. ComplaintRef: operator verdict on
+  sitting-cat evaluation candidate 002, 2026-08-04.
+
+### Sitting-cat evaluation candidate 003 rejected: lowercase-l glyph substitution (2026-08-04)
+
+The operator compared Candidate 003 with the source crop and rejected the third-row right-hand
+glyph: the source contains a vertical bar `|`, while Candidate 003 serialized lowercase `l`.
+Candidate 003 is frozen unchanged with SHA-256
+`6369ea4b05e50b5217f52f1c6a8e1d10859e879e4998d1f3eb97faa0d5d19cc7`. The rejection remains
+evaluation-only; no runtime, attempt, or queue authority changes.
+
+- **Status:** REJECTED; Candidate 004 required with the corrected glyph. ComplaintRef: operator
+  verdict on sitting-cat evaluation candidate 003, 2026-08-04.
+
+### Sitting-cat evaluation candidate 004 rejected: remaining visible structural mismatch (2026-08-04)
+
+The operator reviewed Candidate 004 beside the source and rejected it as visibly non-identical
+beyond the already corrected third-row `|`. Candidate 004 is frozen unchanged with SHA-256
+`c7f4d947572745aa1912b440b2cc6da6d8764640ed728cc26d866b71d34cbf36`. This remains evaluation-only
+rejection evidence; no runtime or conversion attempt may consume it.
+
+- **Status:** REJECTED; Candidate 005 required. ComplaintRef: operator side-by-side verdict on
+  sitting-cat evaluation candidate 004, 2026-08-04.
+
+### Sitting-cat benchmark truth unavailable: guessed-candidate loop terminated (2026-08-04)
+
+The operator rejected Candidate 005 and identified the broader workflow error: successive guessed
+transcripts turned operator review into manual recognition/tuning. Candidate 005 is frozen
+unchanged with SHA-256 `a307b53871862a90c18f0808a2550a7feb87721c0b839e1d141dc1a4c12543fe`.
+Candidates 001–005 are rejected benchmark-label evidence only. None may enter geometry,
+recognition, ranking, or runtime validation.
+
+No further hand-tuned evaluation candidate will be created. Sitting-cat evaluation truth is now
+`evaluation_truth_unavailable` until an authoritative original TXT or a renderer-generated
+hash-bound labeled fixture exists. This removes operator-supplied transcript approval from the
+implementation critical path. Operator review remains a final accept/reject gate for an
+independently generated machine candidate; it is not a recognizer or scorer input.
+
+The next work is the source-only geometry single-owner repair, followed by the open-repertoire
+recognizer and an independently generated sitting-cat replay. Attempt 004 remains forbidden until
+that replay passes machine gates and visual review.
+
+- **Status:** RECORDED; guessed evaluation loop stopped; implementation blocker moved to geometry
+  authority. ComplaintRef: operator correction of sitting-cat evaluation workflow, 2026-08-04.
+
+### Evaluation-truth correction passes focused geometry tests; full transcription suite stalls (2026-08-04)
+
+After marking sitting-cat evaluation truth unavailable, the focused raster geometry suite completed
+10 tests successfully, including the source-only connected-cat invariants. The full
+`tests/transcription` run was stopped after 103.56 seconds at 41 completed tests while still inside
+recognition-heavy work (`numpy` execution; no assertion failure or acceptance artifact). This is a
+runtime/decoder exit-gate failure, not evidence of geometry or transcription success. No attempt,
+candidate, or accepted file was modified.
+
+- **Status:** BLOCKED; full transcription suite must be bounded or replaced by the source-only
+  geometry gate before recognition work can proceed. ComplaintRef: 2026-08-04 execution replay.
+
+### Geometry public-authority regression exposes contradictory accepted-reference states (2026-08-04)
+
+The new public-interface regression replayed the two reviewed fixed references. It currently
+fails the authority contract in both directions: `bbbb-flowers` returns `status=rejected` with
+all four proof flags true, while `a8283c5cdb63b130` returns `status=proved` with pitch, phase, and
+ownership false. The router is still allowing branch plausibility and periodic diagnostics to
+disagree with the public decision. No candidate or attempt was written.
+
+- **Status:** BLOCKED; replace score/diagnostic routing with one model-specific geometry authority
+  before any recognition input can be considered authoritative. ComplaintRef: geometry authority
+  regression, 2026-08-04.
+
+### Geometry decision contract tightened; legacy cat test still expects diagnostic flags (2026-08-04)
+
+The raster authority owner now returns one coherent public decision for the reviewed fixed
+references, but the existing sitting-cat test still asserts `candidate_valid/pitch_proven` on a
+rejected unresolved decision. Those booleans are now authority flags, not diagnostic candidate
+survival signals; exposing them on rejection recreates the contradiction this slice removes.
+
+- **Status:** BLOCKED; repin the cat regression to inspect diagnostic candidates through
+  `bundle.projection_evidence`, while requiring all public decision proof flags to be false when
+  status is rejected. ComplaintRef: geometry authority contract, 2026-08-04.
+
+### Recognition-input builder retains a second geometry authority (2026-08-04)
+
+The raster router now owns production geometry selection, but `RecognitionInputBuilder._mapping()`
+still re-runs `assess_fixed_lattice`/`assess_shaped_runs` and chooses a mode when the caller omits one.
+The serialized-bundle path performs the same fallback. This permits recognition inputs to be built from
+diagnostic branch scores rather than the single public `GeometryDecision`, recreating the ownership split
+the preceding authority fix removed. Hypothesis inputs remain an explicitly unproved diagnostic path;
+authoritative inputs must consume an already-proved decision and selected geometry only.
+
+- **Status:** BLOCKED; remove the builder's mode-selection fallback and add an interface regression before
+  changing recognition scoring. ComplaintRef: geometry/recognition ownership audit, 2026-08-04.
+
+### Per-row proposal coverage/rank evidence was not emitted (2026-08-04)
+
+The proposal benchmark reports complete logical strings and adapter summaries, but it discards the per-run
+row proposal alternatives needed to classify a miss as absent, present-but-losing, visual collision, or
+unsupported. This prevents the required pre-scorer diagnosis and encourages blind ranking changes. The
+matrix must be built from source-derived run proposals after adapters execute; it may read an authoritative
+fixture transcript only for evaluation after proposal generation. Sitting-cat has no such truth after the
+operator rejected candidates 001–005, so its matrix must remain explicitly unavailable rather than consume
+those files.
+
+- **Status:** BLOCKED; retain row/run proposal evidence and emit a deterministic coverage/rank matrix before
+  modifying scorer weights. ComplaintRef: recognition authority audit, 2026-08-04.
+
+### Geometry-input ownership and proposal coverage gates partially repaired (2026-08-04)
+
+`RecognitionInputBuilder` no longer scores or selects a geometry branch. It requires an explicit mode and
+hydrates only the router-selected branch; unresolved or unproved mappings cannot create authoritative inputs.
+The benchmark now retains row/run proposal alternatives and emits a deterministic per-row coverage/rank
+matrix after adapter execution. The matrix records expected NFC rows only when an authoritative fixture
+transcript exists, plus adapter/hypothesis ranks, wrong top results, run-input hashes and repeat proposal
+hashes. A missing transcript returns `evaluation_truth_unavailable`, so sitting-cat's rejected hand-tuned
+files remain outside runtime and benchmark input.
+
+Focused geometry, router, writer-ownership, and matrix tests pass. This does not pass the release gate: the
+full transcription suite previously stalled in recognition, open-repertoire coverage is incomplete, and no
+production `transcribe()`/`accept()` path exists yet.
+
+- **Status:** PARTIAL; second geometry selector removed and pre-scorer coverage evidence available. Continue
+  with canonical production writer ownership before changing scorer weights. ComplaintRef: recognition
+  authority audit, 2026-08-04.
+
+### Canonical production transcribe/accept path is absent (2026-08-04)
+
+The repository has canonical evidence records and a sole `write_candidate_bundle` helper, but no production
+orchestrator constructs the records from a PNG, stops at the first failed gate, or performs receipt-gated
+promotion to `accepted.txt`. Existing OCR/decoder scripts remain diagnostic historical paths. Until the
+orchestrator exists, benchmark and adapter results cannot demonstrate the product path, and no candidate
+should be treated as reviewable.
+
+- **Status:** BLOCKED; add one fail-closed `transcribe()` owner and one receipt-gated `accept()` owner, then
+  test rejection/no-TXT and immutable promotion behavior. ComplaintRef: recognition authority audit,
+  2026-08-04.
+
+### Proposal-only geometry hypotheses restored without a second router (2026-08-04)
+
+The explicit-mode builder change initially rejected the already-materialized hypothesis mapping because it
+contains row bands but no candidate-list wrapper. That broke the unresolved sitting-cat proposal seam and
+caused an `IndexError` in the structural adapter test. The builder now accepts a concrete row/run branch only
+when `allow_unproved=True` and the mapping is explicitly marked with its mode; it never scores or selects a
+branch. The public raster decision remains unresolved with all proof flags false, while sitting-cat produces
+16 bounded source-derived hypothesis inputs for proposal-only measurement.
+
+- **Status:** CORRECTED; focused recognition, geometry, pipeline, router, and writer-ownership tests pass.
+  This does not authorize TXT, attempt 004, horse 065, or queue conversion. ComplaintRef: geometry authority
+  integration replay, 2026-08-04.
+
+### Stale zero-hypothesis validation superseded by current-tree replay (2026-08-04)
+
+The preceding external validation repeated the pre-fix state in which sitting-cat emitted zero proposal
+hypotheses and the structural adapter test failed. Replaying the same source against the current working
+tree now produces 16 deterministic proposal-only hypotheses; the exact structural adapter regression passes.
+The public decision remains correctly `rejected/unresolved` with all four proof flags false. The historical
+failure entry remains preserved, but it is no longer the current integration state.
+
+- **Status:** SUPERSEDED; no authority or TXT promotion follows from the proposal hypotheses. ComplaintRef:
+  current-tree sitting-cat hypothesis replay, 2026-08-04.
+
+### Current dirty-tree 26-image geometry replay recorded (2026-08-04)
+
+A bounded read-only replay ran against the 26 normalized PNGs listed in the external
+`character-dimensions.tsv`, using the current working implementation and a 22-second per-image timeout.
+The result is 11 `proved` (all four public proof flags true), 11 `rejected/unresolved` (all four flags false),
+and 4 timeouts. This replaces neither the historical 7/19 count nor a release gate: the source root is
+external, the implementation is dirty, and the timeout records are not geometry decisions. Full per-image
+source, geometry, evidence hashes and statuses are tracked in
+`tracked/LateLetterResearch/transcription-parity/geometry-replay/current-dirty-2026-08-04.json`.
+The operator-authored `eb861dc84400fc36` image is marked excluded from recognizer conversion despite its
+geometry status.
+
+- **Status:** MEASUREMENT ONLY; the current corpus is not hash-frozen and no TXT/attempt/acceptance may be
+  promoted from this replay. ComplaintRef: bounded current-tree 26-image geometry replay, 2026-08-04.
+
+### Production transcribe/accept owner added, recognition gate remains closed (2026-08-04)
+
+The earlier absence claim is now superseded. `src/lateletter/transcription/pipeline.py` is the sole
+production orchestrator: `transcribe()` snapshots the source, writes canonical source/normalization/
+geometry/gate evidence, and stops without candidate TXT when geometry or open-repertoire recognition fails;
+`accept()` is the separate hash-bound operator-receipt promotion owner. The CLI exposes both commands.
+Synthetic tests prove byte-identical promotion and overwrite refusal. No live PNG has produced a candidate:
+the open-repertoire recognizer gate is intentionally still closed.
+
+- **Status:** PARTIAL; writer ownership exists and fails closed, but recognition coverage and a passing live
+  candidate path remain open. ComplaintRef: production pipeline implementation replay, 2026-08-04.
+
+### Run-level recognition candidates discard source component ownership (2026-08-04)
+
+The geometry builder already records stable `component_ids` on every source-derived run, but the shared
+`_candidate()` constructor hard-codes `component_ids=()`. Structural, Tesseract, and emoji proposals therefore
+look component-bound in their run evidence while their grapheme candidates cannot prove exactly-once ownership.
+This is an ownership-boundary loss, not a recognizer-confidence issue. The repair must thread the run's recorded
+component IDs into every candidate without reading transcript truth or assigning characters during component
+extraction. Unsupported proposals may remain component-less because they do not claim source ink.
+
+- **Status:** OPEN; preserve the single geometry owner, carry source-derived component IDs through proposal
+  candidates, and add a deterministic regression before any ranking or TXT work. ComplaintRef: recognition
+  authority audit, 2026-08-04.
+
+#### Fix attempt 1 — ownership carried into proposal candidates (2026-08-04)
+
+`_candidate()` now accepts an explicit component-ID sequence and canonicalizes it to sorted unique IDs. The
+structural run adapter, Tesseract proposal path, and emoji atlas path pass the IDs from their source-owned run
+evidence; the benchmark forwards those IDs into both the run source and run-mask evidence. The structural
+proposal cache key includes the IDs, preventing an empty-ownership result from being reused for a later run with
+different ownership. Unsupported proposals remain component-less because they claim no source ink. The new
+regression asserts deterministic candidates retain the exact source IDs. Focused recognition tests pass.
+
+- **Status:** CORRECTED, not promoted; exactly-once ownership still requires the future decoder/gate to reconcile
+  candidate IDs against component evidence. ComplaintRef: recognition ownership transfer, 2026-08-04.
+
+### Combined transcription validation still stalls in raster proposal workload (2026-08-04)
+
+The focused ownership, geometry-authority, writer-ownership, and pipeline tests pass. A combined run of
+`tests/transcription/test_pipeline.py`, `test_authority_transfer.py`, `test_geometry_raster.py`, and
+`test_recognition.py` reached 34 passing tests, then remained in Pillow raster work until it was interrupted at
+approximately 103 seconds. This is a bounded validation failure, not evidence of a passing release suite and not
+attributed to the component-ID change. No immutable attempt, TXT, or acceptance evidence was modified.
+
+- **Status:** OPEN; keep the full-suite/runtime gate blocked and profile the slow proposal path before claiming
+  deterministic release validation. ComplaintRef: transcription ownership fix validation, 2026-08-04.
+
+### Dirty 26-image replay contains one non-resolving source basename (2026-08-04)
+
+The read-only hash audit of `geometry-replay/current-dirty-2026-08-04.json` cannot validate all 26 records because
+the record for the d4b reference names `d4b66f66373dc2b3f46d775ed3cb9eee.normalized.png`, while the external
+source is `d4b66f66373db2f3f46d775ed3cb9eee.normalized.png`. The replay evidence is therefore preserved as
+measurement-only, but its `hash_errors` set is not empty until a successor replay is generated from a corrected
+source inventory. No attempt, TXT, or accepted evidence is affected.
+
+- **Status:** OPEN; do not promote the replay counts to a release gate. Generate a new hash-bound replay only
+  after the source inventory is corrected. ComplaintRef: current dirty-tree geometry replay audit, 2026-08-04.
 
 ### Claim verification of e0afab8: four findings, all accepted and reworked (2026-08-04)
 
@@ -6798,6 +8531,416 @@ are accepted; the rework landed in one patch on top of e0afab8.
   receipt remains "minus the transcription lane" until that lane commits.
   ComplaintRef: claim verification of e0afab8, 2026-08-04.
 
+### Recognition diagnosis validated; geometry count and vocabulary count corrected (2026-08-04)
+
+Question:
+Does the explanation “placement is close while glyph identity is obviously wrong” accurately name
+the current pipeline failure, and what correction must govern the next executor order?
+
+Type:
+Codebase-design verification; Wayfinder rechart correction; source-only read audit
+
+- **Recognition verdict — confirmed:** The live structural proposal vocabulary remains a closed,
+  hand-listed set at `src/lateletter/transcription/recognition.py:513–521`; Tesseract still emits
+  one whole-run proposal at fixed confidence 0.25 and declares joined text-art unsupported;
+  `FixedLatticeStructuralAdapter` still returns `whole_run_proposal_unavailable`; PaddleOCR and the
+  independent EasyOCR/Surya adapter remain unavailable/model-not-pinned proposal stubs. Therefore
+  correct logical text outside the finite vocabulary cannot be recovered by ranking.
+- **Count correction:** The tuple contains **32 entries**, not 31. This was verified by importing
+  `_STRUCTURAL_GLYPHS` from the current tree. The count error does not weaken the finding: the set
+  still lacks ordinary letters and digits beyond `x`/`l`, Kanji, Arabic, combining sequences,
+  bidi coverage, and emoji identity.
+- **Lookalike mechanism — confirmed with nuance:** The named `|`/`l`/`│`, `/`/`／`/`ノ`/`ヽ`,
+  `_`/`＿`/`￣`, and ASCII/ideographic-space alternatives are present. A source shape with a
+  represented lookalike can be forced toward it by the current ranking; a shape without any
+  representable path remains unknown, unsupported, or `NO_CANDIDATE` rather than being recovered.
+- **Ranking mechanism — confirmed:** `_topology_row_variants` still `min()`-clamps listed
+  horizontal/bar/diagonal families to 0.26–0.34 at lines 1701–1721; `_source_topology_bonus` remains
+  a glyph whitelist; local and proposal selection still use string/codepoint ordering as their
+  final tie-break. `_proposal_fit_residual` still gives the fallback-font identity raster term 0.15
+  while interval placement alone receives 0.40 and span cardinality receives 0.20. This is the
+  direct mechanism by which the silhouette remains close while glyph identity is wrong.
+- **`aligned` correction — confirmed:** `align_logical_text_to_run` is a real fail-closed width
+  consistency gate and exposes width ambiguity, but `status=aligned` contains no glyph-identity
+  proof. The machine currently cannot accept from this surface, so the failure is wrong text being
+  forwarded to review without a sufficient identity signal, not an automated false acceptance.
+- **Ownership and deep-module finding — confirmed:** `_candidate` still hard-codes
+  `component_ids=()` at line 334. `EmojiAtlasAdapter` remains the in-repo deep-module pattern for a
+  pinned repertoire plus residual, collision, and margin gates, but it requires a
+  `geometry_proven_run` and does not supply general text coverage.
+- **Orchestration finding — confirmed:** No production `transcribe()` or `accept()` function
+  exists; `write_candidate_bundle` has no production caller; proposal capture emits no candidate;
+  and no coded owner writes `accepted.txt`. Recognition and ranking changes alone therefore cannot
+  produce the requested PNG→TXT product.
+
+#### Geometry correction to the pasted audit
+
+- The historical 26-source replay remains valid for its recorded tree: 7 proved and 19 unresolved.
+  It proves geometry was a co-equal primary blocker, not “the working stage.” It must not be quoted
+  as the result of the current dirty tree after subsequent geometry edits.
+- During this validation, concurrent local geometry work superseded the earlier accepted-reference
+  contradiction. The current public interface now returns coherent `proved/fixed_lattice` decisions
+  with all four proof flags true for both hash-identical tracked bbbb and a828 sources. The focused
+  raster suite passes 11 tests. This is partial implementation evidence only: the shaped portrait
+  criterion, one-band periodicity criterion, fallback advance owners, shallow criteria adapters,
+  and diagnostic scoring machinery still exist, and the full 26-source exit gate is not closed.
+- A first current-tree batch replay was invalid because geometry source changed while it ran. A
+  replacement process-pool replay failed before evaluating any source because Python 3.14 cannot
+  spawn workers from `<stdin>`. A thread-pool retry did not complete within the bounded review
+  window and was terminated. These are validation-harness failures, not conversion results. No new
+  current 26-source pass/fail count is claimed.
+
+#### Corrected ownership and ordering decision
+
+- Geometry authority and open-repertoire recognition remain co-equal architecture blockers. Finish
+  and delete-first consolidate the single geometry owner before claiming corpus recognition-input
+  coverage.
+- Before changing any scorer, emit the per-row coverage/rank matrix over fixtures whose expected
+  TXT is independently authoritative. Classify each miss as absent, present-but-losing, collision,
+  or unsupported. Sitting-cat remains source-only proposal inventory while
+  `evaluation_truth_unavailable`; no guessed transcript may be used to tune it.
+- Implement the open recognizer only for absent/unsupported coverage, then regenerate the matrix.
+  Rebuild ranking only for present-but-losing cases. Carry source component IDs into candidates;
+  otherwise exactly-once ownership remains undecidable at glyph level.
+- Complete logical/shaping/ownership gates, then implement the production `transcribe()` and
+  separate receipt-gated `accept()` owner. Re-pin tests at those public interfaces. Only after the
+  hash-frozen 26-source geometry replay and release/holdout benchmark pass may sitting-cat attempt
+  004, horse 065, or queue continuation begin.
+
+- **Status:** VALIDATED WITH CORRECTIONS; IMPLEMENTATION OPEN. Recognition explanation confirmed;
+  historical geometry failure confirmed; current accepted-reference geometry partially repaired;
+  current full-corpus geometry result unproved; executor frontier remains completion of the
+  delete-first geometry authority transfer. ComplaintRef: Wayfinder/codebase-design verification:
+  converter safety surrounds missing correctness owners, 2026-08-04.
+
+### Geometry authority repair severed the unresolved proposal-evidence seam (2026-08-04)
+
+Question:
+Did the current single-owner geometry correction preserve the non-authoritative evidence path that
+recognition development needs for an unresolved source?
+
+Type:
+Cross-boundary regression; geometry authority versus recognition proposal evidence
+
+- **Observed state:** On the hash-tracked sitting-cat source, `route_raster_geometry` now returns a
+  coherent rejected/unresolved public decision with all four proof flags false. The bundle records
+  eight fixed-lattice candidates and one shaped-run candidate, but zero selected periodic-authority
+  candidates. `build_recognition_hypothesis_inputs(..., max_hypotheses=16)` consequently returns an
+  empty tuple.
+- **Test evidence:** The focused recognition/authority run produced 5 passes and 1 failure. The
+  failure is
+  `test_structural_unicode_row_adapter_is_real_deterministic_proposal_source`: indexing the first
+  proposal hypothesis raises `IndexError` because no hypothesis is emitted. This is not evidence
+  that the rejected source should gain geometry authority.
+- **Ownership diagnosis:** Public authority and proposal evidence are different products. An
+  unresolved geometry decision must remain rejected and may not authorize TXT, while bounded,
+  source-derived geometry alternatives must remain available to proposal-only recognizers with an
+  explicit non-authoritative state. Removing the latter while repairing the former makes recognizer
+  coverage impossible to measure and invites restoration of the forbidden second router.
+- **Required successor:** Preserve one geometry owner. Add a typed proposal-only hypothesis surface
+  derived from recorded candidates, carrying source/evidence hashes and `authoritative=false`.
+  It must have no candidate writer, acceptance path, or ability to set pitch/phase/ownership proof.
+  Delete any fallback that independently re-routes the image. Exit only when the public decision
+  remains rejected with all proof flags false, proposal hypotheses are reproducibly available, and
+  the focused authority/recognition tests pass.
+
+- **Status:** OPEN INTEGRATION BLOCKER. No source code was changed by this audit; no TXT or attempt
+  was created. ComplaintRef: validated converter diagnosis and corrected executor order,
+  2026-08-04.
+
+#### Current-tree correction — proposal seam and component ownership are restored (2026-08-04)
+
+The open-blocker status immediately above was stale when written. The current tree keeps
+sitting-cat publicly `rejected/unresolved` with pitch, phase, ownership, and candidate-valid proof
+flags all false, while `build_recognition_hypothesis_inputs(..., max_hypotheses=16)` returns 16
+deterministic, source-derived, proposal-only hypotheses. The exact structural-adapter regression
+passes. Run-level candidates also retain canonicalized source component IDs; the focused
+recognition/authority/component-ownership run passes 5 tests.
+
+No sitting-cat TXT or attempt 004, horse attempt 065, or acceptance was created. The next blocker
+is not the proposal seam: it is a new hash-correct 26-image geometry replay. The current dirty replay
+remains measurement-only because its d4b record basename does not resolve to the external source
+basename. Only after the corrected inventory and complete bounded replay are hash-bound may
+open-repertoire proposal coverage become the active implementation frontier.
+
+- **Status:** SUPERSEDES THE OPEN-BLOCKER STATUS ABOVE. Current frontier: hash-correct 26-image
+  geometry replay, followed by open-repertoire proposal coverage. ComplaintRef: operator stale-state
+  correction and current-tree verification, 2026-08-04.
+
+### Whole-product E2E Wayfinder audit: green Garden proxies coexist with an incomplete product and a stale release matrix (2026-08-04)
+
+**Destination.** One accepted author surface creates a normal sealed `.lateletter`; the browser
+and terminal recipient paths open that exact file, deliver/read/persist its letters and authored
+Garden arc through normal controls, satisfy the fourteen SPEC 7.8.13 gates plus security,
+accessibility and packaging, pass from a clean local release artifact, receive the required human
+verdicts, and only then replace the frozen public legacy deployment.
+
+**Measured current state.** `https://rikiworld.com/lateletter/` returned HTTP 200 and bytes exactly
+equal to `legacy/viewer-bnw.html` (SHA-256 `93d239576b94328c3164a9a2781bd8cf7ef1825f709b2b35dfa06b843af50faa`),
+not the root candidate. Candidate commit `fb7e71f` records 35/35 real-Chrome Garden E2E; the Garden
+Node suites independently reproduce 205/205. The non-transcription, non-browser-E2E Python suite
+holds 796 tests and fails four: the intentional legacy deploy owner plus three visible letter-body
+typography defects. The full Python result is unknown while the mixed transcription lane remains
+dirty and its complete run is blocked/stalled. A root `_site` closes at 28 files only under the
+explicit `--skip-release-gate` bypass; the normal release build correctly refuses.
+
+**Product gaps, not test-count gaps.** The intended HTML author surface cannot start because
+`author.html` imports the absent `web/author-app.mjs`; the Python author service is implementation
+evidence, not the accepted author UI. `PresentationFrame` still does not own final measured
+placement, stateful presentation time, or the terminal adapter. The release validator reports 16
+unaccepted atlas assets, 4 unaccepted recipes, 5 divergent implementations claiming deployed
+approval, 4 gameplay-art owners outside the atlas, one unreviewed starter composition, and four
+outstanding direct human verdicts. macOS signing/notarization, cross-browser and assistive-tech
+observation, performance receipts, the complete security/failure-mode pass, and the handoff package
+remain open. Production therefore stays on the legacy builder.
+
+**New status-owner defect.** `tests/garden_acceptance/gate_matrix.json` still says touch cannot
+reach two starter fixtures and arrow focus is undecided, although the 35-test browser suite now
+proves native touch pan/tap and every recorded key binding. Its green drift test searches raw test
+source for historical failure phrases, so corrected test docstrings preserve exactly the strings
+that let stale blocker prose pass. The same matrix also claims 200% zoom holds although no current
+browser E2E sets or measures 200% zoom. The gate statuses remain truthful (2 and 12 are PARTIAL),
+but their reasons are not.
+
+**Fix attempt 1.** Replace the stale gate-2/gate-12 prose with the exact positive browser selectors
+and the real residual blockers; attach those selectors to each partial gate's `automated_checks`;
+replace the historical-phrase grep with a structural check that every cited test exists and is not
+xfail, and explicitly prohibit the retracted touch/arrow/200%-zoom claims. This repairs the status
+owner only. It does not promote either gate, authorize art, accept a composition, or change
+deployment.
+
+- **Status:** WHOLE PRODUCT NOT E2E COMPLETE; STATUS-MATRIX REPAIR IN PROGRESS. Garden Wayfinder
+  frontier remains the atomic final-frame ownership transfer. Whole-product critical path also
+  includes the missing HTML author adapter and recipient typography before sealed local review.
+  ComplaintRefs: Wayfinder map: explain why the canonical candidate does not reproduce the
+  deployed Garden; Architecture verdict on the presentation seam: REJECTED; route step reopened.
+
+**Fix attempt 1 result — corrected, not promoted.** Gates 2 and 12 now cite the exact live browser
+tests that support their positive claims and name the larger modality/accessibility matrices that
+remain unexecuted. The guard parses the browser test module, requires every cited selector to name
+a collected non-xfail test, forbids the three retracted claims, and requires an explicit residual
+blocker while either gate is PARTIAL. The generated report now says 7 PASS, 5 PARTIAL, 2 BLOCKED;
+neither partial gate was promoted.
+
+**Fix attempt 2 — recipient typography, 2026-08-04.** The three known-red recipient defects were
+still present in the product even though the 2026-07-26 Failure Log records a locally corrected
+version: `LETTER_FONT` and `LETTER_LH` again duplicated the stylesheet, the responsive 12px phone
+font was measured as 13px, and empty paragraph rows still generated no line box. The fix deletes
+both constants, makes `letterMetrics(el)` derive the canvas font, line height, and content width
+from the painted element, keys the PreText cache by both text and computed font, and gives an empty
+`.ll` row a zero-width generated inline. This does not add a second typography owner; CSS remains
+authoritative and the layout adapter consumes its computed result.
+
+**Executed receipt.** The real unsigned demo flow was opened in system Chrome through welcome →
+Garden → open letters → passphrase → archive → reading at 1280×800 and 390×844. Desktop painted at
+13px/21.45px; phone painted at 12px/19.8px. All four paragraph breaks measured one line box at both
+widths. Every justified line ended within 0.19px of the content edge; neither viewport entered the
+fallback path and neither emitted a console error. A permanent browser regression now repeats that
+path and fails if responsive font ownership, paragraph height, or right-edge placement diverges.
+The combined product-path Chrome suite holds **36/36**; the Garden Node suite holds **205/205**;
+the non-transcription Python product suite holds **799** and fails exactly one test,
+`test_pages_deploy_builds_and_verifies_transitive_browser_asset_closure`, because the workflow
+still names the frozen legacy builder. That failure remains intentionally red until cutover. The
+mixed transcription lane was not modified or included in this receipt.
+
+- **Status after attempts 1–2:** WHOLE PRODUCT NOT E2E COMPLETE. The stale release status and the
+  three recipient typography defects are corrected locally. These corrections do not close the
+  missing author application, presentation-frame ownership transfer, recipe/atlas divergence,
+  sealed-bundle scenario sweep, human visual/accessibility verdicts, clean release artifact, or
+  deployment cutover. No cutover is authorized.
+
+**Wayfinder map refinement — the E2E is the specified author-to-recipient lifecycle, not a suite
+count (2026-08-04).**
+
+Destination:
+One first-time author completes the accepted author experience without editing JSON, produces one
+hash-recorded normal sealed handoff package, and that exact package drives the full browser and
+terminal recipient experiences: first-run Garden, authentication, delivery, reading, everyday
+nurturing, authored world changes, persistence/absence, discovery, archive/re-reading and the
+post-completion memorial. Machine checks establish state/security/parity; direct human observation
+separately accepts the emotional and visual moments. Only that lifecycle can authorize cutover.
+
+Notes:
+- Governing contract: SPEC §§1, 4–7, especially §§5, 6.5–6.9, 7.8 and 7.8.13, plus §§15, 18–20.
+  Section 7.8 explicitly supersedes narrower prototype scope when they conflict.
+- The operator withdrew **Tamagotchi** as the product frame on 2026-07-30. The retained contract is
+  humane nurturing: care and relationship without hunger debt, sickness, death, streaks, guilt,
+  decay or compulsory return. The recipient nurtures; the author composes; only standalone mode
+  adds placement agency.
+- A proof surface is not another proof surface. Direct compiler/reducer tests, browser E2E, terminal
+  E2E, release-artifact closure and human visual review remain separately named.
+- The Wayfinder FL helper commands documented by the skill are not present in this repository.
+  This refinement therefore stays in the existing Failure Log map rather than creating a scratch
+  map, standalone ADR or untracked planning document.
+
+Decisions so far:
+- One artifact lineage — downstream tests must consume the bytes produced by the accepted author
+  surface; rebuilding an equivalent fixture in test code breaks the E2E.
+- Author places and schedules; recipient nurtures — recipient placement/move/rotate controls are a
+  defect, not parity.
+- Garden before UI — the recipient first receives a living place, then recognition, then the
+  invitation to open letters.
+- Picture-owned browser interaction — click/tap/hover/focus act through visible ink; labels, cards,
+  action sheets and object lists may not be painted over it.
+- Production legacy remains a visual comparison source, not evidence of canonical gameplay,
+  author-program, security, accessibility or cross-renderer completion.
+
+Not yet specified:
+- The accepted final visual composition, remaining per-asset verdicts and the four direct human
+  verdicts. These are deliberate human gates, not gaps an agent may fill in.
+- The approved nonvisual browser interaction surface for secondary actions after the visible list
+  and action-card model was withdrawn.
+
+Out of scope:
+- Deployment cutover, personal copy, and any production mutation before the local lifecycle and
+  human gates pass.
+
+**Canonical author E2E, derived from the existing SPEC.**
+
+1. **Launch/resume safely.** Start the installed author product offline. Choose resume or fresh;
+   detect corrupt session state; autosave atomically; never persist the passphrase. The curses and
+   accessible line-mode paths expose equivalent work.
+2. **Consent, people and wishes.** Enter editable author/recipient identity and relationship,
+   dates, memories, steward/contact and incapacity wishes, passphrase and required hint. Show the
+   no-recovery warning when the passphrase is confirmed, not only at export.
+3. **Create message slots.** Add, remove and revisit labelled delivery slots. Dates are editable;
+   TBD messages block export. Finalized messages may coexist with unfinished ones.
+4. **Conduct the interview.** Use the reviewed offline question bank without network access;
+   support skip/easier/more-specific controls, intensity pacing, deduplication, autosave and exact
+   resumption after interruption. LLM synthesis remains optional; offline answers become notes for
+   manual composition.
+5. **Write and preview truthfully.** Edit the letter, remove interview scaffolding before sealing,
+   and preview it through the same PreText measurement and responsive typography the recipient
+   paints. The preview must not be an approximation.
+6. **Compose the opening Garden.** Select the initial plants, fixtures and at most the v1 active
+   relationship animal through an approachable author surface. This is author composition, not the
+   catalog dumped into a starter scene and not a raw JSON textarea.
+7. **Direct the future Garden.** In a fatigue-aware beat/timeline editor, author conditions and
+   actions across letters, visits, dates, seasons, absence, plants, animals, fixtures, keepsakes,
+   sky and revisit beats. Preview at arbitrary state/time, inspect an eligibility trace, fast
+   forward through DST/years/absence, resolve conflicts, and block export on invalid or unreachable
+   arcs. Preview and recipient runtime use the same evaluator.
+8. **Review and seal.** Read back all letters and Garden direction; validate references, privacy,
+   temporal reachability, placement and recurrence; confirm the passphrase; seal messages and the
+   Garden program with bounded PBKDF2/AES-GCM; compute checksum/HMAC; round-trip the result before
+   promoting it.
+9. **Export the delivery, not merely JSON.** Incremental finalization keeps a valid bundle and
+   handoff current after every completed message. Formal export atomically produces the
+   `.lateletter`, verified static viewer closure, README, optional notifier and packaged app;
+   presents backup/PII/passphrase warnings; and offers secure completed-draft cleanup while keeping
+   unfinished notes by default.
+10. **Resume/append/incapacity.** Reopen the exact bundle, authenticate before append, preserve old
+    ciphertext and bundle identity, merge rather than replace the existing Garden program, update
+    the handoff atomically, and leave a steward-capable continuation path that exposes no unfinished
+    plaintext to the recipient.
+
+**Canonical recipient E2E, including the humane nurturing Garden.**
+
+1. **Receive a complete package.** On a clean supported machine with no repository, Python or
+   developer tools, open the packaged app or deployed/static viewer and select the exact author
+   artifact. Terminal remains an equal semantic renderer and input path.
+2. **First impression is the Garden.** For 3–5 seconds show only a living, deterministic personal
+   Garden: moving weather, swaying plants and ambient life. Then fade in that it was planted by the
+   author and expose the simple invitation to open letters. No auth jargon, diagnostic controls or
+   action chrome appears.
+3. **Fail closed before trust.** Verify checksum at load. Corruption leaves the Garden available but
+   suppresses unlock/delivery. Before HMAC success reveal no due count, label, date-derived delivery
+   claim, private Garden program, animal name, inscription or memory.
+4. **Authenticate compassionately.** Show the hint immediately, run bounded derivation, clear the
+   passphrase, verify HMAC and the complete encrypted transaction, and use one generic failure for a
+   wrong phrase or tamper. A failed attempt returns to the Garden without destroying it or leaking
+   schedule state.
+5. **Make delivery an event.** After authentication and due evaluation, the letter-bird arrives and
+   waits; a full-bond animal may deliver instead. Multiple due letters use one delivery actor and a
+   count. Pacing, dimming and anticipation must make this feel like arrival, not a dialog opening.
+6. **Read, persist and re-read.** Open the due letter with its decrypted label/body, responsive
+   typesetting, paragraph structure, scrolling and save-to-text. Commit the receipt only after the
+   reading surface successfully opens. Archive access remains available after authentication;
+   read letters reopen, due letters show dates until opened, and future letters remain locked.
+7. **Live there when no letter is due.** The Garden supports glance (notice/inspect), tend (one care
+   action, animal interaction and collection/journal observation) and dwell (multiple plants,
+   animal routine, collections and panning) sessions. The loop is notice → gentle choice →
+   persistent response → collect/remember → leave freely.
+8. **Nurture without punishment.** Existing plants can be observed, watered and interacted with;
+   care affects topology/bloom/visitors/collectibles/event eligibility rather than only particles.
+   The one authored animal develops through visibly distinct Stranger, Familiar, Bonded and Full
+   Bond behavior through varied observe/feed/play/shared-space interactions. Bond never decays;
+   absence creates at most bounded evidence of elapsed life and a three-item welcome-back summary.
+   Nothing dies, sickens, shames, expires or demands a streak.
+9. **Preserve the agency split.** Browser click/tap on visible ink performs the declared safe
+   primary; hover may alter the picture but show no text; spatial keyboard focus plus Enter acts on
+   the same object. Touch, pointer, keyboard and terminal produce the same canonical commands and
+   persisted effects. Recipient placement/move/rotate/undo remains absent; author and standalone
+   own those verbs.
+10. **Let the authored Garden unfold.** The exact encrypted program changes the world on date,
+    visit, letter-read, relationship and compound conditions; missed events follow their declared
+    policy once; deterministic traces match author preview. Items are discovered in the scene and
+    reveal the author's encrypted short memory as a quiet find, not an achievement notification.
+11. **Persist one semantic life.** Browser IndexedDB and terminal storage retain canonical world,
+    journal, inventory, bond, plant growth, event receipts and read receipts in their authenticated
+    bundle namespace. Reload, resize, background suspension, clock rollback and long absence do not
+    duplicate or erase progress. Storage denial may make the Garden ephemeral but never blocks
+    letter reading or promotes a renderer to gameplay owner.
+12. **Become a memorial without ending.** After the last letter, show the memorial flower, lasting
+    delivery/bonded animal, release all remaining authored gifts, change the archive footer and
+    retire new-delivery UI. Weather, seasons, nurturing, archive and the place itself continue.
+13. **Meet the failure/accessibility contract.** Repeat the flow across browser/terminal and the
+    packaged app with corrupted/tampered/unknown bundles, wrong passphrase, storage denial, crash
+    during save/export, mobile, 320px, actual 200% zoom, reduced motion/pause, no color, keyboard,
+    VoiceOver/NVDA and supported browsers. Machine evidence does not replace direct observation of
+    waiting, delivery, bonding, discovery, standalone value and post-completion.
+
+**Audit against that lifecycle — current tree.**
+
+- **HTML author: BLOCKED AT BOOT.** `author.html` declares a seven-stage desk but imports missing
+  `web/author-app.mjs`. Even its inert markup contradicts §7.8.10 by exposing a raw Garden timeline
+  JSON textarea, and it lacks the full steward/wishes/handoff flow. No browser author E2E exists.
+- **Terminal author: PARTIAL.** Intake, offline questions, drafting, resumable plain-language Garden
+  timeline, compile/preview, sealing, append and cleanup owners exist. The tests commonly replace
+  the draft editor, timeline editor or export destination with mocks, so no test drives one
+  first-time author through the actual complete interface. Export writes a `.lateletter` and tells
+  the author to give over that file; it does not generate the §15.1 handoff folder.
+- **Artifact lineage: BLOCKED.** No test takes bytes emitted by the accepted author experience and
+  passes those unchanged into both recipients. Author tests stop after inspecting Python bundle
+  objects; recipient tests manufacture independent bundles.
+- **Browser sealed flow: PARTIAL.** The current real-Chrome helper seals one message directly with
+  `Bundle`, `seal_message` and `seal_bundle`, has no Garden program, and checks pre-auth Garden,
+  successful auth and wrong-pass secrecy. Its own comment explicitly excludes asserting the letter
+  body. The responsive letter E2E uses the unsigned development fixture. Neither test exercises the
+  authored arc, archive/re-read/reload, discoveries, care loop, absence or memorial through one
+  normal sealed product path.
+- **Garden/browser interaction: SUBSYSTEM EVIDENCE, NOT PRODUCT E2E.** Current Chrome coverage proves
+  accepted starter-fixture primary actions, hover, focus, touch pan/tap, motion, season and layout,
+  mostly through standalone/review worlds. It does not drive water, plant interaction, animal
+  observe/feed/play, collect, journal and pause through every modality against an authenticated
+  authored world, and secondary-action accessibility remains open.
+- **Author-control Gate 8: FALSE PASS.** Its cited test constructs `Timeline`, compiles it, seals a
+  bundle and calls `preview_timeline`/`evaluate_program` directly. It proves evaluator parity, not
+  that an author tool expresses or previews the arc without JSON as Gate 8 requires.
+- **Production-reachability Gate 1: FALSE CLAIM INSIDE PARTIAL.** The matrix says the complete normal
+  sealed flow passes locally. No such lifecycle exists; its browser evidence stops after auth and
+  its authored-arc evidence never enters a browser or terminal UI.
+- **Terminal recipient: PARTIAL.** Real sealed v2 program materialization, authentication, letter
+  and canonical world behavior have focused scripted tests. There is no same-artifact browser ↔
+  terminal lifecycle or complete clean-user journey covering all nurturing and memorial stages.
+- **Production legacy: VISUAL BASELINE ONLY.** It has a coherent layered Garden, bundle unlock,
+  reading/archive, legacy gifts and a feed interaction, which is why it feels alive. It does not
+  consume the canonical encrypted Garden program or satisfy the current agency, parity,
+  accessibility and release contract.
+- **Human experience: BLOCKED.** The five §6.9 emotional moments, standalone glance/tend/dwell,
+  animal tiers, authored arc, touch discovery and memorial still lack the required operator field
+  notes/verdicts.
+
+**Completion rule.** “Full E2E” may be claimed only when the test receipt names: the author entry
+point; output artifact hash; handoff closure hash; browser and terminal entrypoints; clean-state and
+restored-state identities; every lifecycle phase reached; canonical state/receipt deltas; negative
+failure vectors; accessibility environment; and separate human verdict references. A test count
+without that lineage is a subsystem receipt.
+
+- **Status:** MAP REFINED; RESEARCH CHILD RESOLVED; WHOLE PRODUCT E2E BLOCKED. The first executable
+  frontier is the accepted author surface producing the canonical sealed handoff artifact. Nothing
+  downstream can become the product E2E while tests continue manufacturing their own bundle.
+
 **Validation of the 2026-08-04 Wayfinder lifecycle audit — every checked citation holds
 (2026-08-04, at fb7e71f).**
 
@@ -6840,6 +8983,329 @@ handoff artifact. They govern different layers; the next executable step for thi
 operator's pick: (a) continue the reopened presentation steps 2–4 (frame ownership) as previously
 ordered, or (b) divert to the author-surface frontier first. No code was changed during this
 validation.
+
+### Wayfinder child: accepted author surface emits the canonical sealed handoff artifact
+
+Question:
+Can a first-time author complete intake → interview → exact preview → approachable opening-Garden
+composition → fatigue-aware authored arc → validation → sealing → atomic handoff, then resume and
+append, without raw JSON, mocked stages or developer tools, while producing the one artifact every
+recipient E2E consumes unchanged?
+
+Type:
+task
+
+- **Entry evidence:** SPEC §§5, 7.8.10, 15.1 and 18; the lifecycle audit immediately above.
+- **Exit evidence:** one executed accepted-author-surface test, artifact and closure hashes, secret
+  non-persistence checks, invalid-arc/export refusal, append preservation, and the emitted package
+  registered as the only downstream recipient E2E input.
+- **Status:** OPEN, first unblocked Wayfinder frontier. No implementation started in this audit.
+  ComplaintRef: Whole-product E2E Wayfinder audit: green Garden proxies coexist with an incomplete
+  product and a stale release matrix.
+
+### Hash-bound 26-source geometry replay completed (2026-08-04)
+
+The source inventory was regenerated from the external `character-dimensions.tsv` with all 26 normalized PNGs
+present and content-hashed. A separate implementation-identity receipt records the dirty working-tree hashes of
+the geometry, component, recognition, model, and schema modules before replay. The identity-pinned replay then
+ran every source with a 90-second per-source bound: 12 `proved`, 14 `rejected/unresolved`, 0 timeouts, and 0
+harness errors. Every source hash matched the inventory and every proved record carried all four proof flags true;
+the d4b basename is now the actual `...db2f3...` filename. The operator-authored `eb861dc84400fc36` image remains
+explicitly excluded from recognizer authority.
+
+Artifacts:
+
+- `geometry-replay/source-inventory-2026-08-04.json` — inventory hash
+  `8499a71f5cd5b0b81c800906fa8cfbf507f4a4acd5ce267f34b2559399bb294f`;
+- `geometry-replay/implementation-identity-2026-08-04.json` — identity hash
+  `f1cbfc8604bba6de697202b72986939a11722dd405a050fa2f1db1d90fbb186b`;
+- `geometry-replay/current-frozen-identity-2026-08-04.json` — replay bound to both hashes.
+
+Because the source root is external and the repository is dirty, this is a reproducible measurement receipt, not
+a release gate. No attempt, TXT, candidate, or acceptance evidence was created.
+
+- **Status:** CORRECTED MEASUREMENT; the next frontier is proposal coverage/rank evidence, followed by
+  open-repertoire recognition. ComplaintRef: hash-bound current 26-source geometry replay, 2026-08-04.
+
+### Coverage-matrix harness invocation omitted project import path (2026-08-04)
+
+The first read-only coverage-matrix invocation failed immediately with `ModuleNotFoundError: lateletter` because
+the inline runner did not set `PYTHONPATH=src`. It produced no matrix and changed no source, attempt, TXT, or
+acceptance artifact. The successor invocation must bind the project source path explicitly and retain its own
+environment-lock hash.
+
+- **Status:** FAILED HARNESS INVOCATION; retry with the corrected environment before interpreting proposal
+  coverage. ComplaintRef: coverage/rank matrix pre-scorer measurement, 2026-08-04.
+
+### Coverage matrix merged unsupported adapters into valid proposal rows (2026-08-04)
+
+The first successful release-fixture matrix was structurally misleading: `_coverage_rank_matrix()` keyed row
+evidence only by `(hypothesis_id, row_index)`. Tesseract's unavailable profile and the structural adapter therefore
+shared one group; the empty Tesseract run caused `row_options()` to return no observations, erasing structural
+proposals and labeling every row `unsupported`. This is a measurement aggregation defect, not recognition
+coverage. Adapter identity must be part of the grouping key so unsupported profiles cannot delete another adapter's
+source-derived evidence.
+
+- **Status:** OPEN; fix the matrix grouping, regenerate the matrix without changing scorer or adapter behavior,
+  and preserve the misleading matrix as rejected measurement evidence. ComplaintRef: coverage/rank matrix
+  pre-scorer measurement, 2026-08-04.
+
+### Coverage matrix dropped the first valid proposal from every row (2026-08-04)
+
+After adapter grouping was separated, a second matrix defect became visible: `row_options()` initialized its
+prefix sentinel to `("",)` but then returned `options[1:]`, even though the first expansion already contained the
+first real proposal rather than an empty sentinel. Consequently `(=)` was dropped from the fixed-ASCII row and
+the matrix reported a false absence. The function must return the expanded options directly; this changes only
+measurement indexing, not recognizer proposals or ranking.
+
+- **Status:** OPEN; correct the row-option sentinel handling, regenerate the matrix, and retain both misleading
+  matrix artifacts as superseded evidence. ComplaintRef: coverage/rank matrix pre-scorer measurement, 2026-08-04.
+
+### Release-fixture coverage/rank matrix corrected without scorer changes (2026-08-04)
+
+The matrix grouping and first-option defects are corrected. The regenerated artifact
+`coverage-rank-matrix-2026-08-04-v3.json` reuses the same recorded source-derived proposal bytes and changes only
+the measurement aggregation. It is bound to the corpus hash and environment-lock hash already recorded in the
+superseded matrix, and it never receives sitting-cat truth. Results include fixed ASCII `/\\_|` present-but-losing
+at rank 4, `(=)` present-and-winning at rank 1, degraded fixed art with one winning and one absent row, and
+explicit unsupported/absent classifications for the uncovered Unicode families. No scorer, adapter, candidate,
+TXT, or acceptance path changed.
+
+- **Status:** CORRECTED MEASUREMENT; proposal coverage is now evidenced before ranking work. The open-repertoire
+  recognizer remains blocked on the absent/unsupported families. ComplaintRef: corrected release-fixture
+  coverage/rank matrix, 2026-08-04.
+
+### Coverage matrix successor used recognition-input hashes as source identity (2026-08-04)
+
+The v3 matrix corrected adapter grouping and proposal indexing, but its regenerated rows were keyed with
+`recognition_input_hash` instead of each fixture's source PNG SHA-256. That is the wrong identity for a source-level
+coverage receipt and was empty for rejected geometry fixtures. The v3 artifact is preserved as superseded evidence;
+the successor must bind every row to the corpus fixture's `source_sha256` while retaining the same recorded proposal
+bytes and classifications.
+
+- **Status:** OPEN; regenerate the matrix with corpus source hashes before using it as the coverage authority.
+  ComplaintRef: coverage/rank matrix source identity audit, 2026-08-04.
+
+### Coverage/rank matrix source identity corrected (2026-08-04)
+
+`coverage-rank-matrix-2026-08-04-v4.json` supersedes v3 and binds all ten release-fixture matrices to their
+corpus `source_sha256` values. It retains the corrected adapter-separated grouping and first-proposal indexing,
+and preserves the same recorded proposal evidence; no recognizer or scorer ran during this measurement-only
+regeneration. All ten source hashes are 64-character SHA-256 values, and sitting-cat remains absent from the
+matrix because its evaluation truth is unavailable.
+
+- **Status:** CORRECTED; coverage/rank evidence is now source-hash-bound. Open-repertoire implementation may
+  address only the absent/unsupported families; ranking changes remain gated on new proposal coverage.
+  ComplaintRef: coverage/rank matrix source identity correction, 2026-08-04.
+
+### Coverage-matrix verification command named a test as a file (2026-08-04)
+
+The first post-v4 verification command passed artifact/hash checks but pytest ran zero tests because the
+component-ID test was supplied as `tests/transcription/test_run_level_candidates_preserve_source_component_ids`
+instead of its actual module path `tests/transcription/test_recognition.py::test_run_level_candidates_preserve_source_component_ids`.
+No source or evidence artifact changed.
+
+- **Status:** FAILED HARNESS INVOCATION; rerun with the correct pytest node. ComplaintRef: coverage/rank matrix
+  verification, 2026-08-04.
+
+### Open-repertoire recognition is absent for non-structural rows (2026-08-04)
+
+The source-hash-bound matrix now separates the actual gaps: the finite structural adapter can propose some
+punctuation rows, but ordinary Latin/combining rows are absent or present-but-losing, and kana/Kanji/width/emoji
+families are unsupported under the current pinned environment. Tesseract has only the global `eng` pack and no
+project-controlled cache, while Arabic shaping and an explicit CJK repertoire are not pinned. Expanding the
+32-symbol structural table would repeat the closed-vocabulary defect. The next recognizer slice must add a
+source-only, run-level, hash-pinned repertoire adapter with residual/collision/margin evidence; unsupported
+families must remain rejected rather than guessed.
+
+- **Status:** OPEN; implement the Unicode template proposal adapter and tests before changing ranking. ComplaintRef:
+  open-repertoire recognition frontier, 2026-08-04.
+
+### Unicode template adapter selected the wrong capability rejection reason (2026-08-04)
+
+The first adapter regression exposed a status-surface defect: `CapabilityProfile` sorts unsupported cases for
+stable serialization, while `propose()` selected the final tuple element as its rejection code. An unpinned font
+therefore reported `visual_unicode_collision` instead of the concrete `template_font_unpinned` prerequisite. The
+adapter must choose rejection reasons by a pinned blocker precedence, not sorted presentation order.
+
+- **Status:** OPEN; correct blocker selection and rerun the adapter tests. ComplaintRef: open-repertoire
+  capability-profile gate, 2026-08-04.
+
+#### Fix attempt 1 — blocker precedence and source-owned proposal tests (2026-08-04)
+
+`UnicodeTemplateRunAdapter` now selects capability failures by explicit prerequisite precedence, preserving sorted
+profile serialization without losing the actionable reason. The adapter emits bounded run-level DP proposals only
+from a hash-pinned font/repertoire and source run mask; candidates retain canonical component IDs, residual spans,
+collision/margin rejection reasons, and source-only provenance. Two focused tests pass, including unpinned-font
+fail-closed behavior and deterministic component-owned proposals. Arabic remains shaping-profile unavailable and CJK
+remains repertoire-unpinned by design.
+
+- **Status:** CORRECTED, not release-promoted; the next step is regenerate proposal coverage with the new adapter
+  before any scorer change. ComplaintRef: open-repertoire capability-profile gate, 2026-08-04.
+
+### Open-repertoire proposal coverage v5 remains below release gate (2026-08-04)
+
+The new `UnicodeTemplateRunAdapter` was included in a fresh release-fixture proposal measurement. It is source-only,
+run-level, hash-bound to the DejaVu template face, preserves component IDs, and records residual/collision/margin
+evidence. The v5 matrix is measurement-only: all ten positive targets remain absent from the reported top-k, while
+fixed ASCII and degraded fixed rows expose present-but-losing/visual-collision and winning/absent splits. Kana,
+Kanji, Arabic, width mixtures, emoji, and mixed-script rows remain unsupported or absent. No scorer changes were
+made, and no candidate/TXT/acceptance path was enabled.
+
+- **Status:** PARTIAL; the adapter architecture is in place, but proposal coverage has not passed. Continue only
+  with recognizer coverage work for absent/unsupported families; do not tune ranking. ComplaintRef: open-repertoire
+  proposal coverage v5, 2026-08-04.
+
+### v5 did not exercise the complete tracked offline model cache (2026-08-04)
+
+The v5 matrix was a source-only adapter measurement, but its Tesseract member was not bound to the tracked
+`tracked/LateLetterResearch/transcription-model-cache/tesseract_best` assets. That cache contains verified
+`eng`, `ara`, `jpn`, `jpn_vert`, `chi_sim`, `chi_tra`, and `osd` traineddata plus pinned Unicode/font assets. A
+new benchmark is required to measure the full pinned ensemble before classifying those families as uncovered.
+This is measurement only: no scorer change, candidate writer, TXT, or acceptance path is permitted.
+
+- **Status:** OPEN; run the pinned-cache benchmark and preserve v5 unchanged. ComplaintRef: open-repertoire
+  proposal coverage, pinned-cache replay, 2026-08-04.
+
+### Pinned-cache benchmark v6 remains below coverage gate (2026-08-04)
+
+The complete tracked Tesseract cache was exercised offline and replayed deterministically, but no positive
+release target appeared in the reported top-k. The result is not a scorer failure to repair: the benchmark's
+adapter set covered Tesseract, the structural helper, and the emoji atlas, while the new Unicode template
+proposal adapters were not included in this script-level replay. Tesseract produced useful but losing whole-run
+proposals for Latin and Japanese rows; Arabic/CJK/emoji remained explicitly unsupported where the required run
+profile was not evidenced. Preserve v6 as blocked evidence and add the hash-bound Unicode proposal adapters to
+the next measurement before any ranking work.
+
+- **Status:** PARTIAL; v6 is blocked_release_coverage with all ten positives missing, zero false-unique negatives,
+  and no scorer/candidate/TXT changes. ComplaintRef: open-repertoire proposal coverage v6, 2026-08-04.
+
+### Pinned-cache benchmark v7 still lacks the run-level structural adapter (2026-08-04)
+
+The v7 replay added hash-bound Latin, combining, and Kana template adapters and completed deterministically, but
+its structural member was still the legacy `FixedLatticeStructuralAdapter`. That adapter intentionally cannot
+produce whole-run Unicode/ASCII proposals, so v7 cannot measure the already-existing `StructuralUnicodeRowAdapter`
+coverage. Template proposals remain bounded evidence with residual/collision/margin rejection and did not recover
+the positive targets. Preserve v7 unchanged; add the run-level structural adapter for the next measurement.
+
+- **Status:** PARTIAL; v7 remains blocked_release_coverage with all ten positives missing and zero false-unique
+  negatives. No scorer, candidate, TXT, or acceptance path changed. ComplaintRef: open-repertoire proposal
+  coverage v7, 2026-08-04.
+
+### Pinned-cache benchmark v8 exceeded the bounded runtime ceiling (2026-08-04)
+
+The v8 harness added `StructuralUnicodeRowAdapter` as required, but the complete repeated-proposal replay did not
+finish within ten minutes. It was interrupted during the second deterministic `EmojiAtlasAdapter.propose()` pass
+while scanning the bounded atlas. No v8 report was written and no source, attempt, candidate, TXT, or acceptance
+artifact changed. This is a benchmark/runtime failure, not evidence that the added adapter passed coverage. The
+next slice must remove repeated work or enforce a pinned per-adapter budget without dropping inference evidence.
+
+- **Status:** OPEN; preserve v7 and the interrupted v8 execution record, then fix generic runtime accounting before
+  replay. ComplaintRef: open-repertoire proposal coverage v8 runtime ceiling, 2026-08-04.
+
+### Pinned-cache benchmark v9 still exceeds the runtime ceiling after replay caching (2026-08-04)
+
+The hash-bound proposal cache removed duplicate work for identical in-process determinism calls, but the first
+full v9 pass still exceeded ten minutes. The interruption occurred inside `StructuralUnicodeRowAdapter`'s
+run-level variant expansion and glyph-position residual scoring, after the benchmark had added the intended
+adapter set. No v9 report was written. This confirms a second bounded-search/runtime defect rather than a
+coverage result; inference evidence must be reduced by admissible, source-only pruning or a dynamic span lattice,
+not by truncating the final report or changing the scorer.
+
+- **Status:** OPEN; preserve v8/v9 timeout evidence and optimize the run-level proposal expansion before the next
+  replay. ComplaintRef: open-repertoire proposal coverage v9 runtime ceiling, 2026-08-04.
+
+#### Fix attempt 2 — bounded run-level replay and geometry-owned shaped input (2026-08-04)
+
+The expensive proposal cache is now shared by the structural, Unicode-template, and emoji adapters and is keyed by
+adapter/version, source/geometry/component/environment hashes, run-mask/configuration hashes, and the pinned model
+face. Identical in-process determinism calls therefore compare the same immutable evidence without rebuilding it;
+fresh-process replay remains required for release determinism. The run-level span lattice also precomputes the next
+substantive span across blank gaps, memoizes rendered-cost text evaluations, and keeps a bounded state beam rather
+than scanning every blank unit for every state. Structural Unicode proposals now accept a geometry-owned
+`shaped_runs` mask as well as fixed/unresolved masks; this removes an adapter-side geometry veto without creating a
+second router. Focused deterministic, emoji, ownership, and shaped-input tests pass. Full release coverage has not
+been rerun; v8/v9 remain timeout evidence and scorer changes remain prohibited.
+
+- **Status:** PARTIAL; runtime reduction and input-boundary corrections are implemented, not release-promoted.
+  ComplaintRef: open-repertoire proposal coverage, bounded run-level replay fix attempt 2, 2026-08-04.
+
+### Adapter profiling is required before v10 replay (2026-08-04)
+
+The v8/v9 timeout records identify the failing stages but do not separate per-adapter cost or retained proposal
+state growth. A successor benchmark must first measure each pinned adapter independently for every release fixture,
+including wall time, run count, proposal/candidate counts, and retained span-state counts. The profile is diagnostic
+only: it must not read transcript truth before proposals, choose a winner, truncate inference evidence, or alter the
+v5–v9 artifacts. Per-adapter budgets will be enforced only after this evidence exists, with over-budget results
+remaining explicitly rejected rather than silently omitted.
+
+- **Status:** OPEN; add the independent profile and budget receipt before attempting v10. ComplaintRef: open-repertoire
+  bounded execution, adapter profiling frontier, 2026-08-04.
+
+### Monolithic v10 profile could not emit independent adapter evidence (2026-08-04)
+
+The first `--profile-only` implementation ran adapters sequentially in one process and wrote only after all
+profiles completed. It was interrupted before ten minutes inside the structural span lattice, so no profile report
+was produced and no adapter timing/state record survived. This confirms the profiling surface must isolate each
+adapter/fixture invocation and persist completed records incrementally; otherwise one slow structural run hides the
+Tesseract, template, emoji, and unavailable-adapter measurements needed to set budgets.
+
+- **Status:** OPEN; replace the monolithic profile loop with independently persisted, budgeted adapter workers.
+
+### Isolated profile v10 stopped at an over-budget structural fixture (2026-08-04)
+
+The independently persisted profile did preserve Tesseract (10/10 fixtures, approximately 60 seconds) and the
+fixed-lattice structural adapter (10/10, approximately 24 seconds). The structural Unicode adapter reached only
+7/10 fixtures after approximately 347 seconds; the active eighth fixture was interrupted at about eight minutes
+while expanding `_topology_row_variants`. The snapshot remains `running` and is not a complete profile or a v10
+benchmark. It contains diagnostic proposal evidence only; no scorer, candidate, TXT, attempt, or acceptance artifact
+changed. A successor must make the per-fixture budget explicit and record a terminal timeout/rejection receipt rather
+than leaving an interrupted snapshot that looks resumable.
+
+- **Status:** OPEN; preserve `recognizer-profile-v10.json` as partial evidence, write a separate timeout receipt, then
+  run a fresh profile with pinned per-adapter/per-fixture budgets. ComplaintRef: open-repertoire bounded execution,
+  structural adapter profile timeout, 2026-08-04.
+
+### First budgeted profile timer was swallowed by the benchmark exception boundary (2026-08-04)
+
+The fresh budgeted profile correctly persisted Tesseract and fixed-lattice records, but the structural worker did
+not stop at its 90-second ceiling. The timer exception was raised inside `benchmark_offline_ensemble()` and its broad
+adapter `except Exception` converted it into an ordinary adapter-exception record, allowing the worker to continue
+expanding. This is not a valid budget result. Stop the run, preserve its partial output, and make the budget signal a
+non-`Exception` control flow that the worker catches while the benchmark continues to catch ordinary adapter failures.
+
+- **Status:** OPEN; fix the timeout exception boundary before the next fresh profile. No scorer, candidate, TXT,
+  attempt, or acceptance artifact changed. ComplaintRef: open-repertoire bounded execution, budget signal boundary,
+  2026-08-04.
+  ComplaintRef: bounded execution, v10 profiling isolation, 2026-08-04.
+
+### Budgeted profile collapsed the independent adapter identities (2026-08-04)
+
+The first corrected budgeted snapshot is not valid complete adapter evidence. EasyOCR and Surya are both instantiated
+as `IndependentOfflineAdapter` with the shared runtime name `independent-offline`; the profile loop keys its persisted
+record by that name, while capability metadata appends the backend in a different field. The resulting snapshot has
+one `independent-offline` profile instead of two independently timed, budget-bound profiles, so one comparator's
+fixture evidence is overwritten/collapsed. Preserve `recognizer-profile-v10-budgeted-2.json` as diagnostic evidence,
+make adapter identity backend-specific at construction and in the budget map, then rerun a fresh profile. No v10
+benchmark, scorer, candidate, TXT, attempt, or acceptance artifact may use the collapsed report.
+
+- **Status:** OPEN; correct identity before accepting the budgeted profile. ComplaintRef: open-repertoire bounded
+  execution, independent adapter profile identity, 2026-08-04.
+
+### Fresh ten-adapter budget profile is complete but blocked (2026-08-04)
+
+After backend-specific identity correction, a fresh-process profile completed all ten pinned adapter records with
+ten fixtures each. The source-bound report is `tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted-3.json`
+(SHA-256 `b23ad9ca4755f0401831f6aef60cd0eb38c632f556ce04662cb0818caa268c53`). It is valid profiling evidence but
+not a v10 coverage benchmark: Tesseract exceeded its 12-second per-fixture budget on `positive-degraded-fixed`;
+structural-unicode exceeded 90 seconds on `positive-degraded-fixed` and `positive-emoji-zwj`; EmojiAtlas exceeded
+30 seconds on `positive-emoji-zwj`. The other seven adapter identities completed without budget failures, including
+independent EasyOCR and Surya as separate records. Preserve the report and receipt; do not run the complete v10
+coverage/rank benchmark, change scorer behavior, or create candidate/TXT/attempt/acceptance evidence until the
+over-budget adapters are addressed by a generic bounded implementation.
+
+- **Status:** BLOCKED; per-adapter budget gate failed with complete independent evidence. ComplaintRef:
+  open-repertoire bounded execution, v10 budget profile, 2026-08-04.
 
 **Reopened steps 2–4 implemented (unproven visually): the frame owns every final visible
 primitive, the painter loses renderer-private knowledge, the circular import is gone
@@ -7078,3 +9544,21 @@ reconciliation before any release-gate claim; nothing here asserts one. The
 suite-vs-experience inversion the operator named — green mechanics over a broken picture —
 is why the 2,011-line browser E2E was deleted in this repair; product-path acceptance is
 the live localhost review, and visual acceptance remains operator-only.
+
+### Transcription substrate Step 0 test gate passed before lane pinning (2026-08-04)
+
+Before continuing the PNG-to-logical-text-art execution plan, the current dirty-tree
+transcription suite was run exactly as the substrate preflight. Command:
+`PYTHONPATH=src pytest -q tests/transcription tests/test_transcription_parity_pipeline.py`.
+Result: 108 passed, 1 Pillow deprecation warning, 185.11 seconds. No candidate TXT,
+attempt, acceptance, scorer change, or v10 coverage benchmark was created by this
+test gate.
+
+This records the test state only. The substrate is still not commit-pinned until the
+transcription lane is committed with an explicit pathspec that excludes unrelated
+garden/browser work and the large profile JSON payloads whose SHA-256 is already
+recorded in receipts.
+
+- **Status:** PARTIAL STEP 0; tests passed, commit pinning still required before A1/B1
+  implementation. ComplaintRef: operator order to log and execute the transcription
+  plan E2E, 2026-08-04.

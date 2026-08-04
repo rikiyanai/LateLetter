@@ -68,6 +68,10 @@ def route_geometry(
         provenance={"router": "exclusive", "proofs": evidence, **dict(provenance or {})},
         status="proved" if selected else "rejected",
         rejection_reasons=tuple(rejection_codes),
+        candidate_valid=bool(selected),
+        pitch_proven=bool(selected),
+        phase_proven=bool(selected),
+        ownership_proven=bool(selected),
     )
 
 
@@ -92,49 +96,74 @@ def route_raster_geometry(
         expected_sha256=expected_sha256,
         configuration=configuration,
     )
-    decision = route_geometry(
-        bundle.source_sha256,
-        bundle.fixed_evidence(),
-        bundle.shaped_evidence(),
-        configuration={
-            "criterion_threshold": float((configuration or {}).get("criterion_threshold", 0.8)),
-            "authority_margin": float((configuration or {}).get("authority_margin", 0.05)),
-        },
-        provenance={"evidence_bundle_hash": bundle.output_hash},
-    )
-    # A bundle that cannot prove a foreground/row/run model is never upgraded
-    # by the router's score arithmetic.
-    if bundle.status != "proved" or decision.mode == "unresolved":
-        return bundle, replace(
-            decision,
+    # Production raster routing is owned here.  ``route_geometry`` remains a
+    # diagnostic proof adapter for legacy unit fixtures, but its score margin
+    # cannot select a production model.
+    threshold = float((configuration or {}).get("criterion_threshold", 0.8))
+    fixed = assess_fixed_lattice(bundle.fixed_evidence(), threshold=threshold)
+    shaped = assess_shaped_runs(bundle.shaped_evidence(), threshold=threshold)
+    periodic = bundle.projection_evidence.get("periodic_authority", {})
+    fixed_authority = bool(periodic.get("fixed_lattice_authority_proven"))
+    shaped_authority = bool(bundle.status == "proved" and shaped.passed and not fixed_authority)
+    selected_mode = "fixed_lattice" if fixed_authority else "shaped_runs" if shaped_authority else "unresolved"
+    authority_proofs: dict[str, dict[str, Any]] = {}
+    for proof, authority in ((fixed, fixed_authority), (shaped, shaped_authority)):
+        item = proof.to_dict()
+        item["branch_candidate_passed"] = bool(proof.passed)
+        item["authority_proven"] = bool(authority)
+        item["passed"] = bool(authority)
+        authority_proofs[proof.mode] = item
+    rejection_codes: list[str] = []
+    if selected_mode == "unresolved":
+        rejection_codes.append("geometry_unresolved")
+        rejection_codes.extend(bundle.rejection_reasons)
+        rejection_codes.extend(fixed.rejection_reasons)
+        rejection_codes.extend(shaped.rejection_reasons)
+    selected = bundle.geometry_mapping(selected_mode) if selected_mode != "unresolved" else None
+    if selected is None:
+        return bundle, GeometryDecision(
             mode="unresolved",
             confidence=0.0,
-            geometry_hash=sha256_bytes(canonical_bytes({"mode": "unresolved", "evidence": bundle.output_hash})),
+            alternatives=tuple(authority_proofs.values()),
             evidence_hash=bundle.output_hash,
+            geometry_hash=sha256_bytes(canonical_bytes({"mode": "unresolved", "evidence": bundle.output_hash})),
             input_hashes={"source": bundle.source_sha256, "geometry_evidence": bundle.output_hash},
+            configuration={"criterion_threshold": threshold, **dict(configuration or {})},
             provenance={
-                **dict(decision.provenance),
+                "router": "raster_authority_owner",
+                "proofs": authority_proofs,
                 "selected_geometry": None,
                 "bundle_status": bundle.status,
                 "bundle_rejection_reasons": list(bundle.rejection_reasons),
             },
             status="rejected",
-            rejection_reasons=tuple(dict.fromkeys((*decision.rejection_reasons, *bundle.rejection_reasons))),
-            output_hash="",
+            rejection_reasons=tuple(dict.fromkeys(rejection_codes)),
+            candidate_valid=False,
+            pitch_proven=False,
+            phase_proven=False,
+            ownership_proven=False,
         )
-    selected = bundle.geometry_mapping(decision.mode)
     selected_hash = sha256_bytes(canonical_bytes(selected))
-    return bundle, replace(
-        decision,
+    return bundle, GeometryDecision(
+        mode=selected_mode,
+        confidence=float(fixed.score if selected_mode == "fixed_lattice" else shaped.score),
+        alternatives=tuple(authority_proofs.values()),
         evidence_hash=bundle.output_hash,
         geometry_hash=selected_hash,
         input_hashes={"source": bundle.source_sha256, "geometry_evidence": bundle.output_hash},
+        configuration={"criterion_threshold": threshold, **dict(configuration or {})},
         provenance={
-            **dict(decision.provenance),
+            "router": "raster_authority_owner",
+            "proofs": authority_proofs,
             "selected_geometry": selected,
             "bundle_status": bundle.status,
         },
-        output_hash="",
+        status="proved",
+        rejection_reasons=(),
+        candidate_valid=True,
+        pitch_proven=True,
+        phase_proven=True,
+        ownership_proven=True,
     )
 
 

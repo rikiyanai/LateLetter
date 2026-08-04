@@ -508,3 +508,26 @@ working-copy mutation. Its transcript SHA-256 is
 `8d6b27d77024d10a220f4841610b215065abeb6e7b173c25b1963aef18c0c2e2`, with 17 unknown, 17
 low-confidence, 0 structural, and 0 forced-blank conflicts. It has no renderer output and no
 `accepted.txt`; its machine gate remains rejected.
+
+## Failure-family audit through 064 — attempt 065 remains blocked
+
+The preserved attempts establish several spent lanes rather than sixty-four independent next
+steps:
+
+- 001–015 exposed setup, row/column coverage, pitch/phase, boundary-cut, and calibration-authority
+  failures. A zero-unknown transcript over a grid that cuts or omits glyphs is invalid evidence.
+- 016–029 mixed transcript questions with font/renderer searches. Nonzero comparison-font diffs do
+  not decide TXT correctness, and 028's source-stencil zero is a rejected source-copy proxy.
+- 030–046 showed that isolated-cell and locally contextual structural heuristics can fill every cell
+  while emitting wrong glyphs. Zero unknown/low-confidence/conflict counts measure decoder
+  completeness, not transcription accuracy.
+- 047–056 exposed artifact/hash drift and repeated renderer probes before operator TXT approval.
+  Those results are diagnostics, not a reason to continue font search.
+- 057–064 corrected stale forced-blank state, component ownership, punctuation continuity, Unicode
+  deferral, and immutable retry handling. Attempt 064 still has 17 unknown and 17 low-confidence
+  cells and is correctly rejected.
+
+The successor is not another horse-local glyph rule. Attempt 065 stays blocked until the general
+run-level Unicode proposal ensemble, logical/shaping evidence, ownership gate, and benchmark exit
+criteria in SPEC §7.10.7 pass. When unblocked, 065 must start from the immutable source and approved
+calibration evidence; it may not import any rejected horse TXT or renderer choice as authority.

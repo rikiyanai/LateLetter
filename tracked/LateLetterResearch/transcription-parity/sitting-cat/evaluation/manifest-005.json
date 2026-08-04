@@ -1,0 +1,20 @@
+{
+  "schema_version": "lateletter-sitting-cat-evaluation-1",
+  "reference": "sitting-cat",
+  "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+  "transcript_path": "expected-transcript-candidate-005.txt",
+  "transcript_sha256": "a307b53871862a90c18f0808a2550a7feb87721c0b839e1d141dc1a4c12543fe",
+  "row_count": 9,
+  "purpose": "evaluation_only",
+  "runtime_input": false,
+  "operator_review": "rejected",
+  "authority": "operator_rejected_benchmark_label",
+  "status": "evaluation_truth_unavailable",
+  "supersedes": {
+    "transcript_path": "expected-transcript-candidate-004.txt",
+    "transcript_sha256": "c7f4d947572745aa1912b440b2cc6da6d8764640ed728cc26d866b71d34cbf36",
+    "operator_verdict": "rejected_visible_structural_mismatch",
+    "frozen": true
+  },
+  "notes": "Frozen rejected benchmark-label evidence. No further hand-tuned successor is permitted; runtime geometry, recognition, and ranking must not read this transcript."
+}

@@ -8,6 +8,8 @@ from lateletter.transcription import (
     CapabilityProfile,
     EmojiAtlasAdapter,
     FixedLatticeStructuralAdapter,
+    StructuralUnicodeRowAdapter,
+    UnicodeTemplateRunAdapter,
     IndependentOfflineAdapter,
     ModelArtifact,
     PaddleOCROfflineAdapter,
@@ -67,6 +69,49 @@ def test_capability_profiles_are_hash_bound_and_explicitly_offline() -> None:
     assert profile.to_dict()["runtime_network"] is False
 
 
+def test_unicode_template_adapter_fails_closed_without_hash_pinned_font() -> None:
+    adapter = UnicodeTemplateRunAdapter()
+    source = {"path": "/missing/source.png", "source_sha256": H, "components_hash": H, "geometry_hash": H}
+    result = adapter.propose(
+        source,
+        {
+            "mode": "fixed_lattice",
+            "run_mask": {"authority": "geometry_proven_run", "pixels": ["0000", "0000"]},
+        },
+        {},
+        build_environment_lock(),
+    )
+    assert result.status == "rejected"
+    assert "template_font_unpinned" in result.rejection_codes
+    assert result.proposals[0].candidates[0].text == "?"
+
+
+def test_unicode_template_adapter_emits_hash_bound_component_owned_proposals() -> None:
+    adapter = UnicodeTemplateRunAdapter(beam_width=3, top_k=3)
+    font = "/Library/Fonts/DejaVuSans.ttf"
+    lock = build_environment_lock(model_paths={"unicode-template-latin.font": font})
+    source = {"path": "/missing/source.png", "source_sha256": H, "components_hash": H, "geometry_hash": H, "component_ids": ["c000002", "c000001"]}
+    geometry = {
+        "mode": "fixed_lattice",
+        "mixed_width_display": {"base_advance_px": 12.0},
+        "run_mask": {
+            "authority": "geometry_proven_run",
+            "run_id": "r000",
+            "pixels": ["000000000000", "001111110000", "001111110000", "000000000000"],
+            "measured_advances": [12.0],
+            "component_ids": ["c000002", "c000001"],
+        },
+    }
+    first = adapter.propose(source, geometry, {}, lock)
+    second = adapter.propose(source, geometry, {}, lock)
+    assert first.status == "proposal_only"
+    assert first.output_hash == second.output_hash
+    assert first.proposals and first.proposals[0].candidates
+    assert all(candidate.component_ids == ("c000001", "c000002") for candidate in first.proposals[0].candidates)
+    assert first.proposals[0].provenance["source_only"] is True
+    assert first.proposals[0].provenance["ground_truth_input"] is False
+
+
 def test_model_cache_verification_is_hash_bound(tmp_path: Path) -> None:
     path = tmp_path / "model.bin"
     path.write_bytes(b"pinned model")
@@ -95,6 +140,17 @@ def test_optional_ensemble_adapters_fail_closed_without_runtime_models() -> None
         assert result.rejection_codes
 
 
+def test_independent_comparator_profiles_keep_backend_identity() -> None:
+    lock = build_environment_lock(script_packs=("eng",))
+    adapters = (
+        IndependentOfflineAdapter(backend="easyocr", name="independent-offline-easyocr"),
+        IndependentOfflineAdapter(backend="surya", name="independent-offline-surya"),
+    )
+    names = tuple(adapter.capability_profile(lock).adapter for adapter in adapters)
+    assert names == ("independent-offline-easyocr", "independent-offline-surya")
+    assert len(set(names)) == len(names)
+
+
 def test_offline_ensemble_records_top_k_without_passing_ground_truth_to_adapter() -> None:
     fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription"
     fixture = {
@@ -114,7 +170,655 @@ def test_offline_ensemble_records_top_k_without_passing_ground_truth_to_adapter(
     assert report["ground_truth_passed_to_adapters"] is False
     assert report["fixture_count"] == 1
     assert report["results"][0]["exact_nfc_target_in_top_k"] is False
+    matrix = report["coverage_rank_matrix"][0]
+    assert matrix["status"] == "measured"
+    assert [row["expected_logical_sequence"] for row in matrix["rows"]] == ["/\\_|", "(=)"]
+    assert all(row["classification"] in {"absent", "unsupported", "present_and_winning", "present_but_losing", "visual_collision"} for row in matrix["rows"])
+    assert report["results"][0]["coverage_rank_matrix"] == matrix
     assert report["status"] == "blocked_release_coverage"
+
+
+def test_fixed_ascii_source_png_recovers_both_rows_without_canvas_tail() -> None:
+    """The terminal-width guard must preserve the literal structural rows."""
+
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_inputs, route_raster_geometry
+
+    source = Path(__file__).parents[1] / "fixtures" / "transcription" / "positive" / "positive-fixed-ascii" / "source.png"
+    bundle, decision = route_raster_geometry(source)
+    inputs = build_recognition_inputs(source, bundle, mode=decision.mode)
+    lock = build_environment_lock(script_packs=("ascii",))
+    rows: list[str] = []
+    with TemporaryDirectory() as temp:
+        for run in inputs["runs"]:
+            row_path = Path(temp) / f"{run['row_index']}.png"
+            row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+            proposal = StructuralUnicodeRowAdapter().propose(
+                {
+                    "path": str(row_path),
+                    "source_sha256": run["run_strip_png_sha256"],
+                    "geometry_hash": inputs["input_hash"],
+                    "components_hash": inputs["components_hash"],
+                    "run_id": run["run_id"],
+                },
+                {
+                    "mode": "fixed_lattice",
+                    "mixed_width_display": inputs["mixed_width_display"],
+                    "run_mask": {
+                        "authority": "geometry_proven_run",
+                        "grapheme_complete": True,
+                        "pixels": run["binary_run_mask"],
+                    },
+                },
+                {},
+                lock,
+            )
+            assert proposal.status == "proposal_only"
+            rows.append(proposal.proposals[0].candidates[0].text)
+    assert rows == ["/\\_|", "(=)"]
+
+
+def test_unresolved_raster_uses_proposal_hypotheses_without_authority_or_txt() -> None:
+    root = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity"
+    fixture = {
+        "id": "sitting-cat-hypothesis",
+        "source_png": "sitting-cat/source/source.normalized.png",
+        "expected_outcome": "rejected",
+    }
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (FixedLatticeStructuralAdapter(),),
+        build_environment_lock(script_packs=("ascii", "latin", "digits")),
+        root=root,
+        top_k=3,
+    )
+    result = report["results"][0]
+    adapter = result["adapters"][0]
+    assert result["geometry_status"] == "rejected"
+    assert result["recognition_input_hash"] is None
+    assert adapter["proposal_hypothesis_count"] > 1
+    assert len(adapter["proposal_hypothesis_ids"]) == adapter["proposal_hypothesis_count"]
+    assert adapter["run_count"] > 0
+
+
+def test_joint_score_keeps_raster_seams_in_the_hypothesis_rank() -> None:
+    from lateletter.transcription import jointly_score_geometry_hypotheses
+
+    ownership = {
+        "owned_pixel_count": 1,
+        "substantive_pixel_count": 1,
+        "unowned_pixel_count": 0,
+        "multiply_owned_pixel_count": 0,
+    }
+    hypotheses = [
+        {
+            "provenance": {
+                "hypothesis": {
+                    "pitch": 23,
+                    "phase": 8,
+                    "normalized_seam_energy": 0.04,
+                    "seam_to_interior_contrast": 0.79,
+                    "ownership": ownership,
+                }
+            },
+            "mixed_width_display": {"base_advance_px": 10.0},
+            "runs": [{"row_index": 0, "source_bounds": [0, 0, 10, 10]}],
+        },
+        {
+            "provenance": {
+                "hypothesis": {
+                    "pitch": 23,
+                    "phase": 7,
+                    "normalized_seam_energy": 0.06,
+                    "seam_to_interior_contrast": 0.64,
+                    "ownership": ownership,
+                }
+            },
+            "mixed_width_display": {"base_advance_px": 10.0},
+            "runs": [{"row_index": 0, "source_bounds": [0, 0, 10, 10]}],
+        },
+    ]
+    report = jointly_score_geometry_hypotheses(
+        hypotheses,
+        {"23:8": {0: ("a",)}, "23:7": {0: ("a",)}},
+        top_k=1,
+    )
+    assert report["winner"]["phase"] == 8
+    assert report["winner"]["geometry_score"] > report["runner_up"]["geometry_score"]
+    assert report["candidate_txt"] is None
+
+
+def test_joint_score_composes_complete_row_sequence_proposals() -> None:
+    from lateletter.transcription import jointly_score_geometry_hypotheses
+
+    ownership = {
+        "owned_pixel_count": 2,
+        "substantive_pixel_count": 2,
+        "unowned_pixel_count": 0,
+        "multiply_owned_pixel_count": 0,
+    }
+    hypotheses = [
+        {
+            "provenance": {
+                "hypothesis": {
+                    "pitch": 20,
+                    "phase": 2,
+                    "normalized_seam_energy": 0.02,
+                    "seam_to_interior_contrast": 0.9,
+                    "ownership": ownership,
+                }
+            },
+            "mixed_width_display": {"base_advance_px": 10.0},
+            "runs": [
+                {"row_index": 0, "source_bounds": [0, 0, 10, 10]},
+                {"row_index": 1, "source_bounds": [0, 10, 10, 20]},
+            ],
+        }
+    ]
+    report = jointly_score_geometry_hypotheses(
+        hypotheses,
+        {"20:2": {0: ("A", "B"), 1: ("C", "D")}},
+        top_k=2,
+    )
+    winner = report["winner"]
+    assert winner["best_logical_sequence"]["normalized_text"] == "A\nC"
+    assert len(winner["logical_sequence_proposals"]) == 4
+    assert all(item["evidence_hash"] for item in winner["logical_sequence_proposals"])
+    assert report["candidate_txt"] is None
+
+
+def test_joint_decoder_exposes_review_candidate_without_canonical_authority() -> None:
+    from lateletter.transcription import jointly_decode_geometry_text
+
+    ownership = {
+        "owned_pixel_count": 2,
+        "substantive_pixel_count": 2,
+        "unowned_pixel_count": 0,
+        "multiply_owned_pixel_count": 0,
+    }
+    hypotheses = [
+        {
+            "provenance": {
+                "hypothesis": {
+                    "pitch": 20,
+                    "phase": 2,
+                    "normalized_seam_energy": 0.02,
+                    "seam_to_interior_contrast": 0.9,
+                    "ownership": ownership,
+                }
+            },
+            "mixed_width_display": {"base_advance_px": 10.0},
+            "runs": [
+                {"row_index": 0, "source_bounds": [0, 0, 10, 10]},
+                {"row_index": 1, "source_bounds": [0, 10, 10, 20]},
+            ],
+        }
+    ]
+    report = jointly_decode_geometry_text(
+        hypotheses,
+        {"20:2": {0: ("A",), 1: ("C",)}},
+    )
+    assert report["status"] == "review_pending"
+    assert report["review_candidate_txt"] == "A\nC"
+    assert report["review_binding_sha256"]
+    assert report["candidate_txt"] is None
+    assert report["operator_review_required"] is True
+    assert report["authority"] == "joint_review_candidate_only"
+
+
+def test_unresolved_benchmark_retains_joint_row_alignment_as_diagnostic_only() -> None:
+    root = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity"
+    fixture = {
+        "id": "sitting-cat-joint-diagnostic",
+        "source_png": "sitting-cat/source/source.normalized.png",
+        "expected_outcome": "rejected",
+    }
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (StructuralUnicodeRowAdapter(beam_width=2),),
+        build_environment_lock(script_packs=("ascii", "japanese", "cjk")),
+        root=root,
+        top_k=1,
+        max_geometry_hypotheses=2,
+    )
+    alignment = report["results"][0]["adapters"][0]["joint_alignment"]
+    assert alignment["status"] == "unresolved"
+    assert alignment["authority"] == "proposal_alignment_only"
+    assert alignment["candidate_txt"] is None
+    assert alignment["winner"] is not None
+    assert alignment["runner_up"] is not None
+
+
+def test_sitting_cat_proposal_sequences_preserve_all_nine_rows_without_txt() -> None:
+    """The unresolved proposal path may not collapse the cat back to four OCR rows."""
+
+    root = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity"
+    fixture = {
+        "id": "sitting-cat-nine-row-regression",
+        "source_png": "sitting-cat/source/source.normalized.png",
+        "expected_outcome": "rejected",
+    }
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (StructuralUnicodeRowAdapter(beam_width=3),),
+        build_environment_lock(script_packs=("ascii", "japanese", "cjk")),
+        root=root,
+        top_k=4,
+        max_geometry_hypotheses=2,
+    )
+    result = report["results"][0]
+    adapter = result["adapters"][0]
+    assert adapter["top_k_logical_sequences"]
+    assert all(len(text.splitlines()) == 9 for text in adapter["top_k_logical_sequences"])
+    assert adapter["joint_alignment"]["candidate_txt"] is None
+    assert adapter["joint_alignment"]["authority"] == "proposal_alignment_only"
+    joint = adapter["joint_alignment"]
+    assert joint["winner"]["aligned_rows"] == 9
+    assert len(joint["winner"]["best_logical_sequence"]["text"].splitlines()) == 9
+    assert joint["winner"]["status"] == "rejected"
+    assert joint["winner"]["width_profile_ambiguous_rows"] >= 1
+
+
+def test_structural_unicode_row_adapter_is_real_deterministic_proposal_source() -> None:
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_hypothesis_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
+    bundle, _ = route_raster_geometry(source_path)
+    hypothesis = build_recognition_hypothesis_inputs(source_path, bundle, max_hypotheses=1)[0]
+    run = hypothesis["runs"][1]
+    lock = build_environment_lock(script_packs=("ascii", "japanese", "cjk"))
+    with TemporaryDirectory() as temp:
+        row_path = Path(temp) / "row.png"
+        row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+        source = {
+            "path": str(row_path),
+            "source_sha256": run["run_strip_png_sha256"],
+            "geometry_hash": hypothesis["input_hash"],
+            "components_hash": hypothesis["components_hash"],
+            "run_id": run["run_id"],
+        }
+        geometry = {
+            "mode": "fixed_lattice",
+            "mixed_width_display": hypothesis["mixed_width_display"],
+            "run_mask": {
+                "authority": "geometry_hypothesis_run",
+                "grapheme_complete": True,
+                "pixels": run["binary_run_mask"],
+            },
+        }
+        adapter = StructuralUnicodeRowAdapter()
+        first = adapter.propose(source, geometry, {}, lock)
+        second = adapter.propose(source, geometry, {}, lock)
+        assert first.status == "proposal_only"
+        assert first.output_hash == second.output_hash
+        assert first.proposals[0].candidates[0].text
+        # The painted-cluster proposal must preserve the narrow slash/greater
+        # pair and the wide Japanese フ as a row-level alternative.  It is
+        # still only proposal evidence; no candidate TXT is written here.
+        assert any(
+            candidate.text.strip() == "/>  フ"
+            for candidate in first.proposals[0].candidates
+        )
+        # The same measured run must also retain the wide-delimiter/ideographic
+        # spacing family; width selection is downstream evidence, never a
+        # reason to discard the Japanese proposal before joint decoding.
+        assert any(
+            candidate.text.strip().startswith("／") and "フ" in candidate.text
+            for candidate in first.proposals[0].candidates
+        )
+    assert first.proposals[0].candidates[0].input_hashes["template_font"]
+
+
+def test_structural_unicode_adapter_splits_connected_horizontal_run_at_lattice() -> None:
+    """A connected three-column underline remains three narrow proposals."""
+
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_hypothesis_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
+    bundle, _ = route_raster_geometry(source_path)
+    hypothesis = next(
+        item
+        for item in build_recognition_hypothesis_inputs(source_path, bundle, max_hypotheses=16)
+        if item["provenance"]["hypothesis"]["pitch"] == 23
+        and item["provenance"]["hypothesis"]["phase"] == 8
+    )
+    run = hypothesis["runs"][0]
+    with TemporaryDirectory() as temp:
+        row_path = Path(temp) / "row.png"
+        row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+        proposal = StructuralUnicodeRowAdapter().propose(
+            {
+                "path": str(row_path),
+                "source_sha256": run["run_strip_png_sha256"],
+                "geometry_hash": hypothesis["input_hash"],
+                "components_hash": hypothesis["components_hash"],
+                "run_id": run["run_id"],
+            },
+            {
+                "mode": "fixed_lattice",
+                "mixed_width_display": hypothesis["mixed_width_display"],
+                "run_mask": {
+                    "authority": "geometry_hypothesis_run",
+                    "grapheme_complete": True,
+                    "pixels": run["binary_run_mask"],
+                },
+            },
+            {},
+            build_environment_lock(script_packs=("ascii", "japanese", "cjk")),
+        )
+    assert any(candidate.text.rstrip().endswith("___") for candidate in proposal.proposals[0].candidates)
+
+
+def test_structural_unicode_adapter_keeps_middle_bar_and_dash_row_as_alternative() -> None:
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_hypothesis_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
+    bundle, _ = route_raster_geometry(source_path)
+    hypothesis = next(
+        item
+        for item in build_recognition_hypothesis_inputs(source_path, bundle, max_hypotheses=16)
+        if item["provenance"]["hypothesis"]["pitch"] == 23
+        and item["provenance"]["hypothesis"]["phase"] == 8
+    )
+    run = hypothesis["runs"][2]
+    lock = build_environment_lock(script_packs=("ascii", "japanese", "cjk"))
+    with TemporaryDirectory() as temp:
+        row_path = Path(temp) / "row.png"
+        row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+        source = {
+            "path": str(row_path),
+            "source_sha256": run["run_strip_png_sha256"],
+            "geometry_hash": hypothesis["input_hash"],
+            "components_hash": hypothesis["components_hash"],
+            "run_id": run["run_id"],
+        }
+        geometry = {
+            "mode": "fixed_lattice",
+            "mixed_width_display": hypothesis["mixed_width_display"],
+            "run_mask": {
+                "authority": "geometry_hypothesis_run",
+                "grapheme_complete": True,
+                "pixels": run["binary_run_mask"],
+            },
+        }
+        proposal = StructuralUnicodeRowAdapter().propose(source, geometry, {}, lock)
+    assert any(candidate.text.strip() == "| _ _|" for candidate in proposal.proposals[0].candidates)
+
+
+def test_structural_unicode_adapter_accepts_geometry_owned_shaped_runs() -> None:
+    """Run-level structural proposals are not a second geometry router."""
+
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[1] / "fixtures" / "transcription" / "positive" / "positive-proportional-latin" / "source.png"
+    bundle, decision = route_raster_geometry(source_path)
+    inputs = build_recognition_inputs(source_path, bundle, mode=decision.mode)
+    run = inputs["runs"][0]
+    lock = build_environment_lock(script_packs=("ascii", "japanese", "cjk"))
+    with TemporaryDirectory() as temp:
+        row_path = Path(temp) / "row.png"
+        row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+        proposal = StructuralUnicodeRowAdapter().propose(
+            {
+                "path": str(row_path),
+                "source_sha256": run["run_strip_png_sha256"],
+                "geometry_hash": inputs["input_hash"],
+                "components_hash": inputs["components_hash"],
+                "run_id": run["run_id"],
+            },
+            {
+                "mode": "shaped_runs",
+                "mixed_width_display": inputs["mixed_width_display"],
+                "run_mask": {
+                    "authority": "geometry_proven_run",
+                    "grapheme_complete": True,
+                    "pixels": run["binary_run_mask"],
+                },
+            },
+            {},
+            lock,
+        )
+    assert "geometry_mode_mismatch" not in proposal.rejection_codes
+
+
+def test_structural_unicode_adapter_retains_lower_row_sequence_alternatives() -> None:
+    """Connected rows must expose competing sequences instead of one greedy label."""
+
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_hypothesis_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
+    bundle, _ = route_raster_geometry(source_path)
+    hypothesis = next(
+        item
+        for item in build_recognition_hypothesis_inputs(source_path, bundle, max_hypotheses=16)
+        if item["provenance"]["hypothesis"]["pitch"] == 23
+        and item["provenance"]["hypothesis"]["phase"] == 8
+    )
+    run = hypothesis["runs"][6]
+    lock = build_environment_lock(script_packs=("ascii", "japanese", "cjk"))
+    with TemporaryDirectory() as temp:
+        row_path = Path(temp) / "row.png"
+        row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+        source = {
+            "path": str(row_path),
+            "source_sha256": run["run_strip_png_sha256"],
+            "geometry_hash": hypothesis["input_hash"],
+            "components_hash": hypothesis["components_hash"],
+            "run_id": run["run_id"],
+        }
+        geometry = {
+            "mode": "fixed_lattice",
+            "mixed_width_display": hypothesis["mixed_width_display"],
+            "run_mask": {
+                "authority": "geometry_hypothesis_run",
+                "grapheme_complete": True,
+                "pixels": run["binary_run_mask"],
+            },
+        }
+        first = StructuralUnicodeRowAdapter(beam_width=4).propose(source, geometry, {}, lock)
+        second = StructuralUnicodeRowAdapter(beam_width=4).propose(source, geometry, {}, lock)
+    candidates = first.proposals[0].candidates
+    assert first.output_hash == second.output_hash
+    assert len(candidates) >= 2
+    assert len({candidate.text for candidate in candidates}) == len(candidates)
+    from lateletter.transcription.recognition import _proposal_texts
+
+    serialized_alternatives = {
+        alternative
+        for candidate in candidates
+        for alternative in candidate.alternatives
+    }
+    surfaced = set(_proposal_texts(first, top_k=32))
+    assert serialized_alternatives
+    assert serialized_alternatives & surfaced
+
+
+def test_run_level_candidates_preserve_source_component_ids() -> None:
+    """A proposal claiming a run must retain the run's source ownership evidence."""
+
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_hypothesis_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
+    bundle, _ = route_raster_geometry(source_path)
+    hypothesis = build_recognition_hypothesis_inputs(source_path, bundle, max_hypotheses=16)[0]
+    run = hypothesis["runs"][2]
+    lock = build_environment_lock(script_packs=("ascii", "japanese", "cjk"))
+    with TemporaryDirectory() as temp:
+        row_path = Path(temp) / "row.png"
+        row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+        source = {
+            "path": str(row_path),
+            "source_sha256": run["run_strip_png_sha256"],
+            "geometry_hash": hypothesis["input_hash"],
+            "components_hash": hypothesis["components_hash"],
+            "run_id": run["run_id"],
+            "component_ids": ["c000002", "c000001"],
+        }
+        geometry = {
+            "mode": "fixed_lattice",
+            "mixed_width_display": hypothesis["mixed_width_display"],
+            "run_mask": {
+                "authority": "geometry_hypothesis_run",
+                "grapheme_complete": True,
+                "pixels": run["binary_run_mask"],
+                "component_ids": ["c000002", "c000001"],
+            },
+        }
+        proposal = StructuralUnicodeRowAdapter(beam_width=2).propose(source, geometry, {}, lock)
+    candidates = proposal.proposals[0].candidates
+    assert candidates
+    assert all(candidate.component_ids == ("c000001", "c000002") for candidate in candidates)
+
+
+def test_structural_unicode_adapter_uses_run_level_mixed_span_surface() -> None:
+    """Connected cat rows are segmented by measured spans, not components."""
+
+    from base64 import b64decode
+    from tempfile import TemporaryDirectory
+    from lateletter.transcription.geometry import build_recognition_hypothesis_inputs, route_raster_geometry
+
+    source_path = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
+    bundle, _ = route_raster_geometry(source_path)
+    hypothesis = next(
+        item
+        for item in build_recognition_hypothesis_inputs(source_path, bundle, max_hypotheses=16)
+        if item["provenance"]["hypothesis"]["pitch"] == 23
+        and item["provenance"]["hypothesis"]["phase"] == 8
+    )
+    lock = build_environment_lock(script_packs=("ascii", "japanese", "cjk"))
+    outputs: dict[int, tuple[str, ...]] = {}
+    with TemporaryDirectory() as temp:
+        for row_index in (2, 3):
+            run = hypothesis["runs"][row_index]
+            row_path = Path(temp) / f"row-{row_index}.png"
+            row_path.write_bytes(b64decode(run["run_strip_png_base64"]))
+            proposal = StructuralUnicodeRowAdapter(beam_width=4).propose(
+                {
+                    "path": str(row_path),
+                    "source_sha256": run["run_strip_png_sha256"],
+                    "geometry_hash": hypothesis["input_hash"],
+                    "components_hash": hypothesis["components_hash"],
+                    "run_id": run["run_id"],
+                },
+                {
+                    "mode": "fixed_lattice",
+                    "mixed_width_display": hypothesis["mixed_width_display"],
+                    "run_mask": {
+                        "authority": "geometry_hypothesis_run",
+                        "grapheme_complete": True,
+                        "pixels": run["binary_run_mask"],
+                    },
+                },
+                {},
+                lock,
+            )
+            outputs[row_index] = tuple(candidate.text for candidate in proposal.proposals[0].candidates)
+            assert proposal.proposals[0].proposal_id.endswith("-run-lattice")
+            assert all(
+                candidate.input_hashes["proposal_mode"]
+                == proposal.proposals[0].candidates[0].input_hashes["proposal_mode"]
+                for candidate in proposal.proposals[0].candidates
+            )
+    assert "| _ _|" in {text.strip() for text in outputs[2]}
+    assert any("ミ＿xノ" in text for text in outputs[3])
+
+
+def test_run_level_span_lattice_preserves_source_supported_kana_diagonal_family() -> None:
+    """A lower-ranked kana diagonal survives complete-run span decoding."""
+
+    import numpy as np
+    from lateletter.transcription.geometry import build_recognition_hypothesis_inputs, route_raster_geometry
+    from lateletter.transcription.recognition import _run_level_variants, _structural_font_path
+
+    source_path = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
+    bundle, _ = route_raster_geometry(source_path)
+    hypothesis = next(
+        item
+        for item in build_recognition_hypothesis_inputs(source_path, bundle, max_hypotheses=16)
+        if item["provenance"]["hypothesis"]["pitch"] == 23
+        and item["provenance"]["hypothesis"]["phase"] == 8
+    )
+    run = hypothesis["runs"][3]
+    raster = np.asarray([[char == "1" for char in row] for row in run["binary_run_mask"]], dtype=bool)
+    anchor = run["anchor_evidence"]
+    variants = _run_level_variants(
+        raster,
+        base_advance=13.65,
+        origin=float(anchor["origin_px"]),
+        font_path=_structural_font_path(),
+        unicode_enabled=True,
+        max_variants=512,
+    )
+    assert any("ミ＿xノ" in text for text, _cost in variants)
+
+
+def test_joint_alignment_keeps_logical_width_and_geometry_margin_separate() -> None:
+    from lateletter.transcription import jointly_score_geometry_hypotheses
+
+    hypotheses = [
+        {
+            "provenance": {"hypothesis": {"pitch": 23, "phase": 8, "ownership": {"owned_pixel_count": 1, "substantive_pixel_count": 1, "unowned_pixel_count": 0, "multiply_owned_pixel_count": 0}}},
+            "mixed_width_display": {"base_advance_px": 10.0},
+            "runs": [{"row_index": 0, "source_bounds": [0, 0, 30, 10]}],
+        },
+        {
+            "provenance": {"hypothesis": {"pitch": 23, "phase": 9, "ownership": {"owned_pixel_count": 1, "substantive_pixel_count": 1, "unowned_pixel_count": 0, "multiply_owned_pixel_count": 0}}},
+            "mixed_width_display": {"base_advance_px": 10.0},
+            "runs": [{"row_index": 0, "source_bounds": [0, 0, 30, 10]}],
+        },
+    ]
+    report = jointly_score_geometry_hypotheses(
+        hypotheses,
+        {"23:8": {0: ("abc",)}, "23:9": {0: ("xyz",)}},
+    )
+    assert report["status"] in {"accepted_diagnostic", "unresolved"}
+    assert report["candidate_txt"] is None
+    assert all(item["status"] == "aligned" for item in report["hypotheses"])
+    assert report["margin"] >= 0
+
+
+def test_joint_alignment_uses_content_cropped_strip_width() -> None:
+    from lateletter.transcription.recognition import align_logical_text_to_run
+
+    aligned = align_logical_text_to_run(
+        "ab",
+        {
+            "source_bounds": [30, 0, 180, 10],
+            "binary_run_mask": ["1" * 20],
+        },
+        {"mixed_width_display": {"base_advance_px": 10.0, "origin_px": 0.0}},
+    )
+    assert aligned["status"] == "aligned"
+    assert aligned["target_units"] == 2
+    assert aligned["alignment_width_px"] == 20.0
+
+    row_trimmed = align_logical_text_to_run(
+        "         ___",
+        {
+            "source_bounds": [30, 0, 180, 10],
+            "run_strip_width_px": 150,
+            "logical_start_column": 0,
+            "logical_end_column": 12,
+            "binary_run_mask": ["0" * 150],
+        },
+        {"mixed_width_display": {"base_advance_px": 10.0, "origin_px": -10.0}},
+    )
+    assert row_trimmed["status"] == "aligned"
+    assert row_trimmed["target_units"] == 12
+    assert row_trimmed["alignment_width_px"] == 150.0
 
 
 def test_run_proposals_are_composed_by_measured_row_order() -> None:

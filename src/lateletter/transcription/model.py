@@ -123,6 +123,10 @@ class GeometryDecision(EvidenceRecord):
     evidence_hash: str = ""
     geometry_hash: str = ""
     rejection_codes: tuple[str, ...] = field(default_factory=tuple)
+    candidate_valid: bool = False
+    pitch_proven: bool = False
+    phase_proven: bool = False
+    ownership_proven: bool = False
 
     def __post_init__(self) -> None:
         if self.mode not in {"fixed_lattice", "shaped_runs", "unresolved"}:
@@ -364,6 +368,13 @@ class GateReport(EvidenceRecord):
         object.__setattr__(self, "checks", _mapping({str(key): bool(value) for key, value in self.checks.items()}))
         object.__setattr__(self, "counts", _mapping({str(key): int(value) for key, value in self.counts.items()}))
         object.__setattr__(self, "rejection_codes", _tuple(self.rejection_codes))
+        if self.passed:
+            if self.rejection_codes:
+                raise ValueError("passed gate cannot contain rejection codes")
+            if any(not value for value in self.checks.values()):
+                raise ValueError("passed gate cannot contain failed checks")
+            if any(value > 0 for key, value in self.counts.items() if str(key).startswith("blocking")):
+                raise ValueError("passed gate cannot contain blocking counts")
         super().__post_init__()
 
 

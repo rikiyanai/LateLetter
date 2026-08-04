@@ -1,0 +1,20 @@
+{
+  "schema_version": "lateletter-sitting-cat-evaluation-1",
+  "reference": "sitting-cat",
+  "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+  "transcript_path": "expected-transcript-candidate-002.txt",
+  "transcript_sha256": "fbbab93a69bb8b5e85b5d787a03d2a29a07e675e81be2d09a9822b86fd4cecd5",
+  "row_count": 9,
+  "purpose": "evaluation_only",
+  "runtime_input": false,
+  "operator_review": "pending",
+  "authority": "operator_visual_audit_required",
+  "status": "not_ground_truth_until_operator_acceptance",
+  "supersedes": {
+    "transcript_path": "expected-transcript-candidate.txt",
+    "transcript_sha256": "74334de57a948970f7eb91948ebc63d3d6fce4c06a1b4ecf8d0b975e5b83aba5",
+    "operator_verdict": "rejected",
+    "frozen": true
+  },
+  "notes": "Successor evaluation candidate created after explicit rejection. It is benchmark-only evidence and must never be read by geometry, recognition, or ranking runtime."
+}

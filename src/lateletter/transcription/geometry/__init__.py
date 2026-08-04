@@ -5,6 +5,7 @@ from .evidence import (
     GeometryProof,
     RecognitionInputBuilder,
     build_geometry_evidence,
+    build_recognition_hypothesis_inputs,
     build_recognition_inputs,
     evaluate_criteria,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "GeometryEvidenceBundle",
     "RecognitionInputBuilder",
     "build_geometry_evidence",
+    "build_recognition_hypothesis_inputs",
     "build_recognition_inputs",
     "evaluate_criteria",
     "assess_fixed_lattice",

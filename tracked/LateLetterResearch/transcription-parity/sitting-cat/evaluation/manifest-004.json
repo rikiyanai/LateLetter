@@ -1,0 +1,20 @@
+{
+  "schema_version": "lateletter-sitting-cat-evaluation-1",
+  "reference": "sitting-cat",
+  "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+  "transcript_path": "expected-transcript-candidate-004.txt",
+  "transcript_sha256": "c7f4d947572745aa1912b440b2cc6da6d8764640ed728cc26d866b71d34cbf36",
+  "row_count": 9,
+  "purpose": "evaluation_only",
+  "runtime_input": false,
+  "operator_review": "pending",
+  "authority": "operator_visual_audit_required",
+  "status": "not_ground_truth_until_operator_acceptance",
+  "supersedes": {
+    "transcript_path": "expected-transcript-candidate-003.txt",
+    "transcript_sha256": "6369ea4b05e50b5217f52f1c6a8e1d10859e879e4998d1f3eb97faa0d5d19cc7",
+    "operator_verdict": "rejected_lowercase_l_substitution",
+    "frozen": true
+  },
+  "notes": "Successor evaluation candidate correcting the source's third-row right-hand vertical bar. Benchmark-only evidence; never readable by geometry, recognition, or ranking runtime."
+}

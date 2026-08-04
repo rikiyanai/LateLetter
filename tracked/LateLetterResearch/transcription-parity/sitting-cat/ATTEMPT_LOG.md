@@ -43,3 +43,39 @@ directory. It records `proposal-report.json`, but deliberately emits **no** `can
 renderer artifacts, or `accepted.txt`. The manifest is `rejected_proposal_only`; it must not be
 read as a geometry pass. The reference remains blocked by `row_baselines_undersegmented` before
 the Japanese whole-run recognizer can be trusted.
+
+## Read-only successor diagnostics after 003 — no attempt created
+
+Later source-only geometry work recovered nine row strips and retained the 23px row pitch with a
+13.65px mixed-width display basis. The live structural proposal owner was replaced with a
+one-to-many-unit run-level span lattice, and its leading logical blanks are now bound to measured
+source columns. A bounded replay can therefore align all nine generated strings to the recovered
+runs.
+
+That is not transcription success. Only row 0 (`___`) visually matches the screenshot. The other
+selected strings contain wrong ASCII/Japanese glyph identities, punctuation, and compound lower-row
+structures. At least one complete lower-row witness (`ミ＿xノ`) is now present in proposal evidence
+but loses ranking; exact complete-row proposal coverage for the other failed rows has not been
+proved. The current failure is therefore split explicitly into:
+
+- **proposal coverage:** whether the correct complete logical row exists in any adapter's output;
+- **proposal ranking:** whether a present correct row loses to a source-incompatible alternative;
+- **authority:** geometry remains proposal-alignment-only until pitch, phase, ownership, and winner
+  margin proofs all pass.
+
+No read-only replay wrote a manifest, candidate, renderer artifact, or acceptance receipt. Attempt
+004 remains uncreated. The hand-tuned evaluation candidates under `evaluation/` are runtime-ineligible
+and rejected benchmark-label evidence; sitting-cat evaluation truth is unavailable until an
+authoritative original TXT or renderer-generated labeled fixture exists.
+
+### Operator verdict on the bounded replay — rejected
+
+The operator performed direct side-by-side source/generated review and explicitly rejected the
+machine replay. The disagreement is structural, not font-only: the head/face glyph identities are
+wrong, the middle rows lose or substitute bars, diagonals, horizontals, and spaces, and the lower
+body contains unrelated bracket/bar/kana/punctuation sequences. All nine rows fitting measured run
+widths does not establish visual parity.
+
+This rejects the replay only. It does not create or mutate attempt 004, and it does not decide the
+separate evaluation transcript candidate. Machine candidate emission remains blocked at proposal
+coverage and ranking.

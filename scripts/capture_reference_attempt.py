@@ -15,10 +15,15 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-from lateletter.transcription.geometry import build_recognition_inputs, route_raster_geometry
+from lateletter.transcription.geometry import (
+    build_recognition_hypothesis_inputs,
+    build_recognition_inputs,
+    route_raster_geometry,
+)
 from lateletter.transcription.hashing import sha256_bytes, sha256_file
 from lateletter.transcription.recognition import (
     FixedLatticeStructuralAdapter,
+    StructuralUnicodeRowAdapter,
     TesseractOfflineAdapter,
     benchmark_offline_ensemble,
     build_environment_lock,
@@ -101,11 +106,59 @@ def write_geometry_overlay(
     return sha256_file(destination)
 
 
+def write_geometry_contact_sheet(source: Path, destination: Path, bundle: object) -> str:
+    """Write candidate seam panels for geometry review only."""
+
+    image = Image.open(source).convert("RGBA")
+    payload = bundle.to_dict() if hasattr(bundle, "to_dict") else dict(bundle)
+    periodic = list(payload.get("projection_evidence", {}).get("periodic_row_candidates", []))
+    reference = next(
+        (float(item.get("horizontal_advance_reference")) for item in periodic if item.get("horizontal_advance_reference")),
+        None,
+    )
+    families: dict[int, list[dict[str, object]]] = {}
+    for item in periodic:
+        pitch = int(item.get("pitch", 0))
+        if reference is None or abs(pitch - reference) <= 4:
+            families.setdefault(pitch, []).append(item)
+    candidates: list[dict[str, object]] = []
+    for pitch in sorted(families):
+        family = sorted(families[pitch], key=lambda item: (not bool(item.get("valid")), -float(item.get("independent_score", 0.0))))
+        candidates.extend(family[:2])
+    rejected = [item for item in periodic if not item.get("valid")]
+    if rejected:
+        candidates.append(max(rejected, key=lambda item: float(item.get("independent_score", 0.0))))
+    candidates = candidates[:12]
+    if not candidates:
+        candidates = [{"pitch": 0, "phase": 0, "row_bounds": [], "valid": False}]
+    panel_width, panel_height = image.width, image.height
+    columns = min(3, len(candidates))
+    rows = (len(candidates) + columns - 1) // columns
+    sheet = Image.new("RGBA", (panel_width * columns, panel_height * rows), (245, 245, 245, 255))
+    colors = ((255, 170, 0, 180), (40, 190, 120, 180), (180, 80, 255, 180), (255, 110, 30, 210))
+    for index, candidate in enumerate(candidates):
+        panel = image.copy()
+        draw = ImageDraw.Draw(panel, "RGBA")
+        color = colors[index % len(colors)]
+        for y0, y1 in candidate.get("row_bounds", []):
+            draw.line((0, int(y0), panel.width - 1, int(y0)), fill=color, width=1)
+            draw.line((0, max(int(y0), int(y1) - 1), panel.width - 1, max(int(y0), int(y1) - 1)), fill=color, width=1)
+        label = f"pitch={candidate.get('pitch')} phase={candidate.get('phase')} {'valid' if candidate.get('valid') else 'REJECTED'}"
+        draw.rectangle((0, 0, min(panel.width, 260), 14), fill=(0, 0, 0, 180))
+        draw.text((3, 2), label, fill=(255, 255, 255, 255))
+        x = (index % columns) * panel_width
+        y = (index // columns) * panel_height
+        sheet.alpha_composite(panel, (x, y))
+    sheet.save(destination, format="PNG", optimize=False)
+    return sha256_file(destination)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path)
     parser.add_argument("attempt", type=Path)
     parser.add_argument("--cache", type=Path, default=Path("tracked/LateLetterResearch/transcription-model-cache"))
+    parser.add_argument("--geometry-only", action="store_true", help="stop after geometry evidence and review artifacts")
     args = parser.parse_args()
     source = args.source.resolve()
     attempt = args.attempt.resolve()
@@ -134,11 +187,78 @@ def main() -> int:
     }
     geometry_hash = write_json(attempt / "geometry.json", geometry_payload)
     geometry_overlay_hash = write_geometry_overlay(source, attempt / "geometry-overlay.png", bundle, decision)
+    geometry_contact_hash = write_geometry_contact_sheet(source, attempt / "geometry-contact-sheet.png", bundle)
     if decision.mode == "unresolved":
+        # Preserve measured hypothesis strips for a future joint decoder. They
+        # remain proposal-only evidence and can never become candidate TXT.
+        hypotheses = build_recognition_hypothesis_inputs(source, bundle)
+        hypothesis_hash = write_json(
+            attempt / "recognition-hypotheses.json",
+            {
+                "authority": "proposal_only",
+                "source_sha256": source_hash,
+                "geometry_sha256": geometry_hash,
+                "count": len(hypotheses),
+                "inputs": list(hypotheses),
+                "candidate_txt": None,
+                "accepted_txt": None,
+            },
+        )
+        # Run the real proposal seam over every measured hypothesis.  This is
+        # intentionally a separate JSON evidence artifact: unresolved geometry
+        # may be compared jointly with row proposals, but it still cannot
+        # write candidate.txt or accepted.txt.
+        proposal_report = benchmark_offline_ensemble(
+            [
+                {
+                    "id": attempt.name,
+                    "source_png": str(source),
+                    "expected_outcome": "rejected",
+                }
+            ],
+            (StructuralUnicodeRowAdapter(),),
+            build_environment_lock(script_packs=("ascii", "japanese", "cjk")),
+            top_k=3,
+        )
+        proposal_hash = write_json(attempt / "recognition-proposals.json", proposal_report)
+        joint_reviews = []
+        for result in proposal_report.get("results", []):
+            for adapter in result.get("adapters", []):
+                decoder = adapter.get("joint_decoder")
+                if decoder is not None:
+                    joint_reviews.append(
+                        {
+                            "fixture": result.get("fixture"),
+                            "adapter": adapter.get("adapter"),
+                            "geometry_status": adapter.get("geometry_status"),
+                            "joint_decoder": decoder,
+                        }
+                    )
+        joint_review_hash = write_json(
+            attempt / "joint-review.json",
+            {
+                "authority": "review_candidate_only",
+                "candidate_txt": None,
+                "accepted_txt": None,
+                "reviews": joint_reviews,
+            },
+        )
+        joint_reasons = sorted(
+            {
+                str(reason)
+                for item in joint_reviews
+                for reason in item.get("joint_decoder", {}).get("rejection_reasons", [])
+            }
+        )
         gate = {
             "status": "rejected_geometry_unresolved",
-            "rejection_reasons": list(decision.rejection_reasons),
+            "rejection_reasons": sorted(set((*decision.rejection_reasons, *joint_reasons))),
             "geometry_overlay_sha256": geometry_overlay_hash,
+            "geometry_contact_sheet_sha256": geometry_contact_hash,
+            "recognition_hypotheses_sha256": hypothesis_hash,
+            "recognition_proposals_sha256": proposal_hash,
+            "joint_review_sha256": joint_review_hash,
+            "recognition": "proposal_only; joint alignment diagnostic; no candidate authority",
         }
         gate_hash = write_json(attempt / "gate-report.json", gate)
         manifest = {
@@ -147,10 +267,50 @@ def main() -> int:
             "status": gate["status"],
             "source_receipt_sha256": source_receipt_hash,
             "geometry_sha256": geometry_hash,
+            "recognition_hypotheses_sha256": hypothesis_hash,
+            "recognition_proposals_sha256": proposal_hash,
+            "joint_review_sha256": joint_review_hash,
             "gate_report_sha256": gate_hash,
-            "artifacts": {"source": "source.png", "source_receipt": "source-receipt.json", "geometry": "geometry.json", "geometry_overlay": "geometry-overlay.png", "gate_report": "gate-report.json"},
+            "artifacts": {"source": "source.png", "source_receipt": "source-receipt.json", "geometry": "geometry.json", "geometry_overlay": "geometry-overlay.png", "geometry_contact_sheet": "geometry-contact-sheet.png", "recognition_hypotheses": "recognition-hypotheses.json", "recognition_proposals": "recognition-proposals.json", "joint_review": "joint-review.json", "gate_report": "gate-report.json"},
         }
         write_json(attempt / "manifest.json", manifest)
+        return 2
+
+    if args.geometry_only:
+        gate = {
+            "status": "geometry_only_review_pending",
+            "geometry_status": decision.status,
+            "geometry_mode": decision.mode,
+            "geometry_overlay_sha256": geometry_overlay_hash,
+            "geometry_contact_sheet_sha256": geometry_contact_hash,
+            "recognition": "not_run",
+            "candidate_sha256": None,
+            "rejection_reasons": ["operator_geometry_review_pending"],
+        }
+        gate_hash = write_json(attempt / "gate-report.json", gate)
+        manifest = {
+            "schema_version": "lateletter-reference-attempt-1",
+            "attempt": attempt.name,
+            "status": gate["status"],
+            "source_receipt_sha256": source_receipt_hash,
+            "geometry_sha256": geometry_hash,
+            "geometry_overlay_sha256": geometry_overlay_hash,
+            "geometry_contact_sheet_sha256": geometry_contact_hash,
+            "candidate_sha256": None,
+            "gate_report_sha256": gate_hash,
+            "artifacts": {
+                "source": "source.png",
+                "source_receipt": "source-receipt.json",
+                "geometry": "geometry.json",
+                "geometry_overlay": "geometry-overlay.png",
+                "geometry_contact_sheet": "geometry-contact-sheet.png",
+                "gate_report": "gate-report.json",
+            },
+            "accepted_txt": None,
+            "renderer": {"status": "not_run", "reason": "geometry_only"},
+        }
+        write_json(attempt / "manifest.json", manifest)
+        print(json.dumps({"status": gate["status"], "attempt": str(attempt), "candidate_sha256": None}, ensure_ascii=False))
         return 2
 
     inputs = build_recognition_inputs(source, bundle, mode=decision.mode)
@@ -165,7 +325,10 @@ def main() -> int:
     fixture = {
         "id": "sitting-cat",
         "source_png": str(source),
-        "expected_outcome": "positive",
+        # Capture has no operator-approved evaluation truth.  A proposal
+        # report must therefore remain diagnostic and cannot manufacture a
+        # positive release fixture.
+        "expected_outcome": "rejected",
     }
     adapters = (
         TesseractOfflineAdapter(
@@ -173,6 +336,7 @@ def main() -> int:
             languages=("eng", "jpn", "jpn_vert", "chi_sim", "chi_tra", "ara"),
         ),
         FixedLatticeStructuralAdapter(),
+        StructuralUnicodeRowAdapter(),
     )
     report = benchmark_offline_ensemble([fixture], adapters, lock, root=None)
     report_hash = write_json(attempt / "proposal-report.json", report)
@@ -182,6 +346,7 @@ def main() -> int:
         "geometry_mode": decision.mode,
         "recognition_input_hash": inputs["input_hash"],
         "geometry_overlay_sha256": geometry_overlay_hash,
+        "geometry_contact_sheet_sha256": geometry_contact_hash,
         "proposal_report_sha256": report_hash,
         "candidate_sha256": None,
         "candidate_profile": None,
@@ -205,6 +370,7 @@ def main() -> int:
             "source_receipt": "source-receipt.json",
             "geometry": "geometry.json",
             "geometry_overlay": "geometry-overlay.png",
+            "geometry_contact_sheet": "geometry-contact-sheet.png",
             "recognition_inputs": "recognition-inputs.json",
             "proposal_report": "proposal-report.json",
             "gate_report": "gate-report.json",

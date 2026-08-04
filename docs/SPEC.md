@@ -2490,6 +2490,19 @@ separate guarantee that a recipient receives the same Garden behaviour in either
 For a source that is demonstrably monospaced, recovery proceeds in this order. This is an
 execution contract, not a suggestion to manually repair OCR output.
 
+**Joint hypothesis rule (applies before final geometry authority):** calibration produces a
+source-derived table of defensible pitch/phase/origin candidates; it must not select one merely
+because it is the first valid lattice. Every retained hypothesis is allowed to produce complete
+row/run proposal evidence. A deterministic joint decoder then evaluates geometry, row-sequence
+recognition, component ownership, logical order, and display-width alternatives together. This
+is the only stage allowed to resolve a geometry ambiguity using text evidence. A hypothesis that
+has not passed that joint gate remains proposal/review evidence, not canonical geometry; it may
+never write `candidate.txt` or `accepted.txt`. Final authority requires complete source coverage,
+exactly-once ownership, complete row alignment, a pinned winner margin over competing hypotheses,
+and no unresolved width/Unicode collision. A blocked joint result may expose a labelled
+`joint-review.json` candidate for operator inspection, while its canonical candidate field stays
+null.
+
 1. **Calibrate before recognizing.** Derive the background/ink mask, horizontal cell advance,
    row pitch, grid phase, crop, and baselines from the source raster. Store the measurements and
    calibration image in the manifest. A character count, a guessed font size, or a prior TXT may
@@ -2520,6 +2533,111 @@ execution contract, not a suggestion to manually repair OCR output.
 The tracked plan and per-reference artifacts live in
 `tracked/LateLetterResearch/transcription-parity/`; no other directory, Preview window, or
 temporary OCR output is authoritative.
+
+#### 7.10.7 End-to-end rendered-Unicode screenshot recovery
+
+This section is the executor contract for the general pipeline. It applies to screenshots of
+rendered text art, including fixed-cell ASCII, mixed ASCII/fullwidth art, kana, Kanji, Arabic,
+combining sequences, bidi text, and emoji grapheme clusters. It does not authorize conversion of
+arbitrary illustrations into plausible text art.
+
+The authority chain is:
+
+```
+immutable source PNG
+  -> raster-derived geometry evidence
+  -> exactly one geometry hypothesis or unresolved
+  -> geometry-owned row/run masks and components
+  -> non-authoritative recognizer proposals
+  -> logical-grapheme decoding and visual shaping evidence
+  -> exactly-once component ownership and ambiguity gates
+  -> immutable machine candidate and layout sidecar
+  -> structural comparison package
+  -> operator accept/reject receipt
+  -> accepted.txt
+```
+
+An `aligned` row means only that its logical display width can be placed on the measured run. It
+does **not** mean its glyph identities match the source. Likewise, zero unknown cells, a complete
+proposal beam, a low renderer residual, or a zero source-stencil diff is not transcription
+acceptance.
+
+Execute in this order, stopping at the first failed exit gate:
+
+0. **Freeze and inventory prior evidence.** Hash the normalized source, identify the next unused
+   attempt ID, and read the reference `ATTEMPT_LOG.md` plus the relevant failure-log family. Never
+   overwrite, rename, repair, or copy a rejected machine TXT into a successor. Record the failed
+   hypothesis, intervention, result, falsifier, and spent lane before beginning its successor.
+1. **Bind evaluation truth outside runtime.** A benchmark transcript requires source provenance,
+   exact UTF-8 bytes, NFC policy, row count, whitespace policy, and an operator verdict. It is
+   stored as evaluation-only evidence and its hash may be read by benchmark scoring only. Geometry,
+   preprocessing, recognition, ranking, and ownership code may never read it. Until approved, it
+   may support visual discussion but not exact automated coverage claims.
+2. **Normalize pixels once.** Record source/crop/background/foreground recipes and hashes. Retain
+   all defensible foreground alternatives until geometry resolves them. UI chrome, guide rails,
+   clipping, antialiasing, and transparent/color glyph evidence remain explicit; preprocessing may
+   not erase unexplained ink.
+3. **Produce geometry candidates without glyph labels.** Measure row bands, baselines, pitch,
+   phase, origin, fixed advances, shaped-run anchors, direction/orientation candidates, seams, and
+   components directly from pixels. Emit a source-sized overlay and candidate table. Do not use a
+   recognizer preference, provisional TXT, expected transcript, or font-template match to manufacture
+   geometry proof.
+4. **Route geometry exclusively.** Select a fixed lattice or shaped/variable-width run model only
+   when its pinned proof criteria and margin pass. If pitch, phase, ownership, or model choice is
+   unresolved, retain all candidates as proposal evidence and stop candidate emission. Both models
+   may be compared diagnostically, but they may not author competing text over the same components.
+5. **Build recognition inputs from the selected raster evidence.** Emit complete row/run strips,
+   binary/RGBA masks, measured anchors, clipping metadata, component IDs, and hashes. Fixed sources
+   use complete rows rather than isolated cells; mixed-width and shaped sources use complete runs.
+   Every substantive source pixel must be present in at least one inspectable input.
+6. **Generate proposals with pinned offline capability profiles.** Invoke every applicable
+   recognizer on every owned run. Record adapter/model/dictionary hashes, versions, script and
+   direction coverage, runtime options, resource use, top-k output, and unsupported reasons. The
+   structural span lattice owns spacing and span composition; it is not a universal Unicode glyph
+   oracle. A finite hand-authored glyph table may support structural ASCII evidence but may not be
+   expanded into the claimed all-Unicode recognizer. Remote models, when explicitly enabled, remain
+   quarantined proposal generators and pass through every later deterministic gate.
+7. **Measure proposal coverage before ranking.** In benchmark mode only, produce a per-run matrix
+   stating whether the approved expected logical sequence is absent or present and, when present,
+   its rank and owning adapter. An absent expected sequence is a recognition-coverage failure;
+   changing the final scorer cannot fix it. A present but losing sequence is a ranking failure;
+   adding transcript-specific recognition rules is forbidden. Coverage metrics never enter runtime
+   scoring.
+8. **Decode logical graphemes.** Compose proposals through an incremental ownership-aware span DAG,
+   preserving measured blank columns and one-to-many display-unit edges. Merge equivalent states by
+   logical grapheme sequence plus owned component IDs. Preserve complete source-supported witnesses
+   independently from report caps; do not materialize or truncate a Cartesian product. Keep
+   visually colliding, canonically non-equivalent alternatives unresolved.
+9. **Shape for comparison without rewriting TXT.** Normalize the logical candidate according to the
+   pinned NFC policy, segment with the pinned UAX #29 implementation, calculate display width with
+   pinned tables, and run pinned bidi/shaping/font fallback to create visual-order evidence. Arabic
+   joining, bidi reordering, combining marks, emoji VS/ZWJ, and vertical text are recorded in the
+   layout sidecar. TXT remains logical order.
+10. **Prove component ownership and rank from source evidence.** Every substantive component must
+    map exactly once to a grapheme/run or remain unresolved. Rank using measured anchors, direction,
+    topology, component cardinality, width, clipping, and independent recognizer agreement. A
+    comparison-font raster residual is advisory and bounded. Unknown ownership, multiply owned ink,
+    unexplained ink, a Unicode collision, or an insufficient winner margin rejects.
+11. **Emit one immutable machine bundle only after all machine gates pass.** The bundle contains the
+    exact candidate UTF-8 bytes, layout sidecar, source/geometry/component/proposal/environment
+    hashes, coverage and conflict counts, normalization/shaping receipts, and rejection/authority
+    state. Proposal capture and diagnostic replay cannot write `candidate.txt`, `machine.txt`, or
+    `accepted.txt`. A failed run receives no retroactive edits; its successor uses a new attempt ID.
+12. **Render a structural review package.** Render without source pixels or stencils at the exact
+    source canvas and measured anchors. Preserve source, candidate render, overlay, diff, row/run
+    panels, unresolved alternatives, and receipt hashes. Pixel equality is required only when the
+    original font and renderer are known; otherwise raster parity is disclosed as blocked while
+    rows, spaces, glyph identities, ownership, and structural strokes remain reviewable.
+13. **Accept, promote, and advance the queue.** The operator accepts or rejects without editing the
+    machine candidate. Acceptance copies the candidate byte-for-byte to `accepted.txt` and records
+    a hash-bound receipt. Rejection freezes the package and records the next falsifiable hypothesis.
+    Only then may the next queued reference activate.
+
+Release of the general converter requires all positive corpus families to appear in deterministic
+offline top-k coverage, all expected-fail-closed fixtures to remain unresolved for their recorded
+reason, repeat hashes to match, resource ceilings to pass, and at least one operator-approved live
+reference from each enabled geometry/script profile. Test counts prove mechanics and regressions;
+they do not substitute for those conversion outcomes.
 
 ---
 

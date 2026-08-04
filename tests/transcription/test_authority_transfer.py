@@ -81,4 +81,6 @@ def test_rejected_proposal_capture_emits_no_txt(tmp_path: Path) -> None:
     assert result.returncode == 2, result.stderr
     assert (attempt / "manifest.json").exists()
     assert (attempt / "geometry-overlay.png").exists()
+    assert (attempt / "recognition-proposals.json").exists()
+    assert (attempt / "joint-review.json").exists()
     assert not any((attempt / name).exists() for name in ("candidate.txt", "machine.txt", "accepted.txt"))
