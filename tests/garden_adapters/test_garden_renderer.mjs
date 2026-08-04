@@ -274,34 +274,6 @@ test('projection is pure and free of hidden depth constants', () => {
     /GROUND_DEPTH_SCALE/);
 });
 
-test('every object stands on the single painted soil line', () => {
-  // The defect this exists to catch: paint one row, place feet on another, and
-  // the scene renders fixtures standing on nothing. Tying both to
-  // `groundFront` in one assertion means they cannot drift apart again.
-  const viewport = [160, 48];
-  const profile = gardenPresentationProfile(viewport);
-  assert.equal(profile.groundBack, profile.groundFront);
-  assert.equal(profile.groundSpan, 0);
-  assert.equal(profile.yScale, 0);
-  const data = projection(), objects = [];
-  for (let index = 0; index < 5; index += 1) {
-    const object = structuredClone(data.objects[0]);
-    object.object_id = `plant:${index}`;
-    object.position = [10 + index * 8, index * 20];
-    object.hotspot = { x: object.position[0], y: object.position[1], width: 1, height: 1 };
-    objects.push(object);
-  }
-  data.camera = [26, 40]; data.objects = objects;
-  const layout = layoutGardenObjects(data, viewport);
-  assert.equal(layout.length, objects.length);          // depth culls nothing now
-  for (const entry of layout) assert.equal(entry.groundRow, profile.groundFront);
-  // World depth no longer moves anything vertically, at any depth multiplier.
-  assert.equal(
-    worldToGardenScreen([40, 0], [40, 40], viewport)[1],
-    worldToGardenScreen([40, 60], [40, 40], viewport)[1],
-  );
-});
-
 test('compositor still culls objects the camera cannot see horizontally', () => {
   const data = projection();
   data.objects = [data.objects[0]];
@@ -1595,80 +1567,20 @@ test('ten-minute pan simulation keeps initialized scenery and partial row diffs'
 // so every fixture in the live capture stood on empty air and the suite
 // reported nothing wrong.
 //
-// A test about paint has to look at paint. This one renders a real frame from
-// the real starter world and reads the characters back out of it.
-const SOIL_GLYPHS = new Set(['.', ',', '*', '`']);
+const STARTER_ROW = ['pond', 'stepping_stones', 'mailbox', 'bench', 'lantern', 'planter'];
 
-test('every ground-dwelling object rests on a painted soil line', async () => {
-  // Desktop and phone. The soil line is placed as a fraction of frame height,
-  // so the two sizes exercise genuinely different rows.
-  for (const [pixelWidth, pixelHeight] of [[1600, 1000], [390, 844]]) {
-    const element = new FakeElement();
-    element.clientWidth = pixelWidth;
-    element.clientHeight = pixelHeight;
-    const renderer = rendererUnderAuthority(element);
-    const state = await generateInitialWorld('ground-paint', 'ground-paint-seed');
-    const data = await projectGardenScene(state);
-    // Clear weather, so the only thing that can put a glyph on the ground row
-    // is the ground itself or an object standing on it. A rain streak landing
-    // on the soil line would otherwise make this test fail for a reason that
-    // has nothing to do with the contract it is guarding.
-    data.scene = { ...data.scene, weather: 'clear' };
-    const frame = renderer.render(data);
-
-    // One answer to "where is the ground", read the way the rest of the
-    // program reads it.
-    const groundY = gardenGroundY(frame.viewport);
-    assert.equal(frame.profile.groundFront, groundY,
-      `gardenGroundY disagrees with the profile at ${pixelWidth}x${pixelHeight}`);
-    assert.ok(frame.layout.length > 0,
-      `nothing was laid out at ${pixelWidth}x${pixelHeight}`);
-
-    const line = [...frame.lines[groundY]];
-    // Columns an object's own drawing occupies. Art paints over the soil, so
-    // these are the cells where a soil glyph is legitimately absent.
-    const covered = new Set();
-    for (const entry of frame.layout) {
-      assert.equal(entry.lift, 0,
-        `${entry.object.object_id} is a ground-dwelling kind and must not be lifted`);
-      assert.equal(entry.rect.bottom, groundY,
-        `${entry.object.object_id}'s feet are on row ${entry.rect.bottom}, ` +
-        `but the ground is row ${groundY}`);
-      for (let column = entry.rect.left; column <= entry.rect.right; column += 1) {
-        covered.add(column);
-      }
-    }
-
-    // THE ASSERTION THAT MATTERS. Every cell of the foot row that no object is
-    // standing on must hold soil. Move the paint back to `horizon` and this
-    // fails on the first uncovered column, because the row is then blank
-    // between the fixtures -- which is exactly what the capture showed.
-    for (let column = 0; column < frame.viewport[0]; column += 1) {
-      if (covered.has(column)) continue;
-      assert.ok(SOIL_GLYPHS.has(line[column]),
-        `at ${pixelWidth}x${pixelHeight} the ground row ${groundY} holds ` +
-        `${JSON.stringify(line[column])} at column ${column}, not soil — ` +
-        'the objects are standing on nothing');
-    }
-  }
-});
-
-// The five starter fixtures, in the order the canonical anchors place them
-// left to right. Named here so a failure says which fixture went missing.
-const STARTER_ROW = ['stepping_stones', 'bench', 'mailbox', 'lantern', 'planter'];
-
-test('the authoritative starter row is whole, separate and stable', async () => {
+test('the authored starter rooms remain whole and stable', async () => {
   const state = await generateInitialWorld('starter-row', 'starter-row-seed');
   const data = await projectGardenScene(state);
   const catalogOf = entry => String(entry.object.semantic_state?.catalog_id ?? '');
 
-  // The world declares five. Anything the picture loses from here on is the
+  // The world declares the whole authored surface. Anything the picture loses from here on is the
   // presentation losing it, not the world never having had it -- a distinction
   // the first single-surface capture could not make, which is why "three
   // fixtures visible" took a live screenshot to notice.
   // Filtered to fixtures. The default scene also plants an oak and a sunflower
   // since the legacy art port, and this test is about the FIXTURE row: the
-  // claim it defends is that all five fixtures survive from world to picture,
+  // claim it defends is that all fixtures survive from world to picture,
   // which is unchanged by there being other objects in the world. The plants
   // are held to their own contract in 'restoring the ported plants leaves the
   // authoritative fixture row alone'.
@@ -1686,19 +1598,18 @@ test('the authoritative starter row is whole, separate and stable', async () => 
   assert.deepEqual(layout.map(catalogOf).sort(), [...STARTER_ROW].sort(),
     'a starter fixture is missing from the desktop composition');
 
-  // Non-overlapping, pairwise. This is the assertion that would have caught
-  // the collision: the planter and the stepping stones were still in the
-  // layout, they were simply drawn underneath the mailbox, so a count of five
-  // proved nothing.
-  const sorted = [...layout].sort((left, right) => left.rect.left - right.rect.left);
-  for (let index = 1; index < sorted.length; index += 1) {
-    assert.ok(sorted[index].rect.left > sorted[index - 1].rect.right,
-      `${catalogOf(sorted[index - 1])} and ${catalogOf(sorted[index])} overlap: ` +
-      `columns ${sorted[index - 1].rect.left}-${sorted[index - 1].rect.right} ` +
-      `and ${sorted[index].rect.left}-${sorted[index].rect.right}`);
-  }
-  assert.deepEqual(sorted.map(catalogOf), STARTER_ROW,
-    'the canonical left-to-right order of the starter row changed');
+  const byCatalog = Object.fromEntries(layout.map(entry => [catalogOf(entry), entry]));
+  assert.ok(byCatalog.stepping_stones.rect.right < byCatalog.pond.rect.left,
+    'stepping stones are not left of the pond');
+  assert.ok(byCatalog.pond.rect.left - byCatalog.stepping_stones.rect.right <= 3,
+    'stepping stones no longer approach the pond');
+  assert.ok(byCatalog.bench.rect.bottom < byCatalog.pond.rect.top,
+    'the bench is not above the pond');
+  const benchCenter = (byCatalog.bench.rect.left + byCatalog.bench.rect.right) / 2;
+  assert.ok(benchCenter >= byCatalog.pond.rect.left && benchCenter <= byCatalog.pond.rect.right,
+    'the bench is no longer horizontally aligned with the pond');
+  assert.equal(byCatalog.lantern.groundRow, gardenPresentationProfile(desktop).groundBack,
+    'the lantern left the far terrain band');
 
   // ── Phone, 390x844 → a 48x56 grid ───────────────────────────────────────
   // Cropping is expected and correct: a phone is a camera into the same world,

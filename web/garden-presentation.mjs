@@ -48,7 +48,7 @@ import { resolveBrowserSky } from './garden-sky.mjs';
 import { validatePaintAuthority } from './garden-paint-authority.mjs';
 import {
   Raster,
-  drawSky, drawSkyLife, drawGround, drawLegacyPlanting, drawAmbient, drawPlantBeds,
+  drawSky, drawSkyLife, drawPondButterflies, drawGround, drawLegacyPlanting, drawAmbient, drawPlantBeds,
   drawWeather, drawObject,
   gardenPresentationProfile, layoutGardenObjects, gardenDepthCohorts,
   timeOfDay, seasonOf, DAY, NIGHT, EVENING, paletteColor,
@@ -192,14 +192,22 @@ function initialLifecycle(worldId) {
   };
 }
 
-function createAmbientActors(rng, season, mode, cols, groundY) {
+function createAmbientActors(rng, season, mode, cols, groundY, pondCenter = null) {
   const actors = [];
   if ((season === 'spring' || season === 'summer') && cols >= 10 && groundY >= 12) {
-    const count = rng.randint(1, 2);
+    const count = pondCenter ? rng.randint(2, 3) : rng.randint(1, 2);
     for (let index = 0; index < count; index += 1) {
+      const phase = rng.random() * 6.2832;
+      const radiusX = 4 + rng.random() * 3;
+      const radiusY = 1.2 + rng.random() * 1.3;
       actors.push({
-        kind: 'butterfly', x: rng.randint(5, cols - 5), y: rng.randint(3, groundY - 8),
-        vx: rng.random() > 0.5 ? 0.3 : -0.3, phase: rng.random() * 6.28,
+        kind: 'butterfly', orbit: Boolean(pondCenter),
+        centerX: pondCenter?.[0] ?? null, centerY: pondCenter?.[1] ?? null,
+        angle: phase, angularVelocity: (index % 2 ? -1 : 1) * (0.035 + rng.random() * 0.02),
+        radiusX, radiusY,
+        x: pondCenter ? pondCenter[0] + Math.cos(phase) * radiusX : rng.randint(5, cols - 5),
+        y: pondCenter ? pondCenter[1] + Math.sin(phase) * radiusY : rng.randint(3, groundY - 8),
+        vx: rng.random() > 0.5 ? 0.3 : -0.3, phase,
         color: rng.choice(['bright_magenta', 'magenta', 'bright_cyan', 'cyan']),
       });
     }
@@ -430,11 +438,22 @@ function advanceLifecycle(previous, scene, frame) {
   const season = seasonOf(projection);
   const mode = timeOfDay(projection);
   const weather = String(projection.scene?.weather ?? '').toLowerCase();
+  const layout = layoutGardenObjects(projection, viewport ?? [cols, 24], frame);
+  const pond = layout.find(entry =>
+    entry.object.kind === 'fixture' && entry.object.semantic_state?.catalog_id === 'pond');
+  const pondCenter = pond
+    ? [Math.round((pond.rect.left + pond.rect.right) / 2), pond.rect.top - 1]
+    : null;
   const ambientRng = new LifecycleRng(state.ambientRng);
-  const ambientKey = `${season}:${mode}:${cols}:${groundY}`;
+  const ambientKey = `${season}:${mode}:${cols}:${groundY}:${pondCenter?.join(',') ?? 'no-pond'}`;
   let ambient = state.ambientKey === ambientKey
     ? state.ambient.map(actor => ({ ...actor }))
-    : createAmbientActors(ambientRng, season, mode, cols, groundY);
+    : createAmbientActors(ambientRng, season, mode, cols, groundY, pondCenter);
+  for (const actor of ambient) {
+    if (actor.kind === 'butterfly' && actor.orbit && pondCenter) {
+      actor.centerX = pondCenter[0]; actor.centerY = pondCenter[1];
+    }
+  }
   if (steps === 0) {
     return {
       ...state,
@@ -443,7 +462,6 @@ function advanceLifecycle(previous, scene, frame) {
     };
   }
 
-  const layout = layoutGardenObjects(projection, viewport ?? [cols, 24], frame);
   const surfaces = surfaceMapsOf(layout);
   const birdRng = new LifecycleRng(state.birdRng);
   const particleRng = new LifecycleRng(state.particleRng);
@@ -463,11 +481,17 @@ function advanceLifecycle(previous, scene, frame) {
     // their positions.
     for (const actor of ambient) {
       if (actor.kind === 'butterfly') {
-        actor.x += actor.vx;
-        actor.y += 0.15 * Math.sin(tick * 0.05 + actor.phase);
-        if (actor.x < 1) { actor.x = 1; actor.vx = Math.abs(actor.vx); }
-        if (actor.x > cols - 3) { actor.x = cols - 3; actor.vx = -Math.abs(actor.vx); }
-        actor.y = clampValue(actor.y, 2, Math.max(2, groundY - 5));
+        if (actor.orbit && Number.isFinite(actor.centerX) && Number.isFinite(actor.centerY)) {
+          actor.angle += actor.angularVelocity;
+          actor.x = actor.centerX + Math.cos(actor.angle) * actor.radiusX;
+          actor.y = actor.centerY + Math.sin(actor.angle) * actor.radiusY;
+        } else {
+          actor.x += actor.vx;
+          actor.y += 0.15 * Math.sin(tick * 0.05 + actor.phase);
+          if (actor.x < 1) { actor.x = 1; actor.vx = Math.abs(actor.vx); }
+          if (actor.x > cols - 3) { actor.x = cols - 3; actor.vx = -Math.abs(actor.vx); }
+          actor.y = clampValue(actor.y, 2, Math.max(2, groundY - 5));
+        }
       } else if (actor.kind === 'firefly') {
         actor.x += actor.vx;
         actor.y += actor.vy + 0.05 * Math.sin(tick * 0.02 + actor.phase);
@@ -700,6 +724,7 @@ export function composePresentationFrame(projection, state, context) {
     drawPlantBeds(raster, projection, entries, palette, season, profile);
     entries.forEach(entry => drawObject(raster, entry, projection, palette, season, view));
   }
+  drawPondButterflies(raster, state.lifecycle, palette);
   const weatherReactions = drawWeather(raster, state.lifecycle, palette);
   if (projection.scene?.memorial?.active) {
     const center = Math.floor(viewport[0] / 2);
@@ -795,7 +820,10 @@ export function composePresentationFrame(projection, state, context) {
   // The background: the accepted sky-to-ground gradient, always. This
   // replaces the deleted hostname-conditioned branch -- there is one
   // background and it does not depend on where the page is served.
-  const groundPct = ((profile.groundFront + 1) / viewport[1] * 100).toFixed(2);
+  // The coloured terrain begins at the far grass edge. The canonical fixture
+  // surface is nearer the bottom and lives inside this band; using it as the
+  // gradient boundary erased the depth between background and foreground.
+  const groundPct = (profile.farGroundY / viewport[1] * 100).toFixed(2);
   const background = {
     kind: 'gradient',
     bands: [

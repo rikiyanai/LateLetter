@@ -116,6 +116,9 @@ def drawn_asset(v1_asset: dict[str, Any], drawing: dict[str, Any]) -> dict[str, 
     """
     ascii_rows = drawing["ascii"]
     proportional_rows = drawing["proportional"]
+    ascii_frames = drawing.get("ascii_frames", (ascii_rows,))
+    proportional_frames = drawing.get("proportional_frames", (proportional_rows,))
+    frame_ticks = int(drawing.get("frame_ticks", 1))
 
     height = len(ascii_rows)
     width = len(ascii_rows[0])
@@ -141,14 +144,20 @@ def drawn_asset(v1_asset: dict[str, Any], drawing: dict[str, Any]) -> dict[str, 
         "anchor": [anchor_column, height - 1],
         "profiles": {
             "ascii-safe": {
-                "idle": [{"ticks": 1, "cells": [list(row) for row in ascii_rows]}],
+                "idle": [
+                    {"ticks": frame_ticks, "cells": [list(row) for row in frame]}
+                    for frame in ascii_frames
+                ],
             },
             "browser-proportional": {
-                "idle": [{
-                    "ticks": 1,
-                    "rows": list(proportional_rows),
-                    **({"accents": drawing["accents"]} if drawing.get("accents") else {}),
-                }],
+                "idle": [
+                    {
+                        "ticks": frame_ticks,
+                        "rows": list(frame),
+                        **({"accents": drawing["accents"]} if drawing.get("accents") else {}),
+                    }
+                    for frame in proportional_frames
+                ],
             },
         },
         "hotspots": v1_asset["hotspots"],
@@ -331,18 +340,26 @@ export const ATLAS_PROPORTIONAL_ART = Object.freeze({body});
  * including inside prose. An earlier draft of this sentence failed the deploy
  * build on a module named "no art". See FAILURE_LOG.
  */
-export function canonicalProportionalArt(assetId, state = 'idle') {{
+export function canonicalProportionalArt(assetId, state = 'idle', frame = 0) {{
   const asset = ATLAS_PROPORTIONAL_ART[assetId];
   if (!asset) return null;
   const frames = asset.states[state] ?? asset.states.idle;
   if (!frames || frames.length === 0) return null;
+  const cycle = frames.reduce((total, item) => total + Math.max(1, Number(item.ticks) || 1), 0);
+  let cursor = ((Math.floor(Number(frame) || 0) % cycle) + cycle) % cycle;
+  let selected = frames[0];
+  for (const item of frames) {{
+    selected = item;
+    cursor -= Math.max(1, Number(item.ticks) || 1);
+    if (cursor < 0) break;
+  }}
   return {{
-    rows: frames[0].rows,
+    rows: selected.rows,
     // Null rather than a copy of `rows`, so the renderer can tell an authored
     // compact drawing from the absence of one and reduce accordingly.
-    compactRows: frames[0].compact_rows ?? null,
+    compactRows: selected.compact_rows ?? null,
     anchor: asset.anchor,
-    accents: frames[0].accents ?? null,
+    accents: selected.accents ?? null,
   }};
 }}
 '''

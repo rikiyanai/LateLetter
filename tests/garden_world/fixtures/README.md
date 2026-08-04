@@ -5,7 +5,7 @@
 A persisted world in the condition the browser one was actually found in: the
 **current shape**, **no content stamps**, and a roster today's generator cannot
 produce — 13 plants, 22 fixtures, 4 animals, 8 collectibles, against a current
-starter of 2 plants and 5 fixtures.
+starter composition.
 
 **What it is.** A document that loads through the real `WorldState.from_dict`,
 so its shape is authentic rather than hand-approximated. It was built from the

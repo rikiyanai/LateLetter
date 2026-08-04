@@ -94,39 +94,24 @@ REVIEW_PENDING_COLLECTIBLES: tuple[str, ...] = ("fallen_acorn",)
 # renderer may crop the world, but it must not invent relationships by repacking
 # records.
 #
-# THE FIVE STARTER FIXTURES (operator decision, 2026-08-01)
-# --------------------------------------------------------
-# `stepping_stones`, `bench`, `mailbox`, `lantern` and `planter` are the default
-# roster, and their anchors are authoritative canonical data. They share one
-# depth (650) because the walkable plane is currently a single line: with no
-# depth separation left to hold them apart, two fixtures at similar x collide,
-# and that is exactly what the first single-surface capture showed -- five
-# objects in the world, three visible on screen, the planter and stepping stones
-# swallowed by the mailbox.
-#
-# The separation therefore has to be HORIZONTAL, and it has to live here rather
-# than in the renderer. A compositor that spread crowded objects out to make
-# them all fit would be inventing a spatial relationship the author never
-# expressed; the world would say one thing and the picture another. Evenly
-# spaced at 125 thousandths apart and centred on 500, the row reads as a
-# deliberate line of objects, and a phone-width crop of the centre still
-# contains the bench, the mailbox and the lantern -- the two fixtures the
-# interaction slice needs, plus the one between them.
-#
-# The remaining five entries are NOT part of the default scene. They keep their
-# original relationship anchors for authored programs and later compositions.
+# THE STARTER TERRAIN ROOMS (operator decision, 2026-08-04)
+# ---------------------------------------------------
+# These anchors author relationships, not even spacing. The bench is directly
+# behind the pond; stepping stones approach from one side; the lantern occupies
+# the far transition band near that room. This belongs here because a renderer
+# that drags props together would create a second, viewport-dependent owner.
 STARTER_FIXTURE_ANCHORS = {
-    "pond": (180, 400),
+    "pond": (400, 900),
     "bridge": (180, 450),
     "birdbath": (80, 720),
     "trellis": (720, 450),
     "arbor": (830, 700),
-    # ── the authoritative starter row ──
-    "stepping_stones": (250, 650),
-    "bench": (375, 650),
-    "mailbox": (500, 650),
-    "lantern": (625, 650),
-    "planter": (750, 650),
+    # ── the authored water/sitting room ──
+    "stepping_stones": (300, 900),
+    "bench": (400, 300),
+    "lantern": (480, 200),
+    "mailbox": (700, 700),
+    "planter": (850, 820),
 }
 # THE DEFAULT ROSE SITS OUTSIDE THE FIXTURE ROW
 # ------------------------------------------------------------------------
@@ -145,15 +130,11 @@ STARTER_FIXTURE_ANCHORS = {
 #
 # The operator-authored rose accepted on 2026-08-03 is the canonical starter
 # plant: it is the exact approved six-line asset, not the old local placeholder.
-# Its earlier 940 anchor put the wide drawing under the planter/lantern pack so
-# only part of its pot survived the final frame. At 60 it owns the open left
-# edge while the five fixtures keep their established row. Oak and sunflower
+# Its earlier interior anchors put the wide drawing inside a fixture room and
+# forced the compositor to move canonical fixtures. At 10 it owns the extreme
+# left edge without rewriting the pond/stones relationship. Oak and sunflower
 # remain available to authored programs; the deployed presentation-native
 # planting layer supplies the dense seasonal planting around all six objects.
-#
-# The five FIXTURE anchors are untouched. They are the authoritative canonical
-# data and nothing here is permitted to move them; this change moves the plants
-# around them, which is the opposite operation.
 #
 # The remaining six entries are not in the default scene and keep their original
 # relationship anchors for authored programs.
@@ -162,7 +143,7 @@ STARTER_PLANT_ANCHORS = {
     "oak": (150, 300),
     "hydrangea": (360, 570),
     "willow": (900, 180),
-    "rose": (60, 320),
+    "rose": (70, 820),
     "meadow_grass": (470, 590),
     "lavender": (570, 760),
     "sunflower": (850, 320),

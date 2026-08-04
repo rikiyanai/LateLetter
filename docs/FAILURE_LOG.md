@@ -9511,10 +9511,10 @@ below it):
 
 - The backdrop is authored in WORLD COLUMNS over a fixed extended extent
   (-300..+420 around the 120-column world) and projected through the SAME
-  `worldToGardenScreen` transform as every canonical object, at layer depths: trees
-  0.45-0.55, shrubs/flowers/grass 0.55-0.65, canonical world 1.0, ground cover 1.12
-  (fast foreground). Baselines recede upward with depth; foreground cover resolves below
-  the walkable line.
+  `worldToGardenScreen` horizontal transform as every canonical object, at layer depths:
+  trees 0.45-0.55, shrubs/flowers/grass 0.55-0.65, canonical world 1.0, ground cover up
+  to 1.12 (fast foreground). The background planting roots on the far terrain band;
+  foreground cover resolves between that band and the canonical walkable surface.
 - The population is a pure function of (seed, season) over the fixed extent — resize
   changes the crop, never the population; panning cannot reach unplanted columns;
   returning the camera reproduces the identical composition. The layout is memoised on
@@ -9838,6 +9838,45 @@ proportional Latin, kana, Kanji, Arabic, and combining.
   budget/determinism defect. Continue D1/Track B only; ranking and acceptance
   remain prohibited. ComplaintRef: operator order to implement the
   transcription plan correctly, 2026-08-04.
+
+### The far terrain band was collapsed into the canonical fixture surface (2026-08-04)
+
+- **Requirement:** The furthest visible terrain band is a continuous Garden-authored
+  contour at the exact sky→terrain colour boundary. Only the large legacy trees and
+  selected far fixtures (the street lantern and, when present, trellis) root there.
+  Small legacy flowers, shrubs, grasses, mushrooms and ferns belong on the closer band.
+  The stepping stones approach the pond from one side; the bench sits generally above
+  the pond; the pond ripples laterally and butterflies circle it.
+- **Symptom:** The first repair moved the only ground row to 68% of the frame. Tall trees,
+  ground cover and all fixtures then competed for that row; trunks crossed the colour
+  boundary and fixtures appeared embedded in a divider. A later repair copied the
+  structural Moon sample `---^/\\___...` into the Garden and rooted every legacy plant
+  on it. The operator rejected both interpretations: the sample demonstrates a continuous
+  far boundary but is not Garden grass art, and small planting belongs on the near band.
+- **Current owner:** `gardenPresentationProfile` owns the two semantic rows;
+  `composePresentationFrame` derives the colour boundary from `farGroundY`;
+  `drawGround` owns both terrain contours; `drawLegacyPlanting` assigns only large trees
+  to `farGroundY` and small planting to `groundFront`; canonical starter anchors assign
+  each fixture to the authored far or near room.
+- **Stale owner deleted:** The arbitrary `legacyBaselineRecession(depth)` calculation and
+  the elevated `groundFront` assignment are gone. No painter may derive another plant or
+  fixture baseline from depth.
+- **Architecture correction:** `farGroundY` and `groundFront` are separate facts. The far
+  edge and CSS colour boundary share the former; the near soil contour shares the latter.
+  Canonical world anchors own fixture relationships, the atlas owns pond animation frames,
+  and the presentation lifecycle owns pond-local butterfly orbits. Ground cover remains
+  deterministic world-space presentation ink between the two bands and keeps parallax.
+- **Agent visual verification:** Cache-busted Chrome at exactly 1544×430 shows one
+  uninterrupted punctuation contour on the sky→terrain colour transition; only the large
+  legacy trees and street lantern root there. Small flowers, shrubs and grass root on the
+  near contour. The stones enter immediately left of the pond and the bench is centred
+  above it. Two live crops 1.1 seconds apart show the atlas ripples translating sideways
+  and the pond butterflies changing both orbit position and wing frame. A frozen-time crop
+  before and after hovering the left pine shows multiple canopy strokes changing while the
+  trunk, camera and fixture roster remain fixed. These are direct visual diagnostics, not
+  geometry or unit-test surrogates and not an operator acceptance claim.
+- **Status:** IMPLEMENTED AND AGENT-VISUALLY-VERIFIED. ComplaintRef: operator terrain,
+  fixture-room, pond-motion and butterfly corrections, 2026-08-04.
 
 ### Coverage matrix collision taxonomy was restored without unbound poisoning (2026-08-04)
 

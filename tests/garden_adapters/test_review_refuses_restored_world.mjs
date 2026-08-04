@@ -112,7 +112,7 @@ test('a review opens a world it generated itself, and it is the exact starter', 
   assert.equal(runtime.loadOrigin, 'generated');
   assert.equal(runtime.worldOrigin.is_fresh, true);
   assert.deepEqual(runtime.worldOrigin.census, {
-    plants: 2, fixtures: 5, animals: 0, collectibles: 0,
+    plants: 1, fixtures: 6, animals: 0, collectibles: 0,
   });
   assert.ok(runtime.projection.objects.length > 0, 'the fresh world projected nothing');
 });

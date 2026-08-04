@@ -135,23 +135,24 @@ def test_python_and_browser_worlds_match_every_checkpoint_and_persisted_byte():
     assert browser == python
 
 
-# The starter row, as decided by the operator on 2026-08-01, in thousandths of
+# The starter surface, as decided by the operator on 2026-08-04, in thousandths of
 # the world extent. Pinned here as a literal so that changing the composition
 # requires changing this test as well — the anchors are canonical world data,
 # and a silent edit to them is a silent edit to everybody's Garden.
 AUTHORITATIVE_STARTER_ANCHORS = {
-    "stepping_stones": (250, 650),
-    "bench": (375, 650),
-    "mailbox": (500, 650),
-    "lantern": (625, 650),
-    "planter": (750, 650),
+    "pond": (400, 900),
+    "stepping_stones": (300, 900),
+    "mailbox": (700, 700),
+    "bench": (400, 300),
+    "lantern": (480, 200),
+    "planter": (850, 820),
 }
 
 
 def _starter_anchor_subset() -> dict[str, tuple[int, int]]:
-    """Just the five starter entries of the canonical anchor table.
+    """Just the starter entries of the canonical anchor table.
 
-    The table also holds anchors for the five catalog fixtures that are NOT in
+    The table also holds anchors for catalog fixtures that are NOT in
     the default scene; those are for authored programs and are deliberately not
     pinned here.
     """
@@ -165,7 +166,7 @@ def _starter_anchor_subset() -> dict[str, tuple[int, int]]:
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
 def test_starter_composition_is_authoritative_and_identical_in_both_generators():
-    """The five starter fixtures land on the same cells in Python and the browser.
+    """The starter fixtures land on the same cells in Python and the browser.
 
     Comparing the two anchor TABLES would not be enough. The tables are only
     inputs; what a recipient sees is the output of scaling them against the
@@ -202,16 +203,18 @@ def test_starter_composition_is_authoritative_and_identical_in_both_generators()
     python["fixtures"].sort(key=by_catalog)
     assert browser == python
 
-    # The row is a row: one shared depth, strictly increasing x in the canonical
-    # left-to-right order. Losing either property is what let three fixtures
-    # hide behind one another in the first single-surface capture.
-    ordered = [
-        next(item for item in python["fixtures"] if item["catalog_id"] == catalog_id)
-        for catalog_id in AUTHORITATIVE_STARTER_ANCHORS
-    ]
-    assert len({item["position"][1] for item in ordered}) == 1
-    columns = [item["position"][0] for item in ordered]
-    assert columns == sorted(columns) and len(set(columns)) == len(columns)
+    # These are authored rooms, not an evenly spaced row. The generator may
+    # nudge footprints apart, but it must preserve the relationships the live
+    # picture depends on: stones approach the pond from one side, the bench is
+    # above and horizontally aligned with it, and the lantern is farther away
+    # near the sitting room.
+    rooms = {item["catalog_id"]: item["position"] for item in python["fixtures"]}
+    assert rooms["stepping_stones"][0] < rooms["pond"][0]
+    assert rooms["pond"][0] - rooms["stepping_stones"][0] <= 12
+    assert rooms["bench"][1] < rooms["pond"][1]
+    assert abs(rooms["bench"][0] - rooms["pond"][0]) <= 2
+    assert rooms["lantern"][1] < rooms["bench"][1]
+    assert abs(rooms["lantern"][0] - rooms["bench"][0]) <= 12
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
@@ -606,7 +609,7 @@ def test_the_terminal_renders_the_same_starter_composition_the_browser_reviews()
 
     # The same census the browser review asserts it is looking at.
     assert world_census(world) == {
-        "plants": 2, "fixtures": 5, "animals": 0, "collectibles": 0,
+        "plants": 1, "fixtures": 6, "animals": 0, "collectibles": 0,
     }
 
     renderer = GardenRenderer(120, 48)
@@ -619,7 +622,7 @@ def test_the_terminal_renders_the_same_starter_composition_the_browser_reviews()
     assert len(world.object_ids()) == 7, world.object_ids()
     for fixture in world.fixtures:
         assert fixture.catalog_id in {
-            "bench", "lantern", "mailbox", "planter", "stepping_stones",
+            "bench", "lantern", "mailbox", "planter", "pond", "stepping_stones",
         }, f"the terminal starter holds an unexpected fixture: {fixture.catalog_id}"
 
 

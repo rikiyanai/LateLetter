@@ -467,6 +467,36 @@ FIXTURE_ART: dict[str, dict[str, Any]] = {
             "(      ~      )",
             " `-.,_,-~-.,_-'",
         ),
+        # The accepted silhouette stays fixed. Only the two interior ripple
+        # marks translate left/centre/right, then ping-pong, so the pond reads
+        # as water without redrawing its banks or filling it with texture.
+        "frames": (
+            (
+                " _,-~-.,_,-~-. ",
+                "( ~      ~    )",
+                "(     ~       )",
+                " `-.,_,-~-.,_-'",
+            ),
+            (
+                " _,-~-.,_,-~-. ",
+                "(  ~      ~   )",
+                "(      ~      )",
+                " `-.,_,-~-.,_-'",
+            ),
+            (
+                " _,-~-.,_,-~-. ",
+                "(   ~      ~  )",
+                "(       ~     )",
+                " `-.,_,-~-.,_-'",
+            ),
+            (
+                " _,-~-.,_,-~-. ",
+                "(  ~      ~   )",
+                "(      ~      )",
+                " `-.,_,-~-.,_-'",
+            ),
+        ),
+        "frame_ticks": 10,
         # The shared table reads `'` as a ground foot, because in the bench and
         # the bridge that is what it is. Here it is the right-hand hook of the
         # far edge, mirroring the `` ` `` at the left, and turning one half of a
@@ -579,10 +609,23 @@ def fixture_profiles(catalog_id: str) -> dict[str, Any] | None:
     if not entry.get("structure"):
         raise ValueError(f"{catalog_id}: no structural stroke graph declared")
 
+    ascii_frames = tuple(
+        _rectangular(tuple(frame), f"{catalog_id} frame {index}")
+        for index, frame in enumerate(entry.get("frames", (ascii_rows,)))
+    )
+    proportional_frames = tuple(
+        _aligned_proportional(
+            _stylize(frame, entry.get("ink", {})), f"{catalog_id} frame {index}",
+        )
+        for index, frame in enumerate(ascii_frames)
+    )
+
     return {
         **entry,
         "ascii": ascii_rows,
         "proportional": proportional_rows,
+        "ascii_frames": ascii_frames,
+        "proportional_frames": proportional_frames,
         # Historical words survive as provenance only. Current verdicts live
         # exclusively in docs/garden-asset-acceptance.json.
         "historical_review": HISTORICAL_REVIEW_RECEIPTS.get(

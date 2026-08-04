@@ -103,20 +103,20 @@ def test_an_empty_world_is_not_a_composition():
 def test_the_stamp_describes_the_roster_the_generator_actually_produced():
     """The census and the fingerprint are measured, never assumed.
 
-    The starter is two plants and five fixtures.  An earlier report of this work
+    An earlier report of this work
     quoted 8/10/4/3 from the failure log's history instead of measuring, which
     is the same class of mistake as trusting a version number.
     """
     world = _generated()
     census = world_census(world)
-    assert census["plants"] == len(STARTER_PLANT_SPECIES) == 2
-    assert census == {"plants": 2, "fixtures": 5, "animals": 0, "collectibles": 0}
+    assert census["plants"] == len(STARTER_PLANT_SPECIES) == 1
+    assert census == {"plants": 1, "fixtures": 6, "animals": 0, "collectibles": 0}
     assert world.composition_fingerprint == composition_fingerprint(world)
     # Species AND the authored anchor each was placed against. Names alone were
     # not enough: moving every anchor produces a visibly different garden out of
     # an identical species list, so a verdict bound to names would survive a
     # layout nobody had seen.
-    assert "plants=oak@60,300,sunflower@940,320" in world.composition_fingerprint
+    assert "plants=rose@70,820" in world.composition_fingerprint
 
 
 def test_moving_an_authored_anchor_changes_the_fingerprint():
@@ -129,12 +129,12 @@ def test_moving_an_authored_anchor_changes_the_fingerprint():
 
     world = _generated()
     before = composition_fingerprint(world)
-    original = generation_module.STARTER_PLANT_ANCHORS["oak"]
-    generation_module.STARTER_PLANT_ANCHORS["oak"] = (999, 999)
+    original = generation_module.STARTER_PLANT_ANCHORS["rose"]
+    generation_module.STARTER_PLANT_ANCHORS["rose"] = (999, 999)
     try:
         assert composition_fingerprint(world) != before
     finally:
-        generation_module.STARTER_PLANT_ANCHORS["oak"] = original
+        generation_module.STARTER_PLANT_ANCHORS["rose"] = original
 
 
 def test_a_version_stamp_is_never_an_operator_approval():
@@ -194,7 +194,7 @@ def test_a_current_stamp_over_a_changed_population_is_caught():
     stamp evidence instead of a claim.
     """
     world = _generated()
-    tampered = replace(world, plants=world.plants[:1])   # somebody removed a plant
+    tampered = replace(world, fixtures=world.fixtures[:-1])  # somebody removed a fixture
     origin = characterize_world(tampered)
     assert not origin.is_fresh
     assert any("no longer match the stamped composition" in reason for reason in origin.reasons)

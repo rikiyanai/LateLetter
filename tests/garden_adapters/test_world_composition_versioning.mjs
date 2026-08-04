@@ -4,8 +4,8 @@
  *
  * This is the side where the defect actually happened. A persisted browser
  * world of 13 plants / 22 fixtures / 4 animals / 8 collectibles was opened in a
- * localhost review and read as the current starter, which generates 2 plants
- * and 5 fixtures. Nothing in the document was false; there was no field able to
+ * localhost review and read as the current starter. Nothing in the document
+ * was false; there was no field able to
  * say "an older generator made me", and nothing in the runtime knew the world
  * had come out of storage at all.
  *
@@ -69,17 +69,17 @@ test('an empty world is not a composition', async () => {
 });
 
 test('the stamp describes the roster the generator actually produced', async () => {
-  // Measured, not quoted. The starter is two plants and five fixtures; an
+  // Measured, not quoted. An
   // earlier report of this work quoted a historical 8/10/4/3 instead of
   // measuring, which is the same mistake as trusting a version number.
   const world = await generated();
   assert.deepEqual(gardenWorldCensus(world), {
-    plants: 2, fixtures: 5, animals: 0, collectibles: 0,
+    plants: 1, fixtures: 6, animals: 0, collectibles: 0,
   });
   // Species AND the authored anchor each was placed against. Names alone were
   // not enough: moving every anchor produces a visibly different garden out of
   // an identical species list.
-  assert.ok(world.composition_fingerprint.includes('plants=oak@60,300,sunflower@940,320'));
+  assert.ok(world.composition_fingerprint.includes('plants=rose@70,820'));
 });
 
 test('the browser and python fingerprints are the same string', async () => {
@@ -90,9 +90,9 @@ test('the browser and python fingerprints are the same string', async () => {
   const world = await generated();
   assert.equal(
     world.composition_fingerprint,
-    'plants=oak@60,300,sunflower@940,320'
-    + '|fixtures=bench@375,650,lantern@625,650,mailbox@500,650,planter@750,650,'
-    + 'stepping_stones@250,650'
+    'plants=rose@70,820'
+    + '|fixtures=bench@400,300,lantern@480,200,mailbox@700,700,planter@850,820,'
+    + 'pond@400,900,stepping_stones@300,900'
     + '|animals=|collectibles=',
   );
 });
@@ -105,7 +105,7 @@ test('a current stamp over a changed population is caught', async () => {
   // Without this, a world could carry every current stamp over an arbitrary
   // roster and characterize as fresh.
   const world = await generated();
-  const tampered = { ...world, plants: world.plants.slice(0, 1) };
+  const tampered = { ...world, fixtures: world.fixtures.slice(0, -1) };
   const origin = characterizeGardenWorld(tampered);
   assert.equal(origin.is_fresh, false);
   assert.ok(origin.reasons.some(r => r.includes('no longer match the stamped composition')));

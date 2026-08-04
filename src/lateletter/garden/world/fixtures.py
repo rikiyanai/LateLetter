@@ -97,7 +97,7 @@ REQUIRED_FUNCTIONAL_FIXTURES = (
     "memorial_stone",
 )
 STARTER_FIXTURES = (
-    "bench", "mailbox", "stepping_stones", "planter", "lantern",
+    "bench", "mailbox", "stepping_stones", "planter", "lantern", "pond",
 )
 CONNECTED_GROUPS = ("fence", "hedge", "path", "pond_edge", "wall")
 CONNECTED_TILE_MASKS: dict[str, tuple[int, ...]] = {

@@ -604,6 +604,9 @@ const NS='lateletter_v1_';
 const SKY_REGION_KEY='lateletter_garden_sky_region_v1';
 const SIDS=['s-welcome','s-passphrase','s-status','s-select','s-reading','s-archive','s-error'];
 const GARDEN_DEBUG_REQUESTED=new URLSearchParams(location.search).get('garden_debug')==='1';
+const GARDEN_VISUAL_CHECK_REQUESTED=Boolean(
+  new URLSearchParams(location.search).get('visual_check'),
+);
 const GARDEN_REVIEW_TIME_TEXT=new URLSearchParams(location.search).get('garden_review_time');
 const GARDEN_REVIEW_TIME_SECONDS=(()=>{
   if(!GARDEN_REVIEW_TIME_TEXT||
@@ -680,6 +683,11 @@ function gardenReviewTime(){
   return GARDEN_REVIEW_IS_LOCAL&&GARDEN_REVIEW_TIME_SECONDS!==null&&
     (standaloneMode||isDevFixture)
     ?GARDEN_REVIEW_TIME_SECONDS:null;
+}
+
+function gardenFreshCompositionReview(){
+  return Boolean(GARDEN_REVIEW_IS_LOCAL&&(standaloneMode||isDevFixture)&&
+    (GARDEN_REVIEW_TIME_SECONDS!==null||GARDEN_VISUAL_CHECK_REQUESTED));
 }
 
 async function _receiptGet(key){
@@ -1153,24 +1161,20 @@ async function prepareCanonicalGardenRuntime(
   worldId,seed,{persistent=true,deferPersistence=false,program=null}={},
 ){
   const reviewTime=gardenReviewTime();
-  const worldPersistence=persistent&&reviewTime===null;
+  // Freshness and a frozen clock are independent review concerns.  A local
+  // `visual_check` asks for this build's newly generated composition while
+  // keeping real time and motion; `garden_review_time` additionally freezes
+  // time for deterministic captures.  Recipient mode keeps restoring the
+  // persisted world exactly as before.
+  const freshCompositionReview=gardenFreshCompositionReview();
+  const worldPersistence=persistent&&!freshCompositionReview;
   const runtime=new GardenRuntime({
     worldId,seed,program,
-    // A REVIEW still reads storage, and refuses what it finds.
-    //
-    // It would be easier to hand review mode an empty loader, and that is what
-    // this did: with nothing to load it always generated, so the picture was
-    // fresh. But "never looked" is not "proved fresh" -- it is the same answer
-    // arrived at by not asking, and it leaves the freshness of a review
-    // depending on a persistence flag two lines up rather than on the guard.
-    // Removing the guard entirely changed no observable behaviour, which is how
-    // a mechanism ends up load-bearing on paper and inert in fact.
-    //
-    // So a review reads what a recipient would have, and `require_fresh` in
-    // `open` refuses it before anything is projected, painted or written. A
-    // review is never given a writer, so refusing costs the stored world
-    // nothing.
-    load:(worldPersistence||reviewTime!==null)?kvGet:async()=>null,
+    // A composition review intentionally generates the current candidate in
+    // an ephemeral runtime.  It neither reads nor overwrites the recipient's
+    // persisted Garden.  Product mode does the opposite: it restores the real
+    // world and never substitutes a new candidate for it.
+    load:freshCompositionReview?async()=>null:worldPersistence?kvGet:async()=>null,
     save:worldPersistence?kvSet:async()=>{},
     now:()=>reviewTime??Math.floor(Date.now()/1000),
   });
@@ -1179,7 +1183,7 @@ async function prepareCanonicalGardenRuntime(
     // Which composition this surface is allowed to open, stated at the call
     // site because there is no answer that is right for both.
     //
-    // A review (`reviewTime!==null`) must see only what this build just
+    // A fresh composition review must see only what this build just
     // generated: the original defect was a persisted 13/22/4/8 world reviewed
     // as the current starter, and `require_fresh` makes that abort before the
     // world is saved, projected or painted rather than after somebody notices.
@@ -1187,7 +1191,7 @@ async function prepareCanonicalGardenRuntime(
     // restored one.
     await runtime.open({
       persist:worldPersistence&&!deferPersistence,
-      composition:reviewTime===null?'accept_restored':'require_fresh',
+      composition:freshCompositionReview?'require_fresh':'accept_restored',
     });
     // Worlds persisted before the projection renderer inherited the model's
     // corner camera even though all generated content lives in positive world

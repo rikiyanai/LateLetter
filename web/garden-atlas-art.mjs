@@ -138,7 +138,34 @@ export const ATLAS_PROPORTIONAL_ART = Object.freeze({
     "states": {
       "idle": [
         {
-          "ticks": 1,
+          "ticks": 10,
+          "rows": [
+            " _,-~-.,_,-~-. ",
+            "( ~      ~    )",
+            "(     ~       )",
+            " `-.,_,-~-.,_-'"
+          ]
+        },
+        {
+          "ticks": 10,
+          "rows": [
+            " _,-~-.,_,-~-. ",
+            "(  ~      ~   )",
+            "(      ~      )",
+            " `-.,_,-~-.,_-'"
+          ]
+        },
+        {
+          "ticks": 10,
+          "rows": [
+            " _,-~-.,_,-~-. ",
+            "(   ~      ~  )",
+            "(       ~     )",
+            " `-.,_,-~-.,_-'"
+          ]
+        },
+        {
+          "ticks": 10,
           "rows": [
             " _,-~-.,_,-~-. ",
             "(  ~      ~   )",
@@ -282,17 +309,25 @@ export const ATLAS_PROPORTIONAL_ART = Object.freeze({
  * including inside prose. An earlier draft of this sentence failed the deploy
  * build on a module named "no art". See FAILURE_LOG.
  */
-export function canonicalProportionalArt(assetId, state = 'idle') {
+export function canonicalProportionalArt(assetId, state = 'idle', frame = 0) {
   const asset = ATLAS_PROPORTIONAL_ART[assetId];
   if (!asset) return null;
   const frames = asset.states[state] ?? asset.states.idle;
   if (!frames || frames.length === 0) return null;
+  const cycle = frames.reduce((total, item) => total + Math.max(1, Number(item.ticks) || 1), 0);
+  let cursor = ((Math.floor(Number(frame) || 0) % cycle) + cycle) % cycle;
+  let selected = frames[0];
+  for (const item of frames) {
+    selected = item;
+    cursor -= Math.max(1, Number(item.ticks) || 1);
+    if (cursor < 0) break;
+  }
   return {
-    rows: frames[0].rows,
+    rows: selected.rows,
     // Null rather than a copy of `rows`, so the renderer can tell an authored
     // compact drawing from the absence of one and reduce accordingly.
-    compactRows: frames[0].compact_rows ?? null,
+    compactRows: selected.compact_rows ?? null,
     anchor: asset.anchor,
-    accents: frames[0].accents ?? null,
+    accents: selected.accents ?? null,
   };
 }

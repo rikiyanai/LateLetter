@@ -493,7 +493,8 @@ export function gardenPresentationProfile(viewport, worldSize = [120, 80]) {
   // the plane stopped well short of the band, objects bunched along the bottom,
   // and the rows between the treetops and the clouds were left as a void. The
   // plane is allowed to be genuinely deep so the Garden occupies its frame.
-  // ONE SURFACE (operator decision; under review, not accepted).
+  // ONE RECEDING TERRAIN PLANE. Canonical world y selects a stable band on
+  // this plane; painters never repack an object onto a different band.
   //
   // The receding plane described above is switched off, and the reason is the
   // defect that produced it. Painting only two soil rows while leaving the
@@ -503,53 +504,38 @@ export function gardenPresentationProfile(viewport, worldSize = [120, 80]) {
   // paint could never have corrected that, because the geometry is what
   // decides where feet land.
   //
-  // Collapsing the plane to a single line is the actual "one band / one
-  // surface" change. `groundSpan` of zero drives `yScale` to zero, so world
-  // DEPTH stops moving anything vertically and every object's feet land on the
-  // same row -- the row that is painted. Depth still orders what is drawn in
-  // front of what; it just no longer lifts anything off the ground.
-  //
-  // The receding formula is kept immediately above in comment form rather than
-  // deleted, because a later composition with objects genuinely at different
-  // depths may want it back, and it was correct for that scene.
-  const groundRows = 1;
-  // Where the single line SITS is a composition choice, not a leftover.
-  //
-  // Anchoring it at `horizon - 1` -- the bottom edge -- is what the first pass
-  // did, and the capture showed why that is wrong: the garden became a 60px
-  // strip along the bottom of a 1000px frame with two thirds of the screen
-  // empty above it. Standing the surface at roughly three quarters of the
-  // frame gives the objects sky to stand against and leaves foreground beneath
-  // them, which is what makes a single band read as a stage rather than as a
-  // gutter.
-  // GROUND NEAR THE BOTTOM (goal §1, legacy law gy = rows - 3). The previous
-  // value stood the soil line at 74% of the frame -- a lane-invented "stage"
-  // that left the bottom quarter of every tall window as a dead foreground
-  // band, which the operator rejected in the field on 2026-08-04: "no large
-  // dead regions above or below a tiny scene", "no unexplained horizontal
-  // divider". The deployed page anchors the ground three rows from the
-  // bottom of the REAL viewport, and so does this.
+  // The later visual review restored a real near/far plane. The two boundary
+  // rows are now explicit owners: the sky transition is `farGroundY`; the
+  // closest walkable contour is `groundFront`. World depth may project between
+  // them, but may never derive a third boundary.
+  const farGroundY = clamp(Math.round(height * 0.64), 5, horizon - 6);
+  const groundRows = Math.max(1, horizon - farGroundY + 1);
+  // Two rows answer two different questions and must not be collapsed again:
+  // `farGroundY` is the continuous grass edge behind the playable scene;
+  // `groundFront` is the canonical surface where fixture feet land.  The
+  // failed 2026-08-04 pass moved `groundFront` to the reference contour and
+  // consequently made background trunks, fixtures and foreground cover all
+  // compete for one row.  The reference instead has an elevated far edge with
+  // a foreground plane continuing down toward the viewer.
   const groundFront = horizon;
-  const groundBack = groundFront;                                 // no depth: same line
-  const groundSpan = groundFront - groundBack;                    // zero, deliberately
+  const groundBack = farGroundY;
+  const groundSpan = groundFront - groundBack;
 
   return {
     width, height, horizon, bandTop, bandRows, lod,
-    groundRows, groundBack, groundFront, groundSpan,
+    groundRows, farGroundY, groundBack, groundFront, groundSpan,
     // A phone is a camera into the same Garden, not a request to crush the
     // entire 120-cell world into forty columns. Cropping preserves silhouettes
     // and spatial relationships; canonical pan/focus reveals the rest.
     xScale: clamp((width - 10) / (worldWidth * DEPTH.foreground), 0.80, 1.35),
-    // Zero while the plane is a single line: world depth must not move an
-    // object vertically, or it would land off the one painted row and be
-    // culled. The clamp floor of 0.01 is bypassed on purpose -- a "very small"
-    // scale is not the same as none, and rounding would still scatter feet
-    // across three rows.
+    // The authored plane is visible again, so canonical world depth maps into
+    // the bounded interval between its far and near contours.
     yScale: groundSpan === 0 ? 0 : clamp(groundSpan / worldHeight, 0.01, 0.44),
     centerX: Math.floor(width / 2),
-    // With one line, the centre IS the line, so a centred camera stands the
-    // Garden on the soil rather than halfway up the frame.
-    centerY: groundBack + Math.floor(groundSpan / 2),
+    // The camera's authored y sits slightly behind the middle of the terrain,
+    // leaving room for a foreground pond while still letting a low world-y
+    // lantern reach the far band.
+    centerY: groundBack + Math.round(groundSpan * 0.45),
   };
 }
 
@@ -558,19 +544,18 @@ export function gardenPresentationProfile(viewport, worldSize = [120, 80]) {
  * The row the Garden's ground is on: where feet land and where soil is painted.
  *
  * It returns `groundFront`, NOT `horizon`, and the difference is the whole
- * point of the function. `horizon` is where the SKY stops -- the boundary the
- * stars, clouds and weather are laid out against. `groundFront` is where the
- * WALKABLE PLANE is, which since the plane collapsed to a single line is one
- * specific row, and it sits well above the horizon so the fixtures have sky
- * behind them and foreground beneath them.
+ * point of the function. `horizon` is the lower layout bound used by sky life
+ * and weather; the visible sky→terrain boundary is `groundBack`. `groundFront` is the nearest
+ * edge of the WALKABLE PLANE. Its far edge and the sky transition are
+ * `groundBack`; objects may project between them, but this helper deliberately
+ * answers the near-edge question only.
  *
  * Returning `horizon` here -- which is what this did -- is how the two rows
  * drifted apart in the first place: `_drawGround` asked "where is the ground"
  * and was told the horizon, while the compositor put feet on `groundFront`, so
  * the band was painted a row and a half below everything standing on it and
- * the capture showed fixtures hanging in empty air. There is now exactly one
- * answer to "where is the ground", and both the painter and the compositor
- * read it from the same field.
+ * the capture showed fixtures hanging in empty air. The near edge now has one
+ * owner and both its painter and consumers read this field.
  *
  * @param viewport `[columns, rows]` of character cells currently available.
  * @returns The row index of the soil line.
@@ -1307,7 +1292,7 @@ function collectibleArt(object, lod = 'full') {
   return lod === 'full' ? entry.full : entry.compact;
 }
 
-function fixtureArt(object, lod = 'full') {
+function fixtureArt(object, lod = 'full', frame = 0) {
   const catalog = String(object.semantic_state?.catalog_id ?? 'fixture');
 
   // CANONICAL ART FIRST.
@@ -1320,7 +1305,7 @@ function fixtureArt(object, lod = 'full') {
   // An asset the atlas does not yet own returns null here and falls through to
   // the legacy tables below. Those tables shrink to nothing as the remaining
   // fixtures are migrated one class at a time.
-  const canonical = canonicalProportionalArt(`fixture.${catalog}`);
+  const canonical = canonicalProportionalArt(`fixture.${catalog}`, 'idle', frame);
   if (canonical) {
     // `compactRows` is present only when the asset carries an authored
     // narrow-viewport drawing. When it is absent the full drawing is reduced
@@ -1411,8 +1396,8 @@ export function objectPresentationArt(object, frame, lod = 'full', emphasized = 
   }
   if (object.kind === 'fixture') {
     const catalog = String(state.catalog_id ?? 'fixture');
-    const canonical = canonicalProportionalArt(`fixture.${catalog}`);
-    const lines = fixtureArt(object, lod);
+    const canonical = canonicalProportionalArt(`fixture.${catalog}`, 'idle', frame);
+    const lines = fixtureArt(object, lod, frame);
     const maximumWidth = Math.max(0, ...lines.map(line => [...line].length));
     return { lines,
       assetId: canonical ? `fixture.${catalog}` : null,
@@ -1816,58 +1801,31 @@ export function drawSky(raster, projection, sky, palette, profile, mode) {
 
 
 /**
- * Paint the receding ground plane.
+ * Paint the two authoritative contours of the receding ground plane.
  *
- * Objects now stand on soil lines anywhere between `profile.groundBack` and
- * `profile.groundFront`, so every one of those lines has to look like ground
- * or the things standing on them still read as floating. Three painted lines
- * under a plane that spans eight is exactly the mismatch that made a bridge
- * look airborne.
- *
- * Density rises toward the viewer: sparse specks at the back where the plane
- * is furthest away, continuous soil at the front. That gradient is what makes
- * a flat character grid read as a surface going away from you rather than as
- * a stripe of noise.
+ * Presentation-native ground cover fills the bounded space between them in
+ * `drawLegacyPlanting`; this painter owns the uninterrupted far transition
+ * and near soil edges that make those intermediate marks read as terrain.
  */
 export function drawGround(raster, palette, season, profile) {
   // `profile.horizon` is deliberately NOT read here. It is the sky boundary,
   // not the ground, and reading it was the defect: see `gardenGroundY`.
-  const texture = ',~.^,.,~^,.,~,.^,~.,';
-  // ONE SURFACE. Two rows of soil at the horizon, and nothing else.
-  //
-  // What used to be here: a far contour line, a ~30-row speckle field whose
-  // density rose toward the viewer, and a pale path receding into it. The
-  // intent was perspective -- make a flat character grid read as a plane
-  // going away from you. On review it read as scattered debris, and the
-  // reason is now clear: perspective needs things AT different depths to
-  // sell it, and the approved roster is five fixtures that all stand on the
-  // same line. The receding field was a stage built for a scene that does
-  // not exist.
-  //
-  // A single band asks less of the art and gives the fixtures one line to
-  // sit on, which is what "one band / one surface" means. `groundBack` and
-  // `groundFront` remain in the presentation profile: they still bound where
-  // ambient life may fly and where weather may settle, and a later
-  // composition may use the space again -- but nothing paints there now.
-  //
-  // This is UNDER REVIEW, not approved. It is the surface the vertical slice
-  // is being reviewed on, so it deliberately does the least a ground can do.
-  //
-  // The rows are `groundFront` -- the line objects' feet actually land on --
-  // and the one below it. Painting `horizon` and `horizon + 1` instead, as
-  // the first attempt did, put the whole band one row BELOW every object,
-  // which is why the capture showed fixtures standing on nothing.
-  // `profile.groundFront` is the single field that answers "where is the
-  // ground". The compositor puts feet on it and `gardenGroundY` reports it,
-  // so paint and feet cannot move independently. `+ 1` is the near lip of
-  // the band, giving the line a little thickness without making it a second
-  // surface.
-  const groundY = profile.groundFront;
-  for (const row of [groundY, groundY + 1]) {
+  // Restore the Garden's previous continuous punctuation texture. The
+  // structural reference supplied the far-band SHAPE; its `---^/\\` bytes were
+  // never Garden art and must not be copied into the product.
+  const farTexture = ',~.^,.,~^,.,~,.^,~.,';
+  const nearSoil = '.,,.*,.`';
+  // Both edges remain one terrain owner's responsibility. The far contour is
+  // also the CSS colour transition and roots big trees/far fixtures. The near
+  // contour roots small legacy planting and the pond room. Their distinct
+  // texture and colour are intentional depth cues, not two unrelated bands.
+  for (const row of [profile.farGroundY, profile.groundFront]) {
     for (let x = 0; x < raster.width; x += 1) {
-      const glyph = texture[(x + (row === groundY ? 0 : 5)) % texture.length];
+      const isFarEdge = row === profile.farGroundY;
+      const texture = isFarEdge ? farTexture : nearSoil;
+      const glyph = texture[(x + (isFarEdge ? 0 : 5)) % texture.length];
       raster.put(x, row, glyph,
-        row === groundY ? palette.ground : palette.dimGreen, false, null,
+        isFarEdge ? palette.dimGreen : palette.ground, false, null,
         { source: 'recipe.scene.ground_line' });
     }
   }
@@ -2079,10 +2037,6 @@ function legacyPlantLayout(seed, season) {
  * depth recedes upward. Shallow foreground (depth > 1) resolves below the
  * line, onto the soil rows.
  */
-function legacyBaselineRecession(depth) {
-  return Math.round((1 - depth) * 10);
-}
-
 const LEGACY_INK_DAY = Object.freeze({
   dim_green: '#ddd8ce', deep_green: '#33511e', green: '#4a7030', bright_green: '#62923e',
   brown: '#7a5830', orange: '#b07020', bright_white: '#555555', white: '#777777',
@@ -2095,8 +2049,9 @@ const LEGACY_INK_NIGHT = Object.freeze({
   bright_yellow: '#e0b848', red: '#d06860', bright_red: '#e87868', cyan: '#68a898',
   bright_cyan: '#80c8b0', magenta: '#b868a8', bright_magenta: '#d880c0', dim: '#606058',
 });
-const LEGACY_RUSTLE_A = Object.freeze({ '@': 'o', o: '0', 0: '@', '&': '@', '*': '.', '^': '*', '~': '`', u: 'v', v: 'u', w: '~', '(': '<', ')': '>' });
-const LEGACY_RUSTLE_B = Object.freeze({ '@': '0', o: '@', 0: 'o', '&': 'o', '*': ',', '^': '`', '~': 'v', u: '~', v: 'w', w: 'u' });
+const LEGACY_RUSTLE_A = Object.freeze({ '@': 'o', o: '0', 0: '@', '&': '@', '*': '.', '^': '*', '/': '\\', '\\': '/', '~': '`', u: 'v', v: 'u', w: '~', '(': '<', ')': '>' });
+const LEGACY_RUSTLE_B = Object.freeze({ '@': '0', o: '@', 0: 'o', '&': 'o', '*': ',', '^': '`', '/': '\\', '\\': '/', '~': 'v', u: '~', v: 'w', w: 'u' });
+const LEGACY_CANOPY_SHIMMER = new Set(['oak', 'bush', 'pine']);
 function legacyRustle(glyph, intensity, seed) {
   const wave = Math.sin(seed) * intensity;
   return wave > 0.45 ? (LEGACY_RUSTLE_A[glyph] ?? glyph)
@@ -2112,7 +2067,7 @@ export function drawLegacyPlanting(
     : /^\d+$/.test(authoredSeed) ? Number(authoredSeed) >>> 0
       : stringHash(authoredSeed || worldId);
   const ink = palette === NIGHT ? LEGACY_INK_NIGHT : LEGACY_INK_DAY;
-  const groundY = profile.groundFront;
+  const farGroundY = profile.farGroundY;
   const camera = Array.isArray(projection.camera) ? projection.camera : [0, 0];
   const viewport = [raster.width, raster.height];
   // One projection for every layer: screen column = the same camera
@@ -2126,11 +2081,19 @@ export function drawLegacyPlanting(
   // the whole raster at this depth from any reachable camera.
   const coverFirst = -LEGACY_BACKDROP_MARGIN;
   const coverLast = LEGACY_WORLD_COLUMNS + LEGACY_BACKDROP_MARGIN;
-  const coverRow = groundY - legacyBaselineRecession(LEGACY_COVER_DEPTH) - 1;
+  // Cover occupies the plane BETWEEN the far grass edge and the canonical
+  // fixture surface. Each glyph receives a stable depth from its world-column
+  // hash, so it pans at the same depth at which it is vertically placed. The
+  // far edge remains continuous because cover starts on the following row.
+  const coverTop = Math.min(profile.groundFront, farGroundY + 1);
+  const coverSpan = Math.max(1, profile.groundFront - coverTop);
   for (let worldX = coverFirst; worldX <= coverLast; worldX += 1) {
-    const column = screenXOf(worldX, LEGACY_COVER_DEPTH);
-    if (column < 0 || column >= raster.width) continue;
     const hash = (Math.imul(worldX + 1013, 0x9e3779b1) ^ seed) >>> 0;
+    const nearness = ((hash >>> 8) % 1000) / 999;
+    const coverDepth = 0.68 + nearness * (LEGACY_COVER_DEPTH - 0.68);
+    const column = screenXOf(worldX, coverDepth);
+    if (column < 0 || column >= raster.width) continue;
+    const coverRow = coverTop + Math.floor(nearness * coverSpan);
     const value = hash % 1000 / 1000;
     if (value < (season === 'winter' ? 0.82 : 0.48)) continue;
     let glyph, color;
@@ -2152,7 +2115,12 @@ export function drawLegacyPlanting(
   for (const { plant, x, depth } of legacyPlantLayout(seed, season)) {
     const anchorX = screenXOf(x, depth);
     if (anchorX < -plant.width - 2 || anchorX > raster.width + plant.width + 2) continue;
-    const baseline = groundY - legacyBaselineRecession(depth);
+    // Only large trees belong to the far transition band. Flowers, shrubs,
+    // grass, mushrooms and ferns form the closer planting band. Horizontal
+    // parallax still comes from each authored depth; the baseline selects the
+    // semantic terrain band and is not inferred from screen height elsewhere.
+    const baseline = plant.type === 'oak' || plant.type === 'pine'
+      ? farGroundY : profile.groundFront;
     if (plant.blades) {
       for (const blade of plant.blades) {
         const lean = wind * 1.6 + Math.sin((frame / 200 + blade.seed * 0.37) * 6.2832) * 0.6;
@@ -2170,15 +2138,35 @@ export function drawLegacyPlanting(
       }
       continue;
     }
+    const canopyShimmer = LEGACY_CANOPY_SHIMMER.has(plant.type);
+    const shimmerIntensity = 0.55 + Math.abs(wind) * 1.1;
     for (const [dy, dx, text, color] of plant.rows) {
       const row = baseline - dy;
       [...text].forEach((original, offset) => {
         const column = anchorX + dx + offset, dr = row - hoverRow, dc = column - hoverColumn;
         const distance = dr * dr + dc * dc;
-        const glyph = distance < 25 && original !== ' '
-          ? legacyRustle(original, (1 - Math.sqrt(distance) / 5) * 1.2, frame * 0.4 + column * 1.9 + row * 2.7)
-          : original;
-        raster.put(column, row, glyph, ink[color], distance < 25, null,
+        let glyph = original, animated = false;
+        // Restore the deployed wind-driven canopy shimmer.  The first port
+        // copied cursor rustle but omitted this fixed 1-in-8 subset, leaving a
+        // tree visually inert unless the pointer happened to cross one of the
+        // few mutable foliage glyphs.
+        if (canopyShimmer && dy >= 2 && glyph !== ' ') {
+          const hash = Math.imul(row * 73 + column * 151 + 7, 0x9e3779b1) >>> 0;
+          if (hash % 8 === 0) {
+            const next = legacyRustle(
+              glyph, shimmerIntensity, frame * 0.06 + (hash % 97) * 0.7,
+            );
+            if (next !== glyph) { glyph = next; animated = true; }
+          }
+        }
+        if (distance < 25 && glyph !== ' ') {
+          const next = legacyRustle(
+            glyph, (1 - Math.sqrt(distance) / 5) * 1.2,
+            frame * 0.4 + column * 1.9 + row * 2.7,
+          );
+          if (next !== glyph) { glyph = next; animated = true; }
+        }
+        raster.put(column, row, glyph, ink[color], animated, null,
           { source: 'recipe.vegetation.plant_paint' });
       });
     }
@@ -2289,14 +2277,8 @@ export const AMBIENT_BIRD_COMPACT_FRAMES = Object.freeze(['>-', '~>']);
 export function drawSkyLife(raster, lifecycle, palette) {
   if (!lifecycle) return;
   const ink = palette === NIGHT ? LEGACY_INK_NIGHT : LEGACY_INK_DAY;
-  const butterflyFrames = ['><', '||', '><', '\\/'];
   for (const actor of lifecycle.ambient ?? []) {
-    if (actor.kind === 'butterfly') {
-      const glyph = butterflyFrames[Math.floor(Math.max(0, lifecycle.tick) / 6) % butterflyFrames.length];
-      raster.text(Math.round(actor.x), Math.round(actor.y), glyph,
-        ink[actor.color] ?? ink.magenta, true, null,
-        { source: 'recipe.ambient.butterfly' });
-    } else if (actor.kind === 'firefly') {
+    if (actor.kind === 'firefly') {
       const cycle = actor.on + actor.off;
       if (lifecycle.tick % cycle >= actor.on) continue;
       raster.put(Math.round(actor.x), Math.round(actor.y), '*', ink.bright_yellow,
@@ -2308,6 +2290,20 @@ export function drawSkyLife(raster, lifecycle, palette) {
     const wing = frames[Math.floor(Math.max(0, lifecycle.tick) / bird.frameStep) % frames.length];
     raster.text(Math.round(bird.x), Math.round(bird.y), wing, palette.dim, true, null,
       { source: 'recipe.ambient.bird_traversal' });
+  }
+}
+
+/** Butterflies paint after canonical objects so their pond orbit stays visible. */
+export function drawPondButterflies(raster, lifecycle, palette) {
+  if (!lifecycle) return;
+  const ink = palette === NIGHT ? LEGACY_INK_NIGHT : LEGACY_INK_DAY;
+  const frames = ['><', '||', '><', '\\/'];
+  for (const actor of lifecycle.ambient ?? []) {
+    if (actor.kind !== 'butterfly') continue;
+    const glyph = frames[Math.floor(Math.max(0, lifecycle.tick) / 6) % frames.length];
+    raster.text(Math.round(actor.x), Math.round(actor.y), glyph,
+      ink[actor.color] ?? ink.magenta, true, null,
+      { source: 'recipe.ambient.butterfly' });
   }
 }
 

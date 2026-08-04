@@ -1748,14 +1748,18 @@ above say what the product must be able to draw. They do not say what a new gard
 with, and the two must not be conflated: a scene that shows everything the catalog can do is
 a showroom, not a place someone lives.
 
-The **default starter scene is exactly five fixtures** — bench, mailbox, stepping stones,
-planter, lantern — held in `STARTER_FIXTURES` in both implementations. An accepted fixture
+The **default starter scene is exactly six fixtures** — pond, stepping stones, mailbox,
+bench, lantern, planter — held in `STARTER_FIXTURES` in both implementations. The pond,
+stepping stones and bench form one water/sitting room: stones approach the pond from one
+side and the bench sits generally above it. The street lantern belongs to the far transition
+band near that room, rather than sharing the pond's near surface.
+Those relationships are canonical generator data, never renderer packing. An accepted fixture
 drawing is an approved **catalog asset**, available to authored programs, progression, and
 later compositions; acceptance never obliges it to appear at the start.
 
-Everything under `REVIEW_PENDING_*` — the starter plants, the cat, the starter collectible —
+Everything under `REVIEW_PENDING_*` — unaccepted starter plants, the cat, the starter collectible —
 stays **absent from the default scene** until each drawing is separately accepted under
-§7.10. Composition arguments must be made against the five, not against every drawing that
+§7.10. Composition arguments must be made against the six, not against every drawing that
 has been approved.
 
 #### 7.8.5 Stable procedural plant growth
@@ -1863,6 +1867,7 @@ The browser and terminal share a continuous canonical camera in world space. Pre
 
 - Browser rendering uses one timestamp-driven `requestAnimationFrame` loop and batched layer transforms. Refresh rate must not alter simulation speed.
 - Terminal rendering quantizes camera offsets to cells, may use block/Braille phases for apparent subcell movement, damage-tracks changed cells, and must not clear/redraw the full screen every frame.
+- The far terrain edge is one continuous Garden-authored contour aligned exactly with the sky→terrain colour boundary. A structural `---^/\\___...` sample from the Moon reference demonstrates continuity only and is not Garden grass art. Large legacy trees and selected far fixtures (the street lantern and, when present, trellis) root on that edge. Small legacy flowers, shrubs, grasses, mushrooms and ferns root on the closer surface with the pond, stones and other near fixtures; neither row may substitute for the other.
 - Scenery wraps or has authored continuation; panning may not reveal blank/uninitialized columns.
 - Hit testing uses world coordinates and remains correct under pan, zoom/reflow, and different parallax offsets.
 - Background-tab suspension pauses presentation only. On resume, canonical elapsed-time processing runs once without duplicating rewards or authored events.

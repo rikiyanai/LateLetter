@@ -27,8 +27,8 @@ export const ENGINE_VERSION = 'garden-world-internal-v1';
 // which is why one number cannot carry them. The Python constants in
 // src/lateletter/garden/world/model.py must match, and a contract test asserts
 // they do.
-export const GENERATOR_VERSION = 3;
-export const COMPOSITION_VERSION = 3;
+export const GENERATOR_VERSION = 4;
+export const COMPOSITION_VERSION = 4;
 
 // How a world arrived in this process -- a different question from its lineage.
 // A world can have perfect stamps and still have come out of storage after a
@@ -108,7 +108,7 @@ const REQUIRED_FUNCTIONAL_FIXTURES = Object.freeze([
   'basket', 'sign', 'memorial_stone',
 ]);
 export const STARTER_FIXTURES = Object.freeze([
-  'bench', 'mailbox', 'stepping_stones', 'planter', 'lantern',
+  'bench', 'mailbox', 'stepping_stones', 'planter', 'lantern', 'pond',
 ]);
 
 export const FIXTURE_VERBS = Object.freeze({
@@ -388,23 +388,22 @@ export const REVIEW_PENDING_ANIMAL_SPECIES = Object.freeze(['cat']);
 export const REVIEW_PENDING_COLLECTIBLES = Object.freeze(['fallen_acorn']);
 // Canonical starter composition in thousandths of the world extent. Mirrors
 // `STARTER_FIXTURE_ANCHORS` in the Python generator EXACTLY, including the
-// authoritative starter row added on 2026-08-01; the reasoning for the shared
-// depth and the even horizontal spacing is written out in full there. The five
-// non-starter entries keep their original relationship anchors and are reached
-// only through authored programs.
+// authored starter surface; the reasoning for its relationships is written out
+// in full there. The remaining non-starter entries keep their original anchors
+// and are reached only through authored programs.
 const STARTER_FIXTURE_ANCHORS = Object.freeze({
-  pond: [180, 400], bridge: [180, 450], birdbath: [80, 720],
+  pond: [400, 900], bridge: [180, 450], birdbath: [80, 720],
   trellis: [720, 450], arbor: [830, 700],
-  // ── the authoritative starter row ──
-  stepping_stones: [250, 650], bench: [375, 650], mailbox: [500, 650],
-  lantern: [625, 650], planter: [750, 650],
+  // ── the authored water/sitting room ──
+  stepping_stones: [300, 900], bench: [400, 300], lantern: [480, 200],
+  mailbox: [700, 700], planter: [850, 820],
 });
 // The exact operator-authored rose accepted 2026-08-03 is the canonical
 // starter plant and owns the open left edge. See the Python generator for the
 // rendered-overlap evidence and ownership reasoning.
 const STARTER_PLANT_ANCHORS = Object.freeze({
   water_lily: [220, 420], oak: [150, 300], hydrangea: [360, 570],
-  willow: [900, 180], rose: [60, 320], meadow_grass: [470, 590],
+  willow: [900, 180], rose: [70, 820], meadow_grass: [470, 590],
   lavender: [570, 760], sunflower: [850, 320],
 });
 const STARTER_ANIMAL_ANCHORS = Object.freeze({

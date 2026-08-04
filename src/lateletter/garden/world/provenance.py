@@ -4,7 +4,7 @@ WHY THIS MODULE EXISTS
 ----------------------
 A localhost review of the browser Garden once opened a persisted world holding
 13 plants, 22 fixtures, 4 animals and 8 collectibles, and it was read as the
-current starter -- which generates 2 plants and 5 fixtures.  Nothing lied.  The
+current starter.  Nothing lied.  The
 stored document was shape-valid, it loaded
 without complaint, and there was no field anywhere in it that could have said
 "an older generator made me".  The reviewer had no way to tell a restored world

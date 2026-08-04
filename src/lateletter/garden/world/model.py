@@ -39,8 +39,8 @@ ENGINE_VERSION = "garden-world-internal-v1"
 # starter reads as today's candidate, which is how a persisted 13-plant /
 # 22-fixture / 4-animal / 8-collectible world came to be reviewed as though it
 # were the current starter.
-GENERATOR_VERSION = 3
-COMPOSITION_VERSION = 3
+GENERATOR_VERSION = 4
+COMPOSITION_VERSION = 4
 PROCESSED_COMMAND_LIMIT = 512
 EVENT_TRACE_LIMIT = 512
 LIVE_TRACE_LIMIT = 120
