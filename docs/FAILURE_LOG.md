@@ -9562,3 +9562,105 @@ recorded in receipts.
 - **Status:** PARTIAL STEP 0; tests passed, commit pinning still required before A1/B1
   implementation. ComplaintRef: operator order to log and execute the transcription
   plan E2E, 2026-08-04.
+
+### Transcription substrate pinned and A1 cost attribution completed (2026-08-04)
+
+Step 0 was completed as a lane-isolated substrate commit:
+`530f19f6b72781f8ee809cf3eed0e0702c42a0d2` (`Pin transcription substrate before
+v10 runtime work`). The pre-commit transcription suite result was 108 passed, 1
+warning. The commit used the transcription lane pathspec and left unrelated local
+garden/browser files and the 143-156MB profile JSON payloads out of git.
+
+A1 then added benchmark-only cost attribution to `scripts/benchmark_transcription_recognizers.py`
+and produced `tests/fixtures/transcription-v2/recognizer-cost-attribution-a1.json`
+(SHA-256 `c15770aaaf6ac6dcc81bbda36339a1fd21b6b93d1d8867f6b6930c5520df1972`).
+The artifact contains eight isolated worker records: the four v10 budget failures
+and their controls. No scorer, adapter acceptance path, candidate TXT, attempt,
+or v10 coverage benchmark was created.
+
+Measured results:
+
+- `tesseract-offline` on `positive-degraded-fixed`: rejected at 12.008s; control
+  `positive-fixed-ascii` completed at 6.414s. Top self-time: subprocess polling.
+- `structural-unicode-row` on `positive-degraded-fixed`: rejected at 90.008s;
+  control `positive-fixed-ascii` completed at 37.051s with 2,067 retained proposal
+  states. Top self-time: `_run_level_variants`/NumPy reduction.
+- `structural-unicode-row` on `positive-emoji-zwj`: rejected at 90.004s; control
+  `positive-kana` also rejected at 90.019s. This means the "kana control" is not
+  actually a passing control under the current implementation and must be treated
+  as structural span-lattice debt, not a successful baseline.
+- `emoji-grapheme-atlas` on `positive-emoji-zwj`: rejected at 30.026s; control
+  `positive-kana` completed at 3.853s. Top self-time on the blocked row:
+  per-pixel `getpixel`.
+
+The recommended diagnostic ceilings recorded by A1 are 15.009s for Tesseract
+degraded, 112.510s for structural degraded, 112.524s for structural emoji-shaped,
+and 37.532s for emoji atlas ZWJ. These are attribution receipts, not permission
+to raise release budgets. A2-A4 must reduce or refuse work generically; they may
+not increase ceilings, use truth-derived pruning, or truncate final proposal
+evidence.
+
+- **Status:** A1 COMPLETE; proceed to bounded generic runtime fixes for Tesseract,
+  structural span lattice, and emoji atlas. ComplaintRef: operator order to log
+  and execute the transcription plan E2E, 2026-08-04.
+
+### Transcription A2-A5 runtime admission bounded, v10 exposes coverage failure (2026-08-04)
+
+The A2-A4 runtime fixes were implemented without creating a TXT, attempt,
+candidate, acceptance, scorer change, or source-copy renderer:
+
+- `tesseract-offline` now uses capability-derived per-call timeouts and fails
+  closed as `recognizer_timeout` instead of blocking the benchmark. Targeted
+  degraded check: `tests/fixtures/transcription-v2/tesseract-degraded-a2-check.json`,
+  SHA-256 `74203ab91e967a3177dcc6406dcc8b610c83411b3257d98bee2e644997bc49d8`.
+- `structural-unicode-row` now refuses shaped emoji/color runs and unresolved
+  shaped display-basis runs before span expansion, and carries a deadline into
+  run-level variant generation. Targeted receipts:
+  `structural-emoji-a3-check.json` SHA-256
+  `3bc55ea15dade4970800156816ab455e742c42a5a4b4a25a72c8e1ad1d53e21c`,
+  `structural-kana-a3-check.json` SHA-256
+  `b6dc152c30053bfd238703af21d209bb6ee87df89225215f28deb80f6a09f87b`,
+  and `structural-degraded-a3-check.json` SHA-256
+  `27d9906559c4ad667d4318ae85c6225e62d6b4dcb89d10d4e2e835a7079a8d2b`.
+- `emoji-grapheme-atlas` no longer performs per-pixel `getpixel` scoring in
+  the hot loop; masks are cached as arrays and mask hashes are computed only
+  for retained evidence. Targeted ZWJ receipt:
+  `emoji-zwj-a4-check.json`, SHA-256
+  `20aa13c1f13c1fcc09021283f650d618cfef8b04d74fafb67214e4655f33f350`.
+- Unicode template adapters now refuse strongly colored emoji-modality runs
+  instead of emitting visually colliding Latin/combining/kana strings. Receipt:
+  `template-combining-emoji-check.json`, SHA-256
+  `fba05aad00b527c9e46018cde73809ed59b5693b037f5a328e5b06ca961defed`.
+
+A compact profile-only ten-adapter receipt completed with 100 fixture-adapter
+records, zero budget failures, deterministic ground-truth isolation, and no
+candidate authority:
+`tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted-4.json`,
+SHA-256 `cb02c062c9b30dc54fe500ce3cbf0af171b0b544a7480cd24bf125c104e4a5c3`.
+
+Fresh full v10 then completed as a coverage/rank measurement, not a release
+pass. Receipt:
+`tests/fixtures/transcription-v2/recognizer-benchmark-v10.json`, size
+115,217,911 bytes, SHA-256
+`a530986a7f5a31bfb0f01ab32f2e8864406d4c3c848eabe2c03b4dfc221afa1b`.
+Status: `blocked_release_coverage`; `budget_failures` is empty;
+`determinism_replay_performed=true`; `ground_truth_passed_to_adapters=false`;
+`false_unique` is empty/null. Positive fixtures still missing exact NFC top-k
+coverage: `positive-fixed-ascii`, `positive-proportional-latin`,
+`positive-kana`, `positive-kanji`, `positive-combining`,
+`positive-width-mixture`, `positive-emoji-zwj`, `positive-mixed-script`, and
+`positive-degraded-fixed`.
+
+The coverage matrix shows the remaining blocker is recognizer repertoire and
+proposal construction, not runtime admission and not ranking. Example: the
+fixed ASCII target `/\\_|` is classified `absent`; Arabic/Tesseract/template
+adapters emit wrong OCR/template strings, and structural helpers either reject
+or lack whole-run proposals. Therefore D1 is the next authorized work: add
+pinned, source-owned open-repertoire proposal coverage for absent/unsupported
+families. Scorer/ranking changes remain prohibited until a regenerated matrix
+separates exact targets that are present-but-losing from targets that are still
+absent.
+
+- **Status:** A2-A5 RUNTIME ADMISSION COMPLETE; C COVERAGE MEASUREMENT
+  COMPLETE BUT BLOCKED; proceed to D1 recognizer coverage only. ComplaintRef:
+  operator order to log and execute the transcription plan E2E, 2026-08-04.

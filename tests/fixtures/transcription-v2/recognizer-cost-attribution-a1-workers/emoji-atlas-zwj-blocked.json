@@ -1,0 +1,362 @@
+{
+  "adapter": "emoji-grapheme-atlas",
+  "adapter_counters": {
+    "budget_exceeded": true,
+    "memory_max_rss": null,
+    "proposal_hypothesis_count": 0,
+    "retained_proposal_state_count": 0,
+    "run_count": 0,
+    "unsupported_status": []
+  },
+  "authority": "diagnostic_only",
+  "benchmark_status": null,
+  "budget_seconds": 30.0,
+  "environment_lock_hash": "d2e0b9561eac6fb7072e15e3786abd052bfe8e659e63790684837f6387da6b40",
+  "error": "adapter fixture exceeded 30.000s budget",
+  "fixture": "positive-emoji-zwj",
+  "ground_truth_passed_to_adapters": false,
+  "rss_max_platform_units": 186220544,
+  "rss_unit_note": "resource.getrusage ru_maxrss; bytes on macOS, kilobytes on Linux",
+  "runtime_ms": 30025.588,
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "stage_costs": [
+    {
+      "cumulative_time_ms": 128498.517,
+      "owner": "other_python",
+      "primitive_calls": 121809743,
+      "total_calls": 122019106,
+      "total_time_ms": 28232.463
+    },
+    {
+      "cumulative_time_ms": 71720.801,
+      "owner": "emoji_atlas",
+      "primitive_calls": 908,
+      "total_calls": 908,
+      "total_time_ms": 192.711
+    },
+    {
+      "cumulative_time_ms": 60013.277,
+      "owner": "benchmark_harness",
+      "primitive_calls": 3,
+      "total_calls": 3,
+      "total_time_ms": 0.046
+    },
+    {
+      "cumulative_time_ms": 18860.182,
+      "owner": "geometry",
+      "primitive_calls": 2713004,
+      "total_calls": 2713004,
+      "total_time_ms": 1575.792
+    },
+    {
+      "cumulative_time_ms": 1643.915,
+      "owner": "raster_comparison",
+      "primitive_calls": 1828,
+      "total_calls": 1828,
+      "total_time_ms": 5.617
+    }
+  ],
+  "status": "rejected_budget_exceeded",
+  "top_functions_by_self_time": [
+    {
+      "cumulative_time_ms": 19192.176,
+      "file": "/Users/r/Library/Python/3.14/lib/python/site-packages/PIL/Image.py",
+      "function": "getpixel",
+      "line": 1650,
+      "owner": "other_python",
+      "primitive_calls": 11059978,
+      "self_time_ms": 5255.082,
+      "total_calls": 11059978
+    },
+    {
+      "cumulative_time_ms": 10185.717,
+      "file": "/Users/r/Library/Python/3.14/lib/python/site-packages/PIL/Image.py",
+      "function": "load",
+      "line": 868,
+      "owner": "other_python",
+      "primitive_calls": 11061798,
+      "self_time_ms": 4814.662,
+      "total_calls": 11061798
+    },
+    {
+      "cumulative_time_ms": 5303.135,
+      "file": "/Users/r/Library/Python/3.14/lib/python/site-packages/PIL/Image.py",
+      "function": "im",
+      "line": 542,
+      "owner": "other_python",
+      "primitive_calls": 22124495,
+      "self_time_ms": 3692.619,
+      "total_calls": 22124496
+    },
+    {
+      "cumulative_time_ms": 21571.621,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "<genexpr>",
+      "line": 2907,
+      "owner": "other_python",
+      "primitive_calls": 11162249,
+      "self_time_ms": 2379.295,
+      "total_calls": 11162249
+    },
+    {
+      "cumulative_time_ms": 2292.796,
+      "file": "~",
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 1820860,
+      "self_time_ms": 2292.796,
+      "total_calls": 1820860
+    },
+    {
+      "cumulative_time_ms": 1805.992,
+      "file": "~",
+      "function": "<built-in method builtins.isinstance>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 23254909,
+      "self_time_ms": 1745.966,
+      "total_calls": 23258255
+    },
+    {
+      "cumulative_time_ms": 1409.994,
+      "file": "/Users/r/Library/Python/3.14/lib/python/site-packages/PIL/Image.py",
+      "function": "readonly",
+      "line": 569,
+      "owner": "other_python",
+      "primitive_calls": 11061796,
+      "self_time_ms": 1409.994,
+      "total_calls": 11061796
+    },
+    {
+      "cumulative_time_ms": 1292.155,
+      "file": "~",
+      "function": "<method 'pixel_access' of 'ImagingCore' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 11061796,
+      "self_time_ms": 1292.155,
+      "total_calls": 11061796
+    },
+    {
+      "cumulative_time_ms": 4130.808,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_measure_mixed_width_display",
+      "line": 962,
+      "owner": "geometry",
+      "primitive_calls": 1,
+      "self_time_ms": 1124.041,
+      "total_calls": 1
+    },
+    {
+      "cumulative_time_ms": 1120.144,
+      "file": "~",
+      "function": "<method 'getpixel' of 'ImagingCore' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 11059977,
+      "self_time_ms": 1120.144,
+      "total_calls": 11059977
+    },
+    {
+      "cumulative_time_ms": 22677.66,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "<genexpr>",
+      "line": 2906,
+      "owner": "other_python",
+      "primitive_calls": 103175,
+      "self_time_ms": 1053.217,
+      "total_calls": 103175
+    },
+    {
+      "cumulative_time_ms": 801.134,
+      "file": "~",
+      "function": "<method 'render' of 'Font' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 904,
+      "self_time_ms": 795.358,
+      "total_calls": 904
+    },
+    {
+      "cumulative_time_ms": 2884.422,
+      "file": "~",
+      "function": "<method 'sum' of 'numpy.ndarray' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 1805107,
+      "self_time_ms": 356.927,
+      "total_calls": 1805107
+    },
+    {
+      "cumulative_time_ms": 2527.496,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/_methods.py",
+      "function": "_sum",
+      "line": 47,
+      "owner": "other_python",
+      "primitive_calls": 1805107,
+      "self_time_ms": 260.531,
+      "total_calls": 1805107
+    },
+    {
+      "cumulative_time_ms": 253.428,
+      "file": "~",
+      "function": "<method 'nonzero' of 'numpy.ndarray' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 16525,
+      "self_time_ms": 253.428,
+      "total_calls": 16525
+    },
+    {
+      "cumulative_time_ms": 401.926,
+      "file": "~",
+      "function": "<built-in method builtins.sum>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 176253,
+      "self_time_ms": 233.847,
+      "total_calls": 176253
+    },
+    {
+      "cumulative_time_ms": 453.085,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/schema.py",
+      "function": "_jsonable",
+      "line": 21,
+      "owner": "other_python",
+      "primitive_calls": 4027,
+      "self_time_ms": 190.717,
+      "total_calls": 207363
+    },
+    {
+      "cumulative_time_ms": 47551.555,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_render_emoji_mask",
+      "line": 2891,
+      "owner": "emoji_atlas",
+      "primitive_calls": 904,
+      "self_time_ms": 170.762,
+      "total_calls": 904
+    },
+    {
+      "cumulative_time_ms": 1489.501,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_periodic_row_candidates",
+      "line": 271,
+      "owner": "geometry",
+      "primitive_calls": 4,
+      "self_time_ms": 148.201,
+      "total_calls": 4
+    },
+    {
+      "cumulative_time_ms": 124.64,
+      "file": "~",
+      "function": "<method 'getlength' of 'Font' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 1807,
+      "self_time_ms": 124.64,
+      "total_calls": 1807
+    },
+    {
+      "cumulative_time_ms": 890.831,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_row_ownership_evidence",
+      "line": 493,
+      "owner": "geometry",
+      "primitive_calls": 2000,
+      "self_time_ms": 113.833,
+      "total_calls": 2000
+    },
+    {
+      "cumulative_time_ms": 116.107,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/components.py",
+      "function": "_connected_components",
+      "line": 16,
+      "owner": "other_python",
+      "primitive_calls": 2,
+      "self_time_ms": 106.537,
+      "total_calls": 2
+    },
+    {
+      "cumulative_time_ms": 96.294,
+      "file": "~",
+      "function": "<method 'append' of 'list' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 986913,
+      "self_time_ms": 96.294,
+      "total_calls": 986913
+    },
+    {
+      "cumulative_time_ms": 77.845,
+      "file": "~",
+      "function": "<built-in method builtins.round>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 894246,
+      "self_time_ms": 77.845,
+      "total_calls": 894246
+    },
+    {
+      "cumulative_time_ms": 98.676,
+      "file": "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/dataclasses.py",
+      "function": "is_dataclass",
+      "line": 1468,
+      "owner": "other_python",
+      "primitive_calls": 207374,
+      "self_time_ms": 65.496,
+      "total_calls": 207374
+    },
+    {
+      "cumulative_time_ms": 59.711,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "<genexpr>",
+      "line": 995,
+      "owner": "geometry",
+      "primitive_calls": 891148,
+      "self_time_ms": 59.711,
+      "total_calls": 891148
+    },
+    {
+      "cumulative_time_ms": 55.275,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "<genexpr>",
+      "line": 998,
+      "owner": "geometry",
+      "primitive_calls": 891148,
+      "self_time_ms": 55.275,
+      "total_calls": 891148
+    },
+    {
+      "cumulative_time_ms": 53.093,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "<genexpr>",
+      "line": 1019,
+      "owner": "geometry",
+      "primitive_calls": 891148,
+      "self_time_ms": 53.093,
+      "total_calls": 891148
+    },
+    {
+      "cumulative_time_ms": 48.256,
+      "file": "~",
+      "function": "<built-in method builtins.max>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 171957,
+      "self_time_ms": 48.231,
+      "total_calls": 171957
+    },
+    {
+      "cumulative_time_ms": 33.561,
+      "file": "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py",
+      "function": "iterencode",
+      "line": 207,
+      "owner": "other_python",
+      "primitive_calls": 4016,
+      "self_time_ms": 33.561,
+      "total_calls": 4016
+    }
+  ]
+}

@@ -1,0 +1,364 @@
+{
+  "adapter": "structural-unicode-row",
+  "adapter_counters": {
+    "budget_exceeded": false,
+    "memory_max_rss": 91045888,
+    "proposal_hypothesis_count": 0,
+    "retained_proposal_state_count": 0,
+    "run_count": 3,
+    "unsupported_status": [
+      "structural_display_basis_unresolved"
+    ]
+  },
+  "authority": "diagnostic_only",
+  "benchmark_status": "blocked_release_coverage",
+  "budget_seconds": 90.0,
+  "environment_lock_hash": "d2e0b9561eac6fb7072e15e3786abd052bfe8e659e63790684837f6387da6b40",
+  "error": null,
+  "fixture": "positive-kana",
+  "ground_truth_passed_to_adapters": false,
+  "rss_max_platform_units": 91062272,
+  "rss_unit_note": "resource.getrusage ru_maxrss; bytes on macOS, kilobytes on Linux",
+  "runtime_ms": 3642.221,
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "stage_costs": [
+    {
+      "cumulative_time_ms": 11196.423,
+      "owner": "geometry",
+      "primitive_calls": 1976598,
+      "total_calls": 1976598,
+      "total_time_ms": 1099.071
+    },
+    {
+      "cumulative_time_ms": 10925.874,
+      "owner": "benchmark_harness",
+      "primitive_calls": 3,
+      "total_calls": 3,
+      "total_time_ms": 0.707
+    },
+    {
+      "cumulative_time_ms": 6933.821,
+      "owner": "other_python",
+      "primitive_calls": 6648594,
+      "total_calls": 6747238,
+      "total_time_ms": 2541.984
+    },
+    {
+      "cumulative_time_ms": 0.726,
+      "owner": "raster_comparison",
+      "primitive_calls": 25,
+      "total_calls": 25,
+      "total_time_ms": 0.24
+    },
+    {
+      "cumulative_time_ms": 0.05,
+      "owner": "coverage_matrix",
+      "primitive_calls": 5,
+      "total_calls": 5,
+      "total_time_ms": 0.034
+    }
+  ],
+  "status": "completed",
+  "top_functions_by_self_time": [
+    {
+      "cumulative_time_ms": 1322.915,
+      "file": "~",
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 1284941,
+      "self_time_ms": 1322.915,
+      "total_calls": 1284941
+    },
+    {
+      "cumulative_time_ms": 2911.332,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_measure_mixed_width_display",
+      "line": 962,
+      "owner": "geometry",
+      "primitive_calls": 1,
+      "self_time_ms": 838.296,
+      "total_calls": 1
+    },
+    {
+      "cumulative_time_ms": 1754.009,
+      "file": "~",
+      "function": "<method 'sum' of 'numpy.ndarray' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 1279347,
+      "self_time_ms": 255.084,
+      "total_calls": 1279347
+    },
+    {
+      "cumulative_time_ms": 1498.924,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/_methods.py",
+      "function": "_sum",
+      "line": 47,
+      "owner": "other_python",
+      "primitive_calls": 1279347,
+      "self_time_ms": 184.974,
+      "total_calls": 1279347
+    },
+    {
+      "cumulative_time_ms": 312.725,
+      "file": "~",
+      "function": "<built-in method builtins.sum>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 176256,
+      "self_time_ms": 183.893,
+      "total_calls": 176256
+    },
+    {
+      "cumulative_time_ms": 214.54,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/schema.py",
+      "function": "_jsonable",
+      "line": 21,
+      "owner": "other_python",
+      "primitive_calls": 4098,
+      "self_time_ms": 90.834,
+      "total_calls": 95056
+    },
+    {
+      "cumulative_time_ms": 529.058,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_periodic_row_candidates",
+      "line": 271,
+      "owner": "geometry",
+      "primitive_calls": 4,
+      "self_time_ms": 71.315,
+      "total_calls": 4
+    },
+    {
+      "cumulative_time_ms": 64.606,
+      "file": "~",
+      "function": "<method 'nonzero' of 'numpy.ndarray' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 6283,
+      "self_time_ms": 64.606,
+      "total_calls": 6283
+    },
+    {
+      "cumulative_time_ms": 61.864,
+      "file": "~",
+      "function": "<method 'append' of 'list' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 649625,
+      "self_time_ms": 61.864,
+      "total_calls": 649625
+    },
+    {
+      "cumulative_time_ms": 88.896,
+      "file": "~",
+      "function": "<built-in method builtins.isinstance>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 455079,
+      "self_time_ms": 58.245,
+      "total_calls": 459535
+    },
+    {
+      "cumulative_time_ms": 55.29,
+      "file": "~",
+      "function": "<built-in method builtins.round>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 656153,
+      "self_time_ms": 55.29,
+      "total_calls": 656153
+    },
+    {
+      "cumulative_time_ms": 45.576,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "<genexpr>",
+      "line": 995,
+      "owner": "geometry",
+      "primitive_calls": 654296,
+      "self_time_ms": 45.576,
+      "total_calls": 654296
+    },
+    {
+      "cumulative_time_ms": 286.492,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_row_ownership_evidence",
+      "line": 493,
+      "owner": "geometry",
+      "primitive_calls": 2000,
+      "self_time_ms": 45.567,
+      "total_calls": 2000
+    },
+    {
+      "cumulative_time_ms": 42.236,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "<genexpr>",
+      "line": 998,
+      "owner": "geometry",
+      "primitive_calls": 654296,
+      "self_time_ms": 42.236,
+      "total_calls": 654296
+    },
+    {
+      "cumulative_time_ms": 41.013,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "<genexpr>",
+      "line": 1019,
+      "owner": "geometry",
+      "primitive_calls": 654296,
+      "self_time_ms": 41.013,
+      "total_calls": 654296
+    },
+    {
+      "cumulative_time_ms": 35.764,
+      "file": "~",
+      "function": "<built-in method builtins.max>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 137400,
+      "self_time_ms": 35.736,
+      "total_calls": 137400
+    },
+    {
+      "cumulative_time_ms": 46.168,
+      "file": "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/dataclasses.py",
+      "function": "is_dataclass",
+      "line": 1468,
+      "owner": "other_python",
+      "primitive_calls": 95107,
+      "self_time_ms": 30.663,
+      "total_calls": 95107
+    },
+    {
+      "cumulative_time_ms": 22.909,
+      "file": "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py",
+      "function": "iterencode",
+      "line": 207,
+      "owner": "other_python",
+      "primitive_calls": 4047,
+      "self_time_ms": 22.909,
+      "total_calls": 4047
+    },
+    {
+      "cumulative_time_ms": 28.201,
+      "file": "<frozen abc>",
+      "function": "__instancecheck__",
+      "line": 117,
+      "owner": "other_python",
+      "primitive_calls": 95001,
+      "self_time_ms": 14.082,
+      "total_calls": 95001
+    },
+    {
+      "cumulative_time_ms": 14.12,
+      "file": "~",
+      "function": "<built-in method _abc._abc_instancecheck>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 95001,
+      "self_time_ms": 13.312,
+      "total_calls": 95001
+    },
+    {
+      "cumulative_time_ms": 8.185,
+      "file": "~",
+      "function": "<built-in method builtins.hasattr>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 96975,
+      "self_time_ms": 8.185,
+      "total_calls": 96975
+    },
+    {
+      "cumulative_time_ms": 11.861,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/linalg/_linalg.py",
+      "function": "norm",
+      "line": 2598,
+      "owner": "other_python",
+      "primitive_calls": 3900,
+      "self_time_ms": 5.709,
+      "total_calls": 3900
+    },
+    {
+      "cumulative_time_ms": 18.401,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_phase_and_boundaries",
+      "line": 246,
+      "owner": "geometry",
+      "primitive_calls": 8,
+      "self_time_ms": 5.07,
+      "total_calls": 8
+    },
+    {
+      "cumulative_time_ms": 15.321,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/numeric.py",
+      "function": "flatnonzero",
+      "line": 679,
+      "owner": "other_python",
+      "primitive_calls": 4283,
+      "self_time_ms": 4.551,
+      "total_calls": 4283
+    },
+    {
+      "cumulative_time_ms": 33.599,
+      "file": "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/__init__.py",
+      "function": "dumps",
+      "line": 185,
+      "owner": "other_python",
+      "primitive_calls": 4047,
+      "self_time_ms": 4.516,
+      "total_calls": 4047
+    },
+    {
+      "cumulative_time_ms": 75.297,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/fromnumeric.py",
+      "function": "_wrapfunc",
+      "line": 48,
+      "owner": "other_python",
+      "primitive_calls": 8284,
+      "self_time_ms": 4.449,
+      "total_calls": 8284
+    },
+    {
+      "cumulative_time_ms": 4.635,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/components.py",
+      "function": "_connected_components",
+      "line": 16,
+      "owner": "other_python",
+      "primitive_calls": 2,
+      "self_time_ms": 4.33,
+      "total_calls": 2
+    },
+    {
+      "cumulative_time_ms": 10.028,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/_methods.py",
+      "function": "_mean",
+      "line": 115,
+      "owner": "other_python",
+      "primitive_calls": 1654,
+      "self_time_ms": 3.695,
+      "total_calls": 1654
+    },
+    {
+      "cumulative_time_ms": 28.044,
+      "file": "/opt/homebrew/Cellar/python@3.14/3.14.3_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/json/encoder.py",
+      "function": "encode",
+      "line": 185,
+      "owner": "other_python",
+      "primitive_calls": 4047,
+      "self_time_ms": 3.63,
+      "total_calls": 4047
+    },
+    {
+      "cumulative_time_ms": 5.133,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/fromnumeric.py",
+      "function": "_wrapit",
+      "line": 38,
+      "owner": "other_python",
+      "primitive_calls": 2001,
+      "self_time_ms": 3.616,
+      "total_calls": 2001
+    }
+  ]
+}

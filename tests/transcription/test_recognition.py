@@ -736,6 +736,31 @@ def test_structural_unicode_adapter_uses_run_level_mixed_span_surface() -> None:
     assert any("ミ＿xノ" in text for text in outputs[3])
 
 
+def test_structural_unicode_adapter_refuses_shaped_runs_without_text_basis() -> None:
+    adapter = StructuralUnicodeRowAdapter()
+    lock = build_environment_lock(script_packs=("ascii", "japanese", "cjk"))
+    source = {
+        "path": __file__,
+        "source_sha256": "1" * 64,
+        "geometry_hash": "2" * 64,
+        "components_hash": "3" * 64,
+        "run_color_stats": {"pixel_count": 100, "strongly_colored_pixels": 0},
+    }
+    geometry = {
+        "mode": "shaped_runs",
+        "run_mask": {
+            "authority": "geometry_proven_run",
+            "pixels": [["1"] * 80 for _ in range(12)],
+            "anchor_evidence": {"base_advance_px": 1.0, "origin_px": 0.0},
+        },
+    }
+
+    proposal = adapter.propose(source, geometry, {}, lock)
+
+    assert proposal.status == "rejected"
+    assert "structural_display_basis_unresolved" in proposal.rejection_codes
+
+
 def test_run_level_span_lattice_preserves_source_supported_kana_diagonal_family() -> None:
     """A lower-ranked kana diagonal survives complete-run span decoding."""
 

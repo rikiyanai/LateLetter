@@ -267,3 +267,43 @@ diagnostic, not a TXT rejection.
 Do not start another reference, tune the renderer, or create `accepted.txt` until a
 contact-sheet-reviewed transcript reaches zero unknown, low-confidence, structural-conflict,
 and forced-blank-conflict cells and the operator accepts its font-independent visual structure.
+
+## Current canonical frontier — PNG-to-logical-UTF-8 pipeline
+
+The legacy calibration/OCR/row-joint scripts above are historical evidence and diagnostics.
+They are not the active product authority for new conversions.
+
+Current records:
+
+- Step 0 substrate commit:
+  `530f19f6b72781f8ee809cf3eed0e0702c42a0d2`.
+- A1 cost attribution:
+  `tests/fixtures/transcription-v2/recognizer-cost-attribution-a1.json`,
+  SHA-256 `c15770aaaf6ac6dcc81bbda36339a1fd21b6b93d1d8867f6b6930c5520df1972`.
+- A5 compact profile receipt:
+  `tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted-4.json`,
+  SHA-256 `cb02c062c9b30dc54fe500ce3cbf0af171b0b544a7480cd24bf125c104e4a5c3`.
+- Fresh full v10 coverage/rank receipt:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v10.json`,
+  SHA-256 `a530986a7f5a31bfb0f01ab32f2e8864406d4c3c848eabe2c03b4dfc221afa1b`.
+
+The full v10 status is `blocked_release_coverage`, with zero budget failures, deterministic
+replay enabled, and ground truth not passed to adapters. The exact NFC target remains absent
+from top-k for nine positive fixtures: fixed ASCII, proportional Latin, kana, Kanji, combining,
+width mixture, emoji ZWJ, mixed script, and degraded fixed-cell.
+
+Current execution frontier:
+
+1. Do not create sitting-cat attempt 004, horse attempt 065, candidate TXT, or acceptance.
+2. Do not change scoring/ranking yet.
+3. Implement D1 recognizer coverage for absent/unsupported families using pinned,
+   source-owned proposal adapters.
+4. Regenerate the coverage/rank matrix after each coverage addition.
+5. Only then rebuild ranking for rows classified `present_but_losing`.
+
+The accepted references remain immutable:
+
+- `bbbb-flowers/accepted.txt`
+- `a8283c5cdb63b130/accepted.txt`
+- `eb861dc84400fc36.provisional-not-pipeline.txt` is operator-approved art, not recognizer
+  output.

@@ -1,0 +1,4663 @@
+{
+  "adapter_budgets_seconds": {
+    "emoji-grapheme-atlas": 30.0,
+    "fixed-lattice-structural": 5.0,
+    "independent-offline-easyocr": 15.0,
+    "independent-offline-surya": 15.0,
+    "paddleocr-offline": 15.0,
+    "structural-unicode-row": 90.0,
+    "tesseract-offline": 12.0,
+    "unicode-template-combining": 30.0,
+    "unicode-template-kana": 30.0,
+    "unicode-template-latin": 30.0
+  },
+  "authority": "diagnostic_only",
+  "capability_profiles": [
+    {
+      "adapter": "tesseract-offline",
+      "adapter_version": "5.5.1",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "extended-grapheme-candidate"
+      ],
+      "license": "Apache-2.0",
+      "model_hashes": {
+        "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+        "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+        "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+        "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+        "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+        "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548"
+      },
+      "offline": true,
+      "output_hash": "d2164aa7e29ed8822ae14de1c73f08f63a5340e2db3ff5ebba8b3b671f65b29a",
+      "runtime_hashes": {
+        "tesseract_binary": "f6684b4e366dfc22bc0f1a509a6c237df3833af4c7105ecd78b9c998a5ab4656"
+      },
+      "runtime_network": false,
+      "runtime_versions": {
+        "python": "3.14.3",
+        "tesseract": "5.5.1"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [
+        "arabic",
+        "ascii",
+        "cjk",
+        "digits",
+        "japanese",
+        "latin",
+        "vertical_text"
+      ],
+      "tested_fixture_families": [
+        "arabic",
+        "ascii",
+        "cjk",
+        "japanese",
+        "latin"
+      ],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "joined_text_art_runs",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "fixed-lattice-structural",
+      "adapter_version": "1",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "ascii-structural"
+      ],
+      "license": "CC0-1.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "b4870c7e126933be2d7266021e0e8394428a2f9c7bf58fba3b9e1b6966fec315",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {},
+      "status": "proposal_only",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "ascii",
+        "digits"
+      ],
+      "tested_fixture_families": [
+        "fixed_lattice_ascii"
+      ],
+      "unsupported_cases": [
+        "ambiguous_spill",
+        "emoji_zwj",
+        "proportional_runs",
+        "unicode_scripts"
+      ]
+    },
+    {
+      "adapter": "structural-unicode-row",
+      "adapter_version": "2-run-level-span-lattice",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "kana-katakana-proposals",
+        "structural-punctuation"
+      ],
+      "license": "Apache-2.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "c319191f1c20cac4d41795e2e6daec19acb9be40852640d87a10217761b7763c",
+      "runtime_hashes": {
+        "template_font": "eca1d26a1bc493490f5a2450fd1b931e4a1822cc37288110163ae6e9938d4130"
+      },
+      "runtime_network": false,
+      "runtime_versions": {
+        "pillow": "12.1.0"
+      },
+      "status": "proposal_only",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "ascii",
+        "cjk",
+        "japanese"
+      ],
+      "tested_fixture_families": [
+        "fixed_ascii",
+        "mixed_width_japanese_structural"
+      ],
+      "unsupported_cases": [
+        "ambiguous_unicode_collision",
+        "arabic_joining",
+        "emoji_zwj"
+      ]
+    },
+    {
+      "adapter": "unicode-template-latin",
+      "adapter_version": "1-template-dp",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "extended-grapheme-cluster",
+        "run-level-span-dp"
+      ],
+      "license": "Bitstream Vera / DejaVu license",
+      "model_hashes": {
+        "unicode-template-latin.font": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081"
+      },
+      "offline": true,
+      "output_hash": "f164ae06a829ed983709efa430f46007c1481b868a4cf68662c0f74a15432c72",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "pillow": "12.1.0",
+        "unicode": "16.0.0"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "latin"
+      ],
+      "tested_fixture_families": [
+        "latin"
+      ],
+      "unsupported_cases": [
+        "partial_cluster",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "unicode-template-combining",
+      "adapter_version": "1-template-dp",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "extended-grapheme-cluster",
+        "run-level-span-dp"
+      ],
+      "license": "Bitstream Vera / DejaVu license",
+      "model_hashes": {
+        "unicode-template-combining.font": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081"
+      },
+      "offline": true,
+      "output_hash": "0db188acd1cdeb68e5bd8c4b8691bfdd6ffe2ca816d8a91f3aba96ad5e34c7d2",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "pillow": "12.1.0",
+        "unicode": "16.0.0"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "combining_marks",
+        "latin"
+      ],
+      "tested_fixture_families": [
+        "combining"
+      ],
+      "unsupported_cases": [
+        "partial_cluster",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "unicode-template-kana",
+      "adapter_version": "1-template-dp",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "extended-grapheme-cluster",
+        "run-level-span-dp"
+      ],
+      "license": "Bitstream Vera / DejaVu license",
+      "model_hashes": {
+        "unicode-template-kana.font": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5"
+      },
+      "offline": true,
+      "output_hash": "d13ebdaf7f56cf1e207edef8285537690bd83b80fe7ea337937bedba69615a20",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "pillow": "12.1.0",
+        "unicode": "16.0.0"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "japanese"
+      ],
+      "tested_fixture_families": [
+        "kana"
+      ],
+      "unsupported_cases": [
+        "partial_cluster",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "paddleocr-offline",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "Apache-2.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "b19b071997b5c86ad79398c155bc18469f8627959a094097f52521c798eac40e",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "paddleocr": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "arabic_model_not_verified",
+        "emoji_zwj",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "independent-offline-easyocr",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "Apache-2.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "d1ba9a33a4e1dd1d0a335700fe098d5c49a757d95256989df0a257fb9ad10fd6",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "easyocr": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "unverified_script_pack",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "independent-offline-surya",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "GPL-3.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "8784ccf54b3080958deec4f9e95f26946c29be7bed05a407732a6660cc078e0b",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "surya": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "unverified_script_pack",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "emoji-grapheme-atlas",
+      "adapter_version": "unicode-emoji-17.0",
+      "emoji_coverage": [
+        "RGI fully-qualified",
+        "count:2000"
+      ],
+      "grapheme_coverage": [
+        "extended-grapheme-cluster"
+      ],
+      "license": "OFL-1.1+Unicode-Terms-of-Use",
+      "model_hashes": {
+        "noto_color_emoji": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+        "unicode_emoji_test": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda"
+      },
+      "offline": true,
+      "output_hash": "b070338bc09f59daf04ce67eaf71aab05f448d130de456fc2329c9e565a1af4b",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "pillow": "12.1.0",
+        "regex": "2026.5.9",
+        "unicodedata": "16.0.0"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "emoji"
+      ],
+      "tested_fixture_families": [
+        "emoji_variation_selector",
+        "emoji_zwj"
+      ],
+      "unsupported_cases": [
+        "font_strike_unavailable",
+        "partial_cluster",
+        "unconfigured_sequence",
+        "visual_unicode_collision"
+      ]
+    }
+  ],
+  "determinism_replay_performed": false,
+  "environment_lock": {
+    "capability_profiles": [
+      {
+        "adapter": "tesseract-offline",
+        "adapter_version": "5.5.1",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "extended-grapheme-candidate"
+        ],
+        "license": "Apache-2.0",
+        "model_hashes": {
+          "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+          "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+          "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+          "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+          "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+          "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548"
+        },
+        "offline": true,
+        "output_hash": "d2164aa7e29ed8822ae14de1c73f08f63a5340e2db3ff5ebba8b3b671f65b29a",
+        "runtime_hashes": {
+          "tesseract_binary": "f6684b4e366dfc22bc0f1a509a6c237df3833af4c7105ecd78b9c998a5ab4656"
+        },
+        "runtime_network": false,
+        "runtime_versions": {
+          "python": "3.14.3",
+          "tesseract": "5.5.1"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [
+          "arabic",
+          "ascii",
+          "cjk",
+          "digits",
+          "japanese",
+          "latin",
+          "vertical_text"
+        ],
+        "tested_fixture_families": [
+          "arabic",
+          "ascii",
+          "cjk",
+          "japanese",
+          "latin"
+        ],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "joined_text_art_runs",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "fixed-lattice-structural",
+        "adapter_version": "1",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "ascii-structural"
+        ],
+        "license": "CC0-1.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "b4870c7e126933be2d7266021e0e8394428a2f9c7bf58fba3b9e1b6966fec315",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {},
+        "status": "proposal_only",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "ascii",
+          "digits"
+        ],
+        "tested_fixture_families": [
+          "fixed_lattice_ascii"
+        ],
+        "unsupported_cases": [
+          "ambiguous_spill",
+          "emoji_zwj",
+          "proportional_runs",
+          "unicode_scripts"
+        ]
+      },
+      {
+        "adapter": "structural-unicode-row",
+        "adapter_version": "2-run-level-span-lattice",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "kana-katakana-proposals",
+          "structural-punctuation"
+        ],
+        "license": "Apache-2.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "c319191f1c20cac4d41795e2e6daec19acb9be40852640d87a10217761b7763c",
+        "runtime_hashes": {
+          "template_font": "eca1d26a1bc493490f5a2450fd1b931e4a1822cc37288110163ae6e9938d4130"
+        },
+        "runtime_network": false,
+        "runtime_versions": {
+          "pillow": "12.1.0"
+        },
+        "status": "proposal_only",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "ascii",
+          "cjk",
+          "japanese"
+        ],
+        "tested_fixture_families": [
+          "fixed_ascii",
+          "mixed_width_japanese_structural"
+        ],
+        "unsupported_cases": [
+          "ambiguous_unicode_collision",
+          "arabic_joining",
+          "emoji_zwj"
+        ]
+      },
+      {
+        "adapter": "unicode-template-latin",
+        "adapter_version": "1-template-dp",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "extended-grapheme-cluster",
+          "run-level-span-dp"
+        ],
+        "license": "Bitstream Vera / DejaVu license",
+        "model_hashes": {
+          "unicode-template-latin.font": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081"
+        },
+        "offline": true,
+        "output_hash": "f164ae06a829ed983709efa430f46007c1481b868a4cf68662c0f74a15432c72",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "pillow": "12.1.0",
+          "unicode": "16.0.0"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "latin"
+        ],
+        "tested_fixture_families": [
+          "latin"
+        ],
+        "unsupported_cases": [
+          "partial_cluster",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "unicode-template-combining",
+        "adapter_version": "1-template-dp",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "extended-grapheme-cluster",
+          "run-level-span-dp"
+        ],
+        "license": "Bitstream Vera / DejaVu license",
+        "model_hashes": {
+          "unicode-template-combining.font": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081"
+        },
+        "offline": true,
+        "output_hash": "0db188acd1cdeb68e5bd8c4b8691bfdd6ffe2ca816d8a91f3aba96ad5e34c7d2",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "pillow": "12.1.0",
+          "unicode": "16.0.0"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "combining_marks",
+          "latin"
+        ],
+        "tested_fixture_families": [
+          "combining"
+        ],
+        "unsupported_cases": [
+          "partial_cluster",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "unicode-template-kana",
+        "adapter_version": "1-template-dp",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "extended-grapheme-cluster",
+          "run-level-span-dp"
+        ],
+        "license": "Bitstream Vera / DejaVu license",
+        "model_hashes": {
+          "unicode-template-kana.font": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5"
+        },
+        "offline": true,
+        "output_hash": "d13ebdaf7f56cf1e207edef8285537690bd83b80fe7ea337937bedba69615a20",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "pillow": "12.1.0",
+          "unicode": "16.0.0"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "japanese"
+        ],
+        "tested_fixture_families": [
+          "kana"
+        ],
+        "unsupported_cases": [
+          "partial_cluster",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "paddleocr-offline",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "Apache-2.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "b19b071997b5c86ad79398c155bc18469f8627959a094097f52521c798eac40e",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "paddleocr": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "arabic_model_not_verified",
+          "emoji_zwj",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "independent-offline-easyocr",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "Apache-2.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "d1ba9a33a4e1dd1d0a335700fe098d5c49a757d95256989df0a257fb9ad10fd6",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "easyocr": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "unverified_script_pack",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "independent-offline-surya",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "GPL-3.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "8784ccf54b3080958deec4f9e95f26946c29be7bed05a407732a6660cc078e0b",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "surya": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "unverified_script_pack",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "emoji-grapheme-atlas",
+        "adapter_version": "unicode-emoji-17.0",
+        "emoji_coverage": [
+          "RGI fully-qualified",
+          "count:2000"
+        ],
+        "grapheme_coverage": [
+          "extended-grapheme-cluster"
+        ],
+        "license": "OFL-1.1+Unicode-Terms-of-Use",
+        "model_hashes": {
+          "noto_color_emoji": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+          "unicode_emoji_test": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda"
+        },
+        "offline": true,
+        "output_hash": "b070338bc09f59daf04ce67eaf71aab05f448d130de456fc2329c9e565a1af4b",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "pillow": "12.1.0",
+          "regex": "2026.5.9",
+          "unicodedata": "16.0.0"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "emoji"
+        ],
+        "tested_fixture_families": [
+          "emoji_variation_selector",
+          "emoji_zwj"
+        ],
+        "unsupported_cases": [
+          "font_strike_unavailable",
+          "partial_cluster",
+          "unconfigured_sequence",
+          "visual_unicode_collision"
+        ]
+      }
+    ],
+    "freetype": "not-recorded",
+    "harfbuzz": "not-installed",
+    "model_hashes": {
+      "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+      "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+      "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+      "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+      "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+      "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548",
+      "osd": "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff",
+      "unicode-template-arabic.font": "ceea25b464a656dc3b26849bab9356740401af62aedf1bfa8b7f0d9b75925b1b",
+      "unicode-template-combining.font": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081",
+      "unicode-template-kana.font": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+      "unicode-template-latin.font": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081"
+    },
+    "output_hash": "d2e0b9561eac6fb7072e15e3786abd052bfe8e659e63790684837f6387da6b40",
+    "pillow_version": "12.1.0",
+    "preprocessing": {
+      "ground_truth_to_adapter": false,
+      "network": "disabled"
+    },
+    "script_packs": [
+      "ara",
+      "chi_sim",
+      "chi_tra",
+      "eng",
+      "jpn",
+      "jpn_vert",
+      "osd",
+      "unicode-template-arabic.font",
+      "unicode-template-combining.font",
+      "unicode-template-kana.font",
+      "unicode-template-latin.font"
+    ],
+    "uax29": "regex/2026.5.9",
+    "unicode_database": "16.0.0",
+    "wcwidth_version": "0.3.3"
+  },
+  "ground_truth_passed_to_adapters": false,
+  "profiles": [
+    {
+      "adapter": "tesseract-offline",
+      "budget_failures": [],
+      "budget_seconds": 12.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 65159168,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 4,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 4,
+              "runtime_ms": 432.041,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [
+                "empty_proposal"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 65388544,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 4,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 4,
+              "runtime_ms": 414.579,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [
+                "empty_proposal"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 65519616,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 0,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 0,
+              "runtime_ms": 642.657,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 65585152,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 4,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 4,
+              "runtime_ms": 153.953,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [
+                "empty_proposal"
+              ],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 74956800,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 275.548,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 76070912,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 277.079,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 76972032,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 690.68,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 77758464,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 214.16,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78495744,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 3,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 269.929,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78495744,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 3,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 270.501,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78528512,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 629.344,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78528512,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 3,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 109.967,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78774272,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 180.642,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78774272,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 175.376,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78774272,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 586.9,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 78774272,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 85.645,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 78938112,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 908.868,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 78938112,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 909.661,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 78938112,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 908.279,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 81149952,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 16,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 1,
+              "runtime_ms": 605.513,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 81231872,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 179.275,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 81231872,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 177.604,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 81231872,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 1,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 1,
+              "runtime_ms": 578.363,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 81231872,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 84.365,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 82116608,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 3,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 265.616,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 82116608,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 3,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 259.811,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 82116608,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 629.356,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 82116608,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 3,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 114.439,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 84148224,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 183.998,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 84148224,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 182.123,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 84148224,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 589.816,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 84148224,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 82.078,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 85229568,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 181.321,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 85229568,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 181.583,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 85229568,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 1,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 1,
+              "runtime_ms": 593.369,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 85229568,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 2,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 73.816,
+              "status": "proposal_only",
+              "top_k_count": 1,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "psm7-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 85540864,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 1817.399,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm13-eng",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 85540864,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 1818.143,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-jpn-cjk",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 85540864,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 1820.16,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_timeout"
+              ],
+              "version": "5.5.1"
+            },
+            {
+              "adapter": "psm7-ara",
+              "budget_exceeded": false,
+              "budget_seconds": 12.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 85540864,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 32,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 2,
+              "runtime_ms": 1176.629,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [],
+              "version": "5.5.1"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 43875.699
+    },
+    {
+      "adapter": "fixed-lattice-structural",
+      "budget_failures": [],
+      "budget_seconds": 5.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 85639168,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 0,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 0,
+              "runtime_ms": 11.998,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_mode_mismatch"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 85803008,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 76.896,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "whole_run_proposal_unavailable"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 86081536,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.169,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_mode_mismatch"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 86081536,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.809,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_mode_mismatch"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 86179840,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 15.254,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "whole_run_proposal_unavailable"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 86179840,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.737,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_mode_mismatch"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 86179840,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.509,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_mode_mismatch"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 87228416,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.402,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_mode_mismatch"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 87457792,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 4.71,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_mode_mismatch"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "fixed-lattice-structural",
+              "budget_exceeded": false,
+              "budget_seconds": 5.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 87654400,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 30.562,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "whole_run_proposal_unavailable"
+              ],
+              "version": "1"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 24299.344
+    },
+    {
+      "adapter": "structural-unicode-row",
+      "budget_failures": [],
+      "budget_seconds": 90.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 87654400,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 0,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 0,
+              "runtime_ms": 12.851,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "structural_display_basis_unresolved"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 252231680,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 2048,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 8865.579,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 252231680,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.821,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "structural_display_basis_unresolved"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 252231680,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.736,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "structural_display_basis_unresolved"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 316178432,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 16384,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 1,
+              "runtime_ms": 65969.894,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 316178432,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 6.235,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "structural_display_basis_unresolved"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 316178432,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 10.167,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "structural_display_basis_unresolved"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 316178432,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 8.203,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 316178432,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.33,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "structural_display_basis_unresolved"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "structural-unicode-row",
+              "budget_exceeded": false,
+              "budget_seconds": 90.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 466911232,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 17976,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 2,
+              "runtime_ms": 84115.583,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "run_level_budget_exceeded"
+              ],
+              "version": "2-run-level-span-lattice"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 183188.575
+    },
+    {
+      "adapter": "unicode-template-latin",
+      "budget_failures": [],
+      "budget_seconds": 30.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 40,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 5,
+              "runtime_ms": 944.814,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 521.232,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 24,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 1061.818,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 551.786,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 128,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 1,
+              "runtime_ms": 2959.299,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 740.838,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 24,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 620.3,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 9.881,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 1179.025,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-latin",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 256,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 2,
+              "runtime_ms": 6470.009,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 39177.471
+    },
+    {
+      "adapter": "unicode-template-combining",
+      "budget_failures": [],
+      "budget_seconds": 30.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 39,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 5,
+              "runtime_ms": 3055.034,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 1446.467,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 24,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 3506.064,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 2123.219,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 118,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 1,
+              "runtime_ms": 11924.808,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 2418.901,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 24,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 1949.152,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 11.928,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 14,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 3862.522,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-combining",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 252,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 2,
+              "runtime_ms": 19586.364,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 74015.809
+    },
+    {
+      "adapter": "unicode-template-kana",
+      "budget_failures": [],
+      "budget_seconds": 30.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 40,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 5,
+              "runtime_ms": 1989.641,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 998.667,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 24,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 1870.142,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 941.073,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 128,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 1,
+              "runtime_ms": 6527.014,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 1311.493,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 24,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 3,
+              "runtime_ms": 1100.583,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 29.133,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 16,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 2,
+              "runtime_ms": 1944.667,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "unicode-template-kana",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 256,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 2,
+              "runtime_ms": 12922.637,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "candidate_margin_insufficient",
+                "unicode_visual_collision"
+              ],
+              "version": "1-template-dp"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 53862.871
+    },
+    {
+      "adapter": "paddleocr-offline",
+      "budget_failures": [],
+      "budget_seconds": 15.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 0,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 0,
+              "runtime_ms": 12.799,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 77.149,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.722,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.761,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 17.611,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 6.169,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.825,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.908,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.026,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "paddleocr-offline",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 34.126,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 24426.162
+    },
+    {
+      "adapter": "independent-offline-easyocr",
+      "budget_failures": [],
+      "budget_seconds": 15.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 0,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 0,
+              "runtime_ms": 12.941,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 77.576,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.653,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.73,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 17.585,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 6.188,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 9.34,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 6.019,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 4.994,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-easyocr",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 34.114,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 24361.073
+    },
+    {
+      "adapter": "independent-offline-surya",
+      "budget_failures": [],
+      "budget_seconds": 15.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 0,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 0,
+              "runtime_ms": 12.921,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 76.704,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.655,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.824,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 17.6,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 6.119,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 8.955,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.772,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 5.08,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "independent-offline-surya",
+              "budget_exceeded": false,
+              "budget_seconds": 15.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 34.893,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "recognizer_unavailable"
+              ],
+              "version": "unavailable"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 24322.782
+    },
+    {
+      "adapter": "emoji-grapheme-atlas",
+      "budget_failures": [],
+      "budget_seconds": 30.0,
+      "fixtures": [
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "e179cf0f83528c7b545c155f351327af9944d3baefbe3201505af27c6e49ec67",
+              "retained_proposal_state_count": 0,
+              "run_count": 5,
+              "run_input_hash_count": 5,
+              "run_span_count": 0,
+              "runtime_ms": 136.306,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-fixed-ascii"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "0a4127986e1976acccc3d429c52f92f0d5c91d0ecf99215a231a0dbced941f60",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 126.775,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-proportional-latin"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "17a26a4b17644f85641eaf69a4b28b9a0620fcee83627676d7bec15abb470473",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 83.687,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-kana"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "ae9dfb8b0c5b5fb35f63e8c91e75030f041dbb981620df7970de1065f6af19fa",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 55.149,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-kanji"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:row_periodicity",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 16,
+              "run_input_hash_count": 16,
+              "run_span_count": 0,
+              "runtime_ms": 408.829,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_run_mask_missing"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-arabic"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "74272ded8b2c38000507b18f025b98a5ddb7f56a6ed240f679af94559e57270f",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 55.738,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-combining"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 467533824,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "c368d3a68bbbb89b424a242397df2107b58135c06f0e76094e5774172d5f2d51",
+              "retained_proposal_state_count": 0,
+              "run_count": 3,
+              "run_input_hash_count": 3,
+              "run_span_count": 0,
+              "runtime_ms": 82.104,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-width-mixture"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 567607296,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "bb7b36e34651068dcca12d090ba62faac1efecc8c02c9fd46142e82af122fa39",
+              "retained_proposal_state_count": 5,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 1,
+              "runtime_ms": 6998.869,
+              "status": "proposal_only",
+              "top_k_count": 5,
+              "unsupported_status": [
+                "unicode_visual_collision"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-emoji-zwj"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [],
+              "geometry_status": "proved",
+              "memory_max_rss": 568688640,
+              "proposal_hypothesis_count": 0,
+              "recognition_input_hash": "9433699e1e6c3457842326806ee8f30faade47813c4ff76a6e0b3421266b0dbf",
+              "retained_proposal_state_count": 0,
+              "run_count": 2,
+              "run_input_hash_count": 2,
+              "run_span_count": 0,
+              "runtime_ms": 55.623,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "emoji_modality_not_evidenced"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-mixed-script"
+        },
+        {
+          "adapters": [
+            {
+              "adapter": "emoji-grapheme-atlas",
+              "budget_exceeded": false,
+              "budget_seconds": 30.0,
+              "determinism_replay_performed": false,
+              "deterministic": true,
+              "error": null,
+              "geometry_rejection_codes": [
+                "geometry_unresolved",
+                "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+                "shaped_runs_criterion_below_threshold:variable_advances"
+              ],
+              "geometry_status": "rejected",
+              "memory_max_rss": 583401472,
+              "proposal_hypothesis_count": 16,
+              "recognition_input_hash": null,
+              "retained_proposal_state_count": 0,
+              "run_count": 32,
+              "run_input_hash_count": 32,
+              "run_span_count": 0,
+              "runtime_ms": 811.689,
+              "status": "rejected",
+              "top_k_count": 0,
+              "unsupported_status": [
+                "geometry_run_mask_missing"
+              ],
+              "version": "unicode-emoji-17.0"
+            }
+          ],
+          "fixture": "positive-degraded-fixed"
+        }
+      ],
+      "positive_missing": [
+        "positive-arabic",
+        "positive-combining",
+        "positive-degraded-fixed",
+        "positive-emoji-zwj",
+        "positive-fixed-ascii",
+        "positive-kana",
+        "positive-kanji",
+        "positive-mixed-script",
+        "positive-proportional-latin",
+        "positive-width-mixture"
+      ],
+      "runtime_ms": 33066.813
+    }
+  ],
+  "source_corpus": "tests/fixtures/transcription-v2/corpus-v2.json",
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "status": "profile_only"
+}

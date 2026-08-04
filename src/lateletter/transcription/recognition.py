@@ -19,7 +19,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Mapping, Protocol
+from typing import Any, Mapping, MutableMapping, Protocol
 
 import PIL
 import numpy as np
@@ -453,8 +453,20 @@ class TesseractOfflineAdapter:
             "-l",
             "+".join(requested),
         ]
+        timeout_seconds = float(source.get("tesseract_timeout_seconds", 30.0))
+        if timeout_seconds <= 0:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "recognizer_timeout_invalid")
         try:
-            completed = subprocess.run(command, capture_output=True, text=True, check=False, timeout=30, env={**os.environ, "TESSDATA_PREFIX": str(tessdata_dir)})
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout_seconds,
+                env={**os.environ, "TESSDATA_PREFIX": str(tessdata_dir)},
+            )
+        except subprocess.TimeoutExpired:
+            return _unsupported_proposal(self.name, self.version, source, environment_lock, "recognizer_timeout")
         except (OSError, subprocess.SubprocessError) as exc:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, f"recognizer_execution:{type(exc).__name__}")
         if completed.returncode != 0:
@@ -1773,6 +1785,7 @@ def _run_level_variants(
     font_path: str,
     unicode_enabled: bool,
     max_variants: int = 512,
+    deadline: float | None = None,
 ) -> tuple[tuple[str, float], ...]:
     """Decode one complete measured run as a span lattice.
 
@@ -1799,6 +1812,9 @@ def _run_level_variants(
     if last_unit <= first_unit:
         return ()
 
+    def expired() -> bool:
+        return deadline is not None and time.perf_counter() >= deadline
+
     def family(value: str) -> str:
         chars = tuple(regex.findall(r"\X", value))
         if not chars:
@@ -1822,6 +1838,8 @@ def _run_level_variants(
         return "other"
 
     def span_options(start: int, end: int) -> tuple[tuple[float, str], ...]:
+        if expired():
+            return ()
         raw_x0 = int(round(origin + start * base_advance))
         raw_x1 = int(round(origin + end * base_advance))
         x0 = max(0, raw_x0)
@@ -1907,6 +1925,8 @@ def _run_level_variants(
 
     edges: dict[tuple[int, int], tuple[tuple[float, str], ...]] = {}
     for start in range(first_unit, last_unit):
+        if expired():
+            return ()
         for end in range(start + 1, min(last_unit, start + 6) + 1):
             options = span_options(start, end)
             if options:
@@ -1947,6 +1967,8 @@ def _run_level_variants(
     # start once and keep the complete span evidence unchanged.
     next_owned_start: dict[int, tuple[int, ...]] = {}
     for cursor in range(first_unit, last_unit):
+        if expired():
+            return ()
         if interval_has_ink(cursor, cursor + 1):
             next_owned_start[cursor] = (cursor,)
             continue
@@ -1956,6 +1978,8 @@ def _run_level_variants(
         )
         next_owned_start[cursor] = (following,) if following is not None else ()
     for cursor in range(first_unit, last_unit):
+        if expired():
+            return ()
         current = states.get(cursor)
         if not current:
             continue
@@ -1995,6 +2019,8 @@ def _run_level_variants(
     # consulted.
     best_prefix: dict[int, tuple[float, str]] = {first_unit: (0.0, " " * first_unit)}
     for cursor in range(first_unit, last_unit + 1):
+        if expired():
+            return ()
         prefix = best_prefix.get(cursor)
         if prefix is None:
             continue
@@ -2014,6 +2040,8 @@ def _run_level_variants(
 
     best_suffix: dict[int, tuple[float, str]] = {last_unit: (0.0, "")}
     for cursor in range(last_unit - 1, first_unit - 1, -1):
+        if expired():
+            return ()
         candidates: list[tuple[float, str]] = []
         for start in range(cursor, last_unit):
             if start > cursor and interval_has_ink(cursor, start):
@@ -2048,6 +2076,8 @@ def _run_level_variants(
         cached_cost = rendered_cost_cache.get(text)
         if cached_cost is not None:
             return cached_cost
+        if expired():
+            return float("inf")
         cursor = 0
         total = 0.0
         for grapheme in regex.findall(r"\X", text):
@@ -2099,6 +2129,8 @@ def _run_level_variants(
     # row or an expected transcript.
     morphology_units: list[str] = []
     for unit in range(first_unit, last_unit):
+        if expired():
+            return ()
         x0 = max(0, int(round(origin + unit * base_advance)))
         x1 = min(raster.shape[1], int(round(origin + (unit + 1) * base_advance)))
         crop = raster[:, x0:x1]
@@ -2128,6 +2160,8 @@ def _run_level_variants(
         result.append((morphology_text, 0.50))
     witness_values: dict[str, float] = {}
     for (start, end), options in edges.items():
+        if expired():
+            return ()
         prefix = best_prefix.get(start)
         suffix = best_suffix.get(end)
         if prefix is None or suffix is None:
@@ -2161,6 +2195,8 @@ def _run_level_variants(
     # complete lower-ranked mixed-width span is serialized.
     ordered_result = [*protected_witnesses, *sorted(result, key=lambda item: (item[1], item[0]))]
     for text, cost in ordered_result:
+        if expired():
+            return tuple(unique)
         if not text or text in seen:
             continue
         seen.add(text)
@@ -2272,6 +2308,14 @@ class StructuralUnicodeRowAdapter:
             run_anchor.get("base_advance_px", mixed.get("base_advance_px", 13.0))
         )
         origin = float(run_anchor.get("origin_px", mixed.get("origin_px", 0.0)))
+        if geometry.get("mode") == "shaped_runs":
+            color_stats = source.get("run_color_stats") if isinstance(source.get("run_color_stats"), Mapping) else {}
+            pixel_count = max(1, int(color_stats.get("pixel_count", 0) or 0))
+            strongly_colored = int(color_stats.get("strongly_colored_pixels", 0) or 0)
+            if strongly_colored / pixel_count > 0.05:
+                return _unsupported_proposal(self.name, self.version, source, environment_lock, "emoji_modality_not_evidenced")
+            if base < 3.0:
+                return _unsupported_proposal(self.name, self.version, source, environment_lock, "structural_display_basis_unresolved")
         width = raster.shape[1]
         # Do not serialize a clipped partial unit at the left canvas edge.
         # The raster strip retains it for evidence, but logical text starts at
@@ -2295,6 +2339,16 @@ class StructuralUnicodeRowAdapter:
         # Unicode-capable path retains those alternatives below as proposals.
         unicode_packs = {"japanese", "jpn", "cjk", "unicode"}
         unicode_enabled = bool(unicode_packs.intersection(environment_lock.script_packs))
+        structural_budget = source.get("structural_run_budget_seconds")
+        structural_deadline = None
+        if structural_budget is not None:
+            try:
+                structural_budget_seconds = float(structural_budget)
+            except (TypeError, ValueError):
+                structural_budget_seconds = 0.0
+            if structural_budget_seconds <= 0:
+                return _unsupported_proposal(self.name, self.version, source, environment_lock, "run_level_budget_invalid")
+            structural_deadline = time.perf_counter() + structural_budget_seconds
 
         # Transfer proposal ownership to the run lattice.  The legacy cell
         # beam below is intentionally unreachable for live proposals: it is
@@ -2309,14 +2363,20 @@ class StructuralUnicodeRowAdapter:
             font_path=font_path,
             unicode_enabled=unicode_enabled,
             max_variants=max(128, min(1024, self.beam_width * 64)),
+            deadline=structural_deadline,
         )
         if not run_level_variants:
+            reason = (
+                "run_level_budget_exceeded"
+                if structural_deadline is not None and time.perf_counter() >= structural_deadline
+                else "run_level_segmentation_no_path"
+            )
             return _unsupported_proposal(
                 self.name,
                 self.version,
                 source,
                 environment_lock,
-                "run_level_segmentation_no_path",
+                reason,
             )
         run_level_candidates: list[GraphemeCandidate] = []
         run_component_ids = tuple(
@@ -2638,6 +2698,12 @@ class UnicodeTemplateRunAdapter:
         base = float(anchor.get("base_advance_px", evidence.get("measured_advances", [0])[0] if evidence.get("measured_advances") else mixed.get("base_advance_px", 0.0)))
         if base <= 0:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "measured_advance_missing")
+        color_stats = source.get("run_color_stats")
+        if isinstance(color_stats, Mapping):
+            pixel_count = max(1, int(color_stats.get("pixel_count", 0) or 0))
+            strongly_colored = int(color_stats.get("strongly_colored_pixels", 0) or 0)
+            if strongly_colored / pixel_count > 0.05:
+                return _unsupported_proposal(self.name, self.version, source, environment_lock, "emoji_modality_not_evidenced")
         font = self._font()
         repertoire = self._repertoire() or ()
         source_hash, geometry_hash, components_hash = _source_hashes(source)
@@ -2903,8 +2969,10 @@ def _render_emoji_mask(font: ImageFont.FreeTypeFont, sequence: str) -> tuple[tup
     if bounds is None:
         return None
     alpha = alpha.crop(bounds)
+    raw = alpha.tobytes()
     return tuple(
-        tuple(alpha.getpixel((x, y)) > 8 for x in range(alpha.width)) for y in range(alpha.height)
+        tuple(value > 8 for value in raw[row * alpha.width : (row + 1) * alpha.width])
+        for row in range(alpha.height)
     )
 
 
@@ -2948,7 +3016,8 @@ def _emoji_rendered_catalog(
     return tuple(rendered)
 
 
-def _resize_mask(mask: tuple[tuple[bool, ...], ...], width: int, height: int) -> tuple[tuple[bool, ...], ...]:
+@lru_cache(maxsize=8192)
+def _resize_mask_array(mask: tuple[tuple[bool, ...], ...], width: int, height: int) -> np.ndarray:
     image = Image.frombytes(
         "L",
         (len(mask[0]), len(mask)),
@@ -2961,10 +3030,14 @@ def _resize_mask(mask: tuple[tuple[bool, ...], ...], width: int, height: int) ->
     # ``getpixel`` per cell made the full pinned atlas benchmark quadratic in
     # Python overhead.  A contiguous byte view preserves the exact threshold
     # while keeping the deterministic mask representation.
-    raw = image.tobytes()
+    return np.asarray(image, dtype=np.uint8) > 32
+
+
+def _resize_mask(mask: tuple[tuple[bool, ...], ...], width: int, height: int) -> tuple[tuple[bool, ...], ...]:
+    resized = _resize_mask_array(mask, max(1, width), max(1, height))
     return tuple(
-        tuple(value > 32 for value in raw[row * image.width : (row + 1) * image.width])
-        for row in range(image.height)
+        tuple(bool(value) for value in resized[row])
+        for row in range(resized.shape[0])
     )
 
 
@@ -2975,6 +3048,18 @@ def _mask_residual(source: tuple[tuple[bool, ...], ...], candidate: tuple[tuple[
     right = np.zeros((height, width), dtype=bool)
     left[: len(source), : len(source[0])] = np.asarray(source, dtype=bool)
     right[: len(candidate), : len(candidate[0])] = np.asarray(candidate, dtype=bool)
+    residual = int(np.count_nonzero(np.logical_xor(left, right)))
+    union = int(np.count_nonzero(np.logical_or(left, right)))
+    return residual, union, residual / max(1, union)
+
+
+def _mask_residual_array(source: np.ndarray, candidate: np.ndarray) -> tuple[int, int, float]:
+    height = max(source.shape[0], candidate.shape[0])
+    width = max(source.shape[1], candidate.shape[1])
+    left = np.zeros((height, width), dtype=bool)
+    right = np.zeros((height, width), dtype=bool)
+    left[: source.shape[0], : source.shape[1]] = source
+    right[: candidate.shape[0], : candidate.shape[1]] = candidate
     residual = int(np.count_nonzero(np.logical_xor(left, right)))
     union = int(np.count_nonzero(np.logical_or(left, right)))
     return residual, union, residual / max(1, union)
@@ -3126,25 +3211,42 @@ class EmojiAtlasAdapter:
         except (OSError, TypeError, ValueError):
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "font_strike_unavailable")
         target_height = len(target_rgba) if target_rgba is not None else len(target)
+        target_array = np.asarray(target, dtype=bool)
         scored: list[dict[str, Any]] = []
         for sequence, rendered, native_advance in rendered_catalog:
             native_width = len(rendered[0])
             for advance in advance_values:
                 scale = max(0.75, min(1.25, advance / native_advance))
-                scaled = _resize_mask(rendered, round(native_width * scale), target_height)
-                residual, union, residual_fraction = _mask_residual(target, scaled)
+                scaled = _resize_mask_array(rendered, round(native_width * scale), target_height)
+                residual, union, residual_fraction = _mask_residual_array(target_array, scaled)
                 score = residual_fraction + abs(native_advance - advance) / max(1.0, advance) * 0.05
                 scored.append({
                     "sequence": sequence,
                     "advance": advance,
                     "font_size": 109,
+                    "native_width": native_width,
+                    "scale": scale,
                     "residual_pixels": residual,
                     "union_pixels": union,
                     "residual_fraction": residual_fraction,
                     "score": score,
-                    "mask_hash": _mask_hash(scaled),
                 })
         scored.sort(key=lambda item: (item["score"], item["sequence"], item["advance"]))
+
+        def ensure_mask_hash(item: MutableMapping[str, Any]) -> str:
+            existing = item.get("mask_hash")
+            if isinstance(existing, str) and is_sha256(existing):
+                return existing
+            sequence = str(item["sequence"])
+            rendered = next(mask for candidate, mask, _advance in rendered_catalog if candidate == sequence)
+            native_width = int(item.get("native_width", len(rendered[0])))
+            scale = float(item.get("scale", 1.0))
+            scaled = _resize_mask(rendered, round(native_width * scale), target_height)
+            item["mask_hash"] = _mask_hash(scaled)
+            return str(item["mask_hash"])
+
+        for item in scored[: min(128, len(scored))]:
+            ensure_mask_hash(item)
         if target_rgba is not None:
             # Alpha gets us to a bounded candidate set; color residuals then
             # distinguish skin tones and other sequences with identical masks.
@@ -3175,8 +3277,8 @@ class EmojiAtlasAdapter:
         best_residual = best.get("color_score", best["residual_fraction"])
         if best_residual > 0.25:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "candidate_margin_insufficient")
-        best_visual_hash = best.get("color_mask_hash", best["mask_hash"])
-        if ties and any(item.get("color_mask_hash", item["mask_hash"]) == best_visual_hash for item in ties):
+        best_visual_hash = best.get("color_mask_hash", ensure_mask_hash(best))
+        if ties and any(item.get("color_mask_hash", ensure_mask_hash(item)) == best_visual_hash for item in ties):
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "unicode_visual_collision")
         if ties:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "candidate_margin_insufficient")
@@ -4523,6 +4625,25 @@ def benchmark_offline_ensemble(
                 try:
                     with tempfile.TemporaryDirectory(prefix="lateletter-run-input-") as run_root:
                         variants = input_variants or (("unresolved", {"runs": ({"run_id": "unresolved", "binary_run_mask": [], "run_strip_png_base64": ""},)}),)
+                        profile_budget_seconds = None
+                        if adapter_budgets_seconds:
+                            for budget_name in (profile_name, adapter.name):
+                                if budget_name in adapter_budgets_seconds:
+                                    profile_budget_seconds = float(adapter_budgets_seconds[budget_name])
+                                    break
+                        total_profile_runs = sum(
+                            len(tuple(item.get("runs", ()))) or 1
+                            for _variant_id, item in variants
+                        )
+                        tesseract_timeout_seconds = None
+                        if psm is not None and profile_budget_seconds is not None:
+                            tesseract_timeout_seconds = max(
+                                0.05,
+                                min(
+                                    1.0,
+                                    profile_budget_seconds / max(1, total_profile_runs * len(profiles)) * 0.20,
+                                ),
+                            )
                         for variant_id, variant_input in variants:
                             hypothesis_ids.append(str(variant_id))
                             variant_geometry = dict(geometry)
@@ -4570,6 +4691,13 @@ def benchmark_offline_ensemble(
                                 if psm is not None:
                                     run_source["tesseract_psm"] = psm
                                     run_source["tesseract_languages"] = list(languages or ())
+                                    if tesseract_timeout_seconds is not None:
+                                        run_source["tesseract_timeout_seconds"] = tesseract_timeout_seconds
+                                if isinstance(adapter, StructuralUnicodeRowAdapter) and profile_budget_seconds is not None:
+                                    run_source["structural_run_budget_seconds"] = max(
+                                        0.05,
+                                        profile_budget_seconds / max(1, total_profile_runs) * 0.45,
+                                    )
                                 first = adapter.propose(run_source, run_geometry, components, environment_lock)
                                 second = (
                                     adapter.propose(run_source, run_geometry, components, environment_lock)
