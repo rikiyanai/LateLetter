@@ -9872,3 +9872,46 @@ Verification:
   D1 release coverage remains blocked by the logged missing families and
   `positive-degraded-fixed:psm7-jpn-cjk` budget/determinism. ComplaintRef:
   D1 row OCR/gap review, 2026-08-04.
+
+### Phase 3.7 geometry rejection classification completed (2026-08-04)
+
+The current hash-bound 26-source geometry replay remains measurement-only:
+`tracked/LateLetterResearch/transcription-parity/geometry-replay/current-frozen-identity-2026-08-04.json`
+has SHA-256 `4be81e486bcdd9062c11b703140438341e14f989991a01c5fb4824343506137a`
+and reports 12 proved sources, 14 rejected/unresolved sources, zero timeouts,
+and zero harness errors. No geometry implementation was changed in this step.
+
+The Phase 3.7 classification receipt is
+`tracked/LateLetterResearch/transcription-parity/geometry-replay/rejection-classification-2026-08-04.json`
+with SHA-256 `00035f95e51f05b66157ff457170658c4fd27061f5408aecdbb9507a26f324af`.
+It verifies all 14 rejected records against the replay and inventory hashes.
+
+Classification result:
+
+- 13 rejected sources are supported-profile sources wrongly rejected by the
+  current generic admission gates.
+- 1 source, `Fish-shell-logo-ascii-black.svg.normalized.png`, remains an
+  intentional fail-closed case because the source is a transparent/logo input
+  with `foreground_unresolved` and `component_evidence_missing`, not a proved
+  supported screenshot substrate.
+
+Dominant rejecting mechanisms from the receipt:
+
+- `fixed_lattice_criterion_below_threshold:fullwidth_multiples`: 12 records.
+- `fixed_lattice_criterion_below_threshold:row_periodicity`: 11 records.
+- `shaped_runs_criterion_below_threshold:connected_joined_runs`: 8 records.
+- `periodic_authority_unresolved` / `phase_authority_unresolved` /
+  `ownership_authority_unresolved`: 7 records.
+- `shaped_runs_criterion_below_threshold:vertical_text_candidates`: 6 records.
+- `shaped_runs_criterion_below_threshold:variable_advances`: 6 records.
+- `row_baselines_undersegmented`: 4 records.
+
+This confirms the geometry blocker is not an isolated sitting-cat symptom. The
+next Phase 3 step must replace the class-eliminating/dual diagnostic gates with
+generic source-derived admission evidence for the supported classes, preserving
+one geometry authority owner and explicit fail-closed handling for unsupported
+input profiles.
+
+- **Status:** PHASE 3.7 COMPLETE / PHASE 3.8 FRONTIER. No attempt, TXT,
+  candidate, acceptance, or benchmark-truth artifact was created. ComplaintRef:
+  operator order to start Track B geometry admission immediately, 2026-08-04.
