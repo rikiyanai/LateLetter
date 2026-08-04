@@ -1,0 +1,25 @@
+{
+  "schema": "lateletter-recognizer-benchmark-receipt-1",
+  "status": "blocked_release_coverage",
+  "authority": "diagnostic_only",
+  "benchmark_path": "tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry.json",
+  "benchmark_sha256": "992a3544c408d8475a32e0fcc0b92c674fa31a9ad03ca9c32c1055d860026719",
+  "benchmark_size_bytes": 7194357,
+  "source_corpus": "tests/fixtures/transcription-v2/corpus-v2.json",
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "fixture_count": 10,
+  "top_k": 5,
+  "budget_failures": [],
+  "nondeterministic_adapters": [],
+  "false_unique_negative_fixtures": [],
+  "positive_missing": [
+    "positive-width-mixture",
+    "positive-emoji-zwj",
+    "positive-mixed-script",
+    "positive-degraded-fixed"
+  ],
+  "ground_truth_passed_to_adapters": false,
+  "determinism_replay_performed": true,
+  "source": "post-Phase-3.8 full coverage run after all 26 live sources proved geometry",
+  "next_authorized_step": "implement D1 proposal coverage for the four missing families; do not create TXT, attempts, candidates, or acceptances"
+}

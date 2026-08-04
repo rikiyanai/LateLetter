@@ -10036,3 +10036,46 @@ and degraded-fixed.
   RECOGNITION STILL BLOCKED. ComplaintRef: operator order to implement the
   Wayfinder roadmap correctly without treating geometry proof as conversion
   success, 2026-08-04.
+
+### Transcription v11 post-geometry coverage receipt is blocked on four recognizer families (2026-08-04)
+
+After Phase 3.8 admitted all 26 live sources through source-owned geometry
+evidence, the recognizer runtime and coverage gates were rerun without creating
+TXT, candidate, attempt, or acceptance artifacts.
+
+Tracked receipts:
+
+- `tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry-receipt.json`
+  binds profile-only artifact
+  `tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry.json`
+  to SHA-256
+  `32d11d873528f15e6694a385e32e9e5fafe4aba89e6a6de4dd8ac5a301d97168`.
+  It contains 130 terminal adapter/fixture records, zero budget failures,
+  zero nondeterministic adapters, and maximum recorded RSS
+  `365641728`.
+- `tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry-receipt.json`
+  binds full coverage artifact
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry.json`
+  to SHA-256
+  `992a3544c408d8475a32e0fcc0b92c674fa31a9ad03ca9c32c1055d860026719`.
+
+Fresh v11 coverage status is `blocked_release_coverage`. `budget_failures`,
+`nondeterministic_adapters`, and `false_unique_negative_fixtures` are empty;
+`ground_truth_passed_to_adapters=false`; determinism replay was performed. The
+remaining missing positives are exactly:
+
+- `positive-width-mixture`
+- `positive-emoji-zwj`
+- `positive-mixed-script`
+- `positive-degraded-fixed`
+
+This proves the current blocker is recognizer proposal construction/repertoire
+for those four families, not runtime admission and not live-corpus geometry.
+Ranking/fusion, machine authority, live attempts, and accepted transcripts
+remain prohibited until these families are present in top-k and the later gates
+pass.
+
+- **Status:** D1 FRONTIER UPDATED; runtime and geometry gates are cleared for
+  measurement, release coverage remains blocked on four recognizer families.
+  ComplaintRef: operator order to implement the PNG-to-logical-Unicode
+  transcription roadmap correctly, 2026-08-04.
