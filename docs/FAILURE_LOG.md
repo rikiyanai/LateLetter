@@ -10345,3 +10345,47 @@ attempts remain next.
   AUTHORITY AND LIVE CONVERSION STILL BLOCKED. ComplaintRef: operator order to
   implement the Wayfinder roadmap correctly and avoid repeating coverage-vs-
   correctness overclaims, 2026-08-04.
+
+### Transcription Phase 6 candidate-authority selector rejected after fail-closed smoke (2026-08-04)
+
+After the D2 rank/fusion gate passed for release positives, an attempted
+production `transcribe()` candidate selector was tested against the same
+offline ensemble evidence. The first version could write candidate TXT for the
+ten positive release fixtures, but fail-closed smoke tests showed it was not
+safe:
+
+- `fallback-kana` wrote `日 日`
+- `fallback-kanji` wrote `ロ ロ`
+- `fallback-width-mixture` wrote `0B 00`
+- `fallback-emoji-zwj` wrote `山 々`
+- `fallback-mixed-script` wrote `سلام للم`
+
+Those are false unique candidates for known collision/unsupported fixtures.
+The selector was therefore reverted before commit. No production candidate
+writer change was landed, and no live source attempt, candidate TXT, accepted
+TXT, sitting-cat attempt 004, horse 065, or queue conversion was created.
+
+Root cause:
+
+- D2 proves that the correct row can rank first inside the right adapter for
+  positive fixtures.
+- It does not provide a source-derived production rule for choosing between
+  competing rank-1 adapters when no transcript truth is available.
+- Capability labels and coarse script priorities are insufficient: wrong OCR
+  profiles can produce plausible-looking rank-1 Unicode strings for visual
+  collision fixtures, and a production selector can turn those into false
+  candidate authority unless collision/source-fit evidence is part of the gate.
+
+Next required Phase 6 slice:
+
+- Build a source-fit/collision gate for cross-adapter candidate authority before
+  `transcribe()` can write `candidate.txt`.
+- The gate must reject all five fallback collision fixtures while preserving
+  the ten positive fixture candidates, using only source pixels, proposal
+  artifacts, component ownership, collision evidence, and deterministic margins.
+- Until that passes in a fresh process, production `transcribe()` must continue
+  to reject before candidate TXT.
+
+- **Status:** PHASE 6 BLOCKED BY FALSE-UNIQUE CANDIDATE AUTHORITY; unsafe
+  selector reverted before commit. ComplaintRef: operator order to implement
+  correctly and avoid prior false-acceptance/process failures, 2026-08-04.
