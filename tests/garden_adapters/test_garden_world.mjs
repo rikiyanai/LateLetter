@@ -259,8 +259,8 @@ function assertFinalExpectations(state) {
  * margin or the collision nudge differ; comparing the generated output catches
  * that, and comparing the tables would not.
  */
-async function runStarterCompositionScenario() {
-  const state = await generateInitialWorld('starter-composition', 'starter-seed');
+async function runStarterCompositionScenario(seed = 'starter-seed') {
+  const state = await generateInitialWorld('starter-composition', seed);
   return {
     world_width: state.world_width,
     world_height: state.world_height,
@@ -269,6 +269,11 @@ async function runStarterCompositionScenario() {
       catalog_id: fixture.catalog_id,
       position: fixture.position,
       rotation: fixture.rotation,
+      visual_asset_id: fixture.authored_state.visual_asset_id,
+      fixture_room_role: fixture.authored_state.fixture_room_role,
+      side: fixture.authored_state.side ?? null,
+      x_offset: fixture.authored_state.x_offset ?? null,
+      y_anchor: fixture.authored_state.y_anchor ?? null,
     })),
   };
 }
@@ -276,7 +281,10 @@ async function runStarterCompositionScenario() {
 if (process.argv.includes('--emit')) {
   process.stdout.write(JSON.stringify(await runScenario()));
 } else if (process.argv.includes('--starter-emit')) {
-  process.stdout.write(JSON.stringify(await runStarterCompositionScenario()));
+  const index = process.argv.indexOf('--starter-emit');
+  process.stdout.write(JSON.stringify(await runStarterCompositionScenario(
+    process.argv[index + 1] ?? 'starter-seed',
+  )));
 } else if (process.argv.includes('--projection-emit')) {
   process.stdout.write(JSON.stringify(await projectGardenScene(deserializeWorldState(scenario.initial_state))));
 } else if (process.argv.includes('--advanced-emit')) {

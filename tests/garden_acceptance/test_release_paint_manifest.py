@@ -99,6 +99,17 @@ def test_the_build_writes_a_manifest_that_verifies(built_site):
     assert verify_paint_manifest(built_site) == []
 
 
+def test_review_candidates_are_never_release_paint_authority(built_site):
+    """A local review licence must not become public paint permission."""
+    manifest = json.loads((built_site / PAINT_MANIFEST_NAME).read_text(encoding="utf-8"))
+    assert manifest["review_candidate_assets"] == []
+    runtime = json.loads((built_site / PAINT_AUTHORITY_FILE).read_text(encoding="utf-8"))
+    assert runtime["review_candidate_assets"] == []
+    assert runtime["accepted_assets"] == manifest["accepted_assets"]
+    assert runtime["accepted_recipes"] == manifest["accepted_recipes"]
+    assert runtime["accepted_legacy_art"] == manifest["accepted_legacy_art"]
+
+
 def test_rejected_and_unreviewed_paint_is_absent_from_the_authority(built_site):
     """Only accepted verdicts grant paint permission -- by construction.
 

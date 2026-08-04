@@ -40,8 +40,10 @@
  *
  * The paint authority these checks consult is the build-generated release
  * manifest (`garden-release-manifest.json`, built by
- * `scripts/prepare_pages_site.py`): `accepted_assets`, `accepted_recipes`
- * (paint recipes only) and `accepted_laws` (never paintable). The earlier
+ * `scripts/prepare_pages_site.py`): `accepted_assets`,
+ * `review_candidate_assets` (local review authority only; always empty in a
+ * release artifact), `accepted_recipes` (paint recipes only), and
+ * `accepted_laws` (never paintable). The earlier
  * draft invented its own manifest vocabulary; a contract that checks against
  * a shape the build does not produce certifies nothing about a release.
  */
@@ -180,12 +182,13 @@ export function primitiveShapeViolations(frame) {
  * from:
  *
  *   - `source_id` is present and appears in the release manifest's
- *     `accepted_assets` or `accepted_recipes`;
+ *     `accepted_assets`, local `review_candidate_assets`, or
+ *     `accepted_recipes`;
  *   - `source_id` is never a law. A law decides what the painters are given
  *     (density, wind, cadence); it emits nothing itself, so naming one as a
  *     primitive's source is anonymity with a respectable id attached;
  *   - `object_id` appears only on the atlas chain (a `source_id` in
- *     `accepted_assets`) and only for an object the projection actually
+ *     either atlas list) and only for an object the projection actually
  *     contains. A recipe-chain primitive carries none, because recipe paint
  *     is not a drawing OF a gameplay object.
  *
@@ -208,6 +211,7 @@ export function identityViolations(frame, input) {
   // paint on is the same.
   const assetIds = new Set([
     ...(manifest.accepted_assets ?? []),
+    ...(manifest.review_candidate_assets ?? []),
     ...(manifest.accepted_legacy_art ?? []),
   ]);
   const recipeIds = new Set(manifest.accepted_recipes ?? []);
@@ -304,6 +308,7 @@ export function paintPayloadViolations(frame, input = {}) {
   const manifest = input.context?.acceptedManifest;
   const assetIds = manifest ? new Set([
     ...(manifest.accepted_assets ?? []),
+    ...(manifest.review_candidate_assets ?? []),
     ...(manifest.accepted_legacy_art ?? []),
   ]) : null;
   frame.measured_asset_placements.forEach((placement, index) => {

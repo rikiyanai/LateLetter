@@ -1324,6 +1324,9 @@ function collectibleArt(object, lod = 'full') {
 
 function fixtureArt(object, lod = 'full', frame = 0) {
   const catalog = String(object.semantic_state?.catalog_id ?? 'fixture');
+  const visualAssetId = String(
+    object.semantic_state?.visual_asset_id ?? `fixture.${catalog}`,
+  );
 
   // CANONICAL ART FIRST.
   //
@@ -1335,7 +1338,7 @@ function fixtureArt(object, lod = 'full', frame = 0) {
   // An asset the atlas does not yet own returns null here and falls through to
   // the legacy tables below. Those tables shrink to nothing as the remaining
   // fixtures are migrated one class at a time.
-  const canonical = canonicalProportionalArt(`fixture.${catalog}`, 'idle', frame);
+  const canonical = canonicalProportionalArt(visualAssetId, 'idle', frame);
   if (canonical) {
     // `compactRows` is present only when the asset carries an authored
     // narrow-viewport drawing. When it is absent the full drawing is reduced
@@ -1429,11 +1432,12 @@ export function objectPresentationArt(object, frame, lod = 'full', emphasized = 
   }
   if (object.kind === 'fixture') {
     const catalog = String(state.catalog_id ?? 'fixture');
-    const canonical = canonicalProportionalArt(`fixture.${catalog}`, 'idle', frame);
+    const visualAssetId = String(state.visual_asset_id ?? `fixture.${catalog}`);
+    const canonical = canonicalProportionalArt(visualAssetId, 'idle', frame);
     const lines = fixtureArt(object, lod, frame);
     const maximumWidth = Math.max(0, ...lines.map(line => [...line].length));
     return { lines,
-      assetId: canonical ? `fixture.${catalog}` : null,
+      assetId: canonical ? visualAssetId : null,
       measured: Boolean(canonical),
       // Full atlas art carries its authored anchor. A reduced derivative keeps
       // the same baseline/centre convention but is still measured as strings.

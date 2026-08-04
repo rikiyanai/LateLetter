@@ -27,8 +27,8 @@ export const ENGINE_VERSION = 'garden-world-internal-v1';
 // which is why one number cannot carry them. The Python constants in
 // src/lateletter/garden/world/model.py must match, and a contract test asserts
 // they do.
-export const GENERATOR_VERSION = 4;
-export const COMPOSITION_VERSION = 4;
+export const GENERATOR_VERSION = 5;
+export const COMPOSITION_VERSION = 5;
 
 // How a world arrived in this process -- a different question from its lineage.
 // A world can have perfect stamps and still have come out of storage after a
@@ -398,6 +398,19 @@ const STARTER_FIXTURE_ANCHORS = Object.freeze({
   stepping_stones: [300, 900], bench: [400, 300], lantern: [480, 200],
   mailbox: [700, 700], planter: [850, 820],
 });
+export const POND_VISUAL_ASSETS = Object.freeze([
+  'fixture.pond', 'fixture.pond_compact', 'fixture.pond_round',
+]);
+export const STEPPING_STONE_VISUAL_ASSETS = Object.freeze([
+  'fixture.stepping_stones',
+  'fixture.stepping_stones_three',
+  'fixture.stepping_stones_five',
+]);
+export const PLANTER_VISUAL_ASSETS = Object.freeze([
+  'fixture.planter', 'fixture.planter_one', 'fixture.planter_three',
+]);
+const BENCH_X_OFFSETS = Object.freeze([-35, 0, 35]);
+const BENCH_Y_ANCHORS = Object.freeze([260, 300, 340]);
 // The exact operator-authored rose accepted 2026-08-03 is the canonical
 // starter plant and owns the open left edge. See the Python generator for the
 // rendered-overlap evidence and ownership reasoning.
@@ -958,6 +971,50 @@ function nearStarterPosition(state, desired, occupied, margin = 2) {
 }
 
 /**
+ * Choose one canonical water/sitting-room composition from independent seed
+ * streams.  This is the browser adapter of `_fixture_room_plan` in Python.
+ * It owns atlas identity and thousandth anchors only; viewport and renderer
+ * state cannot enter the result.
+ */
+async function fixtureRoomPlan(state) {
+  const choose = async (domain, values) => new DeterministicRng(await deriveSeed(
+    state.seed, 'fixture-room', ...domain,
+  )).choice(values);
+  const pondAsset = await choose(['pond', 'visual-asset'], POND_VISUAL_ASSETS);
+  const stoneAsset = await choose(
+    ['stepping-stones', 'visual-asset'], STEPPING_STONE_VISUAL_ASSETS,
+  );
+  const planterAsset = await choose(['planter', 'visual-asset'], PLANTER_VISUAL_ASSETS);
+  const stoneSide = await choose(['stepping-stones', 'side'], ['left', 'right']);
+  const benchXOffset = await choose(['bench', 'x-offset'], BENCH_X_OFFSETS);
+  const benchY = await choose(['bench', 'y-anchor'], BENCH_Y_ANCHORS);
+  const anchors = Object.fromEntries(
+    Object.entries(STARTER_FIXTURE_ANCHORS).map(([id, anchor]) => [id, [...anchor]]),
+  );
+  const [pondX, pondY] = anchors.pond;
+  anchors.stepping_stones = [pondX + (stoneSide === 'left' ? -100 : 100), pondY];
+  anchors.bench = [pondX + benchXOffset, benchY];
+  const authoredStates = Object.fromEntries(STARTER_FIXTURES.map(catalogId => [
+    catalogId,
+    { visual_asset_id: `fixture.${catalogId}`, fixture_room_role: 'independent' },
+  ]));
+  authoredStates.pond = {
+    visual_asset_id: pondAsset, fixture_room_role: 'water',
+  };
+  authoredStates.stepping_stones = {
+    visual_asset_id: stoneAsset, fixture_room_role: 'approach', side: stoneSide,
+  };
+  authoredStates.bench = {
+    visual_asset_id: 'fixture.bench', fixture_room_role: 'seat-facing-water',
+    x_offset: benchXOffset, y_anchor: benchY,
+  };
+  authoredStates.planter = {
+    visual_asset_id: planterAsset, fixture_room_role: 'container',
+  };
+  return { anchors, authoredStates };
+}
+
+/**
  * Reject a starter roster this generator cannot honour, before it is used.
  *
  * Three things go wrong quietly without this check, so each becomes a loud
@@ -1046,6 +1103,7 @@ export async function generateInitialWorld(
     throw new Error(`canonical world must be at least ${MINIMUM_WORLD_WIDTH}x${MINIMUM_WORLD_HEIGHT}`);
   }
   const state = await newGardenWorld(worldId, seed, { world_width, world_height });
+  const fixtureRoom = await fixtureRoomPlan(state);
   const fixtureRng = new DeterministicRng(await deriveSeed(
     state.seed, 'layout', 'fixtures',
   ));
@@ -1056,11 +1114,12 @@ export async function generateInitialWorld(
       fixture_id: await stableId('fixture', state.world_id, catalogId),
       catalog_id: catalogId,
       position: scaledStarterAnchor(
-        state, STARTER_FIXTURE_ANCHORS[catalogId], 2,
+        state, fixtureRoom.anchors[catalogId], 2,
         FIXTURE_CATALOG[catalogId].footprint,
       ),
       rotation: fixtureRng.randbelow(4) * 90,
       authored: false,
+      authored_state: fixtureRoom.authoredStates[catalogId],
     });
     const cells = fixtureCells(fixture).map(cellKey);
     if (cells.some(cell => fixtureCellsUsed.has(cell))) {
@@ -2542,7 +2601,11 @@ export async function projectGardenScene(sourceState) {
         x: fixture.position[0], y: fixture.position[1],
         width: definition.footprint[0], height: definition.footprint[1],
       },
-      semantic_state: { catalog_id: fixture.catalog_id, rotation: fixture.rotation,
+      semantic_state: { catalog_id: fixture.catalog_id,
+        visual_asset_id: String(
+          fixture.authored_state?.visual_asset_id ?? `fixture.${fixture.catalog_id}`,
+        ),
+        rotation: fixture.rotation,
         interaction_count: fixture.interaction_count,
         last_interaction: fixture.last_interaction,
         interaction_verbs: [...FIXTURE_VERBS[fixture.catalog_id]],

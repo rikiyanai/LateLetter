@@ -83,7 +83,7 @@ PROPORTIONAL_FONT = {
 
 # Where the drawn artwork lives. Kept in its own module because it is content,
 # edited on artistic grounds, whereas this file is the mechanical transform.
-from garden_fixture_art import fixture_profiles  # noqa: E402
+from garden_fixture_art import FIXTURE_VARIANT_BASES, fixture_profiles  # noqa: E402
 
 
 def placeholder_lineage(asset_id: str) -> dict[str, Any]:
@@ -237,6 +237,21 @@ def migrate(v1: dict[str, Any]) -> dict[str, Any]:
             assets.append(drawn_asset(v1_asset, drawing))
         else:
             assets.append(carry_asset(v1_asset))
+
+    # Seeded fixture-room drawings are distinct assets, not extra states hidden
+    # beneath an already accepted base id.  Clone only the base fixture's
+    # gameplay metadata, then replace its identity and art.  The acceptance
+    # registry receives a separate not-reviewed row for each id, so no variant
+    # can inherit the base drawing's verdict accidentally.
+    by_id = {asset["id"]: asset for asset in v1["assets"]}
+    for variant_id, base_catalog_id in sorted(FIXTURE_VARIANT_BASES.items()):
+        base = dict(by_id[f"fixture.{base_catalog_id}"])
+        base["id"] = f"fixture.{variant_id}"
+        base["label"] = f"{base['label']} — {variant_id.removeprefix(base_catalog_id + '_').replace('_', ' ')}"
+        drawing = fixture_profiles(variant_id)
+        if drawing is None:  # pragma: no cover - the table above is the contract
+            raise ValueError(f"missing fixture-room variant drawing {variant_id}")
+        assets.append(drawn_asset(base, drawing))
 
     return {
         "version": 2,

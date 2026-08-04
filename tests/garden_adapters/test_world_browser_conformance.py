@@ -135,35 +135,6 @@ def test_python_and_browser_worlds_match_every_checkpoint_and_persisted_byte():
     assert browser == python
 
 
-# The starter surface, as decided by the operator on 2026-08-04, in thousandths of
-# the world extent. Pinned here as a literal so that changing the composition
-# requires changing this test as well — the anchors are canonical world data,
-# and a silent edit to them is a silent edit to everybody's Garden.
-AUTHORITATIVE_STARTER_ANCHORS = {
-    "pond": (400, 900),
-    "stepping_stones": (300, 900),
-    "mailbox": (700, 700),
-    "bench": (400, 300),
-    "lantern": (480, 200),
-    "planter": (850, 820),
-}
-
-
-def _starter_anchor_subset() -> dict[str, tuple[int, int]]:
-    """Just the starter entries of the canonical anchor table.
-
-    The table also holds anchors for catalog fixtures that are NOT in
-    the default scene; those are for authored programs and are deliberately not
-    pinned here.
-    """
-    from lateletter.garden.world.generation import STARTER_FIXTURE_ANCHORS
-
-    return {
-        catalog_id: STARTER_FIXTURE_ANCHORS[catalog_id]
-        for catalog_id in AUTHORITATIVE_STARTER_ANCHORS
-    }
-
-
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")
 def test_starter_composition_is_authoritative_and_identical_in_both_generators():
     """The starter fixtures land on the same cells in Python and the browser.
@@ -174,47 +145,58 @@ def test_starter_composition_is_authoritative_and_identical_in_both_generators()
     footprints collide. Two identical tables can still produce different worlds
     if any of those steps differs, so this compares the generated fixtures.
     """
-    assert _starter_anchor_subset() == AUTHORITATIVE_STARTER_ANCHORS
+    observed_assets: set[str] = set()
+    observed_sides: set[str] = set()
+    for index in range(16):
+        seed = f"starter-seed-{index}"
+        result = subprocess.run(
+            [shutil.which("node") or "node", str(NODE_RUNNER), "--starter-emit", seed],
+            cwd=ROOT, check=True, capture_output=True, text=True,
+        )
+        browser = json.loads(result.stdout)
+        world = generate_initial_world("starter-composition", seed)
+        python = {
+            "world_width": world.world_width,
+            "world_height": world.world_height,
+            "camera": [world.ui.camera.x, world.ui.camera.y],
+            "fixtures": [
+                {
+                    "catalog_id": fixture.catalog_id,
+                    "position": [fixture.position.x, fixture.position.y],
+                    "rotation": fixture.rotation,
+                    "visual_asset_id": fixture.authored_state["visual_asset_id"],
+                    "fixture_room_role": fixture.authored_state["fixture_room_role"],
+                    "side": fixture.authored_state.get("side"),
+                    "x_offset": fixture.authored_state.get("x_offset"),
+                    "y_anchor": fixture.authored_state.get("y_anchor"),
+                }
+                for fixture in world.fixtures
+            ],
+        }
+        by_catalog = lambda record: record["catalog_id"]  # noqa: E731
+        browser["fixtures"].sort(key=by_catalog)
+        python["fixtures"].sort(key=by_catalog)
+        assert browser == python
 
-    result = subprocess.run(
-        [shutil.which("node") or "node", str(NODE_RUNNER), "--starter-emit"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    browser = json.loads(result.stdout)
-    world = generate_initial_world("starter-composition", "starter-seed")
-    python = {
-        "world_width": world.world_width,
-        "world_height": world.world_height,
-        "camera": [world.ui.camera.x, world.ui.camera.y],
-        "fixtures": [
-            {
-                "catalog_id": fixture.catalog_id,
-                "position": [fixture.position.x, fixture.position.y],
-                "rotation": fixture.rotation,
-            }
-            for fixture in world.fixtures
-        ],
-    }
-    by_catalog = lambda record: record["catalog_id"]  # noqa: E731
-    browser["fixtures"].sort(key=by_catalog)
-    python["fixtures"].sort(key=by_catalog)
-    assert browser == python
+        rooms = {item["catalog_id"]: item for item in python["fixtures"]}
+        pond_x, pond_y = rooms["pond"]["position"]
+        stone_x, stone_y = rooms["stepping_stones"]["position"]
+        bench_x, bench_y = rooms["bench"]["position"]
+        assert stone_x != pond_x and abs(stone_x - pond_x) <= 14
+        assert abs(stone_y - pond_y) <= 1
+        assert bench_y < pond_y
+        assert abs(bench_x - pond_x) <= 5
+        assert rooms["lantern"]["position"][1] < bench_y
+        observed_assets.update(item["visual_asset_id"] for item in python["fixtures"])
+        observed_sides.add(rooms["stepping_stones"]["side"])
 
-    # These are authored rooms, not an evenly spaced row. The generator may
-    # nudge footprints apart, but it must preserve the relationships the live
-    # picture depends on: stones approach the pond from one side, the bench is
-    # above and horizontally aligned with it, and the lantern is farther away
-    # near the sitting room.
-    rooms = {item["catalog_id"]: item["position"] for item in python["fixtures"]}
-    assert rooms["stepping_stones"][0] < rooms["pond"][0]
-    assert rooms["pond"][0] - rooms["stepping_stones"][0] <= 12
-    assert rooms["bench"][1] < rooms["pond"][1]
-    assert abs(rooms["bench"][0] - rooms["pond"][0]) <= 2
-    assert rooms["lantern"][1] < rooms["bench"][1]
-    assert abs(rooms["lantern"][0] - rooms["bench"][0]) <= 12
+    assert observed_sides == {"left", "right"}
+    assert {
+        "fixture.pond", "fixture.pond_compact", "fixture.pond_round",
+        "fixture.stepping_stones", "fixture.stepping_stones_three",
+        "fixture.stepping_stones_five", "fixture.planter",
+        "fixture.planter_one", "fixture.planter_three",
+    } <= observed_assets
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")

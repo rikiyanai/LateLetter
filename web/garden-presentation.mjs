@@ -621,7 +621,10 @@ export function advancePresentationState(previousState, presentationEvents, tick
 function permittedSources(manifest) {
   validatePaintAuthority(manifest);
   return new Set(
-    ['accepted_assets', 'accepted_recipes', 'accepted_legacy_art']
+    [
+      'accepted_assets', 'review_candidate_assets',
+      'accepted_recipes', 'accepted_legacy_art',
+    ]
       .flatMap(name => manifest[name]),
   );
 }

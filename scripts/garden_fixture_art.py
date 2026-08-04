@@ -577,6 +577,175 @@ FIXTURE_ART: dict[str, dict[str, Any]] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Seeded fixture-room review candidates
+# ---------------------------------------------------------------------------
+#
+# These are separate atlas identities, not extra states smuggled underneath an
+# accepted asset id.  The current acceptance registry reviewed only the base
+# fixture ``idle`` drawings.  Reusing that id for new silhouettes would make a
+# new pond or planter inherit a verdict it was never shown under.  Separate ids
+# keep the review boundary executable: the generator may persist the selected
+# identity, the renderer may resolve it, and production paint authority still
+# refuses it until its own registry row is accepted.
+#
+# The variants deliberately preserve each base fixture's structural grammar.
+# They vary only the axes the operator assigned to the seed on 2026-08-05:
+# pond diameter/loop silhouette, stone count/size, and planter blossom count.
+# Stone SIDE and bench POSITION are canonical room-layout choices and therefore
+# live in the world generator, not in these drawings.
+FIXTURE_VARIANT_BASES: dict[str, str] = {
+    "pond_compact": "pond",
+    "pond_round": "pond",
+    "stepping_stones_three": "stepping_stones",
+    "stepping_stones_five": "stepping_stones",
+    "planter_one": "planter",
+    "planter_three": "planter",
+}
+
+FIXTURE_ART.update({
+    "pond_compact": {
+        "structure": FIXTURE_ART["pond"]["structure"],
+        "material": "still water",
+        "affordance": "water",
+        "ascii": (
+            "  _,-~-.,_,-~-.,_-.",
+            "( ~~    ~~~    ~~  )",
+            "(   ~~~    ~~     ~)",
+            "  `-.,_,-~-.,_,-'",
+        ),
+        "frames": (
+            (
+                "  _,-~-.,_,-~-.,_-.",
+                "(~~    ~~~    ~~   )",
+                "(    ~~    ~~~    ~)",
+                "  `-.,_,-~-.,_,-'",
+            ),
+            (
+                "  _,-~-.,_,-~-.,_-.",
+                "(  ~~    ~~~    ~~ )",
+                "( ~~    ~~~    ~   )",
+                "  `-.,_,-~-.,_,-'",
+            ),
+            (
+                "  _,-~-.,_,-~-.,_-.",
+                "(    ~~    ~~~   ~)",
+                "(~~~    ~~    ~~   )",
+                "  `-.,_,-~-.,_,-'",
+            ),
+            (
+                "  _,-~-.,_,-~-.,_-.",
+                "(  ~~    ~~~    ~~ )",
+                "( ~~    ~~~    ~   )",
+                "  `-.,_,-~-.,_,-'",
+            ),
+        ),
+        "frame_ticks": 10,
+        "anchor_column": 9,
+        "note": "Seeded compact pond candidate: the accepted shallow-water grammar in a shorter loop.",
+    },
+    "pond_round": {
+        "structure": FIXTURE_ART["pond"]["structure"],
+        "material": "still water",
+        "affordance": "water",
+        "ascii": (
+            "    _,-~-.,_,-~-.    ",
+            "  ,'             `.  ",
+            "(   ~~    ~~~    ~~  )",
+            "( ~~    ~~~    ~~    )",
+            "  `-.,_       _,-'   ",
+            "      `-~-~-~-'       ",
+        ),
+        "frames": (
+            (
+                "    _,-~-.,_,-~-.    ",
+                "  ,'             `.  ",
+                "( ~~    ~~~    ~~    )",
+                "(    ~~    ~~~    ~~ )",
+                "  `-.,_       _,-'   ",
+                "      `-~-~-~-'       ",
+            ),
+            (
+                "    _,-~-.,_,-~-.    ",
+                "  ,'             `.  ",
+                "(   ~~    ~~~    ~~  )",
+                "(  ~~    ~~~    ~~   )",
+                "  `-.,_       _,-'   ",
+                "      `-~-~-~-'       ",
+            ),
+            (
+                "    _,-~-.,_,-~-.    ",
+                "  ,'             `.  ",
+                "(     ~~    ~~~    ~ )",
+                "(~~~    ~~    ~~~    )",
+                "  `-.,_       _,-'   ",
+                "      `-~-~-~-'       ",
+            ),
+            (
+                "    _,-~-.,_,-~-.    ",
+                "  ,'             `.  ",
+                "(   ~~    ~~~    ~~  )",
+                "(  ~~    ~~~    ~~   )",
+                "  `-.,_       _,-'   ",
+                "      `-~-~-~-'       ",
+            ),
+        ),
+        "frame_ticks": 10,
+        "anchor_column": 10,
+        "note": "Seeded round pond candidate: greater front-to-back diameter while retaining open water and moving ripple trains.",
+    },
+    "stepping_stones_three": {
+        "structure": FIXTURE_ART["stepping_stones"]["structure"],
+        "material": "river stone",
+        "affordance": "path",
+        "ascii": (
+            " (=)      ",
+            "   (=) (=)",
+        ),
+        "anchor_column": 4,
+        "note": "Seeded three-stone path candidate with a short staggered approach.",
+    },
+    "stepping_stones_five": {
+        "structure": FIXTURE_ART["stepping_stones"]["structure"],
+        "material": "river stone",
+        "affordance": "path",
+        "ascii": (
+            " (=)       (=)  ",
+            "    (=)         ",
+            "       (=)  (=) ",
+        ),
+        "anchor_column": 7,
+        "note": "Seeded five-stone path candidate with a longer staggered approach.",
+    },
+    "planter_one": {
+        "structure": FIXTURE_ART["planter"]["structure"],
+        "material": "brick",
+        "affordance": "plant",
+        "ascii": (
+            "     Y     ",
+            "    ,|     ",
+            " [_______] ",
+            "  \\_|_|_/  ",
+        ),
+        "anchor_column": 5,
+        "note": "Seeded one-blossom planter candidate; the accepted vessel is unchanged.",
+    },
+    "planter_three": {
+        "structure": FIXTURE_ART["planter"]["structure"],
+        "material": "brick",
+        "affordance": "plant",
+        "ascii": (
+            "  Y   Y   Y  ",
+            " ,|   |   |, ",
+            " [_________] ",
+            "  \\__|_|__/  ",
+        ),
+        "anchor_column": 6,
+        "note": "Seeded three-blossom planter candidate with separated stems and a widened authored vessel.",
+    },
+})
+
+
 def fixture_profiles(catalog_id: str) -> dict[str, Any] | None:
     """Return the structure and both stylizations for one fixture.
 

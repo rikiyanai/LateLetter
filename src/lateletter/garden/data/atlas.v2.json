@@ -2640,6 +2640,1693 @@
         "source": "placeholder",
         "note": "collectible.smooth_stone was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
       }
+    },
+    {
+      "id": "fixture.planter_one",
+      "kind": "fixture",
+      "label": "Planter — one",
+      "description": "A container for garden plants.",
+      "cell_box": [
+        11,
+        4
+      ],
+      "anchor": [
+        5,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  ",",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  "[",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "]",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "\\",
+                  "_",
+                  "|",
+                  "_",
+                  "|",
+                  "_",
+                  "/",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "     Y     ",
+                "    ,|     ",
+                " [_______] ",
+                "  \\_|_|_/  "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "plant",
+          "label": "Plant in the planter",
+          "action": "plant"
+        }
+      ],
+      "tags": [
+        "plant_support"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "tips",
+            "role": "forked stem ends, sparse and clear of each other"
+          },
+          {
+            "part": "stems",
+            "role": "upright runs with one side leaf each, rooted in the box"
+          },
+          {
+            "part": "rim",
+            "role": "upper course, slightly proud of the body"
+          },
+          {
+            "part": "body",
+            "role": "offset brick courses"
+          }
+        ],
+        "material": "brick",
+        "affordance": "plant",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded one-blossom planter candidate; the accepted vessel is unchanged.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.planter_three",
+      "kind": "fixture",
+      "label": "Planter — three",
+      "description": "A container for garden plants.",
+      "cell_box": [
+        13,
+        4
+      ],
+      "anchor": [
+        6,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  ",",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  ",",
+                  " "
+                ],
+                [
+                  " ",
+                  "[",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "]",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "\\",
+                  "_",
+                  "_",
+                  "|",
+                  "_",
+                  "|",
+                  "_",
+                  "_",
+                  "/",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "  Y   Y   Y  ",
+                " ,|   |   |, ",
+                " [_________] ",
+                "  \\__|_|__/  "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "plant",
+          "label": "Plant in the planter",
+          "action": "plant"
+        }
+      ],
+      "tags": [
+        "plant_support"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "tips",
+            "role": "forked stem ends, sparse and clear of each other"
+          },
+          {
+            "part": "stems",
+            "role": "upright runs with one side leaf each, rooted in the box"
+          },
+          {
+            "part": "rim",
+            "role": "upper course, slightly proud of the body"
+          },
+          {
+            "part": "body",
+            "role": "offset brick courses"
+          }
+        ],
+        "material": "brick",
+        "affordance": "plant",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded three-blossom planter candidate with separated stems and a widened authored vessel.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.pond_compact",
+      "kind": "fixture",
+      "label": "Pond — compact",
+      "description": "A small pond with aquatic life.",
+      "cell_box": [
+        20,
+        4
+      ],
+      "anchor": [
+        9,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  ")",
+                  " "
+                ],
+                [
+                  "(",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(~~    ~~~    ~~   )",
+                "(    ~~    ~~~    ~)",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(  ~~    ~~~    ~~ )",
+                "( ~~    ~~~    ~   )",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(    ~~    ~~~   ~) ",
+                "(~~~    ~~    ~~   )",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(  ~~    ~~~    ~~ )",
+                "( ~~    ~~~    ~   )",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "tend",
+          "label": "Tend the pond",
+          "action": "tend"
+        }
+      ],
+      "tags": [
+        "water"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "waterline",
+            "role": "uneven upper boundary, no two spans alike"
+          },
+          {
+            "part": "surface",
+            "role": "sparse ripples, offset row to row, never in one band"
+          },
+          {
+            "part": "far_edge",
+            "role": "lower boundary broken by mixed-weight punctuation"
+          }
+        ],
+        "material": "still water",
+        "affordance": "water",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded compact pond candidate: the accepted shallow-water grammar in a shorter loop.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.pond_round",
+      "kind": "fixture",
+      "label": "Pond — round",
+      "description": "A small pond with aquatic life.",
+      "cell_box": [
+        22,
+        6
+      ],
+      "anchor": [
+        10,
+        5
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "( ~~    ~~~    ~~    )",
+                "(    ~~    ~~~    ~~ )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "(   ~~    ~~~    ~~  )",
+                "(  ~~    ~~~    ~~   )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "(     ~~    ~~~    ~ )",
+                "(~~~    ~~    ~~~    )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "(   ~~    ~~~    ~~  )",
+                "(  ~~    ~~~    ~~   )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "tend",
+          "label": "Tend the pond",
+          "action": "tend"
+        }
+      ],
+      "tags": [
+        "water"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "waterline",
+            "role": "uneven upper boundary, no two spans alike"
+          },
+          {
+            "part": "surface",
+            "role": "sparse ripples, offset row to row, never in one band"
+          },
+          {
+            "part": "far_edge",
+            "role": "lower boundary broken by mixed-weight punctuation"
+          }
+        ],
+        "material": "still water",
+        "affordance": "water",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded round pond candidate: greater front-to-back diameter while retaining open water and moving ripple trains.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.stepping_stones_five",
+      "kind": "fixture",
+      "label": "Stepping stones — five",
+      "description": "A connected garden path.",
+      "cell_box": [
+        16,
+        3
+      ],
+      "anchor": [
+        7,
+        2
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " (=)       (=)  ",
+                "    (=)         ",
+                "       (=)  (=) "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Inspect the path",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "connected",
+        "path"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "stones",
+            "role": "low flat-topped slabs, staggered across the route"
+          }
+        ],
+        "material": "river stone",
+        "affordance": "path",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded five-stone path candidate with a longer staggered approach.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.stepping_stones_three",
+      "kind": "fixture",
+      "label": "Stepping stones — three",
+      "description": "A connected garden path.",
+      "cell_box": [
+        10,
+        2
+      ],
+      "anchor": [
+        4,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  "(",
+                  "=",
+                  ")"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " (=)      ",
+                "   (=) (=)"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Inspect the path",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "connected",
+        "path"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "stones",
+            "role": "low flat-topped slabs, staggered across the route"
+          }
+        ],
+        "material": "river stone",
+        "affordance": "path",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded three-stone path candidate with a short staggered approach.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
     }
   ]
 }

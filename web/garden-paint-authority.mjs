@@ -6,9 +6,9 @@
  * The manifest (`web/garden-accepted-paint.v1.json`) is authored by exactly
  * one writer -- `paint_authority()` in `scripts/prepare_pages_site.py` --
  * with a defined shape: `schema`, `purpose`, `registers` (both register
- * paths with their sha256 digests), and FOUR accepted-id lists
- * (`accepted_assets`, `accepted_recipes`, `accepted_laws`,
- * `accepted_legacy_art`). The 2026-08-04 claim verification found three
+ * paths with their sha256 digests), four accepted-id lists, plus the separate
+ * local-review list (`review_candidate_assets`). The 2026-08-04 claim
+ * verification found three
  * separate hand-rolled checks (viewer, composer, renderer) that each
  * accepted a PARTIAL object carrying only three of the lists -- three schema
  * owners, all of them wrong, free to drift apart. This module replaces all
@@ -39,6 +39,7 @@
 // own law-exclusion logic depends on knowing the list is really there.
 export const PAINT_AUTHORITY_LISTS = Object.freeze([
   'accepted_assets',
+  'review_candidate_assets',
   'accepted_recipes',
   'accepted_laws',
   'accepted_legacy_art',
@@ -46,7 +47,7 @@ export const PAINT_AUTHORITY_LISTS = Object.freeze([
 
 // The schema version this runtime understands. Bump ONLY together with the
 // generator in scripts/prepare_pages_site.py.
-export const PAINT_AUTHORITY_SCHEMA = 1;
+export const PAINT_AUTHORITY_SCHEMA = 2;
 
 /**
  * Validate a candidate manifest against the generator's shape.

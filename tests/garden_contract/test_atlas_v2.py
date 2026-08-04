@@ -85,8 +85,17 @@ def test_generated_v2_atlas_validates(atlas_v2):
     assert atlas_v2["id"] == ATLAS_V2_VERSION
     assert atlas_v2["generator_version"]
     assert PROPORTIONAL_PROFILE in atlas_v2["profiles"]
-    # Every v1 asset survived the migration; none were dropped or invented.
-    assert len(atlas_v2["assets"]) == 26
+    # Every v1 asset survived, and the only additions are the separately named
+    # seeded-room review candidates.  Counting 26 forever made the atlas unable
+    # to grow while pretending to defend migration completeness.
+    v1_ids = {asset["id"] for asset in load_atlas(V1_PATH)["assets"]}
+    v2_ids = {asset["id"] for asset in atlas_v2["assets"]}
+    assert v1_ids <= v2_ids
+    assert v2_ids - v1_ids == {
+        "fixture.planter_one", "fixture.planter_three",
+        "fixture.pond_compact", "fixture.pond_round",
+        "fixture.stepping_stones_five", "fixture.stepping_stones_three",
+    }
 
 
 def test_v1_atlas_still_validates_under_the_shared_compiler(atlas_v2):
@@ -155,10 +164,14 @@ def test_historical_receipts_are_traceable_but_never_claim_current_authority(atl
         receipt = lineage["historical_review"]
         verdict = receipt.get("verdict")
         assert verdict in VERDICT_VOCABULARY, f"{asset['id']}: unknown verdict {verdict!r}"
-        # The words behind the verdict, always. A status flag with no sentence
+        # The words behind a HISTORICAL verdict, always. New review candidates
+        # correctly carry no historical words and remain not_reviewed.
         # attached cannot be checked against what the operator actually said,
         # which is exactly how round 1's verdicts became unrecoverable.
-        assert receipt.get("quote"), f"{asset['id']} records no words behind its receipt"
+        if verdict != "not_reviewed":
+            assert receipt.get("quote"), f"{asset['id']} records no words behind its receipt"
+        else:
+            assert receipt.get("quote") == ""
         assert receipt["authoritative"] is False
         assert receipt["superseded_by"] == "docs/garden-asset-acceptance.json"
 

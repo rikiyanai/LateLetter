@@ -284,7 +284,13 @@ def project_scene(state: WorldState) -> SceneProjection:
             fixture_active_affordances(fixture),
             ("inspect", *definition.interaction_verbs, "move", "rotate"),
             Hotspot(fixture.position.x, fixture.position.y, definition.footprint.x, definition.footprint.y),
-            {"catalog_id": fixture.catalog_id, "rotation": fixture.rotation,
+            {"catalog_id": fixture.catalog_id,
+             "visual_asset_id": str(
+                 fixture.authored_state.get(
+                     "visual_asset_id", f"fixture.{fixture.catalog_id}",
+                 )
+             ),
+             "rotation": fixture.rotation,
              "interaction_count": fixture.interaction_count,
              "last_interaction": fixture.last_interaction,
              "interaction_verbs": list(definition.interaction_verbs),

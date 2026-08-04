@@ -985,13 +985,14 @@ test('an empty paint authority suppresses every attempted primitive', () => {
   // vouch for nothing, which the runtime never re-derives anyway -- digest
   // truth is the build-time drift test's job.
   const nothingAccepted = {
-    schema: 1,
+    schema: 2,
     purpose: 'test authority accepting nothing',
     registers: {
       asset_register: { path: 'docs/garden-asset-acceptance.json', sha256: '' },
       recipe_register: { path: 'docs/garden-presentation-recipes.json', sha256: '' },
     },
-    accepted_assets: [], accepted_recipes: [], accepted_laws: [],
+    accepted_assets: [], review_candidate_assets: [],
+    accepted_recipes: [], accepted_laws: [],
     accepted_legacy_art: [],
   };
   const frame = rendererUnderAuthority(element, {
@@ -1447,10 +1448,14 @@ test('the authored starter rooms remain whole and stable', async () => {
     'a starter fixture is missing from the desktop composition');
 
   const byCatalog = Object.fromEntries(layout.map(entry => [catalogOf(entry), entry]));
-  assert.ok(byCatalog.stepping_stones.rect.right < byCatalog.pond.rect.left,
-    'stepping stones are not left of the pond');
-  assert.ok(byCatalog.pond.rect.left - byCatalog.stepping_stones.rect.right <= 3,
-    'stepping stones no longer approach the pond');
+  const stonesLeft = byCatalog.stepping_stones.rect.right < byCatalog.pond.rect.left;
+  const stonesRight = byCatalog.stepping_stones.rect.left > byCatalog.pond.rect.right;
+  assert.ok(stonesLeft || stonesRight,
+    'stepping stones neither approach from the left nor the right');
+  const approachGap = stonesLeft
+    ? byCatalog.pond.rect.left - byCatalog.stepping_stones.rect.right
+    : byCatalog.stepping_stones.rect.left - byCatalog.pond.rect.right;
+  assert.ok(approachGap <= 3, 'stepping stones no longer approach the pond');
   assert.ok(byCatalog.bench.rect.bottom < byCatalog.pond.rect.top,
     'the bench is not above the pond');
   const benchCenter = (byCatalog.bench.rect.left + byCatalog.bench.rect.right) / 2;

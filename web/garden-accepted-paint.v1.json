@@ -1,10 +1,10 @@
 {
-  "schema": 1,
-  "purpose": "Runtime accepted-paint authority for the Garden composer, derived from the two verdict registers by scripts/prepare_pages_site.py. Regenerate with --write-paint-authority after any register change; a drift test fails while this file and the registers disagree.",
+  "schema": 2,
+  "purpose": "Local runtime paint authority for the Garden composer, derived from the two verdict registers by scripts/prepare_pages_site.py. Accepted IDs and review-only candidate IDs remain separate; the release artifact always empties the candidate list. Regenerate with --write-paint-authority after any register change; a drift test fails while this file and the registers disagree.",
   "registers": {
     "asset_register": {
       "path": "docs/garden-asset-acceptance.json",
-      "sha256": "dd1c17ba23bb4381d08086d439e31c33d5a80c1191cbcde6a1db26d9d700e659"
+      "sha256": "c797e8b3553e16de3c07e589e1bf0362dadcb0f2162cc7f65b908c8616ad6c7e"
     },
     "recipe_register": {
       "path": "docs/garden-presentation-recipes.json",
@@ -23,6 +23,14 @@
     "fixture.stepping_stones",
     "fixture.trellis",
     "plant.rose"
+  ],
+  "review_candidate_assets": [
+    "fixture.planter_one",
+    "fixture.planter_three",
+    "fixture.pond_compact",
+    "fixture.pond_round",
+    "fixture.stepping_stones_five",
+    "fixture.stepping_stones_three"
   ],
   "accepted_recipes": [
     "recipe.ambient.bird_traversal",

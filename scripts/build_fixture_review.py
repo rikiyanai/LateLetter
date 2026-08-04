@@ -58,7 +58,7 @@ DRAWN_SOURCE = "drawn for LateLetter"
 # Bumped whenever the stored shape OR the artwork changes. Restoring round-1
 # marks onto round-2 drawings would silently attach a verdict to a picture it
 # was never given about, which is worse than losing it.
-STORAGE_KEY = "lateletter.fixture-review.round-4.v1"
+STORAGE_KEY = "lateletter.fixture-review.seeded-room.v1"
 
 
 def specimen_markup(asset: dict[str, Any], verdict: dict[str, Any]) -> str:
@@ -359,10 +359,11 @@ PAGE_TEMPLATE = """<title>Fixture art worksheet &mdash; LateLetter Garden</title
 <div class="wrap">
   <header>
     <p class="kicker">operator fixture review record</p>
-    <h1>Fixture art &mdash; accepted starter set</h1>
+    <h1>Fixture art &mdash; accepted set and seeded-room candidates</h1>
     <p class="standfirst">
-      <strong>All ten drawings carry the operator's accepted verdict.</strong>
-      Round 3 accepted bench, trellis and birdbath; round 4 accepted the remaining seven.
+      <strong>The original ten drawings retain their recorded verdicts.</strong>
+      The separately identified pond, stepping-stone and planter variants remain
+      <code>not_reviewed</code> review candidates.
       Current verdicts come from <code>docs/garden-asset-acceptance.json</code>; the exact
       operator messages remain in <code>docs/operator-decision-record.md</code>.
     </p>
@@ -452,7 +453,7 @@ PAGE_TEMPLATE = """<title>Fixture art worksheet &mdash; LateLetter Garden</title
   }
 
   function buildTranscript() {
-    var lines = ['# LateLetter fixture review, round 4'];
+    var lines = ['# LateLetter fixture review, seeded-room variants'];
     var keep = entriesFor('keep');
     var redraw = entriesFor('redraw');
 
@@ -564,7 +565,7 @@ PAGE_TEMPLATE = """<title>Fixture art worksheet &mdash; LateLetter Garden</title
         window.setTimeout(function () { button.textContent = 'Download'; }, 2200);
       };
       window.claude.downloads.save({
-        filename: 'fixture-review-round-4.md',
+        filename: 'fixture-review-seeded-room.md',
         data: buildTranscript() + '\\n'
       }).then(function () { restore('Saved'); }, function (error) {
         // The viewer declining is a normal outcome, not an error to retry.

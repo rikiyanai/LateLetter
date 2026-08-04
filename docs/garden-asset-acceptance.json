@@ -34,8 +34,15 @@
     }
   ],
   "withdrawn_acceptances": [],
-  "review_candidates": [],
-  "review_candidates_note": "No unaccepted atlas drawing is currently licensed as a local review candidate. The default scene's fixtures are already accepted; catalog acceptance does not require an accepted asset to appear in that scene. A future candidate must appear locally and remain barred from public deployment.",
+  "review_candidates": [
+    "fixture.planter_one",
+    "fixture.planter_three",
+    "fixture.pond_compact",
+    "fixture.pond_round",
+    "fixture.stepping_stones_five",
+    "fixture.stepping_stones_three"
+  ],
+  "review_candidates_note": "Seeded fixture-room variants authored on 2026-08-05 are licensed only on the local unreleased review surface. They are separate atlas identities so none inherits the accepted base drawing's verdict. Public paint authority excludes them until each drawing is explicitly accepted.",
   "legacy_ported_renderer_art": {
     "note": "Renderer-local drawings that are now transcriptions of the archive rather than renderer-authored placeholders, ported 2026-08-01 under the operator grant of the same date. Each key is an art identity inside web/garden-legacy-art.mjs and each value is the archive file and section it was transcribed from. This section records ART provenance only. It does NOT clear the gameplay_art_outside_atlas blocker: plants and animals are still painted renderer-locally and have not been migrated into the versioned atlas, so they still carry no per-asset atlas verdict.",
     "ported": {
@@ -331,6 +338,60 @@
       "verdict": "not_reviewed",
       "reviewed_at": null,
       "art_lineage": "fixture.wind_chime was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.planter_one",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded one-blossom planter review candidate. It preserves the accepted planter grammar but is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.planter_three",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded three-blossom planter review candidate. It preserves the accepted planter grammar but is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.pond_compact",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded compact pond review candidate with a shorter loop and the same lateral-ripple grammar. It is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.pond_round",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded round pond review candidate with greater front-to-back diameter. It is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.stepping_stones_five",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded five-stone path review candidate. It is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.stepping_stones_three",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded three-stone path review candidate. It is a new drawing and inherits no verdict.",
       "capture": null
     }
   ],

@@ -113,6 +113,30 @@ STARTER_FIXTURE_ANCHORS = {
     "mailbox": (700, 700),
     "planter": (850, 820),
 }
+
+# Authored visual identities the seeded fixture-room planner may select.  The
+# base ids are the already accepted drawings; every other id is a separate
+# not-reviewed atlas asset so a new silhouette cannot inherit the base asset's
+# verdict.  Selection is canonical and persisted in ``FixtureState``'s
+# ``authored_state``; projection transports it and the renderer only resolves
+# the named asset.
+POND_VISUAL_ASSETS: tuple[str, ...] = (
+    "fixture.pond",
+    "fixture.pond_compact",
+    "fixture.pond_round",
+)
+STEPPING_STONE_VISUAL_ASSETS: tuple[str, ...] = (
+    "fixture.stepping_stones",
+    "fixture.stepping_stones_three",
+    "fixture.stepping_stones_five",
+)
+PLANTER_VISUAL_ASSETS: tuple[str, ...] = (
+    "fixture.planter",
+    "fixture.planter_one",
+    "fixture.planter_three",
+)
+BENCH_X_OFFSETS: tuple[int, ...] = (-35, 0, 35)
+BENCH_Y_ANCHORS: tuple[int, ...] = (260, 300, 340)
 # THE DEFAULT ROSE SITS OUTSIDE THE FIXTURE ROW
 # ------------------------------------------------------------------------
 # `oak` and `sunflower` were anchored at 330 and 590 thousandths, which was a
@@ -204,15 +228,81 @@ def _pick_near_position(
     raise ValueError(f"could not place a starter object near {desired!r}")
 
 
+def _fixture_room_plan(
+    state: WorldState,
+) -> tuple[dict[str, tuple[int, int]], dict[str, dict[str, object]]]:
+    """Choose one canonical water/sitting-room composition from the seed.
+
+    Each axis has its own derived stream.  Adding a pond silhouette therefore
+    cannot flip the stepping-stone side or move the bench, which is the seeded
+    generation contract in SPEC 7.3.  Values are thousandth anchors or atlas
+    identities; no viewport or renderer input exists here.
+    """
+    pond_asset = DeterministicRNG(derive_seed(
+        state.seed, "fixture-room", "pond", "visual-asset",
+    )).choice(POND_VISUAL_ASSETS)
+    stone_asset = DeterministicRNG(derive_seed(
+        state.seed, "fixture-room", "stepping-stones", "visual-asset",
+    )).choice(STEPPING_STONE_VISUAL_ASSETS)
+    planter_asset = DeterministicRNG(derive_seed(
+        state.seed, "fixture-room", "planter", "visual-asset",
+    )).choice(PLANTER_VISUAL_ASSETS)
+    stone_side = DeterministicRNG(derive_seed(
+        state.seed, "fixture-room", "stepping-stones", "side",
+    )).choice(("left", "right"))
+    bench_x_offset = DeterministicRNG(derive_seed(
+        state.seed, "fixture-room", "bench", "x-offset",
+    )).choice(BENCH_X_OFFSETS)
+    bench_y = DeterministicRNG(derive_seed(
+        state.seed, "fixture-room", "bench", "y-anchor",
+    )).choice(BENCH_Y_ANCHORS)
+
+    anchors = dict(STARTER_FIXTURE_ANCHORS)
+    pond_x, pond_y = anchors["pond"]
+    anchors["stepping_stones"] = (
+        pond_x - 100 if stone_side == "left" else pond_x + 100,
+        pond_y,
+    )
+    anchors["bench"] = (pond_x + bench_x_offset, bench_y)
+    visual_assets = {
+        catalog_id: {
+            "visual_asset_id": f"fixture.{catalog_id}",
+            "fixture_room_role": "independent",
+        }
+        for catalog_id in STARTER_FIXTURES
+    }
+    visual_assets["pond"] = {
+        "visual_asset_id": pond_asset,
+        "fixture_room_role": "water",
+    }
+    visual_assets["stepping_stones"] = {
+        "visual_asset_id": stone_asset,
+        "fixture_room_role": "approach",
+        "side": stone_side,
+    }
+    visual_assets["bench"] = {
+        "visual_asset_id": "fixture.bench",
+        "fixture_room_role": "seat-facing-water",
+        "x_offset": bench_x_offset,
+        "y_anchor": bench_y,
+    }
+    visual_assets["planter"] = {
+        "visual_asset_id": planter_asset,
+        "fixture_room_role": "container",
+    }
+    return anchors, visual_assets
+
+
 def _fixture_layout(state: WorldState) -> tuple[FixtureState, ...]:
     rng = DeterministicRNG(derive_seed(state.seed, "layout", "fixtures"))
+    anchors, authored_states = _fixture_room_plan(state)
     fixtures: list[FixtureState] = []
     occupied: set[Vec2] = set()
     for catalog_id in STARTER_FIXTURES:
         definition = FIXTURE_CATALOG[catalog_id]
         position = _scaled_anchor(
             state,
-            STARTER_FIXTURE_ANCHORS[catalog_id],
+            anchors[catalog_id],
             margin=2,
             footprint=definition.footprint,
         )
@@ -223,6 +313,7 @@ def _fixture_layout(state: WorldState) -> tuple[FixtureState, ...]:
             position=position,
             rotation=(rng.randbelow(4) * 90),
             authored=False,
+            authored_state=authored_states[catalog_id],
         )
         cells = fixture_cells(fixture)
         if occupied.intersection(cells):

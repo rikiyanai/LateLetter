@@ -657,6 +657,31 @@ def _accepted_asset_ids(register: dict) -> list[str]:
     return sorted(accepted)
 
 
+def _review_candidate_asset_ids(register: dict) -> list[str]:
+    """Atlas ids licensed only to the committed localhost review authority.
+
+    A candidate remains ``not_reviewed`` in the verdict table.  Keeping the
+    list separate from ``accepted_assets`` is what prevents a review licence
+    from becoming an acceptance claim, while still letting the real product
+    compositor show the candidate locally.  Release manifests always receive
+    an empty candidate list.
+    """
+    candidates = register.get("review_candidates", [])
+    if not isinstance(candidates, list) or not all(
+        isinstance(asset_id, str) for asset_id in candidates
+    ):
+        raise RuntimeError("review_candidates must be a list of asset ids")
+    rows = {record["asset_id"]: record for record in register["assets"]}
+    for asset_id in candidates:
+        if asset_id not in rows:
+            raise RuntimeError(f"review candidate {asset_id!r} has no registry row")
+        if _checked_verdict(rows[asset_id]["verdict"], f"asset {asset_id!r}") != "not_reviewed":
+            raise RuntimeError(
+                f"review candidate {asset_id!r} must remain not_reviewed until verdict capture"
+            )
+    return sorted(set(candidates))
+
+
 def _accepted_recipe_ids(register: dict) -> list[str]:
     """Every PAINT recipe ID the presentation-recipe register accepts.
 
@@ -768,8 +793,12 @@ def _canonical_json_bytes(payload: dict) -> bytes:
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def paint_authority(repository_root: Path = REPOSITORY_ROOT) -> dict:
-    """The runtime slice of the paint authority: the four accepted-id lists.
+def paint_authority(
+    repository_root: Path = REPOSITORY_ROOT,
+    *,
+    include_review_candidates: bool = True,
+) -> dict:
+    """The runtime slice of paint authority, including an explicit review lane.
 
     This is the derivation the release manifest embeds, exposed on its own
     because the RUNTIME composer needs exactly these lists and none of the
@@ -781,20 +810,24 @@ def paint_authority(repository_root: Path = REPOSITORY_ROOT) -> dict:
     file cannot quietly disagree with the registers.
 
     :param repository_root: Where the registers are read from.
-    :returns: The four sorted lists plus the register hashes they came from.
+    :param include_review_candidates: True only for the committed local review
+        authority. Release artifacts pass False and therefore cannot paint a
+        candidate even if a separate deploy blocker were bypassed.
+    :returns: The five sorted lists plus the register hashes they came from.
     """
     asset_register_bytes = (repository_root / ASSET_REGISTER).read_bytes()
     recipe_register_bytes = (repository_root / RECIPE_REGISTER).read_bytes()
     asset_register = json.loads(asset_register_bytes)
     recipe_register = json.loads(recipe_register_bytes)
     return {
-        "schema": 1,
+        "schema": 2,
         "purpose": (
-            "Runtime accepted-paint authority for the Garden composer, "
-            "derived from the two verdict registers by "
-            "scripts/prepare_pages_site.py. Regenerate with "
-            "--write-paint-authority after any register change; a drift test "
-            "fails while this file and the registers disagree."
+            "Local runtime paint authority for the Garden composer, derived "
+            "from the two verdict registers by scripts/prepare_pages_site.py. "
+            "Accepted IDs and review-only candidate IDs remain separate; the "
+            "release artifact always empties the candidate list. Regenerate "
+            "with --write-paint-authority after any register change; a drift "
+            "test fails while this file and the registers disagree."
         ),
         "registers": {
             "asset_register": {
@@ -807,6 +840,10 @@ def paint_authority(repository_root: Path = REPOSITORY_ROOT) -> dict:
             },
         },
         "accepted_assets": _accepted_asset_ids(asset_register),
+        "review_candidate_assets": (
+            _review_candidate_asset_ids(asset_register)
+            if include_review_candidates else []
+        ),
         "accepted_recipes": _accepted_recipe_ids(recipe_register),
         "accepted_laws": _accepted_law_ids(recipe_register),
         "accepted_legacy_art": _accepted_legacy_art_ids(asset_register),
@@ -851,7 +888,7 @@ def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROO
     # One derivation, shared with the committed runtime authority file, so
     # the release manifest and the runtime composer can never disagree about
     # what is accepted: they are the same function's output.
-    authority = paint_authority(repository_root)
+    authority = paint_authority(repository_root, include_review_candidates=False)
 
     # The atlas is also parsed (not only hashed) so the manifest can name the
     # atlas id/version a reviewer would recognise, next to the exact bytes.
@@ -868,7 +905,7 @@ def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROO
     )
 
     body = {
-        "schema": 1,
+        "schema": 2,
         "purpose": (
             "Build-time accepted-paint authority for the Garden release "
             "artifact. Only IDs listed here may be painted by a release "
@@ -879,6 +916,9 @@ def build_paint_manifest(site_root: Path, repository_root: Path = REPOSITORY_ROO
         ),
         "registers": authority["registers"],
         "accepted_assets": authority["accepted_assets"],
+        # Always empty in a release artifact.  Local review authority carries
+        # the candidates as a separate list; release never does.
+        "review_candidate_assets": authority["review_candidate_assets"],
         "accepted_recipes": authority["accepted_recipes"],
         # Accepted laws are NOT paint permission. They are listed so a frame
         # checker can tell "names a law" apart from "names an unknown id" --
@@ -979,7 +1019,10 @@ def verify_paint_manifest(
                 f"{register_name} has changed since the manifest was "
                 "generated; the artifact's paint authority is stale"
             )
-    for list_name in ("accepted_assets", "accepted_recipes", "accepted_laws", "accepted_legacy_art"):
+    for list_name in (
+        "accepted_assets", "review_candidate_assets", "accepted_recipes",
+        "accepted_laws", "accepted_legacy_art",
+    ):
         if stored.get(list_name) != expected[list_name]:
             errors.append(
                 f"{list_name} in the manifest does not match what the "
@@ -1021,6 +1064,19 @@ def prepare_pages_site(output: Path) -> None:
         destination = output / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
+
+    # The source-tree authority is a LOCAL review surface and can name
+    # not-reviewed candidate assets in its separate candidate list. Never copy
+    # that licence into the public artifact. Replace the copied runtime file
+    # before hashing the closure so the viewer and the release manifest consume
+    # the same accepted-only authority, and the artifact identity pins those
+    # exact public bytes.
+    release_runtime_authority = paint_authority(
+        REPOSITORY_ROOT, include_review_candidates=False,
+    )
+    (output / PAINT_AUTHORITY_FILE).write_text(
+        json.dumps(release_runtime_authority, indent=2) + "\n", encoding="utf-8",
+    )
 
     public_letters = REPOSITORY_ROOT / "public_letters"
     if public_letters.is_dir():

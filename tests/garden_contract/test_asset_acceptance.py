@@ -154,10 +154,19 @@ def test_the_local_scene_draws_only_accepted_assets_or_explicit_review_candidate
     required to appear.  Unaccepted candidates are the opposite: every one must
     appear locally or the registry becomes a permission slip for unseen art.
     """
-    from lateletter.garden.world.fixtures import STARTER_FIXTURES
+    from lateletter.garden.world.generation import generate_initial_world
 
     registry = _registry()
-    drawn = {f"fixture.{catalog_id}" for catalog_id in STARTER_FIXTURES}
+    # Five deterministic candidates cover every independently seeded variant.
+    # Read the persisted visual identity the product projects, rather than
+    # assuming catalog id and art id are forever the same fact.
+    drawn = {
+        str(fixture.authored_state["visual_asset_id"])
+        for seed_index in range(5)
+        for fixture in generate_initial_world(
+            f"fixture-review-{seed_index}", f"seed-{seed_index}",
+        ).fixtures
+    }
     accepted = {
         row["asset_id"] for row in registry["assets"]
         if row["verdict"] == "accepted"
