@@ -48,9 +48,10 @@ import { resolveBrowserSky } from './garden-sky.mjs';
 import { validatePaintAuthority } from './garden-paint-authority.mjs';
 import {
   Raster,
-  drawSky, drawSkyLife, drawPondButterflies, drawGround, drawLegacyPlanting, drawAmbient, drawPlantBeds,
+  drawSky, drawSkyLife, drawPondButterflies, drawGround, drawGardenBillboards, drawAmbient,
   drawWeather, drawObject,
-  gardenPresentationProfile, layoutGardenObjects, gardenDepthCohorts,
+  gardenPresentationProfile, gardenTerrainFrame,
+  layoutGardenObjects, gardenDepthCohorts,
   timeOfDay, seasonOf, DAY, NIGHT, EVENING, paletteColor,
   objectBurstPattern, connectedMasks, objectPresentationArt,
   measuredAssetPlacement, escapeHtml, stringHash,
@@ -434,11 +435,12 @@ function advanceLifecycle(previous, scene, frame) {
   const viewport = scene.viewport;
   const cols = Number(viewport?.[0]) || state.cols || 80;
   const profile = gardenPresentationProfile(viewport ?? [cols, 24]);
-  const groundY = profile.groundFront;
+  const terrain = gardenTerrainFrame(projection, viewport ?? [cols, 24], profile);
+  const groundY = terrain.groundFront;
   const season = seasonOf(projection);
   const mode = timeOfDay(projection);
   const weather = String(projection.scene?.weather ?? '').toLowerCase();
-  const layout = layoutGardenObjects(projection, viewport ?? [cols, 24], frame);
+  const layout = layoutGardenObjects(projection, viewport ?? [cols, 24], frame, terrain);
   const pond = layout.find(entry =>
     entry.object.kind === 'fixture' && entry.object.semantic_state?.catalog_id === 'pond');
   const pondCenter = pond
@@ -694,9 +696,10 @@ export function composePresentationFrame(projection, state, context) {
   const season = seasonOf(projection);
   const palette = mode === 'night' ? NIGHT : mode === 'evening' ? EVENING : DAY;
   const profile = gardenPresentationProfile(viewport);
+  const terrain = gardenTerrainFrame(projection, viewport, profile);
   const horizon = profile.horizon;
-  const layout = layoutGardenObjects(projection, viewport, state.visualFrame);
-  const depthCohorts = gardenDepthCohorts(layout, profile);
+  const layout = layoutGardenObjects(projection, viewport, state.visualFrame, terrain);
+  const depthCohorts = gardenDepthCohorts(layout, profile, terrain);
 
   drawSky(raster, projection, sky, palette, profile, mode);
   // Sky life is drawn straight after the stars so that ground, planting and
@@ -706,24 +709,22 @@ export function composePresentationFrame(projection, state, context) {
   // deployed page painted creatures after plants; this backdrop position
   // predates the port and moves, if it moves, with the painter-order law.)
   drawSkyLife(raster, state.lifecycle, palette);
-  drawGround(raster, palette, season, profile);
-  drawLegacyPlanting(
-    raster, projection, palette, season, profile, state.visualFrame,
-    state.hoverCell, lifecycleWindAt(state.lifecycle?.tick ?? state.visualFrame),
-  );
+  drawGround(raster, palette, season, terrain);
   drawAmbient(raster, projection, palette, season, horizon, profile);
-  // Far, middle and near are painter's cohorts derived from the canonical
-  // ground rows. Plant beds are interleaved with their own cohort so the
-  // foreground can overlap the middle distance without moving any object.
   const view = {
     visualFrame: state.visualFrame,
     hoverCell: state.hoverCell,
     focusedObjectId: state.focusedObjectId,
   };
-  for (const entries of [depthCohorts.far, depthCohorts.middle, depthCohorts.near]) {
-    drawPlantBeds(raster, projection, entries, palette, season, profile);
-    entries.forEach(entry => drawObject(raster, entry, projection, palette, season, view));
-  }
+  // One billboard queue owns occlusion.  The old two-phase owner painted all
+  // presentation-native plants first and every canonical fixture afterwards,
+  // so a farther pond or stepping-stone card could cut a nearer plant in half.
+  // Backdrop plants and canonical objects now share one baseline/depth sort.
+  drawGardenBillboards(
+    raster, projection, palette, season, profile, terrain, state.visualFrame,
+    state.hoverCell, lifecycleWindAt(state.lifecycle?.tick ?? state.visualFrame),
+    layout, view,
+  );
   drawPondButterflies(raster, state.lifecycle, palette);
   const weatherReactions = drawWeather(raster, state.lifecycle, palette);
   if (projection.scene?.memorial?.active) {
@@ -791,7 +792,7 @@ export function composePresentationFrame(projection, state, context) {
   // geometry -- a second visual owner deciding placement after composition.
   // The raster's measured plan is already authority-gated, so everything
   // resolved here is accepted ink with its source identity attached.
-  const measuredAssetPlacements = canMeasure
+  const resolvedMeasuredAssets = canMeasure
     ? raster.measuredAssets.map(asset => {
       const placed = measuredAssetPlacement(geometry, asset);
       return {
@@ -805,17 +806,70 @@ export function composePresentationFrame(projection, state, context) {
         // provenance, not paint data, and lives in `diagnostics` below.
         glyphs: placed.glyphs.map(glyph => ({
           glyph: glyph.glyph, x: glyph.x, y: glyph.y, color: glyph.color ?? null,
+          row: glyph.row, column: glyph.column,
         })),
+        owner: asset.owner,
+        world_anchor: [...asset.anchor],
+        art_anchor: [...asset.artAnchor],
       };
     })
     : [];
+
+  // Exact-font mode paints ONE ordered platform plane. The former split put
+  // every measured atlas asset in an overlay above every lattice-painted
+  // plant, so no baseline sort could make a nearer plant occlude a pond. The
+  // raster has already settled final cell ownership and painter order; this
+  // projection merely gives those final glyphs their finished pixel
+  // positions. Affine/degraded mode keeps its existing row transport.
+  const platformGlyphs = canMeasure ? [] : null;
+  if (canMeasure) {
+    for (const placement of resolvedMeasuredAssets) {
+      for (const glyph of placement.glyphs) {
+        const worldX = placement.world_anchor[0] - placement.art_anchor[0] + glyph.column;
+        const worldY = placement.world_anchor[1] - placement.art_anchor[1] + glyph.row;
+        if (worldX < 0 || worldX >= raster.width || worldY < 0 || worldY >= raster.height)
+          continue;
+        if (raster.owners[worldY][worldX] !== placement.owner) continue;
+        platformGlyphs.push({
+          glyph: glyph.glyph, x: glyph.x, y: glyph.y, color: glyph.color,
+          painter_order: raster.cellAttempt[worldY][worldX] ?? 0,
+          source_id: raster.sources[worldY][worldX],
+        });
+      }
+    }
+    for (let row = 0; row < raster.height; row += 1) {
+      for (let column = 0; column < raster.width; column += 1) {
+        const glyph = raster.glyphs[row][column];
+        if (glyph === ' ' || glyph === '' || raster.owners[row][column] !== null) continue;
+        platformGlyphs.push({
+          glyph, x: column * cellWidth, y: row * cellHeight,
+          color: raster.colors[row][column],
+          painter_order: raster.cellAttempt[row][column] ?? 0,
+          source_id: raster.sources[row][column],
+        });
+      }
+    }
+    platformGlyphs.sort((left, right) => left.painter_order - right.painter_order);
+  }
+  const measuredAssetPlacements = resolvedMeasuredAssets.map(placement => ({
+    object_id: placement.object_id,
+    source_id: placement.source_id,
+    units: placement.units,
+    left: placement.left, top: placement.top,
+    width: placement.width, height: placement.height,
+    glyphs: placement.glyphs.map(glyph => ({
+      glyph: glyph.glyph, x: glyph.x, y: glyph.y, color: glyph.color,
+    })),
+  }));
 
   // The painted rows, exactly as the painter must emit them. Text and
   // lattice HTML are both decided here; the paint step copies them into the
   // DOM and decides nothing.
   const lines = Array.from({ length: viewport[1] }, (_, row) => raster.line(row));
-  const htmlLines = Array.from({ length: viewport[1] }, (_, row) =>
-    raster.latticeHtml(row, cellWidth, canMeasure));
+  const htmlLines = canMeasure
+    ? Array.from({ length: viewport[1] }, () => '')
+    : Array.from({ length: viewport[1] }, (_, row) =>
+      raster.latticeHtml(row, cellWidth, false));
 
   // The background: the accepted sky-to-ground gradient, always. This
   // replaces the deleted hostname-conditioned branch -- there is one
@@ -823,7 +877,7 @@ export function composePresentationFrame(projection, state, context) {
   // The coloured terrain begins at the far grass edge. The canonical fixture
   // surface is nearer the bottom and lives inside this band; using it as the
   // gradient boundary erased the depth between background and foreground.
-  const groundPct = (profile.farGroundY / viewport[1] * 100).toFixed(2);
+  const groundPct = (terrain.farGroundY / viewport[1] * 100).toFixed(2);
   const background = {
     kind: 'gradient',
     bands: [
@@ -885,12 +939,16 @@ export function composePresentationFrame(projection, state, context) {
     // consumers of `renderer.lastFrame` read. It is part of the frame, not a
     // side channel: the paint step copies `rows`; adapter consumers read the
     // named fields the class has always exposed.
-    rows: { lines, html: htmlLines, line_height_px: cellHeight },
+    rows: {
+      lines, html: htmlLines, line_height_px: cellHeight,
+      paint_mode: canMeasure ? 'platform' : 'rows',
+    },
     measured_asset_placements: measuredAssetPlacements,
+    platform_glyphs: platformGlyphs,
     aria_label: ariaLabel,
     theme: { mode, palette },
     viewport, lines, sky, palette, season, timeOfDay: mode,
-    horizon, profile, layout, depthCohorts, weatherReactions,
+    horizon, profile, terrain, layout, depthCohorts, weatherReactions,
     motionPaused: motionSuppressed,
   };
 }
@@ -928,6 +986,7 @@ export function paintPresentationFrame(frame, surface) {
   }
   const lines = frame.rows.lines;
   const htmlLines = frame.rows.html;
+  const platformMode = frame.rows.paint_mode === 'platform';
   while (surface.rows.length < lines.length) {
     const row = document.createElement('div');
     row.className = 'garden-lattice-row';
@@ -946,8 +1005,9 @@ export function paintPresentationFrame(frame, surface) {
       surface.rows[index].style.lineHeight = `${frame.rows.line_height_px}px`;
     }
     const html = htmlLines[index];
-    if (surface.rows[index].textContent !== line || surface.rowHtml[index] !== html) {
-      surface.rows[index].textContent = line;
+    const paintedLine = platformMode ? '' : line;
+    if (surface.rows[index].textContent !== paintedLine || surface.rowHtml[index] !== html) {
+      surface.rows[index].textContent = paintedLine;
       if (Object.hasOwn(surface.rows[index], 'innerHTML') ||
         (typeof globalThis.HTMLElement !== 'undefined' &&
           surface.rows[index] instanceof globalThis.HTMLElement)) {
@@ -962,8 +1022,9 @@ export function paintPresentationFrame(frame, surface) {
   // the adapter's `objectArtRectPixels`, which reports where a drawing IS --
   // a fact of the frame, recorded as it is painted.
   const placements = frame.measured_asset_placements;
+  const platformGlyphs = platformMode ? frame.platform_glyphs : null;
   surface.measuredAssetRects = new Map();
-  if (!placements.length) {
+  if (!placements.length && !platformGlyphs?.length) {
     if (surface.measuredLayer) surface.measuredLayer.innerHTML = '';
   } else {
     if (!surface.measuredLayer) {
@@ -975,18 +1036,17 @@ export function paintPresentationFrame(frame, surface) {
       // Keep the overlay after the lattice rows when a resize adds rows.
       element.appendChild(surface.measuredLayer);
     }
-    const spans = [];
     for (const placement of placements) {
       surface.measuredAssetRects.set(placement.object_id, {
         x: placement.left, y: placement.top,
         width: placement.width, height: placement.height,
       });
-      for (const glyph of placement.glyphs) {
-        spans.push(`<span style="left:${glyph.x.toFixed(2)}px;top:${glyph.y.toFixed(2)}px` +
-          (glyph.color ? `;color:${glyph.color}` : '') +
-          `">${escapeHtml(glyph.glyph)}</span>`);
-      }
     }
+    const glyphs = platformGlyphs ?? placements.flatMap(placement => placement.glyphs);
+    const spans = glyphs.map(glyph =>
+      `<span style="left:${glyph.x.toFixed(2)}px;top:${glyph.y.toFixed(2)}px` +
+        (glyph.color ? `;color:${glyph.color}` : '') +
+        `">${escapeHtml(glyph.glyph)}</span>`);
     surface.measuredLayer.innerHTML = spans.join('');
   }
   element.setAttribute('aria-label', frame.aria_label);

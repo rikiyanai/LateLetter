@@ -399,12 +399,15 @@ test('the live composer resolves measured pixel placement, and its frame paints 
   // And the extended contract holds over this measured frame.
   assert.deepEqual(frameViolations(frame, { projection, context }), []);
 
-  // Painting it needs the frame and a bare surface -- nothing else. The spans
-  // painted are exactly the placement's glyph count.
+  // Painting it needs the frame and a bare surface -- nothing else. Exact-font
+  // mode uses one platform plane for measured fixtures AND lattice-native
+  // scenery so their billboard order cannot be destroyed by a second overlay.
   const surface = { element: bareNode(), rows: [], rowHtml: [] };
   withBareDocument(() => live.paintPresentationFrame(frame, surface));
   const spanCount = (surface.measuredLayer.innerHTML.match(/<span /g) ?? []).length;
-  assert.equal(spanCount, bench.glyphs.length);
+  assert.equal(spanCount, frame.platform_glyphs.length);
+  assert.ok(spanCount > bench.glyphs.length,
+    'the platform plane omitted lattice-native scenery and recreated the split paint owner');
   assert.deepEqual(surface.measuredAssetRects.get('fixture:bench'),
     { x: bench.left, y: bench.top, width: bench.width, height: bench.height });
 });

@@ -1225,6 +1225,13 @@ The garden uses a **hybrid authored/procedural scene model**. Procedural systems
   angles, canopy envelope and density). Two gardens with different seeds must produce visibly
   different legal arrangements; the same complete generation input reproduces the same
   topology and placement.
+- **Fixture-room generation** selects only atlas-authored legal variants and persists the
+  choices before projection. The seeded water-room axes are pond radius/loop silhouette,
+  stepping-stone side (left or right), stone size/count, and a bounded bench position above
+  and facing the pond; planter variation selects an authored blossom-count/state. The
+  renderer may animate the selected pond's water state but may not synthesize a new bank,
+  stone, bench anchor, or planter drawing. Each axis has its own derived PRNG stream so one
+  change does not reshuffle the other room relationships.
 - **Ambient presentation** takes `(world_id, projected scene, presentation frame)` and derives
   bounded one-cell trajectories without persistence.
 - **Weather presentation** takes projected weather/season and semantic surfaces. Any lasting
@@ -1882,8 +1889,11 @@ The browser and terminal share a continuous canonical camera in world space. Pre
 - Browser rendering uses one timestamp-driven `requestAnimationFrame` loop and batched layer transforms. Refresh rate must not alter simulation speed.
 - Terminal rendering quantizes camera offsets to cells, may use block/Braille phases for apparent subcell movement, damage-tracks changed cells, and must not clear/redraw the full screen every frame.
 - The far terrain edge is one continuous Garden-authored contour aligned exactly with the sky→terrain colour boundary. A structural `---^/\\___...` sample from the Moon reference demonstrates continuity only and is not Garden grass art. Large legacy trees and selected far fixtures (the street lantern and, when present, trellis) root on that edge. Small legacy flowers, shrubs, grasses, mushrooms and ferns receive stable seeded depth coordinates across the receding terrain plane, excluding the far edge; they must not collapse into a single near row or be repacked as the camera moves.
+- The composed frame owns one camera-projected terrain value containing the far edge, near edge, and span. Terrain ink, the CSS sky→terrain transition, visibility/culling, depth cohorts, cover bounds, and weather ground effects consume that value; no painter or viewer may retain a fixed viewport-row copy. Horizontal and vertical pan move the terrain and everything rooted in it through the same camera law at the layer's declared depth.
+- Every plant, fixture, and other multi-cell drawable is a billboard/card with a stable full-frame footprint, a ground baseline, depth, and stable identity. All cards share one deterministic back-to-front order (`baseline`, then depth, then stable id); a renderer-local phase may not put every fixture above every plant. The full rectangle governs spacing and hit/layout clearance, while blank cells are transparent and only ink occludes. Lattice and measured-font painting implement the same transparency and order.
 - Scenery wraps or has authored continuation; panning may not reveal blank/uninitialized columns.
 - Presentation-native population membership and canonical visibility rooms are resolved in world/terrain space. Pan, drag, resize and parallax may change projection only; they may not add or remove scenery because two screen-space rectangles happen to cross.
+- Presentation-native planting is admitted against a neutral, world-anchored projected card field with minimum card separation and a bounded regional cluster budget. The current camera/viewport may crop that stable population but never participates in deciding membership.
 - Hit testing uses world coordinates and remains correct under pan, zoom/reflow, and different parallax offsets.
 - Background-tab suspension pauses presentation only. On resume, canonical elapsed-time processing runs once without duplicating rewards or authored events.
 - Reduced-motion mode freezes parallax, camera easing, weather travel, idle sway, and nonessential position animation while retaining immediate state changes, interactions, and discoveries.

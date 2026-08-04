@@ -445,10 +445,11 @@ FIXTURE_ART: dict[str, dict[str, Any]] = {
     # ALTERNATE ~". Round 2 filled the interior with a single solid run,
     # `(~~~~-~~~~)`, and a continuous band of identical marks is a texture fill,
     # not a surface: it has no depth cue, which is why it read as a cloud.
-    # Ripples are now SPARSE and OFFSET -- no two rows put a mark in the same
-    # column, and the gaps between them are wider than the marks themselves.
-    # That offsetting is the whole depth cue, and it only works if the marks are
-    # few enough for the gaps to be read as open water.
+    # Ripples are OFFSET -- no two rows put a train in the same columns. The
+    # first accepted version used only two isolated marks per row; live review
+    # showed that its frames differed mechanically but the motion disappeared
+    # at full-scene scale. Short trains preserve open water while making their
+    # two-cell lateral translation perceptible.
     #
     # The form is also flatter now: fifteen columns across four rows. A pond is
     # seen at a shallow angle, so its silhouette is wide and low, and rounds 1
@@ -463,37 +464,37 @@ FIXTURE_ART: dict[str, dict[str, Any]] = {
         "affordance": "water",
         "ascii": (
             "  _,-~-.,_,-~-.,_,-~-.  ",
-            "(   ~          ~       )",
-            "(       ~          ~   )",
+            "(   ~~      ~~~      ~~)",
+            "(  ~~~      ~~      ~~ )",
             "  `-.,_,-~-.,_,-~-.,_-' ",
         ),
         # The operator-directed wider silhouette stays fixed across the four
-        # motion frames. Only the sparse interior ripple marks translate
+        # motion frames. Only the interior ripple trains translate
         # left/centre/right, then ping-pong, so the pond reads as water without
         # redrawing its banks or filling it with texture.
         "frames": (
             (
                 "  _,-~-.,_,-~-.,_,-~-.  ",
-                "( ~          ~         )",
-                "(     ~          ~     )",
+                "( ~~      ~~~      ~~  )",
+                "(    ~~~      ~~      ~)",
                 "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
             (
                 "  _,-~-.,_,-~-.,_,-~-.  ",
-                "(   ~          ~       )",
-                "(       ~          ~   )",
+                "(   ~~      ~~~      ~~)",
+                "(  ~~~      ~~      ~~ )",
                 "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
             (
                 "  _,-~-.,_,-~-.,_,-~-.  ",
-                "(     ~          ~     )",
-                "(         ~          ~ )",
+                "(     ~~      ~~~    ~ )",
+                "(~~~      ~~      ~~   )",
                 "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
             (
                 "  _,-~-.,_,-~-.,_,-~-.  ",
-                "(   ~          ~       )",
-                "(       ~          ~   )",
+                "(   ~~      ~~~      ~~)",
+                "(  ~~~      ~~      ~~ )",
                 "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
         ),
@@ -505,7 +506,7 @@ FIXTURE_ART: dict[str, dict[str, Any]] = {
         # the lantern's override: a character's meaning belongs to the object.
         "ink": {"'": "'"},
         "anchor_column": 11,
-        "note": "Round 3 silhouette widened on 2026-08-04 so the path can meet its bank; sparse ripples translate two cells per frame.",
+        "note": "Round 3 silhouette widened on 2026-08-04 so the path can meet its bank; the 2026-08-05 live review kept that accepted bank and strengthened only the interior ripple train so its side-to-side oscillation reads at full-scene scale.",
     },
 
     # ROUND 3. "TALLER, AND ||| NOT | | | BASE CAN HAVE /___\\ STYLE BASE".

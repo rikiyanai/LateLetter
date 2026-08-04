@@ -539,29 +539,53 @@ export function gardenPresentationProfile(viewport, worldSize = [120, 80]) {
   };
 }
 
-/** Do two `{x, y, width, height}` rectangles share any pixels? */
+// The authored starter camera is the neutral view of the 120 x 80 world.
+// Terrain is part of that world-facing composition, not a CSS stripe glued to
+// the viewport.  Keeping the neutral camera beside the projection law makes
+// the vertical pan transform explicit and prevents a second screen-space
+// owner from appearing in the viewer or painter.
+const GARDEN_HOME_CAMERA_Y = 51;
+const FAR_TERRAIN_DEPTH = 0.52;
+const NEAR_TERRAIN_DEPTH = 1.0;
+
 /**
- * The row the Garden's ground is on: where feet land and where soil is painted.
+ * Camera-projected terrain contours for one composed frame.
  *
- * It returns `groundFront`, NOT `horizon`, and the difference is the whole
- * point of the function. `horizon` is the lower layout bound used by sky life
- * and weather; the visible sky→terrain boundary is `groundBack`. `groundFront` is the nearest
- * edge of the WALKABLE PLANE. Its far edge and the sky transition are
- * `groundBack`; objects may project between them, but this helper deliberately
- * answers the near-edge question only.
- *
- * Returning `horizon` here -- which is what this did -- is how the two rows
- * drifted apart in the first place: `_drawGround` asked "where is the ground"
- * and was told the horizon, while the compositor put feet on `groundFront`, so
- * the band was painted a row and a half below everything standing on it and
- * the capture showed fixtures hanging in empty air. The near edge now has one
- * owner and both its painter and consumers read this field.
- *
- * @param viewport `[columns, rows]` of character cells currently available.
- * @returns The row index of the soil line.
+ * `gardenPresentationProfile` owns the neutral shape of the viewport.  This
+ * function applies the same vertical camera delta used by world projection at
+ * the depth of each contour.  Every consumer of the visible terrain band --
+ * ink, CSS colour transition, culling, planting and weather -- receives this
+ * value.  No consumer is allowed to re-derive a fixed viewport row.
  */
-export function gardenGroundY(viewport) {
-  return gardenPresentationProfile(viewport).groundFront;
+export function gardenTerrainFrame(projection, viewport, profile = null) {
+  const resolved = profile ?? gardenPresentationProfile(viewport);
+  const cameraY = Number(projection?.camera?.[1]);
+  const delta = Number.isFinite(cameraY)
+    ? GARDEN_HOME_CAMERA_Y - cameraY : 0;
+  let groundBack = resolved.groundBack + roundHalfAway(
+    delta * resolved.yScale * FAR_TERRAIN_DEPTH,
+  );
+  let groundFront = resolved.groundFront + roundHalfAway(
+    delta * resolved.yScale * NEAR_TERRAIN_DEPTH,
+  );
+  groundBack = clamp(groundBack, 4, resolved.height - 4);
+  groundFront = clamp(groundFront, groundBack + 2, resolved.height - 2);
+  return Object.freeze({
+    farGroundY: groundBack,
+    groundBack,
+    groundFront,
+    groundSpan: groundFront - groundBack,
+  });
+}
+
+/**
+ * Compatibility query for consumers that need the near soil row.
+ * A projection makes it frame-accurate; omitting one asks for the authored
+ * neutral view and does not create a second paint owner.
+ */
+export function gardenGroundY(viewport, projection = { camera: [60, GARDEN_HOME_CAMERA_Y] }) {
+  const profile = gardenPresentationProfile(viewport);
+  return gardenTerrainFrame(projection, viewport, profile).groundFront;
 }
 
 /**
@@ -812,11 +836,16 @@ export class Raster {
     const top = baseline ? anchorY - lines.length + 1 : anchorY;
     const left = anchorX - Math.floor(width / 2);
     lines.forEach((line, row) => {
-      if (!accents) { this.text(left, top + row, line, color, animated, owner, identity); return; }
-      // Per-cell so an accent can sit inside a run of ordinary strokes.
+      // A billboard's rectangle owns spacing and hit geometry; its EMPTY
+      // cells are transparent.  The measured Contract-P path has always
+      // omitted spaces from its final glyph list.  Writing blanks only on the
+      // lattice path made the same card opaque in one renderer and transparent
+      // in the other, and let a later pond erase a nearer plant through empty
+      // water.  Per-cell emission keeps the two paths identical.
       [...line].forEach((glyph, column) => {
+        if (glyph === ' ' || glyph === '') return;
         this.put(left + column, top + row,
-          glyph, accents[`${row},${column}`] ?? color, animated, owner, identity);
+          glyph, accents?.[`${row},${column}`] ?? color, animated, owner, identity);
       });
     });
   }
@@ -847,10 +876,11 @@ export class Raster {
       this.measuredAssets.push({
         objectId: String(objectId), anchor: [anchorX, anchorY], artAnchor: anchor,
         lines: [...lines], color, accents: options.accents ?? null,
-        source,
+        source, owner,
       });
     }
     lines.forEach((line, row) => [...line].forEach((glyph, column) => {
+      if (glyph === ' ' || glyph === '') return;
       this.put(left + column, top + row, glyph,
         options.accents?.[`${row},${column}`] ?? color,
         Boolean(options.animated), owner,
@@ -1578,8 +1608,9 @@ export function gardenObjectsShareVisualFeature(left, right) {
     (fixture(right) === 'pond' && plant(left) === 'water_lily');
 }
 
-export function layoutGardenObjects(projection, viewport, frame = 0) {
+export function layoutGardenObjects(projection, viewport, frame = 0, terrain = null) {
   const profile = gardenPresentationProfile(viewport);
+  const visibleTerrain = terrain ?? gardenTerrainFrame(projection, viewport, profile);
   const kindOrder = { fixture: 0, plant: 1, collectible: 2, animal: 3 };
   const ordered = [...(projection.objects ?? [])].sort((left, right) =>
     Number(left.position?.[1] ?? 0) - Number(right.position?.[1] ?? 0) ||
@@ -1609,7 +1640,7 @@ export function layoutGardenObjects(projection, viewport, frame = 0) {
     // or behind the plane is outside the camera's view, exactly as a position
     // off the left or right edge is.
     if (baseRect.right < 0 || baseRect.left >= profile.width ||
-      ground[1] < profile.groundBack || ground[1] > profile.groundFront) continue;
+      ground[1] < visibleTerrain.groundBack || ground[1] > visibleTerrain.groundFront) continue;
     prepared.push({
       object, art, lod: profile.lod, baseAnchor: base, baseRect, footprint,
       groundRow: ground[1], lift,
@@ -1671,10 +1702,10 @@ export function layoutGardenObjects(projection, viewport, frame = 0) {
       profile.lod === 'medium' ? 2 : 3;
     const yOffsets = orderedIntegerRange(
       Math.max(
-        profile.groundBack - Math.min(...groundRowsUsed), -bounds.top, -maximumYShift,
+        visibleTerrain.groundBack - Math.min(...groundRowsUsed), -bounds.top, -maximumYShift,
       ),
       Math.min(
-        profile.groundFront - Math.max(...groundRowsUsed), maximumYShift,
+        visibleTerrain.groundFront - Math.max(...groundRowsUsed), maximumYShift,
       ),
     );
     const candidates = [];
@@ -1727,11 +1758,12 @@ export function layoutGardenObjects(projection, viewport, frame = 0) {
  * The cohorts only establish a painter's order so near planting can overlap the
  * feet of the middle distance while far silhouettes remain behind it.
  */
-export function gardenDepthCohorts(layout, profile) {
+export function gardenDepthCohorts(layout, profile, terrain = null) {
+  const visibleTerrain = terrain ?? profile;
   const cohorts = { far: [], middle: [], near: [] };
-  const span = Math.max(1, profile.groundFront - profile.groundBack);
+  const span = Math.max(1, visibleTerrain.groundFront - visibleTerrain.groundBack);
   for (const entry of layout) {
-    const nearness = clamp((entry.groundRow - profile.groundBack) / span, 0, 1);
+    const nearness = clamp((entry.groundRow - visibleTerrain.groundBack) / span, 0, 1);
     const name = nearness < 0.34 ? 'far' : nearness < 0.68 ? 'middle' : 'near';
     cohorts[name].push(entry);
   }
@@ -1811,12 +1843,12 @@ export function drawSky(raster, projection, sky, palette, profile, mode) {
  * Paint the two authoritative contours of the receding ground plane.
  *
  * Presentation-native ground cover fills the bounded space between them in
- * `drawLegacyPlanting`; this painter owns the uninterrupted far transition
+ * `drawGardenBillboards`; this painter owns the uninterrupted far transition
  * and near soil edges that make those intermediate marks read as terrain.
  */
-export function drawGround(raster, palette, season, profile) {
-  // `profile.horizon` is deliberately NOT read here. It is the sky boundary,
-  // not the ground, and reading it was the defect: see `gardenGroundY`.
+export function drawGround(raster, palette, season, terrain) {
+  // `profile.horizon` is deliberately NOT read here. It is a neutral viewport
+  // bound, not the current frame's camera-projected terrain.
   // Restore the Garden's previous continuous punctuation texture. The
   // structural reference supplied the far-band SHAPE; its `---^/\\` bytes were
   // never Garden art and must not be copied into the product.
@@ -1826,9 +1858,9 @@ export function drawGround(raster, palette, season, profile) {
   // also the CSS colour transition and roots big trees/far fixtures. The near
   // contour roots small legacy planting and the pond room. Their distinct
   // texture and colour are intentional depth cues, not two unrelated bands.
-  for (const row of [profile.farGroundY, profile.groundFront]) {
+  for (const row of [terrain.farGroundY, terrain.groundFront]) {
     for (let x = 0; x < raster.width; x += 1) {
-      const isFarEdge = row === profile.farGroundY;
+      const isFarEdge = row === terrain.farGroundY;
       const texture = isFarEdge ? farTexture : nearSoil;
       const glyph = texture[(x + (isFarEdge ? 0 : 5)) % texture.length];
       raster.put(x, row, glyph,
@@ -2016,6 +2048,23 @@ const LEGACY_COVER_DEPTH = 1.12;
  */
 const legacyLayoutCache = new Map();
 
+function legacyPlantCardRect(plant, anchorX, baseline, margin = 0) {
+  if (plant.blades) {
+    const left = Math.min(...plant.blades.map(blade => anchorX + blade.dx)) - 2;
+    const right = Math.max(...plant.blades.map(blade => anchorX + blade.dx)) + 2;
+    const top = baseline - Math.max(...plant.blades.map(blade => blade.height)) - 1;
+    return { left: left - margin, right: right + margin,
+      top: top - margin, bottom: baseline + margin };
+  }
+  const left = Math.min(...plant.rows.map(([, dx]) => anchorX + dx));
+  const right = Math.max(...plant.rows.map(([, dx, text]) =>
+    anchorX + dx + [...text].length - 1));
+  const top = Math.min(...plant.rows.map(([dy]) => baseline - dy));
+  const bottom = Math.max(...plant.rows.map(([dy]) => baseline - dy));
+  return { left: left - margin, right: right + margin,
+    top: top - margin, bottom: bottom + margin };
+}
+
 function legacyPlantLayout(seed, season) {
   const key = `${seed}:${season}`;
   const cached = legacyLayoutCache.get(key);
@@ -2026,7 +2075,11 @@ function legacyPlantLayout(seed, season) {
   const first = -LEGACY_BACKDROP_MARGIN;
   const last = LEGACY_WORLD_COLUMNS + LEGACY_BACKDROP_MARGIN;
   const extent = last - first;
-  const occupied = [], placed = [];
+  // Membership is settled against one neutral projected field, never against
+  // the current camera or viewport.  This gives the generator a real
+  // two-dimensional card-spacing law without reviving the resize/pan defect
+  // where plants appeared and vanished as the crop changed.
+  const occupiedCards = [], regionCounts = new Map(), placed = [];
   for (let attempt = 0; attempt < extent * 3; attempt += 1) {
     const type = rng.choices(names, values), plant = LEGACY_PLANT_MAKERS[type](rng);
     if (season === 'autumn' && ['oak', 'bush'].includes(plant.type)) {
@@ -2044,19 +2097,24 @@ function legacyPlantLayout(seed, season) {
     const depth = isTree ? baseDepth : baseDepth + plane * 0.40;
     const half = Math.floor(plant.width / 2) + 2;
     const x = rng.randint(first + half + 1, last - half - 2);
-    const minimum = x - half - 1, maximum = x + half + 1;
-    // Spacing is two-dimensional. Plants on one terrain row must not collide;
-    // plants separated in depth may share world x because they paint on
-    // different rows. A one-dimensional interval set was the hidden reason a
-    // dense deployed population became one sparse horizontal queue.
-    if (occupied.some(entry =>
-      Math.abs(plane - entry.plane) < 0.13 &&
-      minimum < entry.maximum && maximum > entry.minimum)) continue;
-    occupied.push({ minimum, maximum, plane });
+    const worldY = LEGACY_HOME_CAMERA_Y +
+      (plane - LEGACY_TERRAIN_CENTER) * LEGACY_WORLD_ROWS / depth;
+    const [referenceX, referenceBaseline] = worldToGardenScreen(
+      [x, worldY], [60, LEGACY_HOME_CAMERA_Y], [160, 66], depth,
+    );
+    const referenceRect = legacyPlantCardRect(plant, referenceX, referenceBaseline, 1);
+    if (occupiedCards.some(rect => intersectionArea(referenceRect, rect) > 0)) continue;
+    // A region may carry a small intentional cluster, but never an accretion
+    // of unrelated cards.  The key is neutral-world projected, so membership
+    // remains a pure function of seed and season under every pan and resize.
+    const regionKey = `${Math.floor(referenceX / 24)}:${Math.floor(referenceBaseline / 9)}`;
+    if ((regionCounts.get(regionKey) ?? 0) >= 3) continue;
+    occupiedCards.push(referenceRect);
+    regionCounts.set(regionKey, (regionCounts.get(regionKey) ?? 0) + 1);
     placed.push({ plant, x, depth, plane });
   }
-  // Painter order is the depth model: far silhouettes first, near planting
-  // last, then canonical objects in the compositor above this layer.
+  // Stable generation order only. Final paint order is owned by the shared
+  // billboard queue, which interleaves these cards with canonical objects.
   placed.sort((left, right) => left.plane - right.plane || left.x - right.x);
   legacyLayoutCache.set(key, placed);
   return placed;
@@ -2092,8 +2150,9 @@ function legacyRustle(glyph, intensity, seed) {
     : wave < -0.45 ? (LEGACY_RUSTLE_B[glyph] ?? glyph) : glyph;
 }
 
-export function drawLegacyPlanting(
-  raster, projection, palette, season, profile, frame, hoverCell, wind = 0,
+export function drawGardenBillboards(
+  raster, projection, palette, season, profile, terrain, frame, hoverCell,
+  wind = 0, canonicalEntries = [], view = {},
 ) {
   const worldId = String(projection.world_id ?? projection.scene?.world_id ?? 'lateletter-garden');
   const authoredSeed = String(projection.presentation_seed ?? '');
@@ -2101,7 +2160,7 @@ export function drawLegacyPlanting(
     : /^\d+$/.test(authoredSeed) ? Number(authoredSeed) >>> 0
       : stringHash(authoredSeed || worldId);
   const ink = palette === NIGHT ? LEGACY_INK_NIGHT : LEGACY_INK_DAY;
-  const farGroundY = profile.farGroundY;
+  const farGroundY = terrain.farGroundY;
   const camera = Array.isArray(projection.camera) ? projection.camera : [0, 0];
   const viewport = [raster.width, raster.height];
   // One projection for every layer, horizontally AND vertically. The terrain
@@ -2113,22 +2172,38 @@ export function drawLegacyPlanting(
       (plane - LEGACY_TERRAIN_CENTER) * LEGACY_WORLD_ROWS / depth;
     return worldToGardenScreen([worldX, worldY], camera, viewport, depth);
   };
+  const neutralViewport = [160, 66];
+  const neutralCamera = [60, LEGACY_HOME_CAMERA_Y];
+  const neutralCanonicalRects = (projection.objects ?? []).map(object => {
+    const depth = Number(object.depth ?? 100) / 100;
+    const anchor = worldToGardenScreen(
+      object.position, neutralCamera, neutralViewport, depth,
+    );
+    return footprintRect(anchor, stableArtFootprint(object, 'full'));
+  });
 
   // Canonical objects reserve rooms in WORLD/TERRAIN space. The deleted owner
   // performed this test against current screen rectangles; changing the camera
   // therefore changed membership and made vegetation pop in and out. These
   // rooms depend only on the authored scene, so pan and resize cannot alter
   // the population.
-  const canonicalRooms = (projection.objects ?? []).map(object => ({
-    x: Number(object.position?.[0] ?? object.hotspot?.x ?? 0),
-    plane: clamp(
-      LEGACY_TERRAIN_CENTER +
-        (Number(object.position?.[1] ?? object.hotspot?.y ?? LEGACY_HOME_CAMERA_Y) -
-          LEGACY_HOME_CAMERA_Y) / LEGACY_WORLD_ROWS,
-      0, 1,
-    ),
-    halfWidth: Math.max(4, Number(object.hotspot?.width ?? 1) / 2 + 3),
-  }));
+  const canonicalRooms = (projection.objects ?? []).map(object => {
+    const footprint = stableArtFootprint(object, 'full');
+    return {
+      x: Number(object.position?.[0] ?? object.hotspot?.x ?? 0),
+      plane: clamp(
+        LEGACY_TERRAIN_CENTER +
+          (Number(object.position?.[1] ?? object.hotspot?.y ?? LEGACY_HOME_CAMERA_Y) -
+            LEGACY_HOME_CAMERA_Y) / LEGACY_WORLD_ROWS,
+        0, 1,
+      ),
+      // Reserve the picture, not the one-cell gameplay hotspot. The pond is
+      // 24 columns wide; the old hotspot-derived room was seven, which is how
+      // presentation plants were admitted behind its empty interior and then
+      // appeared sliced at the bank.
+      halfWidth: Math.max(4, footprint.width / 2 + 3),
+    };
+  });
   const roomIsFree = (worldX, plane, halfWidth = 0) => !canonicalRooms.some(room =>
     Math.abs(plane - room.plane) < 0.13 &&
     Math.abs(worldX - room.x) < halfWidth + room.halfWidth);
@@ -2142,8 +2217,8 @@ export function drawLegacyPlanting(
   // fixture surface. Each glyph receives a stable depth from its world-column
   // hash, so it pans at the same depth at which it is vertically placed. The
   // far edge remains continuous because cover starts on the following row.
-  const coverTop = Math.min(profile.groundFront, farGroundY + 1);
-  const coverSpan = Math.max(1, profile.groundFront - coverTop);
+  const coverTop = Math.min(terrain.groundFront, farGroundY + 1);
+  const coverSpan = Math.max(1, terrain.groundFront - coverTop);
   for (let worldX = coverFirst; worldX <= coverLast; worldX += 1) {
     const hash = (Math.imul(worldX + 1013, 0x9e3779b1) ^ seed) >>> 0;
     const nearness = ((hash >>> 8) % 1000) / 999;
@@ -2151,7 +2226,7 @@ export function drawLegacyPlanting(
     if (!roomIsFree(worldX, nearness, 1)) continue;
     const [column, coverRow] = screenPointOf(worldX, nearness, coverDepth);
     if (column < 0 || column >= raster.width || coverRow < coverTop - 2 ||
-        coverRow > profile.groundFront + 2) continue;
+        coverRow > terrain.groundFront + 2) continue;
     const value = hash % 1000 / 1000;
     if (value < (season === 'winter' ? 0.82 : 0.48)) continue;
     let glyph, color;
@@ -2164,16 +2239,50 @@ export function drawLegacyPlanting(
     raster.put(column, coverRow, glyph, ink[color], true, null, { source: 'recipe.ground.cover' });
   }
 
-  const hoverRow = Number(hoverCell?.[1] ?? -999), hoverColumn = Number(hoverCell?.[0] ?? -999);
-  // This is a BACKDROP layer, matching the deployed painter order. Its dense
-  // population remains intact except where a candidate would occupy a
-  // canonical object's reserved visual room. No gameplay object is minted.
+  const hoverRow = Number(hoverCell?.[1] ?? -999);
+  const hoverColumn = Number(hoverCell?.[0] ?? -999);
+  const cards = canonicalEntries.map(entry => ({
+    kind: 'canonical', baseline: entry.groundRow,
+    depth: Number(entry.object.depth ?? 100) / 100,
+    stableId: entry.object.object_id, entry,
+  }));
+
+  // Presentation-native planting joins canonical objects as cards.  It is no
+  // longer painted in a backdrop phase that guarantees every fixture will
+  // erase it.  Membership is still seed/world-owned; only final painter order
+  // is derived here from the projected baseline.
   for (const { plant, x, depth, plane } of legacyPlantLayout(seed, season)) {
     const isTree = plant.type === 'oak' || plant.type === 'pine';
     const halfWidth = Math.floor(plant.width / 2) + (isTree ? 1 : 3);
     if (!roomIsFree(x, plane, halfWidth)) continue;
+    const neutralWorldY = LEGACY_HOME_CAMERA_Y +
+      (plane - LEGACY_TERRAIN_CENTER) * LEGACY_WORLD_ROWS / depth;
+    const neutralAnchor = worldToGardenScreen(
+      [x, neutralWorldY], neutralCamera, neutralViewport, depth,
+    );
+    const neutralPlantRect = legacyPlantCardRect(
+      plant, neutralAnchor[0], neutralAnchor[1], 2,
+    );
+    if (neutralCanonicalRects.some(rect => intersectionArea(neutralPlantRect, rect, 2) > 0))
+      continue;
     const [anchorX, baseline] = screenPointOf(x, plane, depth);
     if (anchorX < -plant.width - 2 || anchorX > raster.width + plant.width + 2) continue;
+    cards.push({
+      kind: 'plant', baseline, depth, stableId: `legacy:${x}:${plane}`,
+      plant, anchorX,
+    });
+  }
+
+  cards.sort((left, right) =>
+    left.baseline - right.baseline || left.depth - right.depth ||
+    compareCodePoints(left.stableId, right.stableId));
+
+  for (const card of cards) {
+    if (card.kind === 'canonical') {
+      drawObject(raster, card.entry, projection, palette, season, view);
+      continue;
+    }
+    const { plant, anchorX, baseline } = card;
     if (plant.blades) {
       for (const blade of plant.blades) {
         const lean = wind * 1.6 + Math.sin((frame / 200 + blade.seed * 0.37) * 6.2832) * 0.6;
@@ -2225,44 +2334,6 @@ export function drawLegacyPlanting(
     }
   }
 }
-
-
-
-/**
- * EMPTIED 2026-08-01, on the same rule that emptied `_drawSkyLife`.
- *
- * WHAT THIS DREW
- * --------------
- * A scatter of `;` `'` `,` `*` `/` `\` across a radius of up to fifteen
- * columns either side of every plant, plus a shallow mound of `.` `:` `,`
- * beneath it, coloured from the foliage palette and reseeded per plant.
- *
- * WHY IT IS GONE
- * --------------
- * It was renderer-authored decoration. Not a canonical object, not an atlas
- * asset, not from the archive -- glyphs this module invented to give the
- * ground "the dense botanical rhythm the Garden needs", which is a visual
- * judgement no one made but this file.
- *
- * The operator's rule admits no exception: nothing they have not approved may
- * appear. Ground-cover scatter is specifically something they have already
- * looked at and rejected once, in the round that removed the ground-cover
- * band. It came back the moment the legacy art port put plants into the
- * default scene again, because it is drawn per plant -- thirty-one columns of
- * unapproved glyphs arriving as a side effect of restoring two approved
- * drawings. That is exactly the failure mode the acceptance registry exists
- * to catch, and here it was caught by the ground contract test rather than by
- * a capture, which is the improvement.
- *
- * The method is kept rather than deleted so this reasoning stays attached to
- * the thing it is about. It draws nothing. If a planted bed is wanted, it has
- * to be drawn as canonical objects or archived art and reviewed per asset.
- */
-export function drawPlantBeds(raster, projection, layout, palette, season, profile) {
-  void raster; void projection; void layout; void palette; void season; void profile;
-}
-
-
 export function drawAmbient(raster, projection, palette, season, horizon, profile) {
   const mode = timeOfDay(projection);
   // Small ambient life belongs among the planting, not scattered through the
