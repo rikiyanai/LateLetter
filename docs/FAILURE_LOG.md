@@ -10211,3 +10211,50 @@ Verification:
   TXT output, and acceptance remain prohibited. ComplaintRef: operator order to
   implement the transcription roadmap correctly and avoid prior process
   failures, 2026-08-04.
+
+### Transcription D1 release positives covered; degraded-fixed recovered from source structure (2026-08-04)
+
+The last D1 missing family was `positive-degraded-fixed`. Runtime admission was
+already bounded; the remaining failure was source-structure recognition:
+
+- The first degraded row contained the correct `/\` glyphs, but leading blank
+  cells were lost when shaped-run geometry fed the fixed structural adapter.
+- The second degraded row contained connected horizontal bands. The existing
+  component decoder treated the merged band as unresolved instead of deriving
+  repeated fixed-lattice horizontals from source pixels.
+
+Corrections:
+
+- Added a source-only degraded horizontal decoder that derives local pitch from
+  same-band horizontal starts, then classifies occupied slots as dash or
+  underscore by vertical band.
+- Added leading-cell reconstruction for the fixed structural adapter only when
+  it consumes a single shaped run for a row. This keeps normal multi-run fixed
+  ASCII unchanged.
+- No transcript truth, candidate TXT, attempt, acceptance, source-copy renderer,
+  or budget-ceiling raise was introduced.
+
+Verification:
+
+- Full recognition suite: 46 passed.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered.json`,
+  size `1631300` bytes, SHA-256
+  `b74c8c0345181f0e70a423956cf03fbb8975d7512eacd39d28f8101a06eeb19b`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered-receipt.json`.
+- Replay status is `passed`: `positive_missing=[]`,
+  `false_unique_negative_fixtures=[]`, `budget_failures=[]`, and
+  `nondeterministic_adapters=[]`.
+- `ground_truth_passed_to_adapters=false`; determinism replay was performed.
+- `positive-degraded-fixed` rows are both `present_and_winning`, rank 1, from
+  `fixed-lattice-structural`: `  /\` and `--__`.
+
+This completes D1 positive top-k coverage for the release-gate corpus. It does
+not complete the PNG-to-TXT product. Ranking/fusion, machine authority,
+release/holdout replay, live sitting-cat/horse attempts, queue conversion, TXT
+output, and acceptance remain prohibited until their gates pass.
+
+- **Status:** D1 COVERAGE GATE PASSED; proceed to ranking/fusion and
+  machine-authority gates only. ComplaintRef: operator order to implement the
+  transcription roadmap correctly and avoid prior process failures, 2026-08-04.

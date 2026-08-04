@@ -1184,9 +1184,87 @@ def _ascii_structural_text_from_run_mask(mask: np.ndarray) -> str | None:
     for component in components:
         shape = _ascii_component_shape(component, run_height=mask.shape[0])
         if shape is None:
-            return None
+            degraded = _degraded_horizontal_sequence_from_run_mask(mask)
+            return degraded
         chars.append(shape)
     return "".join(chars)
+
+
+def _degraded_horizontal_sequence_from_run_mask(mask: np.ndarray) -> str | None:
+    """Recover degraded fixed-lattice horizontal runs from source pixels.
+
+    Downsampled screenshots can merge adjacent dashes/underscores into long
+    bands.  This helper derives a local cell pitch from measured horizontal
+    starts and classifies each occupied slot by vertical band.  It is only
+    used after the ordinary component decoder fails.
+    """
+
+    raster = np.asarray(mask, dtype=bool)
+    if raster.ndim != 2 or not raster.any():
+        return None
+    height, width = raster.shape
+    row_projection = raster.sum(axis=1)
+    occupied_rows = np.where(row_projection > 0)[0]
+    if not len(occupied_rows):
+        return None
+    # Require shallow horizontal evidence, not diagonal/vertical structure.
+    max_row = int(row_projection.max())
+    max_col = int(raster.sum(axis=0).max())
+    if max_row < max(4, int(width * 0.16)) or max_col > max(5, int(height * 0.55)):
+        return None
+    upper = raster[: max(1, height // 2), :]
+    lower = raster[height // 2 :, :]
+
+    def runs_from_projection(values: np.ndarray) -> list[tuple[int, int]]:
+        xs = np.where(values > 0)[0]
+        if not len(xs):
+            return []
+        runs: list[tuple[int, int]] = []
+        start = previous = int(xs[0])
+        for value in xs[1:]:
+            current = int(value)
+            if current > previous + 1:
+                runs.append((start, previous + 1))
+                start = current
+            previous = current
+        runs.append((start, previous + 1))
+        return runs
+
+    top_runs = runs_from_projection(upper.any(axis=0))
+    bottom_runs = runs_from_projection(lower.any(axis=0))
+    pitch_candidates: list[int] = []
+    for band_runs in (top_runs, bottom_runs):
+        starts = [start for start, _end in band_runs]
+        pitch_candidates.extend(b - a for a, b in zip(starts, starts[1:]) if b > a)
+    width_candidates = [end - start for start, end in top_runs + bottom_runs if end > start]
+    if pitch_candidates:
+        pitch = float(np.median(pitch_candidates))
+    elif width_candidates:
+        pitch = float(np.median(width_candidates))
+    else:
+        return None
+    if pitch <= 0:
+        return None
+    cell_count = max(1, int(round(width / pitch)))
+    if cell_count < 2 or cell_count > 16:
+        return None
+    chars: list[str] = []
+    for index in range(cell_count):
+        x0 = int(round(index * width / cell_count))
+        x1 = int(round((index + 1) * width / cell_count))
+        if x1 <= x0:
+            continue
+        crop = raster[:, x0:x1]
+        if not crop.any():
+            chars.append(" ")
+            continue
+        upper_pixels = int(crop[: max(1, height // 2), :].sum())
+        lower_pixels = int(crop[height // 2 :, :].sum())
+        chars.append("_" if lower_pixels > upper_pixels else "-")
+    text = "".join(chars).rstrip()
+    if not text or not set(text) <= {"-", "_", " "}:
+        return None
+    return text
 
 
 _STRUCTURAL_GLYPHS: tuple[tuple[str, int], ...] = (
@@ -5537,6 +5615,15 @@ def benchmark_offline_ensemble(
                                 if psm is not None
                                 else tuple(variant_input.get("runs", ()))
                             )
+                            row_run_counts: dict[int, int] = {}
+                            row_left_origin: int | None = None
+                            for profile_run in profile_runs:
+                                profile_row = int(profile_run.get("row_index", 0))
+                                row_run_counts[profile_row] = row_run_counts.get(profile_row, 0) + 1
+                                bounds = profile_run.get("source_bounds")
+                                if isinstance(bounds, (list, tuple)) and len(bounds) == 4:
+                                    left = int(bounds[0])
+                                    row_left_origin = left if row_left_origin is None else min(row_left_origin, left)
                             for run_index, run in enumerate(profile_runs):
                                 run_source = dict(source)
                                 run_geometry = dict(variant_geometry)
@@ -5627,6 +5714,21 @@ def benchmark_offline_ensemble(
                                 )
                                 run_texts = _proposal_texts(first, top_k=proposal_limit)
                                 row_index = int(run.get("row_index", run_index))
+                                if (
+                                    isinstance(adapter, FixedLatticeStructuralAdapter)
+                                    and str(variant_geometry.get("mode", "")) == "shaped_runs"
+                                    and row_run_counts.get(row_index, 0) == 1
+                                    and row_left_origin is not None
+                                    and run_texts
+                                ):
+                                    bounds = run.get("source_bounds")
+                                    if isinstance(bounds, (list, tuple)) and len(bounds) == 4:
+                                        run_width = max(1, int(bounds[2]) - int(bounds[0]))
+                                        best_units = max(1, max(wcwidth.wcswidth(text) for text in run_texts if text))
+                                        base = run_width / best_units
+                                        prefix = max(0, int(round((int(bounds[0]) - row_left_origin) / max(base, 1e-6))))
+                                        if prefix:
+                                            run_texts = tuple((" " * prefix) + text for text in run_texts)
                                 composition_bounds = (
                                     run.get("source_bounds")
                                     if str(variant_geometry.get("mode", "")) == "shaped_runs"

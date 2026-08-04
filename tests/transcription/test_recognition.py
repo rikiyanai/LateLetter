@@ -27,6 +27,7 @@ from lateletter.transcription.recognition import (
     _coverage_rank_matrix,
     _fixture_exact_top_k_from_matrix,
     _arabic_ocr_variants,
+    _degraded_horizontal_sequence_from_run_mask,
     _latin_cjk_ocr_variants,
     _ocr_latin_confusable_variants,
     _ocr_source_gap_variants,
@@ -1269,6 +1270,40 @@ def test_v2_mixed_script_fuses_profile_proposals_without_truth_input() -> None:
     assert row["classification"] == "present_and_winning"
     assert row["proposal_rank"] == 1
     assert row["proposed_by"] == ["tesseract-profile-fusion"]
+
+
+def test_v2_degraded_fixed_structural_adapter_recovers_horizontal_runs_and_indent() -> None:
+    from lateletter.transcription.geometry import build_recognition_inputs, route_raster_geometry
+    from lateletter.transcription.recognition import _mask_from_pixels
+
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    source_path = fixture_root / "positive/positive-degraded-fixed/source.png"
+    geometry_bundle, decision = route_raster_geometry(source_path)
+    assert decision.status == "proved"
+    inputs = build_recognition_inputs(source_path, geometry_bundle, mode=decision.mode)
+    row1 = next(run for run in inputs["runs"] if run["row_index"] == 1)
+    assert _degraded_horizontal_sequence_from_run_mask(_mask_from_pixels(row1["binary_run_mask"])) == "--__"
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-degraded-fixed")
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (FixedLatticeStructuralAdapter(),),
+        build_environment_lock(script_packs=("ascii",)),
+        root=fixture_root,
+        adapter_budgets_seconds={"fixed-lattice-structural": 5.0},
+        deterministic_replay=True,
+        top_k=5,
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["positive_missing"] == []
+    assert report["results"][0]["exact_nfc_target_in_top_k"] is True
+    rows = report["coverage_rank_matrix"][0]["rows"]
+    assert [(row["expected_logical_sequence"], row["classification"], row["proposal_rank"]) for row in rows] == [
+        ("  /\\", "present_and_winning", 1),
+        ("--__", "present_and_winning", 1),
+    ]
 
 
 def test_recognizer_holdout_covers_required_variation_families() -> None:

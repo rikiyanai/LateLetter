@@ -1,0 +1,39 @@
+{
+  "schema": "lateletter-recognizer-benchmark-receipt-1",
+  "status": "passed",
+  "authority": "diagnostic_only",
+  "benchmark_path": "tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered.json",
+  "benchmark_sha256": "b74c8c0345181f0e70a423956cf03fbb8975d7512eacd39d28f8101a06eeb19b",
+  "benchmark_size_bytes": 1631300,
+  "source_corpus": "tests/fixtures/transcription-v2/corpus-v2.json",
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "fixture_count": 10,
+  "top_k": 5,
+  "budget_failures": [],
+  "nondeterministic_adapters": [],
+  "false_unique_negative_fixtures": [],
+  "positive_missing": [],
+  "ground_truth_passed_to_adapters": false,
+  "determinism_replay_performed": true,
+  "covered_final_slice": {
+    "positive-degraded-fixed": [
+      {
+        "row": "  /\\",
+        "classification": "present_and_winning",
+        "proposal_rank": 1,
+        "proposed_by": [
+          "fixed-lattice-structural"
+        ]
+      },
+      {
+        "row": "--__",
+        "classification": "present_and_winning",
+        "proposal_rank": 1,
+        "proposed_by": [
+          "fixed-lattice-structural"
+        ]
+      }
+    ]
+  },
+  "next_authorized_step": "D1 positive top-k coverage is complete; proceed to ranking/fusion and machine-authority gates before any live attempt or accepted TXT"
+}
