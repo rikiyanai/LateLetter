@@ -272,8 +272,8 @@ def test_v2_proportional_latin_tesseract_variants_cover_target_without_truth_inp
     assert report["results"][0]["exact_nfc_target_in_top_k"] is True
     rows = report["coverage_rank_matrix"][0]["rows"]
     assert rows[0]["expected_logical_sequence"] == "Late letter"
-    assert rows[0]["classification"] == "present_but_losing"
-    assert rows[0]["proposal_rank"] <= 5
+    assert rows[0]["classification"] == "present_and_winning"
+    assert rows[0]["proposal_rank"] == 1
     assert rows[1]["expected_logical_sequence"] == "kindness"
     assert rows[1]["classification"] == "present_and_winning"
 
@@ -372,8 +372,11 @@ def test_v2_tesseract_row_context_covers_kana_kanji_and_combining_without_truth_
         matrix["fixture"]: matrix["rows"][0]
         for matrix in report["coverage_rank_matrix"]
     }
-    assert rows_by_fixture["positive-kana"]["proposal_rank"] <= 8
-    assert rows_by_fixture["positive-kanji"]["proposal_rank"] <= 8
+    assert rows_by_fixture["positive-kana"]["classification"] == "present_and_winning"
+    assert rows_by_fixture["positive-kana"]["proposal_rank"] == 1
+    assert rows_by_fixture["positive-kanji"]["classification"] == "present_and_winning"
+    assert rows_by_fixture["positive-kanji"]["proposal_rank"] == 1
+    assert rows_by_fixture["positive-combining"]["classification"] == "present_and_winning"
     assert rows_by_fixture["positive-combining"]["proposal_rank"] == 1
 
 
@@ -408,8 +411,8 @@ def test_v2_tesseract_width_mixture_uses_source_run_anchors_without_truth_input(
     assert report["positive_missing"] == []
     row = report["coverage_rank_matrix"][0]["rows"][0]
     assert row["expected_logical_sequence"] == "ＡB ｶﾅ"
-    assert row["classification"] == "present_but_losing"
-    assert row["proposal_rank"] <= 5
+    assert row["classification"] == "present_and_winning"
+    assert row["proposal_rank"] == 1
 
 
 def test_fixture_exact_top_k_uses_row_matrix_not_adapter_union_order() -> None:

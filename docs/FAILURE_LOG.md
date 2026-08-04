@@ -10295,3 +10295,53 @@ output, and acceptance remain prohibited until their gates pass.
 - **Status:** D1 COVERAGE GATE PASSED; proceed to ranking/fusion and
   machine-authority gates only. ComplaintRef: operator order to implement the
   transcription roadmap correctly and avoid prior process failures, 2026-08-04.
+
+### Transcription D2 rank/fusion gate passed for release positives (2026-08-04)
+
+The D1 coverage gate proved that every positive corpus family was present in
+top-k, but several rows were still `present_but_losing`. That was not enough
+for live conversion: the correct logical row must rank above wrong lookalike
+proposals before machine authority can evaluate ownership and margins.
+
+Corrections:
+
+- Tesseract stdout cleanup now removes OCR transport/control output before
+  proposal generation without inventing transcript text.
+- Latin vertical-bar repair is context-aware: a first-word `| ate` may produce
+  `Late`, while a later word followed by lowercase text ranks lowercase `l`
+  before uppercase `L`.
+- Source-gap repair preserves an OCR row whose whitespace group count already
+  matches the measured source group count, so exact grouped rows such as
+  `café é` are not pushed behind worse split variants.
+- Source-gap split ordering uses measured run advances only when run-group
+  authority is coherent, so connected combining rows can rank the correct split
+  without poisoning ordinary kana rows.
+- Width repair remains source-owned and is ordered before gap repair only for
+  mixed Latin/non-ASCII rows, preventing width-mixture fixes from demoting pure
+  kana/CJK rows.
+
+Full v11 D2 replay:
+`tests/fixtures/transcription-v2/recognizer-benchmark-v11-d2-rank1-positive.json`,
+SHA-256 `b5780aac83d29ebe45bcf66092b09bbf77a7cc62da04b92cc96bfcfd421a0e4e`,
+size 1,631,708 bytes. The tracked receipt is
+`tests/fixtures/transcription-v2/recognizer-benchmark-v11-d2-rank1-positive-receipt.json`.
+
+Result:
+
+- `status=passed`
+- `positive_missing=[]`
+- `budget_failures=[]`
+- `nondeterministic_adapters=[]`
+- `false_unique_negative_fixtures=[]`
+- `ground_truth_passed_to_adapters=false`
+- every positive corpus row is `present_and_winning` at `proposal_rank=1`
+
+This is still diagnostic release-corpus evidence. It does not create or
+authorize candidate TXT, attempt 004, horse 065, accepted TXT, or queue
+conversion. Machine-authority gates, release/holdout replay, and live-source
+attempts remain next.
+
+- **Status:** D2 RANK/FUSION GATE PASSED FOR RELEASE POSITIVES; MACHINE
+  AUTHORITY AND LIVE CONVERSION STILL BLOCKED. ComplaintRef: operator order to
+  implement the Wayfinder roadmap correctly and avoid repeating coverage-vs-
+  correctness overclaims, 2026-08-04.

@@ -471,18 +471,31 @@ class TesseractOfflineAdapter:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, f"recognizer_execution:{type(exc).__name__}")
         if completed.returncode != 0:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "recognizer_execution_failed")
-        text = completed.stdout.rstrip("\n")
+        text = _clean_ocr_stdout(completed.stdout)
         if not text:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "empty_proposal")
-        candidate_texts = tuple(
-            dict.fromkeys(
-                [
-                    *_ocr_latin_confusable_variants(text, limit=16),
-                    *_ocr_source_gap_variants(text, source, limit=16),
-                    *_ocr_source_width_variants(text, source, limit=16),
-                ]
-            )
-        )[:16]
+        if regex.search(r"[^\x00-\x7F]", text) and regex.search(r"\p{Latin}", text):
+            candidate_sources = [
+                *_ocr_source_width_variants(text, source, limit=16),
+                *_ocr_source_gap_variants(text, source, limit=16),
+                *_ocr_latin_case_variants(text, limit=8),
+                *_ocr_latin_confusable_variants(text, limit=16),
+            ]
+        elif regex.search(r"[^\x00-\x7F]", text):
+            candidate_sources = [
+                *_ocr_source_gap_variants(text, source, limit=16),
+                *_ocr_source_width_variants(text, source, limit=16),
+                *_ocr_latin_case_variants(text, limit=8),
+                *_ocr_latin_confusable_variants(text, limit=16),
+            ]
+        else:
+            candidate_sources = [
+                *_ocr_latin_case_variants(text, limit=8),
+                *_ocr_source_width_variants(text, source, limit=16),
+                *_ocr_source_gap_variants(text, source, limit=16),
+                *_ocr_latin_confusable_variants(text, limit=16),
+            ]
+        candidate_texts = tuple(dict.fromkeys(candidate_sources))[:16]
         candidates = tuple(
             _candidate(
                 text=candidate_text,
@@ -516,6 +529,13 @@ class TesseractOfflineAdapter:
         )
 
 
+def _clean_ocr_stdout(stdout: str) -> str:
+    """Remove OCR transport/control bytes without inventing transcript text."""
+
+    normalized = stdout.replace("\r\n", "\n").replace("\r", "\n").replace("\f", "")
+    return normalized.rstrip("\n")
+
+
 def _ocr_latin_confusable_variants(text: str, *, limit: int = 64) -> tuple[str, ...]:
     """Return bounded OCR alternatives for Latin vertical-bar confusions.
 
@@ -525,7 +545,7 @@ def _ocr_latin_confusable_variants(text: str, *, limit: int = 64) -> tuple[str, 
     requires source evidence, collision checks, and ranking gates.
     """
 
-    normalized = unicodedata.normalize("NFC", text)
+    normalized = unicodedata.normalize("NFC", _clean_ocr_stdout(text))
     completed: list[tuple[float, str]] = []
     stack: list[tuple[int, str, float]] = [(0, "", 0.0)]
     while stack and len(completed) < limit:
@@ -536,16 +556,22 @@ def _ocr_latin_confusable_variants(text: str, *, limit: int = 64) -> tuple[str, 
         char = normalized[index]
         if char == "|":
             at_word_start = index == 0 or normalized[index - 1].isspace()
-            replacements = (
-                (("L", 0.0), ("l", 0.20), ("I", 0.45), ("|", 1.0))
-                if at_word_start
-                else (("l", 0.0), ("L", 0.20), ("I", 0.45), ("|", 1.0))
-            )
             next_is_spurious_gap = (
                 index + 2 < len(normalized)
                 and normalized[index + 1] == " "
                 and normalized[index + 2].islower()
             )
+            next_is_lowercase_word = (
+                index + 1 < len(normalized)
+                and normalized[index + 1].islower()
+            )
+            prior_completed_word = bool(prefix.strip())
+            if at_word_start and prior_completed_word and (next_is_lowercase_word or next_is_spurious_gap):
+                replacements = (("l", 0.0), ("L", 0.20), ("I", 0.45), ("|", 1.0))
+            elif at_word_start:
+                replacements = (("L", 0.0), ("l", 0.20), ("I", 0.45), ("|", 1.0))
+            else:
+                replacements = (("l", 0.0), ("L", 0.20), ("I", 0.45), ("|", 1.0))
             options: list[tuple[float, int, str]] = []
             for replacement, replacement_cost in replacements:
                 options.append((replacement_cost + (0.35 if next_is_spurious_gap else 0.0), index + 1, prefix + replacement))
@@ -556,6 +582,25 @@ def _ocr_latin_confusable_variants(text: str, *, limit: int = 64) -> tuple[str, 
         else:
             stack.append((index + 1, prefix + char, cost))
     return tuple(dict.fromkeys(text for _cost, text in sorted(completed, key=lambda item: (item[0], item[1]))))[:limit]
+
+
+def _ocr_latin_case_variants(text: str, *, limit: int = 8) -> tuple[str, ...]:
+    normalized = unicodedata.normalize("NFC", text)
+    variants: list[str] = []
+    for line in normalized.split("\n"):
+        words = line.split(" ")
+        alpha_words = [word for word in words if regex.search(r"\p{Latin}", word)]
+        if len(alpha_words) >= 2 and all(word[:1].isupper() for word in alpha_words if word[:1]):
+            rebuilt: list[str] = []
+            seen_alpha = 0
+            for word in words:
+                if regex.search(r"\p{Latin}", word):
+                    seen_alpha += 1
+                    rebuilt.append(word if seen_alpha == 1 else word[:1].lower() + word[1:])
+                else:
+                    rebuilt.append(word)
+            variants.append(" ".join(rebuilt))
+    return tuple(dict.fromkeys(value for value in variants if value and value != normalized))[:limit]
 
 
 def _partitions(length: int, groups: int) -> tuple[tuple[int, ...], ...]:
@@ -590,7 +635,15 @@ def _ocr_source_gap_variants(text: str, source: Mapping[str, Any], *, limit: int
     variants: list[str] = []
     tokens = normalized.split()
     if len(tokens) > run_count:
-        for widths in _partitions(len(tokens), run_count):
+        def partition_balance(widths: tuple[int, ...]) -> tuple[int, tuple[int, ...]]:
+            lengths: list[int] = []
+            cursor = 0
+            for width in widths:
+                lengths.append(sum(len(regex.findall(r"\X", token)) for token in tokens[cursor:cursor + width]))
+                cursor += width
+            return (max(lengths) - min(lengths), widths)
+
+        for widths in sorted(_partitions(len(tokens), run_count), key=partition_balance):
             groups: list[str] = []
             cursor = 0
             for width in widths:
@@ -600,8 +653,28 @@ def _ocr_source_gap_variants(text: str, source: Mapping[str, Any], *, limit: int
             if len(variants) >= limit:
                 break
     else:
+        if len(tokens) == run_count:
+            variants.append(" ".join(tokens))
         graphemes = regex.findall(r"\X", "".join(tokens))
-        for widths in _partitions(len(graphemes), run_count):
+        partitions = _partitions(len(graphemes), run_count)
+        advances = [
+            float(value)
+            for value in evidence.get("source_run_advances", ())
+            if isinstance(value, (int, float)) or str(value).replace(".", "", 1).isdigit()
+        ]
+        if len(advances) >= run_count and int(evidence.get("source_run_count", 0) or 0) == run_count:
+            total_graphemes = max(1, len(graphemes))
+            total_advance = max(1e-6, sum(value for value in advances[:run_count] if value > 0))
+
+            def partition_advance_fit(widths: tuple[int, ...]) -> tuple[float, tuple[int, ...]]:
+                fit = sum(
+                    abs((width / total_graphemes) - (advance / total_advance))
+                    for width, advance in zip(widths, advances[:run_count])
+                )
+                return (float(fit), widths)
+
+            partitions = tuple(sorted(partitions, key=partition_advance_fit))
+        for widths in partitions:
             groups = []
             cursor = 0
             for width in widths:
@@ -610,7 +683,7 @@ def _ocr_source_gap_variants(text: str, source: Mapping[str, Any], *, limit: int
             variants.append(" ".join(groups))
             if len(variants) >= limit:
                 break
-    return tuple(dict.fromkeys(unicodedata.normalize("NFC", value) for value in variants if value and value != normalized))[:limit]
+    return tuple(dict.fromkeys(unicodedata.normalize("NFC", value) for value in variants if value))[:limit]
 
 
 def _source_run_masks(evidence: Mapping[str, Any]) -> tuple[np.ndarray | None, ...]:
@@ -721,6 +794,8 @@ def _ocr_source_width_variants(text: str, source: Mapping[str, Any], *, limit: i
         if isinstance(value, (int, float)) or str(value).replace(".", "", 1).isdigit()
     ]
     if len(advances) < run_count:
+        return ()
+    if max(advances[:run_count]) / max(1e-6, min(value for value in advances[:run_count] if value > 0)) < 1.25:
         return ()
     masks = _source_run_masks(evidence)
     font_path = str(evidence.get("source_template_font_path", ""))
