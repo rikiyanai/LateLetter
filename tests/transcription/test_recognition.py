@@ -490,7 +490,7 @@ def test_fixed_ascii_source_png_recovers_both_rows_without_canvas_tail() -> None
     assert rows == ["/\\_|", "(=)"]
 
 
-def test_unresolved_raster_uses_proposal_hypotheses_without_authority_or_txt() -> None:
+def test_proved_sitting_cat_geometry_still_keeps_recognition_proposal_only_without_txt() -> None:
     root = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity"
     fixture = {
         "id": "sitting-cat-hypothesis",
@@ -506,10 +506,12 @@ def test_unresolved_raster_uses_proposal_hypotheses_without_authority_or_txt() -
     )
     result = report["results"][0]
     adapter = result["adapters"][0]
-    assert result["geometry_status"] == "rejected"
-    assert result["recognition_input_hash"] is None
-    assert adapter["proposal_hypothesis_count"] > 1
-    assert len(adapter["proposal_hypothesis_ids"]) == adapter["proposal_hypothesis_count"]
+    assert result["geometry_status"] == "proved"
+    assert result["recognition_input_hash"]
+    assert adapter["geometry_status"] == "proved"
+    assert adapter["status"] == "proposal_only"
+    assert adapter["proposal_hypothesis_count"] == 0
+    assert adapter["proposal_hypothesis_ids"] == []
     assert adapter["run_count"] > 0
 
 
@@ -638,7 +640,7 @@ def test_joint_decoder_exposes_review_candidate_without_canonical_authority() ->
     assert report["authority"] == "joint_review_candidate_only"
 
 
-def test_unresolved_benchmark_retains_joint_row_alignment_as_diagnostic_only() -> None:
+def test_sitting_cat_structural_unicode_refusal_is_diagnostic_only() -> None:
     root = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity"
     fixture = {
         "id": "sitting-cat-joint-diagnostic",
@@ -653,16 +655,18 @@ def test_unresolved_benchmark_retains_joint_row_alignment_as_diagnostic_only() -
         top_k=1,
         max_geometry_hypotheses=2,
     )
-    alignment = report["results"][0]["adapters"][0]["joint_alignment"]
-    assert alignment["status"] == "unresolved"
-    assert alignment["authority"] == "proposal_alignment_only"
-    assert alignment["candidate_txt"] is None
-    assert alignment["winner"] is not None
-    assert alignment["runner_up"] is not None
+    result = report["results"][0]
+    adapter = result["adapters"][0]
+    assert result["geometry_status"] == "proved"
+    assert adapter["status"] == "rejected"
+    assert adapter["top_k_logical_sequences"] == []
+    assert adapter["joint_alignment"] is None
+    assert adapter["unsupported_status"] == ["structural_display_basis_unresolved"]
+    assert adapter["proposal_hypothesis_count"] == 0
 
 
-def test_sitting_cat_proposal_sequences_preserve_all_nine_rows_without_txt() -> None:
-    """The unresolved proposal path may not collapse the cat back to four OCR rows."""
+def test_sitting_cat_shaped_run_refusal_preserves_row_evidence_without_txt() -> None:
+    """Proved geometry may still fail closed before any candidate TXT exists."""
 
     root = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity"
     fixture = {
@@ -680,15 +684,14 @@ def test_sitting_cat_proposal_sequences_preserve_all_nine_rows_without_txt() -> 
     )
     result = report["results"][0]
     adapter = result["adapters"][0]
-    assert adapter["top_k_logical_sequences"]
-    assert all(len(text.splitlines()) == 9 for text in adapter["top_k_logical_sequences"])
-    assert adapter["joint_alignment"]["candidate_txt"] is None
-    assert adapter["joint_alignment"]["authority"] == "proposal_alignment_only"
-    joint = adapter["joint_alignment"]
-    assert joint["winner"]["aligned_rows"] == 9
-    assert len(joint["winner"]["best_logical_sequence"]["text"].splitlines()) == 9
-    assert joint["winner"]["status"] == "rejected"
-    assert joint["winner"]["width_profile_ambiguous_rows"] >= 1
+    assert result["geometry_status"] == "proved"
+    assert result["recognition_input_hash"]
+    assert adapter["run_count"] >= 9
+    assert adapter["row_proposals"]
+    assert {row["row_index"] for row in adapter["row_proposals"][0]["rows"]} == set(range(9))
+    assert adapter["top_k_logical_sequences"] == []
+    assert adapter["joint_alignment"] is None
+    assert adapter["status"] == "rejected"
 
 
 def test_structural_unicode_row_adapter_is_real_deterministic_proposal_source() -> None:

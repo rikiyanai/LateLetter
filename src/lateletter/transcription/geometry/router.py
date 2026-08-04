@@ -104,7 +104,11 @@ def route_raster_geometry(
     shaped = assess_shaped_runs(bundle.shaped_evidence(), threshold=threshold)
     periodic = bundle.projection_evidence.get("periodic_authority", {})
     fixed_authority = bool(periodic.get("fixed_lattice_authority_proven"))
-    shaped_authority = bool(bundle.status == "proved" and shaped.passed and not fixed_authority)
+    shaped_authority = bool(
+        bundle.status == "proved"
+        and bundle.shaped_evidence().get("shaped_run_authority_proven")
+        and not fixed_authority
+    )
     selected_mode = "fixed_lattice" if fixed_authority else "shaped_runs" if shaped_authority else "unresolved"
     authority_proofs: dict[str, dict[str, Any]] = {}
     for proof, authority in ((fixed, fixed_authority), (shaped, shaped_authority)):

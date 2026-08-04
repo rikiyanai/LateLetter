@@ -1506,7 +1506,11 @@ def build_geometry_evidence(
             "variable_advances": variable_advance_score,
             "connected_joined_runs": connected if row_bands and run_anchors else 0.0,
             "direction_candidates": 1.0 if run_anchors else 0.0,
-            "vertical_text_candidates": 1.0 if row_bands and width >= height else 0.0,
+            # Portrait/landscape canvas shape is diagnostic only.  A portrait
+            # screenshot can still be a valid horizontal text-art source; the
+            # old width >= height requirement class-eliminated exactly those
+            # sources before row/run ownership could be evaluated.
+            "vertical_text_candidates": 1.0 if row_bands and run_anchors else 0.0,
         },
         "score": shaped_score,
         "row_bands": row_bands,
@@ -1587,6 +1591,15 @@ def build_geometry_evidence(
         rejection.append("geometry_unresolved")
     elif component_evidence.get("unassigned_component_ids"):
         rejection.append("component_unowned")
+    shaped_run_authority_proven = bool(
+        selected_mask is not None
+        and row_bands
+        and run_anchors
+        and not component_evidence.get("unassigned_component_ids")
+        and bool(component_evidence.get("component_ownership_complete", False))
+    )
+    if shaped_candidates:
+        shaped_candidates[0]["shaped_run_authority_proven"] = shaped_run_authority_proven
     fixed_branch_plausible = bool(
         lattice_candidates
         and any(
@@ -1618,7 +1631,7 @@ def build_geometry_evidence(
     # ownership ambiguity.
     if undersegmented and not all(
         bool(periodic_authority.get(key)) for key in ("candidate_valid", "pitch_proven", "phase_proven", "ownership_proven")
-    ):
+    ) and not shaped_run_authority_proven:
         rejection.append("periodic_authority_unresolved")
         for key, reason in (
             ("candidate_valid", "candidate_validity_unresolved"),
@@ -1641,6 +1654,7 @@ def build_geometry_evidence(
             )
         )
     )
+    shaped_branch_plausible = bool(shaped_branch_plausible or shaped_run_authority_proven)
     if not fixed_branch_plausible and not shaped_branch_plausible:
         rejection.append("geometry_unresolved")
     status = "proved" if selected_mask is not None and row_bands and run_anchors and not rejection and (fixed_authority_proven or shaped_branch_plausible) else "rejected"

@@ -147,24 +147,24 @@ def test_geometry_rejects_blank_raster_before_recognition_inputs(tmp_path: Path)
     assert decision.mode == "unresolved"
 
 
-def test_vertically_connected_cat_art_keeps_phase_and_ownership_unresolved() -> None:
+def test_vertically_connected_cat_art_admits_shaped_run_geometry_without_fixed_lattice_proof() -> None:
     """Blank-gap diagnostics may not veto an independent periodic baseline proof.
 
     The cat has vertical strokes spanning several logical drawing rows.  Blank-
-    gap grouping still collapses those rows into four diagnostic bands, but the
-    source-period evidence recovers a stable nine-row family.  Geometry remains
-    rejected because phase and ownership are not yet authoritative.
+    gap grouping still collapses those rows into diagnostic bands, but the
+    source-period evidence recovers a stable nine-row family.  Missing fixed-
+    lattice phase/ownership proof must not veto a shaped-run authority path
+    when every source pixel is owned by concrete row/run anchors.
     """
 
     bundle, decision = route_raster_geometry(SITTING_CAT)
 
-    assert bundle.status == "rejected"
-    assert decision.mode == "unresolved"
-    # Candidate diagnostics remain available in the bundle, but a rejected
-    # public decision cannot expose any authoritative proof flags.
-    assert (decision.candidate_valid, decision.pitch_proven, decision.phase_proven, decision.ownership_proven) == (False, False, False, False)
+    assert bundle.status == "proved"
+    assert decision.mode == "shaped_runs"
+    assert (decision.candidate_valid, decision.pitch_proven, decision.phase_proven, decision.ownership_proven) == (True, True, True, True)
+    assert decision.provenance["selected_geometry"]["geometry_proven"] is True
+    assert decision.provenance["selected_geometry"]["shaped_run_authority_proven"] is True
     assert "row_baselines_undersegmented" not in bundle.rejection_reasons
-    assert "periodic_authority_unresolved" in bundle.rejection_reasons
     quality = bundle.projection_evidence["row_band_quality"]
     assert quality["undersegmented"] is True
     assert quality["blank_gap_undersegmented"] is True
@@ -214,10 +214,13 @@ def test_vertically_connected_cat_art_keeps_phase_and_ownership_unresolved() -> 
     assert authority["ownership_proven"] is False
     fixed_surface = next(item for item in decision.alternatives if item["mode"] == "fixed_lattice")
     # The measured mixed-width/row evidence no longer fabricates a fixed
-    # branch for this connected cat; its periodic table remains proposal
-    # evidence while phase and ownership are unresolved.
+    # branch for this connected cat; its periodic table remains diagnostic
+    # evidence while shaped-run anchors own recognition input.
     assert fixed_surface["branch_candidate_passed"] is False
     assert fixed_surface["passed"] is False
+    shaped_surface = next(item for item in decision.alternatives if item["mode"] == "shaped_runs")
+    assert shaped_surface["authority_proven"] is True
+    assert shaped_surface["passed"] is True
     # Threshold replay must preserve the winning pitch, phase topology, and
     # ownership geometry.  Raw pixel hashes may still differ under
     # antialiasing; phase/ownership authority remains rejected below.
@@ -235,12 +238,13 @@ def test_vertically_connected_cat_art_keeps_phase_and_ownership_unresolved() -> 
         SITTING_CAT,
         configuration={"foreground_thresholds": (25,)},
     )
-    # A single foreground recipe removes threshold instability, but connected
-    # cross-row continuations still prevent shaped ownership authority.  The
-    # cat therefore remains unresolved; changing the threshold cannot turn a
-    # continuation map into a one-owner text-line proof.
-    assert threshold_decision.mode == "unresolved"
-    assert threshold_bundle.status == "rejected"
+    # A single foreground recipe changes the fixed-period diagnostics, but the
+    # authority split remains the same: fixed-lattice recognition is not
+    # admitted unless its concrete mode is selected, while shaped-run source
+    # anchors remain admissible.
+    assert threshold_decision.mode == "shaped_runs"
+    assert threshold_bundle.status == "proved"
+    assert threshold_decision.provenance["selected_geometry"]["shaped_run_authority_proven"] is True
     assert threshold_bundle.projection_evidence["periodic_authority"]["foreground_stability"]["stable"] is True
     assert threshold_bundle.projection_evidence["periodic_authority"]["pitch_proven"] is True
     assert threshold_bundle.projection_evidence["periodic_authority"]["phase_proven"] is True

@@ -9954,3 +9954,56 @@ input profiles.
 - **Status:** PHASE 3.7 COMPLETE / PHASE 3.8 FRONTIER. No attempt, TXT,
   candidate, acceptance, or benchmark-truth artifact was created. ComplaintRef:
   operator order to start Track B geometry admission immediately, 2026-08-04.
+
+### Phase 3.8 geometry admission gate moved from diagnostic criteria to source-owned anchors (2026-08-04)
+
+The Phase 3.8 implementation separates fixed-lattice authority from shaped-run
+authority:
+
+- Fixed lattice still requires periodic/source proof and may not be promoted by
+  the shaped-run branch.
+- Shaped-run admission can now be proved by complete source-owned row/run
+  anchors and component ownership. Missing fixed-lattice phase/ownership proof
+  no longer vetoes shaped-run geometry.
+- Portrait/landscape canvas shape is demoted from an admission veto to
+  diagnostic evidence. A portrait screenshot can still be horizontal text art.
+- Recognition remains fail-closed. The sitting-cat source now proves
+  `shaped_runs` geometry, but the structural Unicode adapter still returns a
+  typed refusal (`structural_display_basis_unresolved`) and writes no TXT.
+
+A first replay attempt used the stale 2026-08-04 external source inventory and
+correctly failed all 26 rows at source-hash validation because the external
+normalized PNG folder had changed. That rejected harness receipt is preserved:
+`tracked/LateLetterResearch/transcription-parity/geometry-replay/current-phase3-8-stale-inventory-2026-08-04.json`,
+SHA-256 `910f0bca70c588c96f96cf1def9c746959c01aea5d12c5540961e35979887d9c`.
+
+The current-source inventory is
+`tracked/LateLetterResearch/transcription-parity/geometry-replay/source-inventory-phase3-8-2026-08-04.json`,
+SHA-256 `16e0ead0a673cac128d01ff05174447e95720251af3a34a4badb1fc7d0fb8250`.
+The implementation identity receipt is
+`tracked/LateLetterResearch/transcription-parity/geometry-replay/implementation-identity-phase3-8-2026-08-04.json`,
+SHA-256 `e6c297bf6634607659f907f112dee47d47cc6893bdafb7c7c425666354ac461f`.
+
+Fresh per-source subprocess replay:
+`tracked/LateLetterResearch/transcription-parity/geometry-replay/current-phase3-8-2026-08-04.json`,
+SHA-256 `2feb47660bc7ea0c21df34353511453463a9433971d1583bebd9d3338605adf8`.
+Result: 26 total, 26 proved, 0 rejected, 0 timeout, 0 harness error. Mode
+split: 8 `fixed_lattice`, 18 `shaped_runs`. Every proved decision carries
+coherent public proof flags.
+
+Verification:
+
+- `PYTHONPATH=src python3 -m pytest -q tests/transcription` — 79 passed.
+- The Phase 3.8 JSON artifacts validate with `jq`.
+
+This closes the live-corpus geometry admission blocker for the current cleaned
+26-source queue. It does not prove recognition accuracy, does not authorize
+candidate TXT, and does not create attempt 004 or horse 065. The next frontiers
+remain Phase 1 runtime admission for `positive-degraded-fixed:psm7-jpn-cjk`
+and Phase 4 recognizer coverage for width-mixture, emoji-ZWJ, mixed-script,
+and degraded-fixed.
+
+- **Status:** PHASE 3.8 COMPLETE FOR CURRENT 26-SOURCE GEOMETRY REPLAY;
+  RECOGNITION STILL BLOCKED. ComplaintRef: operator order to implement the
+  Wayfinder roadmap correctly without treating geometry proof as conversion
+  success, 2026-08-04.
