@@ -1,0 +1,32 @@
+{
+  "artifact": "recognizer-benchmark-v10-d1-row-ocr-gap.json",
+  "artifact_sha256": "4a148a53eca8650d1294ebd1149834602c5b20c86de049d209d749e992e01a85",
+  "artifact_size_bytes": 117931267,
+  "authority": "diagnostic_only",
+  "budget_failures": [
+    "positive-degraded-fixed:psm7-jpn-cjk"
+  ],
+  "covered_positive_fixtures": [
+    "positive-fixed-ascii",
+    "positive-proportional-latin",
+    "positive-kana",
+    "positive-kanji",
+    "positive-arabic",
+    "positive-combining"
+  ],
+  "determinism_replay_performed": true,
+  "ground_truth_passed_to_adapters": false,
+  "missing_positive_fixtures": [
+    "positive-width-mixture",
+    "positive-emoji-zwj",
+    "positive-mixed-script",
+    "positive-degraded-fixed"
+  ],
+  "nondeterministic_adapters": [
+    "positive-degraded-fixed:psm7-jpn-cjk"
+  ],
+  "raw_status": "blocked_release_coverage",
+  "status": "rejected_diagnostic",
+  "timestamp": "2026-08-04",
+  "v10_coverage_authorized": false
+}

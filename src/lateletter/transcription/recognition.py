@@ -474,23 +474,33 @@ class TesseractOfflineAdapter:
         text = completed.stdout.rstrip("\n")
         if not text:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "empty_proposal")
-        alternatives = tuple(item for item in _ocr_latin_confusable_variants(text) if item != unicodedata.normalize("NFC", text))
-        candidate = _candidate(
-            text=text,
-            source_hash=source_hash,
-            geometry_hash=geometry_hash,
-            components_hash=components_hash,
-            environment_hash=environment_lock.output_hash,
-            confidence=0.25,
-            component_ids=tuple(str(value) for value in source.get("component_ids", ())),
-            alternatives=alternatives,
+        candidate_texts = tuple(
+            dict.fromkeys(
+                [
+                    *_ocr_latin_confusable_variants(text, limit=16),
+                    *_ocr_source_gap_variants(text, source, limit=16),
+                ]
+            )
+        )[:16]
+        candidates = tuple(
+            _candidate(
+                text=candidate_text,
+                source_hash=source_hash,
+                geometry_hash=geometry_hash,
+                components_hash=components_hash,
+                environment_hash=environment_lock.output_hash,
+                confidence=max(0.05, 0.26 - 0.001 * index),
+                component_ids=tuple(str(value) for value in source.get("component_ids", ())),
+                alternatives=tuple(item for item in candidate_texts[:5] if item != candidate_text),
+            )
+            for index, candidate_text in enumerate(candidate_texts)
         )
         proposal = RecognitionProposal(
             proposal_id=f"{self.name}-run",
             adapter=self.name,
             adapter_version=self.version,
             model_hashes=environment_lock.model_hashes,
-            candidates=(candidate,),
+            candidates=candidates,
             run_id=str(source.get("run_id", "row-0")),
             input_hashes={"source": source_hash, "geometry": geometry_hash, "components": components_hash, "environment": environment_lock.output_hash},
             status="proposal",
@@ -545,6 +555,61 @@ def _ocr_latin_confusable_variants(text: str, *, limit: int = 64) -> tuple[str, 
         else:
             stack.append((index + 1, prefix + char, cost))
     return tuple(dict.fromkeys(text for _cost, text in sorted(completed, key=lambda item: (item[0], item[1]))))[:limit]
+
+
+def _partitions(length: int, groups: int) -> tuple[tuple[int, ...], ...]:
+    if groups <= 0 or length < groups:
+        return ()
+    if groups == 1:
+        return ((length,),)
+    result: list[tuple[int, ...]] = []
+    for first in range(1, length - groups + 2):
+        for rest in _partitions(length - first, groups - 1):
+            result.append((first, *rest))
+    return tuple(result)
+
+
+def _ocr_source_gap_variants(text: str, source: Mapping[str, Any], *, limit: int = 32) -> tuple[str, ...]:
+    evidence = source.get("anchor_evidence")
+    if not isinstance(evidence, Mapping):
+        return ()
+    raw_count = evidence.get("source_text_group_count", evidence.get("source_run_count"))
+    if raw_count is None:
+        source_run_ids = evidence.get("source_run_ids", ())
+        raw_count = len(source_run_ids) if isinstance(source_run_ids, (list, tuple)) else 0
+    try:
+        run_count = int(raw_count)
+    except (TypeError, ValueError):
+        return ()
+    if run_count <= 1:
+        return ()
+    normalized = unicodedata.normalize("NFC", text).strip()
+    if not normalized:
+        return ()
+    variants: list[str] = []
+    tokens = normalized.split()
+    if len(tokens) > run_count:
+        for widths in _partitions(len(tokens), run_count):
+            groups: list[str] = []
+            cursor = 0
+            for width in widths:
+                groups.append("".join(tokens[cursor:cursor + width]))
+                cursor += width
+            variants.append(" ".join(groups))
+            if len(variants) >= limit:
+                break
+    elif len(tokens) == 1:
+        graphemes = regex.findall(r"\X", tokens[0])
+        for widths in _partitions(len(graphemes), run_count):
+            groups = []
+            cursor = 0
+            for width in widths:
+                groups.append("".join(graphemes[cursor:cursor + width]))
+                cursor += width
+            variants.append(" ".join(groups))
+            if len(variants) >= limit:
+                break
+    return tuple(dict.fromkeys(unicodedata.normalize("NFC", value) for value in variants if value and value != normalized))[:limit]
 
 
 @dataclass(frozen=True)
@@ -3772,6 +3837,124 @@ def _compose_run_texts(
     return complete[:top_k]
 
 
+def _tesseract_profile_runs(source_path: Path, variant_input: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
+    runs = tuple(run for run in variant_input.get("runs", ()) if isinstance(run, Mapping))
+    if str(variant_input.get("mode", "")) != "shaped_runs" or not runs:
+        return tuple(dict(run) for run in runs)
+    grouped: dict[int, list[Mapping[str, Any]]] = {}
+    for run in runs:
+        grouped.setdefault(int(run.get("row_index", 0)), []).append(run)
+    if all(len(items) == 1 for items in grouped.values()):
+        return tuple(dict(run) for run in runs)
+    try:
+        image = Image.open(source_path).convert("RGB")
+    except (OSError, ValueError):
+        return tuple(dict(run) for run in runs)
+    width, height = image.size
+    row_runs: list[dict[str, Any]] = []
+    for row_index, row_items in sorted(grouped.items()):
+        bounds = [item.get("source_bounds") for item in row_items]
+        if any(not isinstance(bound, (list, tuple)) or len(bound) != 4 for bound in bounds):
+            row_runs.extend(dict(item) for item in row_items)
+            continue
+        sorted_items = sorted(row_items, key=lambda item: int(item.get("source_bounds", (0, 0, 0, 0))[0]))
+        sorted_bounds = [item.get("source_bounds") for item in sorted_items]
+        x0 = min(int(bound[0]) for bound in bounds if isinstance(bound, (list, tuple)))
+        y0 = min(int(bound[1]) for bound in bounds if isinstance(bound, (list, tuple)))
+        x1 = max(int(bound[2]) for bound in bounds if isinstance(bound, (list, tuple)))
+        y1 = max(int(bound[3]) for bound in bounds if isinstance(bound, (list, tuple)))
+        row_height = max(1, y1 - y0)
+        x_pad = max(4, int(round(row_height * 0.35)))
+        y_pad = max(4, int(round(row_height * 0.55)))
+        crop_bounds = [
+            max(0, x0 - x_pad),
+            max(0, y0 - y_pad),
+            min(width, x1 + x_pad),
+            min(height, y1 + y_pad),
+        ]
+        if crop_bounds[2] <= crop_bounds[0] or crop_bounds[3] <= crop_bounds[1]:
+            row_runs.extend(dict(item) for item in row_items)
+            continue
+        crop = image.crop(tuple(crop_bounds))
+        from io import BytesIO
+
+        stream = BytesIO()
+        crop.save(stream, format="PNG", optimize=False)
+        png_bytes = stream.getvalue()
+        mask = np.zeros((crop_bounds[3] - crop_bounds[1], crop_bounds[2] - crop_bounds[0]), dtype=bool)
+        component_ids: list[str] = []
+        measured_advances: list[float] = []
+        run_ids: list[str] = []
+        gaps = [
+            max(0, int(sorted_bounds[index + 1][0]) - int(sorted_bounds[index][2]))
+            for index in range(len(sorted_bounds) - 1)
+            if isinstance(sorted_bounds[index], (list, tuple))
+            and isinstance(sorted_bounds[index + 1], (list, tuple))
+            and len(sorted_bounds[index]) == 4
+            and len(sorted_bounds[index + 1]) == 4
+        ]
+        if len(gaps) == 1:
+            significant_gap_threshold = max(4, int(round(row_height * 0.18)))
+        elif gaps:
+            significant_gap_threshold = max(4, int(math.ceil(min(gaps) * 1.25)), int(round(row_height * 0.25)))
+        else:
+            significant_gap_threshold = max(4, int(round(row_height * 0.25)))
+        text_group_count = 1 + sum(1 for gap in gaps if gap >= significant_gap_threshold)
+        for item in row_items:
+            bound = item.get("source_bounds")
+            if not isinstance(bound, (list, tuple)) or len(bound) != 4:
+                continue
+            local_mask = _mask_from_pixels(item.get("binary_run_mask"))
+            if local_mask is not None:
+                local = np.asarray(local_mask, dtype=bool)
+                dst_x0 = int(bound[0]) - crop_bounds[0]
+                dst_y0 = int(bound[1]) - crop_bounds[1]
+                dst_x1 = min(mask.shape[1], dst_x0 + local.shape[1])
+                dst_y1 = min(mask.shape[0], dst_y0 + local.shape[0])
+                if dst_x0 < dst_x1 and dst_y0 < dst_y1:
+                    mask[max(0, dst_y0):dst_y1, max(0, dst_x0):dst_x1] |= local[: dst_y1 - max(0, dst_y0), : dst_x1 - max(0, dst_x0)]
+            component_ids.extend(str(value) for value in item.get("component_ids", ()) if str(value))
+            measured_advances.extend(float(value) for value in item.get("measured_advances", ()) if float(value) > 0)
+            run_ids.append(str(item.get("run_id", "")))
+        binary_rows = ["".join("1" if value else "0" for value in row) for row in mask]
+        row_runs.append(
+            {
+                "run_id": f"ocr-row-r{row_index:03d}",
+                "row_index": row_index,
+                "source_bounds": crop_bounds,
+                "run_strip_width_px": int(crop.width),
+                "logical_start_column": 0,
+                "logical_end_column": None,
+                "original_anchor": {"source_run_ids": sorted(value for value in run_ids if value)},
+                "direction": str(row_items[0].get("direction", "ltr")),
+                "measured_advances": measured_advances or [float(crop.width)],
+                "run_strip_png_base64": base64.b64encode(png_bytes).decode("ascii"),
+                "run_strip_png_sha256": sha256_bytes(png_bytes),
+                "binary_run_mask": binary_rows,
+                "binary_run_mask_sha256": _mask_hash(mask),
+                "component_ids": sorted(set(component_ids)),
+                "run_color_stats": {
+                    "pixel_count": int(crop.width * crop.height),
+                    "non_grayscale_pixels": 0,
+                    "strongly_colored_pixels": 0,
+                    "unique_rgb_count": 0,
+                },
+                "anchor_evidence": {
+                    "authority": "source_row_ocr_evidence",
+                    "source_run_ids": sorted(value for value in run_ids if value),
+                    "source_run_count": len(row_items),
+                    "source_text_group_count": text_group_count,
+                    "source_gaps_px": gaps,
+                    "significant_gap_threshold_px": significant_gap_threshold,
+                    "source_bounds": crop_bounds,
+                    "mask_sha256": _mask_hash(mask),
+                    "component_ids": sorted(set(component_ids)),
+                },
+            }
+        )
+    return tuple(row_runs)
+
+
 def _coverage_rank_matrix(
     target: str,
     adapter_records: list[Mapping[str, Any]],
@@ -3801,19 +3984,34 @@ def _coverage_rank_matrix(
             "reason": "no_authoritative_transcript",
         }
 
-    def row_options(run_entries: list[Mapping[str, Any]]) -> tuple[str, ...]:
-        options = ("",)
+    def row_options(run_entries: list[Mapping[str, Any]]) -> tuple[dict[str, Any], ...]:
+        options: tuple[tuple[str, tuple[str, ...]], ...] = (("", ()),)
         for run in run_entries:
             proposals = tuple(str(item) for item in run.get("proposals", ()))
             if not proposals:
                 return ()
+            run_collision_codes = tuple(
+                str(item)
+                for item in run.get("rejection_codes", ())
+                if "collision" in str(item)
+            )
             options = tuple(
-                dict.fromkeys(prefix + proposal for prefix in options for proposal in proposals)
+                dict.fromkeys(
+                    (
+                        prefix + proposal,
+                        tuple(sorted(set(collision_codes + run_collision_codes))),
+                    )
+                    for prefix, collision_codes in options
+                    for proposal in proposals
+                )
             )[: max(256, int(top_k) * 16)]
         # The empty prefix is consumed by the first expansion; after that
         # step every option is a real proposal.  Dropping options[0] here
         # would erase the adapter's top-ranked row candidate from the matrix.
-        return options
+        return tuple(
+            {"text": text, "collision_codes": list(collision_codes)}
+            for text, collision_codes in options
+        )
 
     # Keep each adapter's evidence independent.  An unavailable adapter may
     # have an empty run while another adapter has valid proposals for the
@@ -3831,6 +4029,7 @@ def _coverage_rank_matrix(
                         "run_id": row.get("run_id", ""),
                         "proposals": row.get("proposals", ()),
                         "run_input_hash": row.get("run_input_hash"),
+                        "rejection_codes": row.get("rejection_codes", ()),
                     },)
                 key = (adapter_name, variant_id, row_index)
                 for run in run_entries:
@@ -3841,6 +4040,7 @@ def _coverage_rank_matrix(
                             "run_id": str(run.get("run_id", "")),
                             "proposals": tuple(str(item) for item in run.get("proposals", ())),
                             "run_input_hash": run.get("run_input_hash"),
+                            "rejection_codes": tuple(str(item) for item in run.get("rejection_codes", ())),
                             "repeat_run_hash": record.get("repeat_run_hash"),
                         }
                     )
@@ -3853,13 +4053,16 @@ def _coverage_rank_matrix(
         for (adapter_name, variant_id, candidate_row), run_entries in sorted(grouped.items()):
             if candidate_row != row_index:
                 continue
-            for rank, proposed in enumerate(row_options(run_entries), start=1):
+            for rank, row_option in enumerate(row_options(run_entries), start=1):
+                proposed = str(row_option["text"])
+                collision_codes = tuple(str(item) for item in row_option.get("collision_codes", ()))
                 observations.append(
                     {
                         "adapter": adapter_name,
                         "hypothesis_id": variant_id,
                         "rank": rank,
                         "text": unicodedata.normalize("NFC", proposed),
+                        "collision_codes": sorted(set(collision_codes)),
                         "run_input_hashes": sorted(
                             str(entry["run_input_hash"])
                             for entry in run_entries
@@ -3885,14 +4088,24 @@ def _coverage_rank_matrix(
             any("unsupported" in str(code) or "unavailable" in str(code) for code in record.get("unsupported_status", ()))
             for record in adapter_records
         )
-        if exact:
-            best_rank = min(int(item["rank"]) for item in exact)
-            collision = any(
-                "collision" in str(code)
+        collision_status_sources = sorted(
+            {
+                f"{record.get('adapter', '')}:{code}"
                 for record in adapter_records
                 for code in record.get("unsupported_status", ())
+                if "collision" in str(code)
+            }
+        )
+        if exact:
+            best_rank = min(int(item["rank"]) for item in exact)
+            winning_collision = any(
+                int(item["rank"]) == 1 and item.get("collision_codes")
+                for item in exact
             )
-            classification = "visual_collision" if collision else "present_and_winning" if best_rank == 1 else "present_but_losing"
+            classification = "visual_collision" if winning_collision else "present_and_winning" if best_rank == 1 else "present_but_losing"
+        elif any(int(item["rank"]) == 1 and item.get("collision_codes") for item in observations):
+            best_rank = None
+            classification = "visual_collision"
         elif not observations and unsupported:
             best_rank = None
             classification = "unsupported"
@@ -3906,6 +4119,7 @@ def _coverage_rank_matrix(
                 "classification": classification,
                 "proposal_rank": best_rank,
                 "proposed_by": sorted({item["adapter"] for item in exact}),
+                "collision_status_sources": collision_status_sources,
                 "selected_wrong_result": [
                     {
                         "adapter": item["adapter"],
@@ -3927,6 +4141,21 @@ def _coverage_rank_matrix(
         "rows": matrix_rows,
         "reason": "source-derived proposal coverage measured after adapter execution",
     }
+
+
+def _fixture_exact_top_k_from_matrix(coverage_matrix: Mapping[str, Any], *, top_k: int) -> bool:
+    if coverage_matrix.get("status") != "measured":
+        return False
+    rows = coverage_matrix.get("rows", ())
+    if not rows:
+        return False
+    for row in rows:
+        rank = row.get("proposal_rank")
+        if row.get("classification") not in {"present_and_winning", "present_but_losing"}:
+            return False
+        if rank is None or int(rank) > max(1, int(top_k)):
+            return False
+    return True
 
 
 def _template_run_residual(
@@ -4918,8 +5147,8 @@ def benchmark_offline_ensemble(
                             tesseract_timeout_seconds = max(
                                 0.05,
                                 min(
-                                    1.0,
-                                    profile_budget_seconds / max(1, total_profile_runs * len(profiles)) * 0.20,
+                                    3.0,
+                                    profile_budget_seconds / max(1, total_profile_runs) * 0.80,
                                 ),
                             )
                         for variant_id, variant_input in variants:
@@ -4932,7 +5161,12 @@ def benchmark_offline_ensemble(
                             variant_candidates: list[tuple[int, tuple[str, ...]]] = []
                             variant_rows: dict[int, tuple[str, ...]] = {}
                             variant_row_proposals: dict[int, list[dict[str, Any]]] = {}
-                            for run_index, run in enumerate(variant_input.get("runs", ())):
+                            profile_runs = (
+                                _tesseract_profile_runs(source_path, variant_input)
+                                if psm is not None
+                                else tuple(variant_input.get("runs", ()))
+                            )
+                            for run_index, run in enumerate(profile_runs):
                                 run_source = dict(source)
                                 run_geometry = dict(variant_geometry)
                                 if run.get("run_strip_png_base64"):
@@ -5016,6 +5250,7 @@ def benchmark_offline_ensemble(
                                         "run_id": str(run.get("run_id", f"run-{run_index:04d}")),
                                         "proposals": list(run_texts),
                                         "run_input_hash": run_input_hashes[-1] if run_input_hashes else None,
+                                        "rejection_codes": sorted(set(first.rejection_codes)),
                                     }
                                 )
                                 run_spans.extend(proposal.run_id for proposal in first.proposals if proposal.run_id)
@@ -5174,13 +5409,8 @@ def benchmark_offline_ensemble(
                 target_path = root_path / target_path
             if target_path.exists():
                 target = unicodedata.normalize("NFC", target_path.read_text(encoding="utf-8").rstrip("\n"))
-        exact_top_k = bool(target and target in logical_sequences[:top_k])
         expected_outcome = str(fixture.get("expected_outcome", "positive"))
         unique_resolution = len(logical_sequences) == 1 and bool(logical_sequences)
-        if expected_outcome == "positive" and not exact_top_k:
-            positive_missing.append(fixture_id)
-        if expected_outcome == "rejected" and unique_resolution:
-            false_unique.append(fixture_id)
         matrix_source_hash = str(source.get("source_sha256", ""))
         if not is_sha256(matrix_source_hash) and source_path.exists():
             matrix_source_hash = sha256_file(source_path)
@@ -5193,6 +5423,11 @@ def benchmark_offline_ensemble(
             geometry_rejection_codes=geometry_rejection_codes,
             top_k=top_k,
         )
+        exact_top_k = bool(target and _fixture_exact_top_k_from_matrix(coverage_matrix, top_k=top_k))
+        if expected_outcome == "positive" and not exact_top_k:
+            positive_missing.append(fixture_id)
+        if expected_outcome == "rejected" and unique_resolution:
+            false_unique.append(fixture_id)
         coverage_matrices.append(coverage_matrix)
         results.append(
             {

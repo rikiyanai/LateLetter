@@ -23,7 +23,13 @@ from lateletter.transcription import (
     inventory_adapters,
     verify_model_cache,
 )
-from lateletter.transcription.recognition import _ocr_latin_confusable_variants
+from lateletter.transcription.recognition import (
+    _coverage_rank_matrix,
+    _fixture_exact_top_k_from_matrix,
+    _ocr_latin_confusable_variants,
+    _ocr_source_gap_variants,
+    _tesseract_profile_runs,
+)
 
 
 H = "d" * 64
@@ -209,6 +215,15 @@ def test_ocr_latin_confusable_variants_promote_contextual_l_words() -> None:
     variants = _ocr_latin_confusable_variants("| ate |etter")
     assert "Late letter" in variants[:5]
     assert variants.index("Late letter") < variants.index("| ate |etter")
+    assert "café é" not in _ocr_latin_confusable_variants("cafe=")
+
+
+def test_ocr_source_gap_variants_use_measured_run_count_only() -> None:
+    source = {"anchor_evidence": {"source_run_count": 2, "source_run_ids": ["left", "right"]}}
+
+    assert "春 花" in _ocr_source_gap_variants("春花", source)
+    assert "かな カナ" in _ocr_source_gap_variants("か な カナ", source)
+    assert _ocr_source_gap_variants("春花", {"anchor_evidence": {"source_run_count": 1}}) == ()
 
 
 def test_v2_proportional_latin_tesseract_variants_cover_target_without_truth_input() -> None:
@@ -241,6 +256,197 @@ def test_v2_proportional_latin_tesseract_variants_cover_target_without_truth_inp
     assert rows[0]["proposal_rank"] <= 5
     assert rows[1]["expected_logical_sequence"] == "kindness"
     assert rows[1]["classification"] == "present_and_winning"
+
+
+def test_tesseract_profile_uses_shaped_row_strips_without_merging_truth() -> None:
+    source = Path(__file__).parents[1] / "fixtures" / "transcription-v2" / "positive" / "positive-combining" / "source.png"
+    variant = {
+        "mode": "shaped_runs",
+        "runs": (
+            {
+                "run_id": "left",
+                "row_index": 0,
+                "source_bounds": [13, 19, 54, 38],
+                "binary_run_mask": ["1" * 41 for _ in range(19)],
+                "run_strip_png_base64": "present",
+                "component_ids": ["c2", "c1"],
+            },
+            {
+                "run_id": "right",
+                "row_index": 0,
+                "source_bounds": [60, 19, 71, 38],
+                "binary_run_mask": ["1" * 11 for _ in range(19)],
+                "run_strip_png_base64": "present",
+                "component_ids": ["c3"],
+            },
+        ),
+    }
+
+    rows = _tesseract_profile_runs(source, variant)
+
+    assert len(rows) == 1
+    assert rows[0]["run_id"] == "ocr-row-r000"
+    assert rows[0]["component_ids"] == ["c1", "c2", "c3"]
+    assert rows[0]["anchor_evidence"]["source_run_ids"] == ["left", "right"]
+    assert rows[0]["anchor_evidence"]["source_text_group_count"] == 2
+
+
+def test_v2_combining_latin_tesseract_covers_source_row_without_detached_mark_rewrite() -> None:
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    cache = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-model-cache" / "tesseract_best"
+    if not (cache / "eng.traineddata").exists():
+        pytest.skip("project-local Tesseract eng traineddata is not available")
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-combining")
+    model_paths = {path.stem: str(path) for path in cache.glob("*.traineddata")}
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (TesseractOfflineAdapter(cache_dir=str(cache)),),
+        build_environment_lock(
+            model_paths=model_paths,
+            script_packs=tuple(sorted(model_paths)),
+            preprocessing={"network": "disabled", "ground_truth_to_adapter": False},
+        ),
+        root=fixture_root,
+        adapter_budgets_seconds={"tesseract-offline": 12.0},
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["positive_missing"] == []
+    assert report["results"][0]["exact_nfc_target_in_top_k"] is True
+    rows = report["coverage_rank_matrix"][0]["rows"]
+    assert [(row["expected_logical_sequence"], row["classification"], row["proposal_rank"]) for row in rows] == [
+        ("café é", "present_and_winning", 1),
+    ]
+
+
+def test_v2_tesseract_row_context_covers_kana_kanji_and_combining_without_truth_input() -> None:
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    cache = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-model-cache" / "tesseract_best"
+    if not (cache / "eng.traineddata").exists() or not (cache / "jpn.traineddata").exists() or not (cache / "chi_sim.traineddata").exists():
+        pytest.skip("project-local Tesseract eng/jpn/chi_sim traineddata is not available")
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    wanted = {"positive-kana", "positive-kanji", "positive-combining"}
+    fixtures = [item for item in corpus["fixtures"] if item["id"] in wanted]
+    model_paths = {path.stem: str(path) for path in cache.glob("*.traineddata")}
+    report = benchmark_offline_ensemble(
+        fixtures,
+        (TesseractOfflineAdapter(cache_dir=str(cache), languages=("eng", "ara", "jpn", "jpn_vert", "chi_sim", "chi_tra")),),
+        build_environment_lock(
+            model_paths=model_paths,
+            script_packs=tuple(sorted(model_paths)),
+            preprocessing={"network": "disabled", "ground_truth_to_adapter": False},
+        ),
+        root=fixture_root,
+        adapter_budgets_seconds={"tesseract-offline": 12.0},
+        deterministic_replay=True,
+        top_k=8,
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["nondeterministic_adapters"] == []
+    assert report["positive_missing"] == []
+    rows_by_fixture = {
+        matrix["fixture"]: matrix["rows"][0]
+        for matrix in report["coverage_rank_matrix"]
+    }
+    assert rows_by_fixture["positive-kana"]["proposal_rank"] <= 8
+    assert rows_by_fixture["positive-kanji"]["proposal_rank"] <= 8
+    assert rows_by_fixture["positive-combining"]["proposal_rank"] == 1
+
+
+def test_fixture_exact_top_k_uses_row_matrix_not_adapter_union_order() -> None:
+    matrix = {
+        "status": "measured",
+        "rows": [
+            {"classification": "present_and_winning", "proposal_rank": 1},
+            {"classification": "present_but_losing", "proposal_rank": 5},
+        ],
+    }
+    assert _fixture_exact_top_k_from_matrix(matrix, top_k=5) is True
+    assert _fixture_exact_top_k_from_matrix(matrix, top_k=4) is False
+    assert _fixture_exact_top_k_from_matrix(
+        {"status": "measured", "rows": [{"classification": "visual_collision", "proposal_rank": 1}]},
+        top_k=5,
+    ) is False
+
+
+def test_row_coverage_records_unbound_collision_without_poisoning_exact_match() -> None:
+    matrix = _coverage_rank_matrix(
+        "A",
+        [
+            {
+                "adapter": "wrong",
+                "unsupported_status": ["unicode_visual_collision"],
+                "row_proposals": [
+                    {
+                        "hypothesis_id": "h0",
+                        "rows": [{"row_index": 0, "runs": [{"proposals": ["B"], "run_input_hash": H}]}],
+                    }
+                ],
+            },
+            {
+                "adapter": "exact",
+                "unsupported_status": [],
+                "row_proposals": [
+                    {
+                        "hypothesis_id": "h1",
+                        "rows": [{"row_index": 0, "runs": [{"proposals": ["A"], "run_input_hash": H}]}],
+                    }
+                ],
+            },
+        ],
+        fixture_id="fixture",
+        source_hash=H,
+        geometry_status="proved",
+        geometry_rejection_codes=[],
+        top_k=5,
+    )
+    row = matrix["rows"][0]
+    assert row["classification"] == "present_and_winning"
+    assert row["collision_status_sources"] == ["wrong:unicode_visual_collision"]
+    assert row["selected_wrong_result"] == [{"adapter": "wrong", "hypothesis_id": "h0", "text": "B"}]
+
+
+def test_row_coverage_classifies_collision_only_when_winning_proposal_is_marked() -> None:
+    matrix = _coverage_rank_matrix(
+        "A",
+        [
+            {
+                "adapter": "exact-collision",
+                "unsupported_status": ["unicode_visual_collision"],
+                "row_proposals": [
+                    {
+                        "hypothesis_id": "h0",
+                        "rows": [
+                            {
+                                "row_index": 0,
+                                "runs": [
+                                    {
+                                        "proposals": ["A", "Α"],
+                                        "run_input_hash": H,
+                                        "rejection_codes": ["unicode_visual_collision"],
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+        fixture_id="fixture",
+        source_hash=H,
+        geometry_status="proved",
+        geometry_rejection_codes=[],
+        top_k=5,
+    )
+
+    row = matrix["rows"][0]
+    assert row["classification"] == "visual_collision"
+    assert row["proposal_rank"] == 1
+    assert row["observations"][0]["collision_codes"] == ["unicode_visual_collision"]
 
 
 def test_fixed_ascii_source_png_recovers_both_rows_without_canvas_tail() -> None:

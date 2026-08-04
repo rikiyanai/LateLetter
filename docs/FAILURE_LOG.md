@@ -9755,3 +9755,120 @@ Remaining missing positives after this D1 slice:
   proposal coverage added. Continue D1 on kana/Kanji/combining/width/emoji/
   mixed/degraded families. Ranking changes remain prohibited. ComplaintRef:
   operator order to log and execute the transcription plan E2E, 2026-08-04.
+
+### Transcription D1 combining replay was invalidated by proposal synthesis and reporting defects (2026-08-04)
+
+The D1 replay artifact
+`tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin-combining.json`
+is preserved as rejected diagnostic evidence, not release coverage. Its SHA-256
+is `ff2a387752ff21f3f542b8b56b60f0525c8f4ff70eed0e09f010e2cc0e1d1521`
+and its size is `115821602` bytes; the small tracked receipt is
+`tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin-combining-receipt.json`.
+
+Load-bearing defects:
+
+- The Tesseract Latin fallback synthesized `café é` from OCR text shaped like
+  `cafe=` and promoted that rewrite into primary candidate ranking. That is
+  transcript-shaped synthesis, not source/component-derived combining
+  recognition.
+- Fixture-level `positive_missing` depended on adapter iteration order because
+  it tested the full transcript against an insertion-ordered union of adapter
+  strings instead of the already generated row coverage matrix.
+- Row-level `visual_collision` was poisoned by any adapter's unbound collision
+  status for the fixture, even when the exact proposal for that row came from a
+  different adapter and the collision was not attached to that proposal.
+- The replay also contains nondeterministic adapter records:
+  `positive-kanji:psm7-jpn-cjk`, `positive-combining:psm7-jpn-cjk`, and
+  `positive-mixed-script:psm7-jpn-cjk`.
+
+Corrections made in the successor patch:
+
+- Removed detached-accent text rewriting from the Tesseract proposal path.
+- Derived fixture top-k coverage from source-owned row proposal evidence rather
+  than adapter insertion order.
+- Kept unbound collision statuses as diagnostics on the row while preventing
+  them from rewriting row coverage classification.
+
+- **Status:** REJECTED DIAGNOSTIC; D1 must rerun after genuine
+  source/component-derived combining recognition and deterministic adapter
+  replay are fixed. ComplaintRef: open-repertoire proposal coverage D1
+  combining replay, 2026-08-04.
+
+### Transcription D1 row-level OCR/gap evidence expands source-owned Unicode coverage (2026-08-04)
+
+The successor D1 patch fixes two source-evidence losses without enabling
+candidate TXT, acceptance, scorer changes, or transcript input:
+
+- Tesseract profiles now consume geometry-owned shaped row strips rather than
+  isolated connected-run crops. The row strip is cropped from source PNG pixels
+  with bounded padding and retains the underlying run IDs, component IDs, mask
+  hash, and source bounds.
+- OCR outputs receive bounded whitespace alternatives from measured row gaps.
+  This uses the number of source text groups separated by significant gaps, not
+  the expected transcript. It exposes rows such as `春 花` when OCR collapses a
+  measured ideograph gap and `かな カナ` when OCR over-splits adjacent kana.
+- The prior detached-accent synthesis remains deleted. Combining coverage now
+  comes from row OCR context (`café é`), not from rewriting `cafe=`.
+
+Focused verification:
+
+- `positive-kana`: `かな カナ` present-but-losing at rank 3 from
+  `psm7-jpn-cjk`.
+- `positive-kanji`: `春 花` present-but-losing at rank 2 from `psm7-jpn-cjk`.
+- `positive-combining`: `café é` present-and-winning at rank 1 from
+  `psm7-eng`/`psm13-eng`.
+
+Fresh full D1 replay:
+`tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-row-ocr-gap.json`,
+size `117931267` bytes, SHA-256
+`4a148a53eca8650d1294ebd1149834602c5b20c86de049d209d749e992e01a85`.
+The small tracked receipt is
+`tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-row-ocr-gap-receipt.json`.
+
+Full replay status remains `blocked_release_coverage`: `budget_failures` and
+`nondeterministic_adapters` both contain
+`positive-degraded-fixed:psm7-jpn-cjk`. Missing positives are now
+`positive-width-mixture`, `positive-emoji-zwj`, `positive-mixed-script`, and
+`positive-degraded-fixed`. The covered positive families are fixed ASCII,
+proportional Latin, kana, Kanji, Arabic, and combining.
+
+- **Status:** D1 PARTIAL; row-level OCR/gap evidence adds kana, Kanji, and
+  combining coverage, but release coverage is still blocked on width-mixture,
+  emoji-ZWJ, mixed-script, degraded-fixed, and the degraded `psm7-jpn-cjk`
+  budget/determinism defect. Continue D1/Track B only; ranking and acceptance
+  remain prohibited. ComplaintRef: operator order to implement the
+  transcription plan correctly, 2026-08-04.
+
+### Coverage matrix collision taxonomy was restored without unbound poisoning (2026-08-04)
+
+The D1 row OCR/gap review found that the previous reporting fix removed
+`visual_collision` from row-level classification entirely. That avoided the
+old bug where any adapter's detached collision status could poison an exact
+row match, but it also made known visual-collision corpus pairs unclassifiable
+by the release matrix.
+
+Correction:
+
+- Row proposal evidence now carries each run's rejection codes beside its
+  bounded proposal list.
+- `_coverage_rank_matrix` propagates collision codes through composed row
+  options and classifies `visual_collision` only when the top row proposal is
+  itself collision-marked.
+- Detached adapter-level collision statuses remain visible as
+  `collision_status_sources`, but they no longer rewrite an exact proposal from
+  another adapter.
+- `_fixture_exact_top_k_from_matrix` continues to reject `visual_collision` as
+  non-covered release evidence.
+
+Verification:
+
+- Focused tests pass:
+  `test_fixture_exact_top_k_uses_row_matrix_not_adapter_union_order`,
+  `test_row_coverage_records_unbound_collision_without_poisoning_exact_match`,
+  and
+  `test_row_coverage_classifies_collision_only_when_winning_proposal_is_marked`.
+
+- **Status:** CORRECTED; collision taxonomy is restored at the row matrix while
+  D1 release coverage remains blocked by the logged missing families and
+  `positive-degraded-fixed:psm7-jpn-cjk` budget/determinism. ComplaintRef:
+  D1 row OCR/gap review, 2026-08-04.

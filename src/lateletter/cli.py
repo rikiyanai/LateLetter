@@ -27,6 +27,9 @@ from .session_store import SessionStore
 
 
 def main(argv: list[str] | None = None) -> int:
+    command_args = list(sys.argv[1:] if argv is None else argv)
+    if command_args and command_args[0] in {"transcribe", "accept"}:
+        return _transcription_command(command_args)
     parser = argparse.ArgumentParser(
         prog="lateletter",
         description="Letters for people you love, delivered after you're gone.",
@@ -52,7 +55,7 @@ def main(argv: list[str] | None = None) -> int:
         help="Delete all author storage",
     )
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args(command_args)
 
     if args.wipe_session:
         return _wipe_session()
@@ -64,6 +67,41 @@ def main(argv: list[str] | None = None) -> int:
         return _garden_mode(season=args.season)
 
     parser.print_help()
+    return 0
+
+
+def _transcription_command(argv: list[str]) -> int:
+    """Run the canonical screenshot-transcription command surface."""
+
+    import json
+
+    from .transcription import AttemptError, accept, transcribe
+
+    command = argv[0]
+    if command == "transcribe":
+        parser = argparse.ArgumentParser(prog="lateletter transcribe")
+        parser.add_argument("source_png")
+        parser.add_argument("--attempt-root", required=True)
+        parser.add_argument("--attempt-id", required=True)
+        args = parser.parse_args(argv[1:])
+        try:
+            result = transcribe(args.source_png, args.attempt_root, args.attempt_id)
+        except (AttemptError, OSError, ValueError) as exc:
+            print(f"transcribe rejected: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(result, ensure_ascii=False, sort_keys=True))
+        return 0
+
+    parser = argparse.ArgumentParser(prog="lateletter accept")
+    parser.add_argument("attempt_dir")
+    parser.add_argument("--receipt", required=True)
+    args = parser.parse_args(argv[1:])
+    try:
+        result = accept(args.attempt_dir, args.receipt)
+    except (AttemptError, OSError, ValueError) as exc:
+        print(f"accept rejected: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
     return 0
 
 
