@@ -26,6 +26,7 @@
         "docs/GARDEN_PARITY.md",
         "docs/ownership-lanes.json",
         "scripts/validate_presentation_identity.py",
+        "scripts/compose_frame_check.mjs",
         "scripts/check_lane_boundary.py",
         "scripts/extract_operator_decisions.py",
         "scripts/garden_fixture_art.py",

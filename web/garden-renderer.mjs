@@ -170,12 +170,16 @@ export class CanonicalGardenRenderer {
 
     // ---- advance: gathered input events become presentation state. -------
     // Events accumulated since the previous frame (pointer moves and leaves,
-    // click feedback, focus changes) are consumed exactly once. The composer
-    // never sees an event, only the state the advance derived from it, which
-    // is what keeps composition a pure function of its three inputs.
+    // click feedback, focus changes) are consumed exactly once, and the
+    // adapter contributes one scene-facts event so the LIFECYCLE (birds,
+    // weather particles, snow depth -- reopened step 5) can age by elapsed
+    // ticks. The composer never sees an event, only the state the advance
+    // derived from it, which is what keeps composition a pure function of
+    // its three inputs.
     this.presentationState = advancePresentationState(
       this.presentationState,
-      this.pendingEvents.splice(0, this.pendingEvents.length),
+      [...this.pendingEvents.splice(0, this.pendingEvents.length),
+        { kind: 'scene', projection, viewport }],
       { frame: this.visualFrame },
     );
 

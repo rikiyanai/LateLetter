@@ -936,7 +936,8 @@
         "recipe.serialization.colored_rows",
         "recipe.motion.wind_law",
         "recipe.time.phase_selection"
-      ]
+      ],
+      "candidate_note": "Reopened step 5 (2026-08-04): rain is a particle actor pool in advancePresentationState with the deployed law (blob lines 947-979, 1040-1050): gravity vy=min(vy+0.08,2.2), drift vx+wind*0.3 under the deployed two-oscillator wind, glyph leaning with the wind at spawn, spring probability 0.35 under a 60 cap and autumn bursts of 2-5 under 120, maxAges 60/35, fragment and splash reactions on impact. Recorded deviations: seeded entropy; authored weather precedence. Differential verification against the frozen blob (reopened step 6) is pending; the status stays 'different' until that comparison, over distributions and lifecycle rather than constants, is on the record."
     },
     "recipe.weather.rain_fragments": {
       "kind": "paint",
@@ -956,7 +957,7 @@
       "decision_refs": [
         "D1"
       ],
-      "candidate_status": "absent",
+      "candidate_status": "different",
       "language": "When a drop's integer cell is in the collision map it is consumed and 2 to 4 fragments spawn there, thrown against the wind, glyph ageing across three stages at lifetime fractions 0.4 and 0.75. Reads canonical collision, writes nothing — the reference case for a legal recipe-chain cell.",
       "presence_requirement": "optional",
       "law_refs": [
@@ -967,7 +968,8 @@
         "recipe.viewport.resize_regeneration",
         "recipe.serialization.colored_rows",
         "recipe.motion.wind_law"
-      ]
+      ],
+      "candidate_note": "Reopened step 5 (2026-08-04): implemented -- a raindrop entering a plant ink cell spawns 2-4 fragments with the deployed velocities and 3-8 tick lives, aging through the ' . · glyph sequence (blob lines 1006-1030). Previously 'absent': nothing painted under this id. Differential verification against the frozen blob (reopened step 6) is pending; the status stays 'different' until that comparison, over distributions and lifecycle rather than constants, is on the record."
     },
     "recipe.weather.rain_splashes": {
       "kind": "paint",
@@ -987,7 +989,7 @@
       "decision_refs": [
         "D1"
       ],
-      "candidate_status": "absent",
+      "candidate_status": "different",
       "language": "A drop reaching groundY spawns 3 to 5 splashes within one column either side, horizontal velocity plus or minus 0.35 decaying by 0.88 per frame, same three-stage glyph ageing.",
       "presence_requirement": "optional",
       "law_refs": [
@@ -998,7 +1000,8 @@
         "recipe.viewport.resize_regeneration",
         "recipe.serialization.colored_rows",
         "recipe.motion.wind_law"
-      ]
+      ],
+      "candidate_note": "Reopened step 5 (2026-08-04): implemented -- a raindrop reaching the ground line spawns 3-5 splashes with the deployed spread and 3-8 tick lives (blob lines 1032-1037). The previous surface-adjacent splash synthesis that painted under this id was deleted in the same patch. Differential verification against the frozen blob (reopened step 6) is pending; the status stays 'different' until that comparison, over distributions and lifecycle rather than constants, is on the record."
     },
     "recipe.weather.snow": {
       "kind": "paint",
@@ -1038,7 +1041,8 @@
         "recipe.serialization.colored_rows",
         "recipe.motion.wind_law",
         "recipe.time.phase_selection"
-      ]
+      ],
+      "candidate_note": "Reopened step 5 (2026-08-04): the per-frame hashed-position synthesis was deleted; snow is a particle actor pool in advancePresentationState with the deployed law (blob lines 947-1053): spawn every second tick under the 80 cap, vy drawn uniform(0.08,0.25), lateral sway amp*sin(phase+age*0.04)*0.25, maxAge 300, glyphs drawn from '.'/'*', landing on the per-column top surface. Recorded deviations: seeded entropy stream, and authored scene weather takes precedence over the season (canonical state the legacy page did not have). Differential verification against the frozen blob (reopened step 6) is pending; the status stays 'different' until that comparison, over distributions and lifecycle rather than constants, is on the record."
     },
     "recipe.weather.snow_accumulation": {
       "kind": "paint",
@@ -1064,7 +1068,7 @@
       "decision_refs": [
         "D1"
       ],
-      "candidate_status": "absent",
+      "candidate_status": "different",
       "language": "A flake landing on the canonical top surface for its column, falling back to groundY, is consumed and increments that column's depth counter, capped at 3. Depth paints upward from groundY alternating two glyphs on (col + depth) % 3. Holds mutable state that is never persisted — the second reference case for the boundary.",
       "presence_requirement": "optional",
       "law_refs": [
@@ -1076,7 +1080,8 @@
         "recipe.serialization.colored_rows",
         "recipe.motion.wind_law",
         "recipe.time.phase_selection"
-      ]
+      ],
+      "candidate_note": "Reopened step 5 (2026-08-04): implemented as the lifecycle's per-column depth map in advancePresentationState -- a landing flake is consumed and increments its column's depth, capped at 3 (blob lines 981-993); piles paint upward from the ground line alternating '*'/'.' on (column+depth)%3 (blob lines 1105-1115). The previous status 'absent' described the candidate before this landed; the invented hash-density cap/bank synthesis that painted under this id was deleted in the same patch. Differential verification against the frozen blob (reopened step 6) is pending; the status stays 'different' until that comparison, over distributions and lifecycle rather than constants, is on the record."
     },
     "recipe.weather.falling_leaves": {
       "kind": "paint",
@@ -1107,7 +1112,7 @@
       "candidate_status": "different",
       "language": "Autumn only. Population cap is min(60, floor(canopyCells.size / 3)), so leaf density is a function of how much canopy exists rather than a constant. 70 percent detach from a real canopy cell; 30 percent enter from rows 0 to 2 with wider drift. vx accumulates wind*0.04 clamped to plus or minus 0.8; vy accumulates 0.04 to a cap of 1.5 applied at 0.4 scale. Every 8 frames the glyph advances through a three-stage rotation. On reaching groundY the leaf rests, motionless, removed after 41 frames.",
       "candidate_owner": "web/garden-renderer.mjs::_drawWeather",
-      "candidate_note": "SPEC 7.1 transcribes these constants and the transcription matches the blob.",
+      "candidate_note": "SPEC 7.1 transcribes these constants and the transcription matches the blob. Reopened step 5 (2026-08-04): leaves are lifecycle actors with the deployed physics (blob lines 992-1005, 1055-1075): canopy-gated detachment under the min(60, canopy/3) cap, wind-driven drift clamped to +/-0.8, the three-glyph tumble every 8 ticks, landing as a 41-tick rest. Canopy derivation maps the legacy deciduous-cell rule onto plant art rows three or more above the base. Differential verification against the frozen blob (reopened step 6) is pending; the status stays 'different' until that comparison, over distributions and lifecycle rather than constants, is on the record.",
       "presence_requirement": "optional",
       "law_refs": [
         "recipe.motion.frame_cadence",
@@ -1281,9 +1286,9 @@
         "D1",
         "D3"
       ],
-      "candidate_status": "exact",
+      "candidate_status": "different",
       "language": "Birds enter fully off-screen at x = -width-2 (or cols+2) and traverse at plus or minus 0.42 per tick until they leave the far side, at which point they deactivate. Entry side is random. A flock forms 28 percent of the time with 3 to 5 birds, each trailing the previous by 5 columns with a small vertical offset so the group reads as a skein rather than a row. Base altitude is random within the upper sky, clamped to rows 1..groundY-8. The frame set narrows below 60 columns. Respawn interval is 250 to 600 ticks, suppressed in winter.",
-      "candidate_note": "Ported exactly into the GardenPresentation composer on 2026-08-03 (web/garden-renderer.mjs drawSkyLife + ambientBirdSpawns): 0.42 cells per tick, entry at -width-2 / cols+2, deactivation beyond the far bound, 28% flocks of 3-5 trailing by 5 columns with the deployed vertical offsets, base altitude within max(4, groundY-12) clamped to 1..groundY-8, frameStep 5+(i%3) over the archived 4-frame cycle, compact pair below 60 columns, respawn 250 + [0,350) ticks, winter suppressed. Two deliberate, recorded deviations forced by the presentation contract: the ENTROPY SOURCE is a seeded hash instead of Math.random() with every distribution kept verbatim (unseeded randomness is not an available composer input), and a bird mid-crossing at the instant winter begins vanishes rather than finishing, because the composer reads the current season only. Distributions and speeds are the deployed ones; a viewer cannot observe the entropy source.",
+      "candidate_note": "CORRECTED 2026-08-04: the 2026-08-03 note recorded candidate_status 'exact' for a stateless composer port whose respawn law was NOT the deployed one -- it drew ONE wait per interval (expected gap ~426 ticks) where the deployed loop resamples the 250+[0,350) threshold EVERY tick against an accumulating counter (expected gap ~273), and it erased mid-crossing birds at a winter boundary where the deployed page gates spawns only. By its own definition a divergent reimplementation is 'different', so 'exact' was false. Reopened step 5 replaced the substitute with a stateful port in advancePresentationState (web/garden-presentation.mjs): birds are actors; the counter increments per tick, the threshold is redrawn per tick including winter (the deployed condition evaluated its random draw before the season test), winter gates spawns only so crossings finish and the carried-over counter releases on the first non-winter tick; spawn geometry, 0.42 speed, flock law, frame stepping and the compact pair are the blob's lines 1160-1180 and 1476-1498. Recorded deviation: entropy is a seeded per-world stream (LifecycleRng, the blob's own RNG class from lines 593-612) instead of Math.random(), with every distribution kept verbatim; a shared-entropy differential test replays the legacy loop against the advance in tests/garden_adapters/test_garden_renderer.mjs. Differential verification against the frozen blob (reopened step 6) is pending; the status stays 'different' until that comparison, over distributions and lifecycle rather than constants, is on the record.",
       "distinct_from": "recipe.sky.distant_birds",
       "presence_requirement": "required",
       "law_refs": [

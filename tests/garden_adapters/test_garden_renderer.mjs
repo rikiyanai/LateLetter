@@ -9,13 +9,16 @@ import {
 
 import {
   CanonicalGardenRenderer, ambientEntityPosition,
-  AMBIENT_BIRD_FRAMES, AMBIENT_BIRD_COMPACT_FRAMES, ambientBirdSpawns, drawSkyLife,
-  Raster, DAY,
+  AMBIENT_BIRD_FRAMES, AMBIENT_BIRD_COMPACT_FRAMES, drawSkyLife, drawWeather,
+  Raster, DAY, stringHash,
   animalPoseFamily, connectedMasks, gardenGroundY, gardenPresentationProfile,
   layoutGardenObjects, measuredAssetPlacement,
   objectBurstPattern, skyCloudPresentation,
-  weatherParticlePosition, worldToGardenScreen,
+  worldToGardenScreen,
 } from '../../web/garden-renderer.mjs';
+import {
+  advancePresentationState, LifecycleRng,
+} from '../../web/garden-presentation.mjs';
 import { createGeometry } from '../../web/garden-geometry.mjs';
 import {
   ANIMAL_DELIVERY_FRAMES,
@@ -179,20 +182,61 @@ test('ambient presentation follows stable adjacent-frame trajectories', () => {
   }
 });
 
-test('weather moves continuously until a particle exits and respawns', () => {
-  const width = 120, horizon = 60;
-  for (const kind of ['rain', 'snow', 'leaves']) {
-    for (let index = 0; index < 20; index += 1) {
-      for (let frame = 0; frame < 120; frame += 1) {
-        const before = weatherParticlePosition('weather-proof', index, frame, width, horizon, kind);
-        const after = weatherParticlePosition('weather-proof', index, frame + 1, width, horizon, kind);
-        if (after[1] !== 0) assert.ok(Math.abs(after[0] - before[0]) <= 1,
-          `${kind} x jumped mid-flight at ${index}:${frame}`);
-        const dy = Math.abs(after[1] - before[1]);
-        assert.ok(Math.min(dy, horizon - dy) <= 1, `${kind} y jumped at ${index}:${frame}`);
-      }
+/**
+ * Drive the PUBLIC state advance for `ticks` presentation ticks under one
+ * scene -- the adapter's exact usage, one scene-facts event per frame with
+ * monotonic frame numbers -- and return the final presentation state.
+ * Reopened step 5: birds, weather particles and snow depth are lifecycle
+ * actors owned by this advance; nothing else can create or age them.
+ */
+function advancedState(ticks, projectionData, viewport = [60, 30], previous = null, startFrame = 0) {
+  let state = previous;
+  for (let frame = startFrame; frame < startFrame + ticks; frame += 1) {
+    state = advancePresentationState(state, [
+      { kind: 'scene', projection: projectionData, viewport },
+    ], { frame });
+  }
+  return state;
+}
+
+/** A tall deciduous plant: the legacy leaf and fragment laws need a canopy. */
+function oakProjection(season, weather = '') {
+  return {
+    world_id: 'lifecycle-proof', effective_time: 10, camera: [20, 5], motion_paused: false,
+    scene: { sky_mode: 'storybook_fallback', season, weather },
+    objects: [
+      { object_id: 'plant:oak', kind: 'plant', semantic_name: 'oak', position: [20, 5],
+        depth: 100, hotspot: { x: 20, y: 5, width: 3, height: 3 },
+        semantic_state: { species_id: 'oak', visible_organ_count: 12,
+          connected_group: null, connected_mask: 0 } },
+    ],
+  };
+}
+
+test('weather particles are lifecycle actors under the deployed physics', () => {
+  // Snow: sways by its own phase, falls at its drawn 0.08..0.25 speed, and
+  // never exceeds the deployed pool cap of 80 (blob 59dc49a8 line 1053).
+  let state = null;
+  for (let frame = 0; frame < 900; frame += 1) {
+    state = advancePresentationState(state, [
+      { kind: 'scene', projection: oakProjection('winter', 'snow'), viewport: [60, 30] },
+    ], { frame });
+    const snow = state.lifecycle.particles.filter(p => p.kind === 'snow');
+    assert.ok(snow.length <= 80, 'the deployed snow cap is 80');
+    for (const p of snow) {
+      assert.ok(p.vy >= 0.08 && p.vy <= 0.25, `snow fell at ${p.vy}`);
     }
   }
+  // Depth: accumulated where flakes landed, capped at 3 (blob line 985).
+  const depths = Object.values(state.lifecycle.snowDepth);
+  assert.ok(depths.length > 0, 'no flake ever landed in 900 ticks');
+  assert.ok(depths.every(depth => depth >= 1 && depth <= 3), 'the accumulation cap is 3');
+  // Rain: gravity accelerates each drop to the 2.2 terminal speed and never
+  // past it (blob line 967).
+  state = advancedState(300, oakProjection('summer', 'rain'));
+  assert.ok(state.lifecycle.particles
+    .filter(p => p.kind === 'rain')
+    .every(p => p.vy <= 2.2), 'rain fell past terminal speed');
 });
 
 // REWRITTEN 2026-07-31, from three tests that required the receding ground
@@ -1055,18 +1099,29 @@ test('rich projection restores layered plant animal palette and weather presenta
   const element = new FakeElement();
   element.clientWidth = 960;
   element.clientHeight = 720;
-  const frame = rendererUnderAuthority(element, { prefersReducedMotion: true }).render(data);
-  const picture = frame.lines.join('\n');
+  // Weather is lifecycle-owned (reopened step 5): rain has to FALL before it
+  // paints, so the renderer runs for six garden seconds of ticks first.
+  const renderer = rendererUnderAuthority(element, { prefersReducedMotion: true });
+  let frame = null;
+  for (let tick = 0; tick <= 120; tick += 1) {
+    renderer.visualFrame = tick;
+    frame = renderer.render(data);
+  }
   assert.equal(frame.season, 'autumn');
   assert.equal(frame.timeOfDay, 'day');
-  assert.equal(picture.includes('|'), true);
+  // Painted rain carries its accepted identity and only the deployed glyphs
+  // (the lean follows the wind at spawn: '|', '\' or '/').
+  const rainInk = frame.attempted_primitives.filter(item =>
+    item.source_id === 'recipe.weather.rain' && item.glyph.trim());
+  assert.ok(rainInk.length > 0, 'no rain fell in 120 ticks');
+  assert.ok(rainInk.every(item => ['|', '\\', '/'].includes(item.glyph)),
+    'rain painted a glyph outside the deployed lean set');
   const catEntry = frame.layout.find(entry => entry.object.object_id === cat.object_id);
   assert.ok(catEntry, 'canonical camera crop lost the separated animal target');
   assert.equal(catEntry.art.poseFamily, 'rest');
   assert.ok(catEntry.art.lines.length >= 4);
   assert.ok(catEntry.art.lines.some(line => line.includes('z')),
     'resting cat has no readable sleeping pose');
-  assert.equal(picture.includes('/'), true);
   // Asserts that palette colour reaches the DOM, without pinning the order of
   // declarations inside the style attribute. Each span now also carries the
   // `left` that places it on the cell lattice, so `style="color:` alone no
@@ -1128,54 +1183,70 @@ test('civil presentation uses canonical observed time, never elapsed simulation 
   assert.equal(frame.season, 'autumn');
 });
 
-test('weather reacts at object surfaces with splashes caps and settled leaves', () => {
-  const rainy = projectionCenteredOn('plant:a', { isolate: true });
-  rainy.scene = { sky_mode: 'storybook_fallback', season: 'summer', weather: 'rain' };
-  const rainRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
-  rainRenderer.visualFrame = 40;
-  const rain = rainRenderer.render(rainy);
-  assert.ok(rain.weatherReactions.splashes > 0);
-
-  const snowy = projectionCenteredOn('plant:a', { isolate: true });
-  snowy.scene = { sky_mode: 'storybook_fallback', season: 'winter', weather: 'snow' };
-  const snowRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
-  snowRenderer.visualFrame = 90;
-  const snow = snowRenderer.render(snowy);
-  assert.ok(snow.weatherReactions.snowCaps > 0);
-  for (const entry of snow.layout) {
-    const [x, y] = entry.anchor;
-    assert.notEqual(snow.lines[y][x], '.');
-    assert.notEqual(snow.lines[y][x], '*');
+test('weather reacts through the lifecycle: fragments, splashes, resting leaves, piles', () => {
+  // Rain over the oak: a drop crossing the canopy fragments; a drop
+  // reaching the ground splashes. Counted over the run rather than at one
+  // snapshot because spray lives only 3-8 ticks -- these are events the
+  // lifecycle produces, not standing scenery.
+  let state = null;
+  let fragments = 0, splashes = 0;
+  for (let frame = 0; frame < 600; frame += 1) {
+    state = advancePresentationState(state, [
+      { kind: 'scene', projection: oakProjection('summer', 'rain'), viewport: [60, 30] },
+    ], { frame });
+    const reactions = drawWeather(new Raster(60, 30), state.lifecycle, DAY);
+    fragments += reactions.fragments;
+    splashes += reactions.splashes;
   }
+  assert.ok(fragments > 0, 'rain crossed the canopy and never fragmented');
+  assert.ok(splashes > 0, 'rain reached the ground and never splashed');
 
-  const autumn = projectionCenteredOn('plant:a', { isolate: true });
-  autumn.scene = { sky_mode: 'storybook_fallback', season: 'autumn' };
-  const leafRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
-  leafRenderer.visualFrame = 150;
-  assert.ok(leafRenderer.render(autumn).weatherReactions.settledLeaves > 0);
+  // Autumn: leaves detach from the canopy, tumble, and rest on the ground
+  // for their 41-tick lie.
+  state = advancedState(600, oakProjection('autumn'));
+  const autumnReactions = drawWeather(new Raster(60, 30), state.lifecycle, DAY);
+  assert.ok(autumnReactions.settledLeaves > 0, 'no leaf ever rested in 600 autumn ticks');
+
+  // Winter: the depth map paints piles rising from the ground line with the
+  // deployed (column + depth) % 3 glyph alternation (blob lines 1105-1115).
+  state = advancedState(900, oakProjection('winter', 'snow'));
+  const snowRaster = new Raster(60, 30);
+  const winterReactions = drawWeather(snowRaster, state.lifecycle, DAY);
+  assert.ok(winterReactions.snowColumns > 0, 'nothing accumulated in 900 winter ticks');
+  assert.ok(winterReactions.snowDepthTotal >= winterReactions.snowColumns);
+  const groundY = state.lifecycle.groundY;
+  for (const [column, depth] of Object.entries(state.lifecycle.snowDepth)) {
+    const c = Number(column);
+    if (c < 0 || c >= 60) continue;
+    for (let d = 0; d < depth; d += 1) {
+      assert.equal(snowRaster.glyphs[groundY - d][c], (c + d) % 3 === 0 ? '*' : '.',
+        `pile glyph at column ${c} depth ${d} is not the deployed alternation`);
+    }
+  }
 });
 
-test('weather reaction counters require semantic object surfaces and plant canopies', () => {
-  const empty = projection();
-  empty.objects = [];
-  empty.scene = { sky_mode: 'storybook_fallback', season: 'summer', weather: 'rain' };
-  const rainRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
-  rainRenderer.visualFrame = 40;
-  const rain = rainRenderer.render(empty).weatherReactions;
-  assert.equal(rain.splashes, 0);
-  assert.ok(rain.groundSplashes > 0);
+test('weather without plants has no fragments and no leaves, only ground effects', () => {
+  const bare = oakProjection('summer', 'rain');
+  bare.objects = [];
+  let state = null;
+  let fragments = 0, splashes = 0;
+  for (let frame = 0; frame < 600; frame += 1) {
+    state = advancePresentationState(state, [
+      { kind: 'scene', projection: bare, viewport: [60, 30] },
+    ], { frame });
+    const reactions = drawWeather(new Raster(60, 30), state.lifecycle, DAY);
+    fragments += reactions.fragments;
+    splashes += reactions.splashes;
+  }
+  assert.equal(fragments, 0, 'nothing to fragment on, yet fragments appeared');
+  assert.ok(splashes > 0, 'ground splashes vanished with the plants');
 
-  empty.scene = { sky_mode: 'storybook_fallback', season: 'winter', weather: 'snow' };
-  const snowRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
-  snowRenderer.visualFrame = 90;
-  const snow = snowRenderer.render(empty).weatherReactions;
-  assert.equal(snow.snowCaps, 0);
-  assert.ok(snow.groundSnow > 0);
-
-  empty.scene = { sky_mode: 'storybook_fallback', season: 'autumn' };
-  const leafRenderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
-  leafRenderer.visualFrame = 150;
-  assert.equal(leafRenderer.render(empty).weatherReactions.settledLeaves, 0);
+  const bareAutumn = oakProjection('autumn');
+  bareAutumn.objects = [];
+  state = advancedState(600, bareAutumn);
+  assert.equal(
+    state.lifecycle.particles.filter(p => p.kind === 'leaf' || p.kind === 'leaf-rest').length,
+    0, 'leaves detached with no canopy anywhere');
 });
 
 test('semantic focus visibly marks the same canonical object', () => {
@@ -1795,86 +1866,174 @@ test('sky life travels continuously and never impersonates a relationship animal
   assert.ok(cloudPictures.size >= 3, 'cloud catalogue collapsed to repeated bowls');
 });
 
-/**
- * Paint one sky frame through the real painter and return the bird cells.
- *
- * The traversal is judged on what actually lands in a raster, because that
- * is what a viewer sees; the spawn schedule alone cannot show a clamp or an
- * edge bound misfiring.
- */
-function birdCellsAt(frame, cols, season = 'summer') {
+/** Paint one lifecycle's birds through the real painter; the bird cells. */
+function birdCellsOf(lifecycle, cols) {
   const raster = new Raster(cols, 40);
-  const profile = gardenPresentationProfile([cols, 40]);
-  drawSkyLife(raster, { world_id: 'sky-proof' }, DAY, season, profile, 'day', frame);
+  drawSkyLife(raster, lifecycle, DAY);
   return raster.attempted.filter(item =>
     item.source_id === 'recipe.ambient.bird_traversal' && item.glyph.trim());
 }
 
-test('the ambient bird traversal is the deployed recipe, edge to edge', () => {
-  const cols = 120;
-  const spawns = ambientBirdSpawns('sky-proof', 20000);
-  assert.ok(spawns.length > 5, 'a long session produced almost no bird spawns');
-  // The deployed interval: 250 plus up to 350 ticks, spawning the tick after
-  // the threshold -- so consecutive spawn gaps sit in [251, 601].
-  for (let i = 1; i < spawns.length; i += 1) {
-    const gap = spawns[i].time - spawns[i - 1].time;
-    assert.ok(gap >= 251 && gap <= 601, `respawn gap ${gap} is outside the deployed interval`);
-  }
-  // Determinism: the schedule is a pure function of (worldId, frame).
-  assert.deepEqual(ambientBirdSpawns('sky-proof', 20000), spawns);
+/** An empty sky scene for the bird lifecycle. */
+function skyProjection(season) {
+  return {
+    world_id: 'sky-proof', effective_time: 10, camera: [0, 0], motion_paused: false,
+    scene: { sky_mode: 'storybook_fallback', season }, objects: [],
+  };
+}
 
-  // Follow the first spawn across the sky, frame by frame.
-  const spawn = spawns[0];
-  let previousXs = null;
-  let firstSeen = null, lastSeen = null;
-  let minX = Infinity, maxX = -Infinity;
-  const frameGlyphs = new Set();
-  for (let frame = spawn.time; frame < spawn.time + Math.ceil((cols + 20) / 0.42); frame += 1) {
-    const cells = birdCellsAt(frame, cols);
-    if (!cells.length) { previousXs = null; continue; }
-    const xs = cells.map(cell => cell.x);
-    if (firstSeen === null) firstSeen = { frame, x: Math.min(...xs) };
-    lastSeen = { frame, xs };
-    minX = Math.min(minX, ...xs);
-    maxX = Math.max(maxX, ...xs);
-    cells.forEach(cell => frameGlyphs.add(cell.glyph));
-    // Continuous travel: at 0.42 cells a tick, no painted column moves more
-    // than one cell between consecutive frames.
-    if (previousXs !== null) {
-      const step = Math.abs(Math.min(...xs) - Math.min(...previousXs));
-      assert.ok(step <= 1, `the bird jumped ${step} cells in one tick at frame ${frame}`);
+/** One advance under a sky scene; keeps the bird tests to one shape. */
+function advanceSky(state, season, frame, cols = 120) {
+  return advancePresentationState(state, [
+    { kind: 'scene', projection: skyProjection(season), viewport: [cols, 40] },
+  ], { frame });
+}
+
+test('bird spawn times replay the deployed per-tick resampled law, entropy shared', () => {
+  // The REFERENCE: the legacy creature loop verbatim (blob 59dc49a8 lines
+  // 1485-1489, spawn draws from 1160-1180), driven by the same seeded
+  // stream the lifecycle owns. If the advance's draw ordering or
+  // consumption drifts by a single call, every later spawn time diverges
+  // and the deep equality below fails.
+  const rng = new LifecycleRng(stringHash('sky-proof:birds') >>> 0);
+  const expected = [];
+  let birdT = 0;
+  for (let tick = 1; tick <= 20000; tick += 1) {
+    birdT += 1;
+    const threshold = 250 + Math.floor(rng.random() * 350);
+    if (birdT > threshold) {              // summer: the season gate is open
+      birdT = 0;
+      expected.push(tick);
+      rng.random();                                        // entry side
+      if (rng.random() < 0.28) rng.random();               // flock chance, size
+      rng.random();                                        // base altitude
     }
-    previousXs = xs;
   }
-  assert.ok(firstSeen, 'the first spawn never painted at all');
-  // The crossing reaches from one edge region to the other: painting begins
-  // within a few cells of an edge and the swept range covers the full width.
-  assert.ok(minX <= 2, `the bird first appeared at ${minX}, not at an edge`);
-  assert.ok(maxX >= cols - 3, `the bird disappeared at ${maxX}, before the far edge`);
-  // Only the archived flap glyphs ever paint at desktop width.
+  assert.ok(expected.length > 25, 'the law produced almost no spawns in 20000 ticks');
+
+  // The OBSERVED spawn ticks, through the public advance. A spawn is the
+  // tick whose counter reads zero -- the deployed reset.
+  let state = null;
+  const observed = [];
+  for (let frame = 0; frame < 20000; frame += 1) {
+    state = advanceSky(state, 'summer', frame);
+    if (state.lifecycle.birdT === 0) observed.push(state.lifecycle.tick);
+  }
+  assert.deepEqual(observed, expected);
+
+  // The deployed gap law: at least 251 ticks (the counter must clear the
+  // 250 floor), at most 601 (a 601-tick counter exceeds every threshold).
+  const gaps = expected.map((tick, i) => tick - (expected[i - 1] ?? 0));
+  for (const gap of gaps) {
+    assert.ok(gap >= 251 && gap <= 601, `respawn gap ${gap} outside the deployed bounds`);
+  }
+  // The per-tick RESAMPLED hazard spawns early: mean near 273 ticks, where
+  // the withdrawn fixed-wait substitute averaged ~426. This is the
+  // observable distribution the register's false 'exact' hid.
+  const mean = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+  assert.ok(mean < 330, `mean respawn gap ${mean} looks like the fixed-wait substitute`);
+});
+
+test('a spawned bird crosses edge to edge at the deployed speed and glyphs', () => {
+  // 60 columns: a full crossing (~210 ticks) fits inside the minimum
+  // respawn gap (251), so exactly one spawn is ever mid-air.
+  const cols = 60;
+  let state = null;
+  let frame = 0;
+  while (frame < 20000 && !(state?.lifecycle.birds.length)) {
+    state = advanceSky(state, 'summer', frame, cols);
+    frame += 1;
+  }
+  assert.ok(state.lifecycle.birds.length > 0, 'no bird spawned in 20000 ticks');
+
+  let previousMin = null;
+  let minX = Infinity, maxX = -Infinity;
+  const glyphs = new Set();
+  while (state.lifecycle.birds.length && frame < 25000) {
+    state = advanceSky(state, 'summer', frame, cols);
+    frame += 1;
+    const cells = birdCellsOf(state.lifecycle, cols);
+    if (!cells.length) { previousMin = null; continue; }
+    const xs = cells.map(cell => cell.x);
+    const min = Math.min(...xs);
+    minX = Math.min(minX, min);
+    maxX = Math.max(maxX, ...xs);
+    cells.forEach(cell => glyphs.add(cell.glyph));
+    // Continuous travel: at 0.42 cells a tick, no painted column moves more
+    // than one cell between consecutive ticks.
+    if (previousMin !== null) {
+      assert.ok(Math.abs(min - previousMin) <= 1,
+        `the bird jumped ${Math.abs(min - previousMin)} cells in one tick`);
+    }
+    previousMin = min;
+  }
+  assert.ok(minX <= 2, `the crossing never reached the left edge region (${minX})`);
+  assert.ok(maxX >= cols - 3, `the crossing never reached the right edge region (${maxX})`);
   const archived = new Set(AMBIENT_BIRD_FRAMES.flatMap(value => [...value]));
-  for (const glyph of frameGlyphs) {
+  for (const glyph of glyphs) {
     assert.ok(archived.has(glyph), `unarchived bird glyph ${JSON.stringify(glyph)}`);
   }
 });
 
-test('below sixty columns the deployed compact frames paint, and winter is empty', () => {
-  // Find any frame where a phone-width bird is on screen.
-  let compactSeen = new Set();
-  for (let frame = 0; frame < 4000; frame += 1) {
-    for (const cell of birdCellsAt(frame, 49)) compactSeen.add(cell.glyph);
-    if (compactSeen.size) break;
+test('winter gates bird spawns only: crossings finish, the counter carries over', () => {
+  // Summer until a bird exists.
+  const cols = 60;
+  let state = null;
+  let frame = 0;
+  while (frame < 20000 && !(state?.lifecycle.birds.length)) {
+    state = advanceSky(state, 'summer', frame, cols);
+    frame += 1;
   }
-  assert.ok(compactSeen.size > 0, 'no phone-width bird painted in 4000 ticks');
+  const flying = state.lifecycle.birds.length;
+  assert.ok(flying > 0, 'no bird spawned in 20000 summer ticks');
+  const before = state.lifecycle.birds[0].x;
+
+  // Winter begins mid-crossing. The deployed page gated SPAWNS only, so the
+  // bird keeps flying -- the previous stateless port made it vanish at the
+  // boundary, a recorded divergence this repair removes.
+  state = advanceSky(state, 'winter', frame, cols);
+  frame += 1;
+  assert.equal(state.lifecycle.birds.length, flying, 'winter erased a mid-air crossing');
+  assert.notEqual(state.lifecycle.birds[0].x, before, 'the crossing froze at the boundary');
+
+  // Through a long winter the crossing finishes, nothing new spawns, and the
+  // counter keeps counting past every possible threshold.
+  for (let i = 0; i < 3000; i += 1) {
+    state = advanceSky(state, 'winter', frame, cols);
+    frame += 1;
+  }
+  assert.equal(state.lifecycle.birds.length, 0, 'a bird spawned in winter');
+  assert.ok(state.lifecycle.birdT > 601, 'winter reset the respawn counter');
+
+  // The first non-winter tick releases the carried-over counter at once --
+  // the deployed behaviour of a counter that accumulated through winter.
+  state = advanceSky(state, 'spring', frame, cols);
+  assert.ok(state.lifecycle.birds.length > 0,
+    'the accumulated counter did not spawn on the first non-winter tick');
+});
+
+test('below sixty columns the lifecycle spawns the deployed compact pair', () => {
+  const cols = 49;
+  let state = null;
+  let frame = 0;
+  while (frame < 20000 && !(state?.lifecycle.birds.length)) {
+    state = advanceSky(state, 'summer', frame, cols);
+    frame += 1;
+  }
+  assert.ok(state.lifecycle.birds.length > 0, 'no phone-width bird in 20000 ticks');
+  assert.ok(state.lifecycle.birds.every(bird => bird.compact),
+    'a phone-width bird carries the desktop frame set');
+  const seen = new Set();
+  while (frame < 21000 && state.lifecycle.birds.length) {
+    state = advanceSky(state, 'summer', frame, cols);
+    frame += 1;
+    for (const cell of birdCellsOf(state.lifecycle, cols)) seen.add(cell.glyph);
+  }
+  assert.ok(seen.size > 0, 'the phone-width bird never painted');
   const compact = new Set(AMBIENT_BIRD_COMPACT_FRAMES.flatMap(value => [...value]));
-  for (const glyph of compactSeen) {
+  for (const glyph of seen) {
     assert.ok(compact.has(glyph),
       `phone bird painted ${JSON.stringify(glyph)}, not the deployed compact pair`);
-  }
-  // Winter: the deployed viewer stops spawning; this port paints nothing.
-  for (let frame = 0; frame < 4000; frame += 200) {
-    assert.equal(birdCellsAt(frame, 120, 'winter').length, 0,
-      'a bird painted in winter');
   }
 });
 

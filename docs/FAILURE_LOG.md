@@ -6903,3 +6903,75 @@ Next in the reopened route: step 5 — persistent bird/weather/particle lifecycl
 `advancePresentationState`, deleting the stateless substitutes in the same patches and
 correcting the bird register record's false 'exact' — then step 6, differential recipe
 restoration on this seam.
+
+**Reopened step 5 implemented (unproven visually): the lifecycle lives in the state advance,
+the stateless substitutes are deleted, the bird record's false 'exact' is corrected
+(2026-08-04, garden lane).**
+
+What changed:
+
+- **The lifecycle is owned by `advancePresentationState`** (web/garden-presentation.mjs). The
+  deployed engine's persistent actors are ported line for line from blob 59dc49a8: the
+  ambient-bird respawn law (counter incremented per tick, the 250+[0,350) threshold REDRAWN
+  every tick including winter exactly as the deployed condition evaluated its draw before the
+  season test, spawn geometry/flock law/0.42 speed/frame stepping/compact pair from lines
+  1160-1180 and 1476-1498); the particle system (spawn every second tick; spring rain p=0.35
+  under a 60 cap, autumn bursts of 2-5 under 120, winter snow under 80 with vy
+  uniform(0.08,0.25) and maxAge 300; rain gravity min(vy+0.08,2.2) with wind drift; snow sway
+  amp*sin(phase+age*0.04)*0.25; plant-hit fragments 2-4, ground splashes 3-5, both living
+  3-8 ticks through the ' . · sequence; canopy leaves under the min(60,canopy/3) cap with the
+  three-glyph tumble and 41-tick rest); the per-column snow depth map capped at 3 with piles
+  painted upward from the ground line on (column+depth)%3; and the two-oscillator wind law.
+  Entropy is the blob's own RNG class (lines 593-612), ported as `LifecycleRng` and carried
+  in state as plain tuples, in TWO streams mirroring the legacy page's separate sources
+  (creatures vs particle layer). Aging is by TICK DELTA, so hover repaints cannot speed the
+  garden up. Scene facts (projection, viewport) reach the advance as one adapter-contributed
+  `{kind:'scene'}` event per frame; surface maps derive from the plant layout the way the
+  legacy `buildCollision` derived them (lines 785-803).
+- **Winter gates bird SPAWNS only, as deployed**: a mid-crossing bird finishes at a season
+  boundary (the stateless port's recorded vanish divergence is gone), the counter accumulates
+  through winter, and the first non-winter tick releases it.
+- **The stateless substitutes are deleted in this patch**: `ambientBirdSpawns` (one wait
+  drawn per interval — expected gap ~426 ticks where the deployed resampled hazard expects
+  ~273) and `weatherParticlePosition` (hashed positions), plus the invented snow-cap/bank
+  and settled-leaf densities that painted under accepted weather ids. `drawSkyLife` and
+  `drawWeather` now paint from lifecycle state alone.
+- **The register is corrected on the record** (docs/garden-presentation-recipes.json): the
+  bird record's candidate_status 'exact' was FALSE for the stateless port by the register's
+  own definition and is now 'different' with the correction written into the note;
+  rain_fragments/rain_splashes/snow_accumulation move 'absent' → 'different' (implemented,
+  unverified); every touched note states that differential verification (step 6) is pending.
+  The committed paint manifest was regenerated (--write-paint-authority) for the register
+  digest.
+- **The runtime gate warms the lifecycle** (scripts/compose_frame_check.mjs): 600 ticks
+  before judging, so it judges a lived frame — snow fallen and accumulated — rather than an
+  empty first sky. The gate script is now listed under the garden lane in
+  docs/ownership-lanes.json (it was unmatched, which the manifest defines as an error).
+- **Tests** (tests/garden_adapters/test_garden_renderer.mjs): a shared-entropy differential
+  replays the legacy creature loop verbatim beside the advance for 20,000 ticks and requires
+  the spawn schedules deep-equal — one drifted draw diverges every later spawn time; gap
+  bounds [251,601] and mean under 330 (the resampled hazard's ~273, against the withdrawn
+  substitute's ~426); a full crossing followed cell by cell at 60 columns; winter
+  finish/carry-over; the compact pair below 60 columns; snow cap/depth-cap/pile-glyph
+  alternation; rain terminal velocity; fragment/splash/leaf reactions with and without
+  plants.
+
+Recorded deviations and remaining gaps, for step 6: seeded entropy replaces
+Math.random()/Date.now() with distributions kept verbatim; authored scene weather takes
+precedence over the season (canonical state the legacy page did not have); birds still paint
+in the backdrop position predating this patch while the deployed page painted creatures
+after plants (painter-order law, untouched here); the canopy derivation maps the legacy
+deciduous-cell rule onto art rows three or more above the plant base; surface maps are
+derived once per advance rather than per step; butterflies/fireflies remain the stateless
+`ambientEntityPosition` (not among the step-5 named systems) and clouds are unchanged.
+
+Receipts: node garden adapters 212/212; python viewer-contract + garden suites 337 with
+exactly the known-red deploy-cutover test; browser E2E 35/35 in real Chrome (160s),
+including the sky-lives watch that requires a bird crossing the upper half of the REAL
+standalone product within 45 seconds; compose_frame_check exit 0, zero violations, the same
+five divergent records (snow_accumulation now reading 'different'); the identity validator
+reports the unchanged blocker landscape; a live Chrome sighting log recorded the first
+crossing at 15.7s (tick ~314, inside the deployed 251-601 window) with the archived wing
+frames cycling, and a screenshot was taken — diagnostics, not visual acceptance, which
+remains operator-only. The review query's frozen motion is by design and was re-confirmed,
+not altered.

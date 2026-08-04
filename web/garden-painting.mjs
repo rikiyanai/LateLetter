@@ -325,7 +325,7 @@ function roundHalfAway(value) { return Math.sign(value) * Math.floor(Math.abs(va
 export function escapeHtml(value) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
-function stringHash(value) {
+export function stringHash(value) {
   let hash = 2166136261;
   for (const glyph of String(value)) { hash ^= glyph.codePointAt(0); hash = Math.imul(hash, 16777619); }
   return hash >>> 0;
@@ -435,18 +435,11 @@ export function skyCloudPresentation(
 
 
 
-export function weatherParticlePosition(worldId, index, frame, width, horizon, kind = 'rain') {
-  const seed = stringHash(`${worldId}:weather:${kind}:${index}`);
-  const fallCadence = kind === 'rain' ? 1 : kind === 'snow' ? 3 : 4;
-  const fall = Math.floor(Math.max(0, frame) / fallCadence);
-  const baseY = Math.floor(noise(seed + 211) * Math.max(1, horizon));
-  const cycle = Math.floor((baseY + fall) / Math.max(1, horizon));
-  const y = wrap(baseY + fall, Math.max(1, horizon));
-  const withinFall = wrap(baseY + fall, Math.max(1, horizon));
-  const drift = kind === 'rain' ? Math.floor(withinFall / 5) : Math.floor(withinFall / 3);
-  const baseX = Math.floor(noise(seed + cycle * 101) * Math.max(1, width));
-  return [clamp(baseX + drift, 0, Math.max(0, width - 1)), y];
-}
+// `weatherParticlePosition` stood here: a stateless hash of (worldId, kind,
+// index, frame) standing in for the deployed particle system. Deleted by
+// reopened step 5 -- weather particles are lifecycle actors owned by the
+// presentation state advance, and a per-frame recomputation cannot be a
+// port of an engine that accumulates.
 
 /**
  * Responsive, disposable browser presentation profile. Canonical coordinates
@@ -1947,246 +1940,100 @@ export function drawAmbient(raster, projection, palette, season, horizon, profil
 export const AMBIENT_BIRD_FRAMES = Object.freeze(['\\v/', '_v_', '/v\\', '_v_']);
 export const AMBIENT_BIRD_COMPACT_FRAMES = Object.freeze(['>-', '~>']);
 
-// The traversal constants, verbatim from the same blob: 0.42 cells per tick
-// (lines 1476-1478), a 250 + [0,350) tick respawn interval (1485-1489), a
-// 28% flock chance of 3-5 birds trailing by 5 columns (1160-1180). Ticks are
-// the accepted 50ms cadence, so these are the deployed speeds.
-const AMBIENT_BIRD_SPEED = 0.42;
-const AMBIENT_BIRD_RESPAWN_BASE = 250;
-const AMBIENT_BIRD_RESPAWN_SPREAD = 350;
-const AMBIENT_BIRD_FLOCK_CHANCE = 0.28;
-
 /**
- * Every bird spawn that has happened by `frame`, derived deterministically.
+ * Sky life: the lifecycle's ambient-bird actors, painted from state alone.
  *
- * The deployed viewer drew its spawn times and flock parameters from
- * `Math.random()`. The presentation contract forbids unseeded randomness --
- * the same inputs must compose the same frame -- so the ENTROPY SOURCE is a
- * seeded hash of the world id and the spawn ordinal while every DISTRIBUTION
- * is kept verbatim: the interval is still 250 plus up to 350 ticks, the
- * flock chance is still 28%, the flock is still 3 to 5. A viewer cannot
- * observe which entropy source produced a draw; they can observe the
- * distributions, and those are the deployed ones.
+ * Reopened step 5: birds are no longer synthesized here from (worldId,
+ * frame) -- they are ACTORS the presentation state advance spawns, steps and
+ * retires under the deployed law (per-tick resampled 250+[0,350) threshold,
+ * 28% flocks of 3-5, 0.42 cells a tick, winter gating SPAWNS only so a bird
+ * mid-crossing at a season boundary finishes its crossing exactly as the
+ * deployed page let it). This painter draws what the state says exists:
+ * `Math.round` placement and the `floor(tick/frameStep)` wing cycle are the
+ * deployed render lines (blob 59dc49a8, lines 1476-1498), and the muted
+ * role is the deployed 'gray'.
  *
- * Iterating from zero each call is deliberate: it makes the schedule a pure
- * function of (worldId, frame), which is what lets the composer stay
- * stateless about birds. The loop runs frame/250 iterations -- a few hundred
- * after an hour of play -- which costs less than one row of painting.
+ * The clouds and one-cell distant-bird backdrop removed on 2026-08-01 stay
+ * removed: nothing here paints them.
  *
- * @param worldId canonical world id, the deterministic seed root
- * @param frame   current presentation tick
- * @returns spawn records `{time, index}` in chronological order
+ * @param raster    frame being painted
+ * @param lifecycle `state.lifecycle` from the presentation advance; null
+ *                  (no scene facts ever arrived) paints nothing
+ * @param palette   active theme colours
  */
-export function ambientBirdSpawns(worldId, frame) {
-  const spawns = [];
-  let time = 0;
-  let index = 0;
-  while (index < 10000) {   // backstop far beyond any real session
-    const wait = AMBIENT_BIRD_RESPAWN_BASE + Math.floor(
-      noise(stringHash(`${worldId}:bird-wait:${index}`)) * AMBIENT_BIRD_RESPAWN_SPREAD);
-    // The deployed timer spawns on the tick AFTER the threshold is exceeded.
-    time += wait + 1;
-    if (time > frame) break;
-    spawns.push({ time, index });
-    index += 1;
-  }
-  return spawns;
-}
-
-/**
- * Sky life: the accepted legacy ambient-bird traversal, and nothing else.
- *
- * WHAT THIS IS. The exact port of the deployed recipe
- * (`recipe.ambient.bird_traversal`, required by goal sections 2 and 4):
- * birds enter fully beyond one edge, cross the entire visible width at
- * 0.42 cells a tick, and leave beyond the opposite edge, flapping the
- * archived frame cycle on a 5-7 tick step. 28% of spawns are a flock of
- * 3 to 5, each trailing the previous by 5 columns with the deployed small
- * vertical offsets so the group reads as a skein rather than a row. Base
- * altitude is drawn within the upper sky and clamped to rows
- * 1..groundY-8; below 60 columns the compact frame pair is used.
- *
- * WHAT THIS IS NOT. The clouds and one-cell distant-bird backdrop that
- * were removed on 2026-08-01 stay removed: the operator identified them in
- * a live frame as unapproved, and nothing here repaints them. The ambient
- * TRAVERSAL is a different recipe -- named accepted-as-deployed in the
- * register, with its provenance pinned to the frozen blob -- and it is
- * required, not merely permitted.
- *
- * WINTER. The deployed viewer suppresses SPAWNING in winter. This port
- * composes each frame from the current season, so in winter no birds paint
- * at all; the one observable difference from the deployed behaviour is that
- * a bird mid-crossing at the moment winter begins vanishes rather than
- * finishing its crossing -- a seconds-long edge visible only at a season
- * boundary, recorded here rather than silently absorbed.
- *
- * @param raster      frame being painted
- * @param projection  canonical scene; read for world id only
- * @param palette     active theme colours; birds paint in the muted role,
- *                    the deployed 'gray'
- * @param season      canonical season name; winter paints nothing
- * @param profile     presentation profile; groundFront bounds altitude
- * @param mode        'day' | 'evening' | 'night' (unused; birds fly in all)
- * @param visualFrame current presentation tick
- */
-export function drawSkyLife(raster, projection, palette, season, profile, mode, visualFrame) {
-  void mode;
-  if (season === 'winter') return;
-  const worldId = String(projection.world_id ?? 'garden');
-  const cols = raster.width;
-  const frames = cols < 60 ? AMBIENT_BIRD_COMPACT_FRAMES : AMBIENT_BIRD_FRAMES;
-  const width = Math.max(...frames.map(value => [...value].length));
-  const groundY = profile.groundFront;
-  // A spawn's farthest trailing bird has left the far edge after this many
-  // cells of travel; older spawns cannot paint and are skipped unexamined.
-  const farthestTravel = cols + 2 * (width + 2) + 5 * 4 + 2;
-
-  for (const spawn of ambientBirdSpawns(worldId, visualFrame)) {
-    const age = visualFrame - spawn.time;
-    if (age * AMBIENT_BIRD_SPEED > farthestTravel) continue;
-    const draw = key => noise(stringHash(`${worldId}:bird:${spawn.index}:${key}`));
-    const fromLeft = draw('side') > 0.5;
-    const flock = draw('flock') < AMBIENT_BIRD_FLOCK_CHANCE
-      ? 3 + Math.floor(draw('size') * 3) : 1;
-    const baseY = Math.floor(draw('baseY') * Math.max(4, groundY - 12)) + 2;
-    for (let i = 0; i < flock; i += 1) {
-      const trail = i * 5;
-      const offsetY = (i % 2 === 0 ? 0 : 1) + (i === 2 ? -1 : 0);
-      const startX = fromLeft ? -width - 2 - trail : cols + 2 + trail;
-      const vx = fromLeft ? AMBIENT_BIRD_SPEED : -AMBIENT_BIRD_SPEED;
-      const x = Math.round(startX + vx * age);
-      // The deployed deactivation bounds, verbatim.
-      if (x < -width - 2 || x > cols + width + 2) continue;
-      const y = clamp(baseY + offsetY, 1, Math.max(2, groundY - 8));
-      const frameStep = 5 + (i % 3);
-      const wing = frames[Math.floor(Math.max(0, visualFrame) / frameStep) % frames.length];
-      raster.text(x, y, wing, palette.dim, true, null,
-        { source: 'recipe.ambient.bird_traversal' });
-    }
+export function drawSkyLife(raster, lifecycle, palette) {
+  if (!lifecycle) return;
+  for (const bird of lifecycle.birds) {
+    const frames = bird.compact ? AMBIENT_BIRD_COMPACT_FRAMES : AMBIENT_BIRD_FRAMES;
+    const wing = frames[Math.floor(Math.max(0, lifecycle.tick) / bird.frameStep) % frames.length];
+    raster.text(Math.round(bird.x), Math.round(bird.y), wing, palette.dim, true, null,
+      { source: 'recipe.ambient.bird_traversal' });
   }
 }
 
 
 
-export function drawWeather(raster, projection, palette, season, horizon, layout, visualFrame) {
-  const weather = String(projection.scene?.weather ?? '').toLowerCase();
-  // The deployed law derives ambient weather FROM the season when the scene
-  // does not name any (frozen blob 59dc49a8, lines 1030-1056): winter snows
-  // continuously, spring carries persistent light rain, autumn sheds leaves.
-  // An authored scene weather still takes precedence -- it is canonical
-  // state -- but an empty one no longer means an empty sky in January.
-  // Particle DENSITY remains the candidate's own (the register's weather
-  // rows stay candidate_status 'different' until the full particle-system
-  // port); what this derives exactly is PRESENCE.
-  const rain = weather.includes('rain') || weather.includes('storm') ||
-    (!weather && season === 'spring');
-  const snow = weather.includes('snow') ||
-    (season === 'winter' && (weather.includes('weather') || !weather));
-  const leaves = season === 'autumn' && !snow;
-  const plants = layout.filter(entry => entry.object.kind === 'plant');
-  const count = rain ? 70 : snow ? 45 : leaves && plants.length ? 16 : 0;
-  const kind = rain ? 'rain' : snow ? 'snow' : 'leaves';
+/**
+ * Weather: the lifecycle's particle actors and snow depth, painted from
+ * state alone.
+ *
+ * Reopened step 5: the per-frame synthesis that stood here (positions
+ * hashed from worldId and frame, invented splash/settle/cap densities) is
+ * deleted. Every particle on screen is an actor the state advance spawned
+ * under the deployed seasonal law and stepped under the deployed physics
+ * (blob 59dc49a8, lines 947-1116): rain accelerates and breaks into
+ * fragments on plants or splashes on the ground, snow sways by its own
+ * phase and settles into a per-column depth map capped at 3, leaves tumble
+ * through their three-glyph rotation and rest for 41 ticks. The paint here
+ * is the deployed render pair: floor placement for particles, and the
+ * accumulation piles rising from the ground line alternating glyphs on
+ * (column + depth) % 3.
+ *
+ * The reactions report summarizes the state for tests and diagnostics; it
+ * decides nothing.
+ *
+ * @param raster    frame being painted
+ * @param lifecycle `state.lifecycle` from the presentation advance; null
+ *                  paints nothing
+ * @param palette   active theme colours
+ * @returns counts: fragments, splashes, settledLeaves, snowColumns,
+ *          snowDepthTotal
+ */
+export function drawWeather(raster, lifecycle, palette) {
   const reactions = {
-    splashes: 0, snowCaps: 0, settledLeaves: 0,
-    groundSplashes: 0, groundSnow: 0,
+    fragments: 0, splashes: 0, settledLeaves: 0,
+    snowColumns: 0, snowDepthTotal: 0,
   };
-  for (let index = 0; index < count; index += 1) {
-    let [x, y] = weatherParticlePosition(
-      projection.world_id, index, visualFrame, raster.width, horizon, kind,
-    );
-    if (leaves && plants.length) {
-      const plant = plants[index % plants.length];
-      const seed = stringHash(`${projection.world_id}:canopy-leaf:${index}`);
-      const fallSpan = Math.max(2, horizon - plant.rect.top);
-      const fall = Math.floor(Math.max(0, visualFrame) / 4);
-      x = clamp(
-        plant.rect.left + Math.floor(noise(seed) * Math.max(1, plant.rect.right - plant.rect.left + 1)) +
-          (Math.floor((fall + index) / 4) % 3) - 1,
-        0, raster.width - 1,
-      );
-      y = plant.rect.top + wrap(Math.floor(noise(seed + 71) * fallSpan) + fall, fallSpan);
-    }
-    const glyph = rain ? (index % 3 ? '|' : '/') : snow ? (index % 4 ? '.' : '*') : (index % 2 ? '`' : ',');
-    const color = rain ? palette.water : snow ? palette.moon : palette.gold;
-    // Which accepted recipe this particle belongs to. Splash and settle
-    // effects carry their own ids below, because "rain fell" and "rain
-    // splashed off a surface" are different accepted recipes.
-    const particleSource = rain ? 'recipe.weather.rain'
-      : snow ? 'recipe.weather.snow' : 'recipe.weather.falling_leaves';
-    if (raster.glyphs[y]?.[x] === ' ') {
-      raster.put(x, y, glyph, color, true, null, { source: particleSource });
-      continue;
-    }
-    const objectSurface = layout.some(entry => rectContains(entry.rect, [x, y]));
-    const groundSurface = y >= horizon - 1;
-    if (rain && y > 0) {
-      for (const [dx, dy, splash] of [[-1, -1, '·'], [0, -1, '^'], [1, -1, '·']]) {
-        if (raster.glyphs[y + dy]?.[x + dx] === ' ') {
-          raster.put(x + dx, y + dy, splash, palette.water, true, null,
-            { source: 'recipe.weather.rain_splashes' });
-          if (objectSurface) reactions.splashes += 1;
-          else if (groundSurface) reactions.groundSplashes += 1;
-        }
-      }
-    } else if (snow && y > 0) {
-      for (let rise = 1; rise <= 3; rise += 1) {
-        if (raster.glyphs[y - rise]?.[x] === ' ') {
-          raster.put(x, y - rise, rise === 1 && index % 5 === 0 ? '*' : '.', palette.moon, true, null,
-            { source: 'recipe.weather.snow_accumulation' });
-          if (objectSurface) reactions.snowCaps += 1;
-          else if (groundSurface) reactions.groundSnow += 1;
-          break;
-        }
-      }
-    }
+  if (!lifecycle) return reactions;
+  const colorOf = key =>
+    key === 'rain' ? palette.water :
+    key === 'bright_white' || key === 'white' ? palette.moon :
+    key === 'autumn' ? palette.gold : palette.dim;
+  const sourceOf = kind =>
+    kind === 'rain' ? 'recipe.weather.rain' :
+    kind === 'snow' ? 'recipe.weather.snow' :
+    kind === 'frag' ? 'recipe.weather.rain_fragments' :
+    kind === 'splash' ? 'recipe.weather.rain_splashes' :
+    'recipe.weather.falling_leaves';
+  for (const particle of lifecycle.particles) {
+    raster.put(Math.floor(particle.x), Math.floor(particle.y), particle.glyph,
+      colorOf(particle.color), true, null, { source: sourceOf(particle.kind) });
+    if (particle.kind === 'frag') reactions.fragments += 1;
+    else if (particle.kind === 'splash') reactions.splashes += 1;
+    else if (particle.kind === 'leaf-rest') reactions.settledLeaves += 1;
   }
-  if (rain) {
-    for (const entry of layout.filter(item => ['plant', 'fixture'].includes(item.object.kind))) {
-      const x = clamp(entry.anchor[0], 1, raster.width - 2);
-      const y = entry.rect.top - 1;
-      if (y < 0) continue;
-      for (const [dx, splash] of [[-1, '·'], [0, '^'], [1, '·']]) {
-        if (raster.glyphs[y]?.[x + dx] !== ' ') continue;
-        raster.put(x + dx, y, splash, palette.water, true, null,
-          { source: 'recipe.weather.rain_splashes' });
-        reactions.splashes += 1;
-      }
-    }
-  }
-  if (snow) {
-    const capDensity = Math.min(0.72, 0.18 + visualFrame / 180);
-    for (const entry of layout.filter(item => ['plant', 'fixture'].includes(item.object.kind))) {
-      const row = entry.rect.top - 1;
-      for (let x = entry.rect.left; x <= entry.rect.right; x += 1) {
-        if (row < 0 || raster.glyphs[row]?.[x] !== ' ' ||
-          noise(stringHash(`${projection.world_id}:snow-cap:${entry.object.object_id}:${x}`)) > capDensity) continue;
-        raster.put(x, row, x % 4 === 0 ? '*' : '.', palette.moon, true, null,
-          { source: 'recipe.weather.snow_accumulation' });
-        reactions.snowCaps += 1;
-      }
-    }
-    for (let x = 0; x < raster.width; x += 3) {
-      if (noise(stringHash(`${projection.world_id}:snow-bank:${x}`)) > 0.35 &&
-        raster.glyphs[horizon - 1]?.[x] === ' ') {
-        raster.put(x, horizon - 1, x % 2 ? '.' : '*', palette.moon, true, null,
-          { source: 'recipe.weather.snow_accumulation' });
-        reactions.groundSnow += 1;
-      }
-    }
-  }
-  if (leaves && plants.length) {
-    const settleDensity = Math.min(0.60, 0.08 + visualFrame / 240);
-    for (let x = 1; x < raster.width - 1; x += 2) {
-      if (noise(stringHash(`${projection.world_id}:settled-leaf:${x}`)) > settleDensity) continue;
-      // The planted verge deliberately occupies the soil line. A fallen leaf
-      // rests on top of that verge instead of requiring the Garden beneath
-      // it to be blank.
-      const row = [horizon - 2, horizon - 3, horizon - 1]
-        .find(candidate => raster.glyphs[candidate]?.[x] === ' ');
-      if (row === undefined) continue;
-      raster.put(x, row, x % 4 ? ',' : '`', palette.gold, true, null,
-        { source: 'recipe.weather.falling_leaves' });
-      reactions.settledLeaves += 1;
+  // Accumulation piles: upward from the ground line, exactly the deployed
+  // loop (blob lines 1105-1115).
+  for (const [column, depth] of Object.entries(lifecycle.snowDepth)) {
+    const c = Number(column);
+    if (c < 0 || c >= raster.width || !depth) continue;
+    reactions.snowColumns += 1;
+    reactions.snowDepthTotal += depth;
+    for (let d = 0; d < depth; d += 1) {
+      const row = lifecycle.groundY - d;
+      if (row < 0) continue;
+      raster.put(c, row, (c + d) % 3 === 0 ? '*' : '.', palette.moon, true, null,
+        { source: 'recipe.weather.snow_accumulation' });
     }
   }
   return reactions;

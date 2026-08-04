@@ -53,7 +53,8 @@ import {
   gardenPresentationProfile, layoutGardenObjects, gardenDepthCohorts,
   timeOfDay, seasonOf, DAY, NIGHT, EVENING, paletteColor,
   objectBurstPattern, connectedMasks, objectPresentationArt,
-  measuredAssetPlacement, escapeHtml,
+  measuredAssetPlacement, escapeHtml, stringHash,
+  AMBIENT_BIRD_FRAMES, AMBIENT_BIRD_COMPACT_FRAMES,
 } from './garden-painting.mjs';
 
 /**
@@ -73,14 +74,394 @@ const BURST_LIFETIME_FRAMES = 12;
  */
 const MINIMUM_TARGET_PX = 44;
 
+// ---------------------------------------------------------------------------
+// The presentation LIFECYCLE: the legacy engine's persistent actors, seeded.
+//
+// Reopened step 5 (2026-08-04 architecture route): ambient birds, weather
+// particles and snow accumulation are STATEFUL in the deployed viewer --
+// counters that persist across ticks, actors that age, depth maps that
+// accumulate. The stateless per-frame recomputations that stood in for them
+// here (`ambientBirdSpawns`, `weatherParticlePosition`) were the recorded
+// CAUSE of non-exact ports, and are deleted in the same patch that adds
+// this. The laws below are the frozen blob's
+// (59dc49a820d07d1b6a1741e17aafe6d075f6c99d), ported line for line; the two
+// recorded deviations are the entropy source (seeded streams instead of
+// `Math.random()`/`Date.now()`, with every distribution kept verbatim,
+// because the presentation contract forbids unseeded randomness) and the
+// authored-scene weather override, which the legacy page did not have.
+// ---------------------------------------------------------------------------
+
+/**
+ * The deployed viewer's RNG, ported verbatim (blob 59dc49a8 lines 593-612).
+ *
+ * State travels as a plain four-integer tuple so the advance can return a
+ * NEW state without mutating the previous one -- advancing twice from one
+ * state must produce one result. The legacy page kept SEPARATE streams per
+ * layer (the particle layer owned an RNG; the creature layer drew from
+ * `Math.random()`), and the port keeps that separation: bird draws and
+ * particle draws never perturb each other's sequences.
+ */
+export class LifecycleRng {
+  constructor(state) {
+    if (Array.isArray(state)) {
+      [this._a, this._b, this._c, this._d] = state;
+      return;
+    }
+    const seed = state >>> 0;
+    const h = x => { x ^= x >> 16; x = Math.imul(x, 0x45d9f3b) >>> 0; x ^= x >> 16; return x >>> 0; };
+    this._a = h(seed); this._b = h(seed + 1); this._c = h(seed + 2); this._d = h(seed + 3);
+    for (let i = 0; i < 20; i += 1) this.random();
+  }
+  random() {
+    const a = this._a, b = this._b, c = this._c, d = this._d;
+    const t = (a + b | 0) + d | 0;
+    this._d = d + 1 | 0;
+    this._a = b ^ (b >>> 9);
+    this._b = (c + (c << 3)) | 0;
+    this._c = (c << 21 | c >>> 11);
+    this._c = this._c + t | 0;
+    return (t >>> 0) / 4294967296;
+  }
+  randint(low, high) { return low + Math.floor(this.random() * (high - low + 1)); }
+  choice(values) { return values[Math.floor(this.random() * values.length)]; }
+  uniform(low, high) { return low + this.random() * (high - low); }
+  state() { return [this._a, this._b, this._c, this._d]; }
+}
+
+/** Local clamp; the painting module keeps its own private copy. */
+const clampValue = (value, low, high) => Math.max(low, Math.min(high, value));
+
+/**
+ * The wind law, verbatim (blob 59dc49a8 lines 1721-1725): the product of two
+ * slow oscillators with a positive offset for a prevailing direction. Pure
+ * in the tick, so it carries no state.
+ */
+export function lifecycleWindAt(tick) {
+  const n0 = Math.sin(tick * 0.008) + 0.35 * Math.sin(tick * 0.0173 + 1.3);
+  const n1 = Math.sin(tick * 0.0052 + 4.1) + 0.35 * Math.sin(tick * 0.0117 + 2.2);
+  return clampValue(n0 * n1 * 0.45 + 0.08, -0.65, 0.65);
+}
+
+/**
+ * The rain/snow/leaf surface maps, derived from the plant layout the same
+ * way the legacy `buildCollision` derived them from its placed plants
+ * (blob lines 785-803): every plant ink cell collides, the topmost ink row
+ * per column is the landing surface, and foliage three or more rows above
+ * the plant's base is canopy a leaf may detach from.
+ */
+function surfaceMapsOf(layout) {
+  const collision = new Set();
+  const top = {};
+  const canopy = [];
+  for (const entry of layout) {
+    if (entry.object.kind !== 'plant') continue;
+    const lines = entry.art?.lines ?? [];
+    lines.forEach((line, rowIndex) => {
+      const row = entry.rect.top + rowIndex;
+      [...line].forEach((glyph, columnIndex) => {
+        if (glyph === ' ' || glyph === '') return;
+        const column = entry.rect.left + columnIndex;
+        collision.add(`${row},${column}`);
+        if (top[column] === undefined || row < top[column]) top[column] = row;
+        if (entry.rect.bottom - row >= 3) canopy.push([row, column]);
+      });
+    });
+  }
+  return { collision, top, canopy };
+}
+
+/** A fresh lifecycle for one world: seeded streams, empty actor pools. */
+function initialLifecycle(worldId) {
+  return {
+    worldId,
+    // Distinct salts per stream, mirroring the legacy page's separate
+    // entropy sources for creatures and particles.
+    birdRng: new LifecycleRng(stringHash(`${worldId}:birds`) >>> 0).state(),
+    particleRng: new LifecycleRng(stringHash(`${worldId}:particles`) >>> 0).state(),
+    tick: 0,
+    lastFrame: null,
+    birdT: 0,
+    birds: [],
+    particles: [],
+    snowDepth: {},
+    cols: 0,
+    groundY: 0,
+  };
+}
+
+/**
+ * The ambient-bird spawn, verbatim (blob lines 1160-1180): random entry
+ * side, 28% flocks of 3-5 trailing by 5 columns with the deployed vertical
+ * offsets, base altitude within the upper sky clamped to 1..groundY-8,
+ * 0.42 cells a tick, the compact frame pair below 60 columns.
+ */
+function spawnAmbientBirds(birds, rng, cols, groundY, count, forceFlock) {
+  const compact = cols < 60;
+  const frames = compact ? AMBIENT_BIRD_COMPACT_FRAMES : AMBIENT_BIRD_FRAMES;
+  const width = Math.max(...frames.map(value => [...value].length));
+  const fromLeft = rng.random() > 0.5;
+  const flock = forceFlock ? count
+    : (rng.random() < 0.28 ? 3 + Math.floor(rng.random() * 3) : 1);
+  const baseY = Math.floor(rng.random() * Math.max(4, groundY - 12)) + 2;
+  for (let i = 0; i < flock; i += 1) {
+    const trail = i * 5;
+    const offsetY = (i % 2 === 0 ? 0 : 1) + (i === 2 ? -1 : 0);
+    birds.push({
+      x: fromLeft ? -width - 2 - trail : cols + 2 + trail,
+      y: clampValue(baseY + offsetY, 1, Math.max(2, groundY - 8)),
+      vx: fromLeft ? 0.42 : -0.42,
+      frameStep: 5 + (i % 3),
+      compact,
+      width,
+    });
+  }
+}
+
+/** One particle, with the legacy constructor's phase/amp/rotation draws. */
+function newParticle(rng, kind, x, y, vx, vy, glyph, color, maxAge) {
+  return {
+    kind, x, y, vx, vy, glyph, color, age: 0, maxAge,
+    phase: rng.random() * 6.28,
+    amp: 0.3 + rng.random() * 0.7,
+    rotPhase: Math.floor(rng.random() * 3),
+  };
+}
+
+/**
+ * The seasonal spawn law, verbatim (blob lines 1040-1075), with the one
+ * recorded addition the canonical product needs: an AUTHORED scene weather
+ * takes precedence over the season, because authored weather is canonical
+ * state the legacy page never had. An empty authored weather falls through
+ * to the deployed season law exactly.
+ */
+function spawnParticles(particles, rng, facts) {
+  const { season, weather, cols, wind, canopy } = facts;
+  const authoredRain = weather.includes('rain') || weather.includes('storm');
+  const authoredSnow = weather.includes('snow');
+  const seasonal = weather === '' || weather.includes('weather');
+  const rainGlyph = wind > 0.2 ? '\\' : wind < -0.2 ? '/' : '|';
+  const rainCount = particles.filter(p => p.kind === 'rain').length;
+  if ((authoredRain || (seasonal && season === 'spring')) &&
+      rainCount < 60 && rng.random() < 0.35) {
+    particles.push(newParticle(rng, 'rain', rng.random() * cols, 0,
+      wind * 0.3, rng.uniform(0.5, 1.0), rainGlyph, 'rain', 60));
+  }
+  if (seasonal && season === 'autumn' && rainCount < 120) {
+    const n = rng.randint(2, 5);
+    for (let i = 0; i < n; i += 1) {
+      particles.push(newParticle(rng, 'rain', rng.random() * cols, 0,
+        wind * 0.3, rng.uniform(0.7, 1.4), rainGlyph, 'rain', 35));
+    }
+  }
+  if ((authoredSnow || (seasonal && season === 'winter')) &&
+      particles.filter(p => p.kind === 'snow').length < 80) {
+    particles.push(newParticle(rng, 'snow', rng.random() * cols, 0,
+      0, rng.uniform(0.08, 0.25), rng.choice(['.', '*']), 'bright_white', 300));
+  }
+  if (seasonal && season === 'autumn' && canopy.length) {
+    const leafCap = Math.max(0, Math.min(60, Math.floor(canopy.length / 3)));
+    const leafCount = particles.filter(p => p.kind === 'leaf' || p.kind === 'leaf-rest').length;
+    if (leafCount < leafCap) {
+      let x, y, vx, vy;
+      if (rng.random() < 0.3) {
+        x = rng.random() * cols; y = rng.randint(0, 2);
+        vx = rng.uniform(-0.3, 0.3); vy = rng.uniform(0.1, 0.25);
+      } else {
+        const [row, column] = canopy[Math.floor(rng.random() * canopy.length)];
+        x = column; y = row;
+        vx = rng.uniform(-0.2, 0.2); vy = rng.uniform(0.05, 0.2);
+      }
+      particles.push(newParticle(rng, 'leaf', x, y, vx, vy,
+        rng.choice([',', "'", '~', '*']), 'autumn', 150));
+    }
+  }
+}
+
+/** Plant-hit fragments, verbatim (blob lines 1025-1030). */
+function spawnFragments(particles, rng, cx, cy, wind) {
+  const n = rng.randint(2, 4);
+  for (let i = 0; i < n; i += 1) {
+    particles.push(newParticle(rng, 'frag', cx, cy,
+      (wind > 0 ? -1 : 1) * rng.uniform(0.1, 0.4), rng.uniform(-0.3, 0),
+      "'", 'rain', rng.randint(3, 8)));
+  }
+}
+
+/** Ground splashes, verbatim (blob lines 1032-1037). */
+function spawnSplashes(particles, rng, cx, groundY) {
+  const n = rng.randint(3, 5);
+  for (let i = 0; i < n; i += 1) {
+    particles.push(newParticle(rng, 'splash',
+      cx + rng.randint(-1, 1), groundY, rng.uniform(-0.35, 0.35), 0,
+      "'", 'white', rng.randint(3, 8)));
+  }
+}
+
+/**
+ * One tick of particle physics, verbatim from the legacy `update` loop
+ * (blob lines 960-1023): rain gains gravity and splashes or fragments on
+ * impact; snow sways by its own phase and accumulates per-column depth up
+ * to 3 on the landing surface; leaves drift on the wind, tumble through
+ * their three-glyph rotation, and rest on the ground for 41 ticks; spray
+ * ages through the ' . · sequence.
+ */
+function stepParticles(particles, rng, snowDepth, facts) {
+  const { cols, groundY, wind, collision, top } = facts;
+  const alive = [];
+  for (const p of particles) {
+    p.age += 1;
+    if (p.kind === 'rain') {
+      p.vy = Math.min(p.vy + 0.08, 2.2);
+      p.x += p.vx + wind * 0.3;
+      p.y += p.vy;
+      const row = p.y | 0, column = p.x | 0;
+      if (collision.has(`${row},${column}`)) {
+        spawnFragments(alive, rng, column, row, wind);
+      } else if (row >= groundY) {
+        spawnSplashes(alive, rng, column, groundY);
+      } else if (p.age <= p.maxAge && p.x >= 0 && p.x < cols) {
+        alive.push(p);
+      }
+      continue;
+    }
+    if (p.kind === 'snow') {
+      p.x += p.amp * Math.sin(p.phase + p.age * 0.04) * 0.25;
+      p.y += p.vy;
+      const column = Math.round(p.x);
+      const surface = top[column] !== undefined ? top[column] : groundY;
+      const depth = snowDepth[column] || 0;
+      if ((p.y | 0) >= surface - depth) {
+        if (depth < 3) snowDepth[column] = depth + 1;
+        continue;
+      }
+      if (p.age <= p.maxAge && p.x >= 0 && p.x < cols && p.y >= 0) alive.push(p);
+      continue;
+    }
+    if (p.kind === 'leaf') {
+      p.vx += wind * 0.04;
+      p.vx = Math.max(-0.8, Math.min(0.8, p.vx));
+      p.vy = Math.min(p.vy + 0.04, 1.5);
+      p.x += p.vx;
+      p.y += p.vy * 0.4;
+      if (p.age % 8 === 0) p.rotPhase = (p.rotPhase + 1) % 3;
+      p.glyph = ['\\', '-', '/'][p.rotPhase];
+      if ((p.y | 0) >= groundY) {
+        p.kind = 'leaf-rest'; p.vx = 0; p.vy = 0; p.glyph = '-';
+        p.age = 0; p.maxAge = 41;
+        alive.push(p);
+      } else if (p.age <= p.maxAge && p.x >= 0 && p.x < cols) {
+        alive.push(p);
+      }
+      continue;
+    }
+    if (p.kind === 'leaf-rest') {
+      if (p.age < p.maxAge) alive.push(p);
+      continue;
+    }
+    if (p.kind === 'frag' || p.kind === 'splash') {
+      const f = p.age / p.maxAge;
+      p.glyph = f < 0.4 ? "'" : f < 0.75 ? '.' : '·';
+      if (p.kind === 'frag') { p.vx *= 0.82; p.vy += 0.05; }
+      else { p.vx *= 0.88; }
+      p.x += p.vx;
+      p.y += p.vy;
+      if (p.age < p.maxAge && p.x >= 0 && p.x < cols && p.y < groundY + 2) alive.push(p);
+      continue;
+    }
+  }
+  return alive;
+}
+
+/**
+ * Advance the lifecycle by the elapsed presentation ticks.
+ *
+ * Aging is measured in TICK DELTAS, not advance calls: a hover repaint
+ * arrives within the same tick and steps nothing, so pointer traffic can
+ * never speed the garden up. The step cap bounds the cost of a resumed
+ * suspended tab; the legacy page's rAF loop simply stopped counting while
+ * hidden, and so does this.
+ *
+ * Winter gates bird SPAWNS only, exactly as deployed: an active bird keeps
+ * crossing (the previous stateless port made mid-flight birds vanish at the
+ * season boundary -- a recorded divergence this repair removes), the timer
+ * keeps counting and keeps drawing its per-tick threshold, so the first
+ * non-winter tick with an over-threshold counter spawns immediately.
+ */
+function advanceLifecycle(previous, scene, frame) {
+  const projection = scene.projection ?? {};
+  const worldId = String(projection.world_id ?? 'garden');
+  const state = previous && previous.worldId === worldId
+    ? previous : initialLifecycle(worldId);
+  const steps = state.lastFrame === null
+    ? 1 : Math.max(0, Math.min(240, frame - state.lastFrame));
+
+  const viewport = scene.viewport;
+  const cols = Number(viewport?.[0]) || state.cols || 80;
+  const profile = gardenPresentationProfile(viewport ?? [cols, 24]);
+  const groundY = profile.groundFront;
+  if (steps === 0) return { ...state, lastFrame: frame, cols, groundY };
+
+  const season = seasonOf(projection);
+  const weather = String(projection.scene?.weather ?? '').toLowerCase();
+  const layout = layoutGardenObjects(projection, viewport ?? [cols, 24], frame);
+  const surfaces = surfaceMapsOf(layout);
+  const birdRng = new LifecycleRng(state.birdRng);
+  const particleRng = new LifecycleRng(state.particleRng);
+  let birds = state.birds.map(bird => ({ ...bird }));
+  let particles = state.particles.map(particle => ({ ...particle }));
+  const snowDepth = { ...state.snowDepth };
+  let birdT = state.birdT;
+  let tick = state.tick;
+
+  for (let step = 0; step < steps; step += 1) {
+    tick += 1;
+    const wind = lifecycleWindAt(tick);
+
+    // Birds: step, deactivate beyond the deployed bounds, then the per-tick
+    // resampled respawn threshold (blob lines 1476-1489). The draw happens
+    // every tick INCLUDING winter, exactly as the deployed condition
+    // evaluated Math.random() before testing the season.
+    for (const bird of birds) bird.x += bird.vx;
+    birds = birds.filter(bird =>
+      bird.x >= -bird.width - 2 && bird.x <= cols + bird.width + 2);
+    birdT += 1;
+    const threshold = 250 + Math.floor(birdRng.random() * 350);
+    if (birdT > threshold && season !== 'winter') {
+      birdT = 0;
+      spawnAmbientBirds(birds, birdRng, cols, groundY, 1, false);
+    }
+
+    // Particles: the deployed layer spawned every second tick and stepped
+    // every tick (blob lines 960-964).
+    if (tick % 2 === 0) {
+      spawnParticles(particles, particleRng, {
+        season, weather, cols, wind, canopy: surfaces.canopy,
+      });
+    }
+    particles = stepParticles(particles, particleRng, snowDepth, {
+      cols, groundY, wind,
+      collision: surfaces.collision, top: surfaces.top,
+    });
+  }
+
+  return {
+    worldId,
+    birdRng: birdRng.state(),
+    particleRng: particleRng.state(),
+    tick, lastFrame: frame, birdT, birds, particles, snowDepth, cols, groundY,
+  };
+}
+
 /**
  * Advance the disposable presentation state.
  *
  * This is the only door through which pointer movement, pointer leave, click
- * feedback and focus changes enter the presentation layer. The state it
- * returns is disposable and unpersisted, but not derivable from the
- * projection alone: hover depends on where the pointer is, bursts depend on
- * prior clicks. Everything here used to be instance fields on the renderer
+ * feedback, focus changes and the per-frame scene facts enter the
+ * presentation layer. The state it returns is disposable and unpersisted,
+ * but not derivable from the projection alone: hover depends on where the
+ * pointer is, bursts depend on prior clicks, and the lifecycle -- birds,
+ * weather particles, snow depth -- depends on every tick since the world
+ * opened. Everything here used to be instance fields on the renderer
  * (`this.hoverCell`, `this.clickBursts`, `this.focusedObjectId`) mutated
  * from event handlers; making the advance explicit is what lets the composer
  * stay a pure function while the picture still responds.
@@ -88,8 +469,11 @@ const MINIMUM_TARGET_PX = 44;
  * @param {object|null} previousState - the prior state, or null for the first frame
  * @param {Array<object>} presentationEvents - events gathered since the last advance:
  *   `{kind:'pointer-move', cell:[x,y]}`, `{kind:'pointer-leave'}`,
- *   `{kind:'focus-change', objectId}`, and
- *   `{kind:'burst', x, y, kind_, species, catalog, objectId}` for click feedback
+ *   `{kind:'focus-change', objectId}`,
+ *   `{kind:'burst', x, y, kind_, species, catalog, objectId}` for click
+ *   feedback, and `{kind:'scene', projection, viewport}` -- the adapter's
+ *   per-frame scene facts, which drive the lifecycle. Without a scene event
+ *   the lifecycle stands still: nothing spawns and nothing ages.
  * @param {{frame: number}} tick - the presentation frame counter; the ONLY
  *   time source. The advance never reads a clock.
  * @returns {object} the next presentation state
@@ -104,10 +488,12 @@ export function advancePresentationState(previousState, presentationEvents, tick
   const clickBursts = (previousState?.clickBursts ?? [])
     .filter(burst => frame - burst.frame < BURST_LIFETIME_FRAMES);
 
+  let scene = null;
   for (const event of presentationEvents ?? []) {
     if (event.kind === 'pointer-move') hoverCell = event.cell;
     else if (event.kind === 'pointer-leave') hoverCell = null;
     else if (event.kind === 'focus-change') focusedObjectId = event.objectId ?? null;
+    else if (event.kind === 'scene') scene = event;
     else if (event.kind === 'burst') {
       clickBursts.push({
         x: event.x, y: event.y, frame,
@@ -116,7 +502,10 @@ export function advancePresentationState(previousState, presentationEvents, tick
       });
     }
   }
-  return { visualFrame: frame, hoverCell, focusedObjectId, clickBursts };
+  const lifecycle = scene
+    ? advanceLifecycle(previousState?.lifecycle ?? null, scene, frame)
+    : previousState?.lifecycle ?? null;
+  return { visualFrame: frame, hoverCell, focusedObjectId, clickBursts, lifecycle };
 }
 
 /**
@@ -228,8 +617,12 @@ export function composePresentationFrame(projection, state, context) {
 
   drawSky(raster, projection, sky, palette, profile, mode);
   // Sky life is drawn straight after the stars so that ground, planting and
-  // objects all paint over it: clouds and distant birds are the backdrop.
-  drawSkyLife(raster, projection, palette, season, profile, mode, state.visualFrame);
+  // objects all paint over it. The birds are the LIFECYCLE's actors --
+  // spawned and stepped by the state advance, painted here from state alone.
+  // (Recorded painter-order divergence, unchanged by the lifecycle port: the
+  // deployed page painted creatures after plants; this backdrop position
+  // predates the port and moves, if it moves, with the painter-order law.)
+  drawSkyLife(raster, state.lifecycle, palette);
   drawGround(raster, palette, season, profile);
   drawAmbient(raster, projection, palette, season, horizon, profile);
   // Far, middle and near are painter's cohorts derived from the canonical
@@ -244,9 +637,7 @@ export function composePresentationFrame(projection, state, context) {
     drawPlantBeds(raster, projection, entries, palette, season, profile);
     entries.forEach(entry => drawObject(raster, entry, projection, palette, season, view));
   }
-  const weatherReactions = drawWeather(
-    raster, projection, palette, season, horizon, layout, state.visualFrame,
-  );
+  const weatherReactions = drawWeather(raster, state.lifecycle, palette);
   if (projection.scene?.memorial?.active) {
     const center = Math.floor(viewport[0] / 2);
     raster.art(center, horizon - 1, ['  @  ', ' @@@ ', '  |  '], palette.flower,
