@@ -27,8 +27,8 @@ export const ENGINE_VERSION = 'garden-world-internal-v1';
 // which is why one number cannot carry them. The Python constants in
 // src/lateletter/garden/world/model.py must match, and a contract test asserts
 // they do.
-export const GENERATOR_VERSION = 1;
-export const COMPOSITION_VERSION = 1;
+export const GENERATOR_VERSION = 3;
+export const COMPOSITION_VERSION = 3;
 
 // How a world arrived in this process -- a different question from its lineage.
 // A world can have perfect stamps and still have come out of storage after a
@@ -364,7 +364,7 @@ const SPECIES_CATALOG = Object.freeze({
 //
 // Must stay identical to `STARTER_*_SPECIES` in the Python generator; the world
 // conformance tests hold both implementations to the same starter output.
-export const STARTER_PLANT_SPECIES = Object.freeze(['oak', 'sunflower']);
+export const STARTER_PLANT_SPECIES = Object.freeze(['rose']);
 export const STARTER_ANIMAL_SPECIES = Object.freeze([]);
 export const STARTER_COLLECTIBLES = Object.freeze([]);
 
@@ -399,13 +399,13 @@ const STARTER_FIXTURE_ANCHORS = Object.freeze({
   stepping_stones: [250, 650], bench: [375, 650], mailbox: [500, 650],
   lantern: [625, 650], planter: [750, 650],
 });
-// `oak` and `sunflower` moved to the outer edges 2026-08-01, when the legacy
-// art port put them back in the default scene. See the Python generator for the
-// full reasoning and the measurements; the two files must agree.
+// The exact operator-authored rose accepted 2026-08-03 is the canonical
+// starter plant and owns the open left edge. See the Python generator for the
+// rendered-overlap evidence and ownership reasoning.
 const STARTER_PLANT_ANCHORS = Object.freeze({
-  water_lily: [220, 420], oak: [60, 300], hydrangea: [360, 570],
-  willow: [900, 180], rose: [690, 440], meadow_grass: [470, 590],
-  lavender: [570, 760], sunflower: [940, 320],
+  water_lily: [220, 420], oak: [150, 300], hydrangea: [360, 570],
+  willow: [900, 180], rose: [60, 320], meadow_grass: [470, 590],
+  lavender: [570, 760], sunflower: [850, 320],
 });
 const STARTER_ANIMAL_ANCHORS = Object.freeze({
   bird: [100, 680], cat: [350, 780], rabbit: [740, 520], turtle: [220, 500],

@@ -1471,7 +1471,14 @@ function showScreen(name){
   for(const id of SIDS)
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
-  garden?.setPresentationActive?.(name==='garden');
+  // The garden stays ALIVE beneath overlay screens (operator field
+  // rejection, 2026-08-04): the select scrim, the passphrase prompt and the
+  // dimmed reading surface all leave the picture visible, and the deployed
+  // page never froze it. Freezing also stranded click-burst feedback on
+  // screen forever, because bursts age by presentation ticks. The loop is
+  // simply active once a garden exists; it no-ops without a projection and
+  // pauses naturally with reduced motion, canonical pause, or a hidden tab.
+  garden?.setPresentationActive?.(true);
   if(name!=='garden')closeGardenControls();
   syncGardenControlsAvailability();
   updateCanonicalLiveLoop();
@@ -2102,7 +2109,7 @@ function setupResize(el){
 }
 function teardownResize(){
   if(_resizeObs){_resizeObs.disconnect();_resizeObs=null;}
-  _prepared=null;_preparedText='';
+  _prepared=null;_preparedText='';_preparedFont='';
   clearCache();
   if(_progressScrollOff){_progressScrollOff();_progressScrollOff=null;}
   const bar=document.getElementById('lm-progress');
@@ -2568,9 +2575,13 @@ async function init(){
       onSelect:async (object,event)=>{
         const modality=inputModalityFromBrowserEvent(event);
         gardenContextObjectId=object.object_id;
-        await dispatchGardenUi(modality,'move_focus',{args:{target_id:object.object_id},metadata:{source:'canonical-raster'}});
-        // An object may declare no primary action. Focus still moves, but the
-        // browser invents no label or secondary menu for it.
+        // A pointer click acts IN PLACE (operator decision, 2026-08-04). The
+        // deployed page's click rustled leaves where you clicked and moved
+        // nothing; routing clicks through move_focus recentred the camera on
+        // every tap, so the whole scene jumped under the pointer. Camera
+        // centring belongs to KEYBOARD focus navigation only, which has its
+        // own dispatch path. An object may declare no primary action; the
+        // browser invents no label or secondary menu for it either way.
         if(object.primary_action)
           await dispatchGardenDeclaredAction(object.primary_action,object,event,'canonical-raster');
       },

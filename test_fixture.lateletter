@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "bundle_id": "a3f7c821-5d2e-4b19-93e1-7c0d8f4a2e56",
+  "bundle_id": "demo-approved-garden-20260804-v3",
   "author_name": "Buddy",
   "passphrase_hint": "biscuit",
   "bundle_auth_salt": "Wsoepqyv0DjndmKrnPv4tA==",
@@ -15,38 +15,7 @@
       "kdf_params": null
     }
   ],
-  "garden_gifts": [
-    {
-      "id": "c2a91f04-7b3e-4d88-a156-9e0f5c3b1d72",
-      "type": "animal",
-      "catalog_id": "rabbit",
-      "sentiment_ciphertext": "SSd2ZSBiZWVuIHdhdGNoaW5nIG92ZXIgeW91ciB5YXJkLiBEb24ndCBiZSBzdXJwcmlzZWQgaWYgeW91IHNlZSBzb21lb25lIG5ldyBoYW5naW5nIGFyb3VuZC4=",
-      "salt": "bJmsEg21iidaWMS3em09UQ==",
-      "nonce": "ndQ9NL+5x8j3uz8w",
-      "trigger": {
-        "type": "cumulative_visits",
-        "value": "1"
-      },
-      "placement_hint": "random",
-      "animal_name": null,
-      "animal_collar_color": null
-    },
-    {
-      "id": "d8b52e17-3a9c-4f61-b783-0c4e7a6d9f23",
-      "type": "nudge",
-      "catalog_id": "task_prompt",
-      "sentiment_ciphertext": "WW91IGtlZXAgY29taW5nIGJhY2suIEkgc2VlIHlvdS4=",
-      "salt": "UnaGNwPZ5ovzB27LDF2xXA==",
-      "nonce": "qsPe9Trq+SE8A6B2",
-      "trigger": {
-        "type": "post_letter",
-        "value": "f1d4a392-8c67-4e5a-b021-3f9d6a1c7e84"
-      },
-      "placement_hint": "random",
-      "animal_name": null,
-      "animal_collar_color": null
-    }
-  ],
+  "garden_gifts": [],
   "notification": {
     "email": "recipient@example.com",
     "method": "self-hosted"

@@ -33,20 +33,21 @@ import { projectSkyPoints } from './garden-sky.mjs';
 import {
   legacyAnimalPresentation, legacyPlantPresentation,
 } from './garden-legacy-art.mjs';
+import { operatorPlantPresentation } from './garden-approved-art.mjs';
 import { compareCodePoints } from './garden-world.mjs';
 
 const DEPTH = Object.freeze({ stars: 0.02, distant: 0.20, far: 0.55, world: 1, foreground: 1.15 });
 export const DAY = Object.freeze({
-  sky: '#f5efe3', ground: '#e6ddc8', soil: '#d3c3a2', dim: '#958875',
-  green: '#436c2d', brightGreen: '#5f913a', deepGreen: '#2f501c', brown: '#76502b',
-  flower: '#9e367f', flower2: '#b64a34', gold: '#b7811d', water: '#416f8f',
+  sky: '#f9f8f5', ground: '#c8c2b6', soil: '#ddd8ce', dimGreen: '#ddd8ce', dim: '#b0a898',
+  green: '#4a7030', brightGreen: '#62923e', deepGreen: '#33511e', brown: '#7a5830',
+  flower: '#a03888', flower2: '#b85038', gold: '#c09428', water: '#4a6888',
   // Semantic accent, not decoration: the one colour the garden is allowed to
   // spend on "something has arrived". Reserved for the `signal` accent role.
   flag: '#b3241c',
   creature: '#68472d', stone: '#6f695f', star: '#817b6b', moon: '#aaa184', text: '#443d35',
 });
 export const NIGHT = Object.freeze({
-  sky: '#0b0e16', ground: '#13181e', soil: '#28302a', dim: '#606058',
+  sky: '#0b0e16', ground: '#28302a', soil: '#13181e', dimGreen: '#13181e', dim: '#606058',
   green: '#5a9858', brightGreen: '#78b870', deepGreen: '#41703e', brown: '#a08868',
   flower: '#d068b8', flower2: '#e87868', gold: '#e0b848', water: '#7898b8',
   flag: '#e2564a',
@@ -521,7 +522,14 @@ export function gardenPresentationProfile(viewport, worldSize = [120, 80]) {
   // frame gives the objects sky to stand against and leaves foreground beneath
   // them, which is what makes a single band read as a stage rather than as a
   // gutter.
-  const groundFront = clamp(Math.round(height * 0.74), 5, horizon - 1);
+  // GROUND NEAR THE BOTTOM (goal §1, legacy law gy = rows - 3). The previous
+  // value stood the soil line at 74% of the frame -- a lane-invented "stage"
+  // that left the bottom quarter of every tall window as a dead foreground
+  // band, which the operator rejected in the field on 2026-08-04: "no large
+  // dead regions above or below a tiny scene", "no unexplained horizontal
+  // divider". The deployed page anchors the ground three rows from the
+  // bottom of the REAL viewport, and so does this.
+  const groundFront = horizon;
   const groundBack = groundFront;                                 // no depth: same line
   const groundSpan = groundFront - groundBack;                    // zero, deliberately
 
@@ -1076,10 +1084,6 @@ function basePlantArt(object, frame) {
         '   |Y|   ', '    |    ', '   _|_   ']
       : [' @ @ ', `@${sway} ${other}@`, ' |Y| ', '  |  ', ' _|_ '], color: 'flower' };
   }
-  if (species === 'rose') return { lines: stage >= 3
-    ? ['  @ @ @  ', ` @${sway}|${other}@ `, '  \\|/   ', '   |Y|   ',
-      '  /|\\   ', '   |     ', '  _|_    ']
-    : ['  @ @  ', ` ${sway}|${other} `, '  |Y|  ', '  / \\  '], color: 'flower' };
   if (species === 'tulip') return { lines: stage >= 3
     ? [' u u u ', ` ${sway}|||${other} `, '  |||  ', ' /|||\\ ', '  |||  ', ' __|__ ']
     : ['  u  ', ` ${sway}|${other} `, '  |  ', ' /|\\ ', ' _|_ '], color: 'flower' };
@@ -1155,7 +1159,11 @@ function legacyPlantArt(object, frame, hovered, lod) {
   const species = String(object.semantic_state?.species_id ?? object.semantic_name ?? '');
   // 'compact' is a phone-width Garden; 'medium' a small window. Both ask the
   // archive for a smaller drawing rather than for a reduced large one.
-  const ceiling = lod === 'compact' ? 1 : lod === 'medium' ? 2 : 4;
+  // The archive's larger frames are hero/detail drawings.  In the shared
+  // world view even the medium oak still outweighed the full deployed planting
+  // band.  Use the archive's own approved small world sprite at every viewport;
+  // growth/detail views may select larger approved frames elsewhere.
+  const ceiling = 1;
   const presentation = legacyPlantPresentation(
     species, Math.min(plantStage(object), ceiling), frame,
     // Offsetting the loop by a hash of this object's own id is what keeps two
@@ -1172,6 +1180,12 @@ function legacyPlantArt(object, frame, hovered, lod) {
 }
 
 function plantArt(object, frame, hovered = false, lod = 'full') {
+  const species = String(object.semantic_state?.species_id ?? 'plant');
+  // Exact operator-authored assets outrank both the legacy archive and every
+  // renderer fallback.  Rose's former local placeholder was deleted in the
+  // same patch, so there is no second drawing that can silently return.
+  const operatorArt = operatorPlantPresentation(species);
+  if (operatorArt) return { ...operatorArt, color: 'flower' };
   // The archive first: where it draws a species, its drawing is the approved
   // one and everything below is a placeholder awaiting review.
   const legacy = legacyPlantArt(object, frame, hovered, lod);
@@ -1179,7 +1193,6 @@ function plantArt(object, frame, hovered = false, lod = 'full') {
   const starter = starterPlantArt(object, frame, hovered, lod);
   if (starter) return starter;
   const art = basePlantArt(object, frame);
-  const species = String(object.semantic_state?.species_id ?? 'plant');
   const seed = stringHash(object.object_id);
   const cadence = hovered ? 2 : 9;
   const lines = art.lines.map((line, row) => [...line].map((glyph, column) => {
@@ -1819,8 +1832,7 @@ export function drawSky(raster, projection, sky, palette, profile, mode) {
 export function drawGround(raster, palette, season, profile) {
   // `profile.horizon` is deliberately NOT read here. It is the sky boundary,
   // not the ground, and reading it was the defect: see `gardenGroundY`.
-  const texture = season === 'winter' ? '.*.' :
-    season === 'autumn' ? ',`.' : '.,';
+  const texture = ',~.^,.,~^,.,~,.^,~.,';
   // ONE SURFACE. Two rows of soil at the horizon, and nothing else.
   //
   // What used to be here: a far contour line, a ~30-row speckle field whose
@@ -1853,9 +1865,322 @@ export function drawGround(raster, palette, season, profile) {
   const groundY = profile.groundFront;
   for (const row of [groundY, groundY + 1]) {
     for (let x = 0; x < raster.width; x += 1) {
-      const glyph = x % 5 === 0 ? '.' : texture[(x + row * 3) % texture.length];
-      raster.put(x, row, glyph, palette.soil, false, null,
+      const glyph = texture[(x + (row === groundY ? 0 : 5)) % texture.length];
+      raster.put(x, row, glyph,
+        row === groundY ? palette.ground : palette.dimGreen, false, null,
         { source: 'recipe.scene.ground_line' });
+    }
+  }
+}
+
+// The deployed Garden's planting is presentation-native: it is regenerated
+// from the measured viewport and fills as many non-overlapping silhouettes as
+// the frame can hold.  Replacing it with two canonical starter records made
+// the current Garden sparse by construction.  These functions are the exact
+// deployed generators from the frozen 59dc49a8 viewer, expressed as pure data
+// so canonical gameplay objects remain the only interactive/persisted plants.
+class LegacyPlantRng {
+  constructor(seed) {
+    const hash = value => {
+      value ^= value >> 16; value = Math.imul(value, 0x45d9f3b) >>> 0;
+      value ^= value >> 16; return value >>> 0;
+    };
+    this.a = hash(seed >>> 0); this.b = hash((seed + 1) >>> 0);
+    this.c = hash((seed + 2) >>> 0); this.d = hash((seed + 3) >>> 0);
+    for (let index = 0; index < 20; index += 1) this.random();
+  }
+  random() {
+    const total = ((this.a + this.b | 0) + this.d) | 0;
+    this.d = this.d + 1 | 0; this.a = this.b ^ (this.b >>> 9);
+    this.b = this.c + (this.c << 3) | 0;
+    this.c = (this.c << 21 | this.c >>> 11); this.c = this.c + total | 0;
+    return (total >>> 0) / 4294967296;
+  }
+  randint(first, last) { return first + Math.floor(this.random() * (last - first + 1)); }
+  choice(values) { return values[Math.floor(this.random() * values.length)]; }
+  choices(values, weights) {
+    let draw = this.random() * weights.reduce((total, value) => total + value, 0);
+    for (let index = 0; index < values.length; index += 1) {
+      draw -= weights[index]; if (draw <= 0) return values[index];
+    }
+    return values.at(-1);
+  }
+}
+
+const LEGACY_PLANT_WEIGHTS = Object.freeze({
+  spring: Object.freeze({ pine: 6, oak: 6, bush: 8, flower: 30, grass: 15, mushroom: 2, fern: 5 }),
+  summer: Object.freeze({ pine: 8, oak: 8, bush: 8, flower: 18, grass: 12, mushroom: 3, fern: 7 }),
+  autumn: Object.freeze({ pine: 10, oak: 10, bush: 6, flower: 4, grass: 8, mushroom: 5, fern: 6 }),
+  winter: Object.freeze({ pine: 15, oak: 4, bush: 4, flower: 0, grass: 4, mushroom: 2, fern: 3 }),
+});
+const LEGACY_AUTUMN_COLORS = Object.freeze(['yellow', 'bright_yellow', 'orange', 'red', 'brown']);
+const LEGACY_GRASS_FAMILIES = Object.freeze([["'", '`', ','], ['/', '|', '\\'], ['v', 'y', 'w'], ['"', ';', "'"]]);
+
+function legacyPine(rng) {
+  const height = rng.randint(8, 16), levels = height - 2;
+  const rows = [[1, 0, '|', 'brown'], [2, 0, '|', 'brown']];
+  for (let level = 0; level < levels; level += 1) {
+    const dy = 3 + level, width = level;
+    if (level === levels - 1) rows.push([dy, 0, '^', 'bright_green']);
+    else rows.push([dy, -(width + 1), '/'.repeat(width + 1) + (level % 2 ? '*' : '^') + '\\'.repeat(width + 1),
+      level >= levels / 2 ? 'bright_green' : 'green']);
+  }
+  return { type: 'pine', rows, width: levels * 2 + 2 };
+}
+function legacyOak(rng) {
+  const height = rng.randint(8, 14), trunk = Math.max(2, Math.floor(height / 3));
+  const glyph = rng.choice(['@', 'o', '0', '&']), rows = [];
+  for (let index = 1; index <= trunk; index += 1) rows.push([index, 0, '|', 'brown']);
+  const crown = height - trunk, radius = Math.floor(crown / 2) + 1;
+  for (let level = 0; level <= crown + 1; level += 1) {
+    const dy = trunk + level + 1, t = level / (crown + 1) * 2 - 1;
+    const width = Math.max(0, Math.round(radius * Math.sqrt(Math.max(0, 1 - t * t))));
+    if (width) rows.push([dy, -width, glyph.repeat(width * 2 + 1),
+      level > 0 && level <= crown ? 'bright_green' : 'green']);
+  }
+  return { type: 'oak', rows, width: radius * 2 + 3 };
+}
+function legacyBush(rng) {
+  const width = rng.randint(2, 4), glyph = rng.choice(['~', 'u', 'w', 'v']);
+  return { type: 'bush', rows: [
+    [2, -(width + 1), `(${glyph.repeat(width * 2 + 1)})`, 'bright_green'],
+    [1, -width, `{${glyph.repeat(width * 2 - 1)}}`, 'green'],
+  ], width: width * 2 + 4 };
+}
+function legacyFlower(rng) {
+  const species = rng.choice(['daisy', 'tulip', 'sunflower', 'wildflower', 'rose']);
+  const stem = rng.randint(2, 5), rows = [];
+  for (let index = 1; index <= stem; index += 1) rows.push([index, 0, '|', 'green']);
+  if (stem >= 2) {
+    const leafY = rng.randint(1, stem - 1), side = rng.choice(['left', 'right', 'both', 'none', 'none']);
+    if (side === 'left' || side === 'both') rows.push([leafY, -1, '\\', 'green']);
+    if (side === 'right' || side === 'both') rows.push([leafY, 1, '/', 'green']);
+  }
+  const bloom = stem + 1;
+  if (species === 'daisy') {
+    const color = rng.choice(['white', 'bright_white', 'cyan', 'bright_cyan']);
+    rows.push([bloom + 1, -1, '\\*/', color], [bloom, -1, '-O-', 'bright_yellow']);
+  } else if (species === 'tulip') {
+    const color = rng.choice(['red', 'magenta', 'bright_magenta', 'bright_red']);
+    rows.push([bloom + 1, -1, '(" )'.replace(' ', ''), color], [bloom, -1, '|"|', color]);
+  } else if (species === 'sunflower') {
+    rows.push([bloom + 1, -2, '\\{O}/', 'bright_yellow'], [bloom, -1, '{#}', 'yellow']);
+  } else if (species === 'wildflower') {
+    const color = rng.choice(['magenta', 'bright_magenta', 'cyan', 'bright_cyan', 'bright_white']);
+    rows.push([bloom + 1, 0, '*', color], [bloom, -1, '>*<', color]);
+  } else {
+    const color = rng.choice(['red', 'bright_magenta', 'bright_red']);
+    rows.push([bloom + 1, -1, '@@@', color], [bloom, -1, '(@)', color]);
+  }
+  return { type: 'flower', rows, width: species === 'sunflower' ? 5 : 3 };
+}
+function legacyGrass(rng) {
+  const count = rng.randint(1, 3), offsets = count === 1 ? [0] : count === 2 ? [-1, 1] : [-1, 0, 1];
+  const blades = offsets.map(dx => ({ dx, height: rng.randint(2, 5), seed: rng.randint(0, 1023),
+    family: rng.randint(0, LEGACY_GRASS_FAMILIES.length - 1), flower: rng.random() < 0.09 }));
+  return { type: 'grass', blades, rows: [], width: count === 1 ? 1 : 3 };
+}
+function legacyMushroom(rng) {
+  const width = rng.randint(1, 2), color = rng.choice(['red', 'bright_red', 'yellow', 'bright_white', 'magenta']);
+  return { type: 'mushroom', rows: [[2, -width, `(${'~'.repeat(width * 2)})`, color], [1, 0, '|', 'white']], width: width * 2 + 2 };
+}
+function legacyFern(rng) {
+  const height = rng.randint(2, 4), rows = [[height + 1, 0, '*', 'bright_green']];
+  for (let index = 1; index <= height; index += 1) {
+    rows.push([index, 0, '|', 'green']);
+    rows.push([index, -1, index % 2 ? '*' : ',', index % 2 ? 'bright_green' : 'green']);
+    rows.push([index, 1, index % 2 ? '*' : ',', index % 2 ? 'bright_green' : 'green']);
+  }
+  return { type: 'fern', rows, width: 3 };
+}
+const LEGACY_PLANT_MAKERS = Object.freeze({
+  pine: legacyPine, oak: legacyOak, bush: legacyBush, flower: legacyFlower,
+  grass: legacyGrass, mushroom: legacyMushroom, fern: legacyFern,
+});
+
+// ---------------------------------------------------------------------------
+// WORLD-SPACE BACKDROP (parallax ADR, 2026-08-04).
+//
+// The first port of the deployed planting generated positions from
+// `raster.width` and painted at fixed screen columns -- a second coordinate
+// owner beside the canonical camera. Arrow-key panning moved the canonical
+// fixtures while the backdrop stood still, which is the split the operator
+// rejected. The backdrop is now authored in WORLD COLUMNS over a fixed
+// extended extent and projected through the same `worldToGardenScreen`
+// transform as everything else, with its own depth: the camera moves every
+// layer, background more slowly than the interactive world, foreground
+// cover faster -- the deployed page never had a pannable camera, so this is
+// the deployed LOOK carried into the canonical architecture rather than a
+// copy of its screen-space generation.
+//
+// The extent is wide enough that no reachable camera can pan past the
+// planted region at the shallowest depth on the widest supported frame:
+// panning cannot expose uninitialized columns, and resize changes the crop,
+// never the population.
+// ---------------------------------------------------------------------------
+const LEGACY_WORLD_COLUMNS = 120;
+const LEGACY_BACKDROP_MARGIN = 300;
+
+/** Deepest and shallowest backdrop layers (ADR band 0.45-0.65). */
+const LEGACY_TREE_DEPTH = [0.45, 0.55];
+const LEGACY_SHRUB_DEPTH = [0.55, 0.65];
+/** Ground cover leads the canonical world slightly: fast foreground. */
+const LEGACY_COVER_DEPTH = 1.12;
+
+/**
+ * The population is a pure function of (seed, season) over the fixed world
+ * extent, so it is memoised: the deployed page generated its layout once per
+ * reset, and regenerating identical placements every composed frame would be
+ * the same picture at thirty times the cost. Cache keys are exact inputs, so
+ * composition stays observationally pure -- composing twice still returns
+ * one picture.
+ */
+const legacyLayoutCache = new Map();
+
+function legacyPlantLayout(seed, season) {
+  const key = `${seed}:${season}`;
+  const cached = legacyLayoutCache.get(key);
+  if (cached) return cached;
+  const rng = new LegacyPlantRng(seed);
+  const weights = LEGACY_PLANT_WEIGHTS[season] ?? LEGACY_PLANT_WEIGHTS.summer;
+  const names = Object.keys(weights), values = Object.values(weights);
+  const first = -LEGACY_BACKDROP_MARGIN;
+  const last = LEGACY_WORLD_COLUMNS + LEGACY_BACKDROP_MARGIN;
+  const extent = last - first;
+  const occupied = [], placed = [];
+  for (let attempt = 0; attempt < extent * 3; attempt += 1) {
+    const type = rng.choices(names, values), plant = LEGACY_PLANT_MAKERS[type](rng);
+    if (season === 'autumn' && ['oak', 'bush'].includes(plant.type)) {
+      plant.rows = plant.rows.map(([dy, dx, text, color]) => [dy, dx, text,
+        color === 'green' || color === 'bright_green' ? rng.choice(LEGACY_AUTUMN_COLORS) : color]);
+    }
+    // Trees stand deeper than shrubs, flowers and grass, so a pan separates
+    // the layers visibly; the draw stays on the layout stream so the
+    // population is one deterministic sequence.
+    const band = plant.type === 'oak' || plant.type === 'pine'
+      ? LEGACY_TREE_DEPTH : LEGACY_SHRUB_DEPTH;
+    const depth = band[0] + rng.random() * (band[1] - band[0]);
+    const half = Math.floor(plant.width / 2) + 2;
+    const x = rng.randint(first + half + 1, last - half - 2);
+    const minimum = x - half - 1, maximum = x + half + 1;
+    if (occupied.some(([lo, hi]) => minimum < hi && maximum > lo)) continue;
+    occupied.push([minimum, maximum]); placed.push({ plant, x, depth });
+  }
+  legacyLayoutCache.set(key, placed);
+  return placed;
+}
+
+/**
+ * How many rows above the walkable line a backdrop layer's baseline sits.
+ *
+ * The structural reference the operator supplied (Downloads/STRUCTURAL ASCII
+ * ART EXAMPLES, 2026-07-31 screenshot) stands the background tree ABOVE the
+ * one structural ground line with foreground texture continuing below it:
+ * depth recedes upward. Shallow foreground (depth > 1) resolves below the
+ * line, onto the soil rows.
+ */
+function legacyBaselineRecession(depth) {
+  return Math.round((1 - depth) * 10);
+}
+
+const LEGACY_INK_DAY = Object.freeze({
+  dim_green: '#ddd8ce', deep_green: '#33511e', green: '#4a7030', bright_green: '#62923e',
+  brown: '#7a5830', orange: '#b07020', bright_white: '#555555', white: '#777777',
+  yellow: '#8a6418', bright_yellow: '#c09428', red: '#883830', bright_red: '#b85038',
+  cyan: '#246858', bright_cyan: '#329878', magenta: '#702468', bright_magenta: '#a03888', dim: '#b0a898',
+});
+const LEGACY_INK_NIGHT = Object.freeze({
+  ...LEGACY_INK_DAY, dim_green: '#13181e', deep_green: '#41703e', green: '#5a9858', bright_green: '#78b870',
+  brown: '#a08868', orange: '#c89848', bright_white: '#cccccc', white: '#b0b0a8', yellow: '#c09838',
+  bright_yellow: '#e0b848', red: '#d06860', bright_red: '#e87868', cyan: '#68a898',
+  bright_cyan: '#80c8b0', magenta: '#b868a8', bright_magenta: '#d880c0', dim: '#606058',
+});
+const LEGACY_RUSTLE_A = Object.freeze({ '@': 'o', o: '0', 0: '@', '&': '@', '*': '.', '^': '*', '~': '`', u: 'v', v: 'u', w: '~', '(': '<', ')': '>' });
+const LEGACY_RUSTLE_B = Object.freeze({ '@': '0', o: '@', 0: 'o', '&': 'o', '*': ',', '^': '`', '~': 'v', u: '~', v: 'w', w: 'u' });
+function legacyRustle(glyph, intensity, seed) {
+  const wave = Math.sin(seed) * intensity;
+  return wave > 0.45 ? (LEGACY_RUSTLE_A[glyph] ?? glyph)
+    : wave < -0.45 ? (LEGACY_RUSTLE_B[glyph] ?? glyph) : glyph;
+}
+
+export function drawLegacyPlanting(
+  raster, projection, layout, palette, season, profile, frame, hoverCell, wind = 0,
+) {
+  const worldId = String(projection.world_id ?? projection.scene?.world_id ?? 'lateletter-garden');
+  const authoredSeed = String(projection.presentation_seed ?? '');
+  const seed = worldId === 'standalone:local' ? 12345
+    : /^\d+$/.test(authoredSeed) ? Number(authoredSeed) >>> 0
+      : stringHash(authoredSeed || worldId);
+  const ink = palette === NIGHT ? LEGACY_INK_NIGHT : LEGACY_INK_DAY;
+  const groundY = profile.groundFront;
+  const camera = Array.isArray(projection.camera) ? projection.camera : [0, 0];
+  const viewport = [raster.width, raster.height];
+  // One projection for every layer: screen column = the same camera
+  // transform the canonical objects use, at this layer's depth. Panning
+  // moves the whole garden coherently -- that is the ADR's requirement.
+  const screenXOf = (worldX, depth) =>
+    worldToGardenScreen([worldX, 0], camera, viewport, depth)[0];
+
+  // Ground cover: keyed on WORLD columns so the texture travels with the
+  // pan, projected at fast-foreground depth. The sampled world range covers
+  // the whole raster at this depth from any reachable camera.
+  const coverFirst = -LEGACY_BACKDROP_MARGIN;
+  const coverLast = LEGACY_WORLD_COLUMNS + LEGACY_BACKDROP_MARGIN;
+  const coverRow = groundY - legacyBaselineRecession(LEGACY_COVER_DEPTH) - 1;
+  for (let worldX = coverFirst; worldX <= coverLast; worldX += 1) {
+    const column = screenXOf(worldX, LEGACY_COVER_DEPTH);
+    if (column < 0 || column >= raster.width) continue;
+    const hash = (Math.imul(worldX + 1013, 0x9e3779b1) ^ seed) >>> 0;
+    const value = hash % 1000 / 1000;
+    if (value < (season === 'winter' ? 0.82 : 0.48)) continue;
+    let glyph, color;
+    if (value > 0.92) { glyph = '"'; color = 'green'; }
+    else if (value > 0.72) { glyph = ';'; color = 'deep_green'; }
+    else { glyph = hash & 1 ? '.' : ','; color = 'dim_green'; }
+    if (hash % 11 === 0) glyph = LEGACY_GRASS_FAMILIES[3][(hash + Math.floor(frame * 0.12)) % 3];
+    if (season === 'winter') { glyph = hash & 1 ? '.' : '*'; color = hash & 2 ? 'white' : 'dim'; }
+    else if (season === 'autumn' && value > 0.85) color = 'yellow';
+    raster.put(column, coverRow, glyph, ink[color], true, null, { source: 'recipe.ground.cover' });
+  }
+
+  const hoverRow = Number(hoverCell?.[1] ?? -999), hoverColumn = Number(hoverCell?.[0] ?? -999);
+  // This is a BACKDROP layer, matching the deployed painter order. Canonical
+  // objects paint afterward in the foreground; treating every foreground
+  // silhouette as unavailable planting width reduced the deployed `cols*3`
+  // garden back to two plants. No gameplay object is minted here.
+  void layout;
+  for (const { plant, x, depth } of legacyPlantLayout(seed, season)) {
+    const anchorX = screenXOf(x, depth);
+    if (anchorX < -plant.width - 2 || anchorX > raster.width + plant.width + 2) continue;
+    const baseline = groundY - legacyBaselineRecession(depth);
+    if (plant.blades) {
+      for (const blade of plant.blades) {
+        const lean = wind * 1.6 + Math.sin((frame / 200 + blade.seed * 0.37) * 6.2832) * 0.6;
+        for (let height = 1; height <= blade.height; height += 1) {
+          const fraction = height / blade.height;
+          const column = anchorX + blade.dx + Math.round(lean * fraction * 1.2);
+          const glyph = height === blade.height
+            ? (blade.flower ? ['*', '+', '*'] : LEGACY_GRASS_FAMILIES[blade.family])[(blade.seed + Math.floor(frame * 0.12)) % 3]
+            : lean * fraction > 0.3 ? '/' : lean * fraction < -0.3 ? '\\' : '|';
+          const color = height === blade.height ? (blade.flower ? 'bright_yellow' : 'bright_green')
+            : fraction < 0.4 ? 'deep_green' : fraction < 0.75 ? 'green' : 'bright_green';
+          raster.put(column, baseline - height, glyph, ink[color], true, null,
+            { source: 'recipe.vegetation.plant_paint' });
+        }
+      }
+      continue;
+    }
+    for (const [dy, dx, text, color] of plant.rows) {
+      const row = baseline - dy;
+      [...text].forEach((original, offset) => {
+        const column = anchorX + dx + offset, dr = row - hoverRow, dc = column - hoverColumn;
+        const distance = dr * dr + dc * dc;
+        const glyph = distance < 25 && original !== ' '
+          ? legacyRustle(original, (1 - Math.sqrt(distance) / 5) * 1.2, frame * 0.4 + column * 1.9 + row * 2.7)
+          : original;
+        raster.put(column, row, glyph, ink[color], distance < 25, null,
+          { source: 'recipe.vegetation.plant_paint' });
+      });
     }
   }
 }
@@ -1963,6 +2288,21 @@ export const AMBIENT_BIRD_COMPACT_FRAMES = Object.freeze(['>-', '~>']);
  */
 export function drawSkyLife(raster, lifecycle, palette) {
   if (!lifecycle) return;
+  const ink = palette === NIGHT ? LEGACY_INK_NIGHT : LEGACY_INK_DAY;
+  const butterflyFrames = ['><', '||', '><', '\\/'];
+  for (const actor of lifecycle.ambient ?? []) {
+    if (actor.kind === 'butterfly') {
+      const glyph = butterflyFrames[Math.floor(Math.max(0, lifecycle.tick) / 6) % butterflyFrames.length];
+      raster.text(Math.round(actor.x), Math.round(actor.y), glyph,
+        ink[actor.color] ?? ink.magenta, true, null,
+        { source: 'recipe.ambient.butterfly' });
+    } else if (actor.kind === 'firefly') {
+      const cycle = actor.on + actor.off;
+      if (lifecycle.tick % cycle >= actor.on) continue;
+      raster.put(Math.round(actor.x), Math.round(actor.y), '*', ink.bright_yellow,
+        true, null, { source: 'recipe.ambient.firefly' });
+    }
+  }
   for (const bird of lifecycle.birds) {
     const frames = bird.compact ? AMBIENT_BIRD_COMPACT_FRAMES : AMBIENT_BIRD_FRAMES;
     const wing = frames[Math.floor(Math.max(0, lifecycle.tick) / bird.frameStep) % frames.length];
@@ -2043,18 +2383,11 @@ export function drawWeather(raster, lifecycle, palette) {
 export function drawObject(raster, entry, projection, palette, season, view) {
   const { object } = entry, [x, y] = entry.anchor;
   const state = object.semantic_state ?? {};
-  const focused = object.object_id === view.focusedObjectId;
   const hovered = view.hoverCell && rectContains(expandedRect(entry.hitRect, [3, 2]), view.hoverCell);
-  const emphasized = Boolean(hovered || focused);
-  if (focused) {
-    // A compact viewport may legitimately pack a tall picture against row
-    // zero. Focus must remain visible there, so use the top cell rather than
-    // silently dropping the marker.
-    // The caret is renderer-authored: no register record draws it, so it
-    // carries no source and stays anonymous -- visible to the runtime gate,
-    // and absent from any composition that enforces an accepted manifest.
-    raster.put(x, Math.max(0, entry.rect.top - 1), '⌄', palette.gold, true);
-  }
+  // Pointer hover is the approved local response. Selection/focus must not
+  // recolour an accepted picture or add anonymous ink: doing so made a click
+  // visibly replace the mailbox flag and made the whole scene look unstable.
+  const emphasized = Boolean(hovered);
   if (object.kind === 'plant') {
     const art = objectPresentationArt(
       object, view.visualFrame, entry.lod, emphasized,

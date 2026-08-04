@@ -39,6 +39,7 @@ RECIPE_REGISTER = Path("docs/garden-presentation-recipes.json")
 PAINT_IDENTITY_SOURCES = (
     Path("src/lateletter/garden/data/atlas.v2.json"),
     Path("web/fonts/lateletter-garden.woff"),
+    Path("tracked/LateLetterResearch/transcription-parity/eb861dc84400fc36/accepted.txt"),
 )
 
 # Where the manifest lands inside the built site. It is excluded from its own
@@ -636,6 +637,23 @@ def _accepted_asset_ids(register: dict) -> list[str]:
         asset_id = record["asset_id"]
         if _checked_verdict(record["verdict"], f"asset {asset_id!r}") in _ACCEPTED_VERDICTS:
             accepted.append(asset_id)
+    # An exact operator-authored text asset is an asset verdict even though it
+    # entered through the grant ledger rather than the atlas review table.
+    # Require a hash-bound source that exists and matches before granting its
+    # identity; prose alone is never paint authority.
+    for grant in register.get("operator_grants", []):
+        asset_id = grant.get("asset_id")
+        source = grant.get("source")
+        expected = grant.get("source_sha256")
+        if not (isinstance(asset_id, str) and isinstance(source, str) and
+                isinstance(expected, str)):
+            continue
+        source_path = REPOSITORY_ROOT / source
+        if not source_path.is_file() or _sha256_path(source_path) != expected:
+            raise RuntimeError(
+                f"operator-authored asset {asset_id!r} does not match its hash-bound source"
+            )
+        accepted.append(asset_id)
     return sorted(accepted)
 
 

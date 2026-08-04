@@ -300,6 +300,11 @@ export class GardenRuntime {
     this.assertActive();
     const state = this.state;
     const projection = await projectGardenScene(state);
+    // The deployed presentation generator consumed the authored Garden seed
+    // directly. WorldState stores only its digest, so the runtime transports
+    // the constructor's original value to presentation without making it
+    // gameplay state. Renaming a bundle can no longer regenerate the picture.
+    projection.presentation_seed = this.seed;
     this.assertActive();
     if (this.state !== state) throw new Error('Garden runtime changed during projection');
     this.projection = projection;

@@ -21,7 +21,8 @@
     "fixture.planter",
     "fixture.pond",
     "fixture.stepping_stones",
-    "fixture.trellis"
+    "fixture.trellis",
+    "plant.rose"
   ],
   "accepted_recipes": [
     "recipe.ambient.bird_traversal",

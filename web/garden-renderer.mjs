@@ -64,7 +64,27 @@ export class CanonicalGardenRenderer {
         'painting entirely.');
     }
     this.element = element; this.onSelect = onSelect; this.onTheme = onTheme;
-    this.measurer = measurer; this.font = font;
+
+    // The accepted fixture rounds were reviewed as a fixed-column drawing.
+    // Painting the same row strings through Literata's proportional advances
+    // produced a different picture while retaining the old asset verdict.  A
+    // source id is not permission to change its rendering.  Until genuinely
+    // proportional replacements are authored and approved, the Garden uses
+    // the already-declared whole-surface monospace mode and the atlas rows stay
+    // on the character lattice on which they were reviewed.
+    this.element.classList?.add('font-degraded');
+    if (this.element.style) {
+      // Deployed Garden geometry is 13px type on a 15px line box. The 15/17
+      // candidate silently reduced both column count and `cols * 3` legacy
+      // placement attempts, producing the sparse frame the operator rejected.
+      // Menlo is the face the accepted fixture worksheet actually resolved to
+      // on macOS; DejaVu covers the same repertoire on Linux.
+      this.element.style.fontFamily = 'Menlo, "DejaVu Sans Mono", Consolas, monospace';
+      this.element.style.fontSize = '13px';
+      this.element.style.lineHeight = '15px';
+      this.element.style.fontWeight = '400';
+    }
+    this.measurer = null; this.font = null;
     this.paintAuthority = paintAuthority;
     this.prefersReducedMotion = Boolean(prefersReducedMotion); this.readerRegion = readerRegion;
     this.projection = null; this.rows = []; this.rowHtml = [];
@@ -413,6 +433,12 @@ export class CanonicalGardenRenderer {
     // The burst is painted at a cell; the object it reports is chosen in pixels.
     const [x, y] = this._eventCell(event);
     const selected = this._rankedLayoutCandidatesAt(this._eventPixel(event))[0]?.object ?? null;
+    // The deployed click reaction is foliage-specific: leaves or pine needles
+    // come off a plant canopy.  A generic burst on a fixture overwrote authored
+    // parts (the mailbox's red 7 became a dot) and made an ordinary interaction
+    // look like the drawing had changed. Fixtures dispatch their canonical
+    // action; they do not mint plant debris.
+    if (selected?.kind !== 'plant') return;
     this.pendingEvents.push({ kind: 'burst', x, y,
       objectKind: selected?.kind,
       species: selected?.semantic_state?.species_id,

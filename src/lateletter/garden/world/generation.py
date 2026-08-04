@@ -66,7 +66,7 @@ MINIMUM_WORLD_HEIGHT = 40
 # `rest` entry.
 #
 # Collectibles remain empty. Nothing in the archive draws them.
-STARTER_PLANT_SPECIES: tuple[str, ...] = ("oak", "sunflower")
+STARTER_PLANT_SPECIES: tuple[str, ...] = ("rose",)
 STARTER_ANIMAL_SPECIES: tuple[str, ...] = ()
 STARTER_COLLECTIBLES: tuple[str, ...] = ()
 
@@ -128,7 +128,7 @@ STARTER_FIXTURE_ANCHORS = {
     "lantern": (625, 650),
     "planter": (750, 650),
 }
-# THE TWO DEFAULT PLANTS SIT OUTSIDE THE FIXTURE ROW (decision, 2026-08-01)
+# THE DEFAULT ROSE SITS OUTSIDE THE FIXTURE ROW
 # ------------------------------------------------------------------------
 # `oak` and `sunflower` were anchored at 330 and 590 thousandths, which was a
 # sound composition while the world had depth: the oak stood behind the bench
@@ -143,13 +143,13 @@ STARTER_FIXTURE_ANCHORS = {
 # and sunflower where the operator's own verification requires bench, mailbox
 # and lantern.
 #
-# Moving the two plants to the outer edges answers it completely rather than
-# partially: re-measured, all five fixtures return to their exact authoritative
-# columns (55-66, 76-84, 97-103, 116-122, 133-143 at 1600x1000, identical to the
-# fixtures-only layout) and the 390x844 crop holds bench, mailbox and lantern.
-# The Garden reads as a planted row with a tree at one end and a sunflower at
-# the other, which is also a better picture than plants interleaved with
-# furniture.
+# The operator-authored rose accepted on 2026-08-03 is the canonical starter
+# plant: it is the exact approved six-line asset, not the old local placeholder.
+# Its earlier 940 anchor put the wide drawing under the planter/lantern pack so
+# only part of its pot survived the final frame. At 60 it owns the open left
+# edge while the five fixtures keep their established row. Oak and sunflower
+# remain available to authored programs; the deployed presentation-native
+# planting layer supplies the dense seasonal planting around all six objects.
 #
 # The five FIXTURE anchors are untouched. They are the authoritative canonical
 # data and nothing here is permitted to move them; this change moves the plants
@@ -159,13 +159,13 @@ STARTER_FIXTURE_ANCHORS = {
 # relationship anchors for authored programs.
 STARTER_PLANT_ANCHORS = {
     "water_lily": (220, 420),
-    "oak": (60, 300),
+    "oak": (150, 300),
     "hydrangea": (360, 570),
     "willow": (900, 180),
-    "rose": (690, 440),
+    "rose": (60, 320),
     "meadow_grass": (470, 590),
     "lavender": (570, 760),
-    "sunflower": (940, 320),
+    "sunflower": (850, 320),
 }
 STARTER_ANIMAL_ANCHORS = {
     "bird": (100, 680),

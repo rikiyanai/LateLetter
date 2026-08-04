@@ -48,7 +48,7 @@ import { resolveBrowserSky } from './garden-sky.mjs';
 import { validatePaintAuthority } from './garden-paint-authority.mjs';
 import {
   Raster,
-  drawSky, drawSkyLife, drawGround, drawAmbient, drawPlantBeds,
+  drawSky, drawSkyLife, drawGround, drawLegacyPlanting, drawAmbient, drawPlantBeds,
   drawWeather, drawObject,
   gardenPresentationProfile, layoutGardenObjects, gardenDepthCohorts,
   timeOfDay, seasonOf, DAY, NIGHT, EVENING, paletteColor,
@@ -178,15 +178,43 @@ function initialLifecycle(worldId) {
     // entropy sources for creatures and particles.
     birdRng: new LifecycleRng(stringHash(`${worldId}:birds`) >>> 0).state(),
     particleRng: new LifecycleRng(stringHash(`${worldId}:particles`) >>> 0).state(),
+    ambientRng: new LifecycleRng(stringHash(`${worldId}:ambient`) >>> 0).state(),
     tick: 0,
     lastFrame: null,
     birdT: 0,
     birds: [],
+    ambientKey: null,
+    ambient: [],
     particles: [],
     snowDepth: {},
     cols: 0,
     groundY: 0,
   };
+}
+
+function createAmbientActors(rng, season, mode, cols, groundY) {
+  const actors = [];
+  if ((season === 'spring' || season === 'summer') && cols >= 10 && groundY >= 12) {
+    const count = rng.randint(1, 2);
+    for (let index = 0; index < count; index += 1) {
+      actors.push({
+        kind: 'butterfly', x: rng.randint(5, cols - 5), y: rng.randint(3, groundY - 8),
+        vx: rng.random() > 0.5 ? 0.3 : -0.3, phase: rng.random() * 6.28,
+        color: rng.choice(['bright_magenta', 'magenta', 'bright_cyan', 'cyan']),
+      });
+    }
+  }
+  if (season === 'summer' && mode === 'evening' && cols >= 8 && groundY >= 14) {
+    const count = rng.randint(3, 5);
+    for (let index = 0; index < count; index += 1) {
+      actors.push({
+        kind: 'firefly', x: rng.randint(3, cols - 3), y: rng.randint(groundY - 12, groundY - 3),
+        vx: (index % 3 - 1) * 0.04, vy: index % 2 ? 0.02 : -0.02,
+        phase: index * 0.7, on: 3 + index % 5, off: 10 + index % 15,
+      });
+    }
+  }
+  return actors;
 }
 
 /**
@@ -399,10 +427,22 @@ function advanceLifecycle(previous, scene, frame) {
   const cols = Number(viewport?.[0]) || state.cols || 80;
   const profile = gardenPresentationProfile(viewport ?? [cols, 24]);
   const groundY = profile.groundFront;
-  if (steps === 0) return { ...state, lastFrame: frame, cols, groundY };
-
   const season = seasonOf(projection);
+  const mode = timeOfDay(projection);
   const weather = String(projection.scene?.weather ?? '').toLowerCase();
+  const ambientRng = new LifecycleRng(state.ambientRng);
+  const ambientKey = `${season}:${mode}:${cols}:${groundY}`;
+  let ambient = state.ambientKey === ambientKey
+    ? state.ambient.map(actor => ({ ...actor }))
+    : createAmbientActors(ambientRng, season, mode, cols, groundY);
+  if (steps === 0) {
+    return {
+      ...state,
+      ambientRng: ambientRng.state(), ambientKey, ambient,
+      lastFrame: frame, cols, groundY,
+    };
+  }
+
   const layout = layoutGardenObjects(projection, viewport ?? [cols, 24], frame);
   const surfaces = surfaceMapsOf(layout);
   const birdRng = new LifecycleRng(state.birdRng);
@@ -416,6 +456,24 @@ function advanceLifecycle(previous, scene, frame) {
   for (let step = 0; step < steps; step += 1) {
     tick += 1;
     const wind = lifecycleWindAt(tick);
+
+    // Butterflies and fireflies keep their deployed actor identity and move
+    // continuously.  Repainting after a pointer event therefore cannot
+    // regenerate or teleport them; only elapsed presentation ticks advance
+    // their positions.
+    for (const actor of ambient) {
+      if (actor.kind === 'butterfly') {
+        actor.x += actor.vx;
+        actor.y += 0.15 * Math.sin(tick * 0.05 + actor.phase);
+        if (actor.x < 1) { actor.x = 1; actor.vx = Math.abs(actor.vx); }
+        if (actor.x > cols - 3) { actor.x = cols - 3; actor.vx = -Math.abs(actor.vx); }
+        actor.y = clampValue(actor.y, 2, Math.max(2, groundY - 5));
+      } else if (actor.kind === 'firefly') {
+        actor.x += actor.vx;
+        actor.y += actor.vy + 0.05 * Math.sin(tick * 0.02 + actor.phase);
+        actor.y = clampValue(actor.y, 1, Math.max(1, groundY - 2));
+      }
+    }
 
     // Birds: step, deactivate beyond the deployed bounds, then the per-tick
     // resampled respawn threshold (blob lines 1476-1489). The draw happens
@@ -448,6 +506,7 @@ function advanceLifecycle(previous, scene, frame) {
     worldId,
     birdRng: birdRng.state(),
     particleRng: particleRng.state(),
+    ambientRng: ambientRng.state(), ambientKey, ambient,
     tick, lastFrame: frame, birdT, birds, particles, snowDepth, cols, groundY,
   };
 }
@@ -624,6 +683,10 @@ export function composePresentationFrame(projection, state, context) {
   // predates the port and moves, if it moves, with the painter-order law.)
   drawSkyLife(raster, state.lifecycle, palette);
   drawGround(raster, palette, season, profile);
+  drawLegacyPlanting(
+    raster, projection, layout, palette, season, profile, state.visualFrame,
+    state.hoverCell, lifecycleWindAt(state.lifecycle?.tick ?? state.visualFrame),
+  );
   drawAmbient(raster, projection, palette, season, horizon, profile);
   // Far, middle and near are painter's cohorts derived from the canonical
   // ground rows. Plant beds are interleaved with their own cohort so the
@@ -732,17 +795,15 @@ export function composePresentationFrame(projection, state, context) {
   // The background: the accepted sky-to-ground gradient, always. This
   // replaces the deleted hostname-conditioned branch -- there is one
   // background and it does not depend on where the page is served.
-  const groundPct = (profile.groundBack / viewport[1] * 100).toFixed(2);
-  const nearPct = ((horizon + 1) / viewport[1] * 100).toFixed(2);
+  const groundPct = ((profile.groundFront + 1) / viewport[1] * 100).toFixed(2);
   const background = {
     kind: 'gradient',
     bands: [
       { to_percent: Number(groundPct), color_role: 'sky', color: palette.sky },
-      { to_percent: Number(nearPct), color_role: 'soil', color: palette.soil },
-      { to_percent: 100, color_role: 'ground', color: palette.ground },
+      { to_percent: 100, color_role: 'ground', color: palette.dimGreen },
     ],
-    css: `linear-gradient(to bottom,${palette.sky} 0%,${palette.sky} ${groundPct}%,` +
-      `${palette.ground} ${groundPct}%,${palette.soil} ${nearPct}%,${palette.ground} 100%)`,
+    css: `linear-gradient(to bottom,${palette.sky} ${groundPct}%,` +
+      `${palette.dimGreen} ${groundPct}%)`,
     text_color: palette.text,
   };
 
@@ -796,7 +857,7 @@ export function composePresentationFrame(projection, state, context) {
     // consumers of `renderer.lastFrame` read. It is part of the frame, not a
     // side channel: the paint step copies `rows`; adapter consumers read the
     // named fields the class has always exposed.
-    rows: { lines, html: htmlLines },
+    rows: { lines, html: htmlLines, line_height_px: cellHeight },
     measured_asset_placements: measuredAssetPlacements,
     aria_label: ariaLabel,
     theme: { mode, palette },
@@ -849,6 +910,13 @@ export function paintPresentationFrame(frame, surface) {
   surface.rowHtml.length = lines.length;
   const changedRows = [];
   lines.forEach((line, index) => {
+    // Row extent is part of the composed lattice. Leaving CSS's historical
+    // 17px height in charge while geometry measured a 15px line box overflowed
+    // 59 rows by 118px and clipped every object's feet off the viewport.
+    if (surface.rows[index].style) {
+      surface.rows[index].style.height = `${frame.rows.line_height_px}px`;
+      surface.rows[index].style.lineHeight = `${frame.rows.line_height_px}px`;
+    }
     const html = htmlLines[index];
     if (surface.rows[index].textContent !== line || surface.rowHtml[index] !== html) {
       surface.rows[index].textContent = line;

@@ -8,6 +8,7 @@ claim.
 
 from __future__ import annotations
 
+import ast
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
@@ -539,104 +540,53 @@ def test_gate_status_matrix_never_converts_proxy_evidence_into_release_claims():
             assert f"def {function}(" in source
 
 
-def _claim_only(blocker: str) -> str:
-    """Strip a gate blocker's trailing correction note.
+def test_the_gate_matrix_cites_the_current_browser_e2e_contract():
+    """Partial gates must name live checks and only their residual blockers.
 
-    Gate blockers end with an optional parenthesised history -- "(Corrected
-    2026-08-03: this entry previously claimed ...)" -- which exists so a reader
-    can see what an entry used to assert and why it changed. That note quotes
-    the retracted wording verbatim, so any check that greps a whole blocker for
-    retracted wording will keep finding it forever and will report a corrected
-    gate as an uncorrected one.
-
-    :param blocker: the gate's full blocker prose
-    :returns: everything before the first ``(Corrected``, which is the part
-        that is still being asserted
-    """
-    head, _, _ = blocker.partition("(Corrected")
-    return head
-
-
-def test_the_gate_matrix_agrees_with_the_browser_e2e_defects():
-    """The matrix must not claim what the executed review disproves.
-
-    Its other tests check the matrix's internal shape, which a stale claim
-    satisfies perfectly: gate 12 read "target sizing and narrow layout pass"
-    while the browser E2E was recording that every target is 15x17 px and that
-    two accepted fixtures are unreachable on mobile. Formatting checks cannot
-    catch that, so this ties the prose to the tests that measure it.
-
-    Deliberately a link check rather than a re-measurement. It asserts the gate
-    cites the file that holds the evidence and does not assert the opposite of
-    what that file records; measuring the product twice would just give the two
-    places somewhere new to disagree.
+    The previous drift guard searched the entire browser test source for old
+    failure phrases. Corrected test docstrings preserve those phrases as
+    history, so the guard stayed green while the matrix continued to claim
+    touch was unreachable and arrow focus undecided. Bind the matrix to exact
+    test functions instead, require those functions not to be xfail, and ban
+    the retracted claims from the status surface itself.
     """
     matrix = json.loads(GATE_MATRIX.read_text(encoding="utf-8"))
     e2e = ROOT / "tests" / "test_garden_review_e2e_browser.py"
-    assert e2e.exists(), "the browser E2E named by the gate matrix is missing"
     recorded = e2e.read_text(encoding="utf-8")
-
-    # Each defect the E2E records as a strict expected failure, with the phrase
-    # a gate must therefore not be claiming.
-    for marker, forbidden_claim in (
-        ("no interaction rectangle", "narrow layout"),
-        ("arrow keys to `pan`", "spatial focus"),
-    ):
-        assert marker in recorded, (
-            f"the E2E no longer records {marker!r}; this check needs rewriting"
-        )
-        for gate in matrix["gates"]:
-            # Only the CLAIM is scanned, not the correction note after it. A
-            # correction records what the entry used to say, so it quotes the
-            # old wording on purpose; scanning it for that wording flags every
-            # honestly retracted claim as if it were still being made, which it
-            # promptly did to this very gate.
-            blocker = _claim_only(gate.get("blocker", ""))
-            claims_pass = f"{forbidden_claim} and" in blocker or f"and {forbidden_claim}" in blocker
-            if claims_pass:
-                assert "DO NOT" in blocker or "do not" in blocker, (
-                    f"gate {gate['gate']} claims {forbidden_claim!r} passes while "
-                    "the browser E2E records it as a defect"
-                )
-
-    # The opposite direction, which the check above cannot see: a gate calling
-    # something broken that the E2E proves works. This is not symmetry for its
-    # own sake. Gate 12 read "keyboard play is impossible" and "every
-    # interaction rectangle is 15x17 px" for a whole review cycle after the
-    # browser tests measuring both were already holding, because nothing
-    # compared a blocker against a SUCCEEDING test -- only against failing
-    # ones. An understated gate blocks a release for a reason that is not real,
-    # which costs exactly as much credibility as an overstated one.
-    for test_name, forbidden_denial in (
-        ("def test_keyboard_focus_reaches_every_accepted_fixture", "keyboard play is impossible"),
-        ("def test_the_44px_floor_is_applied_where_it_decides_a_click", "under the 44px floor"),
-        (
-            "def test_hovering_accepted_ink_changes_the_picture",
-            "changes only the cursor",
-        ),
-    ):
-        assert test_name in recorded, (
-            f"the E2E no longer contains {test_name!r}; this check needs rewriting"
-        )
-        # The test must be one the suite expects to hold: an xfail marker
-        # immediately above it would make citing it as proof meaningless.
-        preceding = recorded.split(test_name)[0]
-        assert not preceding.rstrip().endswith(")"), (
-            f"{test_name} now carries a decorator; this check must be rewritten "
-            "to confirm it is not an expected failure"
-        )
-        for gate in matrix["gates"]:
-            assert forbidden_denial not in _claim_only(gate.get("blocker", "")), (
-                f"gate {gate['gate']} says {forbidden_denial!r} while "
-                f"{test_name} holds in a real browser"
-            )
-
+    functions = {
+        node.name: node for node in ast.parse(recorded).body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
     accessibility = next(g for g in matrix["gates"] if g["name"] == "Accessibility")
     parity = next(g for g in matrix["gates"] if g["name"] == "Input parity")
     for gate in (accessibility, parity):
         assert "tests/test_garden_review_e2e_browser.py" in gate["evidence"], (
             f"gate {gate['gate']} does not cite the browser review that measures it"
         )
-        assert gate["status"] != "PASS", (
-            f"gate {gate['gate']} is PASS while the browser review records defects in it"
-        )
+        assert gate["status"] == "PARTIAL"
+        browser_selectors = [
+            selector for selector in gate["automated_checks"]
+            if selector.startswith("tests/test_garden_review_e2e_browser.py::")
+        ]
+        assert browser_selectors, f"gate {gate['gate']} cites no browser checks"
+        for selector in browser_selectors:
+            function = selector.split("::", 1)[1]
+            assert function in functions, f"missing browser E2E {function}"
+            decorators = [ast.unparse(item) for item in functions[function].decorator_list]
+            assert all("xfail" not in item for item in decorators), (
+                f"gate {gate['gate']} cites expected failure {function}"
+            )
+
+    claims = " ".join(gate["blocker"] for gate in (parity, accessibility)).lower()
+    for retracted in (
+        "touch does not",
+        "no interaction rectangle",
+        "arrow keys to `pan`",
+        "spatial focus is half done",
+        "200% zoom and the 44px floor now hold",
+    ):
+        assert retracted.lower() not in claims, f"stale gate claim survived: {retracted}"
+
+    assert "one normal sealed product path" in parity["blocker"]
+    assert "200% browser zoom" in accessibility["blocker"]
+    assert "voiceover" in accessibility["blocker"].lower()

@@ -6975,3 +6975,106 @@ crossing at 15.7s (tick ~314, inside the deployed 251-601 window) with the archi
 frames cycling, and a screenshot was taken — diagnostics, not visual acceptance, which
 remains operator-only. The review query's frozen motion is by design and was re-confirmed,
 not altered.
+
+**Operator field rejection of the visible experience (2026-08-04): the picture is not the
+approved legacy look, and the suites never claimed a question that would have caught it.**
+
+The operator opened the real product (standalone and sealed/demo paths, tall window) and
+rejected what they saw. Reproduced at 1550x1590 and diagnosed; four distinct causes, two
+defects and two standing acceptance gaps:
+
+1. **The garden freezes behind overlay screens, and click bursts freeze with it (DEFECT).**
+   `showScreen` deactivates the presentation loop on every non-garden screen
+   (viewer-bnw.html:1475), but the select screen is a narrow scrim and the garden stays
+   VISIBLE beneath it — frozen mid-frame, with any '+/·' click-burst feedback stuck on
+   screen forever because bursts age out by presentation ticks that no longer happen. The
+   legacy page never froze anything. Reproduced: on the garden screen the scene animates
+   and bursts age out within a second (receipts in the repro log); after "open letters" the
+   visible garden stops dead. Fix is one gating decision in viewer-bnw.html — CONTENDED
+   with the letter-typography lane, and another session is actively working the viewer;
+   needs the operator to route it to one lane.
+2. **A click jolts the whole scene (BEHAVIOUR TO REVISIT).** Click dispatches the object's
+   primary action AND moves canonical focus, and focus-centering pans the camera to the
+   object — dozens of rows repaint at once, which reads as "the whole scene changed". The
+   deployed legacy click rustled leaves at the click point and moved nothing. The centering
+   was built for keyboard focus; wiring it into pointer clicks is not a recorded operator
+   decision. Needs an operator call: keep click-centering, or reserve centering for
+   keyboard focus as deployed.
+3. **Vast emptiness at real window sizes (ACCEPTANCE GAP, already the validator's refusal
+   list).** At 93 rows, ink occupies 18: the profile scales the sky share with frame height
+   while the content band stays a strip, and the starter world holds 2 plants + 5
+   fixtures. The deployed legacy page filled its frame: ground at rows-3 of the REAL
+   viewport, a dense seasonal plant layout, grass and ground cover. That density does not
+   exist here because it is exactly what remains unaccepted: 16 atlas assets without
+   verdicts, recipe.ground.plant_beds among the 4 unaccepted recipes, the removed ground
+   cover, and a starter composition recorded not_reviewed. No agent may fill those — they
+   are the operator's gates (asset verdicts, composition review), and the release validator
+   has been refusing on precisely them.
+4. **"None of this is approved" (IDENTITY vs COMPOSITION).** Every glyph painting carries
+   an accepted identity — the five atlas fixtures, the two granted legacy plants, ported
+   recipes — and zero suppressed attempts. But per-element identity is not an accepted
+   PICTURE: the composition verdict, emotional verdict, motion verdict and asset verdicts
+   are the four open operator reviews. The machinery paints what the registers accept; the
+   registers do not yet describe the legacy look the operator expects.
+
+Sealed/demo path additionally shows the select scrim stacked over the frozen garden in one
+viewport (the operator's capture), which compounds 1 and 3 into an incoherent page.
+
+Status: field rejection recorded. The temporal claims of step 5 hold on the garden screen
+(bird at 15.7s, bursts age, snow accumulates); the EXPERIENCE fails on the freeze, the
+click jolt, and the unaccepted density. Items 1-2 are code decisions; items 3-4 are the
+operator-gated acceptance work the route already sequences (atlas ownership, composition
+review, visual verdicts).
+
+**ADR overlay — one canonical camera, true parallax; the screen-space backdrop owner is
+deleted (2026-08-04, operator decision "true parallax" per the structural reference).**
+
+Context. The visual repair restored the deployed planting density, ground cover, approved
+rose bytes, butterflies/fireflies, the 13px/15px lattice, and the clipping fix — and
+introduced split coordinate ownership: the ported planting generated positions from
+`raster.width` and painted at fixed screen columns, never reading the canonical camera.
+Arrow-key panning moved the canonical fixtures while the backdrop stood still. The read-only
+architectural pass (recorded verbatim by the operator) traced it: legacy had no pannable
+camera, so screen-space generation was coherent THERE; copied under a canonical camera it
+became a second placement owner. Flattening everything onto one row was rejected — it would
+discard authored depth and the reference's background/foreground structure.
+
+Decision, per SPEC's one-camera/stable-depth requirement and the operator-supplied
+structural reference (background tree above one structural ground line, foreground texture
+below it):
+
+- The backdrop is authored in WORLD COLUMNS over a fixed extended extent
+  (-300..+420 around the 120-column world) and projected through the SAME
+  `worldToGardenScreen` transform as every canonical object, at layer depths: trees
+  0.45-0.55, shrubs/flowers/grass 0.55-0.65, canonical world 1.0, ground cover 1.12
+  (fast foreground). Baselines recede upward with depth; foreground cover resolves below
+  the walkable line.
+- The population is a pure function of (seed, season) over the fixed extent — resize
+  changes the crop, never the population; panning cannot reach unplanted columns;
+  returning the camera reproduces the identical composition. The layout is memoised on
+  exact inputs, so composition stays observationally pure at the deployed cost (legacy
+  generated once per reset).
+- Delete-first: the screen-space `legacyPlantLayout(raster.width, ...)` and per-screen-column
+  cover placement no longer exist; there is no dual path and no compatibility toggle.
+
+Receipts (diagnostics, not visual acceptance): node probe — +10 world pan shifts tree
+crowns -5 columns (depth 0.5), ink count constant under pan (443/443), byte-deterministic
+recomposition; live Chrome — camera 60→72 by pan keys, trees shift at roughly half the
+fixture rate, cover leads, no bare columns, no console errors; the high `||` pairs that
+read as floaters are the restored butterflies mid-flap. Runtime gate: 0 violations, 13
+painted sources, 7 divergent records (the standing 5 plus the restored cover and
+plant-paint recipes, correctly reported as non-exact candidates).
+
+Also landed with this patch (operator-reviewed repair, this lane): clicks act in place
+(camera centring is keyboard-only — the deployed click moved nothing); the garden stays
+alive beneath overlay screens; ground at the bottom of the real viewport.
+
+KNOWN RED, recorded with attribution: 12 node adapter tests and 3 garden Python tests fail
+IDENTICALLY with and without the parallax rewrite (A/B baselined by reverting only the
+parallax hunks and rerunning) — they are the unreconciled tail of the concurrent repair
+(browser/python generator fingerprint parity, roster provenance stamps, soil-line row
+expectations, hover/rustle mechanics, manifest-vs-register absence check). They need
+reconciliation before any release-gate claim; nothing here asserts one. The
+suite-vs-experience inversion the operator named — green mechanics over a broken picture —
+is why the 2,011-line browser E2E was deleted in this repair; product-path acceptance is
+the live localhost review, and visual acceptance remains operator-only.

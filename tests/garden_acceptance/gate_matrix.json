@@ -24,8 +24,18 @@
     "tests/garden_adapters/test_world_browser_conformance.py",
     "tests/test_garden_review_e2e_browser.py"
    ],
-   "automated_checks": [],
-   "blocker": "POINTER AND KEYBOARD reach the canonical world for all five accepted starter fixtures ON DESKTOP: each click and each Enter increments that fixture's own interaction count and records its own action, measured per interaction against a freshly read rectangle. HOVER HOLDS TOO: hovering accepted ink changes both the cursor and the fixture's own presentation, and reverts when the pointer leaves. TOUCH DOES NOT: at 390x844 the stepping stones and the planter have no interaction rectangle, and a full-width drag does not move the camera, so nothing brings them into reach -- a strict expected failure in tests/test_garden_review_e2e_browser.py. Terminal parity unaffected by this work. (Corrected four times on 2026-08-03, every one my own error: this entry first said four of five fixtures ignore a click and keyboard reaches nothing; then that touch reaches all five, which the mobile expected failure contradicts; then that hover was uncovered; then that hover changes only the cursor, which was an artifact of measuring under `garden_review_time` -- the review clock freezes presentation, so the renderer never repainted the emphasis it had already computed. See docs/FAILURE_LOG.md.)"
+   "automated_checks": [
+    "tests/garden_adapters/test_input_adapters.py::test_all_modalities_normalize_to_byte_identical_commands",
+    "tests/garden_adapters/test_world_browser_conformance.py::test_every_fixture_verb_has_exact_browser_python_linked_world_effects",
+    "tests/test_garden_review_e2e_browser.py::test_clicking_EVERY_accepted_fixture_reaches_the_canonical_world",
+    "tests/test_garden_review_e2e_browser.py::test_keyboard_focus_reaches_every_accepted_fixture_and_ENTER_performs_its_action",
+    "tests/test_garden_review_e2e_browser.py::test_the_full_recorded_key_map_pans_and_focuses_without_shadowing",
+    "tests/test_garden_review_e2e_browser.py::test_touch_can_bring_an_off_screen_fixture_into_reach",
+    "tests/test_garden_review_e2e_browser.py::test_a_single_tap_performs_the_primary_action_on_touch",
+    "tests/test_garden_review_e2e_browser.py::test_a_drag_that_pans_never_performs_the_action_under_the_pointer",
+    "tests/test_garden_review_e2e_browser.py::test_hovering_accepted_ink_changes_the_picture"
+   ],
+   "blocker": "Real Chrome now proves pointer and Enter dispatch for all five accepted starter fixtures, reversible hover presentation, native touch pan that brings both initially off-screen fixtures into reach at 390x844, one-tap primary action, drag-release suppression, and every recorded focus/pan key binding. Cross-runtime adapter tests prove canonical command bytes and fixture effects. Gate 2 remains PARTIAL because its required matrix is larger: plant water/interact, animal feed/play, inspect, collect, journal, pan, and pause have not each been driven through touch, mouse, keyboard, and terminal on one normal sealed product path with identical persisted state transitions; author placement/move/rotate/undo and recipient absence of those commands also need their separate product-path sweep."
   },
   {
    "gate": 3,
@@ -163,8 +173,16 @@
     "tests/test_garden_review_e2e_browser.py",
     "tests/test_viewer_contract.py"
    ],
-   "automated_checks": [],
-   "blocker": "Reduced motion, 200% zoom and the 44px floor now hold in a real browser, and so does keyboard play on the product path: ']' walks canonical focus through all five accepted starter fixtures and Enter performs each one's declared primary action, proved against canonical world state and against three mutations of the viewer. NARROW LAYOUT DOES NOT: at 390x844 the stepping stones and planter have no interaction rectangle at all. SPATIAL FOCUS IS HALF DONE: move_focus now resolves left/right/up/down to the nearest object in that direction by canonical position, identically in both engines across all 28 object-direction cases and mutation-proved; but the browser still binds the arrow keys to pan, so no direction ever reaches the command from a keyboard. What the arrows should do when they can no longer both pan and navigate is an unmade product decision. Both are strict expected failures in tests/test_garden_review_e2e_browser.py. VoiceOver/NVDA and no-color still require human observation. (Corrected 2026-08-03 twice: this entry first claimed target sizing and narrow layout pass, which the browser E2E disproved; it then claimed every target is 15x17 px and that keyboard play is impossible, both of which were my own measurement errors and are disproved by the executed keyboard and 44px tests.)"
+   "automated_checks": [
+    "tests/test_garden_review_e2e_browser.py::test_no_action_chrome_at_every_required_size",
+    "tests/test_garden_review_e2e_browser.py::test_keyboard_focus_reaches_every_accepted_fixture_and_ENTER_performs_its_action",
+    "tests/test_garden_review_e2e_browser.py::test_the_full_recorded_key_map_pans_and_focuses_without_shadowing",
+    "tests/test_garden_review_e2e_browser.py::test_touch_can_bring_an_off_screen_fixture_into_reach",
+    "tests/test_garden_review_e2e_browser.py::test_a_single_tap_performs_the_primary_action_on_touch",
+    "tests/test_garden_review_e2e_browser.py::test_the_44px_floor_is_applied_where_it_decides_a_click",
+    "tests/test_garden_review_e2e_browser.py::test_reduced_motion_still_paints_the_garden"
+   ],
+   "blocker": "Real Chrome now proves the 44px target floor, reduced-motion painting, canonical keyboard focus and action, every recorded focus/pan key, native touch reach and one-tap action at 390x844, and absence of rejected action chrome at desktop, 390px, and 320px widths. Gate 12 remains PARTIAL: full action reachability has not been exercised at 320 CSS pixels or at actual 200% browser zoom; VoiceOver and NVDA traversal, no-color use, physical-device touch, and the complete recipient action set still require direct accessibility verification."
   },
   {
    "gate": 13,
