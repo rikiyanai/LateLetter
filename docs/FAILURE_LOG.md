@@ -9714,3 +9714,44 @@ Remaining missing positives after this D1 slice:
   on absent/unsupported Unicode/proportional/emoji/degraded families. Ranking
   changes remain prohibited until exact targets exist in top-k. ComplaintRef:
   operator order to log and execute the transcription plan E2E, 2026-08-04.
+
+### Transcription D1 adds proportional Latin OCR-confusable proposal coverage (2026-08-04)
+
+The next D1 coverage addition addresses `positive-proportional-latin` without
+changing ranking or acceptance. Tesseract already produced source-derived OCR
+strings such as `| ate |etter`; the exact target was absent from top-k because
+the proposal surface did not include common Latin vertical-bar confusions in
+the right order. The adapter now adds bounded Latin alternatives where OCR
+`|` may represent `L`, `l`, or `I`, and may have an inserted spurious space
+after the bar. The ordering is context-based: word-start bars prefer `L`,
+internal bars before lowercase prefer `l`, and the original OCR string remains
+present as proposal evidence. This is not scorer tuning and does not use the
+expected transcript.
+
+Targeted proportional-Latin replay with Tesseract only completed with
+`status=passed`, no budget failures, exact target in top-k, and ground truth
+not passed to adapters. Row `Late letter` is present-but-losing at rank 3;
+row `kindness` is present-and-winning at rank 1. That is correct D1 behavior:
+coverage exists, but ranking repair must wait for the present-but-losing
+matrix phase.
+
+Fresh full D1 replay:
+`tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin.json`,
+size 115,771,319 bytes, SHA-256
+`830e21159c34ab869e1ab46b7eedc0395290ee4f1819b72b09f80842a8db670c`.
+Status remains `blocked_release_coverage`; `budget_failures` is empty;
+`determinism_replay_performed=true`; `ground_truth_passed_to_adapters=false`;
+`false_unique` is empty/null. `positive-fixed-ascii` and
+`positive-proportional-latin` are both removed from `positive_missing`, but
+their rows remain `visual_collision` evidence in the full matrix because other
+adapters still emit colliding alternatives.
+
+Remaining missing positives after this D1 slice:
+`positive-kana`, `positive-kanji`, `positive-combining`,
+`positive-width-mixture`, `positive-emoji-zwj`, `positive-mixed-script`, and
+`positive-degraded-fixed`.
+
+- **Status:** D1 PARTIAL; fixed structural ASCII and proportional Latin
+  proposal coverage added. Continue D1 on kana/Kanji/combining/width/emoji/
+  mixed/degraded families. Ranking changes remain prohibited. ComplaintRef:
+  operator order to log and execute the transcription plan E2E, 2026-08-04.

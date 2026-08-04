@@ -474,6 +474,7 @@ class TesseractOfflineAdapter:
         text = completed.stdout.rstrip("\n")
         if not text:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "empty_proposal")
+        alternatives = tuple(item for item in _ocr_latin_confusable_variants(text) if item != unicodedata.normalize("NFC", text))
         candidate = _candidate(
             text=text,
             source_hash=source_hash,
@@ -482,6 +483,7 @@ class TesseractOfflineAdapter:
             environment_hash=environment_lock.output_hash,
             confidence=0.25,
             component_ids=tuple(str(value) for value in source.get("component_ids", ())),
+            alternatives=alternatives,
         )
         proposal = RecognitionProposal(
             proposal_id=f"{self.name}-run",
@@ -501,6 +503,48 @@ class TesseractOfflineAdapter:
             supported_scripts=self.supported_scripts,
             status="proposal_only",
         )
+
+
+def _ocr_latin_confusable_variants(text: str, *, limit: int = 64) -> tuple[str, ...]:
+    """Return bounded OCR alternatives for Latin vertical-bar confusions.
+
+    OCR commonly reads capital/lowercase L or I as ``|`` in rendered text art
+    and sometimes inserts a space after that bar.  This is proposal coverage
+    only: the original OCR text remains present, and final acceptance still
+    requires source evidence, collision checks, and ranking gates.
+    """
+
+    normalized = unicodedata.normalize("NFC", text)
+    completed: list[tuple[float, str]] = []
+    stack: list[tuple[int, str, float]] = [(0, "", 0.0)]
+    while stack and len(completed) < limit:
+        index, prefix, cost = stack.pop()
+        if index >= len(normalized):
+            completed.append((cost, unicodedata.normalize("NFC", prefix)))
+            continue
+        char = normalized[index]
+        if char == "|":
+            at_word_start = index == 0 or normalized[index - 1].isspace()
+            replacements = (
+                (("L", 0.0), ("l", 0.20), ("I", 0.45), ("|", 1.0))
+                if at_word_start
+                else (("l", 0.0), ("L", 0.20), ("I", 0.45), ("|", 1.0))
+            )
+            next_is_spurious_gap = (
+                index + 2 < len(normalized)
+                and normalized[index + 1] == " "
+                and normalized[index + 2].islower()
+            )
+            options: list[tuple[float, int, str]] = []
+            for replacement, replacement_cost in replacements:
+                options.append((replacement_cost + (0.35 if next_is_spurious_gap else 0.0), index + 1, prefix + replacement))
+                if next_is_spurious_gap and replacement != "|":
+                    options.append((replacement_cost - 0.10, index + 2, prefix + replacement))
+            for option_cost, next_index, next_prefix in sorted(options, reverse=True):
+                stack.append((next_index, next_prefix, cost + option_cost))
+        else:
+            stack.append((index + 1, prefix + char, cost))
+    return tuple(dict.fromkeys(text for _cost, text in sorted(completed, key=lambda item: (item[0], item[1]))))[:limit]
 
 
 @dataclass(frozen=True)

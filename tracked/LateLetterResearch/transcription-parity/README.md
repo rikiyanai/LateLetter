@@ -289,6 +289,9 @@ Current records:
 - D1 fixed-ASCII replay:
   `tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii.json`,
   SHA-256 `c5a5c71f675475fe68dee0d274b0dfdf222a86381adf32b01992325e6faa66b0`.
+- D1 fixed-ASCII + proportional-Latin replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin.json`,
+  SHA-256 `830e21159c34ab869e1ab46b7eedc0395290ee4f1819b72b09f80842a8db670c`.
 
 The full v10 status is `blocked_release_coverage`, with zero budget failures, deterministic
 replay enabled, and ground truth not passed to adapters. The exact NFC target remains absent
@@ -300,6 +303,13 @@ exact proposals from `fixed-lattice-structural`, but remains visual-collision ev
 than acceptance because other adapters still emit colliding alternatives. The full replay is
 still `blocked_release_coverage`; remaining missing positives are proportional Latin, kana,
 Kanji, combining, width mixture, emoji ZWJ, mixed script, and degraded fixed-cell.
+
+D1 has also repaired proportional Latin proposal coverage. Tesseract OCR vertical-bar
+confusions now include bounded `L`/`l`/`I` alternatives with context ordering, so
+`positive-proportional-latin` is no longer missing. Its `Late letter` row is present in top-k
+but remains present-but-losing/collision evidence; ranking work is still prohibited until all
+required positives have proposal coverage. Remaining missing positives are kana, Kanji,
+combining, width mixture, emoji ZWJ, mixed script, and degraded fixed-cell.
 
 Current execution frontier:
 

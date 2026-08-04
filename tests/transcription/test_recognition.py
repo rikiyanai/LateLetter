@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+
+import pytest
 
 from lateletter.transcription import (
     CapabilityProfile,
@@ -20,6 +23,7 @@ from lateletter.transcription import (
     inventory_adapters,
     verify_model_cache,
 )
+from lateletter.transcription.recognition import _ocr_latin_confusable_variants
 
 
 H = "d" * 64
@@ -180,7 +184,6 @@ def test_offline_ensemble_records_top_k_without_passing_ground_truth_to_adapter(
 
 def test_v2_fixed_ascii_structural_adapter_recovers_exact_rows_without_truth_input() -> None:
     fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
-    import json
 
     corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
     fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-fixed-ascii")
@@ -200,6 +203,44 @@ def test_v2_fixed_ascii_structural_adapter_recovers_exact_rows_without_truth_inp
         ("/\\_|", "present_and_winning", 1),
         ("(=)", "present_and_winning", 1),
     ]
+
+
+def test_ocr_latin_confusable_variants_promote_contextual_l_words() -> None:
+    variants = _ocr_latin_confusable_variants("| ate |etter")
+    assert "Late letter" in variants[:5]
+    assert variants.index("Late letter") < variants.index("| ate |etter")
+
+
+def test_v2_proportional_latin_tesseract_variants_cover_target_without_truth_input() -> None:
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    cache = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-model-cache" / "tesseract_best"
+    if not (cache / "eng.traineddata").exists():
+        pytest.skip("project-local Tesseract eng traineddata is not available")
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-proportional-latin")
+    model_paths = {path.stem: str(path) for path in cache.glob("*.traineddata")}
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (TesseractOfflineAdapter(cache_dir=str(cache)),),
+        build_environment_lock(
+            model_paths=model_paths,
+            script_packs=tuple(sorted(model_paths)),
+            preprocessing={"network": "disabled", "ground_truth_to_adapter": False},
+        ),
+        root=fixture_root,
+        adapter_budgets_seconds={"tesseract-offline": 12.0},
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["positive_missing"] == []
+    assert report["results"][0]["exact_nfc_target_in_top_k"] is True
+    rows = report["coverage_rank_matrix"][0]["rows"]
+    assert rows[0]["expected_logical_sequence"] == "Late letter"
+    assert rows[0]["classification"] == "present_but_losing"
+    assert rows[0]["proposal_rank"] <= 5
+    assert rows[1]["expected_logical_sequence"] == "kindness"
+    assert rows[1]["classification"] == "present_and_winning"
 
 
 def test_fixed_ascii_source_png_recovers_both_rows_without_canvas_tail() -> None:
