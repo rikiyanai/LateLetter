@@ -708,7 +708,7 @@ export function composePresentationFrame(projection, state, context) {
   drawSkyLife(raster, state.lifecycle, palette);
   drawGround(raster, palette, season, profile);
   drawLegacyPlanting(
-    raster, projection, layout, palette, season, profile, state.visualFrame,
+    raster, projection, palette, season, profile, state.visualFrame,
     state.hoverCell, lifecycleWindAt(state.lifecycle?.tick ?? state.visualFrame),
   );
   drawAmbient(raster, projection, palette, season, horizon, profile);

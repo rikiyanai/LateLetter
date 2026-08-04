@@ -615,13 +615,6 @@ function translatedRect(rect, dx, dy) {
   };
 }
 
-function paddedRect(rect, horizontal = 0, vertical = horizontal) {
-  return {
-    left: rect.left - horizontal, right: rect.right + horizontal,
-    top: rect.top - vertical, bottom: rect.bottom + vertical,
-  };
-}
-
 function orderedIntegerRange(minimum, maximum) {
   const values = [];
   for (let value = Math.ceil(minimum); value <= Math.floor(maximum); value += 1)
@@ -1999,7 +1992,13 @@ const LEGACY_PLANT_MAKERS = Object.freeze({
 // never the population.
 // ---------------------------------------------------------------------------
 const LEGACY_WORLD_COLUMNS = 120;
+const LEGACY_WORLD_ROWS = 80;
 const LEGACY_BACKDROP_MARGIN = 300;
+// The declared starter camera is [60, 51] in the canonical 120 x 80 world.
+// Presentation-native vegetation has stable terrain coordinates relative to
+// that authored view; it is not repacked when the camera or viewport changes.
+const LEGACY_HOME_CAMERA_Y = 51;
+const LEGACY_TERRAIN_CENTER = 0.45;
 
 /** Deepest and shallowest backdrop layers (ADR band 0.45-0.65). */
 const LEGACY_TREE_DEPTH = [0.45, 0.55];
@@ -2034,44 +2033,33 @@ function legacyPlantLayout(seed, season) {
       plant.rows = plant.rows.map(([dy, dx, text, color]) => [dy, dx, text,
         color === 'green' || color === 'bright_green' ? rng.choice(LEGACY_AUTUMN_COLORS) : color]);
     }
-    // Trees stand deeper than shrubs, flowers and grass, so a pan separates
-    // the layers visibly; the draw stays on the layout stream so the
-    // population is one deterministic sequence.
-    const band = plant.type === 'oak' || plant.type === 'pine'
-      ? LEGACY_TREE_DEPTH : LEGACY_SHRUB_DEPTH;
-    const depth = band[0] + rng.random() * (band[1] - band[0]);
+    const isTree = plant.type === 'oak' || plant.type === 'pine';
+    // A terrain coordinate is part of the generated population. Trees own the
+    // far transition; smaller planting occupies several stable rows of the
+    // receding plane. The previous implementation assigned no terrain
+    // coordinate and consequently forced every flower onto groundFront.
+    const plane = isTree ? 0 : 0.18 + rng.random() * 0.76;
+    const band = isTree ? LEGACY_TREE_DEPTH : LEGACY_SHRUB_DEPTH;
+    const baseDepth = band[0] + rng.random() * (band[1] - band[0]);
+    const depth = isTree ? baseDepth : baseDepth + plane * 0.40;
     const half = Math.floor(plant.width / 2) + 2;
     const x = rng.randint(first + half + 1, last - half - 2);
     const minimum = x - half - 1, maximum = x + half + 1;
-    if (occupied.some(([lo, hi]) => minimum < hi && maximum > lo)) continue;
-    occupied.push([minimum, maximum]); placed.push({ plant, x, depth });
+    // Spacing is two-dimensional. Plants on one terrain row must not collide;
+    // plants separated in depth may share world x because they paint on
+    // different rows. A one-dimensional interval set was the hidden reason a
+    // dense deployed population became one sparse horizontal queue.
+    if (occupied.some(entry =>
+      Math.abs(plane - entry.plane) < 0.13 &&
+      minimum < entry.maximum && maximum > entry.minimum)) continue;
+    occupied.push({ minimum, maximum, plane });
+    placed.push({ plant, x, depth, plane });
   }
+  // Painter order is the depth model: far silhouettes first, near planting
+  // last, then canonical objects in the compositor above this layer.
+  placed.sort((left, right) => left.plane - right.plane || left.x - right.x);
   legacyLayoutCache.set(key, placed);
   return placed;
-}
-
-/** Final screen-space ink bounds for one presentation-native plant. */
-function legacyPlantScreenRect(plant, anchorX, baseline) {
-  if (plant.blades?.length) {
-    const maximumHeight = Math.max(...plant.blades.map(blade => blade.height));
-    const minimumOffset = Math.min(...plant.blades.map(blade => blade.dx));
-    const maximumOffset = Math.max(...plant.blades.map(blade => blade.dx));
-    // Wind can lean a blade by at most roughly three cells at its tip.
-    return {
-      left: anchorX + minimumOffset - 3, right: anchorX + maximumOffset + 3,
-      top: baseline - maximumHeight, bottom: baseline - 1,
-    };
-  }
-  const cells = plant.rows.map(([dy, dx, text]) => ({
-    left: anchorX + dx, right: anchorX + dx + [...text].length - 1,
-    row: baseline - dy,
-  }));
-  return {
-    left: Math.min(...cells.map(cell => cell.left)),
-    right: Math.max(...cells.map(cell => cell.right)),
-    top: Math.min(...cells.map(cell => cell.row)),
-    bottom: Math.max(...cells.map(cell => cell.row)),
-  };
 }
 
 /**
@@ -2105,7 +2093,7 @@ function legacyRustle(glyph, intensity, seed) {
 }
 
 export function drawLegacyPlanting(
-  raster, projection, layout, palette, season, profile, frame, hoverCell, wind = 0,
+  raster, projection, palette, season, profile, frame, hoverCell, wind = 0,
 ) {
   const worldId = String(projection.world_id ?? projection.scene?.world_id ?? 'lateletter-garden');
   const authoredSeed = String(projection.presentation_seed ?? '');
@@ -2116,18 +2104,34 @@ export function drawLegacyPlanting(
   const farGroundY = profile.farGroundY;
   const camera = Array.isArray(projection.camera) ? projection.camera : [0, 0];
   const viewport = [raster.width, raster.height];
-  // One projection for every layer: screen column = the same camera
-  // transform the canonical objects use, at this layer's depth. Panning
-  // moves the whole garden coherently -- that is the ADR's requirement.
-  const screenXOf = (worldX, depth) =>
-    worldToGardenScreen([worldX, 0], camera, viewport, depth)[0];
-  // Canonical art owns its room. Presentation-native cover and planting may
-  // surround it, but may not paint through or immediately against its ink.
-  // This is final-picture spacing only: no gameplay position is moved and no
-  // second canonical layout is invented.
-  const canonicalRects = layout.map(entry => entry.rect);
-  const coverReservedRects = canonicalRects.map(rect => paddedRect(rect, 1, 1));
-  const nearPlantReservedRects = canonicalRects.map(rect => paddedRect(rect, 4, 1));
+  // One projection for every layer, horizontally AND vertically. The terrain
+  // coordinate is converted to a canonical y once and then goes through the
+  // same camera transform as gameplay objects. Dragging cannot change which
+  // plants exist; it only changes where the fixed population is projected.
+  const screenPointOf = (worldX, plane, depth) => {
+    const worldY = LEGACY_HOME_CAMERA_Y +
+      (plane - LEGACY_TERRAIN_CENTER) * LEGACY_WORLD_ROWS / depth;
+    return worldToGardenScreen([worldX, worldY], camera, viewport, depth);
+  };
+
+  // Canonical objects reserve rooms in WORLD/TERRAIN space. The deleted owner
+  // performed this test against current screen rectangles; changing the camera
+  // therefore changed membership and made vegetation pop in and out. These
+  // rooms depend only on the authored scene, so pan and resize cannot alter
+  // the population.
+  const canonicalRooms = (projection.objects ?? []).map(object => ({
+    x: Number(object.position?.[0] ?? object.hotspot?.x ?? 0),
+    plane: clamp(
+      LEGACY_TERRAIN_CENTER +
+        (Number(object.position?.[1] ?? object.hotspot?.y ?? LEGACY_HOME_CAMERA_Y) -
+          LEGACY_HOME_CAMERA_Y) / LEGACY_WORLD_ROWS,
+      0, 1,
+    ),
+    halfWidth: Math.max(4, Number(object.hotspot?.width ?? 1) / 2 + 3),
+  }));
+  const roomIsFree = (worldX, plane, halfWidth = 0) => !canonicalRooms.some(room =>
+    Math.abs(plane - room.plane) < 0.13 &&
+    Math.abs(worldX - room.x) < halfWidth + room.halfWidth);
 
   // Ground cover: keyed on WORLD columns so the texture travels with the
   // pan, projected at fast-foreground depth. The sampled world range covers
@@ -2144,10 +2148,10 @@ export function drawLegacyPlanting(
     const hash = (Math.imul(worldX + 1013, 0x9e3779b1) ^ seed) >>> 0;
     const nearness = ((hash >>> 8) % 1000) / 999;
     const coverDepth = 0.68 + nearness * (LEGACY_COVER_DEPTH - 0.68);
-    const column = screenXOf(worldX, coverDepth);
-    if (column < 0 || column >= raster.width) continue;
-    const coverRow = coverTop + Math.floor(nearness * coverSpan);
-    if (coverReservedRects.some(rect => rectContains(rect, [column, coverRow]))) continue;
+    if (!roomIsFree(worldX, nearness, 1)) continue;
+    const [column, coverRow] = screenPointOf(worldX, nearness, coverDepth);
+    if (column < 0 || column >= raster.width || coverRow < coverTop - 2 ||
+        coverRow > profile.groundFront + 2) continue;
     const value = hash % 1000 / 1000;
     if (value < (season === 'winter' ? 0.82 : 0.48)) continue;
     let glyph, color;
@@ -2164,19 +2168,12 @@ export function drawLegacyPlanting(
   // This is a BACKDROP layer, matching the deployed painter order. Its dense
   // population remains intact except where a candidate would occupy a
   // canonical object's reserved visual room. No gameplay object is minted.
-  for (const { plant, x, depth } of legacyPlantLayout(seed, season)) {
-    const anchorX = screenXOf(x, depth);
-    if (anchorX < -plant.width - 2 || anchorX > raster.width + plant.width + 2) continue;
-    // Only large trees belong to the far transition band. Flowers, shrubs,
-    // grass, mushrooms and ferns form the closer planting band. Horizontal
-    // parallax still comes from each authored depth; the baseline selects the
-    // semantic terrain band and is not inferred from screen height elsewhere.
-    const baseline = plant.type === 'oak' || plant.type === 'pine'
-      ? farGroundY : profile.groundFront;
-    const plantRect = legacyPlantScreenRect(plant, anchorX, baseline);
+  for (const { plant, x, depth, plane } of legacyPlantLayout(seed, season)) {
     const isTree = plant.type === 'oak' || plant.type === 'pine';
-    const plantReservedRects = isTree ? canonicalRects : nearPlantReservedRects;
-    if (plantReservedRects.some(rect => intersectionArea(plantRect, rect) > 0)) continue;
+    const halfWidth = Math.floor(plant.width / 2) + (isTree ? 1 : 3);
+    if (!roomIsFree(x, plane, halfWidth)) continue;
+    const [anchorX, baseline] = screenPointOf(x, plane, depth);
+    if (anchorX < -plant.width - 2 || anchorX > raster.width + plant.width + 2) continue;
     if (plant.blades) {
       for (const blade of plant.blades) {
         const lean = wind * 1.6 + Math.sin((frame / 200 + blade.seed * 0.37) * 6.2832) * 0.6;

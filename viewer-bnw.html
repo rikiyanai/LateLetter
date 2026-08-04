@@ -608,6 +608,12 @@ const GARDEN_VISUAL_CHECK_REQUESTED=Boolean(
   new URLSearchParams(location.search).get('visual_check'),
 );
 const GARDEN_REVIEW_TIME_TEXT=new URLSearchParams(location.search).get('garden_review_time');
+// Local visual review may hold civil time on a season/hour while leaving the
+// disposable presentation clock alive. The default remains a frozen frame for
+// deterministic asset captures; `garden_review_motion=1` is the temporal
+// review surface for weather, wind, pond water and ambient actors.
+const GARDEN_REVIEW_MOTION_REQUESTED=
+  new URLSearchParams(location.search).get('garden_review_motion')==='1';
 const GARDEN_REVIEW_TIME_SECONDS=(()=>{
   if(!GARDEN_REVIEW_TIME_TEXT||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(GARDEN_REVIEW_TIME_TEXT))return null;
@@ -743,7 +749,8 @@ function syncAmbientMotion(){
   // boundary. Freeze disposable animation without changing canonical pause
   // state, elapsed Garden time, or authored schedule semantics.
   garden?.setReducedMotion?.(
-    reducedMotionQuery.matches||gardenReviewTime()!==null,
+    reducedMotionQuery.matches||
+      (gardenReviewTime()!==null&&!GARDEN_REVIEW_MOTION_REQUESTED),
   );
   updateCanonicalLiveLoop();
 }

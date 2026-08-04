@@ -9896,6 +9896,42 @@ proportional Latin, kana, Kanji, Arabic, and combining.
   displacement. Moving the real pointer into the pine canopy changes multiple canopy strokes
   while the trunk and placement stay fixed. These are agent-read browser diagnostics, not an
   operator acceptance or release claim.
+- **Second field rejection — the replacement still had two screen-space owners
+  (2026-08-05):** The operator found every small flower queued on the bottom contour and a
+  mouse drag making scenery appear and disappear instead of scrolling the Garden. The prior
+  replacement claim above is therefore withdrawn as an account of the whole scene. It proved
+  four close crops and missed the camera-dependent population change.
+- **Causing owner:** `legacyPlantLayout` generated only `(x, depth)`. `drawLegacyPlanting`
+  consequently assigned every non-tree baseline to `profile.groundFront`, reducing a receding
+  terrain plane to one flower row. The same painter then compared each generated silhouette
+  with the canonical objects' *current screen rectangles* and skipped the whole silhouette on
+  intersection. Parallax changes those intersections while dragging, so membership changed
+  with the camera: the observed pop was the literal behavior of the culling rule, not a stale
+  frame or pointer-handler defect.
+- **Delete-first architecture correction:** The screen-rectangle exclusion owner and its
+  plant-bounds helpers are deleted. The `(seed, season)` population now owns a stable terrain
+  coordinate as well as world x; occupancy is two-dimensional, so flowers and small planting
+  are spaced through the plane while trees remain on the far transition. Canonical visibility
+  rooms are derived from the composition in world/terrain coordinates. Cover and vegetation
+  then project both x and y through `worldToGardenScreen` at their declared parallax depth.
+  Camera movement changes projection only and cannot add or remove a plant. Canonical objects
+  still paint after presentation-native vegetation, so this adds no second gameplay/layout
+  owner.
+- **Agent-read live product diagnostics, 2026-08-05:** On the ordinary localhost standalone
+  route at a 900×1000 Chrome viewport, small planting occupies multiple receding rows instead
+  of the bottom contour and the six canonical fixtures remain readable. A real horizontal
+  mouse drag moves background trees, terrain planting, canonical objects and foreground cover
+  at their declared rates; a vertical drag moves the same layers through the shared camera;
+  neither capture shows a silhouette being culled at a canonical screen rectangle. These are
+  visual diagnostics, not operator acceptance.
+- **Weather/day-night visual exercise:** The default fixed-time query correctly froze all
+  motion and was rejected as temporal evidence. A localhost-only `garden_review_motion=1`
+  companion now holds civil time while leaving the real presentation clock active. On the
+  standalone product path, agent-read Chrome captures show spring rain crossing the sky and
+  terrain, summer evening palette and ambience, autumn rain plus leaf motion, and winter night
+  snow falling and accumulating. One-second paired frames changed 223, 163, 497 and 154 cells
+  respectively; those counts are diagnostics attached to the visibly read captures, not a
+  substitute for them.
 - **False-green/false-red test cleanup:** Six adapter assertions that described withdrawn
   renderer mechanics were deleted rather than used as product evidence: compact-tree line
   trimming; loose-glyph wind and hover mutation of the sealed rose; an archive-only starter
@@ -9903,9 +9939,10 @@ proportional Latin, kana, Kanji, Arabic, and combining.
   anonymous focus caret that the product does not paint. No replacement unit assertion was
   added. Visual composition and motion claims in this correction come from the executed Chrome
   surface above, not from those renderer internals.
-- **Status:** CORRECTED AND AGENT-VISUALLY-VERIFIED; OPERATOR ACCEPTANCE NOT CLAIMED.
+- **Status:** CORRECTED AND AGENT-VISUALLY-INSPECTED; OPERATOR ACCEPTANCE NOT CLAIMED.
   ComplaintRef: operator close-crop report of crowding, inverted pine, unreadable pond motion,
-  rose part-colour and stray-overlay defects, 2026-08-04.
+  rose part-colour and stray-overlay defects, 2026-08-04; bottom-row planting and mouse-drag
+  scenery-pop report, 2026-08-05.
 
 ### Coverage matrix collision taxonomy was restored without unbound poisoning (2026-08-04)
 
