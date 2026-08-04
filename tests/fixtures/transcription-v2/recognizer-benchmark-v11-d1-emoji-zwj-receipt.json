@@ -1,0 +1,31 @@
+{
+  "schema": "lateletter-recognizer-benchmark-receipt-1",
+  "status": "blocked_release_coverage",
+  "authority": "diagnostic_only",
+  "benchmark_path": "tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-2.json",
+  "benchmark_sha256": "1aca4028fddb425400d30694cd1724fe0c0677744187548d7cf334fdfec6301c",
+  "benchmark_size_bytes": 1605169,
+  "source_corpus": "tests/fixtures/transcription-v2/corpus-v2.json",
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "fixture_count": 10,
+  "top_k": 5,
+  "budget_failures": [],
+  "nondeterministic_adapters": [],
+  "false_unique_negative_fixtures": [],
+  "covered_in_this_slice": {
+    "positive-emoji-zwj": {
+      "classification": "present_and_winning",
+      "proposal_rank": 1,
+      "proposed_by": [
+        "emoji-grapheme-atlas"
+      ]
+    }
+  },
+  "positive_missing": [
+    "positive-mixed-script",
+    "positive-degraded-fixed"
+  ],
+  "ground_truth_passed_to_adapters": false,
+  "determinism_replay_performed": true,
+  "next_authorized_step": "continue D1 proposal coverage for mixed-script and degraded-fixed; ranking and acceptance remain prohibited"
+}

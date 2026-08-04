@@ -10124,3 +10124,45 @@ Verification:
   Ranking/fusion, machine authority, live attempts, TXT output, and acceptance
   remain prohibited. ComplaintRef: operator order to implement the transcription
   roadmap correctly and avoid prior process failures, 2026-08-04.
+
+### Transcription D1 emoji-ZWJ coverage added with source RGBA and measured run gaps (2026-08-04)
+
+The emoji-ZWJ miss was not font recovery. Geometry already owned two colored
+emoji runs, but the atlas received only alpha masks. With alpha-only evidence,
+skin-tone variants and colored heart variants collide visually; the row matrix
+then reconstructed run alternatives without the measured inter-run space.
+
+Corrections:
+
+- The benchmark run-materialization path now forwards source-owned RGBA pixels
+  from each immutable run-strip PNG into `run_mask.rgba`.
+- The emoji atlas uses those RGBA pixels for color residuals, separating
+  `👩‍🌾` from skin-tone/person variants and `❤️` from other hearts.
+- Row composition can preserve measured inter-run spaces, but only for adapters
+  whose proposal semantics authorize shaped-run spacing. It is not applied to
+  fixed-lattice structural proposals.
+- The coverage matrix now consumes composed row proposals when present, so its
+  row classification matches the adapter's measured logical top-k surface.
+
+Verification:
+
+- Full recognition suite: 44 passed.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-2.json`,
+  size `1605169` bytes, SHA-256
+  `1aca4028fddb425400d30694cd1724fe0c0677744187548d7cf334fdfec6301c`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-receipt.json`.
+- `positive-emoji-zwj` is now `present_and_winning`, rank 1, proposed by
+  `emoji-grapheme-atlas`.
+- Replay status remains `blocked_release_coverage`; remaining missing positives
+  are `positive-mixed-script` and `positive-degraded-fixed`.
+- `budget_failures`, `nondeterministic_adapters`, and
+  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
+  remains false.
+
+- **Status:** D1 PARTIAL; emoji-ZWJ is covered at rank 1, but release coverage
+  remains blocked on mixed-script and degraded-fixed. Ranking/fusion, machine
+  authority, live attempts, TXT output, and acceptance remain prohibited.
+  ComplaintRef: operator order to implement the transcription roadmap correctly
+  and avoid prior process failures, 2026-08-04.

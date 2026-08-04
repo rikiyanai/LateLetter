@@ -3973,7 +3973,7 @@ def _proposal_texts(result: ProposalSet, *, top_k: int | None) -> tuple[str, ...
 
 
 def _compose_run_texts(
-    run_candidates: list[tuple[int, tuple[str, ...]]],
+    run_candidates: list[tuple[Any, ...]],
     *,
     top_k: int,
 ) -> tuple[str, ...]:
@@ -3986,19 +3986,49 @@ def _compose_run_texts(
     deterministic and keeps proposal coverage measurement finite.
     """
 
-    grouped: dict[int, list[tuple[str, ...]]] = {}
-    for row_index, candidates in run_candidates:
+    grouped: dict[int, list[tuple[tuple[int, int, int, int] | None, tuple[str, ...]]]] = {}
+    for item in run_candidates:
+        if len(item) < 2:
+            continue
+        row_index = int(item[0])
+        candidates = tuple(str(value) for value in item[1])
         if candidates:
-            grouped.setdefault(int(row_index), []).append(candidates)
+            bounds: tuple[int, int, int, int] | None = None
+            if len(item) >= 3 and isinstance(item[2], (list, tuple)) and len(item[2]) == 4:
+                try:
+                    bounds = tuple(int(value) for value in item[2])  # type: ignore[assignment]
+                except (TypeError, ValueError):
+                    bounds = None
+            grouped.setdefault(row_index, []).append((bounds, candidates))
     if not grouped:
         return ()
     row_options: list[tuple[str, ...]] = []
     for row_index in sorted(grouped):
         options = ("",)
-        for candidates in grouped[row_index]:
+        previous_bounds: tuple[int, int, int, int] | None = None
+        ordered_runs = sorted(
+            grouped[row_index],
+            key=lambda item: (
+                item[0][0] if item[0] is not None else 10**9,
+                item[0][1] if item[0] is not None else 10**9,
+            ),
+        )
+        for bounds, candidates in ordered_runs:
+            separator = ""
+            if previous_bounds is not None and bounds is not None:
+                gap = max(0, int(bounds[0]) - int(previous_bounds[2]))
+                row_height = max(
+                    1,
+                    int(previous_bounds[3]) - int(previous_bounds[1]),
+                    int(bounds[3]) - int(bounds[1]),
+                )
+                if gap >= max(6, int(round(row_height * 0.12))):
+                    separator = " " * max(1, int(round(gap / max(8, row_height * 0.18))))
             options = tuple(
-                dict.fromkeys(prefix + candidate for prefix in options for candidate in candidates)
+                dict.fromkeys(prefix + separator + candidate for prefix in options for candidate in candidates)
             )[: max(top_k, 1) * 4]
+            if bounds is not None:
+                previous_bounds = bounds
         row_options.append(options)
     complete = ("",)
     for options in row_options:
@@ -4212,7 +4242,16 @@ def _coverage_rank_matrix(
             variant_id = str(variant.get("hypothesis_id", ""))
             for row in variant.get("rows", ()):
                 row_index = int(row.get("row_index", 0))
-                run_entries = row.get("runs")
+                composed_proposals = row.get("composed_proposals")
+                if isinstance(composed_proposals, (list, tuple)) and composed_proposals:
+                    run_entries = ({
+                        "run_id": row.get("run_id", "composed-row"),
+                        "proposals": tuple(str(item) for item in composed_proposals),
+                        "run_input_hash": row.get("run_input_hash"),
+                        "rejection_codes": row.get("rejection_codes", ()),
+                    },)
+                else:
+                    run_entries = row.get("runs")
                 if not isinstance(run_entries, (list, tuple)) or not run_entries:
                     run_entries = ({
                         "run_id": row.get("run_id", ""),
@@ -5362,6 +5401,18 @@ def benchmark_offline_ensemble(
                                     run_bytes = base64.b64decode(run["run_strip_png_base64"])
                                     run_path = Path(run_root) / f"{variant_id}-run-{run_index:04d}.png"
                                     run_path.write_bytes(run_bytes)
+                                    run_rgba = None
+                                    try:
+                                        run_image = Image.open(run_path).convert("RGBA")
+                                        run_rgba = [
+                                            [
+                                                tuple(int(channel) for channel in run_image.getpixel((x, y)))
+                                                for x in range(run_image.width)
+                                            ]
+                                            for y in range(run_image.height)
+                                        ]
+                                    except (OSError, ValueError, TypeError):
+                                        run_rgba = None
                                     run_source.update(
                                         {
                                             "path": str(run_path),
@@ -5381,6 +5432,7 @@ def benchmark_offline_ensemble(
                                         "run_id": run["run_id"],
                                         "source_bounds": run["source_bounds"],
                                         "mask_sha256": run["binary_run_mask_sha256"],
+                                        "rgba": run_rgba,
                                         "component_ids": list(run.get("component_ids", ())),
                                         "measured_advances": run.get("measured_advances", []),
                                         "anchor_evidence": dict(run.get("anchor_evidence") or {}),
@@ -5432,7 +5484,13 @@ def benchmark_offline_ensemble(
                                 )
                                 run_texts = _proposal_texts(first, top_k=proposal_limit)
                                 row_index = int(run.get("row_index", run_index))
-                                variant_candidates.append((row_index, run_texts))
+                                composition_bounds = (
+                                    run.get("source_bounds")
+                                    if str(variant_geometry.get("mode", "")) == "shaped_runs"
+                                    and isinstance(adapter, EmojiAtlasAdapter)
+                                    else None
+                                )
+                                variant_candidates.append((row_index, run_texts, composition_bounds))
                                 variant_rows[row_index] = run_texts
                                 variant_row_proposals.setdefault(row_index, []).append(
                                     {
@@ -5445,6 +5503,17 @@ def benchmark_offline_ensemble(
                                 run_spans.extend(proposal.run_id for proposal in first.proposals if proposal.run_id)
                                 unsupported.extend(first.rejection_codes)
                                 statuses.append(first.status)
+                            composed_sequences = _compose_run_texts(variant_candidates, top_k=max(top_k, 32))
+                            composed_by_row: dict[int, tuple[str, ...]] = {}
+                            row_indexes = sorted(variant_rows)
+                            if row_indexes:
+                                for sequence in composed_sequences:
+                                    parts = sequence.split("\n")
+                                    if len(parts) != len(row_indexes):
+                                        continue
+                                    for row_index, part in zip(row_indexes, parts):
+                                        existing = composed_by_row.get(int(row_index), ())
+                                        composed_by_row[int(row_index)] = tuple(dict.fromkeys((*existing, part)))
                             joint_row_proposals[str(variant_id)] = variant_rows
                             row_proposal_evidence.append(
                                 {
@@ -5455,12 +5524,13 @@ def benchmark_offline_ensemble(
                                             "runs": list(run_items),
                                             "run_id": str(run_items[0].get("run_id", "")) if run_items else "",
                                             "proposals": list(variant_rows.get(row_index, ())),
+                                            "composed_proposals": list(composed_by_row.get(int(row_index), ())),
                                         }
                                         for row_index, run_items in sorted(variant_row_proposals.items())
                                     ],
                                 }
                             )
-                            hypothesis_sequences.extend(_compose_run_texts(variant_candidates, top_k=top_k))
+                            hypothesis_sequences.extend(composed_sequences[:top_k])
                     deterministic = first_payloads == second_payloads
                     # ``canonical_bytes`` intentionally rejects raw bytes.  Hash
                     # the ordered payload byte stream directly so the repeat

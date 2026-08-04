@@ -1182,6 +1182,56 @@ def test_run_proposals_are_composed_by_measured_row_order() -> None:
     assert composed[0] == "AB\nC"
     assert "XB\nC" in composed
 
+    spaced = _compose_run_texts(
+        [
+            (0, ("👩\u200d🌾",), [18, 18, 141, 136]),
+            (0, ("❤️",), [161, 18, 282, 136]),
+        ],
+        top_k=4,
+    )
+    assert spaced[0] == "👩\u200d🌾 ❤️"
+
+
+def test_v2_emoji_atlas_uses_source_rgba_and_measured_run_gap_without_truth_input() -> None:
+    fixture_root = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+    cache = Path(__file__).parents[2] / "tracked/LateLetterResearch/transcription-model-cache"
+    if not (cache / "emoji/NotoColorEmoji.ttf").exists() or not (cache / "emoji/emoji-test.txt").exists():
+        pytest.skip("project-local emoji atlas data is not available")
+
+    corpus = json.loads((fixture_root / "corpus-v2.json").read_text())
+    fixture = next(item for item in corpus["fixtures"] if item["id"] == "positive-emoji-zwj")
+    atlas = EmojiAtlasAdapter.from_cache(cache / "emoji")
+    adapter = EmojiAtlasAdapter(
+        sequence_data_path=atlas.sequence_data_path,
+        font_path=atlas.font_path,
+        font_hashes=atlas.font_hashes,
+        max_sequences=10000,
+    )
+    model_paths = {
+        "noto_color_emoji": str(cache / "emoji/NotoColorEmoji.ttf"),
+        "unicode_emoji_test": str(cache / "emoji/emoji-test.txt"),
+    }
+    report = benchmark_offline_ensemble(
+        [fixture],
+        (adapter,),
+        build_environment_lock(
+            model_paths=model_paths,
+            preprocessing={"network": "disabled", "ground_truth_to_adapter": False},
+        ),
+        root=fixture_root,
+        adapter_budgets_seconds={"emoji-grapheme-atlas": 30.0},
+        deterministic_replay=True,
+        top_k=5,
+    )
+    assert report["ground_truth_passed_to_adapters"] is False
+    assert report["budget_failures"] == []
+    assert report["nondeterministic_adapters"] == []
+    assert report["positive_missing"] == []
+    row = report["coverage_rank_matrix"][0]["rows"][0]
+    assert row["expected_logical_sequence"] == "👩\u200d🌾 ❤️"
+    assert row["classification"] == "present_and_winning"
+    assert row["proposal_rank"] == 1
+
 
 def test_recognizer_holdout_covers_required_variation_families() -> None:
     manifest = Path(__file__).parents[1] / "fixtures" / "transcription" / "recognizer-holdout.json"
