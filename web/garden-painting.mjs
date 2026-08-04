@@ -615,6 +615,13 @@ function translatedRect(rect, dx, dy) {
   };
 }
 
+function paddedRect(rect, horizontal = 0, vertical = horizontal) {
+  return {
+    left: rect.left - horizontal, right: rect.right + horizontal,
+    top: rect.top - vertical, bottom: rect.bottom + vertical,
+  };
+}
+
 function orderedIntegerRange(minimum, maximum) {
   const values = [];
   for (let value = Math.ceil(minimum); value <= Math.floor(maximum); value += 1)
@@ -1346,10 +1353,11 @@ function presentationLod(lines, kind, lod) {
 }
 
 /**
- * Semantic accent roles a fixture part may claim, and what they paint as.
+ * Semantic colour roles an authored visual part may claim.
  *
  * A ROLE, not a colour, is what the atlas declares. The mailbox flag asks for
- * `signal` -- "this part tells you something has arrived" -- and the palette
+ * `signal` -- "this part tells you something has arrived" -- while the exact
+ * rose asset names bloom, stem and vessel parts. The palette
  * decides what `signal` looks like in the current theme and season. Had the
  * atlas named a hex value instead, changing the palette would mean editing
  * artwork, and a dark theme would have no way to keep the accent legible.
@@ -1358,10 +1366,12 @@ function presentationLod(lines, kind, lod) {
  * needs; a role that exists "because a part should stand out" is decoration,
  * and decoration is what the restrained palette exists to keep out.
  */
-const ACCENT_ROLES = Object.freeze({ signal: 'flag' });
+const ACCENT_ROLES = Object.freeze({
+  signal: 'flag', bloom: 'flower', stem: 'brightGreen', vessel: 'brown',
+});
 
 /**
- * Resolve an atlas accent map from roles into palette colours.
+ * Resolve an asset-authored part-role map into palette colours.
  *
  * @param accents `{ "row,column": role }` as authored, or null/undefined.
  * @returns `{ "row,column": color }` for `Raster.art`, or null when there is
@@ -1570,6 +1580,7 @@ export function gardenObjectsShareVisualFeature(left, right) {
     ? String(object.semantic_state?.species_id ?? '') : '';
   const fixturePair = new Set([fixture(left), fixture(right)]);
   if (fixturePair.has('pond') && fixturePair.has('bridge')) return true;
+  if (fixturePair.has('pond') && fixturePair.has('stepping_stones')) return true;
   return (fixture(left) === 'pond' && plant(right) === 'water_lily') ||
     (fixture(right) === 'pond' && plant(left) === 'water_lily');
 }
@@ -1699,7 +1710,10 @@ export function layoutGardenObjects(projection, viewport, frame = 0) {
         (subtotal, item) => subtotal + intersectionArea(entry.rect, item.rect), 0,
       ), 0);
       const padded = translated.reduce((total, entry) => total + placed.reduce(
-        (subtotal, item) => subtotal + intersectionArea(entry.rect, item.rect, 1), 0,
+        (subtotal, item) => subtotal + intersectionArea(
+          entry.rect, item.rect,
+          gardenObjectsShareVisualFeature(entry.object, item.object) ? 0 : 1,
+        ), 0,
       ), 0);
       const score = overlap * 1000000 + padded * 1000 + candidate.distance;
       if (!best || score < best.score) best = { translated, overlap, score };
@@ -1878,12 +1892,20 @@ function legacyPine(rng) {
   const height = rng.randint(8, 16), levels = height - 2;
   const rows = [[1, 0, '|', 'brown'], [2, 0, '|', 'brown']];
   for (let level = 0; level < levels; level += 1) {
-    const dy = 3 + level, width = level;
+    const dy = 3 + level;
     if (level === levels - 1) rows.push([dy, 0, '^', 'bright_green']);
-    else rows.push([dy, -(width + 1), '/'.repeat(width + 1) + (level % 2 ? '*' : '^') + '\\'.repeat(width + 1),
-      level >= levels / 2 ? 'bright_green' : 'green']);
+    else {
+      // `dy` increases upward from the baseline. Width must therefore shrink
+      // as `level` rises; using `width = level` produced an upside-down pine
+      // whose broadest boughs sat immediately under the apex.
+      const width = Math.max(1, Math.ceil((levels - level) * 0.65));
+      rows.push([dy, -width,
+        '/'.repeat(width) + (level % 2 ? '*' : '^') + '\\'.repeat(width),
+        level < levels / 2 ? 'bright_green' : 'green']);
+    }
   }
-  return { type: 'pine', rows, width: levels * 2 + 2 };
+  const maximum = Math.max(1, Math.ceil(levels * 0.65));
+  return { type: 'pine', rows, width: maximum * 2 + 1 };
 }
 function legacyOak(rng) {
   const height = rng.randint(8, 14), trunk = Math.max(2, Math.floor(height / 3));
@@ -2028,6 +2050,30 @@ function legacyPlantLayout(seed, season) {
   return placed;
 }
 
+/** Final screen-space ink bounds for one presentation-native plant. */
+function legacyPlantScreenRect(plant, anchorX, baseline) {
+  if (plant.blades?.length) {
+    const maximumHeight = Math.max(...plant.blades.map(blade => blade.height));
+    const minimumOffset = Math.min(...plant.blades.map(blade => blade.dx));
+    const maximumOffset = Math.max(...plant.blades.map(blade => blade.dx));
+    // Wind can lean a blade by at most roughly three cells at its tip.
+    return {
+      left: anchorX + minimumOffset - 3, right: anchorX + maximumOffset + 3,
+      top: baseline - maximumHeight, bottom: baseline - 1,
+    };
+  }
+  const cells = plant.rows.map(([dy, dx, text]) => ({
+    left: anchorX + dx, right: anchorX + dx + [...text].length - 1,
+    row: baseline - dy,
+  }));
+  return {
+    left: Math.min(...cells.map(cell => cell.left)),
+    right: Math.max(...cells.map(cell => cell.right)),
+    top: Math.min(...cells.map(cell => cell.row)),
+    bottom: Math.max(...cells.map(cell => cell.row)),
+  };
+}
+
 /**
  * How many rows above the walkable line a backdrop layer's baseline sits.
  *
@@ -2075,6 +2121,13 @@ export function drawLegacyPlanting(
   // moves the whole garden coherently -- that is the ADR's requirement.
   const screenXOf = (worldX, depth) =>
     worldToGardenScreen([worldX, 0], camera, viewport, depth)[0];
+  // Canonical art owns its room. Presentation-native cover and planting may
+  // surround it, but may not paint through or immediately against its ink.
+  // This is final-picture spacing only: no gameplay position is moved and no
+  // second canonical layout is invented.
+  const canonicalRects = layout.map(entry => entry.rect);
+  const coverReservedRects = canonicalRects.map(rect => paddedRect(rect, 1, 1));
+  const nearPlantReservedRects = canonicalRects.map(rect => paddedRect(rect, 4, 1));
 
   // Ground cover: keyed on WORLD columns so the texture travels with the
   // pan, projected at fast-foreground depth. The sampled world range covers
@@ -2094,6 +2147,7 @@ export function drawLegacyPlanting(
     const column = screenXOf(worldX, coverDepth);
     if (column < 0 || column >= raster.width) continue;
     const coverRow = coverTop + Math.floor(nearness * coverSpan);
+    if (coverReservedRects.some(rect => rectContains(rect, [column, coverRow]))) continue;
     const value = hash % 1000 / 1000;
     if (value < (season === 'winter' ? 0.82 : 0.48)) continue;
     let glyph, color;
@@ -2107,11 +2161,9 @@ export function drawLegacyPlanting(
   }
 
   const hoverRow = Number(hoverCell?.[1] ?? -999), hoverColumn = Number(hoverCell?.[0] ?? -999);
-  // This is a BACKDROP layer, matching the deployed painter order. Canonical
-  // objects paint afterward in the foreground; treating every foreground
-  // silhouette as unavailable planting width reduced the deployed `cols*3`
-  // garden back to two plants. No gameplay object is minted here.
-  void layout;
+  // This is a BACKDROP layer, matching the deployed painter order. Its dense
+  // population remains intact except where a candidate would occupy a
+  // canonical object's reserved visual room. No gameplay object is minted.
   for (const { plant, x, depth } of legacyPlantLayout(seed, season)) {
     const anchorX = screenXOf(x, depth);
     if (anchorX < -plant.width - 2 || anchorX > raster.width + plant.width + 2) continue;
@@ -2121,6 +2173,10 @@ export function drawLegacyPlanting(
     // semantic terrain band and is not inferred from screen height elsewhere.
     const baseline = plant.type === 'oak' || plant.type === 'pine'
       ? farGroundY : profile.groundFront;
+    const plantRect = legacyPlantScreenRect(plant, anchorX, baseline);
+    const isTree = plant.type === 'oak' || plant.type === 'pine';
+    const plantReservedRects = isTree ? canonicalRects : nearPlantReservedRects;
+    if (plantReservedRects.some(rect => intersectionArea(plantRect, rect) > 0)) continue;
     if (plant.blades) {
       for (const blade of plant.blades) {
         const lean = wind * 1.6 + Math.sin((frame / 200 + blade.seed * 0.37) * 6.2832) * 0.6;
@@ -2394,7 +2450,13 @@ export function drawObject(raster, entry, projection, palette, season, view) {
     // species, and null (honest anonymity) for a placeholder awaiting review.
     const plantIdentity = { source: art.identity ?? null, objectId: object.object_id };
     raster.art(x, y, art.lines, paletteColor(palette, art.color, season),
-      { animated: emphasized, source: plantIdentity.source, objectId: plantIdentity.objectId });
+      { animated: emphasized, accents: accentColors(art.accents, palette, season),
+        source: plantIdentity.source, objectId: plantIdentity.objectId });
+    // Exact operator-authored pictures are sealed compositions. The old path
+    // painted procedural topology organs and a centre glyph over those bytes,
+    // which is where the green `/@` beside the rose pot came from. A sealed
+    // asset replaces that local painter; it is not a background for it.
+    if (art.sealed) return;
     for (const organ of state.visible_organs ?? []) {
       const ox = clamp(Number(organ.offset?.[0] ?? 0), -3, 3);
       const oy = clamp(Number(organ.offset?.[1] ?? 0), 0, Math.max(0, art.lines.length - 1));

@@ -1743,6 +1743,18 @@ Each required fixture has at least one direct interaction and one systemic or na
 
 Fixture placement cannot trap animals, hide required actions, break connected paths, or make collectibles unreachable. Undo and reset-to-safe-layout are mandatory.
 
+Presentation-native planting and ground cover may surround canonical objects but may not
+overpaint or visually crowd their final composed ink. The exclusion room is derived from the
+canonical object's post-layout screen rectangle; it may cull a disposable backdrop candidate,
+but it may never move the canonical object or become a second layout authority. Authored
+connected rooms such as pond plus stepping stones may waive the extra padding so their edges
+meet, while direct cell overlap remains forbidden.
+
+An exact operator-authored picture may declare semantic part roles (for example bloom, stem
+and vessel) for palette resolution. A picture declared sealed replaces renderer-local topology
+and centre-glyph decoration: the renderer may colour the declared parts but may not infer or
+paint additional organs over the approved bytes.
+
 **Catalog completeness is not scene composition (operator decision, 2026-07-31).** The lists
 above say what the product must be able to draw. They do not say what a new garden opens
 with, and the two must not be conflated: a scene that shows everything the catalog can do is
@@ -1751,7 +1763,9 @@ a showroom, not a place someone lives.
 The **default starter scene is exactly six fixtures** — pond, stepping stones, mailbox,
 bench, lantern, planter — held in `STARTER_FIXTURES` in both implementations. The pond,
 stepping stones and bench form one water/sitting room: stones approach the pond from one
-side and the bench sits generally above it. The street lantern belongs to the far transition
+side and visually meet its bank, the bench sits generally above it, and the pond's sparse
+interior ripples oscillate laterally by a perceptible distance at the product lattice and
+cadence. The street lantern belongs to the far transition
 band near that room, rather than sharing the pond's near surface.
 Those relationships are canonical generator data, never renderer packing. An accepted fixture
 drawing is an approved **catalog asset**, available to authored programs, progression, and

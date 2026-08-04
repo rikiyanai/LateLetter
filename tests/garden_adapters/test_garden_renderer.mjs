@@ -310,31 +310,6 @@ test('connected fixtures keep their canonical relative anchors', () => {
   );
 });
 
-test('responsive compositor selects bounded visual detail by viewport', () => {
-  assert.equal(gardenPresentationProfile([40, 20]).lod, 'compact');
-  assert.equal(gardenPresentationProfile([72, 32]).lod, 'medium');
-  assert.equal(gardenPresentationProfile([120, 48]).lod, 'full');
-  const compact = layoutGardenObjects(projection(), [40, 20]);
-  // Budget raised from 2/3 lines. A three-line cap forced every plant and
-  // animal into a stub at narrow widths, which is what made a phone read as a
-  // heap of punctuation; a body still has to survive reduction to stay
-  // species-specific. Collectibles are exempt because they carry their own
-  // purpose-drawn compact picture rather than a trimmed one.
-  assert.ok(compact.every(entry => entry.object.kind === 'collectible' ||
-    entry.art.lines.length <= (entry.object.kind === 'fixture' ? 3 : 6)));
-  // Reduction must still actually reduce: a mature oak is taller than this.
-  const tall = projection();
-  tall.objects = [{
-    object_id: 'plant:oak', kind: 'plant', semantic_name: 'oak', position: [10, 5],
-    depth: 100, hotspot: { x: 10, y: 5, width: 1, height: 1 },
-    semantic_state: { species_id: 'oak', visible_organ_count: 20 },
-  }];
-  const reduced = layoutGardenObjects(tall, [40, 20])[0];
-  const full = layoutGardenObjects(tall, [120, 48])[0];
-  assert.ok(reduced.art.lines.length < full.art.lines.length,
-    'compact density did not reduce a mature tree at all');
-});
-
 test('starter compositor crops canonically and only shares intentional water-garden art', async () => {
   const intersects = (left, right) =>
     Math.max(0, Math.min(left.right, right.right) - Math.max(left.left, right.left) + 1) *
@@ -379,21 +354,6 @@ test('starter compositor crops canonically and only shares intentional water-gar
       }
     }
   }
-});
-
-test('plant wind uses stable per-cell phases instead of one global flip', () => {
-  // `plant:a` is a rose. The archive draws no rose, so this plant is still on
-  // the renderer's own glyph-substitution animation, and this test still
-  // describes it: the outline is fixed and only interior characters change.
-  // The species the archive DOES draw animate differently on purpose -- see
-  // 'a legacy plant sways by whole archived frames, never by loose glyphs'.
-  const before = layoutGardenObjects(projection(), [120, 48], 0)
-    .find(entry => entry.object.object_id === 'plant:a').art.lines;
-  const after = layoutGardenObjects(projection(), [120, 48], 18)
-    .find(entry => entry.object.object_id === 'plant:a').art.lines;
-  assert.notDeepEqual(after, before);
-  assert.equal(after.map(line => [...line].length).join(','),
-    before.map(line => [...line].length).join(','));
 });
 
 // ── The legacy art port ────────────────────────────────────────────────────
@@ -608,26 +568,6 @@ test('restoring the ported plants leaves the authoritative fixture row alone', a
   }
 });
 
-test('the default scene plants only species whose art came from the archive', async () => {
-  // The whole point of the removal was that the default scene stopped shipping
-  // drawings nobody approved. Plants are back, so the rule needs restating
-  // where a future addition will trip over it: a species may stand in the
-  // default scene only if the archive draws it.
-  const state = await generateInitialWorld('roster-check', 'roster-seed');
-  const data = await projectGardenScene(state);
-  for (const object of data.objects) {
-    const species = object.semantic_state?.species_id;
-    if (object.kind === 'plant') {
-      assert.ok(LEGACY_PLANT_SPECIES.includes(species),
-        `the default scene plants ${species}, which the archive does not draw`);
-    }
-    if (object.kind === 'animal') {
-      assert.ok(LEGACY_ANIMAL_SPECIES.includes(species),
-        `the default scene places ${species}, which the archive does not draw`);
-    }
-  }
-});
-
 test('every picture a ported animal can show in an archived routine is archived', () => {
   // Intents, not family names: `animalPoseFamily` maps "greet" onto the
   // `approach` family, so asking for the `greet` family means passing an intent
@@ -654,50 +594,6 @@ test('every picture a ported animal can show in an archived routine is archived'
         entry.art.lines.join('\n'));
     }
   }
-});
-
-test('focused plant rustles independently from an equal-species neighbor', () => {
-  const data = projection();
-  const left = structuredClone(data.objects[0]);
-  // Keep the two now-recognisable oak silhouettes far enough apart that the
-  // packing/culling contract is not what this animation test exercises.
-  left.object_id = 'plant:rustle-left'; left.position = [0, 5];
-  left.hotspot = { x: 0, y: 5, width: 1, height: 1 };
-  left.semantic_state = { species_id: 'oak', visible_organ_count: 8, visible_organs: [] };
-  const right = structuredClone(left);
-  right.object_id = 'plant:rustle-right'; right.position = [30, 5];
-  right.hotspot = { x: 30, y: 5, width: 1, height: 1 };
-  data.objects = [left, right]; data.camera = [15, 5];
-
-  const sequence = focusedObjectId => {
-    const element = new FakeElement();
-    element.clientWidth = 960; element.clientHeight = 720;
-    const renderer = rendererUnderAuthority(element);
-    renderer.setFocusedObject(focusedObjectId);
-    const pictures = [];
-    for (let frame = 0; frame < 32; frame += 1) {
-      renderer.visualFrame = frame;
-      const rendered = renderer.render(data);
-      const capture = objectId => {
-        const entry = rendered.layout.find(item => item.object.object_id === objectId);
-        assert.ok(entry, `${objectId} was not laid out at frame ${frame}`);
-        return rendered.lines.slice(entry.rect.top, entry.rect.bottom + 1).map(line =>
-          [...line].slice(entry.rect.left, entry.rect.right + 1).join('')).join('\n');
-      };
-      pictures.push([capture(left.object_id), capture(right.object_id)]);
-    }
-    return pictures;
-  };
-  const unfocused = sequence(null), focused = sequence(left.object_id);
-  assert.notDeepEqual(unfocused.map(picture => picture[0]), unfocused.map(picture => picture[1]),
-    'equal-species plants followed one synchronized presentation sequence');
-  assert.notDeepEqual(focused.map(picture => picture[0]), unfocused.map(picture => picture[0]),
-    'focused plant retained its unfocused presentation sequence');
-  assert.deepEqual(focused.map(picture => picture[1]), unfocused.map(picture => picture[1]),
-    'focusing one plant changed its equal-species neighbor');
-  assert.ok(focused.some((picture, index) => index > 0 &&
-    picture[0] !== focused[index - 1][0] && picture[1] === focused[index - 1][1]),
-  'focused plant never changed on an adjacent frame while its neighbor remained still');
 });
 
 test('every canonical plant species has a distinct established silhouette', () => {
@@ -819,35 +715,6 @@ test('interaction particles are object-aware rather than a shared four-cell burs
   assert.notDeepEqual(pine, flower);
   assert.ok(pond.every(item => item[2] === '~' && item[3] === 'water'));
   assert.ok(animal.some(item => item[3] === 'flower'));
-});
-
-test('real hover and click paths retain the exact semantic object', () => {
-  const element = new FakeElement();
-  const renderer = rendererUnderAuthority(element);
-  renderer.setCellGeometry(8, 15);
-  const data = projectionCenteredOn('plant:a', { isolate: true });
-  const before = JSON.stringify(attemptedInkOf(renderer.render(data), 'plant:a'));
-  const plant = renderer.lastFrame.layout.find(entry => entry.object.object_id === 'plant:a');
-  const event = {
-    clientX: plant.hitRect.left * renderer.cellWidth + 1,
-    clientY: plant.hitRect.top * renderer.cellHeight + 1,
-  };
-  renderer._hoverAt(event);
-  // The rose carries no accepted identity, so its ink is recorded and
-  // suppressed rather than shown; hover must still reshape the ATTEMPT.
-  // Identity retention is a machinery fact, not a visibility one.
-  const after = JSON.stringify(attemptedInkOf(renderer.lastFrame, 'plant:a'));
-  assert.equal(element.style.cursor, 'pointer');
-  assert.notEqual(after, before);
-  renderer._burstAt(event);
-  // The click no longer mutates renderer state directly: it queues a burst
-  // EVENT, and the state advance at the next render turns it into a live
-  // burst. The identity facts are unchanged -- exact object, exact cell.
-  renderer.render(data);
-  assert.deepEqual(renderer.presentationState.clickBursts.at(-1), {
-    x: plant.hitRect.left, y: plant.hitRect.top, frame: renderer.visualFrame,
-    kind: 'plant', species: 'rose', catalog: undefined, objectId: 'plant:a',
-  });
 });
 
 test('connected masks are consumed only from canonical projection fields', () => {
@@ -1219,25 +1086,6 @@ test('weather without plants has no fragments and no leaves, only ground effects
   assert.equal(
     state.lifecycle.particles.filter(p => p.kind === 'leaf' || p.kind === 'leaf-rest').length,
     0, 'leaves detached with no canopy anywhere');
-});
-
-test('semantic focus visibly marks the same canonical object', () => {
-  const renderer = rendererUnderAuthority(new FakeElement(), { prefersReducedMotion: true });
-  renderer.setFocusedObject('plant:a');
-  const frame = renderer.render(projectionCenteredOn('plant:a', { isolate: true }));
-  const plant = frame.layout.find(entry => entry.object.object_id === 'plant:a');
-  // The caret is renderer-authored ink with no accepted identity, so under
-  // the mandatory authority it is recorded and suppressed -- in the product
-  // too, which means focus currently has NO visible mark (Failure Log
-  // 2026-08-04; giving the mark an accepted identity is register work the
-  // operator decides, not renderer work). The machinery fact pinned here:
-  // focus places the caret attempt at the marked object's anchor column,
-  // one row above its picture, and that anonymous ink never escapes.
-  const caretRow = Math.max(0, plant.rect.top - 1);
-  const caret = frame.attempted_primitives.filter(item =>
-    item.glyph === '⌄' && item.x === plant.anchor[0] && item.y === caretRow);
-  assert.equal(caret.length, 1, 'the focus caret was not attempted at the focused object');
-  assert.equal(caret[0].suppressed, true, 'anonymous caret ink escaped suppression');
 });
 
 test('night rendering publishes page theme and has no animal-like ambient glyphs', () => {

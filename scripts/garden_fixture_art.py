@@ -462,38 +462,39 @@ FIXTURE_ART: dict[str, dict[str, Any]] = {
         "material": "still water",
         "affordance": "water",
         "ascii": (
-            " _,-~-.,_,-~-. ",
-            "(  ~      ~   )",
-            "(      ~      )",
-            " `-.,_,-~-.,_-'",
+            "  _,-~-.,_,-~-.,_,-~-.  ",
+            "(   ~          ~       )",
+            "(       ~          ~   )",
+            "  `-.,_,-~-.,_,-~-.,_-' ",
         ),
-        # The accepted silhouette stays fixed. Only the two interior ripple
-        # marks translate left/centre/right, then ping-pong, so the pond reads
-        # as water without redrawing its banks or filling it with texture.
+        # The operator-directed wider silhouette stays fixed across the four
+        # motion frames. Only the sparse interior ripple marks translate
+        # left/centre/right, then ping-pong, so the pond reads as water without
+        # redrawing its banks or filling it with texture.
         "frames": (
             (
-                " _,-~-.,_,-~-. ",
-                "( ~      ~    )",
-                "(     ~       )",
-                " `-.,_,-~-.,_-'",
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "( ~          ~         )",
+                "(     ~          ~     )",
+                "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
             (
-                " _,-~-.,_,-~-. ",
-                "(  ~      ~   )",
-                "(      ~      )",
-                " `-.,_,-~-.,_-'",
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "(   ~          ~       )",
+                "(       ~          ~   )",
+                "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
             (
-                " _,-~-.,_,-~-. ",
-                "(   ~      ~  )",
-                "(       ~     )",
-                " `-.,_,-~-.,_-'",
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "(     ~          ~     )",
+                "(         ~          ~ )",
+                "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
             (
-                " _,-~-.,_,-~-. ",
-                "(  ~      ~   )",
-                "(      ~      )",
-                " `-.,_,-~-.,_-'",
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "(   ~          ~       )",
+                "(       ~          ~   )",
+                "  `-.,_,-~-.,_,-~-.,_-' ",
             ),
         ),
         "frame_ticks": 10,
@@ -503,8 +504,8 @@ FIXTURE_ART: dict[str, dict[str, Any]] = {
         # mirrored pair into an upward stroke breaks the contour. Same reason as
         # the lantern's override: a character's meaning belongs to the object.
         "ink": {"'": "'"},
-        "anchor_column": 7,
-        "note": "Round 3: wide flat basin, ripples spaced apart and offset row to row instead of one solid band.",
+        "anchor_column": 11,
+        "note": "Round 3 silhouette widened on 2026-08-04 so the path can meet its bank; sparse ripples translate two cells per frame.",
     },
 
     # ROUND 3. "TALLER, AND ||| NOT | | | BASE CAN HAVE /___\\ STYLE BASE".

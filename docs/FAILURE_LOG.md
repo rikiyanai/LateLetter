@@ -9866,17 +9866,46 @@ proportional Latin, kana, Kanji, Arabic, and combining.
   Canonical world anchors own fixture relationships, the atlas owns pond animation frames,
   and the presentation lifecycle owns pond-local butterfly orbits. Ground cover remains
   deterministic world-space presentation ink between the two bands and keeps parallax.
-- **Agent visual verification:** Cache-busted Chrome at exactly 1544×430 shows one
-  uninterrupted punctuation contour on the sky→terrain colour transition; only the large
-  legacy trees and street lantern root there. Small flowers, shrubs and grass root on the
-  near contour. The stones enter immediately left of the pond and the bench is centred
-  above it. Two live crops 1.1 seconds apart show the atlas ripples translating sideways
-  and the pond butterflies changing both orbit position and wing frame. A frozen-time crop
-  before and after hovering the left pine shows multiple canopy strokes changing while the
-  trunk, camera and fixture roster remain fixed. These are direct visual diagnostics, not
-  geometry or unit-test surrogates and not an operator acceptance claim.
-- **Status:** IMPLEMENTED AND AGENT-VISUALLY-VERIFIED. ComplaintRef: operator terrain,
-  fixture-room, pond-motion and butterfly corrections, 2026-08-04.
+- **Invalidated visual claim:** The first cache-busted 1544×430 inspection was too broad.
+  It missed four defects visible in the operator's close crops: legacy planting could crowd
+  and obscure canonical pictures, the deployed pine transcription widened toward its apex
+  and therefore read upside-down, the accepted rose was being overpainted by renderer-local
+  topology glyphs, and the pond's one-cell ripple phase was not perceptible at product scale.
+  The prior `IMPLEMENTED AND AGENT-VISUALLY-VERIFIED` status is withdrawn; a full-frame still
+  was not sufficient evidence for close-range composition or temporal legibility.
+- **Causing owners:** `drawLegacyPlanting` accepted the final canonical `layout` and then
+  discarded it, so the presentation-native population had no exclusion rooms. `legacyPine`
+  increased both row height and bough width from the trunk upward. `drawObject` treated the
+  exact hash-bound rose as a background and painted procedural organs plus a centre glyph
+  over it. The atlas owned pond frames, but its 15-column silhouette and one-column phase
+  shift made the motion functionally invisible.
+- **Architecture correction:** Final canonical rectangles now reserve visual rooms against
+  disposable planting and cover; connected pond/stepping-stone neighbors waive only the
+  extra padding, never direct overlap. Large trees use exact canonical rooms so density is
+  not erased; small near-band planting receives a wider exclusion. Pine width now decreases
+  toward the apex. The exact rose bytes carry authored bloom/stem/vessel roles and are sealed,
+  which deletes the renderer-local overlay path for that asset. The atlas remains the sole
+  pond-art owner; its silhouette is widened to 24 columns and its sparse ripple marks move
+  two columns per phase. No second fixture, plant, camera or animation owner was added.
+- **Agent visual verification, replacement pass:** Cache-disabled Chrome on the standalone
+  product route at exactly 1544×430 shows upright conical pines and large legacy trees on the
+  far boundary; the near planting leaves readable rooms around all six canonical fixtures;
+  the magenta rose bloom, green stem and brown vessel remain one unobscured sealed picture;
+  stepping stones approach the widened pond from the left and meet its visual room. Three
+  live pond crops 180ms apart show both interior ripple displacement and orbiting butterfly
+  displacement. Moving the real pointer into the pine canopy changes multiple canopy strokes
+  while the trunk and placement stay fixed. These are agent-read browser diagnostics, not an
+  operator acceptance or release claim.
+- **False-green/false-red test cleanup:** Six adapter assertions that described withdrawn
+  renderer mechanics were deleted rather than used as product evidence: compact-tree line
+  trimming; loose-glyph wind and hover mutation of the sealed rose; an archive-only starter
+  rule that rejected the operator-approved rose; attempted-ink click mutation; and an
+  anonymous focus caret that the product does not paint. No replacement unit assertion was
+  added. Visual composition and motion claims in this correction come from the executed Chrome
+  surface above, not from those renderer internals.
+- **Status:** CORRECTED AND AGENT-VISUALLY-VERIFIED; OPERATOR ACCEPTANCE NOT CLAIMED.
+  ComplaintRef: operator close-crop report of crowding, inverted pine, unreadable pond motion,
+  rose part-colour and stray-overlay defects, 2026-08-04.
 
 ### Coverage matrix collision taxonomy was restored without unbound poisoning (2026-08-04)
 
