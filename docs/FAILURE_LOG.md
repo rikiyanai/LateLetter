@@ -11212,3 +11212,41 @@ below the neutral horizon and the neutral row holds only planting ink.
 - **Status:** IMPLEMENTED (diagnostic-level evidence above; visual
   acceptance remains operator-only). ComplaintRef: Wayfinder map: operator
   field review of the panning garden (2026-08-05).
+
+### Wayfinder map update: field-review children resolved; remaining fog rostered (2026-08-05)
+
+Index refresh for "Wayfinder map: operator field review of the panning garden
+(2026-08-05)". Recorded as an appended update because the map entry itself is
+committed canon (1a855c9). Decisions so far, with evidence:
+
+- terrain contours follow the camera vertically — RESOLVED by
+  `gardenTerrainFrame` (9d9d45d), independently verified; the two diagnostics
+  that still pinned the neutral row were reconciled in 6dfd628.
+- pond wave motion in the live surface — RESOLVED as perceptual frame
+  sparsity; atlas ripple trains densified (9d9d45d); live-layer suspect list
+  retired.
+- what the world seed composes — IMPLEMENTED per operator direction ("ok do
+  it") as persisted canonical fixture-room choices selecting atlas-authored
+  variants (1e1c8f4). HITL RESIDUE OPEN: the six candidate assets
+  (fixture.pond_compact, fixture.pond_round, fixture.stepping_stones_three,
+  fixture.stepping_stones_five, fixture.planter_one, fixture.planter_three)
+  are `not_reviewed` and need operator visual review before any acceptance;
+  the release builder already refuses to publish them as accepted.
+- screen-space spacing and density law for planting — RESOLVED by
+  neutral-projection card membership with separation and regional budget
+  (9d9d45d).
+- one back-to-front card painter — RESOLVED by `drawGardenBillboards` with
+  the baseline/depth/stable-id sort and transparent blank cells (9d9d45d).
+
+Fog remaining on this map, not yet sharp children:
+
+- Whether `drawAmbient` and the memorial marker, the two consumers still
+  reading the neutral `frame.horizon`, should follow the terrain frame during
+  vertical pan (observed while reconciling 6dfd628).
+- The f05658a known-red tail beyond the reconciled pair has no fresh count.
+- The unified exact-font path (`platform_glyphs`) has no visual proof; the
+  inspected Chrome session ran the degraded-font runtime.
+
+Out of scope here as before: letter typography, transcription conversion,
+release gates (tracked on their own lanes/tasks). Visual acceptance of
+everything above is operator-only on the live product.
