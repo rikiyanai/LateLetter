@@ -77,6 +77,23 @@ RECOVERED_ACCEPTED_FIXTURES = {
     "fixture.trellis",
 }
 
+# The four gift drawings the operator drew, granted, and directed for promotion
+# on 2026-08-06. They are accepted for a DIFFERENT reason than the ten above:
+# those ten were drawn here and then shown to the operator until they read,
+# whereas these four are the operator's own ink promoted byte-exactly, bound to
+# their source files by SHA-256 in the registry's `operator_grants` ledger.
+#
+# Kept as a second named set rather than folded into the first, because
+# collapsing them would let a drawing authored here acquire the credibility of
+# a drawing the operator handed over -- which is the exact substitution the
+# whole register exists to prevent.
+OPERATOR_GRANTED_GIFT_ASSETS = {
+    "fixture.coffee_mug",
+    "fixture.ice_cream_cone",
+    "fixture.mixtape",
+    "fixture.popsicle",
+}
+
 
 def _registry() -> dict:
     return json.loads(REGISTRY.read_text(encoding="utf-8"))
@@ -859,7 +876,24 @@ def test_spec_and_registry_agree_on_the_recovered_fixture_acceptances():
         row["asset_id"] for row in _registry()["assets"]
         if row["verdict"] == "accepted"
     }
-    assert accepted == RECOVERED_ACCEPTED_FIXTURES
+    # Exact equality against an enumerated union, not a subset check. A subset
+    # check would let any number of new acceptances appear unremarked, which is
+    # the inflation this test was written to catch. Every accepted asset must
+    # belong to one of the two named sets, and each set says how its members
+    # earned the verdict.
+    assert accepted == RECOVERED_ACCEPTED_FIXTURES | OPERATOR_GRANTED_GIFT_ASSETS
+
+    # And the two routes to acceptance must not blur into one another.
+    assert not (RECOVERED_ACCEPTED_FIXTURES & OPERATOR_GRANTED_GIFT_ASSETS)
+
+    # Every gift asset's verdict has to rest on a hash-bound grant that names
+    # it, so "accepted" here can never be a bare word someone typed into a row.
+    granted = {
+        grant["asset_id"] for grant in _registry()["operator_grants"]
+        if grant.get("asset_id") and grant.get("source_sha256")
+    }
+    assert OPERATOR_GRANTED_GIFT_ASSETS <= granted
+
     assert "all ten drawn fixture assets carry an `accepted` verdict" in spec
     assert "zero assets carry an `accepted` verdict" not in spec
 

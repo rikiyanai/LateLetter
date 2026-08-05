@@ -12772,3 +12772,151 @@ consequence of the font choice and does not go away with it.
   ComplaintRefs: Wayfinder map: the whole web product, authoring through
   recipient (2026-08-05); operator art grant, 2026-08-06; static-glyph
   animation entry, 2026-08-06.
+
+### Four granted gift assets promoted, with the mug's ASCII smoke ramp (2026-08-06)
+
+The operator granted the gift drawings and then directed two things: promote
+four of them -- coffee mug, ice cream cone, mixtape, popsicle -- to usable atlas
+assets, and give the mug a static-glyph smoke animation on the ASCII ramp
+`. o O` (mode ramp, size 3). Both are now in the atlas. The other six granted
+drawings were deliberately left alone; the reasons already recorded above still
+stand and are now written into the register rather than living only here.
+
+**A prerequisite nobody had noticed.** The eleven granted TXT files committed at
+bf50d7f were REMOVED from the tree again by 1bdea41, a transcription-lane docs
+commit that swept them up as deletions while its message says nothing about
+them. They survived on disk as untracked files with their original bytes, which
+is why nothing caught it. This patch restores all eleven byte-identically to
+bf50d7f. A grant that binds to a source file cannot bind to a file git no longer
+has.
+
+**The asset ids created**, all four v2-only:
+
+| asset id | box | anchor | ink |
+|---|---|---|---|
+| `fixture.coffee_mug` | 5x2 | [3,1] | `:c[_]` plus one steam mark above column 3 |
+| `fixture.ice_cream_cone` | 3x2 | [2,1] | `(~)` over `  V` |
+| `fixture.mixtape` | 5x1 | [2,0] | `[o=o]` |
+| `fixture.popsicle` | 3x3 | [1,2] | `.-.` / `| |` / ` | ` |
+
+They are v2-only for the same reason the seeded fixture-room variants are: atlas
+v1 is the pre-artwork schema in which every asset is one glyph in a 1x1 box, and
+writing a real drawing back into it would describe v1 as something it never was.
+
+**The ink is READ from the granted files, not retyped.** Every other drawing in
+`scripts/garden_fixture_art.py` is authored inside that module, so the module is
+its own source of truth. These four are not ours, so `granted_rows()` loads each
+TXT and refuses to continue unless its bytes still hash to the digest the
+acceptance registry bound the grant to. A transposed space cannot survive that,
+where it would have been invisible in a retyped copy. The chain is mechanical
+end to end: registry grant -> file bytes -> atlas asset -> painted rows. Each
+asset also carries an `operator_grant` receipt in its `art_lineage`, so the
+asset names the bytes it descends from without a reader having to go and match
+it by eye.
+
+**The smoke, and what was NOT invented.** The mug's vessel row is the operator's
+six bytes, unchanged in all three frames. The row above holds exactly one mark,
+`.` then `o` then `O`, at column 3 -- the middle of the `[_]` cup body, which is
+where steam leaves a cup; column 2 is the arithmetic centre of the 5-column
+drawing and would have put the steam over the cup's left wall. No mark exists in
+this asset that the operator did not either draw or name. The frames are held 10
+ticks each, matched to the pond, which is the atlas's only other animated asset
+-- the animation uses the atlas's OWN multi-frame convention (`frames` with
+`ticks`) rather than importing the asciicker `{mode,size,frames}` shape recorded
+in the entry above; that entry supplied the alphabet and the ramp-not-lottery
+discipline, not a second frame format.
+
+**Register bindings.** Four `operator_grants[]` entries, each naming `asset_id`,
+`source` and `source_sha256` on the `plant.rose` precedent, so
+`scripts/prepare_pages_site.py::_accepted_asset_ids` refuses the build if a
+source goes missing or its bytes move. A fifth grant entry records the six that
+were NOT promoted, so their absence is a decision rather than an oversight. Four
+`assets[]` rows carry `accepted`, with the granted TXT itself as the capture --
+what was accepted is the operator's ink, not a rendering of it. The fidelity
+caveat from the grant entry above is carried forward on every one of them: these
+bytes were transcribed from a chat message, and re-supplying them as files would
+raise the confidence of the binding.
+
+**Two guards were narrowed rather than deleted, and one was strengthened.**
+`test_no_asset_still_shows_a_bare_placeholder_glyph_in_the_starter_set` demanded
+every drawn asset be more than one column AND more than one row. `[o=o]` is five
+columns by one row because that is how the operator drew it, and padding a
+granted drawing with invented rows to satisfy a shape test is not available. The
+1x1 rule -- which is what the test's own comment says it is about -- now applies
+to every drawn asset, and the stricter two-dimensional rule is enumerated
+against the ten starter fixtures it was written for.
+`test_spec_and_registry_agree_on_the_recovered_fixture_acceptances` compared the
+accepted set to the recovered ten; it now compares against the union of two
+NAMED sets and additionally requires every gift asset's verdict to rest on a
+hash-bound grant that names it, so "accepted" there can never be a bare word
+somebody typed into a row.
+
+**A cosmetic artifact left for the owner of a contended file.**
+`web/garden-accepted-paint.v1.json` now lists each of the four ids TWICE.
+`_accepted_asset_ids` appends from the verdict table and from the grant ledger
+without de-duplicating; until now no id was in both, because `plant.rose` has a
+grant and no atlas row. Every consumer builds a Set from the list, so nothing
+mis-behaves, and the one-line remedy is `sorted(set(accepted))`.
+`scripts/prepare_pages_site.py` is listed as CONTENDED in
+`docs/ownership-lanes.json`, so this lane did not touch it.
+
+**A hole in the lane manifest, found by using it.** Running
+`scripts/check_lane_boundary.py --lane garden-presentation` over this patch's
+paths refuses on `web/garden-accepted-paint.v1.json`: "belongs to lane nothing".
+The garden lane owns `web/garden-*.mjs` and `web/fonts/**` but not that file,
+even though it is a committed, generated garden artifact derived from
+`docs/garden-asset-acceptance.json`, which the lane does own. The gap predates
+this patch. It is recorded rather than patched because `docs/ownership-lanes.json`
+had an uncommitted diff from a concurrent session while this work was underway,
+and rewriting a shared manifest underneath another session is the class of lost
+update the manifest exists to prevent. Every OTHER path in this patch checks as
+single-lane clean: 8 owned plus 1 shared-canon.
+
+**Counts, before and after, same machine, same command.**
+Baseline before any edit: `node --test tests/garden_adapters/*.mjs` 204/204;
+`pytest tests/garden_contract tests/garden_world tests/garden_acceptance`
+319 passing with 2 failing. After: 204/204 and 319 passing with the SAME 2
+failing. Those two are
+`test_release_acceptance.py::test_gate_status_matrix_never_converts_proxy_evidence_into_release_claims`
+and `::test_the_gate_matrix_cites_the_current_browser_e2e_contract`, both
+raising FileNotFoundError on `tests/test_garden_review_e2e_browser.py`, a file
+this patch neither owns nor deleted. `tests/test_garden_font_contract.py`,
+`tests/test_prepare_pages_site.py` and `tests/test_capture_html_garden_review.py`
+add 44 more, all passing, unchanged from before.
+
+**What was SEEN, not merely counted.** The four assets were rendered through the
+product's own modules -- `web/garden-painting.mjs` (`objectPresentationArt` ->
+`fixtureArt` -> `canonicalProportionalArt`, then `measuredAssetPlacement`) and
+`web/garden-geometry.mjs` with the PreText measurer -- in headless system Chrome
+over a local server, at the atlas's declared 15px/17px 'LateLetter Garden' with
+the bundled face confirmed served (HTTP 200). All six placements reported
+`measured=true`, so every one took the atlas path rather than a renderer-local
+fallback.
+
+Screenshots at
+`/private/tmp/claude-501/-Users-r-Projects-LateLetter/3296eefa-7655-4ba0-a1aa-afc8e78440ab/scratchpad/`:
+- `gift-art-all.png` -- all six placements on one page with their diagnostics.
+- `gift-00-coffee_mug-f0.png`, `gift-01-coffee_mug-f10.png`,
+  `gift-02-coffee_mug-f20.png`, and the stacked strip `mug-ramp-strip.png`.
+  Frame 0 shows a single small dot floating above the cup's opening; frame 10
+  shows a small `o` in the same place; frame 20 shows a distinctly larger `O`.
+  The `:c[_]` row underneath is pixel-identical across all three. The three PNGs
+  have three different SHA-256 digests (`0ab4f207…`, `422f57b5…`, `aaa5cfc1…`),
+  so the ramp is advancing rather than the page redrawing the same frame.
+- `gift-03-ice_cream_cone-f0.png` -- `(~)` reads as a scoop with a swirl and the
+  `V` beneath it reads as the cone. The `V` sits under the RIGHT of the scoop
+  rather than under its middle, because the operator's second line is `  V`.
+  That is the granted drawing and it was not re-centred.
+- `gift-04-mixtape-f0.png` -- `[o=o]`, two hubs with the tape run between them
+  inside a bracketed shell. It reads at one row.
+- `gift-05-popsicle-f0.png` -- rounded `.-.` cap, `| |` block, and the stick
+  below. In the proportional face the stick lands slightly LEFT of the gap's
+  optical centre, because a space's advance is narrower than a bar's; the
+  drawing still reads as a popsicle.
+
+- **Status:** IMPLEMENTED, VISUALLY INSPECTED BY AGENT -- NOT OPERATOR-ACCEPTED.
+  The operator has seen their own drawings; nobody has yet seen these four
+  standing in a composed Garden frame at gameplay scale, and no composition
+  decision places any of them in a recipient's world. ComplaintRefs: operator
+  art grant, 2026-08-06; operator request for a static smoke animation,
+  2026-08-06; operator promotion of the four ASCII gift drawings, 2026-08-06.

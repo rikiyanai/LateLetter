@@ -61,6 +61,12 @@ references never use; the bridge was the last fixture still doing it.
 
 from __future__ import annotations
 
+# `hashlib` and `Path` are used only by the operator-granted gift art at the
+# bottom of this module: granted drawings are read from their own files and
+# their bytes are checked against the digest the acceptance registry bound the
+# grant to, rather than being retyped into this module by hand.
+import hashlib
+from pathlib import Path
 from typing import Any
 
 
@@ -742,6 +748,306 @@ FIXTURE_ART.update({
         ),
         "anchor_column": 6,
         "note": "Seeded three-blossom planter candidate with separated stems and a widened authored vessel.",
+    },
+})
+
+
+# ---------------------------------------------------------------------------
+# Operator-granted gift art
+# ---------------------------------------------------------------------------
+#
+# WHAT THESE ARE
+# --------------
+# On 2026-08-06 the operator handed over ten small drawings as a gift and then
+# granted four of them for promotion into the atlas: a coffee mug, an ice cream
+# cone, a mixtape and a popsicle. The other six are held back -- the pendant,
+# both brooches, the bone and the teddy bear use characters the bundled face
+# does not contain, and the sideways rose is a letter-surface decoration rather
+# than a garden object.
+#
+# WHY THE INK IS READ FROM DISK INSTEAD OF RETYPED HERE
+# ----------------------------------------------------
+# These drawings are not ours. Every other entry in this module is a drawing
+# authored inside the module, so the module is its own source of truth. For
+# granted art the source of truth is the operator's own file, byte for byte,
+# and a retyped copy is a second owner that can silently drift from it -- a
+# transposed space would be invisible in review and would still reach the
+# product labelled as "the operator's drawing".
+#
+# So the rows are LOADED from the granted TXT files and the load refuses to
+# continue unless the bytes still hash to the value the acceptance registry
+# bound its grant to. That makes the chain mechanical end to end: registry
+# grant -> file bytes -> atlas asset -> painted rows.
+GRANTED_ART_DIR = (
+    Path(__file__).resolve().parents[1]
+    / "src" / "lateletter" / "garden" / "data" / "operator-granted-art"
+)
+
+
+def granted_rows(filename: str, expected_sha256: str) -> tuple[str, ...]:
+    """Load one operator-granted drawing, refusing any byte that changed.
+
+    :param filename: Basename inside ``GRANTED_ART_DIR``, e.g. ``coffee-mug.txt``.
+    :param expected_sha256: The digest recorded beside the grant in
+        ``docs/garden-asset-acceptance.json``. Supplied by the caller rather
+        than recomputed here, so that editing the drawing without editing the
+        grant is a hard error instead of a quiet re-approval of different art.
+    :returns: The drawing's lines, with the final newline's empty tail removed.
+        ``splitlines`` is used rather than ``split("\\n")`` precisely because it
+        does not produce that empty trailing element, which would otherwise
+        become a blank row in the asset and change its declared height.
+    :raises FileNotFoundError: If the granted source is absent. A drawing whose
+        source is gone cannot be proven to be the operator's, so the generator
+        stops rather than emitting art on the strength of a filename.
+    :raises ValueError: If the bytes no longer match the grant.
+    """
+    path = GRANTED_ART_DIR / filename
+    payload = path.read_bytes()
+    digest = hashlib.sha256(payload).hexdigest()
+    if digest != expected_sha256:
+        raise ValueError(
+            f"{filename}: bytes hash to {digest}, but the grant is bound to "
+            f"{expected_sha256}. The atlas may not promote a drawing that is "
+            "no longer the one the operator handed over."
+        )
+    return tuple(payload.decode("ascii").splitlines())
+
+
+# The four granted drawings, keyed by the catalog id they become in the atlas.
+# The digests are the ones recorded in docs/garden-asset-acceptance.json.
+GRANTED_COFFEE_MUG = granted_rows(
+    "coffee-mug.txt", "112d7db2dc521d26f83b80c4ffe03b3cba4bcf4d552ef86ad80f747e81b9cd0b",
+)
+GRANTED_ICE_CREAM_CONE = granted_rows(
+    "ice-cream-cone.txt", "292657f37f22f77bea75ae497a3cbb78cbcb50ec9af290fe81cca5b52af834d6",
+)
+GRANTED_MIXTAPE = granted_rows(
+    "mixtape.txt", "2f1239f4fe94bd81d626962b08cbb83820e1aa0c99cc23fa0674d42bc2f17d14",
+)
+GRANTED_POPSICLE = granted_rows(
+    "popsicle.txt", "caa8a3e8a035d13a7c9e308ab7998cc0d596c0b43f66e19940386856265b68b7",
+)
+
+
+# THE MUG'S SMOKE RAMP
+# --------------------
+# The operator asked for a static-glyph smoke animation on the mug and named
+# the alphabet: the ASCII ramp `. o O`, mode `ramp`, size 3. "Static glyph" is
+# the whole discipline -- the mark stays in ONE cell and changes what it is; it
+# never crawls across neighbouring cells pretending to be a wisp. That rule came
+# out of the asciicker-Y9-2 prior-art audit recorded in docs/FAILURE_LOG.md on
+# 2026-08-06, together with the finding that every authored alphabet in that
+# repo is missing from our bundled face, which is why the ramp had to be
+# re-authored in ASCII rather than imported.
+#
+# A ramp is ORDERED, smallest to largest, and it is not a lottery: `.` is the
+# first breath of steam, `o` is it opening out, `O` is it at its widest just
+# before it disperses. Randomly picking a glyph per frame reads as shimmer
+# rather than as smoke, and that finding is recorded in the same audit.
+SMOKE_RAMP: tuple[str, ...] = (".", "o", "O")
+
+# Which column of the mug the steam rises from. The granted drawing is `:c[_]`
+# -- index 0 `:`, 1 `c`, 2 `[`, 3 `_`, 4 `]` -- so the vessel body is the `[_]`
+# run at indices 2..4 and its middle is index 3. Steam leaves a cup from the
+# middle of its opening, so the mark sits above index 3 rather than above the
+# arithmetic centre of the whole 5-column drawing (index 2), which would put it
+# over the cup's left wall.
+SMOKE_COLUMN = 3
+
+# How many ticks each ramp frame is held. Matched to the pond, the only other
+# animated asset in the atlas, so the Garden has one animation cadence rather
+# than a per-asset guess. Frame count is the loop length: three frames, so the
+# ramp runs `.` -> `o` -> `O` and wraps.
+SMOKE_FRAME_TICKS = 10
+
+
+def _smoke_row(glyph: str, width: int) -> str:
+    """Build the mug's steam row: one ramp mark, everything else blank.
+
+    :param glyph: The ramp mark for this frame -- one of ``SMOKE_RAMP``.
+    :param width: The mug drawing's column count, so the steam row is exactly
+        as wide as the row beneath it. ``_rectangular`` would pad a short row
+        anyway, but building it at full width keeps the intent visible: the row
+        is mostly deliberate emptiness, not an accident of padding.
+    :returns: A row string of ``width`` characters with ``glyph`` at
+        ``SMOKE_COLUMN`` and spaces everywhere else.
+    """
+    # Left pad, the mark, then right pad. `width - SMOKE_COLUMN - 1` is the
+    # number of columns after the mark: total width, minus the columns before
+    # it, minus the one the mark itself occupies.
+    return " " * SMOKE_COLUMN + glyph + " " * (width - SMOKE_COLUMN - 1)
+
+
+# The mug is the only granted asset with more than one frame. Its vessel row is
+# the operator's bytes, unchanged in every frame; only the steam row above it
+# advances along the ramp. Holding the drawing still while one mark changes is
+# what makes this a static-glyph animation rather than a redrawn object.
+_MUG_WIDTH = len(GRANTED_COFFEE_MUG[0])
+COFFEE_MUG_FRAMES: tuple[tuple[str, ...], ...] = tuple(
+    (_smoke_row(glyph, _MUG_WIDTH), *GRANTED_COFFEE_MUG)
+    for glyph in SMOKE_RAMP
+)
+
+
+# Gameplay metadata for the granted assets.
+#
+# These ids exist only in atlas v2. They are deliberately NOT added to atlas
+# v1: v1 is the pre-artwork schema whose every asset is a single glyph in a 1x1
+# box, and back-filling a drawn object into it would misrepresent what v1 was.
+# The seeded fixture-room variants set this precedent already.
+#
+# Each needs a hotspot because the atlas compiler requires one on every
+# `fixture` -- an object with no interaction is scenery, and the schema makes
+# you say which it is. The actions are drawn from the vocabulary v1 already
+# uses, so no new verb enters the world model through the art table.
+GIFT_ASSET_METADATA: dict[str, dict[str, Any]] = {
+    "coffee_mug": {
+        "kind": "fixture",
+        "label": "Coffee mug",
+        "description": "A mug the operator drew, still steaming.",
+        "hotspots": [
+            {"id": "inspect", "label": "Look at the coffee mug", "action": "inspect"},
+        ],
+        "tags": ["gift", "keepsake"],
+    },
+    "ice_cream_cone": {
+        "kind": "fixture",
+        "label": "Ice cream cone",
+        "description": "An ice cream cone the operator drew.",
+        "hotspots": [
+            {"id": "inspect", "label": "Look at the ice cream cone", "action": "inspect"},
+        ],
+        "tags": ["gift", "keepsake"],
+    },
+    "mixtape": {
+        "kind": "fixture",
+        "label": "Mixtape",
+        "description": "A cassette the operator drew.",
+        "hotspots": [
+            {"id": "listen", "label": "Listen to the mixtape", "action": "listen"},
+        ],
+        "tags": ["gift", "keepsake"],
+    },
+    "popsicle": {
+        "kind": "fixture",
+        "label": "Popsicle",
+        "description": "A popsicle the operator drew.",
+        "hotspots": [
+            {"id": "inspect", "label": "Look at the popsicle", "action": "inspect"},
+        ],
+        "tags": ["gift", "keepsake"],
+    },
+}
+
+
+FIXTURE_ART.update({
+    "coffee_mug": {
+        "structure": (
+            ("steam", "one mark above the cup's opening, growing along an ordered ramp"),
+            ("handle", "open hook on the left, clear of the body"),
+            ("body", "sealed vessel that holds the liquid"),
+        ),
+        "material": "glazed ceramic",
+        "affordance": "rest",
+        # Frame 0 of the ramp doubles as the still drawing, so a surface that
+        # reads only `ascii` shows the steam at its smallest rather than showing
+        # a mug with no steam at all.
+        "ascii": COFFEE_MUG_FRAMES[0],
+        "frames": COFFEE_MUG_FRAMES,
+        "frame_ticks": SMOKE_FRAME_TICKS,
+        "anchor_column": SMOKE_COLUMN,
+        "operator_grant": {
+            "granted_at": "2026-08-06",
+            "source": "src/lateletter/garden/data/operator-granted-art/coffee-mug.txt",
+            "source_sha256": (
+                "112d7db2dc521d26f83b80c4ffe03b3cba4bcf4d552ef86ad80f747e81b9cd0b"
+            ),
+            "note": (
+                "The vessel row is the operator's granted bytes, unchanged. The row "
+                "above it is the steam the operator asked for, drawn from the ASCII "
+                "ramp the operator named (`. o O`, mode ramp, size 3). No mark in "
+                "this asset was invented outside those two instructions."
+            ),
+        },
+        "note": (
+            "Operator-granted gift drawing, promoted 2026-08-06 with the "
+            "operator-specified `. o O` static-glyph steam ramp above it."
+        ),
+    },
+    "ice_cream_cone": {
+        "structure": (
+            ("scoop", "rounded mass with a swirl across it"),
+            ("cone", "single stroke tapering away beneath the scoop"),
+        ),
+        "material": "wafer and soft ice cream",
+        "affordance": "treat",
+        "ascii": GRANTED_ICE_CREAM_CONE,
+        # The cone stroke on the bottom row sits at column 2, so the object
+        # stands there. Bottom-CENTRE would be column 1, which is empty space in
+        # this drawing -- the anchor has to be where the object touches the
+        # ground, not where the box happens to be halved.
+        "anchor_column": 2,
+        "operator_grant": {
+            "granted_at": "2026-08-06",
+            "source": "src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt",
+            "source_sha256": (
+                "292657f37f22f77bea75ae497a3cbb78cbcb50ec9af290fe81cca5b52af834d6"
+            ),
+            "note": "Every mark is the operator's granted bytes, unchanged.",
+        },
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+    },
+    "mixtape": {
+        "structure": (
+            ("shell", "bracketed cassette body enclosing the mechanism"),
+            ("spools", "two hubs joined by the run of tape between them"),
+        ),
+        "material": "moulded plastic",
+        "affordance": "listen",
+        "ascii": GRANTED_MIXTAPE,
+        # Five columns, `[o=o]`, and the tape run `=` at column 2 is both the
+        # arithmetic middle and the visual one.
+        "anchor_column": 2,
+        "operator_grant": {
+            "granted_at": "2026-08-06",
+            "source": "src/lateletter/garden/data/operator-granted-art/mixtape.txt",
+            "source_sha256": (
+                "2f1239f4fe94bd81d626962b08cbb83820e1aa0c99cc23fa0674d42bc2f17d14"
+            ),
+            "note": "Every mark is the operator's granted bytes, unchanged.",
+        },
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+    },
+    "popsicle": {
+        "structure": (
+            ("cap", "rounded top of the frozen block"),
+            ("block", "two uprights carrying the mass of it"),
+            ("stick", "single stroke below the block, narrower than it"),
+        ),
+        "material": "ice on a wooden stick",
+        "affordance": "treat",
+        # The granted file's last line is ` |` -- two characters, not three.
+        # `_rectangular` right-pads it to ` | ` so the ascii-safe profile can
+        # store a rectangular cell matrix, which the schema requires. That adds
+        # a trailing SPACE and no ink: the drawing is unchanged, the lattice is
+        # merely squared off.
+        "ascii": GRANTED_POPSICLE,
+        # The stick is at column 1 on the bottom row, and the stick is what the
+        # popsicle stands on.
+        "anchor_column": 1,
+        "operator_grant": {
+            "granted_at": "2026-08-06",
+            "source": "src/lateletter/garden/data/operator-granted-art/popsicle.txt",
+            "source_sha256": (
+                "caa8a3e8a035d13a7c9e308ab7998cc0d596c0b43f66e19940386856265b68b7"
+            ),
+            "note": (
+                "Every mark is the operator's granted bytes. The final row is "
+                "right-padded with one space so the cell matrix is rectangular; "
+                "no ink was added."
+            ),
+        },
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
     },
 })
 

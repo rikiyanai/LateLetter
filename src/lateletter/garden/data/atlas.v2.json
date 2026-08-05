@@ -4327,6 +4327,440 @@
         },
         "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
       }
+    },
+    {
+      "id": "fixture.coffee_mug",
+      "kind": "fixture",
+      "label": "Coffee mug",
+      "description": "A mug the operator drew, still steaming.",
+      "cell_box": [
+        5,
+        2
+      ],
+      "anchor": [
+        3,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  ".",
+                  " "
+                ],
+                [
+                  ":",
+                  "c",
+                  "[",
+                  "_",
+                  "]"
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "o",
+                  " "
+                ],
+                [
+                  ":",
+                  "c",
+                  "[",
+                  "_",
+                  "]"
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "O",
+                  " "
+                ],
+                [
+                  ":",
+                  "c",
+                  "[",
+                  "_",
+                  "]"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 10,
+              "rows": [
+                "   . ",
+                ":c[_]"
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "   o ",
+                ":c[_]"
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "   O ",
+                ":c[_]"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Look at the coffee mug",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "steam",
+            "role": "one mark above the cup's opening, growing along an ordered ramp"
+          },
+          {
+            "part": "handle",
+            "role": "open hook on the left, clear of the body"
+          },
+          {
+            "part": "body",
+            "role": "sealed vessel that holds the liquid"
+          }
+        ],
+        "material": "glazed ceramic",
+        "affordance": "rest",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 with the operator-specified `. o O` static-glyph steam ramp above it.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/coffee-mug.txt",
+          "source_sha256": "112d7db2dc521d26f83b80c4ffe03b3cba4bcf4d552ef86ad80f747e81b9cd0b",
+          "note": "The vessel row is the operator's granted bytes, unchanged. The row above it is the steam the operator asked for, drawn from the ASCII ramp the operator named (`. o O`, mode ramp, size 3). No mark in this asset was invented outside those two instructions."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.ice_cream_cone",
+      "kind": "fixture",
+      "label": "Ice cream cone",
+      "description": "An ice cream cone the operator drew.",
+      "cell_box": [
+        3,
+        2
+      ],
+      "anchor": [
+        2,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "(",
+                  "~",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "V"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "(~)",
+                "  V"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Look at the ice cream cone",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "scoop",
+            "role": "rounded mass with a swirl across it"
+          },
+          {
+            "part": "cone",
+            "role": "single stroke tapering away beneath the scoop"
+          }
+        ],
+        "material": "wafer and soft ice cream",
+        "affordance": "treat",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt",
+          "source_sha256": "292657f37f22f77bea75ae497a3cbb78cbcb50ec9af290fe81cca5b52af834d6",
+          "note": "Every mark is the operator's granted bytes, unchanged."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.mixtape",
+      "kind": "fixture",
+      "label": "Mixtape",
+      "description": "A cassette the operator drew.",
+      "cell_box": [
+        5,
+        1
+      ],
+      "anchor": [
+        2,
+        0
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "[",
+                  "o",
+                  "=",
+                  "o",
+                  "]"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "[o=o]"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "listen",
+          "label": "Listen to the mixtape",
+          "action": "listen"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "shell",
+            "role": "bracketed cassette body enclosing the mechanism"
+          },
+          {
+            "part": "spools",
+            "role": "two hubs joined by the run of tape between them"
+          }
+        ],
+        "material": "moulded plastic",
+        "affordance": "listen",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/mixtape.txt",
+          "source_sha256": "2f1239f4fe94bd81d626962b08cbb83820e1aa0c99cc23fa0674d42bc2f17d14",
+          "note": "Every mark is the operator's granted bytes, unchanged."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.popsicle",
+      "kind": "fixture",
+      "label": "Popsicle",
+      "description": "A popsicle the operator drew.",
+      "cell_box": [
+        3,
+        3
+      ],
+      "anchor": [
+        1,
+        2
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  ".",
+                  "-",
+                  "."
+                ],
+                [
+                  "|",
+                  " ",
+                  "|"
+                ],
+                [
+                  " ",
+                  "|",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                ".-.",
+                "| |",
+                " | "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Look at the popsicle",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "cap",
+            "role": "rounded top of the frozen block"
+          },
+          {
+            "part": "block",
+            "role": "two uprights carrying the mass of it"
+          },
+          {
+            "part": "stick",
+            "role": "single stroke below the block, narrower than it"
+          }
+        ],
+        "material": "ice on a wooden stick",
+        "affordance": "treat",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/popsicle.txt",
+          "source_sha256": "caa8a3e8a035d13a7c9e308ab7998cc0d596c0b43f66e19940386856265b68b7",
+          "note": "Every mark is the operator's granted bytes. The final row is right-padded with one space so the cell matrix is rectangular; no ink was added."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
     }
   ]
 }

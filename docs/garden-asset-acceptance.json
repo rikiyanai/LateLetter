@@ -31,6 +31,52 @@
       "statement": "eb861dc84400fc36.provisional-not-pipeline.txt is approved rose bush art asset i just authored. log and track and take in and index",
       "correction": "trailing spaces.NOO DONT INCLUDE TRAILING SPACES",
       "effect": "The exact six-line, 139-byte operator-authored TXT with trailing spaces excluded is accepted as rose-bush art. This is not a transcription-pipeline verdict and does not approve or release the different renderer-local rose placeholder. Runtime use requires a delete-first transfer into the canonical gameplay-art owner."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored coffee-mug TXT art asset, plus its operator-specified steam ramp",
+      "asset_id": "fixture.coffee_mug",
+      "source": "src/lateletter/garden/data/operator-granted-art/coffee-mug.txt",
+      "source_sha256": "112d7db2dc521d26f83b80c4ffe03b3cba4bcf4d552ef86ad80f747e81b9cd0b",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that four of them -- coffee mug, ice cream cone, mixtape, popsicle -- be promoted to usable atlas assets, and that the coffee mug carry a static-glyph smoke animation on the ASCII ramp `. o O` (mode ramp, size 3). Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact six-byte operator-authored TXT is the mug's vessel row and it is unaltered in every frame. The row above it holds one steam mark drawn from the ramp the operator named, and nothing else; the ramp advances `.` then `o` then `O` and wraps, three frames at ten ticks each, matching the pond's cadence. The steam is the operator's instruction realised, not an assistant-invented embellishment: no mark exists in this asset that was not either drawn by the operator or named by the operator. The atlas asset is fixture.coffee_mug, 5x2, anchored at [3,1]. This grant covers the ART. It is not a composition verdict: nothing here places a mug in any recipient's garden.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding. The bytes recorded here are what was received."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored ice-cream-cone TXT art asset",
+      "asset_id": "fixture.ice_cream_cone",
+      "source": "src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt",
+      "source_sha256": "292657f37f22f77bea75ae497a3cbb78cbcb50ec9af290fe81cca5b52af834d6",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that this one be promoted to a usable atlas asset. Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact eight-byte operator-authored TXT is promoted unaltered as fixture.ice_cream_cone, 3x2, anchored at [2,1] -- the column the cone stroke stands on rather than the arithmetic middle of the box. Every mark in the asset is the operator's. This grant covers the ART and is not a composition verdict.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored mixtape TXT art asset",
+      "asset_id": "fixture.mixtape",
+      "source": "src/lateletter/garden/data/operator-granted-art/mixtape.txt",
+      "source_sha256": "2f1239f4fe94bd81d626962b08cbb83820e1aa0c99cc23fa0674d42bc2f17d14",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that this one be promoted to a usable atlas asset. Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact six-byte operator-authored TXT is promoted unaltered as fixture.mixtape, 5x1, anchored at [2,0]. It is one row tall because that is how the operator drew it; it was not padded out with invented rows to look more like the other assets. This grant covers the ART and is not a composition verdict.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored popsicle TXT art asset",
+      "asset_id": "fixture.popsicle",
+      "source": "src/lateletter/garden/data/operator-granted-art/popsicle.txt",
+      "source_sha256": "caa8a3e8a035d13a7c9e308ab7998cc0d596c0b43f66e19940386856265b68b7",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that this one be promoted to a usable atlas asset. Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact eleven-byte operator-authored TXT is promoted as fixture.popsicle, 3x3, anchored at [1,2] -- the column the stick stands on. The drawing's final line is two characters (` |`) and the atlas cell matrix must be rectangular, so it carries one trailing space in the lattice. That adds no ink and changes no mark; it is the same distinction the rose grant's trailing-space correction drew between the operator's file and a storage format's padding. This grant covers the ART and is not a composition verdict.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "the six granted gift drawings that were NOT promoted",
+      "statement": "Operator granted ten gift drawings; four were directed for promotion and the rest were not.",
+      "effect": "Pendant necklace, both brooches, bone and teddy bear remain granted ART but are not paintable: every non-ASCII codepoint in them is absent from the cmap of web/fonts/lateletter-garden.woff, and the atlas additionally requires an ascii-safe profile of one printable ASCII character per cell for every asset. Each needs an ASCII redraw, or font work plus an ASCII fallback drawing anyway. The sideways rose is pure ASCII but is a letter-ending decoration seventeen columns wide, so it belongs to the letter surface rather than to the garden atlas. None of the six has an atlas identity and none may acquire one on the strength of this grant. Recorded here so the absence is a decision rather than an oversight."
     }
   ],
   "withdrawn_acceptances": [],
@@ -393,6 +439,50 @@
       "reviewed_at": null,
       "art_lineage": "Seeded three-stone path review candidate. It is a new drawing and inherits no verdict.",
       "capture": null
+    },
+    {
+      "asset_id": "fixture.coffee_mug",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted byte-exactly from the hash-bound grant above. The vessel row is the granted six bytes and is unaltered in all three frames; the row above it holds one mark from the `. o O` ramp the operator named for the steam. Nothing here was drawn by an assistant. The capture is the granted file itself rather than a review screenshot, because what was accepted is the operator's ink, not a rendering of it.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/coffee-mug.txt"
+    },
+    {
+      "asset_id": "fixture.ice_cream_cone",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted byte-exactly and unaltered from the hash-bound grant above.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt"
+    },
+    {
+      "asset_id": "fixture.mixtape",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted byte-exactly and unaltered from the hash-bound grant above. One row tall because that is how it was drawn.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/mixtape.txt"
+    },
+    {
+      "asset_id": "fixture.popsicle",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted from the hash-bound grant above. The only difference from the granted bytes is one trailing space on the final row, which the rectangular cell matrix requires and which adds no ink.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/popsicle.txt"
     }
   ],
   "presentation_recipe_register": {

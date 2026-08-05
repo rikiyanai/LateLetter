@@ -83,7 +83,11 @@ PROPORTIONAL_FONT = {
 
 # Where the drawn artwork lives. Kept in its own module because it is content,
 # edited on artistic grounds, whereas this file is the mechanical transform.
-from garden_fixture_art import FIXTURE_VARIANT_BASES, fixture_profiles  # noqa: E402
+from garden_fixture_art import (  # noqa: E402
+    FIXTURE_VARIANT_BASES,
+    GIFT_ASSET_METADATA,
+    fixture_profiles,
+)
 
 
 def placeholder_lineage(asset_id: str) -> dict[str, Any]:
@@ -201,6 +205,17 @@ def drawn_asset(v1_asset: dict[str, Any], drawing: dict[str, Any]) -> dict[str, 
                 {"pending_requirement": drawing["pending_requirement"]}
                 if drawing.get("pending_requirement") else {}
             ),
+            # Present only on drawings the OPERATOR handed over rather than
+            # drawings authored inside this repository. It carries the exact
+            # file the ink came from and that file's SHA-256, so the asset
+            # itself names the bytes it descends from instead of relying on a
+            # reader to go and match it against the acceptance registry by eye.
+            # Absent on everything else, because an empty field on every other
+            # asset would read as "checked, and no operator source found".
+            **(
+                {"operator_grant": drawing["operator_grant"]}
+                if drawing.get("operator_grant") else {}
+            ),
             # Recorded explicitly: the browser's old tables were not migrated,
             # they were discarded. Anyone comparing this against the previous
             # appearance should expect it to differ.
@@ -252,6 +267,27 @@ def migrate(v1: dict[str, Any]) -> dict[str, Any]:
         if drawing is None:  # pragma: no cover - the table above is the contract
             raise ValueError(f"missing fixture-room variant drawing {variant_id}")
         assets.append(drawn_asset(base, drawing))
+
+    # Operator-granted gift art.
+    #
+    # These four objects -- coffee mug, ice cream cone, mixtape, popsicle --
+    # were drawn by the operator and granted on 2026-08-06. They enter the atlas
+    # the same way the fixture-room variants do: as v2-only identities with no
+    # counterpart in v1. That is deliberate. v1 is the pre-artwork schema in
+    # which every asset is one glyph in a 1x1 box, so writing a real drawing
+    # back into it would describe v1 as something it never was.
+    #
+    # Unlike the variants there is no base asset to clone gameplay metadata
+    # from, because these are new objects rather than new silhouettes for an
+    # existing one. The metadata is therefore stated outright in
+    # `GIFT_ASSET_METADATA` alongside the drawings, and assembled into the same
+    # shape `drawn_asset` expects of a v1 asset. Sorted so the emitted atlas is
+    # byte-stable across runs, which `test_migration_is_deterministic` requires.
+    for catalog_id, metadata in sorted(GIFT_ASSET_METADATA.items()):
+        drawing = fixture_profiles(catalog_id)
+        if drawing is None:  # pragma: no cover - the art table above is the contract
+            raise ValueError(f"missing operator-granted gift drawing {catalog_id}")
+        assets.append(drawn_asset({"id": f"fixture.{catalog_id}", **metadata}, drawing))
 
     return {
         "version": 2,

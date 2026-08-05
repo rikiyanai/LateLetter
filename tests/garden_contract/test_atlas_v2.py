@@ -95,6 +95,14 @@ def test_generated_v2_atlas_validates(atlas_v2):
         "fixture.planter_one", "fixture.planter_three",
         "fixture.pond_compact", "fixture.pond_round",
         "fixture.stepping_stones_five", "fixture.stepping_stones_three",
+        # The four gift drawings the operator granted on 2026-08-06. They are
+        # v2-only for the same reason the seeded variants are: v1 is the
+        # pre-artwork schema in which every asset is one glyph in a 1x1 box,
+        # and writing a real drawing back into it would describe v1 as
+        # something it never was. Enumerated one by one, so a fifth addition
+        # cannot arrive unnoticed under a category name.
+        "fixture.coffee_mug", "fixture.ice_cream_cone",
+        "fixture.mixtape", "fixture.popsicle",
     }
 
 
@@ -275,11 +283,35 @@ def test_the_two_profiles_are_the_same_object_not_the_same_characters(atlas_v2):
         assert len(rows) == asset["cell_box"][1]
 
 
+STARTER_FIXTURE_IDS = frozenset({
+    "fixture.pond", "fixture.bridge", "fixture.birdbath", "fixture.trellis",
+    "fixture.arbor", "fixture.lantern", "fixture.bench", "fixture.mailbox",
+    "fixture.stepping_stones", "fixture.planter",
+})
+
+
 def test_no_asset_still_shows_a_bare_placeholder_glyph_in_the_starter_set(atlas_v2):
-    # A drawn fixture must be more than one character tall or wide; a 1x1 box is
-    # the signature of the placeholder state this work exists to leave.
+    # A 1x1 box is the signature of the placeholder state this work exists to
+    # leave: one character, standing in for a picture nobody has drawn yet.
+    # That is the rule for EVERY drawn asset and it never relaxes.
     for asset in atlas_v2["assets"]:
         if asset["art_lineage"]["source"] != "drawn for LateLetter":
+            continue
+        width, height = asset["cell_box"]
+        assert (width, height) != (1, 1), f"{asset['id']} is still a single glyph"
+
+    # The starter set is held to the stricter original rule -- more than one
+    # column AND more than one row -- because those ten fixtures are the first
+    # thing a recipient ever sees and a one-row silhouette there would read as
+    # an unfinished stand-in.
+    #
+    # The rule is narrowed to that set rather than dropped, because it now has a
+    # legitimate counter-example: `fixture.mixtape` is exactly the five columns
+    # by one row the operator drew (`[o=o]`), and a granted drawing may not be
+    # padded out with invented rows to satisfy a shape test. Enumerating the
+    # ten by id keeps the strong guard exactly where it was written for.
+    for asset in atlas_v2["assets"]:
+        if asset["id"] not in STARTER_FIXTURE_IDS:
             continue
         width, height = asset["cell_box"]
         assert width > 1 and height > 1, f"{asset['id']} is still a single glyph"

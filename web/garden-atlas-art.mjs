@@ -487,6 +487,104 @@ export const ATLAS_PROPORTIONAL_ART = Object.freeze({
         }
       ]
     }
+  },
+  "fixture.coffee_mug": {
+    "anchor": [
+      3,
+      1
+    ],
+    "cell_box": [
+      5,
+      2
+    ],
+    "states": {
+      "idle": [
+        {
+          "ticks": 10,
+          "rows": [
+            "   . ",
+            ":c[_]"
+          ]
+        },
+        {
+          "ticks": 10,
+          "rows": [
+            "   o ",
+            ":c[_]"
+          ]
+        },
+        {
+          "ticks": 10,
+          "rows": [
+            "   O ",
+            ":c[_]"
+          ]
+        }
+      ]
+    }
+  },
+  "fixture.ice_cream_cone": {
+    "anchor": [
+      2,
+      1
+    ],
+    "cell_box": [
+      3,
+      2
+    ],
+    "states": {
+      "idle": [
+        {
+          "ticks": 1,
+          "rows": [
+            "(~)",
+            "  V"
+          ]
+        }
+      ]
+    }
+  },
+  "fixture.mixtape": {
+    "anchor": [
+      2,
+      0
+    ],
+    "cell_box": [
+      5,
+      1
+    ],
+    "states": {
+      "idle": [
+        {
+          "ticks": 1,
+          "rows": [
+            "[o=o]"
+          ]
+        }
+      ]
+    }
+  },
+  "fixture.popsicle": {
+    "anchor": [
+      1,
+      2
+    ],
+    "cell_box": [
+      3,
+      3
+    ],
+    "states": {
+      "idle": [
+        {
+          "ticks": 1,
+          "rows": [
+            ".-.",
+            "| |",
+            " | "
+          ]
+        }
+      ]
+    }
   }
 });
 
