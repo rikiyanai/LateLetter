@@ -2904,6 +2904,10 @@ Decisions so far:
 - Boundary-straddling ink child ANSWERED (commit 0e92a53): in-box ink offered to the source bank
   under strict gates; bbbb states zero wrong characters against accepted.txt (pinned by an
   accepted-corpus regression test); ten horse texture dots recover as `.`, unproven until review.
+- Window-context naming child ANSWERED (commit f361aad): stage 1.5 window-similarity naming with
+  a self-calibrated floor; compound-component splitting recorded as a SPENT approach (aliases a
+  truncated `(` to `[`; caught by the zero-wrong pin). Cross-source unknowns: bbbb 6, horse 7,
+  sitting-cat 4, blooms 24/24.
 
 Not yet specified:
 - The neighbour-template explanation discriminator for boundary-straddling ink (the remaining
