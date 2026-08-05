@@ -13444,3 +13444,70 @@ reported the path as UNMATCHED.
   that this specific, twice-observed deletion cannot reach a remote unnoticed.
   ComplaintRefs: cross-lane deletion entry (2026-08-06); the deletion recurred
   entry (2026-08-06); operator decision to do (b), 2026-08-06.
+
+### Root cause of the phantom art deletions: a stale shared index, not a deleter (2026-08-06)
+
+The question left open by the recurrence entry (4d95ace) and restated by the
+pre-push gate entry (f8e4ca9) — *what is staging these deletions* — is
+answered by direct evidence: **nothing is staging them. There is no deleter.**
+
+**The observation that broke it open.** Minutes after f8e4ca9 landed, all
+seven newly committed `.githooks/` files showed as staged deletions in the
+shared index — the exact signature of the two earlier incidents, now aimed at
+files that did not exist an hour before. But `.git/index` carries an mtime of
+05:54:53, and f8e4ca9 was committed at 06:05:50 (+0900). The index was last
+written **before** the commit existed. No process staged anything afterward;
+a "staged deletion" is nothing more than a path present in HEAD and absent
+from the index.
+
+**The mechanism.** Every lane in this repository commits through a temp index
+and `git commit-tree` + `git update-ref` — necessarily, because the shared
+checkout is permanently mixed. That plumbing moves HEAD **without ever
+writing the shared `.git/index`**. Consequences, purely mechanical:
+
+- Every path *added* by a surgical commit is present in HEAD and absent from
+  the shared index, so git reports it as staged for deletion from that moment
+  onward.
+- Every path *modified* by a surgical commit sits in the index at its older
+  blob, so git reports a staged reversion.
+- A plain `git commit` from that index then produces a tree missing every
+  path added — and reverting every path modified — since the index's vintage.
+
+**All three incidents reinterpreted.** 1bdea41's silent removal of the eleven
+granted art files was a plain commit from a stale index: mechanical reversion,
+not a deliberate deletion by its author, which is why its message never
+mentioned the files. The first "recurrence" was the same staleness observed
+in the index, not a second act; its per-path repair synced only the twelve
+guarded paths and left the rest of the index stale. f8e4ca9 then added seven
+hook files, which appeared "staged for deletion" by the same arithmetic —
+the third sighting, and the one whose mtime evidence excludes an actor.
+
+**Audit and repair applied.** A classification script
+(`scratchpad/index_audit.py`) compared every index-vs-HEAD divergence against
+the blobs recorded by the last forty ancestor commits. Seventeen divergent
+paths; **all seventeen stale** (index blob identical to an ancestor's blob,
+or absent where ancestors also lacked the path); **zero novel staged
+content** — no lane had deliberate staged work that a sync could harm. All
+seventeen were synced per-path via `git update-index --add --cacheinfo`
+against HEAD's own blobs. `git diff-index --cached HEAD` is now empty.
+
+**The law this adds for every lane.** A temp-index surgical commit MUST end
+by syncing the shared index for exactly the paths it changed:
+
+    git update-index --add --cacheinfo <mode>,<blob>,<path>   # per changed path
+
+Skipping this step re-arms the failure: the next plain commit by any lane
+reverts everything committed surgically since the index last matched HEAD.
+
+**What stays true.** The pre-push gate (f8e4ca9) loses none of its value — a
+stale-index commit is precisely the accident it exists to stop from being
+published — and the grant-source guard test still covers drift and deletion
+at the suite level. What can end is the hunt for a staging mechanism: the
+e4faa3d decision's open thread about an unidentified actor is answered, and
+the recurrence-rate alarm in 4d95ace dissolves into index arithmetic.
+
+- **Status:** EXPLANATION SUPPORTED BY MTIME AND BLOB EVIDENCE (index written
+  05:54:53, f8e4ca9 committed 06:05:50; 17/17 divergences matched ancestor
+  blobs). Index synced to HEAD. The per-commit sync law is Implemented
+  (unproven) as prevention until every lane adopts it. ComplaintRefs:
+  1bdea41; c4ffab4; 4d95ace; f8e4ca9.
