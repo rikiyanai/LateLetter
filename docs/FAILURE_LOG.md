@@ -11290,3 +11290,225 @@ guarded.
 - **Status:** IMPLEMENTED (UNPROVEN beyond the receipts above). ComplaintRef:
   operator take-over order, 2026-08-05; artifact-surface substitution entry,
   2026-08-05; geometry mode misassignment entry, 2026-08-05.
+
+### Known-red tail counted per file and reconciled against the f05658a record (2026-08-05)
+
+Failure-log preflight named three owning records, all of which leave this
+open rather than attempted: the wayfinder map's out-of-scope line ("The 15
+known-red tests recorded at f05658a (separate reconciliation)"), the 9d9d45d
+verification entry ("the f05658a known-red tail beyond these two assertions
+... has no fresh count in this session"), and the map update ("The f05658a
+known-red tail beyond the reconciled pair has no fresh count."). No prior
+repair attempt on the remaining tail is recorded, so this is attempt 1 on it.
+
+The f05658a commit message is the baseline record: "KNOWN RED, recorded in
+the Failure Log with A/B attribution: 12 node and 3 python tests from the
+concurrent repair's unreconciled tail (generator fingerprint parity,
+provenance stamps, soil-line rows, hover/rustle mechanics, manifest absence
+check)."
+
+Fresh per-file count, taken at 4eacd10 with the worktree as found
+(`node --test <file>` once per file, then one pytest run over the garden
+Python set):
+
+- tests/garden_adapters/test_garden_atlas_ownership.mjs 9/9
+- tests/garden_adapters/test_garden_geometry.mjs 28/28
+- tests/garden_adapters/test_garden_hit_testing.mjs 10/10
+- tests/garden_adapters/test_garden_input.mjs 3/3
+- tests/garden_adapters/test_garden_live_runtime.mjs 25/25
+- tests/garden_adapters/test_garden_renderer.mjs 64/64
+- tests/garden_adapters/test_garden_world.mjs 12/12
+- tests/garden_adapters/test_presentation_contract.mjs 28/28
+- tests/garden_adapters/test_raster_identity_contract.mjs 6/6
+- tests/garden_adapters/test_review_refuses_restored_world.mjs 6/6
+- tests/garden_adapters/test_world_composition_versioning.mjs 13/13
+- Node total 204/204. The node half of the f05658a tail is 12 reds -> 0.
+  Those reds were retired incrementally by the terrain/billboard work
+  (9d9d45d), the fixture-room work (1e1c8f4) and the diagnostic
+  reconciliation (6dfd628); no node red survives that was not already
+  accounted for.
+- Python garden set (tests/garden_contract, tests/garden_world,
+  tests/garden_acceptance, tests/garden_adapters/test_world_browser_
+  conformance.py, tests/garden_adapters/test_input_adapters.py,
+  tests/test_garden_font_contract.py, tests/test_capture_html_garden_
+  review.py): 376 passing, 3 red. The python half is 3 -> 3, but it is no
+  longer an unattributed count; all three are named below.
+
+Red 1 and red 2 -- `tests/garden_acceptance/test_release_acceptance.py::
+test_gate_status_matrix_never_converts_proxy_evidence_into_release_claims`
+and `::test_the_gate_matrix_cites_the_current_browser_e2e_contract`. One
+root cause, and it is the "manifest absence check" family f05658a named:
+both raise `FileNotFoundError` on `tests/test_garden_review_e2e_browser.py`,
+which f05658a itself deleted ("the 2,011-line browser E2E that certified
+mechanics over a broken picture is deleted"). `tests/garden_acceptance/
+gate_matrix.json` still cites that file in nine `automated_checks` selectors
+under gate 2 and seven under gate 12, both rows PARTIAL, and both `blocker`
+paragraphs still narrate what "Real Chrome now proves" using evidence that
+is no longer in the checkout.
+
+NOT REPAIRED BY THIS LANE, deliberately. The repair is a rewrite of the
+release-gate status surface: dropping sixteen evidence citations and
+rewriting two operator-facing blocker paragraphs to record that their proof
+was withdrawn. That is a downgrade of recorded release status, and release
+status sits behind the operator fence, so it is counted and attributed here
+and left red rather than edited unilaterally. The exact repair shape is
+recorded above so an operator-authorized attempt does not have to rediscover
+it.
+
+Red 3 -- `tests/garden_acceptance/test_release_paint_manifest.py::
+test_rejected_and_unreviewed_paint_is_absent_from_the_authority`. A stale
+test contract, of the same class as the pair reconciled in 6dfd628, and
+repaired here. The assertion was written when the atlas verdict table
+(`assets[]`) was the register's only way to grant an asset ID. f05658a added
+a second, narrower door: `operator_grants[]`, for an exact operator-authored
+TXT that entered through the grant ledger instead of the atlas review table.
+`scripts/prepare_pages_site.py::_accepted_asset_ids` admits such a grant only
+after resolving its declared `source` and matching its recorded
+`source_sha256`, and raises otherwise. The manifest therefore legitimately
+carries `plant.rose`, while the test expected the verdict table alone and
+reported it as an extra item.
+
+- Repair (tests/garden_acceptance/test_release_paint_manifest.py only; no
+  product code and no register touched): the expected set is now
+  verdict-accepted IDs UNION hash-verified grant IDs, with the digest
+  recomputed inside the test from the register and the file on disk rather
+  than read back from the builder it is checking, so the two derivations stay
+  independent. Every original guarantee is retained: the two anti-leak
+  assertions (no `rejected` ID, no `not_reviewed` ID in the manifest) are
+  unchanged, a grant whose source is absent or whose bytes drifted now fails
+  this test by name, and an added `assert granted_assets` refuses to let the
+  grant half of the proof go vacuous if the ledger is ever emptied.
+- No verdict was created, altered or inherited. `plant.rose` was already an
+  operator grant in `docs/garden-asset-acceptance.json`; the six
+  fixture-variant candidates remain `not_reviewed` and remain outside
+  `accepted_assets`.
+- Grant binding checked directly rather than assumed: the granted source is
+  139 bytes, its sha256 is
+  `04bce501c712fc071523711a3ea1b67a8af302434a66f0e638c2bdc144b0baac`, it
+  matches the register, and appending one byte breaks the match -- so the
+  check is bound to the bytes, not merely present.
+- Evidence: tests/garden_acceptance/test_release_paint_manifest.py 13/13
+  after the repair; the garden Python set moves 376 -> 377 passing with the
+  two gate-matrix reds remaining.
+
+- **Status:** RECONCILED AS A COUNT; ONE RED REPAIRED, TWO RECORDED AND LEFT
+  TO THE OPERATOR FENCE. Node 12 -> 0, Python 3 -> 2, both halves now
+  attributed to named causes instead of an aggregate. Diagnostics only; no
+  visual acceptance and no release-gate claim. ComplaintRef: Wayfinder map:
+  operator field review of the panning garden (2026-08-05).
+
+### The unified exact-font platform_glyphs path, looked at in a real browser (2026-08-05)
+
+Failure-log preflight: the open item is the map update's last fog line, "The
+unified exact-font path (`platform_glyphs`) has no visual proof; the
+inspected Chrome session ran the degraded-font runtime", and the same
+observation in the 9d9d45d verification entry. No prior attempt to view the
+path is recorded. This is attempt 1.
+
+**First finding: the path cannot activate on the product URL at all, and the
+reason is a deliberate art decision, not a defect.** Served locally
+(`python3 -m http.server 8792`) and driven in headless system Chrome at
+1600x1000 on
+`viewer-bnw.html?garden_review_time=2026-08-05T12:00:00Z&garden_review_motion=1`,
+the standalone Garden painted 66 lattice rows, 39 of them carrying ink, with
+NO measured layer and zero glyph spans -- `paint_mode` 'rows', the degraded
+transport. `#g` carried `font-degraded` and computed to Menlo 13px.
+
+The gate is not the font and not the measurement module. `document.fonts.
+check("400 15px 'LateLetter Garden'")` returned true in that same session:
+the bundled WOFF loads. `web/garden-renderer.mjs` accepts `measurer` and
+`font` constructor options and then discards them three lines later
+(`this.measurer = null; this.font = null;`, web/garden-renderer.mjs:87)
+while stamping `font-degraded` unconditionally (:75) and overriding `#g` to
+Menlo 13px/15px (:82-85). The comment above those lines records why: the
+accepted fixture rounds were reviewed as a fixed-column drawing, and
+"a source id is not permission to change its rendering." So the exact-font
+path is currently unreachable BY CONSTRUCTION, and the thing standing in its
+way is an operator asset decision -- authored proportional replacements --
+not renderer work.
+
+**Second finding: forced into the path, it composes correctly and the
+picture is not coherent.** To answer the visual half of the question the
+three statements above were rewritten IN FLIGHT at the network layer for one
+browser session (Playwright route interception serving patched module bytes;
+nothing in the checkout changed). Everything else was the real product boot:
+the real viewer, the real PreText measurer, the real bundled face, the real
+`composePresentationFrame` and `paintPresentationFrame`.
+
+Mechanically the unified plane behaves exactly as designed. `#g` computed to
+'LateLetter Garden' 15px with no degraded class; 58 lattice rows carried ink
+in zero of them; the measured layer held 799 glyph spans at 799 DISTINCT
+integer pixel origins with 0 colliding origins. No glyph is stacked on
+another, nothing is vertically misaligned, and every fixture is present and
+whole: pond, stepping stones, bench, planter, mailbox, sunflowers, roses and
+the memorial marker all painted.
+
+What I SAW, at
+`scratchpad/exact-forced-full.png` and `scratchpad/exact-forced-crop.png`
+(full frame and a 950x560 crop of the fixture band), is nevertheless not a
+coherent garden. The whole scene is roughly twice too airy horizontally.
+Tree canopies that read as solid foliage in the degraded capture
+(`scratchpad/exact-font-full.png`) read as loose polka-dot grids -- `& & & &`
+and `@ @ @ @` and `o o o o` with a gap between every mark. Connected-stroke
+drawings break: the planter's box rules render as a dashed `_ _ _ _ _`
+instead of a continuous edge, the bench seat's underscores no longer join,
+and the pond rim reads as a dotted outline around scattered water rather
+than a bank enclosing it. The right edge clips a tree and a rose that fit in
+the degraded frame.
+
+**Attribution, measured rather than guessed.** The bundled face is genuinely
+proportional: at 15px its advances are '0' 8.69px, 'W' 16.31px, 'i' 5.00px,
+'_' 7.05px. The world lattice pitch, however, is the advance of
+`LATTICE_REFERENCE_TEXT = 'M'` (web/garden-geometry.mjs:86, consumed at
+:345-346), which measures 15.03px in that face. A pitch histogram over all
+799 painted spans confirms the consequence: 498 of the consecutive-glyph x
+deltas are exactly 15.03px -- the lattice-painted scenery, planting, cover
+and terrain -- while object-local measured art uses its own prefix widths and
+shows tight deltas (29 at 7.05px, 16 at 8.73px, and a cluster near 5px). So
+the frame carries TWO incompatible scales in one picture: measured fixture
+art drawn at true per-glyph advances, sitting inside scenery spread on an
+'M'-wide grid nearly double the width of the ink that occupies it. That, not
+overlap or misalignment, is why the exact-font garden does not read.
+
+- **Status:** VISUALLY INSPECTED BY THE AGENT UNDER A LOAD-TIME PATCH; PATH
+  NOT REACHABLE ON THE PRODUCT URL. No product code was changed and no
+  repair is proposed here: the pitch question ('M' as the lattice reference
+  against a proportional repertoire) and the authored proportional
+  replacements the renderer comment names are both asset/ADR decisions above
+  this lane. The degraded stamp in web/garden-renderer.mjs:75 is therefore
+  load-bearing today and must not be removed as tidy-up. Visual acceptance
+  remains operator-only. ComplaintRef: Wayfinder map update, 2026-08-05,
+  fog line "the unified exact-font path has no visual proof".
+
+### Standing task 15 assessed: the terminal is a second composition owner (2026-08-05)
+
+Investigated before any implementation, per the standing task "browser and
+terminal consume one presentation interface". The finding is that the two
+renderers do not merely diverge in style; they are separate owners in
+separate languages.
+
+- The browser interface is `composePresentationFrame` /
+  `paintPresentationFrame` in web/garden-presentation.mjs, consumed by
+  web/garden-renderer.mjs and viewer-bnw.html.
+- The terminal has its own whole composition: `src/lateletter/garden/
+  renderer.py::GardenRenderer` (330 lines) builds row strings straight from
+  `WorldState` in `render_lines` (:67), with its own `connected_glyph` (:61),
+  its own diffing in `render_diff` (:231), and its own outputs in
+  `blit_curses` (:243) and `render_ansi` (:250). Nothing in
+  src/lateletter/garden/ consumes the presentation frame contract, and it
+  could not: that contract is JavaScript.
+- `src/lateletter/garden/terminal.py:26` already declares the gap in
+  source: `FULL_GARDEN_PARITY = False`.
+
+Both paths are garden-lane-owned, so the task is in-lane. It is nevertheless
+not a session-sized change: unifying them means either lifting the frame
+contract into a language-neutral owner that both renderers consume, or
+declaring one of the two the composer and giving the other a transport --
+each a design decision that needs its own ADR and, because the terminal
+paints a picture, its own operator look at the terminal output. Starting it
+inside the remaining time would have produced a half-migrated second owner,
+which is the exact shape of defect this lane keeps paying for.
+
+- **Status:** ASSESSED AND SCOPED, NOT STARTED. Recorded so the next attempt
+  opens from the named owners above rather than rediscovering them.
+
