@@ -175,46 +175,167 @@ def test_v2_monospace_ascii_fixture_routes_lattice_mode() -> None:
     assert authority["pitch_tie_ownership_signature"]
 
 
-def test_horse_animation_sheet_records_typed_lattice_absence() -> None:
-    """The horse sheet is pinned at whatever it can honestly prove today.
+def test_horse_animation_sheet_proves_its_calibrated_line_pitch() -> None:
+    """The horse sheet recovers its true 21 px line pitch from autocorrelation.
 
     Its operator-reviewed calibration measures a 21.0 px line height and an
-    11.55 px cell advance (used here only as a test expectation, never as a
-    runtime input).  The source-only seam ranking still prefers a 30 px period
-    because the sheet's box-drawing strokes run through every true row seam, so
-    a 21 px lattice has no gutter to measure.  The router must therefore *not*
-    claim a lattice: it routes shaped runs, reports honest false pitch/phase
-    proofs, and names why the lattice branch is absent -- including the
-    independent vertical-autocorrelation measurement that contests the seam
-    winner.  This test pins the honest gap so a later estimator change is
-    visible rather than silent.
+    11.55 px cell advance.  Those figures are used here only as test
+    expectations; the router never opens a calibration file.
+
+    Seam energy alone cannot see this lattice.  The sheet's box-drawing strokes
+    run through every true row seam, so a 21 px period has no gutter to measure
+    and the seam ranking prefers 30 px -- and then the harmonic gate rejects 21
+    as a supposed stroke harmonic *of that wrong parent*.  The vertical
+    autocorrelation of the row-ink profile answers the period question directly:
+    it peaks at exactly 21 with a prominence of about six sampling standard
+    errors, which restricts the seam ranking to 21's harmonic ladder and refutes
+    the harmonic rejection whose parent (30) the same measurement rejected.
+
+    The phase is a different question, and the source still cannot answer it:
+    every phase of a 21 px period cuts strokes, the best two differ by 7.3% of
+    their boundary ink (below the 10% authority margin), and the winning phase
+    moves when the foreground threshold moves.  So this is an honest partial --
+    pitch proven, phase not -- and it is pinned as such.
     """
 
     bundle, decision = route_raster_geometry(HORSE_SHEET)
 
     assert bundle.status == "proved"
     assert decision.status == "proved"
+    # Phase authority is still absent, so no lattice may be claimed.
     assert decision.mode == "shaped_runs"
     assert (
         decision.candidate_valid,
         decision.pitch_proven,
         decision.phase_proven,
         decision.ownership_proven,
-    ) == (True, False, False, True)
+    ) == (True, True, False, True)
+
+    lattice = decision.provenance["branch_proofs"]["fixed_lattice"]
+    # The fused winner is the calibrated line height, not the seam winner.
+    assert lattice["winning_pitch"] == 21
+    assert lattice["seam_winning_pitch"] == 30
+    assert lattice["pitch_authority_stream"] == "fused_autocorrelation_restricted"
+    assert lattice["autocorrelation_decisive"] is True
+    assert lattice["autocorrelation_leader_pitch"] == 21.0
+    # Six sampling standard errors: far above the three-sigma significance gate.
+    assert lattice["autocorrelation_leader_sigma"] > 5.0
+    # With the streams fused there is nothing left to contest.
+    assert lattice["autocorrelation_contesting_pitch"] is None
+    assert lattice["pitch_streams_contested"] is False
+
+    # The fractional horizontal stream corroborates the probe's 11.55 px
+    # advance -- a value no integer-lag measurement could have produced.
+    assert lattice["horizontal_measured_advance_px"] == 11.55
+    assert lattice["horizontal_advance_corroborated"] is True
+    assert lattice["horizontal_advance_contested"] is False
+
+    authority = bundle.projection_evidence["periodic_authority"]
+    # Pitch replay is stable across every retained foreground threshold; the
+    # phase replay is not, and the two are now reported separately.
+    assert authority["foreground_stability"]["pitch_stable"] is True
+    assert authority["foreground_stability"]["stable_pitch"] == 21
+    assert authority["foreground_stability"]["stable"] is False
+    assert authority["pitch_margin_sufficient"] is True
+    assert authority["phase_margin_sufficient"] is False
+    assert 0.0 < authority["normalized_phase_margin"] < 0.10
+
     assignment = decision.provenance["mode_assignment"]
     assert assignment["lattice_authority_proven"] is False
     assert assignment["lattice_absence_proven"] is True
     assert set(assignment["lattice_absence_reasons"]) <= set(assignment["absence_vocabulary"])
-    assert "lattice_foreground_unstable" in assignment["lattice_absence_reasons"]
-    lattice = decision.provenance["branch_proofs"]["fixed_lattice"]
-    # The seam ranking's winner and the independent periodicity measurement
-    # disagree; the operator calibration says the latter is the true one.
-    assert lattice["winning_pitch"] == 30
-    assert lattice["autocorrelation_contesting_pitch"] == 21
+    # The absence is now named by the property that is actually missing.
+    assert "lattice_phase_margin_insufficient" in assignment["lattice_absence_reasons"]
+    assert "lattice_pitch_margin_insufficient" not in assignment["lattice_absence_reasons"]
     assert (
         "lattice_pitch_contested_by_vertical_autocorrelation"
-        in assignment["lattice_absence_reasons"]
+        not in assignment["lattice_absence_reasons"]
     )
+
+
+def test_autocorrelation_stream_is_silent_on_shaped_and_proportional_sources() -> None:
+    """The promotion path must not fabricate a lattice on non-lattice sources.
+
+    Promoting autocorrelation to pitch authority is exactly how a false lattice
+    could be manufactured, so every fixture below is checked twice: the routed
+    mode must not become ``fixed_lattice``, *and* the autocorrelation stream
+    must not be decisive in the first place.  The second check is the stronger
+    one -- it pins the gate rather than the outcome, so a future loosening is
+    caught even if some other guard happens to save the mode.
+
+    The sources are proportional Latin, emoji-ZWJ clusters, CJK, mixed script,
+    width mixtures and a degraded render, across both fixture corpora.  None of
+    them is a monospace cell grid, and their row-ink correlation curves are
+    either monotone (no interior peak at all) or carry only ripple below three
+    sampling standard errors.
+    """
+
+    shaped_fixtures = [
+        (ROOT, "positive-emoji-zwj"),
+        (ROOT, "positive-kana"),
+        (ROOT, "positive-kanji"),
+        (ROOT, "positive-mixed-script"),
+        (ROOT, "positive-width-mixture"),
+        (ROOT, "positive-combining"),
+        (ROOT, "positive-degraded-fixed"),
+        (ROOT_V2, "positive-emoji-zwj"),
+        (ROOT_V2, "positive-kana"),
+        (ROOT_V2, "positive-kanji"),
+        (ROOT_V2, "positive-mixed-script"),
+        (ROOT_V2, "positive-width-mixture"),
+        (ROOT_V2, "positive-combining"),
+        (ROOT_V2, "positive-degraded-fixed"),
+        (ROOT_V2, "positive-proportional-latin"),
+        (ROOT, "positive-proportional-latin"),
+    ]
+    for root, name in shaped_fixtures:
+        source = root / "positive" / name / "source.png"
+        bundle, decision = route_raster_geometry(source)
+        authority = bundle.projection_evidence["periodic_authority"]
+        evidence = authority["autocorrelation_pitch_evidence"]
+        assert evidence["decisive"] is False, f"{name} fabricated a periodicity"
+        assert authority["autocorrelation_selected"] is False, name
+        assert authority["pitch_authority_stream"] == "seam_energy", name
+        assert not authority["autocorrelation_reinstated_pitches"], name
+
+    # The genuinely shaped fixtures among them must also still route shaped.
+    for root, name in shaped_fixtures:
+        if "proportional" in name:
+            # Both proportional-latin fixtures already routed ``fixed_lattice``
+            # before this change, on seam evidence alone; the assertions above
+            # pin that the autocorrelation stream took no part in that, and the
+            # mode is deliberately left exactly as it was found.
+            continue
+        source = root / "positive" / name / "source.png"
+        _bundle, decision = route_raster_geometry(source)
+        assert decision.mode == "shaped_runs", f"{name} flipped to {decision.mode}"
+
+
+def test_sitting_cat_records_an_undecisive_autocorrelation_peak() -> None:
+    """A peak that is real but not significant may not carry the pitch.
+
+    The cat's tracked calibration measures an 18.0 px line height, and the
+    autocorrelation curve does lead at lag 18 -- but its prominence is under
+    three sampling standard errors on this 236-row raster, so the stream is not
+    decisive and the seam ranking keeps its own answer of 23.  That is the
+    correct, conservative outcome for this slice: the gate is a statistical
+    significance test, not a race to match a calibration, and the source is
+    pinned here so the gap is visible rather than silently absorbed.
+    """
+
+    bundle, decision = route_raster_geometry(SITTING_CAT)
+
+    assert decision.status == "proved"
+    assert decision.mode == "shaped_runs"
+    authority = bundle.projection_evidence["periodic_authority"]
+    evidence = authority["autocorrelation_pitch_evidence"]
+    assert evidence["leader_lag"] == 18.0
+    assert evidence["separation_met"] is True
+    assert evidence["significance_met"] is False
+    assert evidence["leader_prominence_sigma"] < evidence["significance_sigma"]
+    assert evidence["decisive"] is False
+    assert authority["pitch_authority_stream"] == "seam_energy"
+    assert authority["winning_pitch"] == 23
 
 
 def test_shaped_admission_requires_a_typed_lattice_absence(monkeypatch) -> None:
@@ -542,3 +663,136 @@ def test_benchmark_v5_executes_every_geometry_owned_run_with_tesseract_profiles(
     fixed = next(item for item in release if item["fixture"] == "positive-fixed-ascii")
     assert {adapter["run_count"] for adapter in fixed["adapters"]} == {2}
     assert report["status"] == "blocked_release_coverage"
+
+
+# ---------------------------------------------------------------------------
+# Unit-level pins on the autocorrelation periodicity stream
+# ---------------------------------------------------------------------------
+# The tests above measure real sources.  The ones below pin the gate itself, so
+# a future loosening is caught even on a source nobody thought to add.
+
+
+def test_monotone_correlation_curve_carries_no_periodicity_evidence() -> None:
+    """A decaying curve has no interior peak, so no lag may be a period.
+
+    This is the shape a shaped or proportional source produces: neighbouring
+    lags of a smooth ink profile correlate, so the curve slides downwards from
+    the shortest searched lag with nothing standing out.  Reading its *maximum*
+    as a pitch -- which is what a raw-magnitude comparison does -- would name the
+    shortest searched lag as the period of almost every source in the corpus.
+    """
+
+    from lateletter.transcription.geometry.evidence import (
+        _autocorrelation_periodicity_evidence,
+        _curve_peak_prominences,
+    )
+
+    curve = {float(lag): 0.9 - 0.02 * lag for lag in range(8, 33)}
+    assert _curve_peak_prominences(curve) == []
+    evidence = _autocorrelation_periodicity_evidence(
+        curve, authority_margin=0.10, sample_count=400
+    )
+    assert evidence["decisive"] is False
+    assert evidence["leader_lag"] is None
+    assert evidence["peaks"] == []
+
+
+def test_autocorrelation_significance_scales_with_the_sampling_error() -> None:
+    """The same peak is evidence on a tall raster and noise on a short one.
+
+    Bartlett's approximation puts the standard error of a sample
+    autocorrelation at ``1 / sqrt(N)``.  A prominence of 0.15 is five standard
+    errors on a 1000-row profile and well under three on a 100-row profile, and
+    the gate must follow that -- it is a significance test, not a fixed cutoff.
+    """
+
+    from lateletter.transcription.geometry.evidence import _autocorrelation_periodicity_evidence
+
+    curve = {float(lag): 0.30 - 0.004 * lag for lag in range(8, 33)}
+    curve[21.0] = curve[21.0] + 0.15  # one clean peak, prominence 0.15
+
+    # The peak stands 0.15 above the trend line, and its nearer col is the
+    # neighbouring lag one trend-step (0.004) below it, so the prominence the
+    # measurement reports is 0.146.
+    tall = _autocorrelation_periodicity_evidence(curve, authority_margin=0.10, sample_count=1000)
+    assert tall["leader_lag"] == 21.0
+    assert tall["leader_prominence"] == pytest.approx(0.146, abs=1e-9)
+    assert tall["leader_prominence_sigma"] == pytest.approx(0.146 * 1000 ** 0.5, rel=1e-9)
+    assert tall["significance_met"] is True
+    assert tall["decisive"] is True
+
+    short = _autocorrelation_periodicity_evidence(curve, authority_margin=0.10, sample_count=100)
+    assert short["leader_lag"] == 21.0
+    assert short["significance_met"] is False
+    assert short["decisive"] is False
+
+
+def test_autocorrelation_leader_outside_the_admissible_set_never_decides() -> None:
+    """A period with no valid candidate cannot be selected, however clean.
+
+    ``admissible`` is the set of periods the seam sweep produced a valid
+    candidate for.  A correlation peak at a period that was rejected (a terminal
+    sliver, an unexplained clipped edge) is reported but must fail shut, because
+    there is no geometry behind it to route to.
+    """
+
+    from lateletter.transcription.geometry.evidence import _autocorrelation_periodicity_evidence
+
+    curve = {float(lag): 0.30 - 0.004 * lag for lag in range(8, 33)}
+    curve[21.0] = curve[21.0] + 0.30
+
+    admitted = _autocorrelation_periodicity_evidence(
+        curve, authority_margin=0.10, sample_count=1000, admissible={21.0}
+    )
+    assert admitted["decisive"] is True
+
+    excluded = _autocorrelation_periodicity_evidence(
+        curve, authority_margin=0.10, sample_count=1000, admissible={19.0, 30.0}
+    )
+    assert excluded["leader_lag"] == 21.0
+    assert excluded["significance_met"] is True
+    assert excluded["leader_admissible"] is False
+    assert excluded["decisive"] is False
+
+
+def test_harmonic_ladder_folds_multiples_and_divisors_of_the_leader() -> None:
+    """A period's own harmonics are not rivals to it.
+
+    A source with period 15 also correlates at 30.  Counting 30 as a competitor
+    would destroy the separation margin of a perfectly clean measurement, so the
+    ladder folds multiples and divisors into the leader before the margin test.
+    """
+
+    from lateletter.transcription.geometry.evidence import _harmonic_ladder
+
+    lags = [float(value) for value in range(8, 33)]
+    assert _harmonic_ladder(15.0, lags) == [15.0, 30.0]
+    assert _harmonic_ladder(21.0, lags) == [21.0]
+    # Fractional lags need slack; a quarter pixel is enough to fold 11.5 into 23.
+    assert 23.0 in _harmonic_ladder(11.5, [11.5, 17.0, 23.0], tolerance=0.25)
+
+
+def test_fractional_autocorrelation_recovers_a_non_integer_period() -> None:
+    """The horizontal stream must see advances no integer lag can express.
+
+    The horse sheet's operator-reviewed cell advance is 11.55 px.  A synthetic
+    profile with exactly that period must peak at 11.55 and not at 11 or 12,
+    which is the whole reason the horizontal sweep is fractional.
+    """
+
+    from lateletter.transcription.geometry.evidence import (
+        _curve_peak_prominences,
+        _fractional_autocorrelation,
+    )
+
+    period = 11.55
+    columns = np.arange(600, dtype=float)
+    # A narrow bar once per period: the column-ink profile of a cell grid.
+    profile = np.exp(-((columns % period) - 0.0) ** 2 / 0.8) + np.exp(
+        -((columns % period) - period) ** 2 / 0.8
+    )
+    curve = _fractional_autocorrelation(profile, 9.0, 16.0, 0.05)
+    assert curve
+    peaks = _curve_peak_prominences(curve)
+    assert peaks
+    assert peaks[0]["lag"] == pytest.approx(period, abs=0.05)

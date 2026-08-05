@@ -126,6 +126,9 @@ LATTICE_ABSENCE_REASONS: tuple[str, ...] = (
     # An independent measurement (vertical autocorrelation of the row-ink
     # profile) prefers a different period to the seam-ranked winner.
     "lattice_pitch_contested_by_vertical_autocorrelation",
+    # The fractional-lag correlation of the column projection prefers a
+    # different cell advance to the mixed-width boundary-ink probe.
+    "lattice_horizontal_advance_contested_by_autocorrelation",
 )
 
 # Emitted when the lattice branch neither proved nor produced any of the typed
@@ -145,48 +148,53 @@ UNTYPED_SHAPED_ABSENCE = "shaped_authority_absence_untyped"
 
 
 def _autocorrelation_contest(projection: Mapping[str, Any]) -> int | None:
-    """Return a row period that out-measures the seam-ranked winner, if any.
+    """Return a row period that contests the fused winner, if any.
 
-    ``periodic_row_candidates`` already carries, for every measured period, the
-    vertical autocorrelation of the source row-ink profile at that lag.  That is
-    an *independent* periodicity measurement: unlike seam energy it does not
-    reward a long period simply for having fewer boundaries to cut.  When some
-    other period scores strictly higher on it, the seam-ranked winner is
-    contested, and the router records that by name.
+    Pitch authority is now fused inside the evidence owner: when the vertical
+    autocorrelation of the row-ink profile carries a statistically significant,
+    well-separated peak, that peak's harmonic ladder is the only family the seam
+    ranking may choose from (see ``_periodic_authority_snapshot``).  So in the
+    normal case the two streams cannot disagree -- the winner is on the ladder by
+    construction, and this function returns ``None``.
+
+    A contest survives in exactly two measurable shapes, and both are reported:
+
+    * ``pitch_streams_contested`` -- the ladder restriction left no admissible
+      family at all, so the evidence owner fell back to the seam ranking and
+      refused to hand out a margin.  The two streams genuinely disagree.
+    * a decisive autocorrelation leader whose ladder does not contain the
+      recorded winner.  This should not arise from the current fusion, and the
+      check is kept so that a future change which breaks the invariant is
+      reported rather than silently trusted.
+
+    The earlier version of this function compared *raw* correlation magnitudes
+    and therefore reported lag 8 -- the shortest searched lag -- for almost every
+    source in the corpus, because a smooth profile correlates best at short lags.
+    That measured the decay envelope, not periodicity.
 
     This function reads source-derived numbers only -- no transcript, no
     calibration file, no fixture metadata.  It is consulted solely to *explain*
     an already-absent lattice authority, so it can never promote a mode.
 
     :param projection: the bundle's ``projection_evidence`` mapping.
-    :returns: the contesting period in pixels, or ``None`` when the winner is
-        also the autocorrelation leader (or nothing could be measured).
+    :returns: the contesting period in pixels, or ``None`` when the streams
+        agree (or nothing could be measured).
     """
 
     periodic = dict(projection.get("periodic_authority", {}))
     winner = periodic.get("winning_pitch")
-    if winner is None:
+    evidence = dict(periodic.get("autocorrelation_pitch_evidence", {}))
+    leader = evidence.get("leader_lag")
+    if leader is None:
         return None
-    # One score per period: every phase of a period shares the same lag, so the
-    # maximum over phases is that period's measurement.
-    best_by_pitch: dict[int, float] = {}
-    for item in projection.get("periodic_row_candidates", ()):  # source measurements
-        if not bool(item.get("candidate_valid")):
-            continue
-        pitch = int(item.get("pitch", 0))
-        score = float(item.get("vertical_autocorrelation", 0.0))
-        if score > best_by_pitch.get(pitch, -1.0):
-            best_by_pitch[pitch] = score
-    if not best_by_pitch:
+    if bool(periodic.get("pitch_streams_contested")):
+        return int(leader)
+    if winner is None or not bool(evidence.get("decisive")):
         return None
-    # Ties go to the shorter period: a lattice period is the fundamental, and a
-    # multiple of it necessarily reproduces the same correlation.
-    leader_pitch, leader_score = max(best_by_pitch.items(), key=lambda entry: (entry[1], -entry[0]))
-    if int(leader_pitch) == int(winner):
+    ladder = {int(round(float(item))) for item in evidence.get("harmonic_ladder", ())}
+    if int(winner) in ladder:
         return None
-    if leader_score <= best_by_pitch.get(int(winner), 0.0):
-        return None
-    return int(leader_pitch)
+    return int(leader)
 
 
 def _lattice_proof(bundle: GeometryEvidenceBundle, *, criterion_threshold: float) -> dict[str, Any]:
@@ -266,6 +274,8 @@ def _lattice_proof(bundle: GeometryEvidenceBundle, *, criterion_threshold: float
         contesting_pitch = _autocorrelation_contest(projection)
         if contesting_pitch is not None:
             reasons.append("lattice_pitch_contested_by_vertical_autocorrelation")
+        if bool(periodic.get("horizontal_advance_contested")):
+            reasons.append("lattice_horizontal_advance_contested_by_autocorrelation")
         if not reasons:
             # Nothing measurable explained the absence.  Say so rather than
             # letting an unexplained lattice failure hand the source to the
@@ -286,6 +296,33 @@ def _lattice_proof(bundle: GeometryEvidenceBundle, *, criterion_threshold: float
         "pitch_tie_equivalent": bool(periodic.get("pitch_tie_equivalent")),
         "phase_tie_equivalent": bool(periodic.get("phase_tie_equivalent")),
         "autocorrelation_contesting_pitch": contesting_pitch,
+        # Both pitch streams, side by side, so a receipt can state which
+        # measurement carried (or failed to carry) the period.
+        "pitch_authority_stream": periodic.get("pitch_authority_stream", "none"),
+        "seam_winning_pitch": periodic.get("seam_winning_pitch"),
+        "seam_pitch_margin": float(periodic.get("seam_pitch_margin", 0.0)),
+        "autocorrelation_leader_pitch": (
+            periodic.get("autocorrelation_pitch_evidence", {}) or {}
+        ).get("leader_lag"),
+        "autocorrelation_leader_prominence": float(
+            (periodic.get("autocorrelation_pitch_evidence", {}) or {}).get("leader_prominence", 0.0)
+        ),
+        "autocorrelation_leader_sigma": float(
+            (periodic.get("autocorrelation_pitch_evidence", {}) or {}).get("leader_prominence_sigma", 0.0)
+        ),
+        "autocorrelation_decisive": bool(
+            (periodic.get("autocorrelation_pitch_evidence", {}) or {}).get("decisive")
+        ),
+        "autocorrelation_selected": bool(periodic.get("autocorrelation_selected")),
+        "pitch_streams_contested": bool(periodic.get("pitch_streams_contested")),
+        "horizontal_measured_advance_px": (
+            periodic.get("horizontal_advance_evidence", {}) or {}
+        ).get("measured_advance_px"),
+        "horizontal_autocorrelation_advance_px": (
+            periodic.get("horizontal_advance_evidence", {}) or {}
+        ).get("leader_lag"),
+        "horizontal_advance_corroborated": bool(periodic.get("horizontal_advance_corroborated")),
+        "horizontal_advance_contested": bool(periodic.get("horizontal_advance_contested")),
         "evidence": "source_raster_periodic_authority",
     }
 

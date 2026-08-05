@@ -243,6 +243,63 @@ def _autocorrelation(profile: np.ndarray, min_lag: int, max_lag: int) -> list[di
     return sorted(result, key=lambda item: (-item["score"], item["lag"]))
 
 
+def _fractional_autocorrelation(
+    profile: np.ndarray, minimum: float, maximum: float, step: float
+) -> dict[float, float]:
+    """Autocorrelate ``profile`` at *fractional* lags.
+
+    A monospace cell advance is not an integer in general -- the horse
+    animation sheet's operator-reviewed advance is 11.55 px -- so an
+    integer-lag correlation cannot see it.
+
+    The obvious implementation, "interpolate the shifted copy and correlate it
+    against the original", is *wrong*, and measurably so: linear interpolation
+    attenuates the signal it resamples, so an integer lag (where no
+    interpolation happens) is compared undamaged while a fractional lag is
+    compared against a smoothed copy.  That hands every integer lag a free
+    advantage, and a source whose true advance is 11.55 peaks at 12.
+
+    So the profile is resampled **once** onto the fine lag grid, and every lag
+    is then a whole-sample shift of that resampled signal.  Each lag is treated
+    identically -- same interpolation, same attenuation -- and the comparison
+    between lags is fair.
+
+    :param profile: the one-dimensional projection (here, ink per column).
+    :param minimum: smallest lag to measure, in pixels.
+    :param maximum: largest lag to measure, in pixels.
+    :param step: lag increment, in pixels.  Matched to the mixed-width probe's
+        own sweep so both horizontal streams speak about the same grid.
+    :returns: lag -> correlation, empty when the profile carries no variance.
+    """
+
+    values = np.asarray(profile, dtype=float)
+    if values.size < 3 or step <= 0:
+        return {}
+    # Whole number of fine samples per source pixel; the lag grid is exactly the
+    # resampled sample spacing, so a lag is an integer index shift below.
+    upsample = int(round(1.0 / float(step)))
+    if upsample < 1:
+        return {}
+    positions = np.arange(values.size, dtype=float)
+    fine_positions = np.arange(0.0, float(values.size - 1) + 1e-9, 1.0 / upsample)
+    fine = np.interp(fine_positions, positions, values)
+    centred = fine - fine.mean()
+    denominator = float(np.dot(centred, centred))
+    if denominator <= 1e-12:
+        return {}
+    result: dict[float, float] = {}
+    # Iterate on an integer counter so accumulated float error cannot shift the
+    # lag grid; the replay must reproduce identical keys.
+    steps = int(round((float(maximum) - float(minimum)) / float(step)))
+    for index in range(steps + 1):
+        lag = round(float(minimum) + index * float(step), 6)
+        shift = int(round(lag * upsample))
+        if shift <= 0 or centred.size - shift < 3:
+            break
+        result[lag] = float(np.dot(centred[:-shift], centred[shift:]) / denominator)
+    return result
+
+
 def _phase_and_boundaries(mask: np.ndarray, advance: float, *, origin_hint: float) -> dict[str, Any]:
     """Find the phase with the least ink at lattice boundaries."""
 
@@ -402,9 +459,17 @@ def _periodic_row_candidates(
                 for left, right in zip(profile_vectors, profile_vectors[1:])
             ]
             row_profile_similarity = float(np.mean(similarities)) if similarities else 0.0
+            # ``vertical_autocorrelation`` holds the raw Pearson-style
+            # autocorrelation of the row-ink profile at this lag, in [-1, 1].
+            # The score below rescales it to [0, 1] for the diagnostic blend.
+            # Both are retained: the raw value is what the periodicity stream
+            # measures peaks on (see ``_autocorrelation_periodicity_evidence``),
+            # and rescaling first would only add a constant factor to every
+            # prominence.
+            raw_autocorrelation = float(vertical_autocorrelation.get(pitch, -1.0))
             autocorrelation_score = max(
                 0.0,
-                min(1.0, (vertical_autocorrelation.get(pitch, -1.0) + 1.0) / 2.0),
+                min(1.0, (raw_autocorrelation + 1.0) / 2.0),
             )
             full_span_coverage = 1.0 if row_bounds and row_bounds[0][0] <= y0 and row_bounds[-1][1] >= y1 else 0.0
             advance_proximity = (
@@ -460,6 +525,12 @@ def _periodic_row_candidates(
                     "initial_sliver_rejected": initial_sliver_rejected,
                     "row_profile_similarity": row_profile_similarity,
                     "vertical_autocorrelation": autocorrelation_score,
+                    "vertical_autocorrelation_raw": raw_autocorrelation,
+                    # Number of samples in the row-ink profile the correlation
+                    # above was measured on.  It is the raster height, and it
+                    # fixes the sampling error of every correlation value, which
+                    # is what makes a peak's significance measurable.
+                    "autocorrelation_sample_count": int(height),
                     "full_span_coverage": full_span_coverage,
                     "horizontal_advance_reference": horizontal_advance_hint,
                     "advance_proximity": advance_proximity,
@@ -535,6 +606,249 @@ def _row_ownership_evidence(mask: np.ndarray, row_bounds: list[list[int]]) -> di
         "ownership_proven": not unowned.size and not overlap_rows,
         "method": "pixel_interval_with_explicit_seam_continuation",
     }
+
+
+# ---------------------------------------------------------------------------
+# Autocorrelation periodicity stream
+# ---------------------------------------------------------------------------
+# Seam energy answers "where are the gutters?".  It cannot answer "what is the
+# period?" for a source whose strokes cross every seam, and it carries a known
+# structural bias: ``normalized_seam_energy`` is ``seam_pixels / total_ink``, so
+# a longer period cuts fewer boundaries and is cheaper for that reason alone.
+#
+# Autocorrelation answers the period question directly and has the *opposite*
+# bias: neighbouring lags of a smooth profile correlate, so the raw correlation
+# decays away from short lags and the raw maximum is almost always the shortest
+# searched lag.  Taking the raw maximum as a pitch would therefore be worthless
+# (measured: the raw leader is lag 8 for most sources in the corpus).
+#
+# What survives both biases is the *shape* of the correlation curve: a genuine
+# period shows up as a local maximum standing above the local trend.  The
+# functions below measure that shape -- topographic prominence -- and decide
+# whether one lag stands out decisively enough to be treated as authority.
+# Everything here is computed from source pixels; no transcript, calibration or
+# fixture metadata is read.
+
+
+def _curve_peak_prominences(curve: Mapping[float, float]) -> list[dict[str, float]]:
+    """Return every strict local maximum of ``curve`` with its prominence.
+
+    Topographic prominence of a peak is how far the curve must descend from
+    that peak before it can climb to a higher peak.  It is the standard way to
+    separate a real feature from a ripple riding on a slope, and it is exactly
+    what is needed here: the correlation curve's overall decay from short lags
+    must not be mistaken for periodic evidence.
+
+    :param curve: lag (period) -> correlation value.  Lags may be fractional.
+    :returns: one entry per strict local maximum, sorted by descending
+        prominence then ascending lag, each with ``lag``, ``value`` and
+        ``prominence``.  A monotone curve has no interior maximum and yields an
+        empty list -- which is the correct answer: a monotone correlation curve
+        carries no periodicity evidence at all.
+    """
+
+    lags = sorted(float(lag) for lag in curve)
+    peaks: list[dict[str, float]] = []
+    for index in range(1, len(lags) - 1):
+        lag = lags[index]
+        value = float(curve[lag])
+        # Strict on the left, non-strict on the right so a flat-topped peak is
+        # reported once (at its left-most lag) rather than never.
+        if not (value > float(curve[lags[index - 1]]) and value >= float(curve[lags[index + 1]])):
+            continue
+        # Walk left until the curve climbs back above this peak; the lowest
+        # value seen on the way is this side's key col.
+        left_col = value
+        cursor = index - 1
+        while cursor >= 0 and float(curve[lags[cursor]]) <= value:
+            left_col = min(left_col, float(curve[lags[cursor]]))
+            cursor -= 1
+        right_col = value
+        cursor = index + 1
+        while cursor < len(lags) and float(curve[lags[cursor]]) <= value:
+            right_col = min(right_col, float(curve[lags[cursor]]))
+            cursor += 1
+        # Prominence is measured from the *higher* of the two cols: that is the
+        # saddle a walker would have to cross to reach higher ground.
+        peaks.append(
+            {
+                "lag": float(lag),
+                "value": value,
+                "prominence": float(value - max(left_col, right_col)),
+            }
+        )
+    peaks.sort(key=lambda item: (-item["prominence"], item["lag"]))
+    return peaks
+
+
+def _harmonic_ladder(leader: float, lags: list[float], *, tolerance: float = 0.0) -> list[float]:
+    """Return the lags that are integer multiples or divisors of ``leader``.
+
+    A source with period P also correlates at 2P, 3P, ... and (for a profile
+    with sub-structure) at P/2, P/3, ...  Those lags are not rival hypotheses
+    about the period; they are the same hypothesis restated.  Folding them into
+    one ladder is what stops the second harmonic of a true period from being
+    counted as a competitor that destroys the margin.
+
+    :param leader: the leading peak's lag.
+    :param lags: every lag present in the measurement.
+    :param tolerance: absolute pixel slack when the lags are fractional.  Zero
+        for the integer row sweep.
+    :returns: the ladder lags, ascending, always including ``leader`` itself.
+    """
+
+    ladder: list[float] = []
+    for lag in sorted(lags):
+        if lag <= 0 or leader <= 0:
+            continue
+        ratio_up = lag / leader
+        ratio_down = leader / lag
+        # ``lag`` sits on the ladder when it is (nearly) an integer multiple of
+        # the leader, or the leader is (nearly) an integer multiple of it.
+        on_ladder = (
+            abs(ratio_up - round(ratio_up)) * leader <= tolerance and round(ratio_up) >= 1
+        ) or (
+            abs(ratio_down - round(ratio_down)) * lag <= tolerance and round(ratio_down) >= 1
+        )
+        if on_ladder:
+            ladder.append(float(lag))
+    return ladder
+
+
+# How many sampling standard errors a correlation peak must clear before it is
+# treated as a real periodicity rather than sampling noise.  Under the null
+# hypothesis that the profile is aperiodic, Bartlett's approximation gives every
+# sample autocorrelation a standard error of about 1/sqrt(N) for a profile of N
+# samples.  Three standard errors is the conventional ~99.7% significance level.
+# It is a statistics constant, not a value chosen by replaying known-truth
+# sources: nothing in this module compares it against a calibration.
+AUTOCORRELATION_SIGNIFICANCE_SIGMA = 3.0
+
+
+def _autocorrelation_periodicity_evidence(
+    curve: Mapping[float, float],
+    *,
+    authority_margin: float,
+    sample_count: int,
+    admissible: set[float] | None = None,
+    ladder_tolerance: float = 0.0,
+    stream: str = "vertical_autocorrelation",
+) -> dict[str, Any]:
+    """Decide whether one lag is *decisively* the period of ``curve``.
+
+    Two gates must both pass, and each is either a textbook statistic or a reuse
+    of a threshold the module already pins.  Neither was chosen by trying values
+    against a known-truth calibration.
+
+    1. **Significance.** The leading peak's prominence must clear
+       ``max(authority_margin, sigma_floor)`` in raw correlation units, where
+       ``sigma_floor`` is :data:`AUTOCORRELATION_SIGNIFICANCE_SIGMA` sampling
+       standard errors, ``3 / sqrt(sample_count)``.  The statistical half says
+       "this peak is not noise"; the ``authority_margin`` half says "this peak is
+       materially large", and stops a very tall raster (where the standard error
+       shrinks towards zero) from certifying a ripple.  Correlation is already
+       dimensionless in [-1, 1], so the module's pinned separation margin
+       transfers to this scale unchanged.
+    2. **Separation.** The leading peak must beat its best rival by
+       ``authority_margin`` relatively, exactly the same margin test the seam
+       stream already applies to its own winner.  Peaks on the leader's harmonic
+       ladder are not rivals (see :func:`_harmonic_ladder`).
+
+    :param curve: lag -> raw correlation value.
+    :param authority_margin: the pinned source-evidence separation margin.
+    :param sample_count: number of samples in the profile the correlation was
+        measured on; it sets the sampling standard error.
+    :param admissible: lags the caller can actually act on (for the row sweep,
+        the periods with at least one valid candidate).  A leader outside this
+        set is reported but never decisive -- the stream fails shut.
+    :param ladder_tolerance: pixel slack for fractional lag ladders.
+    :param stream: name recorded in the evidence for the receipt.
+    :returns: a fully self-describing evidence mapping.  ``decisive`` is the
+        only field callers may act on; every number behind it is exposed so a
+        receipt can show why.
+    """
+
+    lags = sorted(float(lag) for lag in curve)
+    values = [float(curve[lag]) for lag in lags]
+    dynamic_range = float(max(values) - min(values)) if values else 0.0
+    peaks = _curve_peak_prominences(curve)
+    sampling_standard_error = float(1.0 / math.sqrt(max(1, int(sample_count))))
+    sigma_floor = float(AUTOCORRELATION_SIGNIFICANCE_SIGMA * sampling_standard_error)
+    significance_floor = float(max(float(authority_margin), sigma_floor))
+    evidence: dict[str, Any] = {
+        "stream": stream,
+        "method": "topographic_prominence_of_local_maxima",
+        "lag_count": len(lags),
+        "dynamic_range": dynamic_range,
+        "sample_count": int(sample_count),
+        "sampling_standard_error": sampling_standard_error,
+        "significance_sigma": float(AUTOCORRELATION_SIGNIFICANCE_SIGMA),
+        "sigma_floor": sigma_floor,
+        "significance_floor": significance_floor,
+        "separation_floor": float(authority_margin),
+        "peaks": [
+            {
+                "lag": item["lag"],
+                "correlation": item["value"],
+                "prominence": item["prominence"],
+            }
+            for item in peaks[:8]
+        ],
+        "leader_lag": None,
+        "leader_correlation": None,
+        "leader_prominence": 0.0,
+        "leader_prominence_sigma": 0.0,
+        # Retained as diagnostics only: how much of the curve's total dynamic
+        # range the leading peak accounts for.  It is not a gate -- it is
+        # sensitive to where the configured lag band starts, which the
+        # significance test is not.
+        "leader_dominance": 0.0,
+        "harmonic_ladder": [],
+        "rival_lag": None,
+        "rival_prominence": 0.0,
+        "separation_margin": 0.0,
+        "significance_met": False,
+        "separation_met": False,
+        "leader_admissible": False,
+        "decisive": False,
+        "transcript_input": False,
+    }
+    if not peaks:
+        # A monotone (or flat) correlation curve.  This is the common, correct
+        # outcome for shaped/proportional sources: nothing periodic to see.
+        return evidence
+
+    leader = peaks[0]
+    ladder = _harmonic_ladder(leader["lag"], lags, tolerance=ladder_tolerance)
+    rivals = [item for item in peaks[1:] if item["lag"] not in set(ladder)]
+    rival = rivals[0] if rivals else None
+    separation = (
+        float((leader["prominence"] - rival["prominence"]) / max(leader["prominence"], 1e-12))
+        if rival
+        else 1.0
+    )
+    dominance = float(leader["prominence"] / dynamic_range) if dynamic_range > 1e-12 else 0.0
+    admissible_ok = admissible is None or leader["lag"] in admissible
+    evidence.update(
+        {
+            "leader_lag": leader["lag"],
+            "leader_correlation": leader["value"],
+            "leader_prominence": leader["prominence"],
+            "leader_prominence_sigma": float(leader["prominence"] / sampling_standard_error),
+            "leader_dominance": dominance,
+            "harmonic_ladder": [float(lag) for lag in ladder],
+            "rival_lag": rival["lag"] if rival else None,
+            "rival_prominence": rival["prominence"] if rival else 0.0,
+            "separation_margin": separation,
+            "significance_met": bool(leader["prominence"] >= significance_floor),
+            "separation_met": bool(separation >= authority_margin),
+            "leader_admissible": bool(admissible_ok),
+        }
+    )
+    evidence["decisive"] = bool(
+        evidence["significance_met"] and evidence["separation_met"] and admissible_ok
+    )
+    return evidence
 
 
 def _periodic_authority_snapshot(
@@ -615,7 +929,108 @@ def _periodic_authority_snapshot(
                 item["harmonic_parent_pitch"] = larger_pitch
                 break
 
-    eligible = [item for item in family_scores if not item["harmonic_rejected"]]
+    # Record what the seam stream alone would have answered, before any fusion
+    # touches the harmonic flags.  This is pure evidence: it lets a receipt show
+    # both streams' verdicts side by side and makes a fused override visible.
+    seam_only_ranked = sorted(
+        [item for item in family_scores if not item["harmonic_rejected"]] or family_scores,
+        key=lambda item: (
+            float(item["seam_cost"]),
+            -float(item["seam_to_interior_contrast"]),
+            int(item["pitch"]),
+        ),
+    )
+
+    # ------------------------------------------------------------------
+    # Second, independent pitch stream: autocorrelation of the row-ink profile
+    # ------------------------------------------------------------------
+    # The raw correlation at each searched period was already measured per
+    # candidate.  Every phase of one period shares the same lag, so any phase of
+    # a period reports that period's value; ``max`` simply picks one
+    # deterministically.  The curve is built from *all* measured candidates so
+    # its shape is unbroken, while only periods with a valid candidate are
+    # admissible as a winner.
+    autocorrelation_curve: dict[float, float] = {}
+    autocorrelation_samples = 0
+    for item in candidates:
+        pitch = float(int(item["pitch"]))
+        if "vertical_autocorrelation_raw" in item:
+            value = float(item["vertical_autocorrelation_raw"])
+        else:
+            # Evidence produced before the raw value was recorded stored only
+            # the [0, 1] rescaling; invert it exactly.
+            value = float(item.get("vertical_autocorrelation", 0.5)) * 2.0 - 1.0
+        autocorrelation_curve[pitch] = max(autocorrelation_curve.get(pitch, -2.0), value)
+        autocorrelation_samples = max(
+            autocorrelation_samples,
+            int(item.get("autocorrelation_sample_count", 0)) or (int(item.get("ink_extent", (0, 0))[1])),
+        )
+    autocorrelation_evidence = _autocorrelation_periodicity_evidence(
+        autocorrelation_curve,
+        authority_margin=authority_margin,
+        sample_count=autocorrelation_samples,
+        admissible={float(pitch) for pitch in families},
+        ladder_tolerance=0.0,
+        stream="vertical_autocorrelation",
+    )
+
+    # ------------------------------------------------------------------
+    # Fusion: one margin gate, two streams
+    # ------------------------------------------------------------------
+    # The seam stream ranks; the autocorrelation stream, when it is decisive,
+    # says *which* periods may be ranked at all.  This division follows the
+    # measurement each stream can actually make.  Autocorrelation identifies the
+    # fundamental of a repeating profile and is blind to phase; seam energy
+    # locates gutters and is the only stream that can place a phase.  So the
+    # decisive autocorrelation leader restricts the eligible families to its own
+    # harmonic ladder, and seam energy then ranks inside that ladder.
+    #
+    # The one further consequence is that a harmonic rejection made *by a period
+    # the autocorrelation stream has refuted* is itself refuted.  The harmonic
+    # gate exists to discard stroke-frequency artefacts, and its only evidence is
+    # the seam cost of a longer period; when an independent measurement says the
+    # longer period is not the fundamental, that rejection has lost its basis.
+    # A rejection whose parent is *on* the ladder (a true second harmonic
+    # outscoring its fundamental on seams) is untouched.
+    ladder = {float(lag) for lag in autocorrelation_evidence.get("harmonic_ladder", ())}
+    autocorrelation_selected = bool(autocorrelation_evidence.get("decisive")) and bool(ladder)
+    autocorrelation_reinstated: list[int] = []
+    autocorrelation_excluded: list[int] = []
+    if autocorrelation_selected:
+        for item in family_scores:
+            on_ladder = float(item["pitch"]) in ladder
+            item["autocorrelation_on_ladder"] = on_ladder
+            if not on_ladder:
+                item["autocorrelation_refuted"] = True
+                autocorrelation_excluded.append(int(item["pitch"]))
+                continue
+            item["autocorrelation_refuted"] = False
+            parent = item.get("harmonic_parent_pitch")
+            if item["harmonic_rejected"] and (parent is None or float(parent) not in ladder):
+                item["harmonic_rejected"] = False
+                item["harmonic_rejection_refuted_by_autocorrelation"] = True
+                item["harmonic_parent_pitch"] = None
+                autocorrelation_reinstated.append(int(item["pitch"]))
+    else:
+        for item in family_scores:
+            item.setdefault("autocorrelation_on_ladder", None)
+            item.setdefault("autocorrelation_refuted", False)
+
+    eligible = [
+        item
+        for item in family_scores
+        if not item["harmonic_rejected"] and not item.get("autocorrelation_refuted")
+    ]
+    if not eligible:
+        # The restriction emptied the field.  Fall back to the seam-only
+        # eligibility so a winner still exists to be *examined*, and record that
+        # the streams disagreed; the fused margin below is forced to zero, so no
+        # pitch can prove out of this state.
+        eligible = [item for item in family_scores if not item["harmonic_rejected"]]
+        autocorrelation_selected = False
+        streams_contested = True
+    else:
+        streams_contested = False
     ranked = sorted(
         eligible or family_scores,
         key=lambda item: (
@@ -626,11 +1041,35 @@ def _periodic_authority_snapshot(
     )
     top = ranked[0] if ranked else None
     runner_up = ranked[1] if len(ranked) > 1 else None
-    pitch_margin = (
+    seam_pitch_margin = (
         (float(runner_up["seam_cost"]) - float(top["seam_cost"])) / max(float(runner_up["seam_cost"]), 1e-9)
         if top and runner_up else 1.0 if top else 0.0
     )
+    # The fused margin is the weaker of the two streams' separations whenever
+    # the autocorrelation stream carried the restriction.  Restricting to a
+    # single-member ladder would otherwise hand out a free margin of 1.0; the
+    # honest number is how decisively the stream that did the work actually won.
+    if streams_contested:
+        pitch_margin = 0.0
+    elif autocorrelation_selected:
+        pitch_margin = min(
+            float(seam_pitch_margin),
+            float(autocorrelation_evidence.get("separation_margin", 0.0)),
+        )
+    else:
+        pitch_margin = float(seam_pitch_margin)
     winning_pitch = int(top["pitch"]) if top else None
+    # Which stream actually decided the answer, for the receipt.
+    if top is None:
+        pitch_authority_stream = "none"
+    elif streams_contested:
+        pitch_authority_stream = "contested"
+    elif not autocorrelation_selected:
+        pitch_authority_stream = "seam_energy"
+    elif autocorrelation_reinstated or autocorrelation_excluded:
+        pitch_authority_stream = "fused_autocorrelation_restricted"
+    else:
+        pitch_authority_stream = "fused_agreement"
     winning_family = families.get(winning_pitch, []) if winning_pitch is not None else []
 
     phase_authority_by_pitch: dict[str, dict[str, Any]] = {}
@@ -727,6 +1166,10 @@ def _periodic_authority_snapshot(
         ranked
         and pitch_leader_signature
         and all(str(item.get("ownership_signature", "")) == pitch_leader_signature for item in pitch_contesting)
+        # Tie equivalence says "the near-ties are one geometry".  It may never
+        # rescue a state in which the two pitch streams contradict each other:
+        # that is a disagreement about which geometry is there at all.
+        and not streams_contested
     )
     selected = min(
         winning_family,
@@ -748,6 +1191,16 @@ def _periodic_authority_snapshot(
         "pitch_tie_equivalent": pitch_tie_equivalent,
         "pitch_tie_contesting_pitches": [int(item["pitch"]) for item in pitch_contesting],
         "pitch_tie_ownership_signature": pitch_leader_signature or None,
+        # Both pitch streams, side by side, with the fusion outcome.  A receipt
+        # can reproduce the decision from these numbers alone.
+        "seam_pitch_margin": float(seam_pitch_margin),
+        "seam_winning_pitch": int(seam_only_ranked[0]["pitch"]) if seam_only_ranked else None,
+        "autocorrelation_pitch_evidence": autocorrelation_evidence,
+        "autocorrelation_selected": bool(autocorrelation_selected),
+        "autocorrelation_reinstated_pitches": sorted(autocorrelation_reinstated),
+        "autocorrelation_excluded_pitches": sorted(autocorrelation_excluded),
+        "pitch_streams_contested": bool(streams_contested),
+        "pitch_authority_stream": pitch_authority_stream,
         "phase_tie_equivalent": bool(phase_summary.get("phase_tie_equivalent")),
         "phase_tie_contesting_group_count": int(phase_summary.get("phase_tie_contesting_group_count", 0)),
         "family_scores": [
@@ -796,16 +1249,26 @@ def _assess_periodic_authority(
     valid = [item for item in candidates if bool(item.get("candidate_valid"))]
     winning = snapshot.get("winning_candidate") or {}
     stability = bool((foreground_stability or {}).get("stable", False))
+    # Pitch stability is the weaker, period-only replay result.  Evidence
+    # recorded before that key existed falls back to full stability, so nothing
+    # older is silently loosened.
+    pitch_stability = bool((foreground_stability or {}).get("pitch_stable", stability))
     same_pitch = (
         not foreground_stability
         or foreground_stability.get("winning_pitch") in {None, snapshot.get("winning_pitch")}
+    )
+    same_stable_pitch = (
+        not foreground_stability
+        or foreground_stability.get("stable_pitch") in {None, snapshot.get("winning_pitch")}
     )
     # Blank-gap grouping is deliberately not part of this proof.  Connected
     # structural art routinely joins several logical rows into one diagnostic
     # band, while the periodic candidate still supplies complete source-span
     # baseline evidence.  Keep the blank-gap result as a warning, but require
     # the winning periodic candidate itself to be complete and replay-stable.
-    baseline_proven = bool(
+    # Everything the winning candidate must satisfy on its own, before any
+    # replay-stability question is asked.
+    candidate_complete = bool(
         winning
         and bool(winning.get("candidate_valid"))
         and int(winning.get("row_count", 0)) >= 2
@@ -813,9 +1276,12 @@ def _assess_periodic_authority(
         and not bool(winning.get("terminal_sliver_rejected"))
         and not bool(winning.get("initial_sliver_rejected"))
         and bool(winning.get("ownership", {}).get("ownership_proven"))
-        and stability
-        and same_pitch
     )
+    baseline_proven = bool(candidate_complete and stability and same_pitch)
+    # The period-only version.  It asks the replay to reproduce the *period*,
+    # not the phase, and it is what the pitch proof is entitled to rely on: a
+    # measured row period makes no claim about where the first boundary sits.
+    baseline_pitch_proven = bool(candidate_complete and pitch_stability and same_stable_pitch)
     # A margin below the authority threshold blocks proof only when the
     # hypotheses that cause it describe different row ownership.  When the whole
     # contesting band carries the winner's row-ownership signature, the source
@@ -827,7 +1293,7 @@ def _assess_periodic_authority(
         float(snapshot.get("normalized_pitch_margin", 0.0)) >= authority_margin or pitch_tie_equivalent
     )
     pitch_proven = bool(
-        baseline_proven
+        baseline_pitch_proven
         and pitch_margin_sufficient
         and not any(int(item.get("pitch")) == int(snapshot["winning_pitch"]) for item in snapshot.get("harmonic_rejections", []))
     )
@@ -838,6 +1304,9 @@ def _assess_periodic_authority(
     )
     phase_proven = bool(
         pitch_proven
+        # Phase, unlike pitch, needs the *full* replay agreement: a phase that
+        # moves when the foreground threshold moves is not a measured origin.
+        and baseline_proven
         and phase_summary.get("winning_phase_group")
         and phase_margin_sufficient
         and stability
@@ -869,6 +1338,7 @@ def _assess_periodic_authority(
         "candidate_valid": bool(valid),
         "pitch_proven": pitch_proven,
         "baseline_proven": baseline_proven,
+        "baseline_pitch_proven": baseline_pitch_proven,
         "periodic_baselines_proven": baseline_proven,
         "phase_proven": phase_proven,
         "ownership_proven": ownership_proven,
@@ -889,6 +1359,16 @@ def _assess_periodic_authority(
         "pitch_tie_equivalent": pitch_tie_equivalent,
         "pitch_tie_contesting_pitches": list(snapshot.get("pitch_tie_contesting_pitches", [])),
         "pitch_tie_ownership_signature": snapshot.get("pitch_tie_ownership_signature"),
+        # Two-stream pitch evidence, surfaced verbatim so the router and the
+        # replay receipt can report which measurement carried the proof.
+        "seam_pitch_margin": float(snapshot.get("seam_pitch_margin", 0.0)),
+        "seam_winning_pitch": snapshot.get("seam_winning_pitch"),
+        "autocorrelation_pitch_evidence": snapshot.get("autocorrelation_pitch_evidence", {}),
+        "autocorrelation_selected": bool(snapshot.get("autocorrelation_selected")),
+        "autocorrelation_reinstated_pitches": list(snapshot.get("autocorrelation_reinstated_pitches", [])),
+        "autocorrelation_excluded_pitches": list(snapshot.get("autocorrelation_excluded_pitches", [])),
+        "pitch_streams_contested": bool(snapshot.get("pitch_streams_contested")),
+        "pitch_authority_stream": snapshot.get("pitch_authority_stream", "none"),
         "phase_margin_sufficient": phase_margin_sufficient,
         "phase_tie_equivalent": phase_tie_equivalent,
         "phase_tie_contesting_group_count": int(phase_summary.get("phase_tie_contesting_group_count", 0)),
@@ -1512,12 +1992,22 @@ def build_geometry_evidence(
         for item in threshold_pitch_families
     ]
     snapshot_stable = False
+    # Pitch stability is measured separately from full snapshot stability.  A
+    # source can reproduce the same row *period* under every retained foreground
+    # threshold while the seam-derived *phase* of that period slides around,
+    # which is exactly what happens when the strokes cross every seam and no
+    # boundary is a real gutter.  Conflating the two made a proved period read
+    # as unproved because of a phase the period never claimed.
+    pitch_stable = False
     if authority_snapshots:
         reference_pitch, reference_phase, reference_cross_rows = authority_snapshots[0]
         phase_tolerance = 1
-        snapshot_stable = all(
-            item[0] == reference_pitch
-            and item[1] is not None
+        pitch_stable = bool(
+            reference_pitch is not None
+            and all(item[0] == reference_pitch for item in authority_snapshots)
+        )
+        snapshot_stable = pitch_stable and all(
+            item[1] is not None
             and reference_phase is not None
             and abs(int(item[1]) - int(reference_phase)) <= phase_tolerance
             and len(set(item[2]).symmetric_difference(reference_cross_rows)) <= 1
@@ -1527,6 +2017,10 @@ def build_geometry_evidence(
     foreground_stability = {
         "method": "retained_foreground_threshold_periodic_replay",
         "stable": snapshot_stable,
+        # True when every retained threshold reproduced the same winning period,
+        # regardless of whether they agreed on its phase.
+        "pitch_stable": pitch_stable,
+        "stable_pitch": authority_snapshots[0][0] if pitch_stable else None,
         "retained_thresholds": threshold_pitch_families,
         "family_count": len(family_sets),
         "selected_background_rgb": list(selected_background) if selected_background is not None else None,
@@ -1538,6 +2032,55 @@ def build_geometry_evidence(
         "ownership_geometry_signature": threshold_pitch_families[0].get("ownership_geometry_signature") if snapshot_stable else None,
     }
 
+    # ------------------------------------------------------------------
+    # Horizontal advance: the same two-stream treatment, one axis over
+    # ------------------------------------------------------------------
+    # ``_measure_mixed_width_display`` above is the horizontal analogue of seam
+    # energy: it sweeps fractional advances and keeps the one whose boundary
+    # columns carry the least non-horizontal ink.  The stream below is the
+    # horizontal analogue of the row autocorrelation, measured on exactly the
+    # same fractional lag grid so the two verdicts are directly comparable.
+    #
+    # It does not select the advance.  The mixed-width probe already measures
+    # fractionally from source pixels and owns the column contract that cells and
+    # recognition strips are cut from; replacing that owner is a separate piece
+    # of work.  What this stream does is *corroborate or contest* the probe, and
+    # a contest is recorded so no lattice claim can quietly rest on an advance
+    # that the independent measurement disagrees with.
+    horizontal_curve = _fractional_autocorrelation(
+        column_projection.astype(float),
+        float(configuration["mixed_width_min_advance"]),
+        float(configuration["mixed_width_max_advance"]),
+        0.05,
+    ) if selected_mask is not None else {}
+    horizontal_advance_evidence = _autocorrelation_periodicity_evidence(
+        horizontal_curve,
+        authority_margin=float(configuration["periodic_authority_margin"]),
+        sample_count=int(width),
+        admissible=None,
+        # Two fractional advances closer than a quarter pixel cut the same
+        # boundary columns on this raster, so they are the same hypothesis.
+        ladder_tolerance=0.25,
+        stream="horizontal_autocorrelation",
+    )
+    measured_advance = float(mixed_width_display.get("base_advance_px", 0.0) or 0.0)
+    leader_advance = horizontal_advance_evidence.get("leader_lag")
+    # Half a pixel is the point at which two advances place a column boundary in
+    # a different raster pixel; below that they are the same measurement.
+    advance_agreement_tolerance = 0.5
+    if horizontal_advance_evidence.get("decisive") and measured_advance > 0.0 and leader_advance:
+        ladder = horizontal_advance_evidence.get("harmonic_ladder", ())
+        on_ladder = any(abs(float(item) - measured_advance) <= advance_agreement_tolerance for item in ladder)
+        horizontal_advance_evidence["measured_advance_px"] = measured_advance
+        horizontal_advance_evidence["advance_agreement_tolerance_px"] = advance_agreement_tolerance
+        horizontal_advance_evidence["advance_corroborated"] = bool(on_ladder)
+        horizontal_advance_evidence["advance_contested"] = bool(not on_ladder)
+    else:
+        horizontal_advance_evidence["measured_advance_px"] = measured_advance or None
+        horizontal_advance_evidence["advance_agreement_tolerance_px"] = advance_agreement_tolerance
+        horizontal_advance_evidence["advance_corroborated"] = False
+        horizontal_advance_evidence["advance_contested"] = False
+
     periodic_authority = _assess_periodic_authority(
         periodic_row_candidates,
         row_band_quality=row_band_quality,
@@ -1546,6 +2089,14 @@ def build_geometry_evidence(
         harmonic_margin=float(configuration["harmonic_rejection_margin"]),
         authority_margin=float(configuration["periodic_authority_margin"]),
     )
+    # Both axes' second-stream evidence travels with the periodic authority so
+    # every consumer (router, receipt, review overlay) sees one surface.
+    periodic_authority = {
+        **periodic_authority,
+        "horizontal_advance_evidence": horizontal_advance_evidence,
+        "horizontal_advance_contested": bool(horizontal_advance_evidence.get("advance_contested")),
+        "horizontal_advance_corroborated": bool(horizontal_advance_evidence.get("advance_corroborated")),
+    }
     fixed_authority = _assess_fixed_lattice_authority(
         lattice_candidates[0] if lattice_candidates else None,
         periodic_authority,
@@ -1692,6 +2243,9 @@ def build_geometry_evidence(
         "autocorrelation": autocorrelation[:16],
         "selected_mask_sha256": selected_hash,
         "mixed_width_display": mixed_width_display,
+        # Fractional-lag correlation of the column projection: the independent
+        # check on the mixed-width probe's measured advance.
+        "horizontal_advance_evidence": horizontal_advance_evidence,
         "foreground_margin": float(configuration["foreground_margin"]),
         "measurement": "source_raster_projection",
         "row_band_quality": row_band_quality,
