@@ -12134,3 +12134,84 @@ cell box after the spill pass reassigned it.
 - **Status:** IMPLEMENTED (UNPROVEN beyond the receipts above). ComplaintRef:
   unknown-cell naming entry, 2026-08-06; row-joint restoration entry,
   2026-08-05.
+
+### The letter-bird already delivers, and a birthday gift beat validates today (2026-08-06)
+
+Two questions from the operator, both answered by execution rather than
+reading.
+
+**1. The gift can fall back to the bird delivery animation — and that is
+already what happens.** `viewer-bnw.html:1758-1801` owns an "Animal delivery
+animation" overlay. Per SPEC §6.3 it uses a bonded (tier-3) animal if one
+exists and otherwise the letter-bird: `deliveryFramesFor(species, tier)`
+(web/garden-atlas.mjs:42-45) returns `ANIMAL_DELIVERY_FRAMES[species]` only
+when `bondTier >= 3`, and `LETTERBIRD_DELIVERY_FRAMES` in every other case.
+The frames are real — `semantic_tokens.delivery_frames` in
+src/lateletter/garden/data/atlas.v2.json carries `letterbird`, `cat`, `bird`,
+`rabbit`, `turtle` — and the overlay announces itself as "A letter-bird
+delivers the letter."
+
+Because the default world seeds ZERO animals, no bonded animal can exist, so
+the letter-bird is what plays today, always. This **unblocks the gift MVP from
+the starter-roster decision**: the delivery beat does not need an authored or
+approved animal, and the roster child returns to sitting beside the gift work
+rather than blocking it (correcting the dependency recorded in the map update
+of 2026-08-05).
+
+**2. What a garden beat is, demonstrated.** A beat is one authored moment on a
+timeline: WHEN it may fire (`when`/`conditions`), WHEN it is due
+(`schedule`), and WHAT it does (`actions`). `garden_beats` is expanded by
+`author_service.garden_program_from_draft` into canonical program `events` and
+then routed through `parse_program`, which is the grammar authority.
+
+The exact vocabulary, from source, because the validator refuses anything else:
+
+- Facts (`SUPPORTED_FACTS`, program.py:48-55): `time.utc`, `time.local`,
+  `date.range`, `season.current`, `visit.total`, `visit.nth`, `absence.days`,
+  `session.duration_seconds`, `letter.due`, `letter.read`, `gift.revealed`,
+  `gift.examined`, `event.completed`, `animal.arrived`, `animal.bond_tier`,
+  `animal.interaction`, `animal.memory`, `plant.growth_stage`, `plant.bloom`,
+  `fixture.present`, `probability.seeded`.
+- Operators (:56-59): `==` `!=` `>` `>=` `<` `<=` `contains` `not_contains`
+  `in` `not_in` `exists`.
+- Schedule keys (:98-100): `start`, `timezone` (IANA, required),
+  `recurrence`, `exceptions`, `missed`. `missed` is REQUIRED and must be one
+  of `skip`, `deliver_on_next_visit`, `summarize_then_current` (:690-693).
+- Recurrence (schedule.py:19,123-150): `frequency` in daily/weekly/monthly/
+  yearly — the key is `frequency`, not `freq` — plus `interval`, and one of
+  `count`, `until`, or `intentional_unbounded` is REQUIRED, so an endless
+  recurrence must say so deliberately.
+- Placement hints (:60-62): `random`, `authored`, `path`, `near_tallest_tree`,
+  `near_bench`, `by_edge`.
+
+A birthday gift, written as a beat, and ACCEPTED by `parse_program` in this
+session:
+
+```
+entities: [{id: birthday_gift, kind: collectible,
+            catalog_id: fallen_acorn, position: {x: 520, y: 640}}]
+beats: [{
+  id: birthday_2027,
+  when:     {fact: "letter.due", op: "==", value: true},
+  schedule: {start: "2027-03-14T09:00:00", timezone: "UTC",
+             missed: "deliver_on_next_visit",
+             recurrence: {frequency: "yearly", interval: 1,
+                          intentional_unbounded: true}},
+  actions:  [{type: "entity.reveal", target: "birthday_gift",
+              params: {position: {x: 520, y: 640}}},
+             {type: "letter.present", params: {letter_id: <message id>}}]
+}]
+```
+
+`occurrence` was inferred as `recurring` from the presence of a recurrence —
+the expander does that for the author (author_service.py:261-266) — and
+`replace_message_references` binds `letter_id` to the real message id, so the
+questionnaire never asks an author to type a UUID.
+
+Note the catalog id used above, `fallen_acorn`, is REVIEW-PENDING art. It
+validates and would not paint. That is the validate-versus-paint trap already
+recorded, demonstrated concretely on the MVP's own example.
+
+- **Status:** VOCABULARY AND WORKED EXAMPLE RECORDED BY EXECUTION. This is the
+  build input for the questionnaire's gift stage. ComplaintRefs: operator
+  scope decision entry (2026-08-06); Wayfinder map (2026-08-05).
