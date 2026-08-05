@@ -10389,3 +10389,344 @@ Next required Phase 6 slice:
 - **Status:** PHASE 6 BLOCKED BY FALSE-UNIQUE CANDIDATE AUTHORITY; unsafe
   selector reverted before commit. ComplaintRef: operator order to implement
   correctly and avoid prior false-acceptance/process failures, 2026-08-04.
+
+### Wayfinder map: operator field review of the panning garden (2026-08-05)
+
+Overlay-kind: planned. Area: garden-presentation. Priority: P1.
+
+Destination:
+The live localhost garden, reviewed at the product and review URLs, shows one
+coherent scene under every arrow-key and drag pan: the terrain transition band
+moves with the camera exactly as the planting and fixtures do; pond water
+visibly moves; every plant, fixture and cover clump occludes and is occluded
+strictly by nearness, with no card cutting into a nearer silhouette; planting
+density reads as a garden rather than glyph noise; and the world seed's
+compositional reach is the scope the operator decides it should be. Reaching
+the end means the operator looks at the moving product and raises none of the
+2026-08-05 field findings again. Visual acceptance stays operator-only.
+
+Notes:
+- Baseline commits: 45b38fe (planting stable across terrain pan, both axes
+  through `worldToGardenScreen`), f05658a (parallax ADR, one canonical
+  camera). The five findings below are the operator's 2026-08-05 field review
+  of that state, with screenshots.
+- Standing operator decisions that constrain every child: clicks act in
+  place; camera centring is keyboard-only; legacy art plus the explicitly
+  accepted asset set are the only approved ink; new or changed assets, final
+  anchors, roster and density are open operator decisions (goal file);
+  the operator has proposed the card/billboard model for per-object
+  occlusion ("we need to think each item/plant/fixture as cards").
+- Evidence gathered for this map, 2026-08-05:
+  - `drawGround` paints both terrain contours at viewport-derived rows with
+    no camera term (web/garden-painting.mjs:1829-1838) while planting,
+    cover and fixtures project through the camera on both axes
+    (`screenPointOf`, web/garden-painting.mjs:2111-2115). The transition
+    band is the remaining screen-anchored layer; the same fixed rows also
+    bound cover culling and the far/middle/near cohort split
+    (`gardenDepthCohorts`, web/garden-painting.mjs:1730-1743).
+  - Node probe (scratchpad probe_pond.mjs): `fixture.pond` idle carries 3
+    distinct frames over a 30-tick cycle, and the composed frame's pond ink
+    differs at visualFrame 0/15/25 through `CanonicalGardenRenderer.render`.
+    The reported static pond is therefore NOT an atlas or composition
+    defect; the open surface is the live browser layer or viewing state.
+  - Seed reach today: backdrop planting only — species mix by season,
+    per-plant art parameters, world x, terrain plane, depth
+    (`legacyPlantLayout`, web/garden-painting.mjs:2019-2063) plus
+    per-column cover hashing. Fixture anchors, roster, art and contents are
+    constants (`STARTER_FIXTURE_ANCHORS`, web/garden-world.mjs; atlas
+    frames, garden-atlas-art.mjs). None of the operator's expected
+    variation axes (pond radius/loop shape, stepping-stone side/count/size,
+    bench constrained near and facing the pond, planter flower count) is
+    seeded anywhere.
+  - Occlusion mechanism: `Raster.put` writes blank glyphs into cells —
+    deliberately never suppressed, and they overwrite ink beneath
+    (web/garden-painting.mjs:766-790). `art`/`measuredArt` paint the full
+    rectangular card including its spaces. Paint order is phase-based:
+    backdrop planting first, then canonical objects by three-band cohort.
+    A fixture painted later therefore erases backdrop-plant ink across its
+    whole card even when the plant's baseline is nearer — the exact
+    stepping-stones/pond cut-offs in the operator's screenshots.
+  - Spacing today is world-x interval packing inside 0.13-wide plane bands
+    with ~2160 placement attempts (web/garden-painting.mjs:2030-2056);
+    there is no screen-space separation across depth layers and no
+    neighbourhood/cluster budget, which is the reported noise.
+
+Decisions so far:
+- 2026-08-05 reconciliation against the executed localhost product and the
+  current source: findings 1, 3, 4 and 5 agree on the causal owners (fixed
+  terrain rows; seed not reaching fixture composition; no projected spacing
+  budget; phase-based rather than global depth order).
+- The pond conclusion in the initial map is withdrawn. A live Chrome capture
+  read the actual painted DOM three times 550 ms apart under
+  `garden_review_motion=1`: the blue `~` coordinates changed on both
+  intervals. The browser surface is not frozen and the overlay is not losing
+  repaint. The defect is perceptual: three sparse wave states technically
+  differ but do not read as lateral water motion at scene scale. The child is
+  changed from a browser-gating investigation to an atlas-owned motion repair.
+- The card-painter child is not blocked on choosing whether to have a global
+  order: the operator explicitly named billboards/cards, and one back-to-front
+  queue is the accepted architecture direction. The remaining interior-space
+  detail must be resolved by the existing raster law plus visual inspection;
+  it is not grounds to retain the phase owner or pause implementation.
+- Seeded fixture variation remains canonical generation/art work. The renderer
+  may not invent pond radii, stone counts or planter contents; those variants
+  must be persisted as seeded composition choices that select atlas-owned
+  drawings and anchors.
+
+Not yet specified:
+- Whether card interiors (spaces inside a silhouette's bounding box) should
+  occlude fully, or only the inked silhouette plus a margin — needs the
+  card-painter child's ADR and an operator look at both candidates.
+- Whether seeded fixture variation is authored variants per fixture or
+  parametric art — operator asset-approval territory; blocked on the
+  grilling child.
+
+Out of scope:
+- Release gates, cutover, deploy.yml (steps 10-15, operator-gated).
+- Transcription and letter-typography lanes.
+- The 15 known-red tests recorded at f05658a (separate reconciliation).
+
+### Wayfinder child: terrain contours follow the camera vertically (2026-08-05)
+
+Question:
+Give the two terrain contour rows (`farGroundY` far transition, `groundFront`
+near soil) world/terrain identity and project them through the same camera
+transform as every other layer, so up/down arrows and vertical drag move the
+band with the scene — including the CSS colour transition rooted to the far
+edge and the cover-culling and cohort boundaries that currently read fixed
+profile rows. Type: task. ComplaintRefs: Wayfinder map: operator field review
+of the panning garden (2026-08-05); operator field report 2026-08-05
+("transition band does not follow up down arrow").
+
+### Wayfinder child: pond wave motion in the live surface (2026-08-05)
+
+Question:
+Where between the composed frame and the operator's eyes does pond motion
+stop? Composition is exonerated by probe (3 distinct atlas frames; composed
+pond ink differs across visualFrames 0/15/25). Remaining suspects: the
+measured-overlay repaint path in `paintPresentationFrame`, presentation-loop
+gating on the review URL (`garden_review_motion=1`,
+`setReducedMotion`/`motion_paused` interplay, viewer-bnw.html:748-756), OS
+reduced-motion, or a paused state during the operator's viewing. Resolve by
+live differential capture of the pond region at both product and review URLs.
+Type: research. ComplaintRefs: Wayfinder map: operator field review of the
+panning garden (2026-08-05).
+
+Correction after live differential, 2026-08-05:
+The research question is answered: the live surface advances. Its blue wave
+cells changed at both sampled intervals. The remaining task is to make the
+atlas-owned wave sequence read unmistakably as side-to-side water motion at
+the full-scene scale; a mechanics-only distinct-frame assertion is not visual
+evidence and may not be cited as completion.
+
+### Wayfinder child: what the world seed composes (2026-08-05)
+
+Question:
+The operator expects the seed to vary composition: pond radius and loop
+shape, stepping stones' side of the scene plus their size and count, a tight
+bench zone above/facing the pond, planter flower count, "etc." Today the seed
+varies backdrop planting only; every fixture anchor, drawing and content is a
+constant. Which variation axes are wanted, what are their ranges, and is the
+art delivered as authored per-fixture variants or parametric drawings? New or
+changed assets and final anchors are explicitly unresolved operator decisions
+in the goal file, so this child is human-in-the-loop; the agent's part is to
+present concrete candidate axes with mockups for approval. Type: grilling.
+ComplaintRefs: Wayfinder map: operator field review of the panning garden
+(2026-08-05).
+
+### Wayfinder child: screen-space spacing and density law for planting (2026-08-05)
+
+Question:
+Design and prototype an anti-noise law for backdrop planting and cover:
+minimum separation measured in projected SCREEN cells across depth layers
+(not only world-x within a plane band), a cluster budget so flowers/grass
+group deliberately instead of accreting, and a density ceiling per screen
+region — while keeping the deployed "dense, living" reading and the frozen
+population law (pan/resize never change membership). Deliverable is
+side-by-side captures for the operator, not a landed default. Type:
+prototype. ComplaintRefs: Wayfinder map: operator field review of the
+panning garden (2026-08-05).
+
+### Wayfinder child: one back-to-front card painter (2026-08-05)
+
+Question:
+Adopt the operator-proposed card/billboard model as the single occlusion
+law: every drawable (backdrop plant, cover clump, plant bed, canonical
+object) becomes a card with a projected baseline row and depth, painted in
+one globally sorted back-to-front pass — replacing the current phase order
+(all backdrop planting, then three-band cohorts) under which a farther
+fixture's card erases a nearer plant's ink. The ADR must decide the sort key
+(baseline row, then depth, then stable id), whether card interiors occlude
+fully or only inked cells plus margin, and how measured-overlay fixtures
+interleave with lattice-painted planting in one order. Type: task.
+ComplaintRefs: Wayfinder map: operator field review of the panning garden
+(2026-08-05); operator field report 2026-08-05 (stepping stones and pond
+cutting plants that stand in front of them).
+
+### Implementation record: terrain, billboard, spacing and pond motion repair (2026-08-05)
+
+- **Terrain owner replaced:** `gardenTerrainFrame` now projects the neutral far
+  and near contours from canonical camera y at their declared depths. The
+  compositor passes that one frame value to terrain ink, CSS gradient,
+  canonical culling/packing, depth cohorts, cover bounds and lifecycle ground
+  effects. The old no-projection `gardenGroundY` paint authority is gone; its
+  compatibility query delegates to the frame owner. In live Chrome,
+  `Shift+ArrowUp` moved the far contour and gradient together from row 42 /
+  63.64% to row 45 / 68.18%. A native mouse drag moved the same boundary to
+  65.15% with the planted scene, rather than making scenery appear/disappear.
+- **One billboard owner installed:** `drawLegacyPlanting` and the canonical
+  three-phase object pass are deleted as paint owners. `drawGardenBillboards`
+  merges presentation-native plant cards and canonical object cards, sorts
+  once by projected baseline, depth and stable id, and paints that order.
+  Billboard rectangles own spacing; blank cells are transparent and only ink
+  occludes. This also removes a previously unrecorded cross-mode divergence:
+  measured Contract-P glyphs already skipped spaces while lattice `art()`
+  wrote them and erased underlying ink.
+- **Exact-font split plane removed:** measured assets and lattice-native
+  scenery now resolve to one ordered `platform_glyphs` payload in exact-font
+  mode. The old measured overlay no longer sits categorically above every
+  plant; final raster cell ownership filters the unified glyph plane. Degraded
+  mode retains row transport but obeys the same billboard order/transparency.
+- **Stable spacing strengthened:** seed/season population generation now uses
+  a neutral world-anchored projected card field, one-cell card separation and
+  a three-card regional budget. Canonical visibility rooms reserve full stable
+  artwork footprints (the pond is 24 columns), not only gameplay hotspots.
+  Current camera and viewport are not inputs to membership, so this does not
+  revive the pan/resize popping defect.
+- **Pond diagnosis corrected and motion repaired:** live DOM samples 550 ms
+  apart proved the browser advanced both times. The accepted bank stayed
+  unchanged; only the interior atlas-owned ripple trains were strengthened and
+  retained their left/centre/right/centre loop. Two live cropped frames now
+  show multiple blue ripple trains translating laterally at scene scale.
+- **Seed reach recorded precisely:** today it still selects presentation
+  planting species/shape/world-x/terrain-plane/depth, cover texture, and
+  lifecycle entropy. It does **not yet** select pond shape/radius, stone
+  side/count/size, bench zone, or planter blossom count. SPEC now assigns
+  those axes to persisted canonical fixture-room generation selecting
+  atlas-authored variants; no renderer-side parametric substitute was added.
+- **Visual diagnostic, not acceptance:** inspected localhost standalone and
+  demo-letter paths in Chrome at daylight, summer evening and winter night;
+  watched pond water and butterflies advance; panned vertically by keyboard
+  and native mouse drag; and clicked the demo scene under a frozen review
+  clock. The click kept both background and scene bytes stable. Winter snow
+  landed in the moved terrain and the day/evening/night palettes remained
+  spatially coherent. These observations establish that the reported defects
+  are no longer reproduced locally; they are not an operator verdict or a
+  release/cutover claim.
+- **Diagnostic suite boundary:** atlas/generator identity checks hold (85),
+  the presentation/renderer diagnostic set retains the same two known-red
+  assertions (`palette-only transitions...`, `ten-minute pan simulation...`).
+  Those tests are not cited as visual evidence; the live Chrome observations
+  above are the user-experience evidence for this attempt.
+- **Status:** IMPLEMENTED LOCALLY, VISUALLY INSPECTED BY AGENT, UNCOMMITTED AT
+  TIME OF THIS ENTRY. Seeded fixture-room variants remain a separate open
+  canonical-generation/art task; no cutover is authorized.
+
+### Wayfinder map verification: 9d9d45d checked independently against the map (2026-08-05)
+
+Independent re-verification of the terrain/billboard/spacing/pond repair by
+the session that charted the Wayfinder map, after the executor's
+implementation record above:
+
+- HEAD is 9d9d45d (`fix: unify garden terrain and billboard composition`),
+  author RIKI YANAI HERNANDEZ, no attribution. Seven files, garden lane only.
+- Source checks agree with the record: `gardenTerrainFrame`
+  (web/garden-painting.mjs:560) applies the camera-y delta at per-contour
+  depths and `drawGround` consumes the terrain frame; `drawGardenBillboards`
+  (web/garden-presentation.mjs:723) paints one queue sorted by
+  baseline/depth/stable-id (web/garden-painting.mjs:2276); lattice blank
+  cells are transparent, matching the measured path; population membership
+  uses neutral-projection card rects with margin separation, not the current
+  camera; the atlas pond ripple trains are densified in
+  src/lateletter/garden/data/atlas.v2.json.
+- Seed-axes boundary confirmed: neither web/garden-world.mjs nor
+  src/lateletter/garden/world/generation.py changed in 9d9d45d. The
+  water-room axes exist as a SPEC contract only; no seeded pond
+  radius/stone/bench/planter variation is generated yet. The map's grilling
+  child stays open, narrowed to approving authored variants and landing the
+  canonical generation.
+- Diagnostics rerun in this session: tests/garden_adapters/
+  test_garden_renderer.mjs 62/64 and test_presentation_contract.mjs 28/28 —
+  90/92 total, matching the record, with the SAME two known-red assertions
+  (`palette-only transitions repaint rows whose glyphs are unchanged`,
+  `ten-minute pan simulation keeps initialized scenery and partial row
+  diffs`). Diagnostics only; not visual evidence.
+- The pond disagreement is settled against this map's original framing: the
+  executor's live DOM sampling and this map's composition probe agree that
+  nothing was frozen anywhere in the pipeline; the defect was perceptual
+  frame sparsity, repaired in the atlas. The map's live-layer suspect list
+  was retired in place.
+- Not verified here: the f05658a known-red tail beyond these two assertions
+  (remaining node files and the three python reds) has no fresh count in
+  this session; its reconciliation entry remains open. The exact-font
+  unified path is architecturally exercised but not visually proven — the
+  executor's Chrome session ran the degraded-font runtime.
+- **Status:** VERIFIED AT SOURCE AND DIAGNOSTIC LEVEL (evidence: 9d9d45d,
+  90/92 rerun). Visual acceptance remains operator-only on the live
+  product; no release-gate claim. ComplaintRef: Wayfinder map: operator
+  field review of the panning garden (2026-08-05).
+
+### Implementation record: canonical seeded fixture-room variants (2026-08-05)
+
+This closes the implementation child recorded above as “what the world seed
+composes.” The operator answered the remaining implementation-direction fork
+with “ok do it”: use persisted canonical choices selecting atlas-authored
+variants, never renderer-parametric fixture synthesis. That instruction is
+authorization to implement and review candidates locally; it is not a visual
+acceptance verdict for the new drawings.
+
+- **Old owner removed from the live path:** the starter generator no longer
+  sends the fixed pond/stones/bench/planter drawing identity and fixed
+  water-room anchors directly to projection. `_fixture_room_plan` /
+  `fixtureRoomPlan` is now the single canonical selection owner; the static
+  anchor table remains its declared base relationship input, not a second
+  runtime chooser.
+- **Independent seeded axes, persisted before projection:** separate derived
+  streams select pond silhouette/radius, stepping-stone three/base/five form,
+  stone side, bench horizontal offset, bench y-zone and planter one/base/three
+  blossom form. `FixtureState.authored_state` stores `visual_asset_id` plus the
+  room role and relevant selection facts. Browser and Python generators both
+  stamp generator/composition version 5.
+- **Renderer ownership narrowed:** projection transports the persisted visual
+  identity; `objectPresentationArt` resolves that identity from the atlas. It
+  does not hash the seed, synthesize a bank, add stones or flowers, or choose a
+  relationship at render time. The previous catalog-id-only asset lookup is
+  deleted from the live path.
+- **Acceptance does not leak:** six changed silhouettes are six new asset IDs,
+  all `not_reviewed`; none inherits the accepted verdict of its base asset.
+  The local paint authority lists them separately as
+  `review_candidate_assets`. The release builder always emits that list empty,
+  and replaces the copied runtime authority with the same accepted-only data
+  before hashing the public closure, so even a cleared deploy blocker cannot
+  publish candidate ink as accepted.
+- **Exact generated assets:** `fixture.pond_compact`, `fixture.pond_round`,
+  `fixture.stepping_stones_three`, `fixture.stepping_stones_five`,
+  `fixture.planter_one`, and `fixture.planter_three` now exist in atlas v2 and
+  the browser atlas module. The two ponds retain atlas-owned multi-frame
+  lateral ripple motion.
+- **Actual visual/temporal diagnostic:** at a 1600×1000 Chrome viewport, the
+  real `CanonicalGardenRenderer` was inspected at midday for canonical seeds
+  0, 1, 3 and 4. The set visibly included compact/base/round ponds,
+  three/base/five stones on both left and right, one/base/three-blossom
+  planters, and the three bench-zone offsets; the bench stayed above the pond
+  and stones met one side without overlap. Two cropped seed-3 captures 850 ms
+  apart showed the compact pond's interior ripple trains at visibly different
+  lateral positions. The localhost `viewer-bnw.html` demo-letter route was
+  then opened under a fresh composition and live review clock; it painted 66
+  rows / 976 ink spans through the same product renderer and showed the
+  canonical pond/stones/bench room in context. This is agent visual inspection,
+  not operator acceptance or release evidence.
+- **Local review surfaces:**
+  `docs/visual-review/2026-08-05/garden/seeded-fixture-room.html` renders any
+  canonical seed through the product renderer, and the generated fixture
+  worksheet now distinguishes the accepted original set from the six
+  not-reviewed candidates. `docs/visual-review/` is intentionally ignored;
+  these are local diagnostics, not release inputs. The worksheet itself is
+  regenerated from the tracked atlas/registry by `build_fixture_review.py`.
+- **Diagnostics, not visual evidence:** 16-seed Python/browser generation
+  parity and relationship constraints hold; the focused Python set is 55/55.
+  The renderer/contract set remains 102/104 with exactly the two pre-existing
+  reds (`palette-only transitions...`, `ten-minute pan simulation...`). Those
+  assertions are not cited as proof of the picture.
+- **Status:** IMPLEMENTED, PERSISTED, AND VISUALLY INSPECTED BY THE AGENT;
+  CANDIDATE ART REMAINS `not_reviewed`; NO RELEASE OR CUTOVER CLAIM.
