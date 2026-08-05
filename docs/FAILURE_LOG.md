@@ -11640,3 +11640,205 @@ the viewer's own section ids rather than from timing:
   letter-typography-lane and contended `viewer-bnw.html` territory, so nothing
   was edited here. No release or cutover claim. ComplaintRef: operator order
   to prove the web flow from authoring to recipient, 2026-08-05.
+
+### The author backend already seals bundles; only the browser module is absent (2026-08-05)
+
+Before roadmapping the authoring build, the server half was EXECUTED rather
+than read, because "the endpoints exist" and "the endpoints produce a valid
+sealed bundle" are different claims and only the second one licenses a
+front-end-only plan.
+
+The author server was started on port 8766 and driven over HTTP with no
+browser involved:
+
+- `GET /api/author/session` -> 200, `{draft, revision, csrf_token}`. The CSRF
+  token is read from the `X-LateLetter-CSRF` header
+  (src/lateletter/author_web.py:170), not the JSON body.
+- `POST /api/author/validate` with an empty draft -> 200,
+  `ok=false, errors=["source file needs at least one message"]`, plus a
+  structured `preview` block (author_name, hint, seed, message_count,
+  per-message date/label/body_characters, garden counts, has_garden_program).
+  The validator is therefore already a usable questionnaire progress surface,
+  not merely a final gate.
+- The draft schema is FLAT at the top level: `author_name`, `passphrase_hint`,
+  `garden_seed`, `messages[]` (`date`, `label`, `body`), and either a full
+  `garden_program` or a `garden_beats` timeline. A draft carrying only
+  messages returns `"a full encrypted garden_program or garden_beats timeline
+  is required"`. Note that author.html's inputs carry `data-path="author.name"`
+  style nested paths, so the missing module owns a mapping between the form's
+  nested paths and this flat draft — that mapping is a real piece of work, not
+  a rename.
+- `POST /api/author/export` with a valid draft plus passphrase and
+  confirmation -> **200 with a real sealed bundle**: 1580 bytes,
+  `version: 2`, message body `ciphertext` under PBKDF2-SHA256 at 600,000
+  iterations, `garden_program` encrypted as well, and
+  `Content-Disposition: attachment; filename="Riki.lateletter"` — the download
+  plumbing is already correct.
+
+**The loop was then joined against the recipient.** That API-exported bundle
+was fed through the product's own `#file-input` in headless Chrome, unlocked
+with its passphrase, and opened to `s-reading` carrying the exact authored
+plaintext; the not-yet-due letter still refused to open. So authoring output
+and recipient input already agree, with no adapter in between.
+
+Consequence for planning: building `web/author-app.mjs` is a FRONT-END
+binding task against four endpoints that already validate, seal, encrypt and
+serve a download. No crypto, no bundle-format, and no server work is implied
+by it. This narrows the authoring child sharply and is the reason the map
+below treats it as one session-sized task rather than a phase.
+
+- **Status:** BACKEND CAPABILITY DEMONSTRATED BY EXECUTION (session receipts
+  above). ComplaintRef: operator order to build the authoring workflow,
+  2026-08-05.
+
+### The tracked sealed demo cannot be opened by anyone (2026-08-05)
+
+The operator asked for the demo to be a repo-stored `.lateletter` unlocked by
+a password. That artifact already exists and is already wired, but it is inert.
+
+- `sealed_demo.lateletter` IS tracked at the repository root (confirmed with
+  `git ls-files --error-unmatch`), is a `version: 2` bundle with one encrypted
+  message and an encrypted garden program, author "Demo Author", seed
+  20260721, hint `'where flowers grow'`.
+- `viewer-bnw.html:2351` already wires `#btn-demo-sealed` to
+  `fetch('sealed_demo.lateletter')` and hands it to `handleFile`, with a
+  download fallback. The button and the gate are in place.
+- **Its passcode is not recorded anywhere in the repository, and it is not the
+  obvious ones.** A candidate sweep against the bundle's real PBKDF2/AES-GCM
+  parameters ("garden", "the garden", "a garden", "where flowers grow",
+  "flowers", "demo", "lateletter", "soil", "earth", "greenhouse", "meadow",
+  "ground") decrypted nothing. The demo therefore cannot be opened by the
+  operator, by a reviewer, or by a visitor.
+
+A second, quieter problem sits behind it: `scripts/prepare_pages_site.py`
+builds the public site from `browser_dependency_closure(ENTRYPOINT)` with
+`ENTRYPOINT = viewer-bnw.html` (:19), and that closure follows import/src/href
+specifiers. `sealed_demo.lateletter` is reached only through a runtime
+`fetch()` string, so it is not part of the closure and would not be copied
+into the built site — the sealed demo button would fail on the deployed
+artifact even if its passcode were known. Only `public_letters/*.lateletter`
+are copied deliberately (:1081-1088).
+
+- **Status:** OPEN. The demo needs a bundle whose passphrase is deliberately
+  chosen and recorded, and a shipping path into the built site. ComplaintRef:
+  operator order for a repo-stored password-unlocked demo, 2026-08-05.
+
+### Wayfinder map: the whole web product, authoring through recipient (2026-08-05)
+
+Overlay-kind: planned. Area: product. Priority: P1.
+
+Destination:
+A person opens the author page in a browser, answers a questionnaire, sets a
+passphrase, and receives a `.lateletter` file. A recipient opens that file —
+or the repo-stored demo, unlocked by a password that is actually known — and
+gets the letter and a garden that behave the way the operator expects, on
+desktop and on a phone. Reaching the end means the operator drives that whole
+path themselves, in a browser, and raises none of the defects listed below.
+Visual acceptance stays operator-only.
+
+Notes:
+- Operator instruction, 2026-08-05: build the authoring workflow; it should
+  flow like a questionnaire ending in a `.lateletter` file; the demo should be
+  a repo-stored `.lateletter` unlocked by password, and the fact that this is
+  architecturally a shortcut is accepted for now. Bundle-format purity is
+  explicitly deprioritized behind a whole garden, a whole recipient
+  experience, and a whole authoring workflow.
+- Terminal parity is WITHDRAWN from the route (operator, 2026-08-05). The
+  entry "Standing task 15 assessed: the terminal is a second composition
+  owner" stands as description only.
+- Proven this session and constraining every child below: the author backend
+  already validates, seals and serves a downloadable bundle, and its output
+  already opens in the recipient viewer (entry above). The recipient journey
+  — ambient garden, passphrase gate, archive, due-date gating, decryption,
+  reading typography — was demonstrated end to end in headless Chrome and
+  photographed.
+- `web/author-app.mjs` is referenced by author.html:771 and allow-listed by
+  author_web.py:81 but has never existed in any commit on any branch.
+- Lane note: author.html, author_web.py, author_service.py and make_letter.py
+  are the author-product lane, not garden-presentation. The operator has
+  directed this work across that boundary; the manifest rule that a lane asks
+  rather than edits is superseded by that instruction for these paths only.
+
+Decisions so far:
+- Author backend capability — DEMONSTRATED BY EXECUTION; the authoring build
+  is front-end only.
+- Sealed demo — the tracked artifact is inert (passcode unknown) and would
+  not ship; it must be regenerated and given a shipping path.
+
+Not yet specified:
+- Which garden interactions must be reachable for the garden to count as
+  whole (watering, feeding, inspect, collect, journal, inventory, gifts,
+  memorial, weather/seasons). A lane audit is in flight; its findings land at
+  scratchpad/audit-garden-lane.md and will graduate into children.
+- Whether author.html's existing wizard step structure IS the questionnaire
+  the operator wants, or whether the steps need reordering/rewriting. This is
+  operator-facing copy and flow, not a mechanical binding decision.
+- Whether the exact-font path should be repaired (the 'M'-pitch question) or
+  left unreachable — an asset/ADR decision already recorded separately.
+
+Out of scope:
+- Terminal parity and src/lateletter/garden/renderer.py.
+- Transcription lane.
+- Release cutover, deploy gates, and the two gate-matrix reds behind the
+  operator fence.
+
+### Wayfinder child: build the authoring questionnaire module (2026-08-05)
+
+Question:
+Write `web/author-app.mjs` so author.html becomes a questionnaire that runs
+end to end and produces a downloadable `.lateletter`. It must: bind the
+existing form controls (the `data-path` inputs, the per-letter fields,
+add/remove letter, the passphrase pair, validate and export buttons); map the
+form's nested `data-path` values onto the FLAT draft schema the server
+validates (`author_name`, `passphrase_hint`, `garden_seed`, `messages[]`,
+`garden_program`/`garden_beats`); drive the wizard steps; autosave the draft
+through `PUT /api/author/session` honouring the revision/409 conflict rule and
+never persisting a passphrase (the server deep-scans for secret keys and
+refuses); surface `POST /api/author/validate` errors and its `preview` block
+as questionnaire progress; and trigger the download from
+`POST /api/author/export`. A default `garden_program` must be supplied for
+authors who do not hand-edit JSON, since validation refuses a draft without
+one. Type: task. ComplaintRefs: Wayfinder map: the whole web product,
+authoring through recipient (2026-08-05); authoring web app has no application
+module entry (2026-08-05).
+
+### Wayfinder child: a demo bundle whose password is known and which ships (2026-08-05)
+
+Question:
+Produce the repo-stored, password-unlocked demo the operator asked for.
+Decide the passphrase deliberately and record it where a reviewer will find
+it; seal a demo bundle with content worth showing; and give it a path into the
+built site, since `browser_dependency_closure` cannot see a runtime `fetch()`
+target and only `public_letters/*.lateletter` are copied today. Decide whether
+the demo becomes a `public_letters` entry, a new closure edge, or an explicit
+copy list — and make `#btn-demo-sealed` depend on whichever is chosen. Type:
+task. ComplaintRefs: Wayfinder map (2026-08-05); the tracked sealed demo
+cannot be opened by anyone (2026-08-05).
+
+### Wayfinder child: the author page must reach a browser at all (2026-08-05)
+
+Question:
+`scripts/prepare_pages_site.py` builds the public site from a dependency
+closure rooted at `ENTRYPOINT = viewer-bnw.html` (:19), so author.html and its
+module are not in the artifact and the authoring workflow cannot be reached by
+anyone who did not clone the repository and start a local server. Decide
+whether authoring ships publicly at all, and if so add it as a second
+entrypoint with its own closure — noting the author server exists precisely
+because drafts are private, so a static public author page may be the wrong
+answer and a documented local-run path may be the right one. Type: grilling.
+ComplaintRefs: Wayfinder map (2026-08-05).
+
+### Wayfinder child: the letter panel collides with the garden (2026-08-05)
+
+Question:
+Repair the two reading-surface defects photographed this session. Desktop
+(scratchpad/rd2-3-reading-scrolled.png): the letter scrim is too weak where
+the column meets the tree line, a tree silhouette bleeds through the panel
+around y≈440-540, and the `[save] [all letters] [← back]` row sits on top of
+garden glyphs exactly where the reader must act. Mobile
+(scratchpad/mob-4-reading-scrolled.png): the scrim ends in a hard rectangular
+edge with no fade and garden glyphs poke past its left edge. Decide whether
+the repair is scrim opacity, a fade mask, a reserved gutter, or suppressing
+garden ink beneath the panel — and prove it with fresh captures at 1400x950
+and 390x844. Type: task. ComplaintRefs: Wayfinder map (2026-08-05); recipient
+experience proven end to end on a real sealed bundle (2026-08-05).
