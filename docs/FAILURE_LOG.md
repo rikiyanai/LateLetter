@@ -12971,3 +12971,78 @@ follow, both recorded rather than repaired here:
   whoever owns lane enforcement; this entry does not repair them. Recorded so
   the next occurrence is recognised immediately rather than diagnosed from a
   failing release build. ComplaintRef: operator art grant, 2026-08-06.
+
+### Wayfinder map update: where the web-product route stands (2026-08-06)
+
+Index refresh for "Wayfinder map: the whole web product, authoring through
+recipient (2026-08-05)". Appended rather than edited, because the map entry is
+committed canon (192097e). Eight children exist; one is answered, one is
+partly advanced, six are open.
+
+Decisions so far, each with its evidence:
+
+- **Author backend capability — DEMONSTRATED BY EXECUTION.** session/validate/
+  export driven over HTTP with no browser; export returned a sealed v2 bundle
+  (PBKDF2 600k, encrypted body and garden program, correct download headers)
+  that then opened and read in the recipient viewer. The authoring build is
+  front-end only.
+- **Recipient journey — DEMONSTRATED END TO END AND PHOTOGRAPHED** at 1400x950
+  and 390x844: ambient garden on open, passphrase gate, archive, due-date
+  gating, decryption, reading typography.
+- **Terminal parity — WITHDRAWN** from the route by operator instruction.
+- **Authoring scope — NARROWED** to letter timing/delivery plus small scheduled
+  static ASCII gifts; every other garden capability stays out of the authoring
+  UI regardless of what the grammar supports.
+- **Grammar — NEEDS NO EXTENSION.** `SUPPORTED_ACTIONS` already carries
+  letter.present, entity.place, entity.reveal, animal.deliver and
+  animal.present_gift; schedule carries start and recurrence. A recurring
+  birthday gift beat was built and accepted by `parse_program`.
+- **Letter-bird — ALREADY THE LIVE DELIVERY.** `deliveryFramesFor` falls back
+  to `LETTERBIRD_DELIVERY_FRAMES` whenever no bonded tier-3 animal exists, and
+  zero animals are seeded, so it always plays. The gift MVP does NOT depend on
+  the starter-roster decision; the blocking dependency asserted in the
+  2026-08-05 map update is withdrawn.
+- **Unicode — ANSWERED: ASCII only for now.** Widening the subset yields
+  nothing (upstream Literata contains none of the wanted families); a second
+  face is deferred, and a different, possibly monospace face is an open
+  future option.
+- **Four gift assets — PROMOTED** (b57441f): `fixture.coffee_mug` with a
+  3-frame `. o O` steam ramp, `fixture.ice_cream_cone`, `fixture.mixtape`,
+  `fixture.popsicle`; all hash-bound to the granted TXT bytes, both profiles,
+  node 204/204 and the garden Python set at its 319/2 baseline.
+
+Child status:
+
+| child | type | status |
+|---|---|---|
+| build the authoring questionnaire module | task | OPEN — letters stage unblocked |
+| the authorable gift must offer only art that may paint | task | PARTLY ADVANCED — four accepted assets exist; the authoring-side restriction is unbuilt |
+| a demo bundle whose password is known and which ships | task | OPEN — untouched |
+| the letter panel collides with the garden | task | OPEN — defects photographed |
+| every modeled interaction needs a control a finger can reach | task | OPEN — largest remaining |
+| the author page must reach a browser at all | grilling | OPEN — awaiting operator |
+| the default garden is one rose and no animals | grilling | OPEN — no longer blocks the gift MVP |
+| full Unicode is a second-face decision | grilling | ANSWERED |
+
+Frontier child selected for the next session: **build the authoring
+questionnaire module**, starting at the letters stage, because its backend is
+demonstrated, its scope is decided, and it is the operator's stated priority.
+
+Fog remaining, not yet sharp children:
+
+- The draft schema has no `recipient_name` field, while author.html asks for
+  recipient name and relationship. Extend the schema or drop the questions —
+  an operator-facing decision inside the questionnaire child.
+- How much of author.html's existing seven-stage markup to hide for the MVP.
+- Whether the eventual face is a wide-repertoire monospace, which would settle
+  the Unicode question and dissolve the `'M'`-pitch defect as a side effect.
+- Two enforcement gaps exposed by the cross-lane deletion: no test asserts that
+  every `operator_grants[].source` path exists, and nothing wires
+  `check_lane_boundary.py` into commit production.
+
+Out of scope, unchanged: terminal parity, transcription lane, release cutover
+and the two gate-matrix reds behind the operator fence.
+
+RQ projection: not projected. The route is clear enough to slice the
+questionnaire child, but the remaining grillings are operator decisions rather
+than execution work.
