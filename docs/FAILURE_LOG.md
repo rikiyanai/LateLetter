@@ -13283,3 +13283,94 @@ Consequences recorded honestly, so this is not mistaken for coverage:
   risk by operator decision rather than left unexamined. ComplaintRef: a
   concurrent lane silently deleted eleven committed operator-granted art files
   (2026-08-06).
+
+### The cross-lane deletion recurred within hours, and this time it targeted the guard too (2026-08-06)
+
+Second occurrence of the failure recorded in "A concurrent lane silently
+deleted eleven committed operator-granted art files (2026-08-06)". It was
+caught live, in the shared index, by a read-only agent that happened to run
+`git status` while reading source.
+
+State found:
+
+- All eleven files under `src/lateletter/garden/data/operator-granted-art/`
+  were STAGED FOR DELETION (`D ` in `git status --short`), and simultaneously
+  present on disk as untracked.
+- `tests/garden_acceptance/test_operator_grant_sources.py` — the guard added
+  in 3c323b4 specifically to catch this class of failure — was staged for
+  deletion in the same index.
+- HEAD was intact: all twelve paths present, so nothing was lost. The hazard
+  was prospective: any plain `git commit` from any lane would have committed
+  those twelve deletions.
+
+**This materially weakens the enforcement decision taken hours earlier.** That
+decision (advisory boundary, rely on the grant guard, revisit a pre-push gate
+later) assumed the guard would fire when the art went missing. But a commit
+that removes the art AND the guard test in one index removes the thing that
+would have complained. A guard deleted alongside what it guards is not a
+guard. This is not a hypothetical: the index observed here contained exactly
+that pairing.
+
+**Repair, by pathspec, without disturbing other lanes.** Each of the twelve
+index entries was restored to the blob HEAD already holds, using
+`git update-index --add --cacheinfo` per path. This is a targeted index repair,
+not a `git add` sweep: no other lane's staged work was touched, and for these
+paths the index now matches HEAD exactly. Disk bytes were then re-verified
+against HEAD — eleven granted files checked, zero differ.
+
+**What remains unexplained, and should not be guessed at.** The mechanism that
+stages these deletions is still unidentified. It has now happened twice within
+hours, once reaching a commit (`1bdea41`) and once caught in the index. Until
+the mechanism is named, any guard is reactive. The recurrence rate is itself
+the finding: this is not a one-off mistake by one commit author.
+
+- **Status:** REPAIRED IN THE INDEX AND VERIFIED AGAINST HEAD; MECHANISM
+  UNIDENTIFIED; PRIOR ENFORCEMENT DECISION NOW QUESTIONABLE ON ITS OWN
+  EVIDENCE. Recorded for the operator to re-weigh, not silently re-decided
+  here. ComplaintRef: cross-lane deletion entry (2026-08-06); operator
+  decision that enforcement stays advisory (2026-08-06).
+
+### Correction: the gift stage is NOT front-end-only; no entity kind both validates and paints (2026-08-06)
+
+I told the operator that building the authoring questionnaire was a front-end
+binding task, on the evidence that the author backend already validates, seals
+and exports a real bundle. That holds for the LETTERS stage. It is FALSE for
+the GIFT stage, and the difference was found by execution during the
+specification pass.
+
+The four promoted gift assets cannot currently be authored into a garden
+program at all:
+
+- `kind: "fixture"`, `catalog_id: "coffee_mug"` (and `"fixture.coffee_mug"`)
+  is REFUSED by `parse_program`:
+  `$.entities[0]: unknown runtime fixture asset 'coffee_mug'`.
+  `FIXTURE_CATALOG` holds 28 ids — arbor, basket, bench, birdbath, bridge,
+  chair, compost, fence, fence_gate, gate, lantern, mailbox, memorial_stone,
+  memory_shrine, planter, pond, shed_edge, sign, stepping_stone,
+  stepping_stones, sundial, table, table_chairs, tool_rack, trellis,
+  watering_can, well, wind_chime — and none of the four new gifts.
+- `kind: "collectible"` and `kind: "item"` are ACCEPTED for any catalog id,
+  including `coffee_mug`. But collectible art resolution falls back to
+  `COLLECTIBLE_ART.authored_keepsake` (web/garden-painting.mjs:1321, art at
+  :177), a generic three-row keepsake mark. So an authored coffee mug would
+  validate cleanly and then paint something that is not a coffee mug.
+
+So one route refuses loudly and the other accepts and paints the wrong thing.
+**No entity kind both validates and resolves to the promoted art.** This is the
+validate-versus-paint trap already recorded, now in its worst form: not
+invisible art, but confidently wrong art, which is harder to notice and worse
+to ship.
+
+Consequence for the route: the gift stage requires a change in Python — the
+four ids must reach a catalog that both admits them in `parse_program` AND
+resolves to their atlas assets at paint time. That is garden-lane work, it is
+small, but it is not front-end, and the questionnaire child cannot deliver
+gifts until it lands. The letters stage remains genuinely front-end-only and
+genuinely unblocked.
+
+- **Status:** DEFECT CONFIRMED BY EXECUTION; MY EARLIER FRONT-END-ONLY CLAIM
+  IS CORRECTED AND NARROWED TO THE LETTERS STAGE. No catalog change was made
+  here — which catalog the gifts should join is a design decision with paint
+  consequences, and is recorded as an open question rather than guessed.
+  ComplaintRefs: operator scope decision entry (2026-08-06); the authorable
+  gift must offer only art that may paint (2026-08-06).
