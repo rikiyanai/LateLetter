@@ -12690,3 +12690,85 @@ for a size-3 `ramp` (small to large, or tight to open) rather than a `cycle`.
   cleared by evidence; only its smoke needs an authored ASCII ramp and an
   operator look. ComplaintRefs: operator art grant, 2026-08-06; operator
   request for a static smoke animation, 2026-08-06.
+
+### Wayfinder child: full Unicode is a second-face decision, not a subsetting one — ANSWERED (2026-08-06)
+
+Question:
+The operator approved the ASCII smoke ramp `. o O` and the promotion of the
+four ASCII-safe gift drawings, and stated that full Unicode will eventually be
+needed because families like the rain ramp `♩♪♫` and the fire/torch/smoke set
+`٨۸۵` are useful, "and more". This child exists because the obvious
+assumption — that the ASCII limit is just an aggressive subset that can be
+widened — is FALSE, and acting on it would waste the effort.
+
+Type: grilling.
+
+Evidence gathered while charting this child:
+
+- The bundled face is built by `scripts/build_garden_font.py`: Literata, with
+  every variable axis pinned to the runtime contract (weight 400, optical size
+  15) and **subset to printable ASCII**, which the script's own header calls
+  "the entire repertoire the `ascii-safe` art profile can contain". The subset
+  takes 955 KB of variable TTF down to about 25 KB of WOFF, a 97% reduction on
+  a page a recipient may open on a phone.
+- **The upstream source does not contain the wanted glyphs either.** The
+  unsubsetted `docs/visual-review/font-decision/fonts/Literata-var.ttf` carries
+  1163 codepoints, and was checked directly against every family named so far:
+
+  | family | present in upstream Literata |
+  |---|---|
+  | rain ramp `♩♪♫` | none |
+  | fire/torch/smoke `٨۸۵` | none |
+  | smoke `⋏∧⋀` | none |
+  | foliage wind `ไใโ` | none |
+  | gift marks `♢✧❖` | none |
+  | teddy bear `ʕᴥʔ•` | only `•` U+2022 |
+  | bone `Ɛ═` | none |
+
+So widening the subset yields nothing. Every wanted glyph would have to arrive
+from a DIFFERENT face, and that is the collision: `#g` deliberately names no
+fallback family, because per-glyph browser substitution is, in the viewer's own
+words, "the exact defect this whole contract closes" — a substituted glyph
+paints at an advance the art was never measured against. This is the same
+failure mode already proven this session, where the exact-font path placed
+lattice scenery on an `'M'`-wide pitch against ink that draws 5-9px.
+
+**Operator answer, 2026-08-06: stay in ASCII for now.** The second declared
+symbol face is DEFERRED, not rejected; the operator further noted the eventual
+answer may be a different font entirely, "mono or something".
+
+That last remark is worth recording precisely, because three independent facts
+already in this log point the same way:
+
+1. The product does not paint in Literata today and never has. Its renderer
+   stamps `font-degraded` unconditionally and overrides `#g` to Menlo 13px/15px
+   (`web/garden-renderer.mjs:75,82-85`), discarding the measurer it is handed
+   (:87). A deliberate move to a monospace face would RATIFY what already
+   ships rather than change it.
+2. The proportional path's proven defect is a pitch mismatch: the world lattice
+   uses the advance of `LATTICE_REFERENCE_TEXT = 'M'` (15.03px in Literata)
+   while ordinary ink draws 5-9px, which is why canopies loosened and rules
+   dashed in the forced exact-font capture. A monospace face has ONE advance
+   for every glyph, so that mismatch cannot arise — the defect dissolves rather
+   than needing a repair.
+3. The accepted fixture art was reviewed on a fixed-column lattice in the first
+   place, which is the stated reason the monospace override exists at all.
+
+So "mono or something" is not a retreat from the exact-font ambition; it is
+plausibly the shape that ambition should have taken, and a monospace face with
+a wide repertoire would also settle this child's Unicode question as a side
+effect. Recorded as an observation for whoever picks the font decision up — it
+is NOT decided here, and no font work is authorized by this entry.
+
+Whichever face is eventually chosen, `src/lateletter/garden/atlas.py`
+independently requires an `ascii-safe` profile of one printable ASCII character
+per cell for EVERY asset (:112-114, :199-200, :241-242), so an ASCII fallback
+drawing remains mandatory for any Unicode art regardless. That rule is not a
+consequence of the font choice and does not go away with it.
+
+- **Status:** ANSWERED FOR NOW — ASCII ONLY; SECOND-FACE AND FONT-SWAP
+  DEFERRED. No font work authorized. The four promoted drawings and the
+  approved `. o O` ramp are unaffected, being ASCII by construction.
+  ComplaintRefs: Wayfinder map: the whole web product, authoring through
+  recipient (2026-08-05); operator art grant, 2026-08-06; static-glyph
+  animation entry, 2026-08-06.
