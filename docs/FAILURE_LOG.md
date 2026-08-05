@@ -12920,3 +12920,54 @@ Screenshots at
   decision places any of them in a recipient's world. ComplaintRefs: operator
   art grant, 2026-08-06; operator request for a static smoke animation,
   2026-08-06; operator promotion of the four ASCII gift drawings, 2026-08-06.
+
+### A concurrent lane silently deleted eleven committed operator-granted art files (2026-08-06)
+
+This is the exact lost-update the ownership manifest exists to prevent, and it
+reached committed operator-granted art before anyone noticed. It was caught
+only because a following task happened to read the files it needed.
+
+- `bf50d7f` ("feat: record the operator gift-art grant with hash-bound
+  sources") added eleven files under
+  `src/lateletter/garden/data/operator-granted-art/`: ten granted gift drawings
+  and the operator's supplied reference sheet.
+- `1bdea41` ("docs: record the calibration-authority route decision and
+  graduate two lattice children") — a DOCS commit from a concurrent lane —
+  deleted all eleven, 355 deletions, with no mention of them in its message.
+  Its stated purpose has nothing to do with art assets.
+- The deletion was silent. No test covered the presence of those files, so
+  nothing went red. The grant register would have kept naming sources that no
+  longer existed; the release builder raises on exactly that
+  (`_accepted_asset_ids` refuses a grant whose hash-bound source is absent), so
+  the next build would have failed with a confusing error far from the cause.
+
+**Recovery, verified rather than assumed.** The promotion patch restored all
+eleven. Every one was then compared blob-to-blob against the original grant:
+`git rev-parse bf50d7f:<path>` equals `git rev-parse HEAD:<path>` for
+coffee-mug, ice-cream-cone, mixtape, popsicle, sideways-rose, teddy-bear, bone,
+brooch-bar, brooch-round and pendant-necklace. All IDENTICAL. The granted bytes
+survived intact, so no operator art was lost or silently altered.
+
+**Mechanism.** `1bdea41` is a documentation commit that carried deletions of
+another lane's paths. That is the failure mode docs/ownership-lanes.json names
+in its own rationale: "a commit taken with no pathspec sweeps up whatever
+another lane happens to have staged." The manifest already forbids this; what
+is missing is anything that ENFORCES it. `scripts/check_lane_boundary.py`
+exists but evidently did not gate this commit.
+
+**Standing risk this exposes.** Operator-granted art is currently protected
+only by a hash recorded in a register — which detects corruption of a file that
+is present, and detects nothing when the file is deleted outright. Two gaps
+follow, both recorded rather than repaired here:
+
+1. No test asserts that every `operator_grants[].source` path EXISTS. Such a
+   test would have turned this silent deletion into an immediate red, in the
+   lane that owns the register, at the moment of deletion.
+2. Nothing prevents a commit from one lane deleting another lane's files. The
+   boundary script is not wired into whatever produces these commits.
+
+- **Status:** RECOVERED AND VERIFIED BYTE-FOR-BYTE (blob comparison against
+  bf50d7f, ten of ten identical). The two gaps above are OPEN and belong to
+  whoever owns lane enforcement; this entry does not repair them. Recorded so
+  the next occurrence is recognised immediately rather than diagnosed from a
+  failing release build. ComplaintRef: operator art grant, 2026-08-06.
