@@ -13137,3 +13137,98 @@ This is content and emotional design, not plumbing; it is the difference
 between a form and something a person actually wants to fill in. Type:
 research, then grilling for approval. ComplaintRefs: Wayfinder map
 (2026-08-05); operator decisions entry (2026-08-06).
+
+### Operator-granted sources are now guarded by a test that names the loss (2026-08-06)
+
+The entry above ("A concurrent lane silently deleted eleven committed
+operator-granted art files") left two gaps open and explicitly did not repair
+them. This entry repairs the first of the two and reports why the second still
+needs an operator decision.
+
+**Gap 1, IMPLEMENTED (proved by mutation).**
+`tests/garden_acceptance/test_operator_grant_sources.py` walks every row of
+`docs/garden-asset-acceptance.json`'s `operator_grants` array that names an
+`asset_id`, a `source` and a `source_sha256` -- the same three-string rule
+`scripts/prepare_pages_site.py::_accepted_asset_ids` uses, so the guard and the
+release builder can never disagree about which rows are grants. Prose-only
+historical rows, which carry null or absent values for all three, are skipped
+by both. There are five such grants today: `plant.rose`, `fixture.coffee_mug`,
+`fixture.ice_cream_cone`, `fixture.mixtape`, `fixture.popsicle`.
+
+Four tests:
+- the headline guard requires every grant's source to be present and to still
+  hash to the recorded digest, and refuses to run vacuously -- an emptied
+  `operator_grants` array fails on its own assertion rather than iterating over
+  nothing and reporting no failure;
+- a ledger guard requires the five ids above to still name a hash-bound source,
+  because deleting a grant ROW would silently stop the headline guard from
+  looking for that file -- the same silent loss, one level up;
+- two mutation tests break a scratch copy of the granted sources inside
+  `tmp_path` (delete one, append one byte to another) and require the guard to
+  name the asset, the path, and which of the two things went wrong.
+
+**Observed failing, not assumed to fail.** The repository's own standard --
+"a check that does not fail when the thing it guards is broken is not a check"
+-- was applied to the guard itself. A copy of the minimum tree (the register,
+the builder, the test, the five sources) was made under a scratch directory,
+`popsicle.txt` was moved away and a single space appended to
+`ice-cream-cone.txt`. The headline test failed with:
+
+    AssertionError: 2 of 5 operator-granted sources are not where the register
+    says they are:
+      operator grant 'fixture.ice_cream_cone': the bytes of
+      src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt NO
+      LONGER MATCH the digest recorded in the register (register says
+      292657f3..., the file on disk hashes to e6316b46...).
+      operator grant 'fixture.popsicle': its hash-bound source
+      src/lateletter/garden/data/operator-granted-art/popsicle.txt is ABSENT.
+
+Both files were then put back and the four tests held. Emptying
+`operator_grants` in the scratch register turned all four red, so the
+anti-vacuity assertion is not decorative either. Nothing under version control
+was moved or altered at any point; every mutation happened in a scratch tree.
+
+**Gap 2 is NOT repaired: wiring `scripts/check_lane_boundary.py` needs an
+operator decision.** Four mechanisms were examined and each carries a choice
+that is not a lane's to make:
+
+1. *A git hook.* This repository has no in-repo hooks directory -- the old
+   `.githooks/` was retired to `dumpster/cleanup-2026-07-26/` -- and
+   `core.hooksPath` is set GLOBALLY to `/Users/r/.git-hooks`, which holds six
+   hooks including the `commit-msg` attribution gate. Pointing `core.hooksPath`
+   at an in-repo directory would silence all six for this repository. That is a
+   trade nobody but the operator can authorise.
+2. *Any hook at all, in this checkout.* The commit procedure these concurrent
+   sessions are required to use is a temporary `GIT_INDEX_FILE` plus
+   `git commit-tree` and `git update-ref`. `commit-tree` runs NO hooks. A
+   `pre-commit` hook would therefore be blind to precisely the commits that
+   land here, `1bdea41` among them.
+3. *CI.* `.github/workflows/**` is owned by no lane in
+   `docs/ownership-lanes.json`, and the script is structurally unable to answer
+   a CI-shaped question anyway: it reads `git status --porcelain`, i.e. the
+   uncommitted checkout, and has no mode that classifies the paths of a COMMIT
+   or a push range. Giving it one is a new feature with a real design question
+   inside it -- what "one lane" means across a range that legitimately contains
+   several commits.
+4. *A pytest gate in the garden lane.* Today `python3
+   scripts/check_lane_boundary.py` exits 1 on this checkout: three UNKNOWN
+   paths (`ascii-animations/creatures/anim_snail.py`,
+   `ascii-animations/creatures/birds-and-insects.txt`,
+   `web/garden-accepted-paint.v1.json`) and one CONTENDED path
+   (`viewer-bnw.html`). A test asserting exit 0 would hold the Garden suite red
+   on other lanes' in-flight state; making it deterministic means deciding
+   which findings are fatal and which are advisory, and it would gate test runs
+   rather than commit production.
+
+The one mechanism that would gate what actually produces these commits is a
+sanctioned commit front door -- a script that performs the temp-index commit
+and refuses when the boundary check reports a mixture. That invents a new
+required workflow for every concurrent session, so it is recorded here as the
+recommended option rather than taken unilaterally.
+
+- **Status:** gap 1 IMPLEMENTED and proved by mutation (four tests in
+  `tests/garden_acceptance/test_operator_grant_sources.py`; observed failing
+  against a damaged scratch tree and holding against an intact one). Gap 2
+  remains OPEN and now has four costed options and a recommendation instead of
+  only a statement that it is unwired. ComplaintRef: operator art grant,
+  2026-08-06.
