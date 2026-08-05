@@ -12361,3 +12361,101 @@ one addition, one safe extension, and one measured dead end.
 - **Status:** CHILD ANSWERED / IMPLEMENTED (UNPROVEN beyond the receipts
   above). ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
   Unicode text-art recovery; boundary-ink child outcome, 2026-08-06.
+
+### Operator art grant: ten gift drawings recorded, and which of them can actually paint (2026-08-06)
+
+The operator granted a set of gift drawings as approved art and supplied a
+reference sheet, noting themselves that some are well sized for immediate
+promotion while others are not well sized and complex and need careful
+decisions. This entry records the grant and turns that instinct into an
+evidence-based split, because two independent gates decide whether a drawing
+can ever appear.
+
+**The grant, stored byte-exactly.** Each drawing is written to its own TXT
+under `src/lateletter/garden/data/operator-granted-art/` so a register grant
+can bind to exact bytes, the way `plant.rose` already does, rather than to a
+description of a picture:
+
+| file | bytes | sha256 (first 16) |
+|---|---|---|
+| bone.txt | 13 | 061649a5bd83e400 |
+| brooch-bar.txt | 10 | 906719a8baf9609e |
+| brooch-round.txt | 25 | d8f1c5d51c54fc0d |
+| coffee-mug.txt | 6 | 112d7db2dc521d26 |
+| ice-cream-cone.txt | 8 | 292657f37f22f77b |
+| mixtape.txt | 6 | 2f1239f4fe94bd81 |
+| pendant-necklace.txt | 19 | d0bde89d674e3137 |
+| popsicle.txt | 11 | caa8a3e8a035d13a |
+| sideways-rose.txt | 79 | daf6e093dd259a74 |
+| teddy-bear.txt | 21 | 3fec429386369100 |
+| REFERENCE-SHEET.txt | 6376 | 7f93248b52bb4941 |
+
+**Fidelity caveat, recorded rather than glossed.** These ten were transcribed
+from the operator's chat message, which is a lower-fidelity channel than a
+file: trailing spaces and line ends can be altered in transit, and this
+project has already been burned once by treating an approximate copy of
+approved art as the approved art. The bytes above are what was received. The
+operator should confirm them, or re-supply the drawings as files, before any
+of these is promoted to an accepted atlas asset.
+
+**Gate 1 — the mandatory ASCII profile.** `src/lateletter/garden/atlas.py`
+requires an `ascii-safe` profile for EVERY asset (:199-200, :241-242) and
+requires its cells to be one printable ASCII character each (:112-114). A
+drawing containing any non-ASCII glyph therefore cannot be expressed as an
+ascii-safe profile at all; it needs a `unicode-cell-safe` profile
+(`_TERMINAL_PROFILES`, :60) AND a separate ASCII fallback drawing regardless.
+
+**Gate 2 — the bundled face's repertoire.** Checked directly against the cmap
+of `web/fonts/lateletter-garden.woff` with fontTools. The result is decisive:
+**every non-ASCII codepoint in the granted set is ABSENT from the face**, so
+each would render as tofu rather than as the intended mark.
+
+| drawing | w x h | pure ASCII | codepoints missing from the face |
+|---|---|---|---|
+| coffee mug | 5x1 | YES | — |
+| ice cream cone | 3x2 | YES | — |
+| mixtape | 5x1 | YES | — |
+| popsicle | 3x3 | YES | — |
+| sideways rose | 17x6 | YES | — |
+| pendant necklace | 5x3 | no | `♢` U+2662 |
+| brooch (round) | 7x3 | no | `✧` U+2727 |
+| brooch (bar) | 7x1 | no | `❖` U+2756 |
+| bone | 5x1 | no | `Ɛ` U+0190, `═` U+2550 |
+| teddy bear | 6x2 | no | `ʕ` U+0295, `ʖ` U+0296, `ᴥ` U+1D25, `•` U+2022 |
+
+**The split this produces.**
+
+- **Promotable to atlas assets now** — pure ASCII, small enough for the
+  lattice, no font work: coffee mug (5x1), ice cream cone (3x2), mixtape
+  (5x1), popsicle (3x3). These four are the MVP's giftable set.
+- **Granted but not yet paintable** — pendant necklace, both brooches, bone,
+  teddy bear. Each needs either an ASCII redraw or font work adding the
+  codepoints plus an ASCII fallback drawing anyway (gate 1 does not go away
+  when gate 2 is satisfied). Recording them as accepted atlas assets in their
+  current form would create an accepted verdict on art that renders as tofu.
+- **Different surface** — the sideways rose is pure ASCII but 17 columns wide
+  and was described as a letter-ending decoration, not a garden object. It
+  belongs to the letter/typography surface, not the garden atlas, and is not
+  bound by the lattice-fixture size argument at all.
+
+**The reference sheet is mostly out of scale for the garden.** The supplied
+`ASCIIARTREFS` contains 19 drawings; by blank-line block, 14 are LARGE (up to
+66 columns by 41 rows), 3 medium, and 2 small. For comparison the accepted
+pond fixture is 24 columns. This confirms the operator's own reading, and it
+restates a defect already in this log: reference subjects run far wider than
+anything the current anchor tables can place, so promoting them is blocked
+behind composition work rather than behind an art verdict.
+
+**Coffee mug smoke.** The operator asked for a static-glyph smoke animation
+and pointed at prior art in the asciicker-Y9-2 checkout (a glyph viewer/cycle
+script, and a Godot static-glyph animation for leaves and grass). That
+investigation is in flight; its findings land at
+scratchpad/audit-asciicker-glyph-anim.md and will decide how a small
+static-glyph animation is represented as data here.
+
+- **Status:** GRANT RECORDED WITH HASH-BOUND SOURCES; PAINT ELIGIBILITY
+  SPLIT BY EVIDENCE. No asset verdict was written into
+  docs/garden-asset-acceptance.json by this entry — four drawings are cleared
+  by evidence for promotion, five are blocked on a glyph decision that is the
+  operator's, and the promotion step remains a separate, deliberate act.
+  ComplaintRef: operator art grant, 2026-08-06.
