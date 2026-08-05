@@ -2908,15 +2908,20 @@ Decisions so far:
   a self-calibrated floor; compound-component splitting recorded as a SPENT approach (aliases a
   truncated `(` to `[`; caught by the zero-wrong pin). Cross-source unknowns: bbbb 6, horse 7,
   sitting-cat 4, blooms 24/24.
+- Calibration-authority research child ANSWERED (2026-08-06): route selected — complete the
+  router's own lattice proof and emit hash-bound calibrations behind the existing
+  `resolve_calibration` seam; the legacy calibrator stays legacy evidence (wrong-harmonic lock,
+  hand-tuned per-source bounds, structural operator review). Graduated children: lattice-first
+  mode-assignment proof (NEXT); calibration emitter at the seam (BLOCKED on it).
 
 Not yet specified:
 - The neighbour-template explanation discriminator for boundary-straddling ink (the remaining
   bbbb wrong-blank and part of the refused unknown groups) and window-context naming for the
   unknown groups both naming stages refuse today.
-- Production lattice calibration authority: 21 of 26 live queue sources have no tracked
-  hash-bound calibration and therefore cannot reach row-joint decode; the route is either a
-  revived deterministic calibrator step or the router's own lattice proof, which also owes the
-  mode-assignment proof reopened on 2026-08-05.
+- How many of the 21 uncalibrated queue sources are genuinely lattice versus shaped — the
+  lattice-first mode-assignment proof child measures this; not before. Coverage law: a source
+  with no provable lattice fails closed to shaped routing and never receives a row-joint
+  calibration, per the destination's exclusive routing.
 - The final source-derived ranking features and winner margins after exact expected sequences are
   proved present in proposal evidence.
 - The complete shaping/bidi/font-fallback and exactly-once ownership exit gates across Arabic,
@@ -12288,8 +12293,10 @@ research
   commit 9193041); geometry mode misassignment entry, 2026-08-05. Exit evidence: a selected
   route with its acceptance surface defined (per-source calibration receipts, replay
   determinism, and the mode/lattice proof obligations named).
-- Status: OPEN / BLOCKS QUEUE COVERAGE. ComplaintRef: Wayfinder map: build deterministic
-  PNG-to-logical-Unicode text-art recovery.
+- Status: ANSWERED 2026-08-06 — route selected: the router's own lattice proof behind the
+  existing `resolve_calibration` seam; see the calibration-authority outcome entry for the
+  selection evidence, proof obligations, and acceptance surface. ComplaintRef: Wayfinder map:
+  build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Wayfinder child outcome: boundary-straddling ink explained by the source bank (2026-08-06)
 
@@ -12459,6 +12466,154 @@ static-glyph animation is represented as data here.
   by evidence for promotion, five are blocked on a glyph decision that is the
   operator's, and the promotion step remains a separate, deliberate act.
   ComplaintRef: operator art grant, 2026-08-06.
+
+### Wayfinder child outcome: calibration authority routed to the router's own lattice proof at the resolve_calibration seam (2026-08-06)
+
+The "production lattice calibration authority for uncalibrated live sources"
+child is answered by source and receipt review. No code changed; this is a
+route selection with its acceptance surface, per the child's exit evidence.
+
+**Selected route:** complete the router's own lattice proof and emit
+hash-bound calibrations from it behind the existing `resolve_calibration`
+seam — the seam and this succession are already named in
+`row_joint.py:33-35` ("when the router later proves lattices itself, that
+proof can replace this lookup at a single seam"). The legacy grid calibrator
+is NOT revived as a production step; its attempt-history artifacts remain
+the interim authority for the five bound sources until the router proof
+replaces them source by source.
+
+**Why not the legacy calibrator (measured disqualifiers, not preference):**
+
+- Demonstrated misdetection on a real queue source: wrong-harmonic lock on
+  ldb-flower-field — the calibrator derived 13.75 px where an independent
+  exhaustive search found a legal lattice (advance 23.95 px, origin 7.10 px,
+  zero boundary ink); "the period detector is locking onto a wrong harmonic"
+  and the CLI offers no lever (failure-log calibrator-v5 entry, 2026-08).
+- Per-source hand-tuned search bounds are required in practice: version 5 is
+  literally "parameterized-bounds", and a8283c5cdb63b130 needed x 14–22 /
+  y 28–40 against the 6–14 / 14–24 defaults. A production step that needs a
+  human to tune each source is not deterministic production.
+- Structural operator review: it only ever emits `calibration_candidate` with
+  `pending_operator_review` (`calibrate_monospace_grid.py:515-526`), and
+  attempts 007–014 were invalidated in this history for treating an
+  unreviewed lattice as authoritative. The destination gives operators
+  accept/reject of candidates, not lattice arithmetic.
+- Unpinned host dependencies: first baseline derives from the system
+  Menlo.ttc recorded by path not hash, PIL/numpy versions unrecorded, a
+  host-absolute source path embedded, an explicit 11 px tie-break bias
+  (`calibrate_monospace_grid.py:233`), and hardcoded 36 px guide rails.
+- Its measurement core (autocorrelation pitch, boundary-ink phase) is a
+  weaker duplicate of what `geometry/evidence.py` already owns with margins,
+  harmonic rejection, and per-pixel ownership proof.
+
+**Why the router proof carries it:**
+
+- Already deterministic, source-only, and hash-bound, running on all 26
+  sources inside production `transcribe()`; the identity-pinned replay
+  receipt pattern (commit 38680cf) is the established determinism evidence.
+- The proved fixed-lattice contract is a near-superset of the row-joint
+  calibration fields: `origin_x` / `advance_x` / `line_height` / `rows` /
+  `columns` carry over directly; first baseline, crop offsets, background,
+  and ink threshold derive from `baselines`, `row_bounds`, and the
+  selected-foreground recipe. The emitter is an adapter, not a new
+  measurement.
+- It subsumes the reopened mode-assignment proof instead of routing around
+  it: lattice-first assignment is the direct fix for the demonstrated
+  positive-fixed-ascii misassignment (2026-08-05 entry).
+
+**Proof obligations named (the child's required exit evidence):**
+
+1. Lattice-first assignment: shaped admission only after fixed-lattice
+   authority is proved ABSENT, not merely unproven — today `router.py:107-112`
+   admits shaped whenever `fixed_lattice_authority_proven` is false.
+2. Mode-vs-truth on known-truth fixtures: positive-fixed-ascii routes
+   fixed_lattice; the accepted-anchor regression asserts `status == "proved"`
+   and mode fixed_lattice for bbbb-flowers / a8283c5cdb63b130 instead of
+   accepting either coherent outcome; horse re-examined under the new proof.
+3. Honest per-property flags: the top-level pitch/phase/ownership flags
+   mirror their branch proofs instead of being forced true on any proved
+   mode (`router.py:167-170`).
+4. Seam hygiene: `resolve_calibration` refuses `calibration_rejected`
+   artifacts — today 2 of the 5 bound sources (sitting-cat, ldb-flower-field)
+   decode under rejected calibrations because the index binds by hash alone
+   (`row_joint.py:543-545`).
+5. Index integrity: the calibration artifact's sha256 is recorded into a
+   written index at creation, replacing the runtime directory scan and
+   lexicographic-"newest" selection (`row_joint.py:524-564`).
+
+**Acceptance surface — what proves a calibration without consulting
+transcript truth:** a per-source calibration receipt carrying the
+source_sha256; the winning pitch with normalized margin ≥ authority margin
+and no harmonic rejection; phase margin ≥ authority margin; complete
+per-pixel row ownership; baseline regularity (max |delta − line_height| ≤
+2.0); foreground stability; boundary-ink legality (no structural ink on cell
+boundaries — the `machine_legal` analogue); evidence/geometry hashes; the
+implementation identity hash (38680cf pattern); and the artifact sha256.
+Replay determinism: same source bytes produce the same artifact hash across
+fresh subprocess runs under the pinned identity. Every quantity is
+raster-derived; accepted corpora (bbbb `accepted.txt`) remain holdout-only
+regression evidence, never inputs.
+
+**Coverage law:** the "21 of 26" framing resolves under obligation 1 — a
+source with no provable lattice fails closed to shaped_runs and never
+receives a row-joint calibration. That is the destination's exclusive
+routing working, not a coverage gap; shaped-source recognition is the other
+frontier. How many of the 21 are genuinely lattice is fog the mode-proof
+child measures, not this one.
+
+**Graduated children:** (1) lattice-first mode-assignment proof with honest
+per-property flags — OPEN / NEXT; (2) hash-bound calibration emitter at the
+`resolve_calibration` seam — BLOCKED on child 1.
+
+- **Status:** CHILD ANSWERED (RESEARCH) / ROUTE SELECTED; execution not
+  started. The operator may contest the route at the next map index.
+  ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-Unicode
+  text-art recovery; geometry mode misassignment entry, 2026-08-05;
+  row-joint restoration entry, commit 9193041.
+
+### Wayfinder child: lattice-first mode-assignment proof with honest per-property flags
+
+Question:
+Can the router's mode assignment be made proof-carrying — fixed-lattice authority proved or
+proved-absent before any shaped admission — with the top-level pitch/phase/ownership flags
+mirroring their branch proofs, demonstrated by mode-vs-truth agreement on the known-truth
+fixtures (positive-fixed-ascii routes fixed_lattice; the bbbb-flowers / a8283c5cdb63b130
+accepted-anchor regression asserts `status == "proved"` and mode fixed_lattice; horse
+re-examined), without consulting transcript truth anywhere in the proof?
+
+Type:
+prototype
+
+- Entry evidence: geometry mode misassignment entry (2026-08-05); `router.py:107-112` shaped
+  admission on merely-unproven fixed authority; `router.py:167-170` flags forced true;
+  calibration-authority outcome entry (2026-08-06), obligations 1–3. Exit evidence: obligations
+  1–3 met; accepted-anchor regression tightened; identity-pinned replay receipt shows
+  mode-vs-truth agreement on the known-truth fixtures; full transcription suite green.
+- Status: OPEN / NEXT. ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
+  Unicode text-art recovery.
+
+### Wayfinder child: hash-bound calibration emitter at the resolve_calibration seam
+
+Question:
+Can the proved fixed-lattice contract be emitted as an immutable hash-bound calibration
+artifact row-joint decodes under — a schema adapter deriving first baseline, crop offsets,
+background, and ink threshold from `selected_geometry`; the artifact sha256 written into a
+real index at creation; rejection-status enforced at the seam; and per-source receipts
+carrying pitch/phase margins, ownership completeness, baseline regularity, and boundary-ink
+legality — with replay determinism (same source bytes, same artifact hash) and zero
+transcript-truth consultation?
+
+Type:
+prototype
+
+- Entry evidence: calibration-authority outcome entry (2026-08-06), obligations 4–5 and the
+  acceptance surface; `row_joint.py:524-564` index/resolve seam. Exit evidence: the 26-source
+  replay emits per-source calibration receipts; every proved lattice decodes under its emitted
+  calibration with the source_sha256 rehash match enforced; rejected or unproved sources fail
+  closed (no calibration, no row-joint decode); full transcription suite green including the
+  bbbb zero-wrong pin.
+- Status: OPEN / BLOCKED on the lattice-first mode-assignment proof child. ComplaintRef:
+  Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.
 
 ### Static-glyph animation: the asciicker technique transfers, its alphabets do not (2026-08-06)
 
