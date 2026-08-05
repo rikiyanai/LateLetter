@@ -37,12 +37,16 @@ replace this lookup at a single seam: ``resolve_calibration``.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Mapping
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
 
 # Repository root, derived from this file's location so behaviour does not
 # depend on the caller's current directory.
@@ -58,6 +62,353 @@ _LEGACY_DECODER_PATH = _REPOSITORY_ROOT / "scripts" / "decode_monospace_rows.py"
 _PARITY_ROOT = _REPOSITORY_ROOT / "tracked" / "LateLetterResearch" / "transcription-parity"
 
 ADAPTER_NAME = "row-joint-lattice"
+
+# ---------------------------------------------------------------------------
+# Unknown-cell naming
+#
+# The row-joint decoder refuses (``?``) any cell whose shape has too few
+# repeated siblings for leave-one-out validation — typically glyphs that
+# appear once or twice in the screenshot, like a lone ``)`` or ``\\``.
+# Structure is proven for those cells (the ink, its box, its baseline); only
+# the NAME is missing.  This section names such cells by rendering candidate
+# glyphs from the pinned mono font and comparing bounding-box-normalized
+# shapes, gated three ways before a name may replace a ``?``:
+#
+#   1. shape overlap (IoU on 24x24 bbox-normalized masks) must reach
+#      _NAMING_MIN_IOU;
+#   2. the winner must beat the runner-up by _NAMING_MIN_MARGIN (a close
+#      second means the shapes collide and the cell stays ``?``);
+#   3. size and baseline position must agree within _NAMING_POSITION_TOL —
+#      bbox normalization erases position, and position is exactly what
+#      separates ``.`` from ``'`` and ``_`` from ``-``.
+#
+# Cells are named per shape-group, never individually: identical unknown
+# shapes receive one consistent name or none.  Naming only ever replaces
+# ``?``; it never overrides a glyph the decoder committed to, and it never
+# touches blank cells.  The thresholds are set from the emoji-atlas gate
+# family a priori; they are not tuned against any accepted transcript.
+# ---------------------------------------------------------------------------
+
+_NAMING_FONT_PATH = (
+    _REPOSITORY_ROOT
+    / "tracked"
+    / "LateLetterResearch"
+    / "transcription-model-cache"
+    / "fonts"
+    / "NotoSansMono-Variable.ttf"
+)
+# Printable ASCII (0x21..0x7E).  The naming repertoire is deliberately the
+# generic character class, not a per-transcript list.
+_NAMING_REPERTOIRE = tuple(chr(code) for code in range(0x21, 0x7F))
+_NAMING_MIN_IOU = 0.75
+_NAMING_MIN_MARGIN = 0.04
+_NAMING_POSITION_TOL = 0.28
+
+
+@lru_cache(maxsize=1)
+def _naming_font_sha256() -> str | None:
+    if not _NAMING_FONT_PATH.exists():
+        return None
+    return hashlib.sha256(_NAMING_FONT_PATH.read_bytes()).hexdigest()
+
+
+@lru_cache(maxsize=None)
+def _rendered_glyph_features(glyph: str, cell_width: int, cell_height: int) -> tuple[bytes, float, float] | None:
+    """Render one candidate glyph and reduce it to comparable features.
+
+    Returns ``(normalized_mask_bytes, relative_height, baseline_offset)``
+    where the mask is the legacy decoder's 24x24 bbox normalization (packed
+    to bytes so the result is hashable/cacheable), relative_height is the
+    ink bbox height over the cell height, and baseline_offset is the ink
+    bbox center measured from the text baseline in cell heights.  Returns
+    ``None`` for glyphs that render without ink at this cell size.
+    """
+
+    if not _NAMING_FONT_PATH.exists() or cell_width <= 0 or cell_height <= 0:
+        return None
+    # Render onto a canvas larger than one cell so ascenders/descenders and
+    # side bearings cannot clip; the baseline sits at a known y.
+    canvas_w, canvas_h = cell_width * 4, cell_height * 4
+    baseline_y = cell_height * 2
+    image = Image.new("L", (canvas_w, canvas_h), 0)
+    draw = ImageDraw.Draw(image)
+    try:
+        font = ImageFont.truetype(str(_NAMING_FONT_PATH), size=max(6, int(round(cell_height * 0.85))))
+    except OSError:
+        return None
+    draw.text((cell_width, baseline_y), glyph, fill=255, font=font, anchor="ls")
+    rendered = np.asarray(image) > 96
+    if not bool(rendered.any()):
+        return None
+    ys, xs = np.nonzero(rendered)
+    y0, y1, x0, x1 = ys.min(), ys.max(), xs.min(), xs.max()
+    crop = rendered[y0 : y1 + 1, x0 : x1 + 1]
+    normalized = _legacy_module().normalized_shape(crop)
+    relative_height = float((y1 - y0 + 1) / cell_height)
+    baseline_offset = float((((y0 + y1) / 2.0) - baseline_y) / cell_height)
+    return normalized.astype(bool).tobytes(), relative_height, baseline_offset
+
+
+def _dilated(mask: np.ndarray) -> np.ndarray:
+    """8-neighbourhood dilation by one pixel.
+
+    The source screenshot and the pinned font draw the same glyph with
+    different stroke widths and curve rasterization, so raw pixel IoU
+    punishes thin strokes even when the shapes agree.  Comparing dilated
+    masks is the standard stroke-width-tolerant shape match; the winner
+    margin gate still separates genuinely different glyphs.
+    """
+
+    out = mask.copy()
+    out[1:, :] |= mask[:-1, :]
+    out[:-1, :] |= mask[1:, :]
+    out[:, 1:] |= mask[:, :-1]
+    out[:, :-1] |= mask[:, 1:]
+    out[1:, 1:] |= mask[:-1, :-1]
+    out[1:, :-1] |= mask[:-1, 1:]
+    out[:-1, 1:] |= mask[1:, :-1]
+    out[:-1, :-1] |= mask[1:, 1:]
+    return out
+
+
+def _cell_features(module, cell) -> tuple[np.ndarray, float, float] | None:
+    """Reduce one unknown cell's ink to the same comparable features."""
+
+    mask = np.asarray(cell.mask, dtype=bool)
+    if not bool(mask.any()):
+        return None
+    ys, xs = np.nonzero(mask)
+    y0, y1 = int(ys.min()), int(ys.max())
+    crop = mask[y0 : y1 + 1, int(xs.min()) : int(xs.max()) + 1]
+    normalized = module.normalized_shape(crop).astype(bool)
+    cell_height = max(1, mask.shape[0])
+    relative_height = float((y1 - y0 + 1) / cell_height)
+    baseline_offset = float((((y0 + y1) / 2.0) - float(cell.baseline_local)) / cell_height)
+    return normalized, relative_height, baseline_offset
+
+
+def _dilated_iou(a: np.ndarray, b: np.ndarray) -> float:
+    left, right = _dilated(a), _dilated(b)
+    union = float(np.logical_or(left, right).sum())
+    if not union:
+        return 0.0
+    return float(np.logical_and(left, right).sum()) / union
+
+
+def _known_cell_reference(
+    module, cells: list, decoded: list[str], unknown: str, cell_width: int, cell_height: int
+) -> dict[str, float] | None:
+    """Calibrate the naming gates from the source's own KNOWN cells.
+
+    The gap between screenshot ink and pinned-font rendering (stroke
+    width, curve shape, baseline drift) is a property of the SOURCE, not
+    of any particular glyph.  Cells the decoder has already committed to
+    give a truth-free sample of that gap: for each known non-blank cell,
+    score its ink against the rendering of its own decoded glyph.  The
+    resulting distributions set the admission floor and position
+    tolerances for naming unknown cells in this same image.  Fewer than
+    eight usable known cells means no calibration, and naming falls back
+    to the strict default constants.
+    """
+
+    ious: list[float] = []
+    height_diffs: list[float] = []
+    offset_diffs: list[float] = []
+    for cell, glyph in zip(cells, decoded):
+        if glyph == unknown or not glyph.strip() or glyph not in _NAMING_REPERTOIRE:
+            continue
+        features = _cell_features(module, cell)
+        rendered = _rendered_glyph_features(glyph, cell_width, cell_height)
+        if features is None or rendered is None:
+            continue
+        rendered_mask = np.frombuffer(rendered[0], dtype=bool).reshape(24, 24)
+        ious.append(_dilated_iou(features[0], rendered_mask))
+        height_diffs.append(abs(features[1] - rendered[1]))
+        offset_diffs.append(abs(features[2] - rendered[2]))
+    if len(ious) < 8:
+        return None
+    return {
+        # A quarter of this source's KNOWN cells score at or below this
+        # against their own glyph's rendering, so an unknown cell may not
+        # be required to beat it — but never admit below the absolute
+        # floor, whatever the calibration says.
+        "iou_floor": max(0.55, float(np.percentile(ious, 25))),
+        "height_tolerance": max(0.10, float(np.percentile(height_diffs, 90))),
+        "offset_tolerance": max(0.10, float(np.percentile(offset_diffs, 90))),
+        "known_cells_sampled": float(len(ious)),
+    }
+
+
+# Same-font (source-template) naming gates.  Matching an unknown cell
+# against the screenshot's OWN decoded instances of a glyph is an
+# apples-to-apples comparison, so the strict constants apply — no
+# cross-font calibration is involved.
+_SOURCE_TEMPLATE_MIN_IOU = 0.75
+
+
+def _box_features(mask: np.ndarray) -> tuple[np.ndarray, float, float] | None:
+    """Bbox-normalized shape plus box-relative size/position for one mask.
+
+    Used for source-template comparison where both sides live in identical
+    cell boxes, so box-relative position substitutes for the baseline
+    feature used in rendered matching.
+    """
+
+    mask = np.asarray(mask, dtype=bool)
+    if not bool(mask.any()):
+        return None
+    ys, xs = np.nonzero(mask)
+    y0, y1 = int(ys.min()), int(ys.max())
+    crop = mask[y0 : y1 + 1, int(xs.min()) : int(xs.max()) + 1]
+    normalized = _legacy_module().normalized_shape(crop).astype(bool)
+    box_height = max(1, mask.shape[0])
+    return normalized, float((y1 - y0 + 1) / box_height), float(((y0 + y1) / 2.0) / box_height)
+
+
+def _score_group_against_source_templates(
+    module, cells: list, templates: Mapping[str, list]
+) -> tuple[dict[str, Any] | None, tuple[float, str] | None]:
+    """Stage 1: name an unknown group from the screenshot's own templates.
+
+    For every glyph the decoder has templates for, the group's score is
+    the best template instance's mean dilated IoU over member cells, with
+    box-relative size/position agreement required.  Returns the decision
+    (or ``None`` when no templates produced a comparable score) plus the
+    best source score regardless of gates — stage 2 must treat that score
+    as a standing competitor so a rendered lookalike can never outvote the
+    source's own font.
+    """
+
+    group_features = [item for item in (_box_features(cell.mask) for cell in cells) if item is not None]
+    if not group_features:
+        return None, None
+    scored: list[tuple[float, str]] = []
+    for glyph in sorted(templates):
+        if not str(glyph).strip():
+            continue
+        best_instance = 0.0
+        for template in templates[glyph]:
+            rendered = _box_features(template.mask)
+            if rendered is None:
+                continue
+            total = 0.0
+            compatible = True
+            for normalized, relative_height, relative_center in group_features:
+                total += _dilated_iou(normalized, rendered[0])
+                if abs(relative_height - rendered[1]) > _NAMING_POSITION_TOL:
+                    compatible = False
+                if abs(relative_center - rendered[2]) > _NAMING_POSITION_TOL:
+                    compatible = False
+            if compatible:
+                best_instance = max(best_instance, total / len(group_features))
+        if best_instance > 0.0:
+            scored.append((best_instance, str(glyph)))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    if not scored:
+        return None, None
+    best_score, best_glyph = scored[0]
+    runner_score = scored[1][0] if len(scored) > 1 else 0.0
+    source_best = (best_score, best_glyph)
+    if best_score < _SOURCE_TEMPLATE_MIN_IOU:
+        return None, source_best
+    if best_score - runner_score < _NAMING_MIN_MARGIN:
+        return (
+            {
+                "named": None,
+                "stage": "source_template",
+                "reason": "winner_margin_below_gate",
+                "best": best_glyph,
+                "runner_up": scored[1][1],
+                "iou": round(best_score, 4),
+                "margin": round(best_score - runner_score, 4),
+            },
+            source_best,
+        )
+    return (
+        {
+            "named": best_glyph,
+            "stage": "source_template",
+            "iou": round(best_score, 4),
+            "margin": round(best_score - runner_score, 4),
+            "runner_up": scored[1][1] if len(scored) > 1 else None,
+        },
+        source_best,
+    )
+
+
+def _score_group_against_repertoire(
+    module,
+    cells: list,
+    cell_width: int,
+    cell_height: int,
+    reference: dict[str, float] | None,
+    source_best: tuple[float, str] | None = None,
+) -> dict[str, Any] | None:
+    """Score one unknown shape-group against every repertoire glyph.
+
+    The group's score for a glyph is the mean dilated IoU of its member
+    cells; position agreement is checked per cell.  Gate values come from
+    the source's known-cell calibration when available, else the strict
+    default constants.  Returns the naming decision record (named, or
+    refused with a typed reason).
+    """
+
+    iou_floor = reference["iou_floor"] if reference else _NAMING_MIN_IOU
+    height_tolerance = reference["height_tolerance"] if reference else _NAMING_POSITION_TOL
+    offset_tolerance = reference["offset_tolerance"] if reference else _NAMING_POSITION_TOL
+    features = [item for item in (_cell_features(module, cell) for cell in cells) if item is not None]
+    if not features:
+        return None
+    # Every repertoire glyph is scored on shape.  Position agreement is
+    # recorded separately: it may QUALIFY the winner, but it may never
+    # remove a glyph from the margin competition — a filtered-out near
+    # twin (``(`` versus ``{``) would otherwise hand the surviving
+    # lookalike an unopposed win, which is exactly how a wrong name gets
+    # written.  A close second anywhere in the repertoire forces refusal.
+    scored: list[tuple[float, bool, str]] = []
+    for glyph in _NAMING_REPERTOIRE:
+        rendered = _rendered_glyph_features(glyph, cell_width, cell_height)
+        if rendered is None:
+            continue
+        rendered_mask = np.frombuffer(rendered[0], dtype=bool).reshape(24, 24)
+        total = 0.0
+        position_ok = True
+        for normalized, relative_height, baseline_offset in features:
+            total += _dilated_iou(normalized, rendered_mask)
+            if abs(relative_height - rendered[1]) > height_tolerance:
+                position_ok = False
+            if abs(baseline_offset - rendered[2]) > offset_tolerance:
+                position_ok = False
+        scored.append((total / len(features), position_ok, glyph))
+    scored.sort(key=lambda item: (-item[0], item[2]))
+    qualified = [item for item in scored if item[1]]
+    if not qualified:
+        return {"named": None, "reason": "no_position_compatible_glyph"}
+    best_score, _ok, best_glyph = qualified[0]
+    others = [item for item in scored if item[2] != best_glyph]
+    runner_score, _runner_ok, runner_glyph = others[0] if others else (0.0, False, None)
+    # The source's own template bank is a standing competitor: a rendered
+    # winner that cannot beat the screenshot's best same-font match by the
+    # margin is refused unless both agree on the glyph.
+    if source_best is not None and source_best[1] != best_glyph and source_best[0] > runner_score:
+        runner_score, runner_glyph = source_best[0], f"source:{source_best[1]}"
+    if best_score < iou_floor:
+        return {"named": None, "reason": "shape_overlap_below_gate", "best": best_glyph, "iou": round(best_score, 4)}
+    if best_score - runner_score < _NAMING_MIN_MARGIN:
+        return {
+            "named": None,
+            "reason": "winner_margin_below_gate",
+            "best": best_glyph,
+            "runner_up": runner_glyph,
+            "iou": round(best_score, 4),
+            "margin": round(best_score - runner_score, 4),
+        }
+    return {
+        "named": best_glyph,
+        "iou": round(best_score, 4),
+        "margin": round(best_score - runner_score, 4),
+        "runner_up": runner_glyph,
+    }
 
 
 @lru_cache(maxsize=1)
@@ -157,8 +508,50 @@ def decode_rows_with_calibration(source_png: Path, calibration: Mapping[str, Any
     # The consensus pass may replace a ``?`` only when repeated topology
     # across the screenshot agrees; it never invents an unseen glyph.
     decoded_all = module.apply_repeated_topology_consensus(cells, decoded_all, confidences, columns)
-    lines = ["".join(decoded_all[row * columns : (row + 1) * columns]).rstrip() for row in range(rows)]
     unknown = str(getattr(module, "UNKNOWN", "?"))
+    unknown_before = sum(1 for glyph in decoded_all if glyph == unknown)
+    # Name remaining ``?`` cells from the pinned-font repertoire, one
+    # decision per identical-shape group, behind the three gates described
+    # above.  A refused group simply stays ``?``.
+    naming_records: list[dict[str, Any]] = []
+    reference: dict[str, float] | None = None
+    if unknown_before:
+        groups: dict[str, list[int]] = {}
+        for index, glyph in enumerate(decoded_all):
+            if glyph != unknown:
+                continue
+            cell = cells[index]
+            mask = np.asarray(cell.mask, dtype=bool)
+            key = module.recognition_shape_key(mask) if bool(mask.any()) else ""
+            if key:
+                groups.setdefault(key, []).append(index)
+        # Cell box dimensions come from the calibration grid, identical for
+        # every cell, so the rendered-feature cache is shared.
+        cell_width = max(1, int(round(float(grid["cell_advance_x_px"]))))
+        cell_height = max(1, int(round(float(grid["line_height_px"]))))
+        reference = _known_cell_reference(module, cells, decoded_all, unknown, cell_width, cell_height)
+        for key in sorted(groups):
+            indexes = groups[key]
+            group_cells = [cells[i] for i in indexes]
+            # Stage 1: the screenshot's own font.  Stage 2 (pinned-font
+            # rendering) runs only when stage 1 makes no decision, and the
+            # source bank's best score competes in stage 2's margin.
+            decision, source_best = _score_group_against_source_templates(module, group_cells, templates)
+            if decision is None:
+                decision = _score_group_against_repertoire(
+                    module, group_cells, cell_width, cell_height, reference, source_best
+                )
+                if decision is not None:
+                    decision["stage"] = "rendered_repertoire"
+            if decision is None:
+                continue
+            decision["shape_key"] = key
+            decision["cell_indexes"] = indexes
+            naming_records.append(decision)
+            if decision.get("named"):
+                for index in indexes:
+                    decoded_all[index] = str(decision["named"])
+    lines = ["".join(decoded_all[row * columns : (row + 1) * columns]).rstrip() for row in range(rows)]
     unknown_cells = sum(1 for glyph in decoded_all if glyph == unknown)
     return {
         "adapter": ADAPTER_NAME,
@@ -169,7 +562,16 @@ def decode_rows_with_calibration(source_png: Path, calibration: Mapping[str, Any
         "row_count": rows,
         "cell_count": len(decoded_all),
         "unknown_cells": unknown_cells,
+        "unknown_cells_before_naming": unknown_before,
         "unknown_marker": unknown,
+        "unknown_naming": {
+            "font_sha256": _naming_font_sha256(),
+            "min_iou": _NAMING_MIN_IOU,
+            "min_margin": _NAMING_MIN_MARGIN,
+            "position_tolerance": _NAMING_POSITION_TOL,
+            "known_cell_reference": reference if unknown_before else None,
+            "groups": naming_records,
+        },
         "source_sha256": actual,
         "template_glyphs": sorted(templates.keys()),
     }

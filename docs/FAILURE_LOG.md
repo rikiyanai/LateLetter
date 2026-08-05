@@ -12055,3 +12055,45 @@ is committed canon (192097e).
   operator wants" is partly settled — the letters and garden stages are in
   scope, and the remaining question is only how much of the existing markup to
   hide for the MVP.
+
+### Unknown-cell naming: source-template first, rendered repertoire gated behind it (2026-08-06)
+
+Continuation of the row-joint slice (commit 9193041): the decoder's `?` cells
+now receive names through a two-stage, fail-closed naming pass in
+`row_joint.py`, measured against the accepted bbbb-flowers transcript as
+holdout (truth is never an input to any decision).
+
+- **Stage 1 — the screenshot's own font.** An unknown shape-group is compared
+  against the decoder's template bank (the source's own decoded glyph
+  instances): mean dilated IoU per glyph, box-relative size/position
+  agreement, floor 0.75, winner margin 0.04. Same-font matching is
+  apples-to-apples, so strict constants apply.
+- **Stage 2 — pinned-font rendering (NotoSansMono), only when stage 1 makes
+  no decision.** Cross-font gates self-calibrate from the source's KNOWN
+  cells (each known cell scored against its own glyph's rendering; floor =
+  25th percentile, position tolerance = 90th percentile) with an absolute
+  floor of 0.55. Two structural rules came from observed wrong-name
+  failures during development: the winner margin is computed against the
+  FULL repertoire including position-rejected shapes (a filtered-out near
+  twin such as `(` versus `{` must still be able to force refusal), and the
+  source bank's best score is a standing competitor in stage 2 (a rendered
+  lookalike can never outvote the screenshot's own font — this refused the
+  one wrong naming observed, `{` where the source glyph is `(`).
+- **Measured results, gates chosen a priori and not adjusted afterwards:**
+  bbbb-flowers unknowns 12 to 4; row parity against accepted.txt 5 of 16 to
+  8 of 16 exact rows; every name matches the accepted transcript ((, ), /,
+  backslash, underscore at IoU 0.78-1.0). Horse unknowns 17 to 7 (truth
+  unavailable; all names are source-template decisions with margins 0.13+).
+  No wrong name was introduced: the remaining 3 non-`?` bbbb mismatches are
+  the pre-existing wrong-blank cells (blank decoded where truth has `(` or
+  `_`), which are an ownership/forced-blank audit item, not naming output.
+- **Evidence:** pytest 2026-08-06 on top of commit 9193041,
+  tests/transcription: 98 of 98, zero failures. Naming evidence (per-group
+  stage, iou, margin, runner-up, calibration reference, font hash) is
+  recorded in every decode result.
+- **Open:** 4 bbbb + 7 horse unknowns remain refused (typed reasons);
+  wrong-blank ownership audit; live sources without tracked calibrations
+  remain out of row-joint reach.
+- **Status:** IMPLEMENTED (UNPROVEN beyond the receipts above). ComplaintRef:
+  row-joint restoration entry, 2026-08-05; operator continuation order
+  ("ok proceed"), 2026-08-06.

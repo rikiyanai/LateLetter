@@ -52,6 +52,43 @@ def test_unbound_source_hash_has_no_calibration() -> None:
     assert row_joint.resolve_calibration("0" * 64) is None
 
 
+BBBB_SOURCE = (
+    REPO
+    / "tracked"
+    / "LateLetterResearch"
+    / "transcription-parity"
+    / "bbbb-flowers"
+    / "source"
+    / "source.normalized.png"
+)
+
+
+def test_unknown_naming_reduces_unknowns_only_via_gated_source_evidence() -> None:
+    first = row_joint.decode_for_source(BBBB_SOURCE)
+    second = row_joint.decode_for_source(BBBB_SOURCE)
+    assert first is not None and first == second
+    # Naming may only shrink the unknown count, never grow it, and every
+    # decision must carry its evidence record.
+    assert first["unknown_cells"] <= first["unknown_cells_before_naming"]
+    named = [g for g in first["unknown_naming"]["groups"] if g.get("named")]
+    refused = [g for g in first["unknown_naming"]["groups"] if not g.get("named")]
+    assert named, "bbbb-flowers has repeat-shape unknowns the source bank can name"
+    for group in named:
+        # Every name so far comes from the screenshot's own font; a
+        # rendered-repertoire name is legal but must clear the same
+        # record shape.
+        assert group["stage"] in {"source_template", "rendered_repertoire"}
+        assert group["iou"] >= 0.55
+        assert group["margin"] >= 0.04
+        assert group["cell_indexes"]
+    for group in refused:
+        assert group.get("reason"), "a refusal must carry a typed reason"
+    # Naming decisions never touch cells the decoder committed to: the
+    # named cell indexes must all have been unknown beforehand.
+    total_named_cells = sum(len(g["cell_indexes"]) for g in named)
+    assert first["unknown_cells_before_naming"] - first["unknown_cells"] == total_named_cells
+
+
 def _report_with(adapters: list[dict]) -> dict:
     return {"results": [{"adapters": adapters}]}
 
