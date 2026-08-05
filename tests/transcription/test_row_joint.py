@@ -89,6 +89,35 @@ def test_unknown_naming_reduces_unknowns_only_via_gated_source_evidence() -> Non
     assert first["unknown_cells_before_naming"] - first["unknown_cells"] == total_named_cells
 
 
+def test_bbbb_decode_states_no_wrong_characters_against_accepted_holdout() -> None:
+    """Accepted-corpus regression pin: every character the machine STATES
+    on bbbb-flowers must match the accepted transcript; imperfection is
+    only allowed as an explicit ``?`` refusal.  The accepted text is a
+    holdout — the decode path never reads it."""
+
+    import unicodedata
+
+    res = row_joint.decode_for_source(BBBB_SOURCE)
+    assert res is not None
+    accepted = (
+        REPO / "tracked" / "LateLetterResearch" / "transcription-parity" / "bbbb-flowers" / "accepted.txt"
+    )
+    truth = [
+        unicodedata.normalize("NFC", line.rstrip())
+        for line in accepted.read_text(encoding="utf-8").rstrip("\n").splitlines()
+    ]
+    machine = [line.rstrip() for line in res["text"].splitlines()]
+    wrong = [
+        (row, col, m_ch, t_ch)
+        for row, (m_line, t_line) in enumerate(zip(machine, truth))
+        for col, (m_ch, t_ch) in enumerate(zip(m_line.ljust(80), t_line.ljust(80)))
+        if m_ch != t_ch and m_ch != res["unknown_marker"]
+    ]
+    assert wrong == [], f"machine stated wrong characters: {wrong}"
+    exact_rows = sum(1 for m_line, t_line in zip(machine, truth) if m_line == t_line)
+    assert exact_rows >= 8
+
+
 def _report_with(adapters: list[dict]) -> dict:
     return {"results": [{"adapters": adapters}]}
 

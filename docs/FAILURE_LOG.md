@@ -12283,3 +12283,32 @@ research
   determinism, and the mode/lattice proof obligations named).
 - Status: OPEN / BLOCKS QUEUE COVERAGE. ComplaintRef: Wayfinder map: build deterministic
   PNG-to-logical-Unicode text-art recovery.
+
+### Wayfinder child outcome: boundary-straddling ink explained by the source bank (2026-08-06)
+
+The "explain merged spill ink by the neighbour's decoded template" child is
+answered with a stricter rule than the question proposed: instead of trusting
+the neighbour's decode, the blank cell's own in-box ink is offered directly to
+the source template bank under the strict same-font gates, and only a
+confident match may replace the blank. Anything unmatched keeps the existing
+behaviour, so overhang slivers cannot be disturbed.
+
+- **bbbb-flowers (accepted holdout):** the boundary `_` at row 6 column 11 is
+  named from the source bank; non-`?` character mismatches against
+  accepted.txt reach ZERO. Every character the machine states on bbbb is now
+  correct; all imperfection is typed `?` refusal (6 cells). A regression test
+  pins this property at the decode interface
+  (`test_bbbb_decode_states_no_wrong_characters_against_accepted_holdout`).
+- **horse:** ten blank spill cells recover as `.` — each is a compact,
+  free-standing 2x2-3x3 ink blob of 4-8 pixels (eight fully interior to the
+  box), matching the source's own `.` template at IoU 1.0 with margins
+  0.61-0.77. The legacy 064 output blanked all ten, which is consistent with
+  the legacy spill heuristic over-firing on small baseline punctuation (a
+  documented battle in this attempt history). Horse truth does not exist, so
+  these names remain UNPROVEN until operator review.
+- **sitting-cat:** zero audit actions; unchanged.
+- **Evidence:** pytest 2026-08-06 on top of commit 7c22ac4,
+  tests/transcription: 99 of 99, zero failures.
+- **Status:** CHILD ANSWERED / IMPLEMENTED (UNPROVEN beyond the receipts
+  above). ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
+  Unicode text-art recovery; ink-conservation audit entry, 2026-08-06.
