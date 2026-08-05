@@ -2901,6 +2901,9 @@ Decisions so far:
   gated behind the source bank (commit 9fbc991); stolen blank cells demote to refusals via the
   ink-conservation audit (commit ff401ef). Holdout measurement on accepted bbbb-flowers: 8 of 16
   rows exact, one non-`?` character mismatch remaining; sitting-cat unknowns 14 to 5 of 247 cells.
+- Boundary-straddling ink child ANSWERED (commit 0e92a53): in-box ink offered to the source bank
+  under strict gates; bbbb states zero wrong characters against accepted.txt (pinned by an
+  accepted-corpus regression test); ten horse texture dots recover as `.`, unproven until review.
 
 Not yet specified:
 - The neighbour-template explanation discriminator for boundary-straddling ink (the remaining
