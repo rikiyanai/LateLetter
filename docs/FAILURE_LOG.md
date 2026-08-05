@@ -11512,3 +11512,131 @@ which is the exact shape of defect this lane keeps paying for.
 - **Status:** ASSESSED AND SCOPED, NOT STARTED. Recorded so the next attempt
   opens from the named owners above rather than rediscovering them.
 
+
+### Operator decision: drop terminal parity; prove the web path end to end first (2026-08-05)
+
+Operator instruction, in substance: forget the terminal. What is needed is the
+whole HTML/web app flow, from authoring through the end-to-end recipient
+experience, demonstrated VISUALLY. The terminal is not to be half-maintained
+while the webapp/PreText version has never been proven.
+
+This supersedes the standing task recorded earlier today as "browser and
+terminal consume one presentation interface" and the entry "Standing task 15
+assessed: the terminal is a second composition owner (2026-08-05)". That
+assessment stands as a factual description of
+`src/lateletter/garden/renderer.py`, but the unification work is withdrawn
+from the route. The terminal is not to be maintained toward parity while the
+browser/PreText product has never been demonstrated end to end.
+
+The route this replaces it with: author a letter, seal it, hand it to a
+recipient, and watch the recipient open, unlock and read it with the garden
+alive behind — as pictures, on the real product, not as assertions.
+
+### Authoring web app has no application module and has never had one (2026-08-05)
+
+Attempting the authoring half of that route stopped immediately, on a defect
+no test in this repository reports.
+
+- `author.html:771` loads `<script type="module" src="./web/author-app.mjs">`.
+- `src/lateletter/author_web.py:81` names it in `STATIC_FILE_ALLOWLIST`, so
+  the server is built to serve it.
+- `author.html`'s own prose treats it as the enforcing owner: ":46" says
+  "`web/author-app.mjs` enforces this", ":56" says "See `renderLetterBody` in
+  `web/author-app.mjs`".
+- The file does not exist. `git rev-list --all --objects | grep author-app`
+  returns nothing: **no blob of that name has ever existed in any commit on
+  any branch.**
+
+Observed, not inferred. The author server was started
+(`lateletter.author_web.main`, port 8765) and driven in headless Chrome at
+1280x900. `author.html` returns 200; `web/author-app.mjs` returns 404. The
+page paints its chrome — the "LateLetter / author desk" header, the "not
+saved yet" badge, a "Your desk" heading, and the back/continue buttons — over
+an entirely blank content panel. A DOM sweep at each of twelve consecutive
+"continue" clicks found **zero visible input, textarea or select elements**
+and the heading never changed from "Your desk": the wizard cannot advance
+because nothing is driving it. Screenshot: scratchpad/author-recon-0.png.
+
+The markup is not a stub — `author.html` carries the whole authoring surface
+in source (`#f-author-name`, `#f-recipient-name`, `#f-hint`, `#f-seed`,
+`#f-letter-date`, `#f-letter-label`, `#f-letter-body`, `#f-program-json`,
+`#btn-validate`, `#pp-new`, `#pp-confirm`, `#btn-export`). Only the module
+that binds them is absent.
+
+- **Ownership:** `author.html`, `src/lateletter/author_web.py` and
+  `make_letter.py` are the **author-product lane**, not garden-presentation.
+  This lane recorded the defect and did not implement the missing module.
+- **Status:** OPEN / AUTHORING WEB APP NOT IMPLEMENTED. The product currently
+  has no browser authoring path at all; the only authoring owner that runs is
+  the `make_letter.py` command line. ComplaintRef: operator order to prove the
+  web flow from authoring to recipient, 2026-08-05.
+
+### Recipient experience proven end to end on a real sealed bundle (2026-08-05)
+
+With browser authoring unavailable, the letter was authored through the owner
+that does run, and the whole recipient half was then driven and photographed.
+
+**Sealing.** `make_letter.build()` — the production path, with only the
+passphrase prompt injected — sealed a two-letter bundle at a private
+scratchpad path (the builder refuses tracked repository paths). Inspecting the
+artifact confirms real sealing rather than a plaintext container: message
+bodies are `ciphertext` with per-message `salt`/`nonce` and PBKDF2-SHA256 at
+600,000 iterations, and `garden_program` is encrypted too. `garden_seed`
+(20260719), `author_name`, `passphrase_hint` and the message DATES are
+plaintext metadata by design.
+
+**The journey, driven in headless system Chrome at 1400x950 and again at
+390x844 with touch, on the real product URL.** Each screen was identified from
+the viewer's own section ids rather than from timing:
+
+1. Welcome screen with the drop zone.
+2. The bundle fed through the product's own `#file-input`. The viewer goes
+   **straight into the garden**, captioned "planted for you by Riki." — the
+   garden is the ambient gift and is not passphrase-gated. The seeded scene
+   painted trees, pond with lateral ripples, stepping stones, bench, planter,
+   mailbox, sunflowers, roses, butterflies and the memorial marker.
+3. An "open letters" control is the gate. Clicking it raises `s-passphrase`
+   with `#pp-input`.
+4. The real passcode unlocks to `s-archive`, listing "July 20, 2026" and
+   "September 1, 2026" over the living garden.
+5. A **real trusted mouse click** on the due letter reaches `s-reading`
+   carrying the exact authored plaintext ("Dear you, If you are reading this,
+   the garden has been waiting a while…"), so decryption is demonstrated, not
+   assumed. A scripted `element.click()` did NOT advance the screen; the
+   product's handlers require genuine pointer events, which is worth knowing
+   before anyone cites a synthetic click as evidence.
+6. The not-yet-due letter is **not clickable** (Playwright times out waiting
+   for it to become actionable). The late-letter mechanic itself behaves.
+
+**What I saw, with the pictures.**
+
+- Mobile reading (scratchpad/mob-4-reading-scrolled.png) is the strongest view
+  of this product so far. "from Riki / Open me first / July 20, 2026" sits
+  above body text set in a serif at a comfortable measure with generous
+  leading, and the paragraphs are genuinely **justified with even word
+  spacing** — the measured-typography path doing visible work. The garden
+  continues below and behind. `[save] [all letters] [← back]` are reachable.
+- Desktop reading (scratchpad/rd2-3-reading-scrolled.png) places the letter in
+  a left column with the garden filling the remaining two thirds. The
+  emotional intent reads: the garden keeps moving while you read.
+- **Defect seen, desktop:** the letter's scrim is too weak where the column
+  meets the tree line. Around y≈440-540 a tree silhouette bleeds through the
+  letter panel, and the `[save] [all letters] [← back]` row sits directly on
+  top of garden glyphs (`//`, `\//`, `/\/`, `////....`), which reads as
+  clutter exactly where the reader must act.
+- **Defect seen, mobile:** the scrim panel terminates in a hard rectangular
+  edge with no fade, and garden glyphs (`\\`, `/\`) poke out past the panel's
+  left edge at x≈0-30.
+- **Composition observation, mobile archive** (scratchpad/mob-2-archive.png):
+  the upper ~60% of the screen is empty sky before "planted for you by Riki."
+  appears. Whether that quiet is intended or is dead space is an operator
+  call, not a defect this lane may decide.
+
+- **Status:** RECIPIENT PATH DEMONSTRATED END TO END AND VISUALLY INSPECTED BY
+  THE AGENT — NOT OPERATOR-ACCEPTED. Sealing, ambient garden, passphrase gate,
+  archive, due-date gating, decryption and reading typography were each
+  observed on the real product in a real browser. The two scrim/overlap
+  defects above are recorded for repair; the letter panel is
+  letter-typography-lane and contended `viewer-bnw.html` territory, so nothing
+  was edited here. No release or cutover claim. ComplaintRef: operator order
+  to prove the web flow from authoring to recipient, 2026-08-05.
