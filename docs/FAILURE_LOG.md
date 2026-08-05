@@ -2888,15 +2888,28 @@ Decisions so far:
   alone is not expected to satisfy Slice 6. Peak process RSS reached 2,420,146,176 bytes. That value
   is a process high-water mark repeated on later records, so cost attribution must identify its
   actual owner before assigning it to one adapter.
+- 2026-08-05: bounded runtime and D1/D2 fixture coverage landed (commits 32b89cc, 7c3113f,
+  9ddc6e1, 2cd574b, fab2b55, dbc3cb4, 8520d20, 7782907); the v11 replay receipt records every
+  positive family present at rank 1 inside its home adapter. The production selector remains
+  fixture-scoped interim authority — see the candidate-authority entries of 2026-08-05.
+- 2026-08-05: geometry admission reworked; the identity-pinned replay proves 26/26 live sources
+  (commit 38680cf), but lattice-vs-shaped mode assignment carries no proof of its own —
+  positive-fixed-ascii and the horse source both route shaped_runs — so mode may not exclude
+  adapters (commit 3c5eecf and its FL entry).
+- 2026-08-05/06: the legacy row-joint decoder re-entered production as gated proposal evidence
+  (commit 9193041); unknown cells are named source-template-first with the rendered repertoire
+  gated behind the source bank (commit 9fbc991); stolen blank cells demote to refusals via the
+  ink-conservation audit (commit ff401ef). Holdout measurement on accepted bbbb-flowers: 8 of 16
+  rows exact, one non-`?` character mismatch remaining; sitting-cat unknowns 14 to 5 of 247 cells.
 
 Not yet specified:
-- The source-only bounded algorithms that bring the four v10 profile failures under their pinned
-  per-fixture ceilings without hiding evidence, followed by the pinned recognizer/model ensemble
-  that supplies exact top-k coverage for the still-uncovered release and holdout families.
-- Which of the 14 live-corpus geometry rejections are supported text-art profiles versus declared
-  fail-closed exclusions, and which generic admission evidence is required to prove every supported
-  source. Sitting-cat is one explicit supported target whose current public geometry remains
-  rejected/unresolved and therefore cannot reach recognition or attempt 004.
+- The neighbour-template explanation discriminator for boundary-straddling ink (the remaining
+  bbbb wrong-blank and part of the refused unknown groups) and window-context naming for the
+  unknown groups both naming stages refuse today.
+- Production lattice calibration authority: 21 of 26 live queue sources have no tracked
+  hash-bound calibration and therefore cannot reach row-joint decode; the route is either a
+  revived deterministic calibrator step or the router's own lattice proof, which also owes the
+  mode-assignment proof reopened on 2026-08-05.
 - The final source-derived ranking features and winner margins after exact expected sequences are
   proved present in proposal evidence.
 - The complete shaping/bidi/font-fallback and exactly-once ownership exit gates across Arabic,
@@ -12215,3 +12228,58 @@ recorded, demonstrated concretely on the MVP's own example.
 - **Status:** VOCABULARY AND WORKED EXAMPLE RECORDED BY EXECUTION. This is the
   build input for the questionnaire's gift stage. ComplaintRefs: operator
   scope decision entry (2026-08-06); Wayfinder map (2026-08-05).
+
+### Wayfinder child: explain merged spill ink by the neighbour's decoded template
+
+Question:
+For a boundary-straddling ink component shared between a blank spill cell and its decoded
+neighbour, can the neighbour's decoded-glyph template coverage of the merged component decide
+ownership — naming the stolen part or refusing — closing the remaining bbbb wrong-blank
+(row 6 column 11, component below the 70% inside line) and part of the refused unknown groups,
+without inflating refusals on horse's genuine overhang spill?
+
+Type:
+prototype
+
+- Entry evidence: ink-conservation audit entry (commit ff401ef); the merged-cell masks and
+  neighbour decodes are already recorded in the decode result. Exit evidence: bbbb non-`?`
+  mismatches reach zero or the residual case gains a typed refusal; horse demotions stay
+  zero; deterministic replay.
+- Status: OPEN / NEXT. ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
+  Unicode text-art recovery.
+
+### Wayfinder child: window-context naming for refused unknown groups
+
+Question:
+Does matching cell-plus-window (the decoder's three-cell context) against source templates and
+the rendered repertoire, under the same floor/margin/position gates and standing-competitor
+rule, name the currently refused unknown groups (4 bbbb, 7 horse, 5 sitting-cat, 24 each on the
+two bloom sources) without introducing a single wrong name on the bbbb holdout?
+
+Type:
+prototype
+
+- Entry evidence: two-stage naming entry (commit 9fbc991) and its per-group refusal records.
+  Exit evidence: unknown counts fall with zero new non-`?` mismatches against accepted
+  bbbb-flowers; every naming decision carries stage/iou/margin/runner-up evidence.
+- Status: OPEN. ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-Unicode
+  text-art recovery.
+
+### Wayfinder child: production lattice calibration authority for uncalibrated live sources
+
+Question:
+What deterministic, source-only production step gives the 21 queue sources without tracked
+calibrations a hash-bound lattice calibration row-joint can decode under — a revived legacy
+grid calibrator emitting immutable calibration artifacts, the router's own lattice proof
+(which also owes the reopened mode-assignment proof), or both at one seam — and what evidence
+proves a calibration without consulting any transcript truth?
+
+Type:
+research
+
+- Entry evidence: calibration index (5 of 26 sources bound; row-joint restoration entry,
+  commit 9193041); geometry mode misassignment entry, 2026-08-05. Exit evidence: a selected
+  route with its acceptance surface defined (per-source calibration receipts, replay
+  determinism, and the mode/lattice proof obligations named).
+- Status: OPEN / BLOCKS QUEUE COVERAGE. ComplaintRef: Wayfinder map: build deterministic
+  PNG-to-logical-Unicode text-art recovery.
