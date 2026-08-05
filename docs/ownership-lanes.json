@@ -26,7 +26,6 @@
         "docs/GARDEN_PARITY.md",
         "docs/ownership-lanes.json",
         "scripts/validate_presentation_identity.py",
-        "scripts/compose_frame_check.mjs",
         "scripts/check_lane_boundary.py",
         "scripts/extract_operator_decisions.py",
         "scripts/garden_fixture_art.py",
@@ -61,8 +60,10 @@
       ]
     },
     "letter-typography": {
-      "summary": "The letter itself: justification, measured typography, paragraph line boxes. Three of the five standing Python failures belong to this lane. It owns no path exclusively today — every file it is changing is listed under `contended`, which is precisely the problem item 1 names.",
-      "owns": []
+      "summary": "The letter itself: justification, measured typography, paragraph line boxes. The product HTML remains contended with Garden presentation; browser typography regressions have an exclusive test owner.",
+      "owns": [
+        "tests/test_letter_typography_e2e_browser.py"
+      ]
     },
     "author-product": {
       "summary": "Author-side authoring and export, and the recipient entry points.",
@@ -79,12 +80,13 @@
       ]
     },
     "packaging": {
-      "summary": "Dependency declaration and repository hygiene.",
+      "summary": "Dependency declaration and repository hygiene, including the repo-local git hooks that guard the shared checkout.",
       "owns": [
         "pyproject.toml",
         "uv.lock",
         ".gitignore",
-        ".gitattributes"
+        ".gitattributes",
+        ".githooks/**"
       ]
     },
     "shared-canon": {

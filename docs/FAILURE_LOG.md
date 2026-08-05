@@ -13374,3 +13374,73 @@ genuinely unblocked.
   consequences, and is recorded as an open question rather than guessed.
   ComplaintRefs: operator scope decision entry (2026-08-06); the authorable
   gift must offer only art that may paint (2026-08-06).
+
+### Pre-push gate installed: a commit that drops granted art cannot be published (2026-08-06)
+
+Option (b) from the enforcement decision, brought forward after the deletion
+recurred within hours and took the guard test with it. The advisory posture
+was decided on the assumption that the grant guard would fire; a commit
+removing the art AND the guard in one index defeats that, so the gate moves to
+the one place a hook is guaranteed to run.
+
+**Why push time.** Every lane commits through a temp index and
+`git commit-tree`, because a plain `git commit` from the shared mixed checkout
+sweeps up another lane's staged work. `git commit-tree` is plumbing and runs
+NO hooks, so no pre-commit hook can ever observe these commits. Push is the
+first genuine choke point.
+
+**What was installed.**
+
+- `.githooks/pre-push` inspects each revision being published — not the
+  checkout, which is permanently dirty with other lanes' in-flight changes, so
+  judging a push by it would produce false refusals.
+- `.githooks/check_granted_sources.py` reads that revision's own
+  `docs/garden-asset-acceptance.json` via `git show <rev>:<path>` and refuses
+  when any real `operator_grants[].source` is absent at that revision, or when
+  `tests/garden_acceptance/test_operator_grant_sources.py` is absent while
+  grants exist. Prose-only historical rows with null fields are skipped,
+  exactly as the release builder skips them.
+- Five chaining stubs (`commit-msg`, `prepare-commit-msg`, `post-checkout`,
+  `post-commit`, `post-merge`). These exist ONLY because setting a repo-local
+  `core.hooksPath` overrides the user's GLOBAL hooks directory, which would
+  otherwise silently disable the AI-attribution gate and Git LFS. Each stub
+  hands control straight back to the global hook of the same name, and
+  succeeds quietly if that hook is absent rather than inventing a policy. The
+  pre-push hook likewise tail-calls the global Git LFS pre-push, replaying the
+  same stdin payload git handed it.
+- `git config --local core.hooksPath .githooks`. Repo-local: nothing outside
+  this repository changes.
+
+**Proved by breaking it, not asserted.** A commit was synthesised that deletes
+all eleven granted files and the guard test together — the exact shape of the
+observed incident — and the gate refused it, naming each missing grant source
+and the guard, and telling the reader to restore rather than redraw. Against
+HEAD it exits 0. The refusal path is reached before any chaining, so a bad
+push stops rather than reaching Git LFS. All six hooks satisfy `sh -n`.
+
+**Deliberately NOT wired: the full lane-boundary census.**
+`scripts/check_lane_boundary.py` currently exits non-zero on other lanes'
+legitimate in-flight paths (three UNKNOWN, one CONTENDED at the time of
+writing). Wiring that here would refuse every push and be disabled within a
+day. A gate that cries wolf is worse than no gate, so the guard is narrow and
+deterministic by choice.
+
+**What is still not covered, stated plainly.**
+
+- Only granted art and its guard are protected. A cross-lane deletion of
+  anything else — code, tests, docs — still passes unremarked.
+- `core.hooksPath` lives in `.git/config`, which is not committed, so a fresh
+  clone does not inherit the gate until someone runs the config command. The
+  hooks themselves are committed; the wiring is not.
+- The mechanism that stages these deletions remains unidentified. This gate
+  stops the consequence reaching a remote; it does not explain the cause.
+
+`.githooks/**` is claimed by the packaging lane in docs/ownership-lanes.json,
+which previously had no owner for repository-level hooks and would have
+reported the path as UNMATCHED.
+
+- **Status:** IMPLEMENTED AND PROVED BY MUTATION (refusal output above; exit 0
+  against HEAD). Not a claim that cross-lane deletion is solved — it is a claim
+  that this specific, twice-observed deletion cannot reach a remote unnoticed.
+  ComplaintRefs: cross-lane deletion entry (2026-08-06); the deletion recurred
+  entry (2026-08-06); operator decision to do (b), 2026-08-06.
