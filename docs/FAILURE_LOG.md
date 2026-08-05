@@ -11842,3 +11842,110 @@ the repair is scrim opacity, a fade mask, a reserved gutter, or suppressing
 garden ink beneath the panel — and prove it with fresh captures at 1400x950
 and 390x844. Type: task. ComplaintRefs: Wayfinder map (2026-08-05); recipient
 experience proven end to end on a real sealed bundle (2026-08-05).
+
+### Lane audits: what exists and what does not, authoring and garden (2026-08-05)
+
+Two read-only source audits were run in parallel on operator instruction, to
+confirm inventory rather than trust this session's spot checks. Full findings
+at scratchpad/audit-author-lane.md and scratchpad/audit-garden-lane.md.
+
+**Author lane — confirms the front-end-only diagnosis and adds one trap.**
+
+- `web/author-app.mjs` absent, referenced only by author.html's script tag and
+  `STATIC_FILE_ALLOWLIST`; never in git history. It is the ONLY script
+  author.html loads, and **every wizard stage stays `hidden` without it** —
+  which is exactly the blank panel photographed earlier.
+- author.html carries **74 elements with ids** (67 step-scoped, 7 page-shell)
+  across **7 stages**: resume, people, questions, letters, garden, review,
+  export. The questionnaire the operator asked for is already authored as
+  markup; it has no driver.
+- `author_web.py` exposes 5 routes over 3 methods, all behind Host/Origin/CSRF
+  /body-cap guards. The module has **no test file of its own**, an omission its
+  own docstring admits.
+- **The schema mismatch is worse than a rename.** author.html uses nested
+  `data-path` values (`author.name`, `recipient.relationship`), while
+  `author_service` accepts a FLAT draft — and there is **no `recipient_name`
+  field in the accepted schema at all**. So the recipient-identity questions
+  the form asks currently have nowhere to go. Deciding whether to extend the
+  draft schema or drop those questions is a real decision, not a mapping
+  detail, and it belongs to the authoring child.
+
+**Garden lane — the recipient can see the garden but cannot touch most of it.**
+
+Cross-checked against `world/engine.py` (dispatch), `world/projection.py`
+(what becomes `primary_action` versus `opportunities`), and viewer-bnw.html's
+key bindings (:2444-2456):
+
+- Genuinely reachable for an ordinary recipient: animal `play` (the one
+  click/tap primary action), gifts/memories (real visible HUD and archive
+  path), memorial mode (automatic), weather, season, day/night (all ambient).
+- **Keyboard-only with zero on-screen affordance:** inspect (`g`), tend/water
+  (`t`), collect (`c`), open_journal (`j`), pause_motion (space). Live for any
+  real recipient bundle, with no legend, no HUD button, no hint they exist.
+- **Not reachable at all outside the debug panel:** animal `feed`. It is
+  modeled as a spawned *opportunity* rather than a primary action
+  (`world/animals.py:104-134`), opportunities are carried in the projection
+  (`projection.py:184`), and **no browser code ever paints a beside-object
+  control for one**. `garden-renderer.mjs:369-387` documents that
+  `objectRectPixels`/`objectArtRectPixels` exist so a caller COULD place such
+  a control; no caller does.
+- **Journal is dispatchable but never displayed.** `open_journal` returns
+  entries/inventory/absence_summary/memorial (`engine.py:862-868`);
+  viewer-bnw.html never reads `ui.journal_open` and has no journal screen.
+  Inventory is modeled and never rendered outside a debug-gated summary.
+- Plants declare **no `primary_action` and no opportunities**
+  (`projection.py:248-266`; `web/garden-world.mjs:2586-2590`), so there is no
+  click or tap path to a plant at all.
+
+The consequence, stated plainly: **a recipient on a phone — the device a
+letter like this is actually read on — can pan, tap an animal, and read. They
+cannot water a plant, feed an animal, collect anything, open the journal, or
+see an inventory.** Touch has no equivalent of the keyboard shortcuts.
+
+**And the default world is nearly empty.** `generate_initial_world` seeds six
+fixtures and `STARTER_PLANT_SPECIES = ("rose",)` — one plant — with
+`STARTER_ANIMAL_SPECIES = ()` and `STARTER_COLLECTIBLES = ()`
+(generation.py:69-71). Hydrangea, meadow grass, lavender, oak, sunflower and
+the starter cat were removed from the default scene on 2026-07-31 pending
+per-asset visual approval; oak and sunflower art was approved 2026-08-01 but
+never re-added to the roster. So with zero animals seeded, the one reachable
+interaction (`play`) has nothing to act on in a default garden.
+
+- **Status:** INVENTORY RECORDED. Two children graduated below from the map's
+  "not yet specified" fog. ComplaintRef: Wayfinder map: the whole web product,
+  authoring through recipient (2026-08-05).
+
+### Wayfinder child: every modeled interaction needs a control a finger can reach (2026-08-05)
+
+Question:
+Give the garden's modeled verbs a visible, touch-reachable surface. Concretely:
+paint a beside-object control for spawned `opportunities` (the machinery to
+position one already exists — `objectRectPixels`/`objectArtRectPixels`,
+web/garden-renderer.mjs:369-387 — and no caller uses it), which is the only
+route by which animal `feed` becomes reachable at all; build a journal screen
+that renders what `open_journal` already returns (entries, inventory,
+absence_summary, memorial) instead of setting a flag nothing reads; decide
+whether plants get a `primary_action` (today they declare none, so a plant
+cannot be tapped); and decide how inspect/tend/collect/pause become
+discoverable without turning the garden into a control panel — an on-screen
+legend, a long-press, a HUD affordance, or a deliberate decision that they
+stay keyboard-only for desktop and are absent on touch. The design fork is
+operator-facing; the plumbing is not. Type: task, with a grilling dependency
+on the control vocabulary. ComplaintRefs: Wayfinder map (2026-08-05); lane
+audits entry (2026-08-05).
+
+### Wayfinder child: the default garden is one rose and no animals (2026-08-05)
+
+Question:
+Decide the starter roster. `generate_initial_world` seeds six fixtures, one
+rose, zero animals and zero collectibles (generation.py:69-71). Species were
+pulled from the default scene on 2026-07-31 pending per-asset visual approval;
+oak and sunflower were approved 2026-08-01 and never re-added; `cat` and
+`fallen_acorn` remain review-pending. With no animal seeded, the single
+click-reachable interaction in the product (`play`) has nothing to act on, and
+the scene reads sparse in every capture taken this session. Which species and
+collectibles belong in the default garden, at what density — and which still
+need art approval before they may paint? Asset acceptance is operator-only, so
+the agent's part is to present the approved-versus-pending set with captures
+and let the operator choose. Type: grilling. ComplaintRefs: Wayfinder map
+(2026-08-05); lane audits entry (2026-08-05).
