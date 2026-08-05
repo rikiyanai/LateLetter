@@ -13232,3 +13232,54 @@ recommended option rather than taken unilaterally.
   remains OPEN and now has four costed options and a recommendation instead of
   only a statement that it is unwired. ComplaintRef: operator art grant,
   2026-08-06.
+
+### Operator decision: lane-boundary enforcement stays advisory; the grant guard carries it (2026-08-06)
+
+Closing the second of the two enforcement gaps opened by the cross-lane
+deletion entry. Guard 1 (a test binding every operator grant to its source
+path and digest) landed in 3c323b4 and was proved by mutation. Guard 2 —
+wiring `scripts/check_lane_boundary.py` so it actually fires — was NOT
+implemented, and the reason is a property of this repo's own commit
+discipline rather than a missing script.
+
+**Why no hook can gate these commits.** Every lane here is required to commit
+through a temp index and `git commit-tree`, because a plain `git commit` from
+the shared mixed worktree sweeps up whatever another lane has staged — the
+exact failure the ownership manifest exists to prevent. But `git commit-tree`
+is plumbing: it runs NO hooks at all. So a pre-commit hook cannot see these
+commits no matter where it is installed. Compounding that, `core.hooksPath`
+resolves to `/Users/r/.git-hooks`, which is GLOBAL and shared with unrelated
+projects, so a repo-scoped fix cannot live there; CI is not owned by any lane;
+and a pytest gate would be non-deterministic today, because the lane census
+already exits non-zero on three UNKNOWN and one CONTENDED path belonging to
+other lanes' in-flight work.
+
+The only mechanism that would genuinely fire is a sanctioned commit front
+door: a script that performs the temp-index commit AND runs the boundary
+census as part of doing so, so the gate lives inside the commit path rather
+than around it.
+
+**Operator decision, 2026-08-06:** leave lane-boundary enforcement ADVISORY
+for now and rely on Guard 1, which covers the specific asset-deletion class
+that actually occurred; revisit a `pre-push` gate later, which is a real
+choke point and where a hook already exists. A commit front door is a change
+to how every lane commits and is to be made deliberately, not as cleanup
+attached to an incident.
+
+Consequences recorded honestly, so this is not mistaken for coverage:
+
+- Guard 1 detects deletion or silent edit of an operator-granted SOURCE FILE.
+  It does not detect a cross-lane deletion of anything else — code, tests,
+  data, or docs — and nothing currently does.
+- The window remains open between a bad commit and the next push, and closes
+  only if and when the pre-push gate is adopted.
+- `scripts/check_lane_boundary.py` remains correct and unwired. Its census
+  exiting non-zero on other lanes' in-flight paths is itself a signal that a
+  future gate needs a notion of "in-flight but declared" before it can be
+  strict.
+
+- **Status:** DECIDED — ADVISORY FOR NOW, PRE-PUSH GATE DEFERRED. Gap 1 of the
+  cross-lane deletion entry is guarded; gap 2 is accepted as a known, bounded
+  risk by operator decision rather than left unexamined. ComplaintRef: a
+  concurrent lane silently deleted eleven committed operator-granted art files
+  (2026-08-06).
