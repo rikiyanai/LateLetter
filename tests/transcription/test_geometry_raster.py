@@ -20,27 +20,80 @@ from lateletter.transcription.geometry import (
 
 
 ROOT = Path(__file__).parents[1] / "fixtures" / "transcription"
+ROOT_V2 = Path(__file__).parents[1] / "fixtures" / "transcription-v2"
+HORSE_SHEET = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "horse-animation-sheet" / "source" / "source.normalized.png"
 SITTING_CAT = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "sitting-cat" / "source" / "source.normalized.png"
 BBBB_FLOWERS = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "bbbb-flowers" / "source" / "source.normalized.png"
 A828_REFERENCE = Path(__file__).parents[2] / "tracked" / "LateLetterResearch" / "transcription-parity" / "a8283c5cdb63b130" / "source" / "source.normalized.png"
 
 
-def test_geometry_authority_has_no_status_and_proof_contradiction() -> None:
-    """The public decision is the only authority surface.
+def test_accepted_anchor_sources_prove_their_lattice_mode() -> None:
+    """The two operator-accepted anchors must prove a lattice, not merely cohere.
 
-    A rejected decision cannot expose proof flags, and a proved decision must
-    expose all four required proofs.  The two existing reviewed fixed sources
-    are regression anchors for this contract.
+    Both sources carry an operator-reviewed acceptance receipt built on a
+    monospace cell grid, so ``unresolved`` and ``shaped_runs`` are both wrong
+    answers for them.  The earlier version of this test accepted either outcome
+    as long as the flags agreed with the status, which let a mode regression
+    pass unnoticed.  Nothing here reads ``accepted.txt`` or any transcript; the
+    expectation comes from the sources' tracked lattice calibrations, which are
+    operator-reviewed geometric measurements used only as test expectations.
     """
 
     for source in (BBBB_FLOWERS, A828_REFERENCE):
         _bundle, decision = route_raster_geometry(source)
+        assert decision.status == "proved"
+        assert decision.mode == "fixed_lattice"
+        assert (
+            decision.candidate_valid,
+            decision.pitch_proven,
+            decision.phase_proven,
+            decision.ownership_proven,
+        ) == (True, True, True, True)
+        assert decision.provenance["selected_geometry"]["geometry_proven"] is True
+        assignment = decision.provenance["mode_assignment"]
+        assert assignment["lattice_authority_proven"] is True
+        # A proved lattice never needs an absence reason, and never consults
+        # the shaped branch to reach its answer.
+        assert not assignment["lattice_absence_reasons"]
+        assert assignment["shaped_admitted"] is False
+        assert assignment["transcript_input"] is False
+
+
+def test_geometry_authority_has_no_status_and_proof_contradiction() -> None:
+    """The public decision is the only authority surface.
+
+    A rejected decision may not expose any proof flag.  A proved decision must
+    name a concrete mode, expose the selected branch's own property proofs, and
+    carry no absence reason for the branch it selected.
+    """
+
+    for source in (BBBB_FLOWERS, A828_REFERENCE, SITTING_CAT):
+        _bundle, decision = route_raster_geometry(source)
         assert decision.mode in {"fixed_lattice", "shaped_runs", "unresolved"}
         flags = (decision.candidate_valid, decision.pitch_proven, decision.phase_proven, decision.ownership_proven)
+        assignment = decision.provenance["mode_assignment"]
         if decision.status == "proved":
             assert decision.mode != "unresolved"
-            assert flags == (True, True, True, True)
             assert decision.provenance["selected_geometry"]["geometry_proven"] is True
+            branch = decision.provenance["branch_proofs"][decision.mode]
+            # The four public flags are exactly the selected branch's own
+            # measurements -- never raised to true because a mode was chosen.
+            assert flags == (
+                branch["candidate_valid"],
+                branch["pitch_proven"],
+                branch["phase_proven"],
+                branch["ownership_proven"],
+            )
+            assert branch["authority_proven"] is True
+            assert branch["absence_reasons"] == ()
+            if decision.mode == "shaped_runs":
+                # Shaped admission requires the lattice absence to be proved,
+                # with at least one name from the enumerated vocabulary.
+                assert assignment["lattice_absence_proven"] is True
+                assert assignment["lattice_absence_reasons"]
+                assert set(assignment["lattice_absence_reasons"]) <= set(
+                    assignment["absence_vocabulary"]
+                )
         else:
             assert decision.mode == "unresolved"
             assert flags == (False, False, False, False)
@@ -86,6 +139,118 @@ def test_fixed_ascii_png_produces_concrete_lattice_and_complete_row_strips() -> 
     # strips and hashes across runs.
     assert inputs == build_recognition_inputs(source, bundle, mode=decision.mode)
     assert build_recognition_inputs(source, bundle.to_dict(), mode=decision.mode)["input_hash"] == inputs["input_hash"]
+
+
+def test_v2_monospace_ascii_fixture_routes_lattice_mode() -> None:
+    """A two-row monospace render must route to the lattice branch.
+
+    This fixture is rendered by ``build_corpus_v2.py`` from a monospace font at
+    a pinned size, so a cell lattice is true by construction.  It used to route
+    ``shaped_runs`` because its zero-seam period band (28..32 px) tied and the
+    tie was read as an ambiguity.  All the tied periods carry the same measured
+    row-ownership signature, so they describe one geometry and the tie decides
+    nothing; the router now says so explicitly.
+    """
+
+    source = ROOT_V2 / "positive" / "positive-fixed-ascii" / "source.png"
+    bundle, decision = route_raster_geometry(source)
+
+    assert bundle.status == "proved"
+    assert decision.status == "proved"
+    assert decision.mode == "fixed_lattice"
+    assert (
+        decision.candidate_valid,
+        decision.pitch_proven,
+        decision.phase_proven,
+        decision.ownership_proven,
+    ) == (True, True, True, True)
+    assert decision.provenance["mode_assignment"]["lattice_authority_proven"] is True
+    authority = bundle.projection_evidence["periodic_authority"]
+    # The tie is recorded, not hidden: the margin really is zero, and the proof
+    # rests on the contesting periods sharing the winner's row ownership.
+    assert authority["normalized_pitch_margin"] == 0.0
+    assert authority["pitch_tie_equivalent"] is True
+    assert authority["pitch_margin_sufficient"] is True
+    assert authority["pitch_tie_contesting_pitches"]
+    assert authority["pitch_tie_ownership_signature"]
+
+
+def test_horse_animation_sheet_records_typed_lattice_absence() -> None:
+    """The horse sheet is pinned at whatever it can honestly prove today.
+
+    Its operator-reviewed calibration measures a 21.0 px line height and an
+    11.55 px cell advance (used here only as a test expectation, never as a
+    runtime input).  The source-only seam ranking still prefers a 30 px period
+    because the sheet's box-drawing strokes run through every true row seam, so
+    a 21 px lattice has no gutter to measure.  The router must therefore *not*
+    claim a lattice: it routes shaped runs, reports honest false pitch/phase
+    proofs, and names why the lattice branch is absent -- including the
+    independent vertical-autocorrelation measurement that contests the seam
+    winner.  This test pins the honest gap so a later estimator change is
+    visible rather than silent.
+    """
+
+    bundle, decision = route_raster_geometry(HORSE_SHEET)
+
+    assert bundle.status == "proved"
+    assert decision.status == "proved"
+    assert decision.mode == "shaped_runs"
+    assert (
+        decision.candidate_valid,
+        decision.pitch_proven,
+        decision.phase_proven,
+        decision.ownership_proven,
+    ) == (True, False, False, True)
+    assignment = decision.provenance["mode_assignment"]
+    assert assignment["lattice_authority_proven"] is False
+    assert assignment["lattice_absence_proven"] is True
+    assert set(assignment["lattice_absence_reasons"]) <= set(assignment["absence_vocabulary"])
+    assert "lattice_foreground_unstable" in assignment["lattice_absence_reasons"]
+    lattice = decision.provenance["branch_proofs"]["fixed_lattice"]
+    # The seam ranking's winner and the independent periodicity measurement
+    # disagree; the operator calibration says the latter is the true one.
+    assert lattice["winning_pitch"] == 30
+    assert lattice["autocorrelation_contesting_pitch"] == 21
+    assert (
+        "lattice_pitch_contested_by_vertical_autocorrelation"
+        in assignment["lattice_absence_reasons"]
+    )
+
+
+def test_shaped_admission_requires_a_typed_lattice_absence(monkeypatch) -> None:
+    """An unexplained lattice failure must fail shut, never fall back to shaped.
+
+    The router is handed a lattice proof whose authority is absent but whose
+    absence carries no typed reason.  That is a hole in the proof, so the only
+    admissible answer is ``unresolved`` even though the shaped branch of this
+    source proves perfectly well on its own.
+    """
+
+    from lateletter.transcription.geometry import router as router_module
+
+    source = ROOT / "positive" / "positive-emoji-zwj" / "source.png"
+    _bundle, baseline = route_raster_geometry(source)
+    assert baseline.mode == "shaped_runs"
+
+    real_proof = router_module._lattice_proof
+
+    def untyped_proof(bundle, *, criterion_threshold):
+        proof = dict(real_proof(bundle, criterion_threshold=criterion_threshold))
+        proof["authority_proven"] = False
+        proof["absence_reasons"] = (router_module.UNTYPED_LATTICE_ABSENCE,)
+        return proof
+
+    monkeypatch.setattr(router_module, "_lattice_proof", untyped_proof)
+    _bundle, decision = route_raster_geometry(source)
+    assert decision.mode == "unresolved"
+    assert decision.status == "rejected"
+    assert router_module.UNTYPED_LATTICE_ABSENCE in decision.rejection_reasons
+    assert (
+        decision.candidate_valid,
+        decision.pitch_proven,
+        decision.phase_proven,
+        decision.ownership_proven,
+    ) == (False, False, False, False)
 
 
 def test_recognition_input_builder_never_selects_geometry_without_explicit_mode() -> None:
@@ -161,7 +326,14 @@ def test_vertically_connected_cat_art_admits_shaped_run_geometry_without_fixed_l
 
     assert bundle.status == "proved"
     assert decision.mode == "shaped_runs"
-    assert (decision.candidate_valid, decision.pitch_proven, decision.phase_proven, decision.ownership_proven) == (True, True, True, True)
+    # Honest per-property flags.  The cat proves a stable row period and
+    # exactly-once run ownership, but its phase groups do not separate, so the
+    # phase proof stays false even though the shaped decision itself is proved.
+    assert (decision.candidate_valid, decision.pitch_proven, decision.phase_proven, decision.ownership_proven) == (True, True, False, True)
+    assignment = decision.provenance["mode_assignment"]
+    assert assignment["lattice_authority_proven"] is False
+    assert assignment["lattice_absence_proven"] is True
+    assert "lattice_phase_margin_insufficient" in assignment["lattice_absence_reasons"]
     assert decision.provenance["selected_geometry"]["geometry_proven"] is True
     assert decision.provenance["selected_geometry"]["shaped_run_authority_proven"] is True
     assert "row_baselines_undersegmented" not in bundle.rejection_reasons

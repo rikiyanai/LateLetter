@@ -1034,11 +1034,27 @@ class FixedLatticeStructuralAdapter:
         # when the public routing decision is still unsettled.  This adapter
         # does not select geometry; it only consumes a source-owned complete
         # run mask and emits ASCII structural proposals for that run.
-        text = _ascii_structural_text_from_run_mask(np.asarray(mask, dtype=bool))
+        evidence = geometry.get("run_mask") if isinstance(geometry.get("run_mask"), Mapping) else {}
+        # A lattice row strip covers many cells at once.  When the geometry
+        # owner has painted the row's column units, decode unit by unit so a
+        # multi-stroke character is not mistaken for several characters.  Any
+        # malformed or overlapping unit evidence falls back to the whole-strip
+        # reading below, which is the behaviour every shaped-run strip keeps.
+        anchor = evidence.get("anchor_evidence") if isinstance(evidence, Mapping) else None
+        text = None
+        if geometry.get("mode") == "fixed_lattice":
+            # Only a proved lattice row strip is decoded unit by unit.  A
+            # shaped-run strip has no cell contract behind its painted units, so
+            # it keeps the whole-strip reading it has always had.
+            text = _ascii_structural_text_from_painted_units(
+                np.asarray(mask, dtype=bool),
+                anchor.get("painted_runs") if isinstance(anchor, Mapping) else None,
+            )
+        if text is None:
+            text = _ascii_structural_text_from_run_mask(np.asarray(mask, dtype=bool))
         if text is None:
             return _unsupported_proposal(self.name, self.version, source, environment_lock, "ascii_structural_run_unresolved")
         source_hash, geometry_hash, components_hash = _source_hashes(source)
-        evidence = geometry.get("run_mask") if isinstance(geometry.get("run_mask"), Mapping) else {}
         run_hash = str(evidence.get("mask_sha256", ""))
         if not is_sha256(run_hash):
             run_hash = sha256_bytes(canonical_bytes({"pixels": evidence.get("pixels") if isinstance(evidence, Mapping) else mask}))
@@ -1263,6 +1279,71 @@ def _ascii_structural_text_from_run_mask(mask: np.ndarray) -> str | None:
             return degraded
         chars.append(shape)
     return "".join(chars)
+
+
+def _ascii_structural_text_from_painted_units(
+    mask: np.ndarray,
+    painted_runs: Any,
+) -> str | None:
+    """Decode a whole lattice row strip through its geometry-painted units.
+
+    ``_ascii_structural_text_from_run_mask`` was written for a strip holding one
+    glyph cluster: it treats the strip's connected components as the characters
+    to emit.  That reading breaks the moment the strip covers a whole lattice
+    row, because a single character built from several separated strokes (an
+    equals sign is two stacked bars) is then indistinguishable from two adjacent
+    characters -- the row ``(=)`` comes back as ``(--)``.
+
+    The geometry owner has already solved that: ``anchor_evidence.painted_runs``
+    records, for each measured column unit of the row, the local pixel bounds of
+    the ink painted inside it.  Decoding each painted unit separately restores
+    the one-cluster assumption the shape recogniser needs.  The units'
+    ``unit_start``/``unit_end`` indices are used to confirm the units tile the
+    row without a gap; a gap makes this return ``None`` rather than guess how
+    many blank characters it stands for (the index counts display *base* units,
+    which are not always one character wide).
+
+    :param mask: the run-local boolean ink mask for the whole row strip.
+    :param painted_runs: the ``painted_runs`` list from the run's anchor
+        evidence; anything malformed makes this return ``None``.
+    :returns: the row's proposal text, or ``None`` to fall back to the
+        whole-strip reading (never a partial or guessed result).
+    """
+
+    if not isinstance(painted_runs, (list, tuple)) or len(painted_runs) < 2:
+        return None
+    units: list[tuple[int, int, int, int]] = []
+    for item in painted_runs:
+        if not isinstance(item, Mapping):
+            return None
+        bounds = item.get("local_bounds")
+        if not isinstance(bounds, (list, tuple)) or len(bounds) != 4:
+            return None
+        # Slice columns only.  The full row height must be preserved because
+        # the shape recogniser scores every component against it.
+        x0, x1 = int(bounds[0]), int(bounds[2])
+        start = int(item.get("unit_start", -1))
+        end = int(item.get("unit_end", -1))
+        if x1 <= x0 or start < 0 or end <= start:
+            return None
+        units.append((start, end, x0, x1))
+    units.sort()
+    pieces: list[str] = []
+    cursor = units[0][0]
+    for start, end, x0, x1 in units:
+        # Deliberately strict: the units must tile the row without a gap and
+        # without an overlap.  A gap would have to be turned into some number of
+        # blank characters, and the painted unit index counts display base
+        # units, which are not always one character wide.  Rather than guess a
+        # blank count, hand the row back to the whole-strip reading.
+        if start != cursor:
+            return None
+        text = _ascii_structural_text_from_run_mask(np.asarray(mask[:, x0:x1], dtype=bool))
+        if not text:
+            return None
+        pieces.append(text)
+        cursor = max(end, start + 1)
+    return "".join(pieces)
 
 
 def _degraded_horizontal_sequence_from_run_mask(mask: np.ndarray) -> str | None:

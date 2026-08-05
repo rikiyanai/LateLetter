@@ -541,6 +541,7 @@ def _periodic_authority_snapshot(
     candidates: list[Mapping[str, Any]],
     *,
     harmonic_margin: float = 0.20,
+    authority_margin: float = 0.10,
 ) -> dict[str, Any]:
     """Rank raster hypotheses without claiming final geometry authority.
 
@@ -548,6 +549,17 @@ def _periodic_authority_snapshot(
     primary, seam/interior contrast breaks ties, and autocorrelation is retained
     only as a diagnostic.  A short period is marked as a stroke harmonic when a
     materially cleaner, longer period explains the same ink span.
+
+    ``authority_margin`` is the relative separation a winner must hold over the
+    hypotheses that contest it.  A near-tie is not automatically an ambiguity:
+    two different periods can describe *exactly the same* row ownership when the
+    surplus period lands entirely in blank margin above and below the ink.  This
+    function therefore also records whether every contesting hypothesis carries
+    the winner's row-ownership signature (the per-row ink counts, seam contacts,
+    unowned pixels and overlap rows measured from the source mask).  When they
+    do, the numeric tie describes one geometry rather than several, and the
+    caller may treat the margin as immaterial.  The signature is derived only
+    from source pixels; no transcript, calibration, or fixture metadata is read.
     """
 
     valid = [item for item in candidates if bool(item.get("candidate_valid"))]
@@ -578,6 +590,11 @@ def _periodic_authority_snapshot(
                 "phase_count": len(family),
                 "best_phase": int(best.get("phase", 0)),
                 "best_candidate_valid": bool(best.get("candidate_valid")),
+                # The pixel-content ownership signature of this family's best
+                # phase.  Two families sharing it partition the source ink into
+                # identical rows, so a numeric seam tie between them is not a
+                # geometry ambiguity.
+                "ownership_signature": str(best.get("ownership", {}).get("ownership_signature", "")),
                 "best": best,
                 "harmonic_rejected": False,
                 "harmonic_parent_pitch": None,
@@ -635,6 +652,15 @@ def _periodic_authority_snapshot(
                 {
                     "ownership_signature": signature,
                     "ownership_geometry_signature": signature,
+                    # The geometry signature above is keyed by pitch/phase/row
+                    # bounds, so every phase forms its own group by
+                    # construction.  This second signature is keyed by the
+                    # measured per-row ink instead, which lets a caller tell an
+                    # ambiguous phase apart from a phase shift that leaves the
+                    # source partition unchanged.
+                    "row_ownership_signature": str(
+                        best_group.get("ownership", {}).get("ownership_signature", "")
+                    ),
                     "phases": sorted(int(item.get("phase", 0)) for item in group),
                     "boundary_ink_pixels": int(best_group.get("boundary_ink_pixels", 0)),
                     "normalized_seam_energy": float(best_group.get("normalized_seam_energy", 1.0)),
@@ -646,13 +672,62 @@ def _periodic_authority_snapshot(
             / max(group_rows[1]["boundary_ink_pixels"], 1)
             if len(group_rows) > 1 else 1.0 if group_rows else 0.0
         )
+        # Phase groups whose boundary ink sits inside the authority margin of
+        # the leader contest it.  If every contesting group carries the same
+        # row-ownership signature, they all cut the source into the same rows
+        # and the margin does not decide anything.
+        phase_contesting = [
+            item
+            for item in group_rows[1:]
+            if (item["boundary_ink_pixels"] - group_rows[0]["boundary_ink_pixels"])
+            / max(item["boundary_ink_pixels"], 1)
+            < authority_margin
+        ]
+        phase_leader_signature = group_rows[0]["row_ownership_signature"] if group_rows else ""
+        phase_tie_equivalent = bool(
+            group_rows
+            and phase_leader_signature
+            and all(item["row_ownership_signature"] == phase_leader_signature for item in phase_contesting)
+        )
         phase_authority_by_pitch[str(pitch)] = {
             "phase_groups": group_rows,
             "phase_group_count": len(group_rows),
             "phase_margin": float(phase_margin),
             "winning_phase_group": group_rows[0]["ownership_signature"] if group_rows else None,
+            "phase_tie_equivalent": phase_tie_equivalent,
+            "phase_tie_contesting_group_count": len(phase_contesting),
+            "phase_tie_row_ownership_signature": phase_leader_signature or None,
         }
-    phase_summary = phase_authority_by_pitch.get(str(winning_pitch), {"phase_groups": [], "phase_group_count": 0, "phase_margin": 0.0, "winning_phase_group": None})
+    phase_summary = phase_authority_by_pitch.get(
+        str(winning_pitch),
+        {
+            "phase_groups": [],
+            "phase_group_count": 0,
+            "phase_margin": 0.0,
+            "winning_phase_group": None,
+            "phase_tie_equivalent": False,
+            "phase_tie_contesting_group_count": 0,
+            "phase_tie_row_ownership_signature": None,
+        },
+    )
+    # Pitch families whose seam cost sits inside the authority margin of the
+    # leader contest it.  Sparse two-row sources routinely produce an exact
+    # zero-seam tie across a whole band of periods because the extra period
+    # falls in the blank margin; those hypotheses are only distinguishable on
+    # paper.  Compare their row-ownership signatures to find out whether the
+    # tie is a real ambiguity or one geometry counted several times.
+    pitch_contesting = [
+        item
+        for item in ranked[1:]
+        if (float(item["seam_cost"]) - float(ranked[0]["seam_cost"])) / max(float(item["seam_cost"]), 1e-9)
+        < authority_margin
+    ] if ranked else []
+    pitch_leader_signature = str(ranked[0].get("ownership_signature", "")) if ranked else ""
+    pitch_tie_equivalent = bool(
+        ranked
+        and pitch_leader_signature
+        and all(str(item.get("ownership_signature", "")) == pitch_leader_signature for item in pitch_contesting)
+    )
     selected = min(
         winning_family,
         key=lambda item: (
@@ -670,6 +745,11 @@ def _periodic_authority_snapshot(
         "normalized_pitch_margin": float(pitch_margin),
         "phase_margin": float(phase_summary.get("phase_margin", 0.0)),
         "normalized_phase_margin": float(phase_summary.get("phase_margin", 0.0)),
+        "pitch_tie_equivalent": pitch_tie_equivalent,
+        "pitch_tie_contesting_pitches": [int(item["pitch"]) for item in pitch_contesting],
+        "pitch_tie_ownership_signature": pitch_leader_signature or None,
+        "phase_tie_equivalent": bool(phase_summary.get("phase_tie_equivalent")),
+        "phase_tie_contesting_group_count": int(phase_summary.get("phase_tie_contesting_group_count", 0)),
         "family_scores": [
             {key: value for key, value in item.items() if key != "best"}
             for item in sorted(family_scores, key=lambda item: int(item["pitch"]))
@@ -708,7 +788,11 @@ def _assess_periodic_authority(
     margin and replay-stable winning authority.
     """
 
-    snapshot = _periodic_authority_snapshot(candidates, harmonic_margin=harmonic_margin)
+    snapshot = _periodic_authority_snapshot(
+        candidates,
+        harmonic_margin=harmonic_margin,
+        authority_margin=authority_margin,
+    )
     valid = [item for item in candidates if bool(item.get("candidate_valid"))]
     winning = snapshot.get("winning_candidate") or {}
     stability = bool((foreground_stability or {}).get("stable", False))
@@ -732,16 +816,30 @@ def _assess_periodic_authority(
         and stability
         and same_pitch
     )
+    # A margin below the authority threshold blocks proof only when the
+    # hypotheses that cause it describe different row ownership.  When the whole
+    # contesting band carries the winner's row-ownership signature, the source
+    # has one geometry and the numeric tie is immaterial.  This never relaxes
+    # the requirement that some hypothesis win: it only stops counting one
+    # geometry as several competitors.
+    pitch_tie_equivalent = bool(snapshot.get("pitch_tie_equivalent"))
+    pitch_margin_sufficient = bool(
+        float(snapshot.get("normalized_pitch_margin", 0.0)) >= authority_margin or pitch_tie_equivalent
+    )
     pitch_proven = bool(
         baseline_proven
-        and float(snapshot.get("normalized_pitch_margin", 0.0)) >= authority_margin
+        and pitch_margin_sufficient
         and not any(int(item.get("pitch")) == int(snapshot["winning_pitch"]) for item in snapshot.get("harmonic_rejections", []))
     )
     phase_summary = (snapshot.get("phase_authority_by_pitch") or {}).get(str(snapshot.get("winning_pitch")), {})
+    phase_tie_equivalent = bool(phase_summary.get("phase_tie_equivalent"))
+    phase_margin_sufficient = bool(
+        float(phase_summary.get("phase_margin", 0.0)) >= authority_margin or phase_tie_equivalent
+    )
     phase_proven = bool(
         pitch_proven
         and phase_summary.get("winning_phase_group")
-        and float(phase_summary.get("phase_margin", 0.0)) >= authority_margin
+        and phase_margin_sufficient
         and stability
         and (foreground_stability or {}).get("winning_phase_group") in {None, phase_summary.get("winning_phase_group")}
     )
@@ -782,6 +880,19 @@ def _assess_periodic_authority(
         "normalized_pitch_margin": float(snapshot.get("normalized_pitch_margin", 0.0)),
         "phase_margin": float(phase_summary.get("phase_margin", 0.0)),
         "normalized_phase_margin": float(phase_summary.get("phase_margin", 0.0)),
+        # Tie-equivalence evidence.  These make it explicit whether a margin
+        # below the authority threshold was overridden because the contesting
+        # hypotheses were the same geometry, and which source-derived signature
+        # licensed that.
+        "authority_margin": float(authority_margin),
+        "pitch_margin_sufficient": pitch_margin_sufficient,
+        "pitch_tie_equivalent": pitch_tie_equivalent,
+        "pitch_tie_contesting_pitches": list(snapshot.get("pitch_tie_contesting_pitches", [])),
+        "pitch_tie_ownership_signature": snapshot.get("pitch_tie_ownership_signature"),
+        "phase_margin_sufficient": phase_margin_sufficient,
+        "phase_tie_equivalent": phase_tie_equivalent,
+        "phase_tie_contesting_group_count": int(phase_summary.get("phase_tie_contesting_group_count", 0)),
+        "phase_tie_row_ownership_signature": phase_summary.get("phase_tie_row_ownership_signature"),
         "family_scores": family_scores,
         "ranked_family_scores": snapshot.get("ranked_family_scores", []),
         "harmonic_family_scores": harmonic_scores,
@@ -1301,6 +1412,7 @@ def build_geometry_evidence(
     periodic_snapshot = _periodic_authority_snapshot(
         periodic_row_candidates,
         harmonic_margin=float(configuration["harmonic_rejection_margin"]),
+        authority_margin=float(configuration["periodic_authority_margin"]),
     )
     baseline_candidate = periodic_snapshot.get("winning_candidate") or {}
     baseline_row_bands = [
@@ -1369,6 +1481,7 @@ def build_geometry_evidence(
         snapshot = _periodic_authority_snapshot(
             alternative_candidates,
             harmonic_margin=float(configuration["harmonic_rejection_margin"]),
+            authority_margin=float(configuration["periodic_authority_margin"]),
         )
         threshold_pitch_families.append(
             {

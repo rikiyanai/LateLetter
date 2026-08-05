@@ -183,13 +183,21 @@ def test_offline_ensemble_records_top_k_without_passing_ground_truth_to_adapter(
     )
     assert report["ground_truth_passed_to_adapters"] is False
     assert report["fixture_count"] == 1
-    assert report["results"][0]["exact_nfc_target_in_top_k"] is False
+    # Recovery for this corpus-v1 monospace fixture used to stop short of the
+    # exact target, because the structural adapter read a whole lattice row
+    # strip as one glyph cluster and split the two stacked bars of an equals
+    # sign into two hyphens.  The adapter now decodes the row through the
+    # geometry owner's painted column units, so both rows come back exactly.
+    # The assertion is updated to the measured capability, not relaxed.
+    assert report["results"][0]["exact_nfc_target_in_top_k"] is True
     matrix = report["coverage_rank_matrix"][0]
     assert matrix["status"] == "measured"
     assert [row["expected_logical_sequence"] for row in matrix["rows"]] == ["/\\_|", "(=)"]
-    assert all(row["classification"] in {"absent", "unsupported", "present_and_winning", "present_but_losing", "visual_collision"} for row in matrix["rows"])
+    assert [row["classification"] for row in matrix["rows"]] == ["present_and_winning", "present_and_winning"]
     assert report["results"][0]["coverage_rank_matrix"] == matrix
-    assert report["status"] == "blocked_release_coverage"
+    # Both rows win, so the release-coverage block no longer applies to this
+    # single-fixture report.
+    assert report["status"] not in {"blocked_release_coverage"}
 
 
 def test_v2_fixed_ascii_structural_adapter_recovers_exact_rows_without_truth_input() -> None:
