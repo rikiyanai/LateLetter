@@ -11179,3 +11179,36 @@ refusing.
 - **Status:** SELECTOR MODE-TRUST REMOVED (evidence above); GEOMETRY MODE
   ASSIGNMENT REMAINS OPEN. ComplaintRef: operator take-over order, 2026-08-05;
   artifact-surface substitution entry, 2026-08-05.
+
+### Known-red renderer diagnostics reconciled with the camera-projected terrain law (2026-08-05)
+
+The two assertions carried as known reds since the terrain repair (9d9d45d,
+recorded in the wayfinder verification entry above) were stale contracts, not
+product defects. Both read `frame.horizon` — the NEUTRAL viewport bound — and
+demanded soil ink there, which is exactly the fixed-viewport-row anchoring the
+operator's field finding 1 rejected and docs/SPEC.md now forbids ("no painter
+or viewer may retain a fixed viewport-row copy"). The test fixture camera sits
+at y=5 against the authored home y=51, so the camera-projected soil contour
+(`gardenTerrainFrame`, web/garden-painting.mjs:560) legitimately lands rows
+below the neutral horizon and the neutral row holds only planting ink.
+
+- Repair (tests/garden_adapters/test_garden_renderer.mjs only; no product
+  code touched): `palette-only transitions repaint rows whose glyphs are
+  unchanged` and `ten-minute pan simulation keeps initialized scenery and
+  partial row diffs` now read `frame.terrain.groundFront` — the frame's own
+  camera-projected soil row — instead of `frame.horizon`. Every original
+  assertion (glyph-stable row, palette-only HTML change, partial changedRows,
+  night ground `#28302a`, soil `.` presence under a 600-step pan) is retained
+  at the corrected row; nothing was weakened or skipped.
+- Evidence at HEAD 1a855c9 + this repair: test_garden_renderer.mjs 64/64,
+  test_presentation_contract.mjs + test_garden_world.mjs 40/40,
+  and the Python garden set (test_world_browser_conformance.py,
+  test_atlas_v2.py, test_asset_acceptance.py) 97/97. Diagnostics only — not
+  visual acceptance.
+- `frame.horizon` remains exported as the neutral bound consumed by
+  drawAmbient and the memorial marker; whether those two consumers should
+  follow the terrain frame during vertical pan is an observed open question
+  for the map, not decided here.
+- **Status:** IMPLEMENTED (diagnostic-level evidence above; visual
+  acceptance remains operator-only). ComplaintRef: Wayfinder map: operator
+  field review of the panning garden (2026-08-05).
