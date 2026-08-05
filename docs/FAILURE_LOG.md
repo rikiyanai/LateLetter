@@ -9756,6 +9756,100 @@ Remaining missing positives after this D1 slice:
   mixed/degraded families. Ranking changes remain prohibited. ComplaintRef:
   operator order to log and execute the transcription plan E2E, 2026-08-04.
 
+### Queued structural ASCII art asset folder corrected: originals trashed, normalized polarity unified (2026-08-04)
+
+Operator requested the queued asset folder
+`/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES ` be corrected before further
+review: non-normalized original image versions should be removed from the
+working folder, and black-on-white normalized ASCII art should be flipped to
+white-on-black so the review queue shares one polarity.
+
+Actions taken:
+
+- Moved 11 non-normalized image originals to `/Users/r/.Trash`:
+  `4409e4149b1b6827b4b8c44ed8a3772d.png`,
+  `Fish-shell-logo-ascii-black.svg.png`,
+  `Screenshot 2026-07-31 at 13.12.04.png`,
+  `Screenshot 2026-07-31 at 13.14.18.png`,
+  `Screenshot 2026-07-31 at 13.14.25.png`,
+  `Screenshot 2026-07-31 at 13.14.32.png`,
+  `Screenshot 2026-07-31 at 13.16.07.png`,
+  `Screenshot 2026-07-31 at 13.29.23.png`,
+  `Screenshot 2026-07-31 at 13.30.21.png`,
+  `bbbb_flowers.png`, and `waterfall-2c.gif`.
+- Inverted 20 `.normalized.png` files whose sampled edge/corner background
+  was light, preserving alpha. Existing dark-background normalized PNGs were
+  left unchanged.
+- Verification after the correction: `remaining_non_normalized_image_count=0`
+  for image originals in the folder; `remaining_light_bg_count=0` for
+  normalized PNGs by the same sampled-background classifier; folder now holds
+  54 files.
+
+This is a queued-asset hygiene correction only. It does not create accepted
+transcripts, conversion attempts, candidate TXT, benchmark truth, or recognizer
+training data.
+
+- **Status:** ASSET QUEUE CORRECTED; normalized review images are now
+  white-on-black/dark-background only. ComplaintRef: operator request to trash
+  non-normalized originals and flip black-on-white assets, 2026-08-04.
+
+### Correction to queued asset polarity: normalized review images must be light-background (2026-08-04)
+
+Operator corrected the prior instruction: the normalized queued screenshots
+should have light backgrounds, not dark backgrounds. The immediately preceding
+asset note is therefore superseded on polarity only. The original-image trash
+step remains valid.
+
+Actions taken after the correction:
+
+- Inverted all 26 `.normalized.png` files in
+  `/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES ` back to light-background
+  polarity.
+- Fixed `Fish-shell-logo-ascii-black.svg.normalized.png` separately because it
+  was white ink on transparent pixels after the first inversion. It is now an
+  opaque light-background PNG with dark antialiased ink.
+- Verification after correction:
+  `normalized_count=26`, `light_count=26`, `dark_count=0`,
+  `transparent_count=0`, `remaining_non_normalized_image_count=0`, folder
+  file count `54`.
+
+This remains an asset hygiene correction only. It does not create accepted
+transcripts, conversion attempts, candidate TXT, benchmark truth, or recognizer
+training data.
+
+- **Status:** ASSET QUEUE POLARITY CORRECTED; all normalized review PNGs are
+  light-background. ComplaintRef: operator correction "all the normalized
+  should have light background", 2026-08-04.
+
+### Correction to queued asset tones: normalized review images must be binary black-on-white (2026-08-04)
+
+Operator reported that some normalized queued assets, especially Stone Story
+references, still contained light-gray glyphs. The intended review substrate is
+not antialiased grayscale or color; every normalized queued PNG should be
+two-tone: opaque white background and opaque black ink.
+
+Actions taken:
+
+- Binarized all 26 `.normalized.png` files in
+  `/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES `.
+- Classification used each image's sampled border/background color and treated
+  pixels meaningfully different from that background as ink. Output was then
+  written as exactly black or white, with opaque alpha.
+- Verification after correction:
+  `normalized_count=26`, `bad_two_tone_count=0`. The only remaining colors in
+  every normalized PNG are `(255,255,255,255)` and `(0,0,0,255)`.
+- Spot checks after binarization: Stone Story Cross River has 22,346 black
+  pixels; crypt shop has 17,295; ranting tree has 19,845; bbbb flowers has
+  2,424. These are black ink on white background, not gray glyphs.
+
+This is still asset hygiene only. It does not create accepted transcripts,
+conversion attempts, candidate TXT, benchmark truth, or recognizer training
+data.
+
+- **Status:** ASSET QUEUE TONE CORRECTED; all normalized review PNGs are
+  binary black-on-white. ComplaintRef: operator note that Stone Story glyphs
+  were still light gray, 2026-08-04.
+
 ### Transcription D1 combining replay was invalidated by proposal synthesis and reporting defects (2026-08-04)
 
 The D1 replay artifact
@@ -9838,6 +9932,272 @@ proportional Latin, kana, Kanji, Arabic, and combining.
   budget/determinism defect. Continue D1/Track B only; ranking and acceptance
   remain prohibited. ComplaintRef: operator order to implement the
   transcription plan correctly, 2026-08-04.
+
+### Correction to queued asset binarization: threshold noise and unsafe distance math (2026-08-04)
+
+Operator reported that some normalized queued assets were visibly noisy after
+the binary-tone pass, with
+`d4b66f66373db2f3f46d775ed3cb9eee.normalized.png` as the concrete example.
+
+Additional findings:
+
+- The previous binarization did produce strict two-tone output, but the
+  threshold implementation used a small integer distance calculation that could
+  overflow while squaring RGB deltas. That makes the method invalid as a
+  repeatable normalization rule even when the observed output is binary.
+- The `d4b66f66373db2f3f46d775ed3cb9eee` package no longer has a
+  non-normalized source image available in either
+  `/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES ` or `/Users/r/.Trash`.
+  Only the normalized PNG and its TXT remain, so that asset cannot currently be
+  regenerated from pre-binarized pixels.
+- The paired TXT for `d4b66f66373db2f3f46d775ed3cb9eee` contains intentional
+  dot/degree/star characters. Some visible small marks are therefore authored
+  text-art content, not automatically removable compression noise.
+
+Actions taken:
+
+- Preserved all normalized PNG filenames and light-background polarity.
+- Removed tiny black connected components from normalized PNGs, then applied a
+  second conservative isolated-speckle cleanup pass.
+- Verification after cleanup: `normalized_count=26`, `bad_two_tone_count=0`.
+  Every normalized PNG still contains only `(255,255,255,255)` and
+  `(0,0,0,255)`.
+- For `d4b66f66373db2f3f46d775ed3cb9eee.normalized.png`, the cleanup reduced
+  artifact-scale components to: `d4_components=45`,
+  `d4_tiny_components_le_3=0`, `d4_small_components_le_8=1`,
+  `d4_small_components_le_18=16`, `d4_black_pixels=4873`.
+
+This correction remains asset hygiene only. It does not create accepted
+transcripts, conversion attempts, candidate TXT, benchmark truth, recognizer
+training data, or operator-approved art.
+
+- **Status:** ASSET QUEUE BINARY CLEANUP PARTIAL; normalized PNGs are strictly
+  two-tone black-on-white and tiny speckles were removed, but assets lacking
+  pre-binarized sources cannot be perfectly re-normalized from original pixels.
+  ComplaintRef: operator report that normalized queued assets remained noisy,
+  2026-08-04.
+
+### Transcription v11 post-geometry coverage receipt is blocked on four recognizer families (2026-08-04)
+
+After Phase 3.8 admitted all 26 live sources through source-owned geometry
+evidence, the recognizer runtime and coverage gates were rerun without creating
+TXT, candidate, attempt, or acceptance artifacts.
+
+Tracked receipts:
+
+- `tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry-receipt.json`
+  binds profile-only artifact
+  `tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry.json`
+  to SHA-256
+  `32d11d873528f15e6694a385e32e9e5fafe4aba89e6a6de4dd8ac5a301d97168`.
+  It contains 130 terminal adapter/fixture records, zero budget failures,
+  zero nondeterministic adapters, and maximum recorded RSS
+  `365641728`.
+- `tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry-receipt.json`
+  binds full coverage artifact
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry.json`
+  to SHA-256
+  `992a3544c408d8475a32e0fcc0b92c674fa31a9ad03ca9c32c1055d860026719`.
+
+Fresh v11 coverage status is `blocked_release_coverage`. `budget_failures`,
+`nondeterministic_adapters`, and `false_unique_negative_fixtures` are empty;
+`ground_truth_passed_to_adapters=false`; determinism replay was performed. The
+remaining missing positives are exactly:
+
+- `positive-width-mixture`
+- `positive-emoji-zwj`
+- `positive-mixed-script`
+- `positive-degraded-fixed`
+
+This proves the current blocker is recognizer proposal construction/repertoire
+for those four families, not runtime admission and not live-corpus geometry.
+Ranking/fusion, machine authority, live attempts, and accepted transcripts
+remain prohibited until these families are present in top-k and the later gates
+pass.
+
+- **Status:** D1 FRONTIER UPDATED; runtime and geometry gates are cleared for
+  measurement, release coverage remains blocked on four recognizer families.
+  ComplaintRef: operator order to implement the PNG-to-logical-Unicode
+  transcription roadmap correctly, 2026-08-04.
+
+### Transcription D1 width-mixture coverage added with source-owned run anchors (2026-08-04)
+
+The width-mixture miss was not a geometry or runtime failure. The source row
+already contained three geometry-owned runs with measured advances and masks,
+but the OCR proposal repair path only used large source text gaps. Rows such as
+`AB が` therefore retained no source-owned way to express that the first Latin
+run was fullwidth and the final Japanese OCR token covered two halfwidth-kana
+components.
+
+Corrections:
+
+- Tesseract row OCR evidence now carries source-run advances and source-run
+  masks for the row strips it owns.
+- Gap repair remains based on measured text groups; it was not converted into a
+  raw-run splitter.
+- A separate width/run repair consumes only source-owned run anchors, measured
+  advances, and a hash-pinned NotoSansCJKjp font. It can emit fullwidth ASCII
+  for visibly wide Latin runs and bounded halfwidth-kana component sequences
+  when OCR collapses adjacent kana into one Japanese token.
+- The adapter still emits proposal evidence only. No transcript truth, fixture
+  ID, candidate TXT, attempt, or acceptance is passed into recognition or
+  created by this slice.
+
+Verification:
+
+- Focused width/source-run regression passes.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-width-mixture.json`,
+  size `7255800` bytes, SHA-256
+  `948d1aa1b59d1c85a3757f06ba93c5e8bfb9efa6b0c24260d52bad8f84195c67`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-width-mixture-receipt.json`.
+- Replay status remains `blocked_release_coverage`, but the missing positives
+  dropped from four to three. `positive-width-mixture` is now
+  `present_but_losing`, rank 2, proposed by `psm7-jpn-cjk`.
+- `budget_failures`, `nondeterministic_adapters`, and
+  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
+  remains false.
+
+- **Status:** D1 PARTIAL; width-mixture is covered in top-k, but release
+  coverage remains blocked on emoji-ZWJ, mixed-script, and degraded-fixed.
+  Ranking/fusion, machine authority, live attempts, TXT output, and acceptance
+  remain prohibited. ComplaintRef: operator order to implement the transcription
+  roadmap correctly and avoid prior process failures, 2026-08-04.
+
+### Transcription D1 emoji-ZWJ coverage added with source RGBA and measured run gaps (2026-08-04)
+
+The emoji-ZWJ miss was not font recovery. Geometry already owned two colored
+emoji runs, but the atlas received only alpha masks. With alpha-only evidence,
+skin-tone variants and colored heart variants collide visually; the row matrix
+then reconstructed run alternatives without the measured inter-run space.
+
+Corrections:
+
+- The benchmark run-materialization path now forwards source-owned RGBA pixels
+  from each immutable run-strip PNG into `run_mask.rgba`.
+- The emoji atlas uses those RGBA pixels for color residuals, separating
+  `👩‍🌾` from skin-tone/person variants and `❤️` from other hearts.
+- Row composition can preserve measured inter-run spaces, but only for adapters
+  whose proposal semantics authorize shaped-run spacing. It is not applied to
+  fixed-lattice structural proposals.
+- The coverage matrix now consumes composed row proposals when present, so its
+  row classification matches the adapter's measured logical top-k surface.
+
+Verification:
+
+- Full recognition suite: 44 passed.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-2.json`,
+  size `1605169` bytes, SHA-256
+  `1aca4028fddb425400d30694cd1724fe0c0677744187548d7cf334fdfec6301c`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-receipt.json`.
+- `positive-emoji-zwj` is now `present_and_winning`, rank 1, proposed by
+  `emoji-grapheme-atlas`.
+- Replay status remains `blocked_release_coverage`; remaining missing positives
+  are `positive-mixed-script` and `positive-degraded-fixed`.
+- `budget_failures`, `nondeterministic_adapters`, and
+  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
+  remains false.
+
+- **Status:** D1 PARTIAL; emoji-ZWJ is covered at rank 1, but release coverage
+  remains blocked on mixed-script and degraded-fixed. Ranking/fusion, machine
+  authority, live attempts, TXT output, and acceptance remain prohibited.
+  ComplaintRef: operator order to implement the transcription roadmap correctly
+  and avoid prior process failures, 2026-08-04.
+
+### Transcription D1 mixed-script coverage added with proposal-only profile fusion (2026-08-04)
+
+The mixed-script miss was not a geometry failure. The source row was admitted,
+but no single Tesseract profile proposed the whole logical sequence. The
+Japanese/CJK profile carried the Latin+CJK side (`A漢`) as a lower-noise
+alternative, while the Arabic profile carried the Arabic side (`سلام`) through
+OCR-confusable variants. The benchmark had no bounded proposal-only surface that
+could preserve those independent script proposals as one mixed logical row.
+
+Corrections:
+
+- Added bounded Latin+CJK OCR cleanup for mixed rows: collapse measured
+  Latin/Han internal OCR gaps and retain a prefix-stripped variant when the
+  remaining text still contains both Latin and Han evidence.
+- Added bounded Arabic OCR variants for isolated Arabic proposal strings,
+  preserving the original OCR text while adding terminal-shape repairs as
+  proposal evidence only.
+- Added `tesseract-profile-fusion`, a deterministic proposal-only benchmark
+  surface that combines independent Tesseract profile proposals after adapters
+  have run. It does not receive fixture truth and does not authorize ranking,
+  machine acceptance, or candidate TXT.
+
+Verification:
+
+- Full recognition suite: 45 passed.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-mixed-script.json`,
+  size `1630681` bytes, SHA-256
+  `00be7b5f732e9254bc078b564004842e4375b206955453ac817fdde78ce605a8`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-mixed-script-receipt.json`.
+- `positive-mixed-script` is now `present_and_winning`, rank 1, proposed by
+  `tesseract-profile-fusion`.
+- Replay status remains `blocked_release_coverage`; remaining missing positive
+  is only `positive-degraded-fixed`.
+- `budget_failures`, `nondeterministic_adapters`, and
+  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
+  remains false.
+
+- **Status:** D1 PARTIAL; mixed-script is covered at rank 1, but release
+  coverage remains blocked on degraded-fixed. Machine authority, live attempts,
+  TXT output, and acceptance remain prohibited. ComplaintRef: operator order to
+  implement the transcription roadmap correctly and avoid prior process
+  failures, 2026-08-04.
+
+### Transcription D1 release positives covered; degraded-fixed recovered from source structure (2026-08-04)
+
+The last D1 missing family was `positive-degraded-fixed`. Runtime admission was
+already bounded; the remaining failure was source-structure recognition:
+
+- The first degraded row contained the correct `/\` glyphs, but leading blank
+  cells were lost when shaped-run geometry fed the fixed structural adapter.
+- The second degraded row contained connected horizontal bands. The existing
+  component decoder treated the merged band as unresolved instead of deriving
+  repeated fixed-lattice horizontals from source pixels.
+
+Corrections:
+
+- Added a source-only degraded horizontal decoder that derives local pitch from
+  same-band horizontal starts, then classifies occupied slots as dash or
+  underscore by vertical band.
+- Added leading-cell reconstruction for the fixed structural adapter only when
+  it consumes a single shaped run for a row. This keeps normal multi-run fixed
+  ASCII unchanged.
+- No transcript truth, candidate TXT, attempt, acceptance, source-copy renderer,
+  or budget-ceiling raise was introduced.
+
+Verification:
+
+- Full recognition suite: 46 passed.
+- Full v11 D1 replay:
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered.json`,
+  size `1631300` bytes, SHA-256
+  `b74c8c0345181f0e70a423956cf03fbb8975d7512eacd39d28f8101a06eeb19b`.
+- The tracked small receipt is
+  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered-receipt.json`.
+- Replay status is `passed`: `positive_missing=[]`,
+  `false_unique_negative_fixtures=[]`, `budget_failures=[]`, and
+  `nondeterministic_adapters=[]`.
+- `ground_truth_passed_to_adapters=false`; determinism replay was performed.
+- `positive-degraded-fixed` rows are both `present_and_winning`, rank 1, from
+  `fixed-lattice-structural`: `  /\` and `--__`.
+
+This completes D1 positive top-k coverage for the release-gate corpus. It does
+not complete the PNG-to-TXT product. Ranking/fusion, machine authority,
+release/holdout replay, live sitting-cat/horse attempts, queue conversion, TXT
+output, and acceptance remain prohibited until their gates pass.
+
+- **Status:** D1 COVERAGE GATE PASSED; proceed to ranking/fusion and
+  machine-authority gates only. ComplaintRef: operator order to implement the
+  transcription roadmap correctly and avoid prior process failures, 2026-08-04.
 
 ### The far terrain band was collapsed into the canonical fixture surface (2026-08-04)
 
@@ -10074,228 +10434,6 @@ and degraded-fixed.
   Wayfinder roadmap correctly without treating geometry proof as conversion
   success, 2026-08-04.
 
-### Transcription v11 post-geometry coverage receipt is blocked on four recognizer families (2026-08-04)
-
-After Phase 3.8 admitted all 26 live sources through source-owned geometry
-evidence, the recognizer runtime and coverage gates were rerun without creating
-TXT, candidate, attempt, or acceptance artifacts.
-
-Tracked receipts:
-
-- `tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry-receipt.json`
-  binds profile-only artifact
-  `tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry.json`
-  to SHA-256
-  `32d11d873528f15e6694a385e32e9e5fafe4aba89e6a6de4dd8ac5a301d97168`.
-  It contains 130 terminal adapter/fixture records, zero budget failures,
-  zero nondeterministic adapters, and maximum recorded RSS
-  `365641728`.
-- `tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry-receipt.json`
-  binds full coverage artifact
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry.json`
-  to SHA-256
-  `992a3544c408d8475a32e0fcc0b92c674fa31a9ad03ca9c32c1055d860026719`.
-
-Fresh v11 coverage status is `blocked_release_coverage`. `budget_failures`,
-`nondeterministic_adapters`, and `false_unique_negative_fixtures` are empty;
-`ground_truth_passed_to_adapters=false`; determinism replay was performed. The
-remaining missing positives are exactly:
-
-- `positive-width-mixture`
-- `positive-emoji-zwj`
-- `positive-mixed-script`
-- `positive-degraded-fixed`
-
-This proves the current blocker is recognizer proposal construction/repertoire
-for those four families, not runtime admission and not live-corpus geometry.
-Ranking/fusion, machine authority, live attempts, and accepted transcripts
-remain prohibited until these families are present in top-k and the later gates
-pass.
-
-- **Status:** D1 FRONTIER UPDATED; runtime and geometry gates are cleared for
-  measurement, release coverage remains blocked on four recognizer families.
-  ComplaintRef: operator order to implement the PNG-to-logical-Unicode
-  transcription roadmap correctly, 2026-08-04.
-
-### Transcription D1 width-mixture coverage added with source-owned run anchors (2026-08-04)
-
-The width-mixture miss was not a geometry or runtime failure. The source row
-already contained three geometry-owned runs with measured advances and masks,
-but the OCR proposal repair path only used large source text gaps. Rows such as
-`AB が` therefore retained no source-owned way to express that the first Latin
-run was fullwidth and the final Japanese OCR token covered two halfwidth-kana
-components.
-
-Corrections:
-
-- Tesseract row OCR evidence now carries source-run advances and source-run
-  masks for the row strips it owns.
-- Gap repair remains based on measured text groups; it was not converted into a
-  raw-run splitter.
-- A separate width/run repair consumes only source-owned run anchors, measured
-  advances, and a hash-pinned NotoSansCJKjp font. It can emit fullwidth ASCII
-  for visibly wide Latin runs and bounded halfwidth-kana component sequences
-  when OCR collapses adjacent kana into one Japanese token.
-- The adapter still emits proposal evidence only. No transcript truth, fixture
-  ID, candidate TXT, attempt, or acceptance is passed into recognition or
-  created by this slice.
-
-Verification:
-
-- Focused width/source-run regression passes.
-- Full v11 D1 replay:
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-width-mixture.json`,
-  size `7255800` bytes, SHA-256
-  `948d1aa1b59d1c85a3757f06ba93c5e8bfb9efa6b0c24260d52bad8f84195c67`.
-- The tracked small receipt is
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-width-mixture-receipt.json`.
-- Replay status remains `blocked_release_coverage`, but the missing positives
-  dropped from four to three. `positive-width-mixture` is now
-  `present_but_losing`, rank 2, proposed by `psm7-jpn-cjk`.
-- `budget_failures`, `nondeterministic_adapters`, and
-  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
-  remains false.
-
-- **Status:** D1 PARTIAL; width-mixture is covered in top-k, but release
-  coverage remains blocked on emoji-ZWJ, mixed-script, and degraded-fixed.
-  Ranking/fusion, machine authority, live attempts, TXT output, and acceptance
-  remain prohibited. ComplaintRef: operator order to implement the transcription
-  roadmap correctly and avoid prior process failures, 2026-08-04.
-
-### Transcription D1 emoji-ZWJ coverage added with source RGBA and measured run gaps (2026-08-04)
-
-The emoji-ZWJ miss was not font recovery. Geometry already owned two colored
-emoji runs, but the atlas received only alpha masks. With alpha-only evidence,
-skin-tone variants and colored heart variants collide visually; the row matrix
-then reconstructed run alternatives without the measured inter-run space.
-
-Corrections:
-
-- The benchmark run-materialization path now forwards source-owned RGBA pixels
-  from each immutable run-strip PNG into `run_mask.rgba`.
-- The emoji atlas uses those RGBA pixels for color residuals, separating
-  `👩‍🌾` from skin-tone/person variants and `❤️` from other hearts.
-- Row composition can preserve measured inter-run spaces, but only for adapters
-  whose proposal semantics authorize shaped-run spacing. It is not applied to
-  fixed-lattice structural proposals.
-- The coverage matrix now consumes composed row proposals when present, so its
-  row classification matches the adapter's measured logical top-k surface.
-
-Verification:
-
-- Full recognition suite: 44 passed.
-- Full v11 D1 replay:
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-2.json`,
-  size `1605169` bytes, SHA-256
-  `1aca4028fddb425400d30694cd1724fe0c0677744187548d7cf334fdfec6301c`.
-- The tracked small receipt is
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-receipt.json`.
-- `positive-emoji-zwj` is now `present_and_winning`, rank 1, proposed by
-  `emoji-grapheme-atlas`.
-- Replay status remains `blocked_release_coverage`; remaining missing positives
-  are `positive-mixed-script` and `positive-degraded-fixed`.
-- `budget_failures`, `nondeterministic_adapters`, and
-  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
-  remains false.
-
-- **Status:** D1 PARTIAL; emoji-ZWJ is covered at rank 1, but release coverage
-  remains blocked on mixed-script and degraded-fixed. Ranking/fusion, machine
-  authority, live attempts, TXT output, and acceptance remain prohibited.
-  ComplaintRef: operator order to implement the transcription roadmap correctly
-  and avoid prior process failures, 2026-08-04.
-
-### Transcription D1 mixed-script coverage added with proposal-only profile fusion (2026-08-04)
-
-The mixed-script miss was not a geometry failure. The source row was admitted,
-but no single Tesseract profile proposed the whole logical sequence. The
-Japanese/CJK profile carried the Latin+CJK side (`A漢`) as a lower-noise
-alternative, while the Arabic profile carried the Arabic side (`سلام`) through
-OCR-confusable variants. The benchmark had no bounded proposal-only surface that
-could preserve those independent script proposals as one mixed logical row.
-
-Corrections:
-
-- Added bounded Latin+CJK OCR cleanup for mixed rows: collapse measured
-  Latin/Han internal OCR gaps and retain a prefix-stripped variant when the
-  remaining text still contains both Latin and Han evidence.
-- Added bounded Arabic OCR variants for isolated Arabic proposal strings,
-  preserving the original OCR text while adding terminal-shape repairs as
-  proposal evidence only.
-- Added `tesseract-profile-fusion`, a deterministic proposal-only benchmark
-  surface that combines independent Tesseract profile proposals after adapters
-  have run. It does not receive fixture truth and does not authorize ranking,
-  machine acceptance, or candidate TXT.
-
-Verification:
-
-- Full recognition suite: 45 passed.
-- Full v11 D1 replay:
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-mixed-script.json`,
-  size `1630681` bytes, SHA-256
-  `00be7b5f732e9254bc078b564004842e4375b206955453ac817fdde78ce605a8`.
-- The tracked small receipt is
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-mixed-script-receipt.json`.
-- `positive-mixed-script` is now `present_and_winning`, rank 1, proposed by
-  `tesseract-profile-fusion`.
-- Replay status remains `blocked_release_coverage`; remaining missing positive
-  is only `positive-degraded-fixed`.
-- `budget_failures`, `nondeterministic_adapters`, and
-  `false_unique_negative_fixtures` are empty; `ground_truth_passed_to_adapters`
-  remains false.
-
-- **Status:** D1 PARTIAL; mixed-script is covered at rank 1, but release
-  coverage remains blocked on degraded-fixed. Machine authority, live attempts,
-  TXT output, and acceptance remain prohibited. ComplaintRef: operator order to
-  implement the transcription roadmap correctly and avoid prior process
-  failures, 2026-08-04.
-
-### Transcription D1 release positives covered; degraded-fixed recovered from source structure (2026-08-04)
-
-The last D1 missing family was `positive-degraded-fixed`. Runtime admission was
-already bounded; the remaining failure was source-structure recognition:
-
-- The first degraded row contained the correct `/\` glyphs, but leading blank
-  cells were lost when shaped-run geometry fed the fixed structural adapter.
-- The second degraded row contained connected horizontal bands. The existing
-  component decoder treated the merged band as unresolved instead of deriving
-  repeated fixed-lattice horizontals from source pixels.
-
-Corrections:
-
-- Added a source-only degraded horizontal decoder that derives local pitch from
-  same-band horizontal starts, then classifies occupied slots as dash or
-  underscore by vertical band.
-- Added leading-cell reconstruction for the fixed structural adapter only when
-  it consumes a single shaped run for a row. This keeps normal multi-run fixed
-  ASCII unchanged.
-- No transcript truth, candidate TXT, attempt, acceptance, source-copy renderer,
-  or budget-ceiling raise was introduced.
-
-Verification:
-
-- Full recognition suite: 46 passed.
-- Full v11 D1 replay:
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered.json`,
-  size `1631300` bytes, SHA-256
-  `b74c8c0345181f0e70a423956cf03fbb8975d7512eacd39d28f8101a06eeb19b`.
-- The tracked small receipt is
-  `tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered-receipt.json`.
-- Replay status is `passed`: `positive_missing=[]`,
-  `false_unique_negative_fixtures=[]`, `budget_failures=[]`, and
-  `nondeterministic_adapters=[]`.
-- `ground_truth_passed_to_adapters=false`; determinism replay was performed.
-- `positive-degraded-fixed` rows are both `present_and_winning`, rank 1, from
-  `fixed-lattice-structural`: `  /\` and `--__`.
-
-This completes D1 positive top-k coverage for the release-gate corpus. It does
-not complete the PNG-to-TXT product. Ranking/fusion, machine authority,
-release/holdout replay, live sitting-cat/horse attempts, queue conversion, TXT
-output, and acceptance remain prohibited until their gates pass.
-
-- **Status:** D1 COVERAGE GATE PASSED; proceed to ranking/fusion and
-  machine-authority gates only. ComplaintRef: operator order to implement the
-  transcription roadmap correctly and avoid prior process failures, 2026-08-04.
-
 ### Transcription D2 rank/fusion gate passed for release positives (2026-08-04)
 
 The D1 coverage gate proved that every positive corpus family was present in
@@ -10389,6 +10527,63 @@ Next required Phase 6 slice:
 - **Status:** PHASE 6 BLOCKED BY FALSE-UNIQUE CANDIDATE AUTHORITY; unsafe
   selector reverted before commit. ComplaintRef: operator order to implement
   correctly and avoid prior false-acceptance/process failures, 2026-08-04.
+
+### Fresh 26-source queue replay confirms old visual review was stale/provisional, not current production output (2026-08-05)
+
+Operator requested a from-scratch regeneration after reporting that the opened
+review page contained a few plausible conversions but most outputs were
+incoherent. A clean diagnostic replay was run against the current external
+folder `/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES `, using exactly the
+26 `*.normalized.png` files present at replay time.
+
+Replay rules:
+
+- Existing TXT files were not read.
+- Accepted TXT files were not read.
+- Historical attempts were not read.
+- No queue item, accepted transcript, provisional TXT, horse attempt 065,
+  sitting-cat attempt 004, or accepted asset was overwritten.
+- Each source was copied into a new immutable diagnostic attempt and passed
+  through current production `transcribe()`.
+
+Artifacts:
+
+- Run root:
+  `tracked/LateLetterResearch/transcription-parity/queue-diagnostic-replays/20260805-current-transcribe-scratch/`
+- Review page:
+  `tracked/LateLetterResearch/transcription-parity/queue-diagnostic-replays/20260805-current-transcribe-scratch/review.html`
+- Source inventory SHA-256:
+  `0da606a4a0c5b6664a8e500c432b35548b41c7d84346abe7e075b92d49f529ac`
+- Replay SHA-256:
+  `bf78edd366f1a9818198316ad453c4c2421b62d756b48f5eb601f45ea43a4422`
+- Receipt SHA-256:
+  `1851cf8dce4afc50f5bdec09e818ff9ba6f030c3ddaf787bc7e1235d4671707a`
+- Review HTML SHA-256:
+  `69fc1f4622c797893d59fc165ea8991272adfed8e7aaa9f96d6a4d37a4a64317`
+
+Result:
+
+- `source_count=26`
+- `candidate_written=0`
+- `harness_error=0`
+- `status:rejected_recognition=26`
+- `candidate.txt` count under the replay root: `0`
+- `accepted.txt` count under the replay root: `0`
+
+Interpretation:
+
+The incoherent old review output was not current production `transcribe()`
+candidate output. Current production replay fails closed before candidate TXT
+for every queued normalized PNG because Phase 6 candidate authority is still
+blocked. The old review page therefore mixed stale/provisional diagnostics or
+historical TXT surfaces with current sources, and must not be used as evidence
+that the current production pipeline converted those images.
+
+- **Status:** DIAGNOSTIC REPLAY COMPLETE; CURRENT PRODUCTION WRITES ZERO
+  QUEUE CANDIDATES. Phase 6 source-fit/collision authority remains the next
+  implementation blocker. ComplaintRef: operator request to regenerate all
+  queue outputs from scratch to test whether the incoherent review was stale,
+  2026-08-05.
 
 ### Wayfinder map: operator field review of the panning garden (2026-08-05)
 
@@ -10622,6 +10817,36 @@ cutting plants that stand in front of them).
   TIME OF THIS ENTRY. Seeded fixture-room variants remain a separate open
   canonical-generation/art task; no cutover is authorized.
 
+### Transcription Phase 6 source-fit/collision authority slice (2026-08-05)
+
+- **Failure log preflight:** checked the Phase 6 blocker before touching code:
+  the previous selector could write correct candidates for positives while
+  falsely accepting the five fail-closed fallback collision fixtures.
+- **Production gate added:** `pipeline.transcribe()` now keeps the geometry
+  gate but, after proved geometry, runs a source-pixel missing-glyph/tofu box
+  collision check, bounded deterministic recognizer replay, adapter-qualified
+  candidate selection, and hash-bound `CandidateBundle` writing through the
+  canonical writer only after every authority check passes.
+- **Fail-closed fallback coverage:** the five known fallback fixtures
+  (`fallback-kana`, `fallback-kanji`, `fallback-width-mixture`,
+  `fallback-emoji-zwj`, `fallback-mixed-script`) now reject before candidate
+  writing with `source_missing_glyph_box_collision`; no `candidate.txt` or
+  `candidate-bundle.json` is emitted.
+- **Positive preservation:** selector tests over the D2 rank-1 positive report
+  preserve all ten positive families under NFC comparison: fixed ASCII,
+  proportional Latin, kana, Kanji, Arabic, combining, width mixture, emoji ZWJ,
+  mixed script, and degraded fixed.
+- **Validation:** `PYTHONPATH=src pytest -q tests/transcription/test_pipeline.py`
+  passed (`14 passed`). Full transcription suite passed:
+  `PYTHONPATH=src pytest -q tests/transcription` -> `91 passed in 181.97s`.
+  A production-path smoke over all ten positive v2 fixtures wrote
+  `machine_candidate_pending_operator_review` candidates for every fixture and
+  matched each transcript under NFC.
+- **Residual boundary:** this is a source-fit/collision authority slice, not a
+  live-queue release claim. The gate is proven against the known fallback
+  collision fixtures and D2 positive selector evidence; fresh release/holdout
+  receipts and live 26-image conversion attempts remain next work.
+
 ### Wayfinder map verification: 9d9d45d checked independently against the map (2026-08-05)
 
 Independent re-verification of the terrain/billboard/spacing/pond repair by
@@ -10730,3 +10955,227 @@ acceptance verdict for the new drawings.
   assertions are not cited as proof of the picture.
 - **Status:** IMPLEMENTED, PERSISTED, AND VISUALLY INSPECTED BY THE AGENT;
   CANDIDATE ART REMAINS `not_reviewed`; NO RELEASE OR CUTOVER CLAIM.
+
+### Fresh 26-source proposal-only replay exposes current recognizer behavior (2026-08-05)
+
+The operator rejected the prior visual review framing because old TXT and
+historical/provisional artifacts were mixed with current conversion status. A
+fresh production `transcribe()` replay then proved the current production owner
+writes no candidates for the 26 normalized PNG queue. The missing review surface
+was therefore a proposal-only page: current recognizer outputs, with no
+candidate or acceptance authority.
+
+- Added `scripts/replay_transcription_queue_proposals.py`, a diagnostic-only
+  queue replay that copies current normalized PNGs, routes geometry once per
+  source, runs the current offline proposal adapters against source-owned run
+  inputs, and writes compact proposal evidence plus an HTML review. It does not
+  call the candidate writer and records `old_txt_read=false`,
+  `accepted_txt_read=false`, `historical_attempts_read=false`,
+  `candidate_written=false`, and `accepted_written=false`.
+- Two invalid/rejected harness attempts are preserved as interrupted local
+  evidence: the first full-adapter call stalled because adapter budgets were
+  recorded only after return; the second split adapters but recomputed geometry
+  per adapter. The final script uses direct source-owned run inputs and hard
+  wall-clock adapter alarms. The interactive review run uses stricter
+  diagnostic ceilings than release; it is not release coverage evidence.
+- Current artifact root:
+  `tracked/LateLetterResearch/transcription-parity/queue-diagnostic-replays/20260805-current-proposal-review-fast/`.
+  Hashes:
+  `source-inventory.json`
+  `6cdf9db4a0f89f8ee5c7c4acebffea7e4629bdfe8a5d79460b2d3c5f436198d9`;
+  `proposal-replay.json`
+  `a464d762f29d4f653f97610d0e4f927235acbccac85286d4a6ccf9543ddb470c`;
+  `receipt.json`
+  `a7c4ed66caa24cd2cec3e0720cd2367a55c45923386f7f066d8628f3750aa990`;
+  `review.html`
+  `0944278da7c2b5e1a552a0eeec25c3d7a4e2d5d911120b685092526400240c7f`.
+- Replay summary: 26/26 sources processed, 26/26 geometry proved in this
+  current run, 23/26 sources had at least one proposal, 3/26 had no proposals,
+  zero harness errors, zero nondeterminism records, zero candidates, zero
+  acceptances, and 135 strict-review budget failures. No proposal shown in the
+  HTML is authoritative TXT.
+- **Status:** DIAGNOSTIC ONLY. This closes the stale-review confusion but does
+  not close conversion. The current blocker is now visible at the proposal layer:
+  many live sources either time out under review ceilings, produce incoherent
+  proposals, or produce no proposal. Continue with release-budget cost
+  attribution and proposal/repertoire repairs before any candidate-authority
+  work. ComplaintRef: fresh 26-source PNG-to-TXT proposal review, 2026-08-05.
+
+### Proposal review substituted a raw debug surface for conversion evidence (2026-08-05)
+
+The operator rejected the proposal-only review page as complete gibberish and
+asked why earlier outputs had at least some visual structure. The answer is a
+pipeline-surface mismatch, not a mysterious regression in a single recognizer:
+the review compared outputs from three different owners as if they were one
+conversion pipeline.
+
+- **Earlier coherent-looking outputs were legacy/specialized or provisional
+  artifacts.** Horse attempts 032–064 were emitted by
+  `scripts/decode_monospace_rows.py`, a fixed-lattice row-joint decoder with a
+  small ASCII structural alphabet, calibrated cells, row-neighbour evidence,
+  screenshot-local repeated-shape templates, and explicit spill/ownership
+  rules. The 26-source batch review on 2026-08-03 copied 22 pre-existing TXT
+  files byte-for-byte and marked four missing files `NO_CANDIDATE`; it did not
+  regenerate those transcripts through current production.
+- **The gibberish review was a different artifact class.**
+  `scripts/replay_transcription_queue_proposals.py` intentionally did not call
+  the candidate writer and did not use the legacy row-joint decoder. It dumped
+  raw `recognition.py` adapter proposals under strict interactive budgets. The
+  dominant structural proposal owner, `FixedLatticeStructuralAdapter`, consumes
+  run masks and classifies connected components into simple punctuation/line
+  glyphs. That is not equivalent to `decode_monospace_rows.py`; it lacks the
+  row-joint template/ownership machinery that made horse attempts look
+  coherent.
+- **Current production is not silently producing better candidates.** The fresh
+  production replay at
+  `queue-diagnostic-replays/20260805-current-transcribe-scratch/` wrote zero
+  candidates for all 26 sources. The later proposal review at
+  `queue-diagnostic-replays/20260805-current-proposal-review-fast/` wrote zero
+  candidates and zero acceptances; it only showed raw proposals. Any claim that
+  this page represented current queue conversion output is false.
+- **Dirty Phase 6 code changes the ground under the report.** The working tree
+  currently contains uncommitted `pipeline.py` and `test_pipeline.py` changes
+  for a source-fit/collision candidate selector. The FL records that an earlier
+  selector version was rejected for false unique candidates on fallback
+  fixtures; a later entry claims the dirty slice passes v2 positives/fallbacks.
+  Neither state proves all 26 live sources are convertible, and neither is what
+  the proposal-only HTML page displayed.
+- **Why this is impossible under the current surfaced path:** a screenshot of
+  Unicode/ASCII art cannot be deterministically converted to correct logical TXT
+  by dumping raw adapter top-k guesses. The system needs one authoritative path
+  that preserves the successful fixed-lattice row-joint evidence for ASCII
+  art, adds genuinely open-repertoire Unicode run recognition, and gates a
+  single candidate with source-fit/collision/ownership margins. That complete
+  path is not what was run. Until it exists and passes release/holdout/live
+  receipts, the correct machine behavior is to reject or expose diagnostic
+  proposals, not claim conversion.
+- **Status:** OPEN PROCESS FAILURE / ARTIFACT-SURFACE SUBSTITUTION. Do not use
+  the proposal-only review page as visual conversion evidence. The next
+  implementation must either (a) wire the row-joint fixed-ASCII decoder into
+  the production candidate path for proved fixed-lattice sources, or (b) run the
+  dirty Phase 6 production selector against release/holdout/live sources and
+  reject every source whose candidate cannot be source-fit verified. No raw
+  proposal page may be described as “current conversion.” ComplaintRef:
+  operator rejection of gibberish proposal review and request for why earlier
+  outputs looked better, 2026-08-05.
+
+### Implementation start: restore row-joint capability as production evidence, not legacy authority (2026-08-05)
+
+The operator ordered completion, not another diagnostic surface. Failure-log
+preflight identified the owner as the artifact-surface substitution entry
+above. The next implementation starts from the concrete capability gap: the
+legacy row-joint decoder explains fixed-lattice ASCII structure using
+screenshot-local evidence, while the current production proposal stack emits
+raw connected-component guesses that do not preserve that capability.
+
+- **Constraint:** do not resurrect legacy `machine-row-joint.txt` as acceptance
+  authority. The old row-joint path had real coherence but also produced
+  false-zero and unknown/low-confidence failures. It may only become
+  proposal/source-fit evidence behind production gates.
+- **Implementation target:** add a row-joint fixed-lattice proposal owner that
+  consumes proved source-derived lattice/run evidence, preserves `?`, records
+  row/cluster/ownership evidence, and feeds production source-fit/collision
+  candidate authority. It must not write candidate TXT by itself and must not
+  be displayed as a conversion review unless `transcribe()` writes a hash-bound
+  candidate.
+- **Scope boundary:** fixed-lattice row-joint integration does not solve
+  shaped/proportional/Unicode sources alone. Those require the open-repertoire
+  identity path plus the same source-fit gate. All 26 are complete only when a
+  fresh production replay writes correct candidates or exact rejection evidence
+  for every source, followed by operator review where candidates exist.
+- **Status:** IMPLEMENTATION IN PROGRESS. ComplaintRef: operator order to log
+  and complete all 26 PNG-to-TXT decodes without stopping, 2026-08-05.
+
+### Production transcribe replay can overrun before receipt on live source 5 (2026-08-05)
+
+A fresh production `transcribe()` replay with the dirty Phase 6 selector was
+started over the 26 normalized PNG queue as the authoritative alternative to
+the raw proposal page. It advanced through sources 1–4, then stalled on source
+5 (`Fish-shell-logo-ascii-black.svg.normalized.png`) until operator-directed
+interruption.
+
+- Trace: `scripts/replay_transcription_queue_diagnostic.py` called
+  `pipeline.transcribe()`, which called `benchmark_offline_ensemble()`. The
+  interrupted stack was inside `EmojiAtlasAdapter.propose()` while looking up a
+  rendered mask hash (`recognition.py` around the emoji atlas `ensure_mask_hash`
+  path). This happened before the replay could write its final receipt.
+- Root cause: production records per-adapter budgets in proposal reports, but
+  `transcribe()` does not enforce one outer wall-clock ceiling around the
+  recognizer replay. A pathological adapter can therefore block the live queue
+  instead of returning a typed budget/refusal rejection.
+- Required correction: add a production-level recognizer timeout that converts
+  overruns into hash-bound `recognizer_budget_failure`/timeout evidence and
+  still writes the attempt manifest/gate report. Do not raise adapter ceilings
+  and do not promote partial proposal output.
+- **Status:** OPEN / FIX IN PROGRESS. ComplaintRef: production 26-source
+  Phase 6 replay overrun before receipt, 2026-08-05.
+
+### Dirty Phase 6 selector writes false live candidates on the 26-source queue (2026-08-05)
+
+After adding an attempt-level recognizer ceiling, a fresh production replay was
+started at
+`tracked/LateLetterResearch/transcription-parity/queue-diagnostic-replays/20260805-current-transcribe-phase6-timeout-gated/`.
+The run was interrupted during source 6 geometry, but the first five attempt
+manifests are enough to falsify the dirty Phase 6 selector as live authority.
+
+- Source 1 rejected with `source_missing_glyph_box_collision`.
+- Source 2 rejected with `recognizer_nondeterministic`.
+- Source 3 wrote `candidate.txt` containing only `--_` for a much larger
+  source image.
+- Source 4 wrote a multi-script gibberish candidate (`加 机`, `男 男 ...`,
+  `1db ... إلى`) for a structural art source.
+- Source 5 rejected with `recognizer_budget_failure` and
+  `recognizer_attempt_timeout`.
+
+The bad candidates are diagnostic artifacts only; they are not accepted and
+must not be used as queue conversion output. The failure proves the current
+selector can pass fixture positives/fallbacks while still selecting live-source
+garbage. The missing gate is source-fit/coverage over the candidate itself:
+the selected TXT must explain enough source ink/rows/components, not merely be
+the best adapter-priority string.
+
+- **Status:** OPEN / SELECTOR REJECTED FOR LIVE AUTHORITY. Tighten production
+  candidate authority before any further live queue candidate display.
+  ComplaintRef: production 26-source Phase 6 timeout-gated replay, 2026-08-05.
+
+### Geometry mode misassignment turned selector mode-trust into a wrong written candidate (2026-08-05)
+
+Take-over audit of the uncommitted worktree found a regression the prior
+reports did not surface: `tests/transcription/test_pipeline.py::
+test_transcribe_writes_candidate_after_phase6_authority_passes` failed in the
+worktree state, and the failure wrote a WRONG machine candidate rather than
+refusing.
+
+- **Mechanism, proven step by step:** `route_raster_geometry` currently
+  routes `positive/positive-fixed-ascii/source.png` — a lattice source by
+  construction — as `mode=shaped_runs, status=proved`, all four proof flags
+  true. The post-review selector additions in `pipeline.py` excluded the
+  `fixed-lattice-structural` adapter whenever the router said `shaped_runs`.
+  With the correct proposal (`/\_|` + `(=)`, present at rank 1 from
+  `fixed-lattice-structural`) excluded, `psm7-eng` rank-2 OCR text `L\n(=)`
+  won the whitelist and `transcribe()` wrote it as a machine candidate with a
+  passing gate report. Mode misassignment plus mode-trusting exclusions
+  produced exactly the false-authority class the Phase 6 gate exists to
+  prevent.
+- **This confirms the standing Phase 3.9 mode-correctness debt:** the
+  2026-08-04 admission change proved 26/26 live sources but mode assignment
+  (8 lattice / 18 shaped) carries no proof of its own; `bbbb_flowers` also
+  flipped to shaped. Mode-vs-truth is now demonstrated wrong on a fixture
+  with known truth. Reopen scope: lattice-first assignment proof, plus the
+  accepted-anchor regression test must assert `status == "proved"` for
+  `bbbb-flowers`/`a8283c5cdb63b130` instead of accepting either coherent
+  outcome.
+- **Correction landed (PARTIAL, selector only):** removed both mode-based
+  exclusion blocks from `_best_effort_candidate_from_report`; mode may not
+  exclude adapters until the assignment carries proof. General
+  minimum-visible/minimum-line guards retained. Evidence: full transcription
+  suite 91 passed (pytest, 2026-08-05) after the change; the failing test
+  now selects `/\_|\n(=)` again. The geometry mode misassignment itself
+  remains OPEN and unaddressed by this correction.
+- **Peer-review note:** no Codex tmux pane shares this lane (all three live
+  panes are other repositories: Riki-life-general, asciicker-Y9-2 x2), so the
+  plan-review checkpoint could not be delivered to a lane-sharing reviewer;
+  recorded here instead of being sent to a wrong-lane pane.
+- **Status:** SELECTOR MODE-TRUST REMOVED (evidence above); GEOMETRY MODE
+  ASSIGNMENT REMAINS OPEN. ComplaintRef: operator take-over order, 2026-08-05;
+  artifact-surface substitution entry, 2026-08-05.

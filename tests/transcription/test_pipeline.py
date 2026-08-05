@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import unicodedata
 from pathlib import Path
 
 import pytest
@@ -19,10 +21,25 @@ from lateletter.transcription import (
 )
 from lateletter.transcription.hashing import sha256_file
 from lateletter.transcription.model import GateReport
+from lateletter.transcription.pipeline import _best_effort_candidate_from_report, _missing_glyph_box_evidence
 
 
 ROOT = Path(__file__).parents[2]
-FIXTURE = ROOT / "tests" / "fixtures" / "transcription" / "positive" / "positive-fixed-ascii" / "source.png"
+V2_ROOT = ROOT / "tests" / "fixtures" / "transcription-v2"
+FIXTURE = V2_ROOT / "positive" / "positive-fixed-ascii" / "source.png"
+FALLBACK_IDS = ("fallback-kana", "fallback-kanji", "fallback-width-mixture", "fallback-emoji-zwj", "fallback-mixed-script")
+POSITIVE_IDS = (
+    "positive-fixed-ascii",
+    "positive-proportional-latin",
+    "positive-kana",
+    "positive-kanji",
+    "positive-arabic",
+    "positive-combining",
+    "positive-width-mixture",
+    "positive-emoji-zwj",
+    "positive-mixed-script",
+    "positive-degraded-fixed",
+)
 
 
 def test_transcribe_stops_at_geometry_and_writes_no_txt(tmp_path: Path) -> None:
@@ -37,26 +54,75 @@ def test_transcribe_stops_at_geometry_and_writes_no_txt(tmp_path: Path) -> None:
     assert not any((attempt / name).exists() for name in ("candidate.txt", "machine.txt", "accepted.txt"))
 
 
-def test_transcribe_proved_geometry_stops_before_unavailable_recognizer(tmp_path: Path) -> None:
+def test_transcribe_writes_candidate_after_phase6_authority_passes(tmp_path: Path) -> None:
     result = transcribe(FIXTURE, tmp_path / "attempts", "001-recognition-gate")
     attempt = Path(result["attempt_dir"])
 
-    assert result["status"] == "rejected_recognition"
-    assert "recognizer_open_repertoire_unavailable" in result["gate_report"]["rejection_reasons"]
-    assert not (attempt / "candidate-bundle.json").exists()
-    assert not (attempt / "candidate.txt").exists()
+    assert result["status"] == "machine_candidate_pending_operator_review"
+    assert result["candidate_written"] is True
+    assert result["gate_report"]["passed"] is True
+    assert (attempt / "candidate-bundle.json").exists()
+    assert (attempt / "candidate.txt").read_text(encoding="utf-8").rstrip("\n") == "/\\_|\n(=)"
 
 
 def test_transcribe_attempts_are_immutable(tmp_path: Path) -> None:
-    transcribe(FIXTURE, tmp_path / "attempts", "001-immutable")
+    source = tmp_path / "blank.png"
+    Image.new("RGB", (32, 24), (255, 255, 255)).save(source)
+    transcribe(source, tmp_path / "attempts", "001-immutable")
     with pytest.raises(AttemptError, match="attempt directory already exists"):
-        transcribe(FIXTURE, tmp_path / "attempts", "001-immutable")
+        transcribe(source, tmp_path / "attempts", "001-immutable")
 
 
 def test_accept_cannot_promote_without_machine_candidate(tmp_path: Path) -> None:
-    result = transcribe(FIXTURE, tmp_path / "attempts", "001-no-candidate")
+    source = tmp_path / "blank.png"
+    Image.new("RGB", (32, 24), (255, 255, 255)).save(source)
+    result = transcribe(source, tmp_path / "attempts", "001-no-candidate")
     with pytest.raises(AttemptError, match="no candidate bundle"):
         accept(result["attempt_dir"], tmp_path / "operator-review.json")
+
+
+def test_source_collision_gate_rejects_fallbacks_and_preserves_positives() -> None:
+    fallback_counts = {
+        fixture_id: len(_missing_glyph_box_evidence(V2_ROOT / "fail_closed" / fixture_id / "source.png"))
+        for fixture_id in FALLBACK_IDS
+    }
+    positive_counts = {
+        fixture_id: len(_missing_glyph_box_evidence(V2_ROOT / "positive" / fixture_id / "source.png"))
+        for fixture_id in POSITIVE_IDS
+    }
+
+    assert all(count > 0 for count in fallback_counts.values())
+    assert positive_counts == {fixture_id: 0 for fixture_id in POSITIVE_IDS}
+
+
+def test_phase6_selector_preserves_all_d2_positive_family_candidates() -> None:
+    report = json.loads((V2_ROOT / "recognizer-benchmark-v11-d2-rank1-positive.json").read_text(encoding="utf-8"))
+    selected: dict[str, str] = {}
+    for result in report["results"]:
+        fixture_id = result["fixture"]
+        one_result_report = {**report, "results": [result]}
+        selector = _best_effort_candidate_from_report(one_result_report, source_png=V2_ROOT / "positive" / fixture_id / "source.png")
+        assert selector is not None, fixture_id
+        assert float(selector["selector_margin"]) > 0.0, fixture_id
+        selected[fixture_id] = unicodedata.normalize("NFC", str(selector["text"]))
+
+    expected = {
+        fixture_id: unicodedata.normalize("NFC", (V2_ROOT / "positive" / fixture_id / "transcript.txt").read_text(encoding="utf-8").rstrip("\n"))
+        for fixture_id in POSITIVE_IDS
+    }
+    assert selected == expected
+
+
+@pytest.mark.parametrize("fixture_id", FALLBACK_IDS)
+def test_transcribe_rejects_source_collision_fallback_without_candidate(tmp_path: Path, fixture_id: str) -> None:
+    result = transcribe(V2_ROOT / "fail_closed" / fixture_id / "source.png", tmp_path / "attempts", f"001-{fixture_id}")
+    attempt = Path(result["attempt_dir"])
+
+    assert result["status"] == "rejected_candidate_authority"
+    assert result["candidate_written"] is False
+    assert "source_missing_glyph_box_collision" in result["gate_report"]["rejection_reasons"]
+    assert not (attempt / "candidate-bundle.json").exists()
+    assert not (attempt / "candidate.txt").exists()
 
 
 def test_accept_promotes_only_byte_identical_candidate_after_receipt(tmp_path: Path) -> None:
@@ -122,7 +188,7 @@ def test_cli_transcribe_uses_canonical_pipeline(tmp_path: Path, capsys: pytest.C
     code = main(
         [
             "transcribe",
-            str(FIXTURE),
+            str(V2_ROOT / "fail_closed" / "fallback-kana" / "source.png"),
             "--attempt-root",
             str(tmp_path / "attempts"),
             "--attempt-id",
