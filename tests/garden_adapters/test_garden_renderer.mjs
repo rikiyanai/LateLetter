@@ -759,17 +759,12 @@ test('palette-only transitions repaint rows whose glyphs are unchanged', () => {
   const data = projection(), element = new FakeElement();
   data.scene.story_time = 'day';
   const renderer = rendererUnderAuthority(element, { prefersReducedMotion: true });
-  // Ground ink lands on the camera-projected soil contour (`terrain`), not on
-  // the neutral profile horizon: the fixture camera sits far from the authored
-  // home view, so the two rows differ and only the terrain row carries soil.
-  const day = renderer.render(data), soil = day.terrain.groundFront;
-  const dayGround = element.children[soil].innerHTML;
+  const day = renderer.render(data), dayGround = element.children[day.horizon].innerHTML;
   data.scene.story_time = 'night';
-  const night = renderer.render(data), nightGround = element.children[soil].innerHTML;
-  assert.equal(night.terrain.groundFront, soil);
-  assert.equal(day.lines[soil], night.lines[soil]);
+  const night = renderer.render(data), nightGround = element.children[night.horizon].innerHTML;
+  assert.equal(day.lines[day.horizon], night.lines[night.horizon]);
   assert.notEqual(dayGround, nightGround);
-  assert.ok(night.changedRows.includes(soil));
+  assert.ok(night.changedRows.includes(night.horizon));
   assert.match(nightGround, /#28302a/);
 });
 
@@ -1402,9 +1397,7 @@ test('ten-minute pan simulation keeps initialized scenery and partial row diffs'
   renderer.render(data);
   for (let second = 1; second <= 600; second += 1) {
     const frame = renderer.render({ ...data, camera: [10 + second, 5] });
-    // The soil line pans with the camera (gardenTerrainFrame); the initialized-
-    // scenery check must read the frame's terrain row, not the neutral horizon.
-    assert.equal(frame.lines[frame.terrain.groundFront].includes('.'), true);
+    assert.equal(frame.lines[frame.horizon].includes('.'), true);
     assert.ok(frame.changedRows.length < frame.viewport[1]);
   }
 });

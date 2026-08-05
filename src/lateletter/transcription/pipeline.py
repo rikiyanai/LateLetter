@@ -222,6 +222,16 @@ def _source_ink_summary(source_png: Path) -> dict[str, int]:
     return {"ink_pixels": int(mask.sum()), "component_count": len(_connected_components(mask))}
 
 
+# The script-membership whitelist below was validated only against the ten
+# tiny release fixtures (a handful of ink components each).  On live
+# screenshots with hundreds of components it selects structurally plausible
+# garbage (horse smoke, 2026-08-05: connected-component dashes/backslashes
+# written as a candidate).  Above this component count, only screenshot-local
+# row-joint evidence may author a candidate; everything else stays proposal
+# evidence and the attempt is a typed refusal.
+_WHITELIST_COMPONENT_LIMIT = 64
+
+
 def _best_effort_candidate_from_report(
     report: Mapping[str, Any],
     *,
@@ -229,6 +239,7 @@ def _best_effort_candidate_from_report(
     geometry_mode: str | None = None,
     source_component_count: int = 0,
     source_row_count: int = 0,
+    row_joint_available: bool = False,
 ) -> dict[str, Any] | None:
     results = report.get("results")
     if not isinstance(results, list) or len(results) != 1:
@@ -269,7 +280,32 @@ def _best_effort_candidate_from_report(
                 continue
             priority = 90
             reason = "untrusted_adapter"
-            if strong_color and adapter_name == "emoji-grapheme-atlas" and _contains_emoji(normalized):
+            if adapter_name != "row-joint-lattice" and row_joint_available:
+                # Screenshot-local row-joint evidence exists for this
+                # source.  Weaker evidence classes may not author the
+                # candidate while stronger evidence is present — if the
+                # row-joint text still carries ``?`` the correct outcome
+                # is a typed refusal, not a fallback to a guess.
+                continue
+            if adapter_name != "row-joint-lattice" and source_component_count > _WHITELIST_COMPONENT_LIMIT:
+                # Whitelist rules are fixture-scoped evidence; at live
+                # scale they select plausible garbage, so they may not
+                # author candidates for large sources.
+                continue
+            if adapter_name == "row-joint-lattice" and "?" in normalized:
+                # Unknown cells are honest refusals from the row-joint
+                # decoder; a text still carrying ``?`` is evidence, never
+                # a candidate.
+                continue
+            if adapter_name == "row-joint-lattice":
+                # Screenshot-local leave-one-out templates with an
+                # unexplained-ink cost are the strongest source-fit
+                # evidence any adapter currently records, so an
+                # unknown-free row-joint decode outranks every
+                # script-membership heuristic below.
+                priority = 3
+                reason = "row_joint_screenshot_local_template_fit"
+            elif strong_color and adapter_name == "emoji-grapheme-atlas" and _contains_emoji(normalized):
                 priority = 0
                 reason = "source_color_emoji_atlas"
             elif adapter_name == "tesseract-profile-fusion" and _contains_arabic_letters(normalized) and _contains_cjk_or_kana_width(normalized):
@@ -533,6 +569,49 @@ def transcribe(
                 )
                 report["production_recognizer_runtime_ms"] = recognizer_runtime_ms
                 report["production_recognizer_budget_seconds"] = _RECOGNIZER_TOTAL_BUDGET_SECONDS
+                # Row-joint lattice evidence: when a tracked hash-bound
+                # calibration exists for this exact source, the legacy
+                # screenshot-local decoder joins the report as one more
+                # deterministic proposal owner.  Its ``?`` cells survive
+                # into the text; the selector refuses any ``?``-bearing
+                # candidate, so unknown cells can never reach candidate
+                # TXT.  Absence of a calibration is a typed unavailability
+                # and adds nothing to the report.
+                try:
+                    from . import row_joint
+
+                    row_joint_result = row_joint.decode_for_source(normalized_copy)
+                except Exception as exc:  # decoder or calibration failure stays evidence-only
+                    row_joint_result = None
+                    provenance["row_joint_error"] = f"{type(exc).__name__}: {exc}"
+                if row_joint_result is not None:
+                    results_list = report.get("results")
+                    if isinstance(results_list, list) and len(results_list) == 1:
+                        adapters_list = results_list[0].get("adapters")
+                        if isinstance(adapters_list, list):
+                            adapters_list.append(
+                                {
+                                    "adapter": row_joint.ADAPTER_NAME,
+                                    "adapter_version": row_joint_result["decoder_version"],
+                                    "deterministic": True,
+                                    "budget_exceeded": False,
+                                    "unsupported_status": [],
+                                    "top_k_logical_sequences": [row_joint_result["text"]],
+                                    "row_joint": {
+                                        key: row_joint_result[key]
+                                        for key in (
+                                            "unknown_cells",
+                                            "cell_count",
+                                            "row_count",
+                                            "columns",
+                                            "calibration_path",
+                                            "calibration_sha256",
+                                            "template_glyphs",
+                                        )
+                                        if key in row_joint_result
+                                    },
+                                }
+                            )
                 proposals_hash = _write_json_once(attempt / "proposals.json", report)
                 provenance["environment_lock_hash"] = environment_hash
                 provenance["proposals_hash"] = proposals_hash
@@ -542,6 +621,7 @@ def transcribe(
                     geometry_mode=decision.mode,
                     source_component_count=int(source_ink_summary.get("component_count", 0)),
                     source_row_count=source_row_count,
+                    row_joint_available=row_joint_result is not None,
                 )
                 checks["recognizer_open_repertoire_available"] = bool(selector)
                 checks["recognizer_budget_passed"] = not report.get("budget_failures")

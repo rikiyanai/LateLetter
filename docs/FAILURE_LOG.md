@@ -11250,3 +11250,43 @@ Fog remaining on this map, not yet sharp children:
 Out of scope here as before: letter typography, transcription conversion,
 release gates (tracked on their own lanes/tasks). Visual acceptance of
 everything above is operator-only on the live product.
+
+### Row-joint capability restored as gated production proposal evidence (2026-08-05)
+
+Take-over implementation of the integration the artifact-surface entry ordered:
+the legacy screenshot-local row-joint decoder re-enters production as proposal
+evidence only, and two selector authority holes found during the work are now
+guarded.
+
+- **New module `src/lateletter/transcription/row_joint.py`:** loads the single
+  decode owner `scripts/decode_monospace_rows.py` (no logic copied), decodes
+  only under a tracked calibration whose `source_sha256` matches the image
+  bytes, preserves every `?` cell, and returns typed unavailability when no
+  calibration is bound. The geometry router cannot supply the lattice today —
+  the horse source itself routes `shaped_runs` with `pitch_proven` false — so
+  hash-bound calibrations from the immutable attempt history are the interim
+  lattice authority, replaceable later at the `resolve_calibration` seam.
+- **Pipeline wiring:** `transcribe()` appends a `row-joint-lattice` adapter
+  entry (text plus unknown-cell/calibration evidence) to the recognizer report
+  when a calibration is bound. Selector rules: a `?`-bearing row-joint text is
+  never a candidate; an unknown-free row-joint text outranks every
+  script-membership rule; when row-joint evidence exists, weaker adapters may
+  not author the candidate; and whitelist rules may not author candidates
+  above 64 source ink components, because a horse smoke run showed
+  `fixed-lattice-structural` connected-component output (`---___`,`\\_--`)
+  being written as a machine candidate at live scale.
+- **Observed behaviour after the change:** horse `transcribe()` returns
+  `rejected_candidate_authority` with no candidate TXT (row-joint decode has
+  17 unknown cells of 814 and refuses; nothing weaker may step in). The ten
+  release fixtures keep their machine candidates (whitelist still authors
+  small-source candidates when no row-joint evidence exists). Evidence:
+  pytest 2026-08-05 on top of commit 3c5eecf, tests/transcription: 97 of 97,
+  zero failures, including six new row-joint/selector-guard tests.
+- **Open work this does not claim:** unknown-cell handling for horse (17
+  cells), calibrations exist for only a subset of live sources (row-joint
+  coverage is bounded by the tracked calibration index), geometry lattice
+  proof remains OPEN, and the whitelist remains fixture-scoped interim
+  authority below the component limit.
+- **Status:** IMPLEMENTED (UNPROVEN beyond the receipts above). ComplaintRef:
+  operator take-over order, 2026-08-05; artifact-surface substitution entry,
+  2026-08-05; geometry mode misassignment entry, 2026-08-05.
