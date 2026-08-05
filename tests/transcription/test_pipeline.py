@@ -42,6 +42,80 @@ POSITIVE_IDS = (
 )
 
 
+def test_ensemble_timeout_does_not_block_row_joint_candidate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """When the diagnostic ensemble exceeds its production ceiling but
+    bounded deterministic row-joint evidence exists, the row-joint text
+    still authors the candidate; the timeout is recorded as missing
+    diagnostics, not a candidate-authority failure."""
+
+    from lateletter.transcription import pipeline as pipeline_module
+    from lateletter.transcription import row_joint as row_joint_module
+
+    def _boom(callback):
+        raise pipeline_module._RecognizerBudgetExceeded("simulated ensemble ceiling")
+
+    monkeypatch.setattr(pipeline_module, "_run_with_recognizer_budget", _boom)
+    monkeypatch.setattr(
+        row_joint_module,
+        "decode_for_source",
+        lambda source: {
+            "decoder_version": "test-decoder",
+            "text": "/\\_|\n(=)",
+            "unknown_cells": 0,
+            "cell_count": 8,
+            "row_count": 2,
+            "columns": 4,
+            "template_glyphs": ["/", "\\", "_", "|", "(", "=", ")"],
+        },
+    )
+    result = transcribe(FIXTURE, tmp_path / "attempts", "001-ensemble-timeout")
+    assert result["status"] == "machine_candidate_pending_operator_review"
+    assert result["candidate_written"] is True
+    attempt = Path(result["attempt_dir"])
+    assert (attempt / "candidate.txt").read_text(encoding="utf-8").rstrip("\n") == "/\\_|\n(=)"
+    error_record = json.loads((attempt / "recognizer-error.json").read_text(encoding="utf-8"))
+    assert error_record["status"] == "ensemble_diagnostics_unavailable"
+
+
+def test_ensemble_timeout_without_row_joint_still_refuses(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from lateletter.transcription import pipeline as pipeline_module
+    from lateletter.transcription import row_joint as row_joint_module
+
+    def _boom(callback):
+        raise pipeline_module._RecognizerBudgetExceeded("simulated ensemble ceiling")
+
+    monkeypatch.setattr(pipeline_module, "_run_with_recognizer_budget", _boom)
+    monkeypatch.setattr(row_joint_module, "decode_for_source", lambda source: None)
+    result = transcribe(FIXTURE, tmp_path / "attempts", "001-timeout-no-row-joint")
+    assert result["candidate_written"] is False
+    assert result["status"] != "machine_candidate_pending_operator_review"
+
+
+def test_ensemble_timeout_with_unknown_bearing_row_joint_refuses(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from lateletter.transcription import pipeline as pipeline_module
+    from lateletter.transcription import row_joint as row_joint_module
+
+    def _boom(callback):
+        raise pipeline_module._RecognizerBudgetExceeded("simulated ensemble ceiling")
+
+    monkeypatch.setattr(pipeline_module, "_run_with_recognizer_budget", _boom)
+    monkeypatch.setattr(
+        row_joint_module,
+        "decode_for_source",
+        lambda source: {
+            "decoder_version": "test-decoder",
+            "text": "/\\?|\n(=)",
+            "unknown_cells": 1,
+            "cell_count": 8,
+            "row_count": 2,
+            "columns": 4,
+            "template_glyphs": ["/", "\\", "|", "(", "=", ")"],
+        },
+    )
+    result = transcribe(FIXTURE, tmp_path / "attempts", "001-timeout-unknown-cells")
+    assert result["candidate_written"] is False
+
+
 def test_transcribe_stops_at_geometry_and_writes_no_txt(tmp_path: Path) -> None:
     source = tmp_path / "blank.png"
     Image.new("RGB", (32, 24), (255, 255, 255)).save(source)

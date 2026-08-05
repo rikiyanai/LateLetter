@@ -13726,3 +13726,38 @@ no live witness on this corpus.
 - Status: **IMPLEMENTED (UNPROVEN — geometry holds and the decoder produces full grids on all
   ten new sources, but no named glyph on any of them has been checked against any truth)**.
   ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.
+
+### First live machine candidate: row-joint authority survives ensemble timeout (2026-08-06)
+
+Running production `transcribe()` on the long-stem-bloom queue source (the one
+source whose row-joint decode carries zero `?` cells under its admissible
+calibration) exposed an ordering defect: the diagnostic recognizer ensemble
+exceeded its 120s production ceiling on the live image, and because row-joint
+evidence was computed AFTER the ensemble inside the same guarded block, the
+timeout aborted the attempt before the authoring evidence existed. The
+candidate authority for such a source is the row-joint evidence (bounded,
+deterministic, and the selector bars every weaker adapter when it exists);
+the ensemble is diagnostic context.
+
+- **Change:** `transcribe()` computes row-joint evidence first. On ensemble
+  timeout with row-joint evidence present, the gates evaluate the report the
+  authoring path actually produced, and the timeout is recorded as
+  `ensemble_diagnostics_unavailable` in the attempt's recognizer-error
+  record. Without row-joint evidence the timeout still refuses exactly as
+  before. Ceilings were not raised.
+- **Result:** `transcribe()` on long-stem-bloom now writes the FIRST machine
+  candidate for a live queue source through the full authority chain —
+  status `machine_candidate_pending_operator_review`, 19 rows, selector
+  `row-joint-lattice / row_joint_screenshot_local_template_fit`. The scratch
+  attempt was diagnostic; no tracked attempt, accepted TXT, or queue
+  advancement was created. Zero unknown cells is NOT a correctness claim
+  (the repository's failure history is explicit on that conflation);
+  operator accept/reject is the only correctness authority, and no
+  transcript truth exists for this source.
+- **Evidence:** pytest 2026-08-06 on top of commit 311c5c0,
+  tests/transcription: 124 of 124, zero failures — three added tests pin
+  the timeout-fallback contract (row-joint authors on timeout; no row-joint
+  still refuses; `?`-bearing row-joint still refuses).
+- **Status:** IMPLEMENTED (UNPROVEN — pending operator review of any real
+  attempt). ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
+  Unicode text-art recovery; calibration emitter outcome, 2026-08-06.

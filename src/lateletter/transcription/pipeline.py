@@ -545,75 +545,53 @@ def transcribe(
         if missing_box_evidence:
             rejection_codes.append("source_missing_glyph_box_collision")
         else:
+            # Row-joint lattice evidence is computed FIRST.  It is cheap,
+            # bounded, and deterministic, and when it exists the selector
+            # bars every weaker adapter from authoring the candidate — so
+            # the ensemble below is diagnostic context for review, not the
+            # candidate authority.  Its ``?`` cells survive into the text;
+            # the selector refuses any ``?``-bearing candidate, so unknown
+            # cells can never reach candidate TXT.  Absence of a
+            # calibration is a typed unavailability and adds nothing.
             try:
-                from .recognition import benchmark_offline_ensemble
+                from . import row_joint
 
-                adapters, environment_lock = _recognizer_environment()
-                environment_hash = _write_json_once(attempt / "environment-lock.json", environment_lock.to_dict())
-                report, recognizer_runtime_ms = _run_with_recognizer_budget(
-                    lambda: benchmark_offline_ensemble(
-                        (
-                            {
-                                "id": attempt_id,
-                                "source_png": str(normalized_copy),
-                                "source_sha256": normalized_hash,
-                                "expected_outcome": "candidate",
-                            },
-                        ),
-                        adapters,
-                        environment_lock,
-                        top_k=8,
-                        deterministic_replay=True,
-                        adapter_budgets_seconds=_ADAPTER_BUDGETS_SECONDS,
-                    )
-                )
-                report["production_recognizer_runtime_ms"] = recognizer_runtime_ms
-                report["production_recognizer_budget_seconds"] = _RECOGNIZER_TOTAL_BUDGET_SECONDS
-                # Row-joint lattice evidence: when a tracked hash-bound
-                # calibration exists for this exact source, the legacy
-                # screenshot-local decoder joins the report as one more
-                # deterministic proposal owner.  Its ``?`` cells survive
-                # into the text; the selector refuses any ``?``-bearing
-                # candidate, so unknown cells can never reach candidate
-                # TXT.  Absence of a calibration is a typed unavailability
-                # and adds nothing to the report.
-                try:
-                    from . import row_joint
+                row_joint_result = row_joint.decode_for_source(normalized_copy)
+            except Exception as exc:  # decoder or calibration failure stays evidence-only
+                row_joint_result = None
+                provenance["row_joint_error"] = f"{type(exc).__name__}: {exc}"
+            row_joint_entry = None
+            if row_joint_result is not None:
+                from . import row_joint
 
-                    row_joint_result = row_joint.decode_for_source(normalized_copy)
-                except Exception as exc:  # decoder or calibration failure stays evidence-only
-                    row_joint_result = None
-                    provenance["row_joint_error"] = f"{type(exc).__name__}: {exc}"
-                if row_joint_result is not None:
-                    results_list = report.get("results")
-                    if isinstance(results_list, list) and len(results_list) == 1:
-                        adapters_list = results_list[0].get("adapters")
-                        if isinstance(adapters_list, list):
-                            adapters_list.append(
-                                {
-                                    "adapter": row_joint.ADAPTER_NAME,
-                                    "adapter_version": row_joint_result["decoder_version"],
-                                    "deterministic": True,
-                                    "budget_exceeded": False,
-                                    "unsupported_status": [],
-                                    "top_k_logical_sequences": [row_joint_result["text"]],
-                                    "row_joint": {
-                                        key: row_joint_result[key]
-                                        for key in (
-                                            "unknown_cells",
-                                            "cell_count",
-                                            "row_count",
-                                            "columns",
-                                            "calibration_path",
-                                            "calibration_sha256",
-                                            "template_glyphs",
-                                        )
-                                        if key in row_joint_result
-                                    },
-                                }
-                            )
+                row_joint_entry = {
+                    "adapter": row_joint.ADAPTER_NAME,
+                    "adapter_version": row_joint_result["decoder_version"],
+                    "deterministic": True,
+                    "budget_exceeded": False,
+                    "unsupported_status": [],
+                    "top_k_logical_sequences": [row_joint_result["text"]],
+                    "row_joint": {
+                        key: row_joint_result[key]
+                        for key in (
+                            "unknown_cells",
+                            "cell_count",
+                            "row_count",
+                            "columns",
+                            "calibration_path",
+                            "calibration_sha256",
+                            "template_glyphs",
+                        )
+                        if key in row_joint_result
+                    },
+                }
+
+            selector = None
+            proposals_hash = None
+
+            def _gate_on_report(report: dict) -> None:
+                nonlocal selector, proposals_hash
                 proposals_hash = _write_json_once(attempt / "proposals.json", report)
-                provenance["environment_lock_hash"] = environment_hash
                 provenance["proposals_hash"] = proposals_hash
                 selector = _best_effort_candidate_from_report(
                     report,
@@ -635,6 +613,39 @@ def transcribe(
                     rejection_codes.append("recognizer_nondeterministic")
                 if not checks["candidate_selector_unique"]:
                     rejection_codes.append("candidate_selector_not_unique")
+
+            try:
+                from .recognition import benchmark_offline_ensemble
+
+                adapters, environment_lock = _recognizer_environment()
+                environment_hash = _write_json_once(attempt / "environment-lock.json", environment_lock.to_dict())
+                provenance["environment_lock_hash"] = environment_hash
+                report, recognizer_runtime_ms = _run_with_recognizer_budget(
+                    lambda: benchmark_offline_ensemble(
+                        (
+                            {
+                                "id": attempt_id,
+                                "source_png": str(normalized_copy),
+                                "source_sha256": normalized_hash,
+                                "expected_outcome": "candidate",
+                            },
+                        ),
+                        adapters,
+                        environment_lock,
+                        top_k=8,
+                        deterministic_replay=True,
+                        adapter_budgets_seconds=_ADAPTER_BUDGETS_SECONDS,
+                    )
+                )
+                report["production_recognizer_runtime_ms"] = recognizer_runtime_ms
+                report["production_recognizer_budget_seconds"] = _RECOGNIZER_TOTAL_BUDGET_SECONDS
+                if row_joint_entry is not None:
+                    results_list = report.get("results")
+                    if isinstance(results_list, list) and len(results_list) == 1:
+                        adapters_list = results_list[0].get("adapters")
+                        if isinstance(adapters_list, list):
+                            adapters_list.append(row_joint_entry)
+                _gate_on_report(report)
             except _RecognizerBudgetExceeded as exc:
                 environment_error_hash = _write_json_once(
                     attempt / "recognizer-error.json",
@@ -643,16 +654,33 @@ def transcribe(
                         "error_type": type(exc).__name__,
                         "error": str(exc),
                         "budget_seconds": _RECOGNIZER_TOTAL_BUDGET_SECONDS,
-                        "status": "rejected",
+                        "status": "rejected" if row_joint_entry is None else "ensemble_diagnostics_unavailable",
                     },
                 )
                 provenance["recognizer_error_hash"] = environment_error_hash
-                checks["recognizer_open_repertoire_available"] = False
-                checks["recognizer_budget_passed"] = False
-                checks["recognizer_deterministic"] = False
-                checks["candidate_selector_unique"] = False
-                rejection_codes.append("recognizer_budget_failure")
-                rejection_codes.append("recognizer_attempt_timeout")
+                if row_joint_entry is not None:
+                    # The candidate authority for this source is the
+                    # row-joint evidence, which is bounded and
+                    # deterministic; the ensemble timeout removes only
+                    # the diagnostic context and is recorded above.  The
+                    # gates therefore evaluate the report that the
+                    # authoring path actually produced.
+                    _gate_on_report(
+                        {
+                            "results": [{"adapters": [row_joint_entry]}],
+                            "budget_failures": [],
+                            "nondeterministic_adapters": [],
+                            "production_recognizer_budget_seconds": _RECOGNIZER_TOTAL_BUDGET_SECONDS,
+                            "ensemble_diagnostics": "unavailable_recognizer_attempt_timeout",
+                        }
+                    )
+                else:
+                    checks["recognizer_open_repertoire_available"] = False
+                    checks["recognizer_budget_passed"] = False
+                    checks["recognizer_deterministic"] = False
+                    checks["candidate_selector_unique"] = False
+                    rejection_codes.append("recognizer_budget_failure")
+                    rejection_codes.append("recognizer_attempt_timeout")
             except Exception as exc:
                 environment_error_hash = _write_json_once(
                     attempt / "recognizer-error.json",
