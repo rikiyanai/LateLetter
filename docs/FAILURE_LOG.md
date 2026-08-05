@@ -11949,3 +11949,109 @@ need art approval before they may paint? Asset acceptance is operator-only, so
 the agent's part is to present the approved-versus-pending set with captures
 and let the operator choose. Type: grilling. ComplaintRefs: Wayfinder map
 (2026-08-05); lane audits entry (2026-08-05).
+
+### Operator scope decision: the minimal authorable surface, and what it costs upstream (2026-08-06)
+
+Operator narrowed the authoring MVP. Recorded as canon because it decides what
+the questionnaire child may and may not expose.
+
+**Authorable in the MVP:**
+1. Timing and delivery of letters.
+2. Small, scheduled, NON-ANIMATED gifts as ASCII art — e.g. leaving an item for
+   a birthday. The intended shape: something brings the gift (an animal
+   delivery is the operator's example), tapping or clicking it opens a letter,
+   and from that point the gift/collectable stays put at the same spot in the
+   garden.
+
+**Explicitly NOT authorable in the MVP:** everything else in the garden,
+especially the recent work. It is to be unconnected, unreachable and
+undetermined from the authoring stage. Any additional or planned authorable
+garden experience feature is GATED on the whole path running end to end first.
+
+**The upstream question, answered with source.** The operator asked whether
+recent garden work forces an upstream update. The grammar is not the problem —
+it is already richer than the MVP. `src/lateletter/garden/program.py:64-76`
+declares `SUPPORTED_ACTIONS`, which already contains every verb this MVP
+needs and then some:
+
+- `letter.present` (param `letter_id`) — letter delivery.
+- `entity.place` (required param `position`) — a gift that rests at one
+  settled spot, which is precisely the "stays at the same place" requirement.
+- `entity.reveal` (`position`, `state`) — its appearance.
+- `animal.deliver` (`entity_id`) and `animal.present_gift` (`gift_id`) — the
+  operator's "animal brings a flower" example, already a first-class action.
+- `schedule` carries `start`, `timezone`, `recurrence`, `exceptions`, `missed`
+  (:98-100), so a birthday — including an annually recurring one — is
+  expressible today.
+
+So no new authoring grammar is required for the MVP. Three real upstream
+consequences do follow, and they are the answer to the question:
+
+1. **The v1 gift shape is dead and must not be built against.**
+   `bundle.py` still defines `GardenGift` and `Trigger` (`type` date /
+   cumulative_visits / post_letter, plus `placement_hint`), but
+   `web/garden-program.mjs:165-166` refuses them outright: *"version 2 bundles
+   must leave garden_gifts empty"*, and the viewer only accepts them through
+   `migrateAuthenticatedLegacyGifts` for old v1 bundles. The author service
+   emits v2. Therefore the questionnaire must author gifts as
+   `garden_beats`/`garden_program` events, NOT as `garden_gifts`. Building the
+   MVP against the `GardenGift` dataclass would produce bundles the product
+   rejects.
+2. **`garden_beats` is the right authoring surface, and it already exists.**
+   `author_service.garden_program_from_draft` (:222-296) expands a friendly
+   beat timeline — `{id, when, schedule, occurrence, priority, actions}` plus
+   scene-wide `entities`/`animals`/`variables` — into the canonical program,
+   runs `replace_message_references` to bind beats to letter ids, and passes
+   the result through `parse_program` as grammar authority. The questionnaire
+   should emit beats and never hand-written program JSON.
+3. **Validation and PAINT PERMISSION are different gates, and this is the trap.**
+   `program.py:621-629,788-796` validates an authored `catalog_id` against
+   `SPECIES_CATALOG` / `FIXTURE_CATALOG` / the collectible catalog. Satisfying
+   that check is not permission to paint: painting additionally requires an
+   ACCEPTED asset verdict, and the default roster currently seeds one rose,
+   zero animals and zero collectibles, with several species pulled pending
+   per-asset approval. An author could therefore compose a birthday gift that
+   validates cleanly and then never appears. The MVP must restrict the
+   author's choice to catalog ids whose art is actually accepted, and must
+   refuse — visibly, at authoring time — anything else.
+
+- **Status:** SCOPE RECORDED. No grammar work is implied; the constraint work
+  is (a) author beats not legacy gifts, (b) offer only accepted art, (c) keep
+  every other garden capability out of the authoring UI. ComplaintRef:
+  operator scope narrowing, 2026-08-06.
+
+### Wayfinder child: the authorable gift must offer only art that may paint (2026-08-06)
+
+Question:
+Build the MVP gift authoring path and close the validate-versus-paint gap.
+Concretely: derive the author's selectable catalog from the ACCEPTED asset
+register rather than from `SPECIES_CATALOG`/`FIXTURE_CATALOG` membership, so a
+gift cannot be authored against art that validates and then cannot paint;
+express the chosen gift as a `garden_beats` beat with a `schedule.start`
+(optionally recurring for a birthday) whose actions rest the entity at one
+stable position and present the attached letter on tap; and refuse, at
+authoring time and in words the author understands, any catalog id without an
+accepted verdict. Asset acceptance itself stays operator-only — this child
+consumes verdicts, it never grants them. Type: task. ComplaintRefs: Wayfinder
+map: the whole web product, authoring through recipient (2026-08-05); operator
+scope decision entry (2026-08-06).
+
+### Map update: authoring scope narrowed, one child added, one child re-bounded (2026-08-06)
+
+Index refresh for "Wayfinder map: the whole web product, authoring through
+recipient (2026-08-05)", recorded as an appended update because the map entry
+is committed canon (192097e).
+
+- The questionnaire child is RE-BOUNDED by the operator scope decision above:
+  it exposes letter timing/delivery and scheduled static ASCII gifts only.
+  Every other garden capability stays out of the authoring UI regardless of
+  what the grammar supports.
+- New child: "the authorable gift must offer only art that may paint".
+- The starter-roster child gains a dependency it did not have: with zero
+  animals seeded, the operator's own example (an animal bringing a gift) has
+  no animal to perform it, so the roster decision now blocks the gift MVP
+  rather than sitting beside it.
+- Fog retired: "whether author.html's wizard steps are the questionnaire the
+  operator wants" is partly settled — the letters and garden stages are in
+  scope, and the remaining question is only how much of the existing markup to
+  hide for the MVP.
