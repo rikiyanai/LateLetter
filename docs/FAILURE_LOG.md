@@ -13511,3 +13511,70 @@ the recurrence-rate alarm in 4d95ace dissolves into index arithmetic.
   blobs). Index synced to HEAD. The per-commit sync law is Implemented
   (unproven) as prevention until every lane adopts it. ComplaintRefs:
   1bdea41; c4ffab4; 4d95ace; f8e4ca9.
+
+### Correction: there was no deleting lane; the mandated commit recipe deleted the art, mine included (2026-08-06)
+
+A concurrent session diagnosed the phantom deletions in a13fe90 and its
+explanation is correct. This entry retracts the framing of my two earlier
+entries and records my own share of the cause, because both entries name an
+actor that does not exist.
+
+**What I wrote, and why it was wrong.** "A concurrent lane silently deleted
+eleven committed operator-granted art files (2026-08-06)" and "The cross-lane
+deletion recurred within hours (2026-08-06)" both describe another lane
+deleting files, and the second calls the recurrence rate "itself the finding".
+There was no deleting lane and no actor. The mechanism is structural:
+
+- The temp-index surgical recipe every lane is REQUIRED to use writes a tree
+  and moves HEAD via `git commit-tree`, and never writes the shared
+  `.git/index`.
+- So every path such a commit ADDS reads afterwards as staged-for-deletion,
+  and every path it MODIFIES reads as a staged reversion — the index simply
+  has not been told.
+- Any later commit whose tree is built from that stale shared index therefore
+  drops silently everything added since the index was last synced.
+
+The evidence in a13fe90 is decisive: after f8e4ca9 the seven new hook files
+showed the signature while `.git/index` mtime (05:54:53) predated the commit
+(06:05:50), and an audit of all seventeen index-versus-HEAD divergences
+matched every one to an ancestor blob, with zero novel staged content. Verified
+independently here: `git diff-index --cached HEAD` now reports 0 paths, and the
+five remaining differences are ordinary unstaged edits in the shared checkout,
+not index staleness.
+
+**1bdea41 did not delete the art on purpose.** Its tree lacked the eleven files
+because the shared index it was built from had never been told they existed.
+The commit message's silence about them, which I read as carelessness, was
+simply an author who did not know they were dropping anything.
+
+**My own commits are part of the cause, not merely the report.** `bf50d7f`
+added the eleven granted files through the temp-index recipe and did not sync
+the shared index afterwards. That is precisely what made the art invisible to
+the shared index and therefore droppable by the next commit built from it. I
+then reported the consequence as another lane's deletion. Every surgical commit
+I made this session has the same defect, and each one widened the divergence
+that the next commit could drop.
+
+**The law adopted in a13fe90 is the actual repair:** every surgical commit must
+end by syncing the shared index for exactly the paths it changed. This entry's
+own commit does that, as the first one written under the rule.
+
+**The pre-push gate stays, and is worth more under this diagnosis, not less.**
+`.githooks/pre-push` (f8e4ca9) refuses a pushed revision whose tree lacks a
+granted source or the guard test. It never asked WHY a tree was missing them,
+so it catches the stale-index case exactly as well as a deliberate deletion —
+and it would have refused 1bdea41. A structural cause that produces silent,
+plausible-looking commits is a stronger argument for a content gate at the last
+choke point than malice ever was.
+
+**What this changes in the prior entries.** The two deletion entries stand as
+records of what was observed, and are corrected here rather than rewritten,
+per the append-only rule. Specifically retracted: the existence of a deleting
+actor; the reading of the recurrence rate as evidence of a repeat offender;
+and the sentence "the mechanism that stages these deletions is still
+unidentified" — it is identified, and it is the recipe this lane also uses.
+
+- **Status:** CAUSE IDENTIFIED AND OWNED. Index verified clean against HEAD.
+  Sync law adopted for this lane's remaining commits. No guard is withdrawn.
+  ComplaintRefs: cross-lane deletion entry (2026-08-06); recurrence entry
+  (2026-08-06); a13fe90.
