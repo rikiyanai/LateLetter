@@ -479,6 +479,71 @@ def resolve_calibration(source_sha256: str) -> tuple[dict[str, Any], str] | None
     return payload, chosen_path
 
 
+def _demote_stolen_blank_cells(
+    module, source_png: Path, calibration: Mapping[str, Any], cells: list, decoded: list[str], unknown: str
+) -> list[dict[str, Any]]:
+    """Demote blank spill cells that still own most of an ink component.
+
+    Recomputes the raw ink mask exactly as ``segment`` does, finds the
+    connected components overlapping each blank forced-blank spill cell,
+    and measures how much of each component lies inside that cell's box.
+    A component at least 70% inside the box with a visible pixel count
+    means the spill pass reassigned a whole glyph, not an overhang; the
+    cell becomes ``?`` in place.  Returns the audit records.
+    """
+
+    suspects = [
+        index
+        for index, cell in enumerate(cells)
+        if cell.forced_blank and "spill" in str(cell.ownership_reason) and not decoded[index].strip()
+    ]
+    if not suspects:
+        return []
+    with Image.open(source_png) as opened:
+        pixels = np.asarray(opened.convert("RGB"))
+    background = np.asarray(calibration["canvas"]["background_rgb"])
+    threshold = int(calibration["normalization"]["ink_threshold_l1"])
+    raw_ink = np.max(np.abs(pixels.astype(int) - background), axis=2) > threshold
+    records: list[dict[str, Any]] = []
+    for index in suspects:
+        cell = cells[index]
+        x0, y0, x1, y1 = (int(value) for value in cell.pixel_bounds)
+        xa, xb = max(0, x0), min(raw_ink.shape[1], x1)
+        ya, yb = max(0, y0), min(raw_ink.shape[0], y1)
+        if xa >= xb or ya >= yb or not bool(raw_ink[ya:yb, xa:xb].any()):
+            continue
+        # Flood the components touching this box on a padded window so a
+        # component extending into the neighbours is measured whole.
+        pad_x, pad_y = (xb - xa), (yb - ya)
+        wxa, wxb = max(0, xa - pad_x), min(raw_ink.shape[1], xb + pad_x)
+        wya, wyb = max(0, ya - pad_y), min(raw_ink.shape[0], yb + pad_y)
+        window = raw_ink[wya:wyb, wxa:wxb]
+        for points in module.connected_components(window):
+            inside = sum(
+                1
+                for py, px in points
+                if ya <= py + wya < yb and xa <= px + wxa < xb
+            )
+            if not inside:
+                continue
+            fraction = inside / len(points)
+            if fraction >= 0.70 and inside >= 4:
+                decoded[index] = unknown
+                records.append(
+                    {
+                        "cell_index": index,
+                        "row": int(cell.row),
+                        "column": int(cell.column),
+                        "ownership_reason": str(cell.ownership_reason),
+                        "component_pixels": int(len(points)),
+                        "pixels_inside_box": int(inside),
+                        "inside_fraction": round(fraction, 4),
+                    }
+                )
+                break
+    return records
+
+
 def decode_rows_with_calibration(source_png: Path, calibration: Mapping[str, Any]) -> dict[str, Any]:
     """Run the legacy row-joint decode for one source under one calibration.
 
@@ -509,6 +574,15 @@ def decode_rows_with_calibration(source_png: Path, calibration: Mapping[str, Any
     # across the screenshot agrees; it never invents an unseen glyph.
     decoded_all = module.apply_repeated_topology_consensus(cells, decoded_all, confidences, columns)
     unknown = str(getattr(module, "UNKNOWN", "?"))
+    # Ink-conservation audit.  The spill-ownership pass may declare a cell
+    # blank because its ink "belongs" to a neighbour.  That is correct for
+    # a genuine overhang (the ink component lies mostly in the neighbour's
+    # box) but on sub-pixel grids it can steal a whole glyph whose
+    # component lies mostly INSIDE the blank cell's own box (observed on
+    # bbbb-flowers: three `(`/`_` cells decoded blank).  A blank spill
+    # cell that still owns most of a raw ink component is demoted to
+    # ``?`` — a stated blank must be true, an uncertain cell must refuse.
+    stolen_cells = _demote_stolen_blank_cells(module, source_png, calibration, cells, decoded_all, unknown)
     unknown_before = sum(1 for glyph in decoded_all if glyph == unknown)
     # Name remaining ``?`` cells from the pinned-font repertoire, one
     # decision per identical-shape group, behind the three gates described
@@ -563,6 +637,7 @@ def decode_rows_with_calibration(source_png: Path, calibration: Mapping[str, Any
         "cell_count": len(decoded_all),
         "unknown_cells": unknown_cells,
         "unknown_cells_before_naming": unknown_before,
+        "stolen_blank_cells_demoted": stolen_cells,
         "unknown_marker": unknown,
         "unknown_naming": {
             "font_sha256": _naming_font_sha256(),

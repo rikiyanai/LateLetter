@@ -12097,3 +12097,40 @@ holdout (truth is never an input to any decision).
 - **Status:** IMPLEMENTED (UNPROVEN beyond the receipts above). ComplaintRef:
   row-joint restoration entry, 2026-08-05; operator continuation order
   ("ok proceed"), 2026-08-06.
+
+### Ink-conservation audit demotes stolen blank cells to refusals (2026-08-06)
+
+Follow-up to the naming slice (commit 9fbc991), targeting the wrong-blank
+cells it documented: bbbb-flowers rows 1/5/6 decoded blank where the accepted
+transcript has `(` and `_`, all three with `forced_blank=True`,
+`ownership_reason=same_row_horizontal_spill_proven`, and zero ink left in the
+cell box after the spill pass reassigned it.
+
+- **Calibration sweep first (truth-free ranking check):** all 13 tracked
+  bbbb calibrations decoded; attempts 016-021 tie as best (4 remaining
+  unknowns) and the current lexicographic-last choice is inside that tie, so
+  the wrong-blanks are not calibration-selectable and the spill pass itself
+  is the owner of the defect.
+- **New `_demote_stolen_blank_cells` audit in `row_joint.py`:** recomputes
+  the raw ink mask exactly as `segment` does and measures, for every blank
+  forced-blank spill cell, how much of each overlapping ink component lies
+  inside that cell's own box. A component at least 70% inside with 4+ pixels
+  means a whole glyph was reassigned, not an overhang; the cell is demoted
+  to `?` in place, with an audit record (row, column, component pixels,
+  inside fraction) in the decode result.
+- **Measured:** bbbb demotes exactly the two stolen `(` cells (rows 1 and 5,
+  column 17, component 84% inside); silent non-`?` mismatches against the
+  accepted transcript drop from 3 to 1. Horse demotes zero cells — genuine
+  overhang spill stays untouched, so the rule does not inflate refusals.
+  The one remaining wrong-blank (row 6 column 11, an `_` straddling the box
+  boundary below the 70% line) is genuinely ambiguous under this
+  discriminator and stays OPEN rather than threshold-chased; a future
+  discriminator should compare the neighbour's decoded-glyph template
+  explanation of the merged ink.
+- **Evidence:** pytest 2026-08-06 on top of commit 9fbc991,
+  tests/transcription: 98 of 98, zero failures. bbbb decode now states no
+  more than one incorrect character; every other imperfection is a typed
+  `?` refusal.
+- **Status:** IMPLEMENTED (UNPROVEN beyond the receipts above). ComplaintRef:
+  unknown-cell naming entry, 2026-08-06; row-joint restoration entry,
+  2026-08-05.
