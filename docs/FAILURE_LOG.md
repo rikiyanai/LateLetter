@@ -12315,3 +12315,45 @@ behaviour, so overhang slivers cannot be disturbed.
 - **Status:** CHILD ANSWERED / IMPLEMENTED (UNPROVEN beyond the receipts
   above). ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
   Unicode text-art recovery; ink-conservation audit entry, 2026-08-06.
+
+### Wayfinder child outcome: window-context naming lands; compound splitting is a spent approach (2026-08-06)
+
+The "window-context naming for refused unknown groups" child is answered with
+one addition, one safe extension, and one measured dead end.
+
+- **Stage 1.5 added (commit pending):** the decoder's own window-aware
+  `template_similarity` (cell shape + vertical band + edge contact +
+  three-cell window) names groups that `candidate_domain` never lets compete
+  during decode (multi-component and edge-contact cells). Its floor is
+  calibrated from known cells' leave-one-out self-similarity (25th
+  percentile, absolute floor 0.60); the margin rule is unchanged.
+- **Stolen components may be named whole:** a stolen component that is one
+  complete glyph raster is offered whole to the source bank; a compound
+  component stays `?`.
+- **SPENT APPROACH — do not repeat:** two strategies for splitting a
+  compound stolen component were measured against the accepted bbbb
+  holdout and both alias the truncated glyph to a square lookalike, writing
+  `[` where the source glyph is `(`: (1) geometric box clipping ( `[` 0.757
+  vs `(` 0.713, margin above the gate — the gates cannot save a
+  systematically distorted shape), and (2) subtracting the neighbour's
+  dilated decoded-glyph template from the component (the cover eats the
+  paren's baseline tip, same aliasing). Both were reverted the same day;
+  the accepted-corpus zero-wrong pin caught the regression exactly as
+  designed. Any future split must first prove it preserves the glyph
+  silhouette.
+- **Measured state after this child (accepted-holdout parity where truth
+  exists; truth never an input):** bbbb-flowers unknowns 14 to 6, 8 of 16
+  rows exact, ZERO wrong characters; horse 17 to 7; sitting-cat 14 to 4
+  (one group via window similarity); long-stem-bloom 55 to 24;
+  ldb-flower-field 30 to 24. Every named cell records stage, score,
+  margin, and runner-up.
+- **Note for downstream width gates:** the row-joint alphabet is ASCII;
+  sources whose accepted forms are fullwidth (sitting-cat `＞` family) will
+  need the documented ASCII-variant/width-profile resolution before any
+  candidate claim.
+- **Evidence:** pytest 2026-08-06 on top of commit 4551674,
+  tests/transcription: 99 of 99, zero failures, including the bbbb
+  zero-wrong regression pin that caught and killed the spent approach.
+- **Status:** CHILD ANSWERED / IMPLEMENTED (UNPROVEN beyond the receipts
+  above). ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
+  Unicode text-art recovery; boundary-ink child outcome, 2026-08-06.

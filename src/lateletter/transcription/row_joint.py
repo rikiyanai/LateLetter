@@ -336,6 +336,91 @@ def _score_group_against_source_templates(
     )
 
 
+def _window_similarity_reference(
+    module, cells: list, decoded: list[str], unknown: str, templates: Mapping[str, list]
+) -> float | None:
+    """Calibrate a floor for the decoder's own window-aware similarity.
+
+    For every known non-blank cell, the leave-one-out best
+    ``template_similarity`` against its own glyph's templates samples what
+    a correct same-font match scores in this source.  The floor is the
+    25th percentile, never below the absolute 0.60.  Fewer than eight
+    samples means no calibration and stage 1.5 is skipped entirely.
+    """
+
+    scores: list[float] = []
+    for cell, glyph in zip(cells, decoded):
+        if glyph == unknown or not glyph.strip():
+            continue
+        instances = templates.get(glyph)
+        if not instances:
+            continue
+        best = 0.0
+        for template in instances:
+            if (template.row, template.column) == (cell.row, cell.column):
+                continue
+            best = max(best, float(module.template_similarity(cell, template)))
+        if best > 0.0:
+            scores.append(best)
+    if len(scores) < 8:
+        return None
+    return max(0.60, float(np.percentile(scores, 25)))
+
+
+def _score_group_by_window_similarity(
+    module, cells: list, templates: Mapping[str, list], floor: float
+) -> dict[str, Any] | None:
+    """Stage 1.5: window-aware similarity naming from the source bank.
+
+    Uses the decoder's own ``template_similarity`` (cell shape, vertical
+    band, edge contact, and three-cell window context) rather than the
+    bbox-only stage 1 metric, so multi-component and edge-contact unknown
+    cells — which ``candidate_domain`` never lets compete during decode —
+    get one gated second chance.  Same margin rule as every other stage:
+    a close second anywhere in the bank forces refusal.
+    """
+
+    scored: list[tuple[float, str]] = []
+    for glyph in sorted(templates):
+        if not str(glyph).strip():
+            continue
+        total = 0.0
+        for cell in cells:
+            best = 0.0
+            for template in templates[glyph]:
+                if (template.row, template.column) == (cell.row, cell.column):
+                    continue
+                best = max(best, float(module.template_similarity(cell, template)))
+            total += best
+        score = total / len(cells)
+        if score > 0.0:
+            scored.append((score, str(glyph)))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    if not scored:
+        return None
+    best_score, best_glyph = scored[0]
+    runner_score = scored[1][0] if len(scored) > 1 else 0.0
+    if best_score < floor:
+        return None
+    if best_score - runner_score < _NAMING_MIN_MARGIN:
+        return {
+            "named": None,
+            "stage": "window_similarity",
+            "reason": "winner_margin_below_gate",
+            "best": best_glyph,
+            "runner_up": scored[1][1],
+            "iou": round(best_score, 4),
+            "margin": round(best_score - runner_score, 4),
+        }
+    return {
+        "named": best_glyph,
+        "stage": "window_similarity",
+        "iou": round(best_score, 4),
+        "margin": round(best_score - runner_score, 4),
+        "runner_up": scored[1][1] if len(scored) > 1 else None,
+    }
+
+
 def _score_group_against_repertoire(
     module,
     cells: list,
@@ -549,19 +634,32 @@ def _demote_stolen_blank_cells(
             inside_total += inside
             fraction = inside / len(points)
             if fraction >= 0.70 and inside >= 4:
+                record = {
+                    "action": "demoted_to_unknown",
+                    "cell_index": index,
+                    "row": int(cell.row),
+                    "column": int(cell.column),
+                    "ownership_reason": str(cell.ownership_reason),
+                    "component_pixels": int(len(points)),
+                    "pixels_inside_box": int(inside),
+                    "inside_fraction": round(fraction, 4),
+                }
                 decoded[index] = unknown
-                records.append(
-                    {
-                        "action": "demoted_to_unknown",
-                        "cell_index": index,
-                        "row": int(cell.row),
-                        "column": int(cell.column),
-                        "ownership_reason": str(cell.ownership_reason),
-                        "component_pixels": int(len(points)),
-                        "pixels_inside_box": int(inside),
-                        "inside_fraction": round(fraction, 4),
-                    }
-                )
+                # The stolen component is a whole glyph raster (that is
+                # what made it stolen rather than an overhang), so the
+                # entire component — including the part in the neighbour's
+                # box — is offered to the source bank.  A strict-gate
+                # match upgrades the demotion to a name.
+                if templates:
+                    named = _name_stolen_component(module, points, (wya, wxa), (ya, yb), templates)
+                    if named is not None and named.get("named"):
+                        decoded[index] = str(named["named"])
+                        record["action"] = "named_stolen_component"
+                        record["named"] = str(named["named"])
+                        record["iou"] = named.get("iou")
+                        record["margin"] = named.get("margin")
+                        record["via"] = named.get("via")
+                records.append(record)
                 stolen = True
                 break
         if stolen or inside_total < 4 or not templates:
@@ -594,6 +692,57 @@ def _demote_stolen_blank_cells(
                 }
             )
     return records
+
+
+def _name_stolen_component(
+    module,
+    points: list,
+    window_origin: tuple[int, int],
+    box_rows: tuple[int, int],
+    templates: Mapping[str, list],
+) -> dict[str, Any] | None:
+    """Name a stolen component when it is one whole glyph raster.
+
+    The whole component, framed at cell-box height, is offered to the
+    source bank under the strict same-font gates.  Compound components
+    are refused — see the inline note on why splitting is a spent
+    approach.
+    """
+
+    wya, wxa = window_origin
+    ya, yb = box_rows
+
+    def _offer(mask_points: list) -> dict[str, Any] | None:
+        if len(mask_points) < 4:
+            return None
+        xs_abs = [px + wxa for _py, px in mask_points]
+        frame = np.zeros((yb - ya, max(xs_abs) - min(xs_abs) + 1), dtype=bool)
+        for py, px in mask_points:
+            fy = py + wya - ya
+            if 0 <= fy < frame.shape[0]:
+                frame[fy, px + wxa - min(xs_abs)] = True
+
+        class _ComponentCell:
+            mask = frame
+
+        decision, _best = _score_group_against_source_templates(module, [_ComponentCell()], templates)
+        if decision is not None and decision.get("named"):
+            return decision
+        return None
+
+    whole = _offer(points)
+    if whole is not None:
+        whole["via"] = "whole_component"
+        return whole
+    # Compound components (a glyph fused with a neighbouring raster) are
+    # NOT split here.  Two split strategies were measured against the
+    # accepted bbbb holdout and both alias the truncated glyph to a
+    # square lookalike (`[` where the source glyph is `(`): a geometric
+    # box clip, and subtracting the neighbour's dilated decoded-glyph
+    # template (the cover eats the paren's baseline tip).  Until a split
+    # can prove it preserves the glyph's silhouette, a compound stolen
+    # component stays a ``?`` refusal.
+    return None
 
 
 def decode_rows_with_calibration(source_png: Path, calibration: Mapping[str, Any]) -> dict[str, Any]:
@@ -658,13 +807,17 @@ def decode_rows_with_calibration(source_png: Path, calibration: Mapping[str, Any
         cell_width = max(1, int(round(float(grid["cell_advance_x_px"]))))
         cell_height = max(1, int(round(float(grid["line_height_px"]))))
         reference = _known_cell_reference(module, cells, decoded_all, unknown, cell_width, cell_height)
+        similarity_floor = _window_similarity_reference(module, cells, decoded_all, unknown, templates)
         for key in sorted(groups):
             indexes = groups[key]
             group_cells = [cells[i] for i in indexes]
-            # Stage 1: the screenshot's own font.  Stage 2 (pinned-font
-            # rendering) runs only when stage 1 makes no decision, and the
-            # source bank's best score competes in stage 2's margin.
+            # Stage 1: the screenshot's own font, bbox shape.  Stage 1.5:
+            # the decoder's window-aware similarity, calibrated floor.
+            # Stage 2 (pinned-font rendering) runs last, and the source
+            # bank's best score competes in stage 2's margin.
             decision, source_best = _score_group_against_source_templates(module, group_cells, templates)
+            if decision is None and similarity_floor is not None:
+                decision = _score_group_by_window_similarity(module, group_cells, templates, similarity_floor)
             if decision is None:
                 decision = _score_group_against_repertoire(
                     module, group_cells, cell_width, cell_height, reference, source_best
