@@ -13578,3 +13578,151 @@ unidentified" — it is identified, and it is the recipe this lane also uses.
   Sync law adopted for this lane's remaining commits. No guard is withdrawn.
   ComplaintRefs: cross-lane deletion entry (2026-08-06); recurrence entry
   (2026-08-06); a13fe90.
+
+### Wayfinder child outcome: the proved lattice now emits its own hash-bound calibration, and the seam refuses rejected geometry (2026-08-06)
+
+Child question: can the proved lattice contract be emitted as an immutable hash-bound
+calibration artifact that row-joint decodes under, with an index at creation,
+rejection-status enforced at the seam, per-source proof receipts, replay determinism,
+and zero transcript consultation?
+
+**What landed.** New owner `src/lateletter/transcription/geometry/calibration_emitter.py`
+with one deep entry, `emit_calibration(source_png, output_root)`. It runs
+`route_raster_geometry`, refuses unless the router proves the lattice on all four
+properties, and derives every legacy-schema field from `selected_geometry` and the source
+pixels alone: background and ink threshold from the router's own selected foreground recipe
+(the router and `decode_monospace_rows.segment` use the identical
+`max(|px - bg|) > threshold` formula, so one number carries across); columns/advance/origin
+from the selected lattice contract; rows/line-height/first-baseline/crop offsets from the
+winning periodic row candidate. Artifacts are write-once under
+`tracked/LateLetterResearch/transcription-parity/router-calibrations/<source_sha256>/`
+(`calibration.json` + `receipt.json`), with each artifact sha256 appended to one shared
+`index.json` at creation (read-modify-write, sorted keys). Refusals are typed — a 13-name
+enumerated vocabulary, no free text.
+
+**A measured correctness finding that changed the design.** `selected_geometry`'s top-level
+`rows`/`line_height`/`baselines`/`row_bounds` are the blank-gap ink bands, NOT the proved
+lattice. For `Screenshot 2026-07-31 at 13.12.04` the blank-gap model reports 19 rows at
+line height 21.5 with irregular baselines, while the proved periodic candidate reports 21
+rows at pitch 22 with baselines 32/54/76/98/... — and the tracked inventory independently
+records that source's glyph cell pitch as 12x22. For `988fd1ab...` the blank-gap model
+reports ONE row of height 238 (the picture is one connected blob) against 14 periodic rows
+at pitch 17. Deriving crops from the blank-gap model gave crop spans exceeding the line
+height on 4 of 10 sources. The emitter therefore recovers the winning periodic candidate by
+matching pitch AND ownership signature together, breaking phase ties on lowest phase among
+ownership-identical candidates.
+
+**Related trap, recorded rather than patched.** `fixed_lattice_authority.baseline_regular`
+(`evidence.py:1411-1419`) is also computed from the blank-gap bands. It reports False for 8
+of the 10 sources whose periodic baselines are perfectly regular (interior residual max 0 on
+all ten). A first emission pass gated on it and refused 7 correct lattices; those artifacts
+were moved to `dumpster/router-calibrations-pre-baseline-gate-2026-08-06/` and the gate was
+replaced with the winning candidate's own `baseline_delta_residuals` over interior row gaps,
+tolerance 1px, terminal residual excluded when `terminal_baseline_clamped` is set. Both
+numbers are written into every receipt. `evidence.py` was NOT changed — that would have
+moved the evidence hashes and invalidated the recorded 26-source receipt.
+
+**Emitted sources (replay run 1, 2026-08-06, git head f387f180). 26 total: 10 emitted, 16
+refused, 0 errors.** Index sha256
+`87b97d7663b26164f0bb90ae9bc5eb32e6a5471110dad930f1e0e7235c84a234`.
+
+| source | source sha256 | artifact sha256 | grid | pitch / phase margin | ink outside cells | decode cells | unknown |
+|---|---|---|---|---|---|---|---|
+| 988fd1ab7783d6757e0b68aa9b27ab4d | e37d0eb6da67 | ee89640414f7 | 14x47 lh17 adv5 | 1.000 / 1.000 | 0/5967 | 658 | 44 (6.7%) |
+| 9d0cb1893cfa495d1edfdaf8d312108c | 976162d43548 | 891505b1c862 | 10x41 lh30 adv8 | 0.953 / 1.000 | 0/1626 | 410 | 7 (1.7%) |
+| Screenshot 2026-07-31 at 13.12.04 | 9fee60dd442c | 870ccf1a2c12 | 21x79 lh22 adv12 | 0.516 / 0.745 | 0/8213 | 1659 | 63 (3.8%) |
+| Screenshot 2026-07-31 at 13.14.18 | bfa54972c6b3 | bafd38420be3 | 5x39 lh32 adv23 | 0.175 / 0.179 | 0/7118 | 195 | 20 (10.3%) |
+| Screenshot 2026-07-31 at 13.14.25 | 8154e782230e | 1f780eb2e5a8 | 5x38 lh21 adv23 | 0.605 / 0.445 | 0/5217 | 190 | 6 (3.2%) |
+| Screenshot 2026-07-31 at 13.29.23 | 3e2fcc96a303 | aea8a3df4b12 | 24x21 lh22 adv23 | 0.581 / 0.211 | 0/10325 | 504 | 36 (7.1%) |
+| Screenshot 2026-07-31 at 13.30.21 | 7bef5889725f | 58ee3027f830 | 5x23 lh28 adv21 | 0.205 / 0.134 | 0/3186 | 115 | 9 (7.8%) |
+| a8283c5cdb63b130.png!cover_jpg | 4125debb430e | af16f84a21a6 | 20x16 lh31 adv18 | 0.000 / 0.113 | 204/8149 | 320 | 3 (0.9%) |
+| eb861dc84400fc36.png!cover_jpg | 3194c0d6e8bf | 142ada4a3648 | 6x22 lh32 adv18 | 0.623 / 0.087 | 0/5713 | 132 | 10 (7.6%) |
+| rain-wind-ascii-art-v0-2asg0us8glbf1 | 8a87b1d7f53a | c9f5a9ed0c47 | 18x109 lh24 adv5 | 0.453 / 0.176 | 0/11180 | 1962 | 112 (5.7%) |
+
+All ten report `ownership_complete` true with `unowned_pixel_count` 0 and interior baseline
+residual 0. The last two are the live monospace sources whose mode flipped in the prior
+slice; neither has any legacy calibration, so both are entirely new coverage. The 204
+stranded pixels on `a8283c5cdb63b130` are its 19 one-pixel row seams, which the router's
+ownership proof accounts for explicitly as cross-row continuations; recorded, not gated.
+
+The 16 refusals: 7 `[mode_not_fixed_lattice, phase_unproven]`, 7
+`[mode_not_fixed_lattice, pitch_unproven, phase_unproven]`, 2 `[mode_not_fixed_lattice]`.
+Zero untyped refusals. No proved lattice was refused.
+
+**Row-joint decode on the newly covered sources — the first router-derived coverage.** All
+ten decode through `router-calibrations/`: 128 rows, 6145 cells, 310 unknown after naming
+(5.0%), 568 before naming, zero decode errors, zero binding failures. That percentage is the
+decoder's own refusal rate, NOT an accuracy figure: no transcript exists for any of these ten
+sources and none was consulted.
+
+**Rejection enforcement at the seam, and the coverage it costs.** Measured status vocabulary
+across all 66 tracked attempt calibrations: 59 `calibration_candidate`, 6
+`calibration_rejected`, 1 `machine_candidate_only` (which carries no `source_sha256` and was
+never indexed). No tracked calibration carries any approval status. The claim that
+sitting-cat and ldb-flower-field decode under rejected calibrations was verified true, and so
+did long-stem-bloom/a8283c5cdb63b130. `resolve_calibration` now drops explicitly rejected
+artifacts from both indexes — a frozen set `{"calibration_rejected"}`, not a substring test.
+Absence of a status stays admissible. The bbbb binding was checked BEFORE enforcing:
+`attempts/021` is `calibration_candidate`, so it survives; a stricter "admit only approved"
+rule would have refused bbbb and horse alike, which is direct confirmation that
+explicit-rejection-only is the only rule the route decision supports.
+
+Coverage change, measured:
+
+| source hash | before | after |
+|---|---|---|
+| c50bcf5ded3a (a8283 / long-stem-bloom) | `long-stem-bloom/001` (rejected): 35x21, 735 cells, 24 unknown | `a8283.../008` (candidate): 19x16, 304 cells, 0 unknown |
+| f7d6f3d502ca (bbbb) | `attempts/021` | unchanged |
+| 9ea8eab2c0b3 (horse) | `attempts/064` | unchanged |
+| 2319f211dae0 (ldb-flower-field) | rejected calibration: 21x26, 546 cells, 24 unknown | NO calibration, no decode |
+| e9b08e31960f (sitting-cat) | rejected calibration: 13x19, 247 cells, 4 unknown | NO calibration, no decode |
+
+793 cells of decode were lost. That output was produced under geometry an operator turned
+down — the rejected long-stem calibration was over-segmenting 35 rows where the admissible
+one finds 19 — so no correctness claim rested on it. Honest loss beats dishonest coverage.
+Net source hashes with a row-joint decode: 5 legacy becomes 3 legacy + 10 emitted = 13.
+
+**Precedence.** Legacy attempt calibrations keep interim authority for the hashes they bind;
+emitted calibrations serve everything else. The two stores do not intersect at a single hash
+on today's corpus, so precedence is exercised only in test, using bbbb-flowers — the one
+source the router proves AND the attempt history binds. The router index additionally
+verifies each artifact's bytes against the sha256 recorded at creation and drops any entry
+that changed, is missing, or disagrees with its own key; per-source directories are never
+scanned, so an orphan from an interrupted emission is invisible to the decoder.
+
+**Replay determinism.** Two runs in two fresh OS processes. Run 1: 10 emitted / 16 refused /
+0 errors. Run 2: 0 emitted / 26 refused, with all ten previously-emitted sources returning
+exactly `[emitter_artifact_already_present]`; for 10 of 10 the fresh rehash of the file on
+disk equals run 1's recorded `artifact_sha256`, zero mismatches, and all 16 refusal-reason
+lists are byte-identical between runs. Two artifacts additionally kept identical hashes
+across the emitter code change between the two emission passes, confirming artifact bytes
+depend on the source and the derivation and not on the emitter's internal identity. No
+`datetime.now()`, no randomness, sorted keys everywhere, index fully rewritten so its bytes
+depend on contents rather than emission order.
+
+**Zero transcript consultation.** Emitter, seam and replay driver open no `.txt`, no
+`accepted.txt`, no manifest; `transcript_input: false` is written into every artifact,
+receipt and summary. The bbbb accepted-holdout test remains the only transcript reader in the
+suite, and it still holds.
+
+**Tests.** 11 new tests in `tests/transcription/test_calibration_emitter.py` covering typed
+refusal on non-proved sources, emitted-artifact decode under the source-hash binding
+(including a mismatched hash that must raise), receipt proof families, index recording,
+two-root byte-identical determinism plus write-once refusal, legacy precedence, emitted
+fallthrough, explicit-rejection refusal, absent-status admissibility, and index rejection of
+a tampered artifact. Full transcription suite: 121 of 121, zero failures (pytest, 2026-08-06,
+312s), up from 110.
+
+**What stays OPEN.** Named-glyph correctness is unmeasured on all 10 new sources (no
+transcript exists). 14 of the 16 refusals name `phase_unproven` — the phase-margin proof is
+the next lever, not the emitter. sitting-cat and ldb-flower-field now have no row-joint
+decode at all and the router does not prove their lattices either (shaped_runs with phase
+unproven, and unresolved, respectively), so restoring them needs the geometry proof to
+improve, not the seam to relax. `a8283c5cdb63b130`'s emitted crop does not tile its pitch
+exactly. `fixed_lattice_authority.baseline_regular` remains a blank-gap measurement wearing a
+lattice name. `emitter_cell_crop_overlaps_neighbour_row` and `emitter_grid_degenerate` have
+no live witness on this corpus.
+
+- Status: **IMPLEMENTED (UNPROVEN — geometry holds and the decoder produces full grids on all
+  ten new sources, but no named glyph on any of them has been checked against any truth)**.
+  ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-Unicode text-art recovery.

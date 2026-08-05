@@ -33,6 +33,39 @@ measurements reviewed during the attempt history, so using them keeps the
 decode deterministic and source-derived without trusting the unproven
 mode label.  When the router later proves lattices itself, that proof can
 replace this lookup at a single seam: ``resolve_calibration``.
+
+The router-emitted succession, and why it sits second
+-----------------------------------------------------
+That succession has now begun.  ``geometry.calibration_emitter`` writes a
+calibration for any source whose lattice the router proves outright, into
+``transcription-parity/router-calibrations/<source_sha256>/``, with each
+artifact's SHA-256 recorded in one shared ``index.json`` at creation.
+``resolve_calibration`` consults BOTH stores, in this order:
+
+1.  a legacy attempt calibration bound to this exact source hash, when
+    one exists and is not explicitly marked rejected;
+2.  otherwise the router-emitted calibration, when the index binds one.
+
+Legacy first is deliberate and temporary.  The five sources the attempt
+history binds were measured and reviewed by hand over dozens of attempts,
+and two of them (bbbb-flowers, horse-animation-sheet) carry the only
+accepted decode evidence in the repository.  Swapping their geometry out
+from under that evidence would invalidate it.  The router's emissions
+therefore serve the sources nobody has ever bound — which, on today's
+corpus, is all of them: the emitted set and the legacy set do not
+intersect at a single source hash.
+
+Rejection enforcement at the seam
+---------------------------------
+Legacy artifacts carry a ``status`` field whose vocabulary is
+``calibration_candidate``, ``calibration_rejected``, and
+``machine_candidate_only``.  A calibration marked ``calibration_rejected``
+is one an operator looked at and turned down; decoding under it means
+decoding under geometry that is known to be wrong.  The seam now refuses
+those outright.  It refuses ONLY explicit rejection: a calibration with no
+status field at all stays admissible, because absence of a review verdict
+is not a negative verdict, and the interim legacy bindings predate the
+field.
 """
 
 from __future__ import annotations
@@ -521,14 +554,48 @@ def decoder_version() -> str:
     return str(getattr(_legacy_module(), "DECODER_VERSION", "unknown"))
 
 
+# ---------------------------------------------------------------------------
+# Rejection status vocabulary
+# ---------------------------------------------------------------------------
+# The exact string an operator's turn-down writes into a legacy calibration's
+# ``status`` field.  Only this value blocks a calibration at the seam.  It is a
+# set (not a substring test) on purpose: a rule like "anything containing the
+# word reject" would be guessing at intent, and a rule like "anything that is
+# not an approval word" would refuse the interim bindings the whole row-joint
+# decode currently rests on, none of which was ever explicitly approved either.
+_EXPLICITLY_REJECTED_STATUSES: frozenset[str] = frozenset({"calibration_rejected"})
+
+# Where router-emitted calibrations and their shared index live.  The index is
+# the authority: an artifact directory with no index entry is an orphan from an
+# interrupted emission and is deliberately invisible here.
+_ROUTER_CALIBRATION_ROOT = _PARITY_ROOT / "router-calibrations"
+_ROUTER_CALIBRATION_INDEX = _ROUTER_CALIBRATION_ROOT / "index.json"
+
+
+def calibration_is_explicitly_rejected(payload: Mapping[str, Any]) -> bool:
+    """Say whether this calibration document was explicitly turned down.
+
+    :param payload: a parsed calibration document.
+    :returns: ``True`` only when the document carries a ``status`` field whose
+        value is one of :data:`_EXPLICITLY_REJECTED_STATUSES`.  A missing or
+        unrecognised status returns ``False`` — silence is not rejection.
+    """
+
+    return str(payload.get("status", "")) in _EXPLICITLY_REJECTED_STATUSES
+
+
 @lru_cache(maxsize=1)
 def _calibration_index() -> tuple[tuple[str, str], ...]:
-    """Map every tracked calibration to its bound source hash.
+    """Map every tracked LEGACY attempt calibration to its bound source hash.
 
     Returns ``(source_sha256, calibration_path)`` pairs sorted by path so
     the scan order — and therefore every downstream choice — is
     deterministic.  The scan is cached; calibrations are immutable attempt
     artifacts, so a stale cache cannot occur within one process run.
+
+    Explicitly rejected calibrations are dropped here rather than at the
+    lookup, so a rejected artifact can never become the "newest" match and
+    shadow an admissible earlier attempt for the same source.
     """
 
     pairs: list[tuple[str, str]] = []
@@ -540,28 +607,98 @@ def _calibration_index() -> tuple[tuple[str, str], ...]:
         except (OSError, ValueError):
             # An unreadable calibration is skipped, never guessed at.
             continue
+        if calibration_is_explicitly_rejected(payload):
+            continue
         digest = str(payload.get("source_sha256", ""))
         if len(digest) == 64:
             pairs.append((digest, str(path)))
     return tuple(pairs)
 
 
-def resolve_calibration(source_sha256: str) -> tuple[dict[str, Any], str] | None:
-    """Return the newest tracked calibration bound to ``source_sha256``.
+@lru_cache(maxsize=1)
+def _router_calibration_index() -> tuple[tuple[str, str], ...]:
+    """Map every router-EMITTED calibration to its bound source hash.
 
-    "Newest" means the lexicographically last attempt path, which follows
-    the zero-padded attempt numbering convention of the parity history.
-    Returns ``None`` when no calibration is bound to this exact source
-    hash — the caller must then treat row-joint decode as unavailable
-    rather than inventing a lattice.
+    The single ``index.json`` written by
+    ``geometry.calibration_emitter.emit_calibration`` is the only thing read
+    here; the per-source directories are not scanned.  That is what makes the
+    index meaningful: an artifact is visible to the decoder exactly when its
+    hash was recorded at creation time.
+
+    Entries whose artifact file is missing, unreadable, or whose recorded
+    SHA-256 does not match the bytes on disk are dropped.  An artifact that
+    changed after it was indexed is no longer the artifact that was emitted,
+    and this bridge never decodes under a document it cannot verify.
+
+    :returns: ``(source_sha256, calibration_path)`` pairs sorted by source
+        hash, so iteration order does not depend on the file system.
     """
 
-    matches = [item for item in _calibration_index() if item[0] == source_sha256]
-    if not matches:
-        return None
-    chosen_path = matches[-1][1]
-    payload = json.loads(Path(chosen_path).read_text(encoding="utf-8"))
-    return payload, chosen_path
+    if not _ROUTER_CALIBRATION_INDEX.exists():
+        return ()
+    try:
+        index = json.loads(_ROUTER_CALIBRATION_INDEX.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ()
+    entries = index.get("calibrations") if isinstance(index, dict) else None
+    if not isinstance(entries, dict):
+        return ()
+    pairs: list[tuple[str, str]] = []
+    for digest in sorted(entries):
+        entry = entries[digest]
+        if len(str(digest)) != 64 or not isinstance(entry, dict):
+            continue
+        relative = str(entry.get("artifact_path", ""))
+        recorded = str(entry.get("artifact_sha256", ""))
+        path = _ROUTER_CALIBRATION_ROOT / relative
+        if not relative or not path.exists():
+            continue
+        try:
+            data = path.read_bytes()
+        except OSError:
+            continue
+        if hashlib.sha256(data).hexdigest() != recorded:
+            # The file on disk is not the file that was indexed.
+            continue
+        try:
+            payload = json.loads(data.decode("utf-8"))
+        except ValueError:
+            continue
+        if calibration_is_explicitly_rejected(payload):
+            continue
+        # The artifact must also agree with the key it is filed under; a
+        # mislabelled entry would bind a calibration to the wrong image.
+        if str(payload.get("source_sha256", "")) != str(digest):
+            continue
+        pairs.append((str(digest), str(path)))
+    return tuple(pairs)
+
+
+def resolve_calibration(source_sha256: str) -> tuple[dict[str, Any], str] | None:
+    """Return the calibration this bridge will decode ``source_sha256`` under.
+
+    Two stores are consulted, in a pinned precedence:
+
+    1.  the legacy attempt history — when it binds this source hash, the
+        lexicographically last (therefore highest-numbered) attempt wins,
+        matching the zero-padded numbering convention of the parity history;
+    2.  otherwise the router-emitted index.
+
+    Explicitly rejected calibrations were already removed from both indexes,
+    so anything returned here has either a positive status or no status at all.
+
+    Returns ``None`` when neither store binds this exact source hash — the
+    caller must then treat row-joint decode as unavailable rather than
+    inventing a lattice.
+    """
+
+    for index in (_calibration_index(), _router_calibration_index()):
+        matches = [item for item in index if item[0] == source_sha256]
+        if matches:
+            chosen_path = matches[-1][1]
+            payload = json.loads(Path(chosen_path).read_text(encoding="utf-8"))
+            return payload, chosen_path
+    return None
 
 
 def _demote_stolen_blank_cells(
