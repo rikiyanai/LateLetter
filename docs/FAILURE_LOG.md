@@ -12459,3 +12459,79 @@ static-glyph animation is represented as data here.
   by evidence for promotion, five are blocked on a glyph decision that is the
   operator's, and the promotion step remains a separate, deliberate act.
   ComplaintRef: operator art grant, 2026-08-06.
+
+### Static-glyph animation: the asciicker technique transfers, its alphabets do not (2026-08-06)
+
+The operator asked for a static-glyph smoke animation for the granted coffee
+mug and pointed at prior art in the asciicker-Y9-2 checkout. That checkout was
+audited read-only. Findings at scratchpad/audit-asciicker-glyph-anim.md.
+
+**The prior art is richer than hoped, and it is a written contract rather than
+a trick.** asciicker-Y9-2 holds an explicit law for this: the selected product
+cell MAY cycle its foreground glyph over time, but the animation MUST NOT move
+the glyph around neighbouring cells as a proxy for wind, rain, smoke, fire,
+wings, walking or swimming. That is the same discipline this project already
+enforces when it refuses renderer-invented decoration, and it is the reason
+the technique is worth importing at all.
+
+Concrete owners found:
+- `scripts/glyph_families_viewer.py` — a curses browser that animates glyph
+  families in place at `frame % len(members)`, 4 fps.
+- `adhoc/glyph_fx_preview.py` — a 233-line grass/leaves/rain FX preview TUI,
+  close to a drop-in starting point for a review surface here.
+- `godot_project/shaders/cell_owner_product.glsl` — six live implementations
+  in one GLSL file: foliage wind (:2268-2409), fire flicker (:5854-5911),
+  smoke (:10596-10635), water (:3118-3131), rain/snow (:4118-4324), twinkle
+  (:10644-10656). Nothing in `.gd`/`.tscn`/`.tres`.
+
+**The data shape, which is the part worth copying.** An animation is
+`{mode: cycle|ramp|spin|fill, size: N, frames: [ordered glyph frames],
+role_hint, animation_semantics}`. Frame count IS loop length. There is no
+timing and no phase stored in the asset; the runtime supplies both:
+
+```
+frame = frames[ floor(t * rate_hz + fract(cell_index * 0.61803399)) % size ]
+```
+
+`0.61803399` is the golden-ratio conjugate, giving each cell a maximally
+spread phase with no clustering and no hash table.
+
+**The measured trap, recorded so it is not rediscovered.** The per-cell offset
+must go INSIDE the floor. Putting it outside makes every cell tick in unison;
+the source repo measured the difference as a 47.73% peak change rate collapsing
+to 7.85% once the offset was moved inside. That repo also explicitly rejects
+random per-cell glyph picks as "shimmer" — the frames must be an ordered
+progression, not a lottery.
+
+**The alphabets cannot be imported, and this is not a small caveat.** Every
+authored glyph family in that repo was checked against the cmap of
+`web/fonts/lateletter-garden.woff`. **All of them are missing entirely:**
+
+| family | glyphs | result against our face |
+|---|---|---|
+| smoke (torch, the recommended one) | `⋏∧⋀` | MISSING U+22CF U+2227 U+22C0 |
+| smoke curl | `⃔⃕⃡` | MISSING U+20D4 U+20D5 U+20E1 |
+| fire/torch/smoke | `٨۸۵` | MISSING U+0668 U+06F8 U+06F5 |
+| foliage wind | `ไใโ` | MISSING U+0E44 U+0E43 U+0E42 |
+| rain ramp | `♩♪♫` | MISSING U+2669 U+266A U+266B |
+
+This is the same wall the operator's granted gift art hit in the entry above,
+now confirmed to be general rather than incidental: the bundled face carries an
+ASCII-shaped repertoire, and this project additionally requires an `ascii-safe`
+profile of one printable ASCII character per cell for every asset
+(atlas.py:112-114, :199-200, :241-242). So the asciicker alphabets fail BOTH
+gates, exactly as the Unicode gift drawings did.
+
+**What does transfer:** the contract, the data shape, the phase formula, the
+inside-the-floor correction, and the ramp-not-lottery rule. Only the glyph
+inventory has to be re-authored in ASCII. Candidate ASCII smoke ramps were
+checked against the same face and all are present and printable-ASCII:
+`. o O`, `` ` ' " ``, `. : *`, `, ; :`, `^ ~ -`. A rising-wisp reading argues
+for a size-3 `ramp` (small to large, or tight to open) rather than a `cycle`.
+
+- **Status:** TECHNIQUE AND DATA SHAPE RECORDED AS BUILD INPUT; ALPHABET
+  BLOCKED ON ASCII RE-AUTHORING. No animation was added and no asset verdict
+  was written. The mug itself (`coffee-mug.txt`, 5x1, pure ASCII) is already
+  cleared by evidence; only its smoke needs an authored ASCII ramp and an
+  operator look. ComplaintRefs: operator art grant, 2026-08-06; operator
+  request for a static smoke animation, 2026-08-06.
