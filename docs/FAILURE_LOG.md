@@ -13761,3 +13761,59 @@ the ensemble is diagnostic context.
 - **Status:** IMPLEMENTED (UNPROVEN — pending operator review of any real
   attempt). ComplaintRef: Wayfinder map: build deterministic PNG-to-logical-
   Unicode text-art recovery; calibration emitter outcome, 2026-08-06.
+
+### Operator decisions: undated letters are a real state, and authored gifts are uncapped (2026-08-06)
+
+Two of the specification's seven open questions are answered and locked. Both
+bind the authoring questionnaire child.
+
+**Question 5 — TBD dates. LOCKED as option (b).** A letter may exist in the
+questionnaire WITHOUT a date. It is shown as "not ready", and it is simply
+omitted from the draft's `messages` array until a date is supplied.
+
+- This is closest to SPEC §5.2, which makes "TBD" a real state and forbids
+  exporting a TBD message: an undated letter is never exported because it
+  never enters `messages`, so the prohibition is satisfied by construction
+  rather than by a check that could be forgotten.
+- It requires NO schema change. `message_specs` continues to demand a real ISO
+  date on every message it receives; the questionnaire simply does not hand it
+  the undated ones.
+- It costs nothing in the service, which never learns the undated letter
+  exists.
+- The operator's reason is the strongest one: it matches how people actually
+  write. An author starts a letter for "when she graduates" long before that
+  date is knowable, and a form that refuses to hold that letter until the date
+  is known would lose the letter, not the date.
+
+Consequence for the build: the questionnaire owns the undated state entirely.
+It must persist undated letters in the DRAFT (autosaved through
+`PUT /api/author/session`, which has no date requirement), render them as "not
+ready", exclude them when composing `messages`, and say plainly at the review
+and export stages that an undated letter is not in the bundle. An author who
+cannot tell that a letter was left behind is the failure mode to design
+against.
+
+**Question 6 — a cap on authored gifts. LOCKED as NO CAP.** The suggestion of
+a cap is withdrawn; it was inherited from the specification's reasoning without
+being examined, and it conflated two different things:
+
+- **How many gifts an author may SCHEDULE** — uncapped. An author writing to a
+  child may want a gift on every birthday for fifteen years. A cap there would
+  be the product telling someone their love is too long, which is the opposite
+  of what this product is for.
+- **How many gifts are SIMULTANEOUSLY VISIBLE in one region** — a genuine
+  composition constraint, owned by the margin rule and the renderer's regional
+  budget, not by an authoring limit. If a scene strains, the repair is
+  placement policy, and it would be visible in a capture. Revisit only against
+  an actual broken scene, never pre-emptively.
+
+The one honest limit that remains is structural rather than arbitrary: **one
+gift per beat**, because a beat is one moment. Many beats therefore mean many
+gifts, and the timeline is the natural place for that plurality to live.
+
+- **Status:** BOTH DECISIONS LOCKED. Remaining open specification questions:
+  #2 (`recipient_name` — draft-only, plaintext bundle field, or encrypted) and
+  #7 (whether the SPEC §5.4 passphrase-loss warning screens ship in this
+  build). Neither blocks the letters stage. ComplaintRefs: Wayfinder map: the
+  whole web product, authoring through recipient (2026-08-05); operator scope
+  decision entry (2026-08-06).
