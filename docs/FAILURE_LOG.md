@@ -14345,3 +14345,54 @@ territory and was not altered.
   proposed by this entry. The defect stands exactly as the prior entry
   described it; only the menu of remedies has shrunk to one.
   ComplaintRefs: the anchor-cell stamp entry, 2026-08-07; 9bf3147.
+
+### Repair (1) is impossible; a preview of repair (2) shows what the stamp hides (2026-08-07)
+
+Two results, one negative and one that should be looked at before any decision.
+
+**Repair (1) — mapping the four gift ids into `FIXTURE_ASSETS` — is a strict
+no-op, and was withdrawn rather than committed.** The reason is a version split
+nobody had named: `web/garden-atlas.mjs:3` imports `atlas.v1.json`, which holds
+26 assets and none of the four gifts, while the gifts and their art live only in
+`atlas.v2.json` (36 assets). So adding map keys hands `assetGlyph` an id that
+v1 has never heard of, and it returns the same `'F'`. Measured live: all four
+still stamp `F` at their anchor cells, and a whole-render diff found 40 changed
+cells, every one ambient animation, and 0 of 11 anchor cells changed. The Python
+counterpart `_FIXTURE_ASSET` (src/lateletter/garden/renderer.py:27-42) also
+loads v1 and also emits `F`, so both runtimes already agree and there is nothing
+to sync. Repointing the table at v2 — the only variant that would bite — stamps
+a BLANK for coffee_mug, mailbox, lantern and bench, which is worse than a wrong
+letter because an invisible hole is not noticed. Nothing was committed but the
+finding.
+
+**Preview of repair (2), rendered but NOT committed.** The live standalone
+garden was loaded twice in one session, the second time with
+`web/garden-painting.mjs` patched at the network layer so the `render_cells`
+stamp is skipped whenever `presentation.lines` is non-empty — that is, whenever
+the object actually contributed a drawing. Nothing in the checkout changed. Read
+as DOM text, since the question is literally which character occupies one cell:
+
+| fixture | stock | guarded |
+|---|---|---|
+| mailbox | `_M|_` | `_||_` |
+| lantern | `/_o_\` | `/___\` |
+
+Ink rows are 39 in BOTH runs, so the guard removes nothing except the stamp.
+
+What this establishes: the `M` in the mailbox and the `o` in the lantern are
+not drawing. The mailbox's own art is `_||_` — a post — and the lantern's is
+`/___\` — a base. Every accepted fixture has been painting with one cell of its
+art replaced, in every capture the operator has ever reviewed, and the
+substituted glyph is plausible enough that it reads as the drawing rather than
+as damage.
+
+That also reframes the acceptance question honestly: the operator accepted
+these fixtures as they appeared WITH the stamp. Removing it does not restore
+something they approved; it reveals something they have not seen. Which is
+precisely why it is their decision and not a tidy-up, and why the preview
+exists.
+
+- **Status:** REPAIR (1) WITHDRAWN AS A NO-OP; REPAIR (2) PREVIEWED IN THE LIVE
+  PRODUCT AND NOT APPLIED. No renderer code committed. The four gifts still
+  paint an alien `F` at their anchor cell and cannot be offered to an author as
+  drawn until this is decided. ComplaintRefs: 7551269; 20027eb; 9bf3147.
