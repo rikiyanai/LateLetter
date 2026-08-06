@@ -40,6 +40,29 @@ _FIXTURE_ASSET = {
     "compost": "fixture.compost", "basket": "fixture.basket",
     "sign": "fixture.sign", "memorial_stone": "fixture.memorial_stone",
 }
+
+# The single lattice glyph for a fixture whose drawing lives only in atlas v2.
+#
+# Mirrors ``V2_ONLY_FIXTURE_STAMP_GLYPHS`` in web/garden-atlas.mjs, and exists
+# for the same reason: the four operator-granted gift drawings of 2026-08-06 are
+# deliberately v2-only, because v1 is the pre-artwork schema where every asset
+# is one glyph in a 1x1 box, and tests/garden_contract/test_atlas_v2.py pins
+# both that exclusion and a byte-for-byte migration of v1 into v2. Since this
+# renderer loads atlas v1, those ids miss ``_FIXTURE_ASSET`` and fall back to
+# the anonymous "F".
+#
+# Each character below is the glyph the asset's OWN art already places at its
+# OWN declared anchor cell, so the value carried here never contradicts the
+# drawing it stands for:
+#   coffee_mug     anchor (3,1) of ":c[_]"  -> "_"
+#   ice_cream_cone anchor (2,1) of "  V"    -> "V"
+#   mixtape        anchor (2,0) of "[o=o]"  -> "="
+#   popsicle       anchor (1,2) of " | "    -> "|"
+#
+# Both runtimes must agree, so a change here needs the same change there.
+_V2_ONLY_FIXTURE_STAMP_GLYPHS = {
+    "coffee_mug": "_", "ice_cream_cone": "V", "mixtape": "=", "popsicle": "|",
+}
 class GardenRenderer:
     """Quantize a read-only scene projection into a terminal viewport."""
 
@@ -134,9 +157,16 @@ class GardenRenderer:
                     group = item.semantic_state.get("connected_group")
                     group = str(group) if group is not None else None
                     asset = self._assets.get(_FIXTURE_ASSET.get(catalog, f"fixture.{catalog}"))
-                    frame = atlas_asset_frame(
-                        asset, str(item.semantic_state.get("presentation_state", "idle")),
-                    ) if asset else (("F",),)
+                    if asset:
+                        frame = atlas_asset_frame(
+                            asset, str(item.semantic_state.get("presentation_state", "idle")),
+                        )
+                    else:
+                        # A v2-only fixture has no v1 asset to read a glyph from.
+                        # Without this the anonymous "F" would stand in for the
+                        # operator's granted drawing; the mapped glyph is the one
+                        # that drawing already places at its own anchor cell.
+                        frame = ((_V2_ONLY_FIXTURE_STAMP_GLYPHS.get(catalog, "F"),),)
                     render_cells = item.semantic_state.get("render_cells", ())
                     if isinstance(render_cells, (list, tuple)) and render_cells:
                         for cell in render_cells:

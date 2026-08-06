@@ -14420,3 +14420,78 @@ plus `acceptance-receipt.json`, receipt hash `ba9360c9b44a8271…`.
   one source; every other queue source remains unconverted). ComplaintRef:
   first-live-candidate entry, 2026-08-06; Wayfinder map: build deterministic
   PNG-to-logical-Unicode text-art recovery.
+
+### The granted gifts stamp their own glyph; the reviewed garden is untouched (2026-08-07)
+
+Implements the operator's chosen route after both earlier attempts were
+withdrawn. The four operator-granted gift fixtures now paint their granted art
+instead of an anonymous `F`, and no existing fixture changed.
+
+**Why the two earlier routes failed, in order.** Mapping the ids into
+`FIXTURE_ASSETS` alone was a no-op: `web/garden-atlas.mjs:3` imports
+`atlas.v1.json`, which holds 26 assets and none of the gifts, so the lookup
+still missed and still returned `'F'`. Adding the gifts to v1 was then refused
+on inspection: `tests/garden_contract/test_atlas_v2.py:91-107` enumerates these
+exact four as v2-only and `:331-340` pins `migrate(v1)` byte-for-byte against
+the committed v2 file, and the test's own comment states the principle -- "v1
+is the pre-artwork schema in which every asset is one glyph in a 1x1 box, and
+writing a real drawing back into it would describe v1 as something it never
+was." A migration attempt also emitted each gift twice, which `validate_atlas`
+rejects.
+
+**What landed instead.** A small declared stamp-glyph table in both runtimes,
+consulted before the v1 atlas lookup:
+`V2_ONLY_FIXTURE_STAMP_GLYPHS` (web/garden-atlas.mjs) and
+`_V2_ONLY_FIXTURE_STAMP_GLYPHS` (src/lateletter/garden/renderer.py). This is
+precisely what v1 was for -- one glyph per object -- without mutating a pinned
+artifact.
+
+Each glyph was derived from the asset's OWN art at its OWN declared anchor
+cell, read out of atlas.v2.json rather than chosen:
+
+| fixture | anchor | art row | glyph |
+|---|---|---|---|
+| coffee_mug | (3,1) | `:c[_]` | `_` |
+| ice_cream_cone | (2,1) | `  V` | `V` |
+| mixtape | (2,0) | `[o=o]` | `=` |
+| popsicle | (1,2) | ` \| ` | `\|` |
+
+Because the stamped glyph equals the glyph the drawing already places there,
+the stamp lands INVISIBLY. That is strictly better than the existing fixtures
+manage -- `mailbox` stamps `M` over its own `|`, `lantern` stamps `o` over its
+own `_` -- and it was achieved without touching them.
+
+**Verified in the live product on the real authoring path.** A `garden_beats`
+draft placing `kind: "fixture"`, `catalog_id: "fixture.coffee_mug"` was sealed
+by `make_letter.build()`, loaded through the product's own `#file-input`,
+unlocked, and returned to the garden through `#btn-arc-back`. Painted DOM rows,
+read as text:
+
+- mug: `;||:c[_],` -- the granted drawing intact, where it previously read
+  `:c[F]`
+- mailbox: `"\"_M|_,||` -- unchanged
+- lantern: `,.^/_o_\~.` -- unchanged
+- a scan for `[F]` anywhere in the frame: none
+
+A first attempt with a `letter.due` condition and a past-dated schedule did NOT
+fire -- the runtime reported only the six starter fixtures -- and is recorded
+because it is a real authoring trap: the proven shape is `visit.total >= 1`
+with no schedule, matching the existing `bench-reveal` beat. Which conditions
+reliably fire for an authored gift is therefore an open question for the
+questionnaire's gift stage, not a settled one.
+
+Both runtimes were asserted to declare the identical table, and the new ids
+were asserted disjoint from `_FIXTURE_ASSET` so no existing fixture can be
+shadowed. Suites: node 204/204; Python garden set 323 passing with the same two
+known-red `test_release_acceptance.py` items. No assertion was weakened.
+
+**Not repaired, deliberately.** The underlying defect stands: every fixture
+still loses its anchor cell to an unguarded stamp
+(web/garden-painting.mjs:2596-2600). The operator chose to preserve the
+reviewed appearance rather than reveal it. `mailbox` and `lantern` still paint
+a glyph over their own art, and the preview of what guarding the stamp would
+restore remains recorded and undecided.
+
+- **Status:** IMPLEMENTED, VISUALLY INSPECTED BY AGENT — NOT OPERATOR-ACCEPTED.
+  The four granted gifts can now be offered to an author as drawn.
+  ComplaintRefs: 7551269; 39a0477; 20027eb; 9bf3147.
