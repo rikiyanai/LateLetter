@@ -99,6 +99,37 @@ export const FIXTURE_CATALOG = Object.freeze({
   basket: { name: 'Garden basket', footprint: [1, 1], blocks_movement: false, affordances: ['inventory', 'gather'], actions: ['inspect', 'primary_interact'] },
   sign: { name: 'Garden sign', footprint: [1, 1], blocks_movement: true, affordances: ['narrative', 'read'], actions: ['inspect', 'primary_interact'] },
   memorial_stone: { name: 'Memorial stone', footprint: [1, 1], blocks_movement: true, affordances: ['inscription', 'memory-discovery'], actions: ['inspect', 'open_journal'] },
+  // --------------------------------------------------------------------------
+  // Operator-granted gift drawings (promoted to atlas assets in b57441f).
+  //
+  // WHY THEY ARE HERE. The art was already accepted -- `fixture.coffee_mug`,
+  // `fixture.ice_cream_cone`, `fixture.mixtape` and `fixture.popsicle` are
+  // hash-bound operator grants -- but accepted art is not the same thing as
+  // authorable art. `authoredEntityKind`/`validateAuthoredEntity` decide what
+  // an author may place by asking whether the catalog leaf is a key of this
+  // object, exactly as `FIXTURE_CATALOG` does on the Python side. Without a key
+  // here the browser would refuse a fixture the Python grammar accepts, which
+  // is precisely the cross-runtime disagreement the conformance vectors exist
+  // to prevent.
+  //
+  // WHY THEY ARE NOT IN `STARTER_FIXTURES`. A gift is something one person
+  // chose to send to one person. The generator must never place one on its own,
+  // or every recipient receives a gift nobody sent. These four are
+  // AUTHORABLE-ONLY: reachable from an authored program, absent from the
+  // default scene. `STARTER_FIXTURES` stays at six entries below.
+  //
+  // Footprint is in WORLD TILES, not art cells: the mailbox draws into a 7x4
+  // art box and still occupies one tile. These are hand-held keepsakes, so one
+  // tile each. `blocks_movement: false` follows the small-portable-object
+  // precedent (`basket`, `watering_can`) rather than the furniture precedent,
+  // and keeps an authored placement from sealing off a corner of the garden.
+  //
+  // Mirrors the four entries at the end of `FIXTURE_CATALOG` in
+  // `src/lateletter/garden/world/fixtures.py`.
+  coffee_mug: { name: 'Coffee mug', footprint: [1, 1], blocks_movement: false, affordances: ['keepsake', 'memory-discovery'], actions: ['inspect', 'primary_interact', 'open_journal'] },
+  ice_cream_cone: { name: 'Ice cream cone', footprint: [1, 1], blocks_movement: false, affordances: ['keepsake', 'memory-discovery'], actions: ['inspect', 'primary_interact', 'open_journal'] },
+  mixtape: { name: 'Mixtape', footprint: [1, 1], blocks_movement: false, affordances: ['keepsake', 'memory-discovery'], actions: ['inspect', 'primary_interact', 'open_journal'] },
+  popsicle: { name: 'Popsicle', footprint: [1, 1], blocks_movement: false, affordances: ['keepsake', 'memory-discovery'], actions: ['inspect', 'primary_interact', 'open_journal'] },
 });
 
 const REQUIRED_FUNCTIONAL_FIXTURES = Object.freeze([
@@ -124,6 +155,13 @@ export const FIXTURE_VERBS = Object.freeze({
   wind_chime: ['listen'], shed_edge: ['open', 'organize'], tool_rack: ['organize'],
   watering_can: ['fill', 'water'], compost: ['turn'], basket: ['review_inventory', 'gather'],
   sign: ['read'], memorial_stone: ['remember', 'observe'],
+  // The operator-granted gift drawings. `observe` first (it is also their
+  // primary act), `remember` second for the "more actions" path -- the same
+  // pairing `memorial_stone` uses, and both verbs already fall through the
+  // shared counter branch of `fixtureInteraction`, so these entries add no new
+  // reducer behaviour on either side of the parity vector.
+  coffee_mug: ['observe', 'remember'], ice_cream_cone: ['observe', 'remember'],
+  mixtape: ['observe', 'remember'], popsicle: ['observe', 'remember'],
 });
 
 /**
@@ -137,8 +175,9 @@ export const FIXTURE_VERBS = Object.freeze({
  *
  * A missing entry means the fixture declares no primary action; it is then
  * inert to direct activation and its verbs are reached through "more actions",
- * which 7.8.3.1 explicitly allows. Only the five default-scene fixtures are
- * authored so far -- the rest await the same judgement. This does NOT change
+ * which 7.8.3.1 explicitly allows. Only the default-scene fixtures and the four
+ * operator-granted gift drawings are authored so far -- the rest await the same
+ * judgement. This does NOT change
  * dispatch, which still falls back to the first verb; it governs only what the
  * world OFFERS as a one-click act.
  *
@@ -157,6 +196,22 @@ export const FIXTURE_PRIMARY_ACTIONS = Object.freeze({
   // to the spawned-opportunity path in 7.8.3.2, where the world can offer
   // exactly the one that currently applies. Looking is always safe.
   lantern: { verb: 'observe', label: 'Look at the lantern' },
+  // The four operator-granted gift drawings. They need a primary action for a
+  // reason none of the furniture does: `primary_verb`/`FIXTURE_PRIMARY_ACTIONS`
+  // is what makes an object tappable at all, and the MVP's whole promise is
+  // "tap the gift and a letter opens". Without an entry here the granted art
+  // would be registered and still untouchable.
+  //
+  // `observe` for the same reason the lantern chose it over `light`: looking is
+  // always available, never state-dependent, never consequential -- and it is
+  // what these objects are FOR. They are drawings someone sent to be looked at,
+  // not machinery to be operated. (A mixtape tempts `listen`, but this world
+  // has no audio to deliver, and a primary action must not promise what the
+  // world cannot do.)
+  coffee_mug: { verb: 'observe', label: 'Look at the coffee mug' },
+  ice_cream_cone: { verb: 'observe', label: 'Look at the ice cream cone' },
+  mixtape: { verb: 'observe', label: 'Look at the mixtape' },
+  popsicle: { verb: 'observe', label: 'Look at the popsicle' },
 });
 
 /**

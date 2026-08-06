@@ -30,8 +30,9 @@ class FixtureDefinition:
     # `None` means the fixture declares no primary action. It is then inert to
     # direct activation and its verbs are reached through "more actions" --
     # explicitly allowed by 7.8.3.1. Most of the catalog is currently `None`:
-    # the five default-scene fixtures are authored below, and the rest await the
-    # same authoring pass. This does NOT change dispatch, which still falls back
+    # the default-scene fixtures and the four operator-granted gift drawings
+    # are authored below, and the rest await the same authoring pass. This does
+    # NOT change dispatch, which still falls back
     # to `interaction_verbs[0]` in `_fixture_interaction`; it only governs what
     # the world OFFERS as a one-click act.
     primary_verb: str | None = None
@@ -41,10 +42,13 @@ class FixtureDefinition:
 
 
 FIXTURE_CATALOG: dict[str, FixtureDefinition] = {
-    # Primary actions are authored only for the five default-scene fixtures
-    # (`STARTER_FIXTURES`). Every other entry keeps `primary_verb=None` until it
-    # has been through the same authoring judgement, because a primary action is
-    # a promise about safety, not a convenience default.
+    # Primary actions are authored for the default-scene fixtures
+    # (`STARTER_FIXTURES`) and, at the end of this dict, for the four
+    # operator-granted gift drawings -- which need one because a gift that
+    # cannot be tapped cannot open a letter. Every other entry keeps
+    # `primary_verb=None` until it has been through the same authoring
+    # judgement, because a primary action is a promise about safety, not a
+    # convenience default.
     "bench": FixtureDefinition("bench", "Garden bench", ("inspect", "primary_interact"), ("sit", "animal-rest", "author-socket"), Vec2(2, 1), interaction_verbs=("sit", "observe"), primary_verb="sit", primary_label="Sit on the garden bench"),
     "fence": FixtureDefinition("fence", "Fence", ("inspect", "primary_interact"), ("boundary", "perch", "vine-support"), connected_group="fence", interaction_verbs=("open", "close")),
     "gate": FixtureDefinition("gate", "Garden gate", ("inspect", "primary_interact"), ("open-close", "route"), blocks_movement=False, connected_group="fence", interaction_verbs=("open", "close")),
@@ -83,6 +87,74 @@ FIXTURE_CATALOG: dict[str, FixtureDefinition] = {
     "basket": FixtureDefinition("basket", "Garden basket", ("inspect", "primary_interact"), ("inventory", "gather"), blocks_movement=False, interaction_verbs=("review_inventory", "gather")),
     "sign": FixtureDefinition("sign", "Garden sign", ("inspect", "primary_interact"), ("narrative", "read"), interaction_verbs=("read",)),
     "memorial_stone": FixtureDefinition("memorial_stone", "Memorial stone", ("inspect", "primary_interact", "open_journal"), ("inscription", "memory-discovery"), interaction_verbs=("remember", "observe")),
+    # ---------------------------------------------------------------------
+    # Operator-granted gift drawings (promoted to atlas assets in b57441f).
+    #
+    # WHY THEY ARE HERE AT ALL. The four drawings were already accepted art --
+    # `fixture.coffee_mug`, `fixture.ice_cream_cone`, `fixture.mixtape` and
+    # `fixture.popsicle` all carry `ascii-safe` and `browser-proportional`
+    # profiles and hash-bound `operator_grants[]` entries in
+    # `docs/garden-asset-acceptance.json`. But art acceptance alone does not
+    # make an asset AUTHORABLE. `parse_program` decides what an author may put
+    # in a garden, and it decides it by asking whether the catalog leaf is a
+    # key of this dict. Without a key here, `kind: "fixture"` was refused with
+    # "unknown runtime fixture asset", and the only route that parsed --
+    # `kind: "collectible"` -- painted the generic `authored_keepsake` mark
+    # instead of the operator's drawing. One route said no loudly; the other
+    # said yes and drew the wrong thing. Registering them here is what makes
+    # the granted art reachable from an authored program.
+    #
+    # WHY THEY ARE NOT IN `STARTER_FIXTURES`. A gift is a thing one specific
+    # person chose to send to one specific person. Putting a coffee mug in the
+    # default generated world would hand every recipient a gift nobody sent
+    # them, and would quietly convert an operator's drawing into set dressing.
+    # These four are AUTHORABLE-ONLY: an author may place them deliberately,
+    # and the generator never places them on its own. `STARTER_FIXTURES` is
+    # therefore left at its six entries, and `REQUIRED_FUNCTIONAL_FIXTURES`
+    # (the placement/persistence obligation set) is left at its twenty-two --
+    # neither list is a catalog, and neither should grow because the catalog
+    # did.
+    #
+    # WHY THE FOOTPRINT IS 1x1 DESPITE LARGER ART. Footprint is measured in
+    # WORLD TILES, not in art cells. `fixture.mailbox` draws into a 7x4 art box
+    # and still occupies one tile; `fixture.lantern` draws 7x7 and occupies
+    # one. These are small hand-held keepsakes, so one tile each is the honest
+    # measure -- the atlas `cell_box` (5x2, 3x2, 5x1, 3x3) governs how much ink
+    # the renderer lays down around the anchor, not how much ground is taken.
+    #
+    # WHY THEY DO NOT BLOCK MOVEMENT. A mug, a cone, a cassette and a lolly are
+    # objects you step around, not walls. `blocks_movement=False` also keeps an
+    # authored placement from making a garden unreachable: `layout_is_safe`
+    # only treats blocking fixtures as barriers, so an author who tucks a gift
+    # into a corner cannot accidentally seal the corner off. This follows the
+    # existing small-portable-object precedent (`basket`, `watering_can`),
+    # not the furniture precedent (`bench`, `mailbox`).
+    #
+    # WHY `primary_verb` IS `observe` FOR ALL FOUR. SPEC 7.8.3.1 requires the
+    # primary act -- the one a plain tap, click or Enter performs -- to be
+    # obvious, safe, and free of choices, and `primary_verb` is precisely what
+    # makes an object tappable at all (projection turns it into the object's
+    # `primary_action`; a fixture with `None` here is inert to direct
+    # activation). The MVP's whole promise is "tap the gift and a letter
+    # opens", so leaving these at `None` would have registered the art and
+    # still left it untouchable. `observe` is chosen for the same reason the
+    # lantern chose it over `light`: looking at a thing is always available,
+    # never state-dependent, and never consequential. It is also what these
+    # objects are FOR -- they are drawings someone sent to be looked at, not
+    # machinery to be operated. (A mixtape tempts `listen`, but this world has
+    # no audio to deliver, and a primary action must not promise what the world
+    # cannot do.)
+    #
+    # `remember` is the second verb rather than the primary: it belongs with
+    # the `memory-discovery` affordance and is reached through "more actions",
+    # exactly as it is on `mailbox` and `memorial_stone`. Both verbs are
+    # already handled by the shared counter branch of `_fixture_interaction`
+    # in BOTH engines, so no new reducer behaviour is introduced by these
+    # entries and the browser/Python fixture-verb parity vector stays exact.
+    "coffee_mug": FixtureDefinition("coffee_mug", "Coffee mug", ("inspect", "primary_interact", "open_journal"), ("keepsake", "memory-discovery"), blocks_movement=False, interaction_verbs=("observe", "remember"), primary_verb="observe", primary_label="Look at the coffee mug"),
+    "ice_cream_cone": FixtureDefinition("ice_cream_cone", "Ice cream cone", ("inspect", "primary_interact", "open_journal"), ("keepsake", "memory-discovery"), blocks_movement=False, interaction_verbs=("observe", "remember"), primary_verb="observe", primary_label="Look at the ice cream cone"),
+    "mixtape": FixtureDefinition("mixtape", "Mixtape", ("inspect", "primary_interact", "open_journal"), ("keepsake", "memory-discovery"), blocks_movement=False, interaction_verbs=("observe", "remember"), primary_verb="observe", primary_label="Look at the mixtape"),
+    "popsicle": FixtureDefinition("popsicle", "Popsicle", ("inspect", "primary_interact", "open_journal"), ("keepsake", "memory-discovery"), blocks_movement=False, interaction_verbs=("observe", "remember"), primary_verb="observe", primary_label="Look at the popsicle"),
 }
 
 # Full functional catalog required for placement, authored programs, fixtures

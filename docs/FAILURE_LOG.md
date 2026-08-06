@@ -13972,3 +13972,130 @@ a panel is either a wall or a parting shot.
   part is delivered. ComplaintRefs: Wayfinder child: research the question tree
   (2026-08-06); Wayfinder map: the whole web product, authoring through
   recipient (2026-08-05).
+
+### The four granted gift drawings are now authorable fixtures, and the renderer only surfaces their baseline row (2026-08-07)
+
+**What was wrong.** Commit `b57441f` promoted four operator drawings to atlas
+assets — `fixture.coffee_mug` (5x2, carrying the operator's three-frame
+`. o O` steam ramp), `fixture.ice_cream_cone` (3x2), `fixture.mixtape` (5x1),
+`fixture.popsicle` (3x3). All four carry `ascii-safe` and
+`browser-proportional` profiles and hash-bound `operator_grants[]` entries in
+`docs/garden-asset-acceptance.json`. Accepted art, and unreachable from an
+authored program. Measured by execution, before any change here:
+
+```
+coffee_mug:     REFUSED   $.entities[0]: unknown runtime fixture asset 'coffee_mug'
+ice_cream_cone: REFUSED   $.entities[0]: unknown runtime fixture asset 'ice_cream_cone'
+mixtape:        REFUSED   $.entities[0]: unknown runtime fixture asset 'mixtape'
+popsicle:       REFUSED   $.entities[0]: unknown runtime fixture asset 'popsicle'
+```
+
+That is `garden_program_from_draft` on a `garden_beats` draft whose entity
+declares `kind: "fixture"`. The other route parsed and lied: `kind:
+"collectible"` was accepted and painted `COLLECTIBLE_ART.authored_keepsake` — a
+generic keepsake mark, not a mug. One door refused loudly; the other said yes
+and drew the wrong object.
+
+**What was done.** The four are registered as first-class fixtures in both
+catalogs, by the existing mechanism and nothing new:
+
+- `src/lateletter/garden/world/fixtures.py` — four `FixtureDefinition` entries
+  at the end of `FIXTURE_CATALOG`, which is the dict `parse_program` consults.
+- `web/garden-world.mjs` — the mirrored entries in `FIXTURE_CATALOG`,
+  `FIXTURE_VERBS` and `FIXTURE_PRIMARY_ACTIONS`.
+
+Each is 1x1 in WORLD TILES (footprint is tiles, not art cells: `fixture.mailbox`
+draws into a 7x4 box and occupies one tile), `blocks_movement=False` following
+the small-portable-object precedent (`basket`, `watering_can`), affordances
+`keepsake` + `memory-discovery`, interaction verbs `("observe", "remember")`.
+
+`primary_verb` is `observe` for all four, with per-object labels. That field is
+what makes an object tappable at all — projection turns it into the object's
+`primary_action`, and a fixture with `None` is inert to direct activation — so
+without it the granted art would have been registered and still untouchable,
+which would have missed the point of the whole exercise. `observe` was chosen
+for the reason the lantern chose it over `light`: looking is always available,
+never state-dependent, never consequential, and it is what these objects are
+FOR. A mixtape tempts `listen`; this world has no audio to deliver, and a
+primary action must not promise what the world cannot do.
+
+They are deliberately NOT in `STARTER_FIXTURES`. A gift is something one person
+chose to send to one person; the generator placing one on its own would hand
+every recipient a gift nobody sent them. Verified by execution: a default world
+still generates exactly the same six starter fixtures in both engines
+(`bench, lantern, mailbox, planter, pond, stepping_stones`), with none of the
+four present. `REQUIRED_FUNCTIONAL_FIXTURES` is likewise untouched at
+twenty-two. The catalog itself went from 28 to 32 entries in both runtimes.
+
+**After, by the same execution probe:**
+
+```
+coffee_mug:     ACCEPTED  kind='fixture' catalog_id='coffee_mug'
+ice_cream_cone: ACCEPTED  kind='fixture' catalog_id='ice_cream_cone'
+mixtape:        ACCEPTED  kind='fixture' catalog_id='mixtape'
+popsicle:       ACCEPTED  kind='fixture' catalog_id='popsicle'
+```
+
+The draft carried an `entity.reveal` and a `letter.present` action against the
+gift, which is the MVP shape: the gift appears, and touching it leads to a
+letter.
+
+**Counts.** `node --test tests/garden_adapters/*.mjs` 204/204, unchanged from
+baseline. `pytest tests/garden_contract tests/garden_world
+tests/garden_acceptance` 323 satisfied with the 2 known-red
+`test_release_acceptance.py` items (FileNotFoundError on a deleted E2E file,
+pre-existing and untouched here). `pytest tests/garden_adapters` 36/36 —
+that suite holds the browser/Python fixture-verb conformance vector, which
+dispatches EVERY verb of EVERY catalog entry through both reducers and demands
+byte-identical world states; it is the check that proves the four new entries
+did not fork the two runtimes. No assertion was weakened and no count was
+lowered: no test asserts a literal catalog size, and the two that count
+fixtures derive their number from `STARTER_FIXTURES`, which did not change.
+
+**What the screenshots actually show — and the finding that came out of it.**
+The four were rendered through the real `CanonicalGardenRenderer` over a served
+repository in headless Chrome, one fixture per scene, and the PNGs were read.
+Three separate facts:
+
+1. The projection resolves the granted art. Each object carries
+   `visual_asset_id: fixture.<id>` and a `primary_action` of
+   `primary_interact` / `{fixture_action: observe}` with its authored label.
+   The collectible misroute is gone.
+2. The operator's steam ramp reaches the composed frame and advances. At
+   visual frames 0/10/20 the composer emits `.`, then `o`, then `O`, one cell
+   above the vessel, `source_id: fixture.coffee_mug`, `suppressed: false`.
+3. **But only the BASELINE row of a fixture's drawing reaches the visible
+   browser surface, and one cell of it is overstamped.** The mug paints as
+   `:c[F]` — the operator's `:c[_]` with its final `_` replaced — and the steam
+   row above it is blank on screen even though the frame composed it.
+
+Fact 3 is NOT caused by this registration, and the control proves it. Rendered
+the same way, `mailbox` — a starter fixture, atlas-owned and accepted long
+before this change — paints as `_M|_`: the baseline row of its four-row drawing
+with an `M` stamped into it, and its `   7   `, ` (__(_)` and `   ||  ` rows
+absent from the surface. Two shared mechanisms produce it:
+
+- The `render_cells` layer in `web/garden-painting.mjs` stamps
+  `glyphForProjection(object)` over the fixture's anchor cell after the art is
+  laid down. For a fixture the ATLAS V1 asset table knows, that is its own
+  semantic glyph (`M`); for these four it is the anonymous fallback `'F'`,
+  because they are deliberately v2-only — `tests/garden_contract/test_atlas_v2.py`
+  enumerates them as v2-only on the stated grounds that v1 is the
+  one-glyph-per-asset schema and writing a real drawing back into it would
+  describe v1 as something it never was.
+- Art rows whose only content is asset ink do not survive DOM row transport in
+  the current lattice paint mode, so every fixture in the browser shows one row.
+
+Neither is repaired here. Both are renderer-wide and would change how the
+entire accepted default scene looks, which is an operator judgement about
+pictures, not a lane-local correctness change. They are recorded so the next
+person does not rediscover them by surprise, and so nobody reads "the gift
+fixtures paint" as "the gift drawings appear whole".
+
+- **Status:** IMPLEMENTED, VISUALLY INSPECTED BY AGENT — NOT OPERATOR-ACCEPTED.
+  The four assets validate as `kind: "fixture"`, resolve their granted atlas
+  art with the operator's steam ramp advancing, and declare a safe primary
+  action so a tap can reach a letter. The renderer's baseline-row-only paint
+  and its anchor-cell glyph stamp remain open, are shared with the already
+  accepted starter fixtures, and are operator territory. Asset verdicts were
+  consumed here, never granted.
