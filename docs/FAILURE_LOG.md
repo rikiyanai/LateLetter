@@ -13885,3 +13885,90 @@ not told.
   obligation is part of the build's definition rather than something noticed
   afterwards. ComplaintRefs: operator decisions entry (2026-08-06); Wayfinder
   child: build the authoring questionnaire module (2026-08-05).
+
+### Question-tree research: the genre forgets to release the reader (2026-08-07)
+
+Answers the research child commissioned in "Wayfinder child: research the
+question tree the questionnaire should ask (2026-08-06)", and revises the stage
+cut. Full tree at scratchpad/research-question-tree.md (533 lines). Sources
+read: ethical-will and legacy-letter templates, Dignity Therapy (Chochinov),
+the Stanford Letter Project's seven tasks of life review, Byock's Four Things,
+the curated life-question genre (StoryWorth and guided journals), milestone-
+letter practice, and bereavement literature.
+
+**The finding that matters most: the genre transmits, but it does not
+release.** Ethical-will and legacy-letter templates are near-universally about
+transmission — values, wisdom, stories, advice, blessing. Almost none of them
+ask the writer to RELEASE the reader. Nobody is prompted to write "you are
+allowed to be happy", "you are allowed to be angry at me", "you are allowed to
+stop reading these", "you are allowed to love someone else". Bereavement
+literature says those are the load-bearing sentences. The template literature
+does not ask for them. That gap is the product opportunity, and the proposed
+tree gives it its own band.
+
+**The same failure in a different coat: legacy letters are abstract.** The
+dying hand over values and advice, because that is what feels worth handing
+over. What the bereaved treasure is the ordinary and the sensory — how you made
+coffee, what you hummed, what you were like on a Sunday. A letter of pure
+values is a letter about the writer's ideas; a letter with one Sunday in it is
+a letter with the writer in it. The tree forces at least one.
+
+**Strongest single question found:** "When did you feel most alive?" (Dignity
+Therapy, question 2). Six words, never mentions death, produces a scene rather
+than a sentiment, and is answerable in one line by someone who may not get a
+second sitting. That last property is the selection criterion this product
+needs and most question sets ignore.
+
+**Stage cut — substance CONFIRMED, count CHALLENGED.** Five counted stages plus
+one uncounted door, not six. Three revisions to the specification's proposal:
+
+- `resume` — KEEP but UNCOUNTED. It asks nothing; it is a door, not a step.
+  Counting it spends a step of the author's patience on a question that does
+  not exist.
+- `questions` — DISSOLVE INTO `letters`, rather than hide. A questionnaire
+  with no questions is a form, and SPEC §5.3 already places question-and-answer
+  INSIDE a message rather than in a global stage. The stage dies; the questions
+  ship, as an inline prompt drawer beside the letter body. This costs NO schema
+  change by design.
+- passphrase hint — MOVE from `people` to `export`, so the hint is written
+  next to the passphrase it hints at rather than several stages earlier.
+  **This contradicts SPEC §5.1's ordering and is therefore an operator
+  decision, not an agent one.**
+
+Counted length the author sees: 5. Stages that actually demand input: 3
+(`people`, `letters`, `export`); `gift` is passable in one click and `review`
+asks nothing.
+
+**The tree: 40 questions.** 17 metadata, 23 letter-body prompts. Only 6 are
+REQUIRED. 13 are marked emotionally heavy, and all 13 are opt-in and placed
+mid-panel — never first, never last, because a heavy question at either end of
+a panel is either a wall or a parting shot.
+
+**Schema consequences — 6 items, and most should not ship.**
+
+- `recipient_name`, `recipient_relationship`, `author_relationship` — already
+  covered by the operator's standing decision to extend the draft.
+- `steward_name` / `steward_contact` — NEW, and named the highest-value
+  deferred field in the whole specification, for a blunt reason: **a bundle
+  nobody delivers is a bundle that failed.** SPEC §5.1 has it; the flat draft
+  does not; it also touches the handoff README (SPEC §15.1). If it cannot ship
+  in the MVP, the research proposes a replacement that costs nothing and
+  stores nothing: the single sentence **"Tell one person this file exists."**
+- `key_dates` — DEFER. Genuinely nice for pre-filling letter and gift dates,
+  but a convenience, and nothing in the tree requires it.
+- `memory_tags` — REJECT for the MVP. Only pays off with an LLM prompt
+  selector, which is outside scope.
+
+**Open operator decisions this raises:**
+
+1. Accept the passphrase-hint move to `export` against SPEC §5.1's ordering,
+   or keep the hint in `people` and honour the SPEC.
+2. Ship `steward_name`/`steward_contact`, or use the no-storage sentence.
+
+- **Status:** RESEARCH CHILD ANSWERED; TREE AWAITING OPERATOR APPROVAL OR
+  REDLINE. Nothing implemented. The tree is a proposal about what the product
+  ASKS, which is content and emotional design and therefore operator
+  territory; the agent's part was to bring candidates with sources, and that
+  part is delivered. ComplaintRefs: Wayfinder child: research the question tree
+  (2026-08-06); Wayfinder map: the whole web product, authoring through
+  recipient (2026-08-05).
