@@ -14227,3 +14227,121 @@ Neither was applied. No renderer code was touched.
   The gift MVP cannot offer the mug as drawn until repair 1 at minimum lands.
   ComplaintRefs: 9bf3147; correction entry 2026-08-07; the authorable gift must
   offer only art that may paint, 2026-08-06.
+
+### Repair 1 was attempted and withdrawn: adding the four gift ids to `FIXTURE_ASSETS` changes nothing, because the glyph table reads atlas v1 (2026-08-07)
+
+The prior entry offered two repairs for the anchor-cell stamp and recommended
+repair 1 — add `coffee_mug`, `ice_cream_cone`, `mixtape`, `popsicle` to
+`web/garden-atlas.mjs`'s `FIXTURE_ASSETS` — as the small in-lane one that would
+make the four gifts "stamp a glyph from their own art rather than an alien `F`".
+
+**That premise is false.** I implemented repair 1, measured it, and took it back
+out. It is a strict no-op. No repo file is changed by this entry except this log.
+
+**Why.** `web/garden-atlas.mjs:3` imports `atlas.v1.json`, and builds its
+`ASSETS` map from that manifest's 26 assets. The four gift assets exist ONLY in
+`atlas.v2.json` (36 assets; `tests/garden_contract/test_atlas_v2.py:94-107`
+pins them as v2-only). So mapping `coffee_mug -> 'fixture.coffee_mug'` hands
+`assetGlyph` an id that `ASSETS.get` does not know, and `assetGlyph`
+(garden-atlas.mjs:31-36) returns its `fallback` — the same literal `'F'` as
+before. The missing map entry was never the operative cause; the operative
+cause is that the glyph path reads the v1 manifest while the art path reads v2
+(`web/garden-atlas-art.mjs`, generated from `atlas.v2.json`).
+
+**Measured at the module boundary.** Calling `glyphForProjection` directly on a
+fixture object, before and after adding the four keys:
+
+| catalog id | before | with the four keys added |
+|---|---|---|
+| coffee_mug | `F` | `F` |
+| ice_cream_cone | `F` | `F` |
+| mixtape | `F` | `F` |
+| popsicle | `F` | `F` |
+| mailbox (control) | `M` | `M` |
+| lantern (control) | `o` | `o` |
+| bench (control) | `=` | `=` |
+
+**Measured in the live product, same authoring route as the prior entry.** A
+`garden_beats` draft carrying all four gifts as `kind: "fixture"` entities with
+`entity.reveal` beats, sealed by `make_letter.build()` with the passphrase
+injected via `password_fn`, fed through the viewer's own `#file-input`, unlocked
+and entered with genuine pointer events. The four all placed
+(`__gardenReview.positions()` reports `gift-mug`, `gift-cone`, `gift-tape`,
+`gift-pop`). Rows reconstructed at true column indices from each span's
+`style.left / cellWidth` (7.82671875 px):
+
+| fixture | before | with the four keys added | its own art says |
+|---|---|---|---|
+| coffee_mug | `:c[F]` | `:c[F]` | `:c[_]` |
+| ice_cream_cone | `  F` | `  F` | `  V` |
+| mixtape | `[oFo]` | `[oFo]` | `[o=o]` |
+| popsicle | ` F ` | ` F ` | ` \| ` |
+| mailbox (control) | `  _M\|_ ` | `  _M\|_ ` | `  _\|\|_ ` |
+| lantern (control) | `^/_o_\~` | `^/_o_\~` | ` /___\ ` |
+
+A whole-render cell-by-cell diff of the two runs found 40 differing cells, all
+of them ambient animation phase (grass sway, pond ripple, the mug's own steam
+mark `O` -> `o`, distant birds). **Zero of the eleven object anchor cells
+differed.** The two renders are otherwise identical.
+
+**Why the obvious follow-on is much worse, not better.** The only way to make
+the map entries bite is to point the glyph table at `atlas.v2.json`. I measured
+that too, on a scratch copy. `assetGlyph` returns `frames[0].cells[0][0]` — the
+first cell of the first ROW — and in v2 almost every asset's row 0 begins with
+blank padding, because the art is centred over its anchor:
+
+| catalog id | glyph if the table read v2 |
+|---|---|
+| coffee_mug | `' '` (its row 0 is the `. o O` steam ramp) |
+| ice_cream_cone | `'('` |
+| mixtape | `'['` |
+| popsicle | `'.'` |
+| mailbox (control) | `' '` |
+| lantern (control) | `' '` |
+| bench (control) | `' '` |
+
+That would punch an invisible blank hole in the anchor cell of EVERY fixture
+including every long-accepted starter, replacing a wrong-but-visible letter with
+a silent gap. Strictly worse, and across the whole reviewed scene. Not applied.
+
+**The Python side is not diverging, and has no counterpart defect.**
+`src/lateletter/garden/renderer.py:27-42` holds `_FIXTURE_ASSET`, a dict with
+the identical 28 keys and 28 values as the browser's `FIXTURE_ASSETS` (set-diff
+empty in both directions). It differs in one way: line 136 falls back to
+`f"fixture.{catalog}"` instead of `undefined`, so an unmapped catalog id still
+names its asset. But `renderer.py:48` calls `load_atlas()`, which
+(`garden/atlas.py:765-769`) reads `atlas.v1.json` — so the four gift ids name an
+asset that is not in the table, `self._assets.get(...)` is `None`, and line 139
+substitutes the hard-coded frame `(("F",),)`. **Both runtimes stamp `F`, for the
+same underlying reason.** Adding keys to `_FIXTURE_ASSET` would be a no-op there
+twice over, so neither map was altered.
+
+**No test pins this map.** `FIXTURE_ASSETS` and `assetGlyph` are module-private
+and referenced by no test. `glyphForProjection` is exercised once,
+`tests/garden_adapters/test_garden_renderer.mjs:919`, and only on ANIMAL
+objects. Nothing asserts the `'F'` fallback anywhere. The browser/Python parity
+suite (`tests/garden_adapters/test_world_browser_conformance.py:139-213`)
+compares `visual_asset_id`, but that field is produced by the concatenation path
+in `world/generation.py:269`, never by either lookup map — which is exactly why
+a browser map missing four ids stayed invisible to it. No assertion was altered
+or weakened; none needed to be.
+
+**Test counts, unchanged from baseline because no product code changed.**
+`node --test tests/garden_adapters/*.mjs` -> 204 pass / 0 fail.
+`PYTHONPATH=src python3 -m pytest -q tests/garden_contract tests/garden_world
+tests/garden_acceptance` -> 323 pass / 2 fail; the two
+`test_release_acceptance.py` failures are the known-red pre-existing pair.
+
+**What this means for the two repairs.** Repair 1 as written is dead — it cannot
+improve the gifts, and the version of it that could (repointing at v2) degrades
+every fixture. So the gifts' `F` and the starters' misplaced `M`/`o`/`=` now have
+a SINGLE remedy between them, not two: repair 2, guarding the `render_cells`
+stamp at `web/garden-painting.mjs:2596-2600` so it never overwrites art that was
+already blitted. Nothing smaller reaches the symptom. That remains operator
+territory and was not altered.
+
+- **Status:** REPAIR 1 IMPLEMENTED, MEASURED, AND WITHDRAWN AS A NO-OP —
+  VISUALLY INSPECTED BY AGENT, NOT OPERATOR-ACCEPTED. No code change is
+  proposed by this entry. The defect stands exactly as the prior entry
+  described it; only the menu of remedies has shrunk to one.
+  ComplaintRefs: the anchor-cell stamp entry, 2026-08-07; 9bf3147.
