@@ -14396,3 +14396,27 @@ exists.
   PRODUCT AND NOT APPLIED. No renderer code committed. The four gifts still
   paint an alien `F` at their anchor cell and cannot be offered to an author as
   drawn until this is decided. ComplaintRefs: 7551269; 20027eb; 9bf3147.
+
+### FIRST PIPELINE-ACCEPTED TRANSCRIPT: long-stem-bloom attempt 002 (2026-08-07)
+
+The operator reviewed the long-stem-bloom machine candidate (19 rows, authored
+by `row-joint-lattice` under the admissible hash-bound calibration, selector
+reason `row_joint_screenshot_local_template_fit`) and approved it. The real
+tracked attempt was then created through production `transcribe()` at
+`long-stem-bloom/attempts/002-first-machine-candidate/`; the regenerated
+candidate was byte-identical to the reviewed text; an `OperatorReviewReceipt`
+(verdict approved, layout and human visual parity accepted, raster parity
+not_run) was written and `accept()` promoted the candidate — `accepted.txt`
+plus `acceptance-receipt.json`, receipt hash `ba9360c9b44a8271…`.
+
+- This is the first transcript in the repository produced end to end by the
+  production pipeline and accepted through the coded receipt path: geometry
+  proof, row-joint decode, unknown-cell naming, source-fit gates, machine
+  candidate, operator accept — no hand-authored or legacy-workflow step.
+- Machine-accepted queue count: 1 of 26 (bbbb-flowers and a8283c5cdb63b130
+  remain accepted from the legacy workflow; the rose remains
+  operator-authored art).
+- **Status:** ACCEPTED BY OPERATOR RECEIPT (this acceptance claims exactly
+  one source; every other queue source remains unconverted). ComplaintRef:
+  first-live-candidate entry, 2026-08-06; Wayfinder map: build deterministic
+  PNG-to-logical-Unicode text-art recovery.

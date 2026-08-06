@@ -1,0 +1,1 @@
+{"budget_seconds":120.0,"error":"recognizer replay exceeded 120.000s production ceiling","error_type":"_RecognizerBudgetExceeded","schema":"lateletter-recognizer-error-1","status":"ensemble_diagnostics_unavailable"}
