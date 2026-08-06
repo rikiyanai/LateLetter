@@ -13817,3 +13817,71 @@ gifts, and the timeline is the natural place for that plurality to live.
   build). Neither blocks the letters stage. ComplaintRefs: Wayfinder map: the
   whole web product, authoring through recipient (2026-08-05); operator scope
   decision entry (2026-08-06).
+
+### Amendment: the undated-letter obligation is binding, with acceptance criteria (2026-08-06)
+
+Amends "Operator decisions: undated letters are a real state, and authored
+gifts are uncapped (2026-08-06)". The decision there is unchanged; what follows
+was written as an observation and is hereby raised to a REQUIREMENT on the
+authoring questionnaire child, with criteria that can be checked rather than
+asserted. The operator confirmed the obligation and asked for it to be
+amended in.
+
+**The failure mode this exists to prevent.** An author writes letters they may
+not live to send. One of them has no date yet — "for when she graduates". The
+bundle exports, the author believes their letters are safe, and that letter is
+silently not in it. The person it was for never receives it, and nobody ever
+learns why. There is no recovery from this after the author is gone. It is the
+most consequential silent failure this product can have, and it is created
+BY the decision to let undated letters exist, so the guard must ship with the
+feature rather than after it.
+
+**Binding requirements on `web/author-app.mjs`.** All five must hold:
+
+1. **An undated letter is never lost.** It persists in the draft through
+   `PUT /api/author/session` like any other, survives reload and resume, and
+   is still there on the next session. The draft is the author's desk; nothing
+   they wrote may vanish from it because a field is blank.
+2. **It is visibly marked at the point of authoring.** In the letters stage the
+   undated letter carries a persistent "not ready — no date yet" state on the
+   letter itself, not only in a summary elsewhere. An author scrolling their
+   letters must be able to see which ones are not going.
+3. **The review stage states both lists.** Review must name what IS in the
+   bundle AND what is NOT, as two explicit lists with counts — not a single
+   list from which absence must be inferred. Absence is exactly what a tired
+   or grieving person fails to notice.
+4. **Export cannot proceed silently past an exclusion.** When at least one
+   letter is undated, the export step must state the exclusion in words naming
+   the specific letters, immediately before the act of exporting. Export is NOT
+   blocked — an author with one undated letter must still be able to ship the
+   others — but it may not happen without the exclusion having been said.
+5. **The post-export confirmation repeats it.** After the file is produced, the
+   confirmation names the letters that were left behind and says they remain in
+   the draft. This is the last moment the author is looking; it is where a
+   misunderstanding is still cheap to repair.
+
+**Acceptance criteria — how this is proven, not claimed.** Per SPEC §13 a suite
+result is a diagnostic and never visual acceptance, so both are required:
+
+- A browser check that authors two letters, dates one, leaves one undated,
+  exports, and asserts: the produced bundle's `messages` has length 1; the
+  undated letter is still present in the draft after reload; and the exclusion
+  text naming that letter appears at review, at export, and in the
+  confirmation.
+- Screenshots at 1400x950 and 390x844 of the letters stage, the review stage,
+  and the post-export confirmation, each showing the exclusion visible without
+  scrolling past it, and each LOOKED AT and described. Mobile matters most
+  here: it is the viewport where a two-list review most easily degrades into
+  one list with something scrolled off.
+
+**Explicitly NOT satisfied by:** a tooltip, a colour difference alone, a
+disabled control with no explanation, a count that requires arithmetic to
+notice, or copy that appears only in a place the author has already left. The
+requirement is that the author cannot honestly say afterwards that they were
+not told.
+
+- **Status:** REQUIREMENT RECORDED AND BINDING ON THE QUESTIONNAIRE CHILD. Not
+  implemented — the module does not exist yet. This entry exists so the
+  obligation is part of the build's definition rather than something noticed
+  afterwards. ComplaintRefs: operator decisions entry (2026-08-06); Wayfinder
+  child: build the authoring questionnaire module (2026-08-05).
