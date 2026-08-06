@@ -14152,3 +14152,78 @@ an author.
   the live behaviour is seen. ComplaintRefs: 9bf3147; operator art grant,
   2026-08-06; the authorable gift must offer only art that may paint,
   2026-08-06.
+
+### Every fixture loses its anchor cell to an unguarded stamp, and always has (2026-08-07)
+
+Settles the open paint question from the correction entry of 2026-08-07, and
+finds a defect far wider than the one it was sent to check. Verified twice:
+once by an agent driving the real authoring path end to end, and once at source
+by reading the two functions involved.
+
+**The chain works.** A `garden_beats` draft placing `kind: "fixture"`,
+`catalog_id: "coffee_mug"` was sealed by `make_letter.build()`, loaded through
+the product's own `#file-input`, unlocked, and reached the live garden: the
+runtime reports a seventh fixture `coffee_mug / gift-mug` at the authored
+position, projected as "Coffee mug". Authoring a gift and having it arrive in a
+recipient's garden is therefore demonstrated on the real path, not a harness.
+The steam ramp also advances in the live product: sampled ~600ms apart at the
+same column, `O` then `.` then `o`.
+
+**But the drawing is corrupted, and so is every other fixture's.** The mug
+paints `:c[F]` where its granted art says `:c[_]`. The replaced cell is exactly the
+asset's declared `anchor: [3,1]`. Controls taken from the SAME live render show
+the identical injury on long-accepted starter art:
+
+| fixture | paints | its own art says |
+|---|---|---|
+| coffee_mug | `:c[F]` | `:c[_]` |
+| mailbox | `  _M|_ ` | `  _||_ ` |
+| lantern | `^/_o_\~` | ` /___\ ` |
+
+Every fixture loses exactly ONE cell — its anchor cell — to a stamp.
+
+**Mechanism, read at source.** `web/garden-painting.mjs:2596-2600` iterates
+`state.render_cells` and calls `raster.put` once per cell, unconditionally,
+AFTER the art blit at :2583-2594 (`measuredArt` for atlas-owned fixtures,
+`art` for placeholders). There is no guard on whether art was already painted
+there, so the stamp overwrites the drawing's own ink. The glyph comes from
+`glyphForProjection` -> `web/garden-atlas.mjs:69`:
+`assetGlyph(FIXTURE_ASSETS[state.catalog_id], state.presentation_state, 'F')`.
+
+That explains both severities. For a mapped fixture, `FIXTURE_ASSETS` yields
+its own asset and `assetGlyph` returns that asset's FIRST cell — so the stamp
+is a glyph from the fixture's own drawing, landing on the wrong cell. Subtle,
+plausible-looking, and present in every capture the operator has ever
+reviewed: the `M` in the mailbox and the `o` in the lantern are not art, they
+are stamps. For the four new gifts, `FIXTURE_ASSETS` (garden-atlas.mjs:9-17+)
+has no entry, so the lookup is undefined and the literal `'F'` fallback is
+stamped instead — which is why the defect became visible only now.
+
+**Both earlier readings were partly right and partly wrong.** The original
+`:c[F]` observation was CORRECT and I retracted too much of it. My counter —
+that fixture art is not flattened — was ALSO correct: art does reach the DOM
+across multiple rows. The truth is narrower than either: no rows are lost, one
+CELL is, per fixture, every frame. The stamp repaints on every frame, so
+`:c[F]` was byte-identical across all three samples.
+
+**Two repairs, and they are not equivalent.**
+
+1. Add the four ids to `FIXTURE_ASSETS`. Small, in-lane, and makes the new
+   gifts behave exactly like every existing fixture — stamping a glyph from
+   their own art rather than an alien `F`. It does NOT stop the cell being
+   overwritten; it makes the corruption consistent and unobtrusive.
+2. Guard the stamp so it does not overwrite art already blitted. This is the
+   actual repair and would restore the anchor cell of EVERY fixture — the
+   mailbox's `|`, the lantern's `_`. It therefore changes how every
+   operator-reviewed fixture looks, which is operator territory, not a
+   tidy-up. It also needs care: `render_cells` plausibly exists to give each
+   fixture a lattice/hit glyph, so the guard must preserve that purpose where
+   no art exists.
+
+Neither was applied. No renderer code was touched.
+
+- **Status:** DEFECT CONFIRMED IN THE LIVE PRODUCT BY TWO INDEPENDENT ROUTES
+  AND READ AT SOURCE; UNREPAIRED PENDING AN OPERATOR DECISION ON WHICH REPAIR.
+  The gift MVP cannot offer the mug as drawn until repair 1 at minimum lands.
+  ComplaintRefs: 9bf3147; correction entry 2026-08-07; the authorable gift must
+  offer only art that may paint, 2026-08-06.
