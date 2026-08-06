@@ -14099,3 +14099,56 @@ fixtures paint" as "the gift drawings appear whole".
   and its anchor-cell glyph stamp remain open, are shared with the already
   accepted starter fixtures, and are operator territory. Asset verdicts were
   consumed here, never granted.
+
+### Correction: the flattened fixture art was the harness, not the product (2026-08-07)
+
+Amends the visual finding in "the four operator-granted gift drawings
+registered as authorable fixtures" (9bf3147). The registration itself stands;
+its rendering conclusion does not.
+
+**What the executing agent reported.** Rendering the new fixtures solo, the
+coffee mug painted as `:c[F]` -- its final `_` overstamped by an anonymous
+anchor glyph, and its steam row blank on screen -- while the composer emitted
+`.`/`o`/`O` with `source_id: fixture.coffee_mug` and `suppressed: false`. A
+control render of `mailbox`, a long-accepted starter fixture, showed the same
+single-row shape (`_M|_`). The agent concluded the loss was two pre-existing
+renderer-wide mechanisms and left them unrepaired as operator territory.
+
+**Why that conclusion does not hold.** The control was run in the same solo
+harness, so it could only show that the harness treats both fixtures alike --
+not that the PRODUCT does. Checked against the live standalone garden by
+reading the painted DOM rows directly (no screenshot, to keep the evidence
+textual): fixture drawings reach the live DOM across MULTIPLE rows.
+`|"|` and `_M|_` appear on separate rows; the bench's `(__(_)` and the
+planter's `|_____|` and `\_|UU_/` likewise occupy distinct rows. 39 of 66 rows
+carry ink. Multi-row fixture art is therefore NOT flattened in the product.
+
+The solo harness is the anomaly. This also matches the earlier promotion
+capture, where the same mug painted correctly as `:c[_]` with a visible steam
+`O` above it and three distinct frames -- that render went through the atlas
+asset path rather than the fixture path, and it was not flattened either.
+
+**What remains genuinely unverified, and must not be reported as settled.**
+No capture yet shows one of the four NEW fixtures painted in a live garden
+through the fixture path. The registration is proven at the catalog and
+authoring level -- `FIXTURE_CATALOG` is 28 -> 32, `STARTER_FIXTURES` is
+unchanged so the default world still generates the same six, and
+`garden_program_from_draft` now ACCEPTS a `kind: "fixture"` mug where it
+previously refused -- and the suites hold at node 204/204 and Python 323/2
+against the same two known reds. But paint is a separate claim from
+registration, and the only fixture-path render of these four came from a
+harness now shown to flatten art.
+
+Specifically still open: whether the anchor-glyph stamp puts an anonymous
+`F` over a cell of the mug's drawing in the LIVE product. If it does, the
+granted art is corrupted at paint time and the gift is not shippable as drawn;
+if it does not, the earlier `:c[F]` was entirely a harness artifact. That
+question is cheap to answer and must be answered before any gift is offered to
+an author.
+
+- **Status:** REGISTRATION HOLDS; ITS RENDERING CONCLUSION IS RETRACTED. Live
+  fixture-path paint of the four new drawings is UNVERIFIED and is the next
+  required evidence. No renderer change was made, and none is proposed until
+  the live behaviour is seen. ComplaintRefs: 9bf3147; operator art grant,
+  2026-08-06; the authorable gift must offer only art that may paint,
+  2026-08-06.
