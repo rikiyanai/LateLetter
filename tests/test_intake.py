@@ -103,6 +103,15 @@ class TestValidatePassphrase:
         assert len(errors) == 1
         assert errors[0].field == "passphrase"
 
+    def test_service_four_character_floor(self):
+        errors = validate_passphrase("123", "123")
+        assert any(
+            error.field == "passphrase"
+            and "at least 4 characters" in error.message
+            for error in errors
+        )
+        assert validate_passphrase("1234", "1234") == []
+
 
 @pytest.mark.parametrize("phrase,expect_warn", [
     ("abc", True),           # short

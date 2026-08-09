@@ -43,13 +43,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from lateletter.author_service import (  # noqa: E402
-    AuthorServiceError, write_bundle_file,
+    AuthorServiceError, passphrase_problem, write_bundle_file,
 )
 from lateletter.bundle import read_bundle  # noqa: E402
 from lateletter.garden.program import (  # noqa: E402
     ProgramValidationError, parse_program,
 )
-from lateletter.intake import passphrase_strength_warning  # noqa: E402
 from lateletter.sealed import (  # noqa: E402
     open_garden_program, open_gift_sentiment, open_message, verify_bundle_hmac,
 )
@@ -137,11 +136,9 @@ def _fresh_passphrase(password_fn=getpass.getpass) -> str:
         raise ValueError("passphrase entry cancelled") from exc
     if passphrase != confirmation:
         raise ValueError("passphrases do not match")
-    if len(passphrase) < 12:
-        raise ValueError("fresh passphrase must contain at least 12 characters")
-    warning = passphrase_strength_warning(passphrase)
-    if warning is not None:
-        raise ValueError(warning)
+    problem = passphrase_problem(passphrase)
+    if problem is not None:
+        raise ValueError(problem)
     return passphrase
 
 

@@ -144,7 +144,7 @@ class TestValidation:
 class TestWarnings:
     def test_strength_and_communication_warnings(self, tmp_path):
         output = []
-        _run(tmp_path, passwords=["abc", "abc"], output_fn=output.append)
+        _run(tmp_path, passwords=["1234", "1234"], output_fn=output.append)
         text = "\n".join(output)
         assert "short" in text.lower()     # strength warning
         assert "lost forever" in text       # communication warning

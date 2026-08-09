@@ -253,10 +253,19 @@ def test_builder_requires_v2_program_and_rejects_legacy_gifts(tmp_path):
     assert not output.exists()
 
 
-def test_fresh_passphrase_is_confirmed_and_strong():
+def test_fresh_passphrase_is_confirmed_and_accepted():
     answers = iter([FRESH_PASSPHRASE, FRESH_PASSPHRASE])
     assert _fresh_passphrase(lambda _prompt: next(answers)) == FRESH_PASSPHRASE
 
     mismatch = iter([FRESH_PASSPHRASE, "different phrase 2026!"])
     with pytest.raises(ValueError, match="do not match"):
         _fresh_passphrase(lambda _prompt: next(mismatch))
+
+
+def test_fresh_passphrase_uses_the_service_four_character_floor():
+    accepted = iter(["1234", "1234"])
+    assert _fresh_passphrase(lambda _prompt: next(accepted)) == "1234"
+
+    too_short = iter(["123", "123"])
+    with pytest.raises(ValueError, match="at least 4 characters"):
+        _fresh_passphrase(lambda _prompt: next(too_short))

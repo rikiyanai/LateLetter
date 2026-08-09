@@ -21,7 +21,7 @@ from lateletter.author_service import (  # noqa: E402
     AuthorServiceError, build_bundle, export_bundle_bytes, find_passphrase_key,
     passphrase_problem, serialize_bundle, validate_draft, write_bundle_file,
 )
-from lateletter.bundle import read_bundle, write_bundle  # noqa: E402
+from lateletter.bundle import Bundle, read_bundle, write_bundle  # noqa: E402
 from lateletter.sealed import open_message, verify_bundle_hmac  # noqa: E402
 
 STRONG_PASSPHRASE = "correct-horse-battery-staple-2026"
@@ -77,19 +77,27 @@ def test_preview_never_contains_message_bodies():
 
 # ── passphrase policy ───────────────────────────────────────────────────────
 
-@pytest.mark.parametrize("value", ["short", "", 12, None])
-def test_weak_passphrases_are_refused(value):
+@pytest.mark.parametrize("value", ["", "a", "abc", 12, None])
+def test_passphrases_below_the_four_character_floor_are_refused(value):
     assert passphrase_problem(value) is not None
 
 
-def test_a_strong_passphrase_is_accepted():
-    assert passphrase_problem(STRONG_PASSPHRASE) is None
+@pytest.mark.parametrize(
+    "value", ["1234", "aaaa", "password", STRONG_PASSPHRASE],
+)
+def test_four_or_more_characters_are_accepted_even_when_strength_copy_warns(value):
+    assert passphrase_problem(value) is None
 
 
-def test_export_refuses_a_weak_passphrase():
+def test_export_refuses_a_passphrase_below_four_characters():
     with pytest.raises(AuthorServiceError) as excinfo:
-        export_bundle_bytes(draft(), "short")
-    assert any("12 characters" in issue for issue in excinfo.value.issues)
+        export_bundle_bytes(draft(), "123")
+    assert any("4 characters" in issue for issue in excinfo.value.issues)
+
+
+def test_export_accepts_a_four_character_passphrase():
+    payload, _summary = export_bundle_bytes(draft(), "1234")
+    assert verify_bundle_hmac(Bundle.from_dict(json.loads(payload)), "1234")
 
 
 # ── validation ──────────────────────────────────────────────────────────────

@@ -15120,3 +15120,65 @@ would exceed this task's scoped publication authority.
   record: the 40-question research tree is restored and redlined (2026-08-10);
   Garden capture attempt 3: current sealed-bundle desktop/mobile package
   produced (2026-08-10).
+
+### Operator decision: passphrase floor is four characters (2026-08-10)
+
+The first question-tree approval decision is resolved. The current blocking
+minimum is **4 characters**, intentionally provisional and changeable through
+the canonical policy later. This means four characters are sufficient for
+export; it does not make the input numeric-only. Weak/common guidance remains
+advisory at or above the floor.
+
+`src/lateletter/author_service.py` is the sole blocking-policy owner. Its floor
+changed from 12 to 4 and it no longer converts the intake strength warning
+into an export error. The independent 12-character check in `make_letter.py`
+was deleted; that adapter and `intake.validate_passphrase` now consume
+`author_service.passphrase_problem`. Tests exercise rejection at three,
+acceptance at four (including `1234`), and a sealed four-character HMAC round
+trip. SPEC §5.1 and the research audit now state the same contract.
+
+The recovered `scratchpad/research-question-tree.md` remains byte-for-byte
+unchanged at SHA-256
+`68311dbebaa1e7db60f91bb848300180fd34fa4583ed77d645e0d7e5dcb0ea48`;
+its 12-character sentence is preserved evidence, not current canon. X1 remains
+held only on stage placement coupled to X2. The next operator question is
+passphrase/hint placement.
+
+Verification attempt 1 ran the broad author/intake lane: 90 passed and 1
+failed. `tests/test_intake_accessible.py::TestWarnings::test_strength_and_communication_warnings`
+still supplied the three-character value `abc` to reach advisory warning copy,
+so it now correctly stopped at the four-character blocking floor. This is a
+stale test fixture, not a product-policy mismatch. Successor: use a weak
+four-character fixture, rerun the same 91-test lane, then run consistency and
+diff checks.
+
+- **Status:** DECISION IMPLEMENTED; FIRST BROAD VERIFICATION ATTEMPT FAILED ON
+  A STALE THREE-CHARACTER FIXTURE; SUCCESSOR UNBLOCKED. ComplaintRefs: Recovery
+  and audit record: the 40-question research tree is restored and redlined
+  (2026-08-10); Wayfinder map update: recovered tree moves the parent frontier
+  to approval (2026-08-10).
+
+### Passphrase-floor successor verification and parent frontier update (2026-08-10)
+
+The stale accessible-intake fixture now uses `1234`: it reaches the advisory
+short-passphrase warning while satisfying the canonical blocking floor. The
+same broad author/intake lane then passed **91/91**. The earlier focused run
+passed 59/59, including rejection at three characters and a four-character
+sealed-bundle HMAC round trip.
+
+Consistency checks find one blocking length comparison, in
+`author_service.passphrase_problem`; `intake.py` retains only its separate
+less-than-eight advisory warning. `git diff --check` passes. The recovered
+question tree is still 533 lines with SHA-256
+`68311dbebaa1e7db60f91bb848300180fd34fa4583ed77d645e0d7e5dcb0ea48`.
+
+Parent-map consequence: the passphrase-minimum child is decided and verified.
+Browser implementation remains blocked on the rest of question approval; the
+frontier advances exactly one question to **passphrase and required-hint stage
+placement**, including when the no-recovery warning appears. No browser module
+or alternate bundle/content owner was added.
+
+- **Status:** FOUR-CHARACTER FLOOR VERIFIED; X1 MINIMUM SUBDECISION COMPLETE;
+  NEXT GRILLING QUESTION IS PASSPHRASE/HINT PLACEMENT. ComplaintRefs: Operator
+  decision: passphrase floor is four characters (2026-08-10); Wayfinder map:
+  the whole web product, authoring through recipient (2026-08-05).

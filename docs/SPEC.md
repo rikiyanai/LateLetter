@@ -270,7 +270,7 @@ Passphrase hint ......... [ What we called our first dog ]
 - All fields except Shared memories/tags are required. **Passphrase hint is required** — a grieving recipient who hasn't thought about the passphrase in years deserves every available cue. The author can write anything, but the field cannot be left empty.
 - Passphrase mismatch: inline error below the Confirm field (not a modal). Author cannot proceed until matched.
 - Key dates: free text stored as label+date pairs. No format enforcement — the author knows their own dates.
-- No minimum passphrase length enforced, but a **soft strength warning** is shown for short or common passphrases: *"This passphrase is short. Someone who finds this file could guess it."* The author can proceed — memorability is a valid priority — but the risk is surfaced.
+- Passphrases must contain at least **4 characters**. Below four is a blocking validation error; at four or more, short/common-passphrase guidance remains a **soft warning**: *"This passphrase is short. Someone who finds this file could guess it."* The author can proceed — memorability is a valid priority — but the risk is surfaced. Four is the current operator-set floor and may be revised later through the same canonical service policy.
 - **Passphrase communication warning** is shown immediately after the passphrase is confirmed during intake (not deferred to export): *"Important: If [recipient_name] cannot remember this passphrase, these letters are lost forever. Consider writing it down for someone you trust."* This ensures the warning fires even if the author loses capacity before the formal export flow.
 - Tab/Enter navigates between fields. `esc` exits intake (with confirmation if any field was filled).
 

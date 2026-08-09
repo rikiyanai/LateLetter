@@ -41,16 +41,15 @@ from lateletter.bundle import (
 from lateletter.garden.program import (
     GardenProgram, ProgramValidationError, parse_program,
 )
-from lateletter.intake import passphrase_strength_warning
 from lateletter.sealed import (
     open_garden_program, open_message, seal_bundle, seal_garden_program,
     seal_message, verify_bundle_hmac,
 )
 
-# A passphrase shorter than this is refused outright, before the strength
-# checker even runs. Twelve characters is the floor the command-line builder
-# has always enforced; it is restated here so every front end inherits it.
-PASSPHRASE_MIN_LENGTH = 12
+# This is the one blocking passphrase policy shared by every author front end.
+# Strength guidance is advisory UI copy; it must not become a second export
+# gate. The operator set the current floor to four characters on 2026-08-10.
+PASSPHRASE_MIN_LENGTH = 4
 
 # Any mapping key whose name suggests a secret must never reach a saved draft.
 # The session store applies its own version of this rule at its top level; the
@@ -125,19 +124,13 @@ def find_passphrase_key(value: Any, path: str = "") -> str | None:
 def passphrase_problem(passphrase: Any) -> str | None:
     """Return why this passphrase is unacceptable, or None if it is fine.
 
-    Length is checked here; everything else defers to the existing strength
-    checker in ``lateletter.intake`` so there is one definition of "strong".
+    Only the canonical four-character floor blocks export. Front ends may show
+    non-blocking strength guidance, but must not turn it into another policy.
     """
     if not isinstance(passphrase, str):
         return "passphrase must be text"
     if len(passphrase) < PASSPHRASE_MIN_LENGTH:
-        return (
-            f"provide a strong fresh passphrase of at least "
-            f"{PASSPHRASE_MIN_LENGTH} characters"
-        )
-    warning = passphrase_strength_warning(passphrase)
-    if warning is not None:
-        return warning
+        return f"passphrase must contain at least {PASSPHRASE_MIN_LENGTH} characters"
     return None
 
 

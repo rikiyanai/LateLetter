@@ -70,7 +70,7 @@ Current canon overrides the recovered proposal in four places:
 | G4 | REDLINE | optional | 0 | per gift beat | full `schedule.recurrence` object | Garden-program grammar | none | A boolean alone is not the destination. Yearly means `{frequency: yearly, intentional_unbounded: true}` plus canonical defaults. |
 | G5 | KEEP | conditional | 0 | required per gift beat | `letter.present.letter_id` via service `MESSAGE_n` substitution | author-service adapter | none | Only dated/exportable letters may appear in this selector. |
 | G6 | HOLD | optional | 0 | per gift beat | no approved authoring destination yet | editorial/product candidate only | none | `placement_hint` is legacy-v1 language, not the v2 beat contract. Hide this row until a canonical stable-position policy exists. |
-| X1 | HOLD | required | 0 | export only; never autosaved | separate passphrase argument to export service | SPEC crypto/export flow | none | Live `author_service.py` rejects fewer than 12 characters and tests lock that behavior, while SPEC §5.1 says warning-only. The UI must not choose between them; operator must decide policy, then service/SPEC/copy must agree. |
+| X1 | HOLD | required | 0 | stage remains coupled to X2; never autosaved | separate passphrase argument to export service | SPEC crypto/export flow + operator decision 2026-08-10 | none | Minimum resolved: REDLINE “at least 12” to a blocking 4-character floor; strength feedback is advisory above it. The row remains held only because passphrase/hint stage placement is the next operator decision. |
 | X2 | HOLD | required | 0 | exact stage remains operator decision | draft `passphrase_hint`, then plaintext bundle header | SPEC §5.1 | none | Required status is clear; placement conflicts. SPEC requires the warning immediately after passphrase confirmation during intake, while the recovered tree moves hint to export. |
 | X3 | HOLD | optional | 0 | only if schema/handoff owner is approved | draft steward fields and handoff README; not bundle metadata by default | SPEC intake/handoff | none | Decide whether to store `steward_name/contact`; otherwise show “Tell one person this file exists” without collecting data. |
 
@@ -103,12 +103,13 @@ Accounting: 28 MERGE + 94 ALT + 9 HOLD = 131. The active MVP remains the redline
 
 These are ordered by dependency. Per the grilling workflow they should be decided one at a time.
 
-1. Passphrase minimum policy: keep the live service's 12-character rejection and amend SPEC, or restore SPEC's warning-only policy in the service and tests.
-2. Passphrase hint placement: keep SPEC intake timing, move only the hint field to export while repeating the warning earlier, or amend the SPEC completely.
-3. Steward data: store optional steward name/contact in the draft and handoff package, or collect no steward data and show only the no-storage instruction.
-4. Accept/redline the row recommendations, especially B3, C1, C3, D1, D4, D5 and the eight prototype-only prompts with no close bank counterpart.
-5. Confirm conditional-required semantics: undated/unfinished letters stay in draft; only dated nonblank letters are service messages; gift fields are required per created beat, never for skipping gifts.
-6. Decide G6 placement ownership. Until then, the browser may not ask where a gift should sit.
+Resolved 2026-08-10: the blocking passphrase minimum is 4 characters. Strength feedback is advisory, and the floor may be revised later through the canonical service policy.
+
+1. Passphrase hint placement: keep SPEC intake timing, move only the hint field to export while repeating the warning earlier, or amend the SPEC completely.
+2. Steward data: store optional steward name/contact in the draft and handoff package, or collect no steward data and show only the no-storage instruction.
+3. Accept/redline the row recommendations, especially B3, C1, C3, D1, D4, D5 and the eight prototype-only prompts with no close bank counterpart.
+4. Confirm conditional-required semantics: undated/unfinished letters stay in draft; only dated nonblank letters are service messages; gift fields are required per created beat, never for skipping gifts.
+5. Decide G6 placement ownership. Until then, the browser may not ask where a gift should sit.
 
 ## Verified lineage sources
 
@@ -118,4 +119,4 @@ These are ordered by dependency. Per the grilling workflow they should be decide
 
 ## Exit state
 
-Recovery is complete. The research comparison and redline are complete. Operator approval is open, so `web/author-app.mjs` remains blocked. The first decision question is the passphrase-minimum contradiction, followed by hint placement.
+Recovery is complete. The research comparison and redline are complete. The passphrase-minimum contradiction is resolved at a provisional 4-character floor. Operator approval remains open, so `web/author-app.mjs` remains blocked. The next decision is passphrase/hint placement.

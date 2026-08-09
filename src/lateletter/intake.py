@@ -5,8 +5,9 @@ Manages the §5.1 intake form fields: author name, relationship, recipient,
 key dates, shared memories, steward, incapacitation wishes, passphrase hint.
 
 The passphrase is NEVER persisted — it is held in memory only and passed
-to the encryption layer when needed.  This module validates passphrase
-matching and emits soft strength warnings, but never stores the value.
+to the encryption layer when needed. This module delegates blocking policy
+to the author service, validates confirmation, and emits soft strength
+warnings, but never stores the value.
 
 Intake data is stored in session.json via SessionStore.  The intake
 screen is re-enterable — the author can update steward, wishes, or any
@@ -137,6 +138,13 @@ def validate_passphrase(passphrase: str, confirm: str) -> list[ValidationError]:
     if not passphrase:
         errors.append(ValidationError("passphrase", "Passphrase is required."))
         return errors
+    # Consume the canonical export policy instead of owning a second length
+    # rule in this intake adapter.
+    from lateletter.author_service import passphrase_problem
+
+    problem = passphrase_problem(passphrase)
+    if problem is not None:
+        errors.append(ValidationError("passphrase", problem))
     if passphrase != confirm:
         errors.append(ValidationError("passphrase_confirm", "Passphrases do not match."))
     return errors
@@ -153,7 +161,8 @@ _COMMON_PASSPHRASES = frozenset({
 def passphrase_strength_warning(passphrase: str) -> str | None:
     """Return a soft warning string if the passphrase is weak, else None.
 
-    No minimum length is enforced — memorability is valid (SPEC §5.1).
+    This helper is advisory. The canonical service separately enforces the
+    current minimum, while memorability remains a valid priority (SPEC §5.1).
     """
     if not passphrase:
         return None
