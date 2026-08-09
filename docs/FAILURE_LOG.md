@@ -15339,3 +15339,18 @@ RQ projection: not projected.
   one-based message placeholder rejected (2026-08-10); Batch operator decision:
   author corpus approved and product fog resolved (2026-08-10); Wayfinder map:
   the whole web product, authoring through recipient (2026-08-05).
+
+### Commit receipt: approved browser questionnaire child (2026-08-10)
+
+Commit `9fd59cf` (`author: ship approved browser questionnaire`) contains the
+approved 40-row corpus, five-stage browser adapter, questionnaire and
+passphrase-advice API additions, revisioned autosave/export E2E coverage,
+ownership map, SPEC/audit synchronization, and the failed/successor FL record.
+The exact staged scope was 13 author-product/shared-canon files. Existing dirty
+Garden, viewer, animation, typography, capture and transcription work remained
+unstaged. The commit is local and was not pushed.
+
+- **Status:** COMMITTED LOCALLY; NOT PUSHED. ComplaintRefs: Browser author
+  questionnaire implementation and focused E2E receipt (2026-08-10); Batch
+  operator decision: author corpus approved and product fog resolved
+  (2026-08-10).
