@@ -8,6 +8,7 @@ builder has always written, and that a passphrase cannot end up inside a draft.
 
 from __future__ import annotations
 
+import ast
 import json
 import sys
 from pathlib import Path
@@ -24,6 +25,7 @@ from lateletter.bundle import read_bundle, write_bundle  # noqa: E402
 from lateletter.sealed import open_message, verify_bundle_hmac  # noqa: E402
 
 STRONG_PASSPHRASE = "correct-horse-battery-staple-2026"
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 
 
 def draft() -> dict:
@@ -177,3 +179,39 @@ def test_an_out_of_range_placeholder_is_refused():
     }]
     result = validate_draft(broken)
     assert any("out of range" in issue for issue in result.errors)
+
+
+def test_author_service_is_the_only_product_bundle_writer_and_questions_survive():
+    """Delete-first ownership: no second product module may seal or write."""
+    product_root = REPOSITORY_ROOT / "src" / "lateletter"
+    owner = product_root / "author_service.py"
+    calls: dict[str, set[str]] = {}
+
+    for path in product_root.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        called = {
+            node.func.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in {"seal_bundle", "write_bundle"}
+        }
+        if called:
+            calls[path.relative_to(REPOSITORY_ROOT).as_posix()] = called
+
+    assert calls == {
+        owner.relative_to(REPOSITORY_ROOT).as_posix(): {
+            "seal_bundle", "write_bundle",
+        },
+    }
+    assert not (product_root / "author.py").exists()
+
+    preserved = [
+        product_root / "data" / "question_bank_seed.v0.json",
+        product_root / "data" / "question_bank_domain_pools.v0.json",
+        product_root / "question_selector.py",
+        product_root / "qa_loop.py",
+        product_root / "session_resumer.py",
+        product_root / "draft_editor.py",
+    ]
+    assert all(path.is_file() for path in preserved)

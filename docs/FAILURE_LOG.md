@@ -14781,3 +14781,63 @@ not source inference or stale captures.
 RQ projection: not projected. The Garden route has sharp evidence-gathering
 children, but interaction vocabulary and visual verdicts remain operator
 decisions.
+
+### Implementation record: terminal export owner deleted; question domain preserved (2026-08-10)
+
+The selected Wayfinder child, “delete the terminal direct-export owner without
+deleting questions”, is RESOLVED. This attempt was checked against the failure
+log before code changes. The repository has no Y9 `scripts/analyze_failure_log.py`
+or `scripts/analyze_runs.py` front door, so this LateLetter append-only record is
+the available attempt ledger; no standalone ADR was created.
+
+**Causal intervention.** Deleted `src/lateletter/author.py` before introducing
+any browser application owner, removed the `lateletter --write` and
+`--accessible` routes from `src/lateletter/cli.py`, and deleted the tests whose
+contract made that second writer authoritative. The remaining `lateletter`
+command owns Garden, transcription and maintenance surfaces only.
+`lateletter-author` continues to serve the loopback adapter, while
+`author_service.py` is the sole product module that calls both `seal_bundle`
+and `write_bundle`. A source-AST regression assertion now fails if another
+module under `src/lateletter` takes either direct write operation or if
+`author.py` returns.
+
+**Preservation evidence.** No question, answer or draft-domain component was
+deleted. The universal bank still contains 30 prompts; the occasion,
+relationship and heavy-gated pools still contain 101. `question_selector.py`,
+`qa_loop.py`, `session_resumer.py`, `draft_editor.py` and their tests remain.
+The focused CLI/service/question/Q&A/resume/make-letter suite passes 125 tests
+with eight pre-existing split-state-healing warnings.
+
+**Research-status correction.** The preceding architectural entry overstates
+the metadata when it says both banks label themselves draft/not reviewed. The
+universal bank describes its prompts as reviewed but also calls the file a
+temporary prototype awaiting replacement; the conditional bank explicitly
+says `review_status: draft — not editorially reviewed, prototype only`.
+Neither file supplies item-level citations or durable approval lineage.
+Accordingly, the overall questionnaire design is research-informed and the
+conditional safety mechanics are tested, but the 131 individual prompts are
+not all proven research-backed canonical questions.
+
+**Acceptance and residual failure.** `docs/SPEC.md` and Garden gate 8 now name
+browser authoring as BLOCKED until `web/author-app.mjs` exists and drives the
+full questionnaire-to-export E2E. The gate-matrix structure test remains red
+before reaching gate 8 because the already-recorded
+`tests/test_garden_review_e2e_browser.py` dependency is absent. This attempt did
+not manufacture that missing evidence or weaken the gate. JSON validation,
+Python compilation and `git diff --check` pass.
+
+**Falsifier.** This result is invalid if another product module directly calls
+`seal_bundle` or `write_bundle`, if `author.py` or the removed author CLI flags
+return, or if any preserved question/Q&A/draft artifact disappears. The next
+full-product frontier is now **recover and audit the research question tree**;
+the browser application remains blocked on approved question dispositions.
+The nested recipient-Garden frontier is unchanged: **capture the current
+whole-Garden acceptance surface**.
+
+- **Status:** RESOLVED FOR OWNERSHIP; AUTHOR PRODUCT REMAINS BLOCKED ON BROWSER
+  E2E AND QUESTION-LINEAGE REVIEW. ComplaintRefs: Architectural decision:
+  delete the old export owner, preserve the question corpus (2026-08-10);
+  Wayfinder child: delete the terminal direct-export owner without deleting
+  questions (2026-08-10); Wayfinder map update: delete-first authoring route
+  and preserved questions (2026-08-10); Wayfinder map: the whole recipient
+  Garden, nested under product E2E (2026-08-10).

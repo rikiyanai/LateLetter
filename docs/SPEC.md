@@ -1,20 +1,22 @@
 # LateLetter — Canonical Project Specification
 
-> A terminal program for the terminally ill. Compose messages for the people you love.
+> A local-first program for the terminally ill. Compose messages for the people you love.
 > They will find them — on birthdays, anniversaries, ordinary Tuesdays — inside a living garden.
 
 ---
 
 ## 1. Vision
 
-LateLetter is a local-first application with two distinct modes and two equal presentation targets (terminal and browser):
+LateLetter is a local-first application with two distinct modes and a
+browser-led product surface. The terminal Garden remains a development and
+diagnostic adapter; it is not a second authoring or presentation owner:
 
 - **Author mode** — a guided, intimate interview process. The author answers curated questions (offline) or LLM-driven questions (with API key) over many sessions. Completed messages are encrypted and exported as a `.lateletter` bundle file.
 - **Recipient mode** — the normal garden experience. When opened with a `.lateletter` file, the garden runs as usual. On days when a message is waiting, a small bird appears carrying a letter. The recipient presses `e` to unlock and read.
 
 The garden is both the delivery mechanism and a complete cozy idle garden in its own right. Without a bundle, it must sustain observation, tending, collecting, decorating, plant growth, and animal relationships. With a bundle, author-directed letters and world events join that same simulation rather than replacing it with a reader backdrop. The message arrives as naturally as a bird landing on a branch.
 
-**Product bar:** “The renderer contains garden code” is not completion. A production recipient must be able to discover and operate the feature through touch, pointer, keyboard, and the terminal path; standalone mode must remain worthwhile when no letter is due; and authored events must be previewable and deterministic. §7.8 is the controlling contract.
+**Product bar:** “The renderer contains garden code” is not completion. A production recipient must be able to discover and operate the feature through touch, pointer, and keyboard on the browser product surface; standalone mode must remain worthwhile when no letter is due; and authored events must be previewable and deterministic. §7.8 is the controlling contract.
 
 ---
 
@@ -23,11 +25,15 @@ The garden is both the delivery mechanism and a complete cozy idle garden in its
 | Mode | How to enter | Purpose |
 |------|-------------|---------|
 | Recipient (default) | `python garden.py [file.lateletter]` | Garden TUI; `e` unlocks the bundle, bird appears after auth if a message is due; `i` examines garden items; `l` opens letter archive |
-| Author | `python garden.py --write [file.lateletter]` | Intake wizard + LLM Q&A + encryption + export |
+| Author | `lateletter-author` | Loopback browser questionnaire + canonical service validation/encryption/export |
 
 If no `.lateletter` file is passed, the garden runs as a standalone experience (original behavior). No hint or prompt about `.lateletter` files is shown — the garden is a complete experience on its own.
 
-These commands are the canonical developer/operator entrypoints. The packaged recipient release described later in this spec must expose the same behavior without requiring terminal command entry.
+`lateletter-author` is the canonical local author-server entrypoint. Bundle
+construction belongs only to `src/lateletter/author_service.py`; the browser is
+an adapter to that module. The packaged recipient release described later in
+this spec must expose recipient behavior without requiring terminal command
+entry.
 
 ---
 
@@ -223,13 +229,26 @@ The file format (`.lateletter` JSON bundle) is not in question — that stays re
 
 ## 5. Author Mode — Full Flow
 
+**Ownership lock (2026-08-10):** The former `lateletter --write` workflow and
+`src/lateletter/author.py` direct bundle writer are deleted. They must not be
+restored or wrapped. `author_service.py` is the only module that validates,
+constructs, seals and writes author-produced bundles; `lateletter-author` and
+the browser questionnaire are adapters. The bundled question banks, selector,
+Q&A persistence, session resumption, draft editing and authored answers remain
+independent domain content. Their retention does not retain terminal export
+authority. Until `web/author-app.mjs` lands and passes the E2E author path,
+author control is BLOCKED rather than satisfied by the service alone.
+
 ### 5.1 First launch (consent and intake)
 
 Before any letter writing begins, the author completes a combined **intake and wishes form**. The steward designation and wishes fields are integrated into the intake form (not a separate gate), because the wishes have no automation backing them in v1 — they are advisory records for the steward's guidance, not automated behaviors. The "release unfinished on date" option has no enforcement mechanism; the steward must manually act on it.
 
 **These choices are editable.** The author can return to the intake screen from the message list at any time to update steward, wishes, or other intake fields. A terminally ill author whose steward dies or whose prognosis changes must be able to revise without starting over.
 
-The **intake form** follows. Default presentation is a quiet TUI form (curses, not a scrolling CLI). If the user enables `--accessible` or the terminal accessibility probe says full-screen curses is unsuitable, the app falls back to a plain line-oriented prompt flow with the same fields, validation, and autosave behavior. Fields:
+The **intake form** follows. Default presentation is the responsive browser
+questionnaire served from loopback. It uses ordinary labeled HTML controls,
+keyboard navigation, screen-reader semantics and autosave; there is no
+terminal author fallback. Fields:
 
 ```
 Your name .............. [ Robert                    ]
@@ -376,14 +395,19 @@ Export flow:
 8. **Session wipe prompt:** *"Completed drafts and notes are still on this computer. Would you like to delete them securely? [Delete completed drafts / Keep everything for later]"*
    - **Delete completed drafts:** Overwrites finalized `drafts/*.txt` with random bytes, then deletes them. `session.json` is compacted: intake context, steward information, pending message slots, and unfinished-message notes remain; Q&A content for already-encrypted messages is removed. `questions_asked.json` is retained for dedup.
    - If unfinished-message notes exist, a second prompt appears: *"Keep unfinished notes so you or your steward can continue later? [Y/n]"*. Default is keep.
-   - **Keep everything for later:** All files retained. Warning shown on next launch: *"Unencrypted drafts exist in ~/.lateletter/. Run --wipe-session to delete them."*
+   - **Keep everything for later:** All files retained. Warning shown on next launch: *"Unencrypted drafts exist in ~/.lateletter/. Return to the author desk to review or delete them."* The maintenance-only `lateletter --wipe-session` command remains available for an explicit full local wipe.
 9. Final screen: *"Give this folder to Maya. Tell her the passphrase when the time feels right — or leave it with someone you trust."*
 
 **Default is Delete completed drafts** — the secure option should not require opt-in, but unfinished notes are preserved by default because they are still part of the incapacitation/handoff path.
 
 ### 5.5 Adding messages later
 
-Author can reopen `--write file.lateletter` and add new message slots. On reopening, the author must supply the original passphrase; the app verifies it by recomputing the bundle HMAC before allowing additions. The passphrase is then cached for the rest of the session (same caching behavior as recipient mode — mutable bytearray, zeroed on exit). It is used for encrypting new messages and recomputing the HMAC.
+The author can reopen the browser author desk, select an existing
+`.lateletter`, and add new message slots. On reopening, the author must supply
+the original passphrase; the service verifies it by recomputing the bundle HMAC
+before allowing additions. The passphrase is retained only for the active
+export transaction and discarded afterwards. It is used for encrypting new
+messages and recomputing the HMAC.
 
 **Reopen UX:**
 - The message list shows existing encrypted messages by date only (labels are encrypted and not visible without decryption). After passphrase verification, labels are decrypted and shown.
@@ -398,7 +422,7 @@ The author dying or losing capacity before finishing is the **expected primary s
 **Design mitigations:**
 1. **Incremental export** (§5.4): Each message is encrypted into the bundle as soon as it is finalized. Partial progress is never lost — even one completed message produces a valid `.lateletter` file.
 2. **Steward role:** The author can designate a trusted person (a "steward") during intake. The steward's name is recorded in `session.json` and included in the handoff package README (§15.1). During intake, the app optionally asks for the steward's contact information (phone or email) so the README can direct the recipient to them for help. If the author cannot continue, the steward can use the session file and the passphrase to complete remaining messages on the author's machine.
-3. **Session file as handoff artifact:** `session.json` contains intake context and Q&A history but **never the passphrase**. The steward must already know the passphrase (or the author must communicate it separately). The steward launches `--write` with the existing bundle and enters the passphrase to continue.
+3. **Session file as handoff artifact:** `session.json` contains intake context and Q&A history but **never the passphrase**. The steward must already know the passphrase (or the author must communicate it separately). The steward opens the local browser author desk with the existing bundle and enters the passphrase to continue.
 4. **No unfinished-message exposure:** Messages that were started but not finalized remain only in `session.json` as Q&A notes — they are not exported to the bundle. The steward can review these notes and choose to complete or discard them. The default export wipe removes completed-message notes but keeps unfinished notes unless the author explicitly deletes them.
 
 ---
@@ -488,7 +512,7 @@ Pressing `e`:
    ```
    Messages are listed by date (ascending). Labels are not shown until after per-message decryption — only authenticated dates are visible in this list. If only one message is due, this selection is skipped.
 
-6. When the recipient opens a due message, the label is decrypted and shown ("For your 30th birthday"), then the full message renders in the overlay with word-wrap. For long messages, `↑/↓` or `j/k` scrolls within the overlay. A soft indicator at the bottom shows scroll position (*"↓ scroll for more"* or *"end of letter"*). Full-screen interactive TUI screens require a minimum terminal size of **80 columns x 24 rows**; below that, the app shows a resize-required screen or offers the `--accessible` line-mode path instead of rendering a truncated interface. Pressing `p` attempts to print if a supported printer backend is available; otherwise it offers save-to-text-file for manual printing.
+6. When the recipient opens a due message, the label is decrypted and shown ("For your 30th birthday"), then the full message renders in the overlay with word-wrap. For long messages, `↑/↓` or `j/k` scrolls within the overlay. A soft indicator at the bottom shows scroll position (*"↓ scroll for more"* or *"end of letter"*). Full-screen interactive TUI screens require a minimum terminal size of **80 columns x 24 rows**; below that, the app shows a resize-required screen and directs the recipient to the browser viewer instead of rendering a truncated interface. Pressing `p` attempts to print if a supported printer backend is available; otherwise it offers save-to-text-file for manual printing.
 
 7. After reading, `q` or `esc` returns to the garden (or to the selection list if more messages are waiting). The status bar changes: `· message read ·`.
 
@@ -2728,13 +2752,13 @@ LLM synthesis is **assistive only**. A synthesized draft is never encrypted or e
 
 ### 8.4 Draft editor
 
-The draft is presented in a **minimal curses editor** within the app by default:
-- Arrow keys to navigate. Standard text editing (backspace, delete, enter for newlines).
-- `Ctrl+S` to save and return to the message list.
-- `Ctrl+X` to discard the draft and return (with confirmation: *"Discard this draft? [y/N]"*).
-- After save, a lock confirmation: *"Encrypt this message? Once encrypted, it cannot be edited. [y/N]"*
-
-If the environment variable `LATELETTER_EDITOR` is set, or if `--accessible` mode is active, the draft is written to a managed file inside `~/.lateletter/author/drafts/` (mode `0600`) and opened in that editor instead. On editor exit, the draft is read back into the app. The app does **not** use world-readable system temp directories for plaintext drafts. Any swap/backup files created by the external editor are outside the app's control, so the app warns about this before first use and recommends disabling editor backup artifacts when possible.
+The draft is presented in the browser author desk as a labeled multiline text
+editor with visible save state, message label, word count and explicit continue
+and discard actions. It autosaves through the loopback session endpoint; the
+passphrase is never included in that draft request. Browser-native keyboard,
+screen-reader and dictation/paste behavior are the required accessibility
+surface. Plaintext drafts remain inside the private author session store and
+are never written to world-readable temporary directories.
 
 ---
 
@@ -2924,15 +2948,15 @@ ASCII animation and motion language are therefore **not** one of the first few i
 - Refactor `garden.py` into modular structure: separate renderer, state manager, CLI parser
 - Create `pyproject.toml` with dependencies
 - Consent and wishes form (living will-inspired — §5.1)
-- TUI intake form (curses) with validation, steward field, passphrase hint
+- Browser intake form with validation, steward field, passphrase hint
 - Temporary reviewed seed bank file for the first offline vertical slice (`src/lateletter/data/question_bank_seed.v0.json`) using the canonical question-entry shape where practical
 - Offline question selector: universal base set + personalization layer + pacing/gating rules
 - Reviewed question bank (80–120 questions covering all 16 domains, categorized, versioned, shipped read-only in app resources) — the primary question engine. The 500+ bank target is a post-v1 content milestone; 80–120 well-reviewed questions fully serve a 10-exchange session and the existing selector infrastructure.
 - Q&A session loop (offline — questions drawn from the selector/bank system) with session resumption
-- Minimal curses draft editor (§8.4)
+- Browser draft editor (§8.4)
 - Local session storage with secure lifecycle (§9)
 - Author incapacitation design (§5.6)
-- Accessibility: `--accessible` line-mode author flow, paste-first dictation support, and external-editor path (§12a)
+- Accessibility: semantic browser form/editor, keyboard and screen-reader operation, and paste-first dictation support (§12a)
 
 ### Phase 2 — Recipient mode (delivery)
 - `.lateletter` bundle loader and recipient UI against the canonical bundle schema (development fixtures may stub ciphertext before Phase 3, but the on-disk schema does not reintroduce plaintext labels)
@@ -3020,8 +3044,8 @@ Expanded detail for all ship-blocking work lives in §24 steps 12–15. Summary:
 The primary author may be terminally ill with limited mobility, vision impairment, or fatigue. Accessibility is a core requirement:
 
 - **Voice-to-text input:** Author mode must support dictation for Q&A answers and draft editing. On macOS, leverage system dictation (Fn-Fn). On other platforms, integrate with OS accessibility services. The app must always accept pasted text from external dictation tools at minimum.
-- **Screen reader compatibility:** Every author task must have a screen-reader-safe path. Because full-screen curses is unreliable with VoiceOver (macOS) and similar tools, the app must ship a plain line-oriented `--accessible` mode and support external-editor drafting. Avoid visual-only indicators; use text labels for all states.
-- **Braille display support:** The `--accessible` path should emit ordinary terminal output compatible with braille display hardware. Curses is optional in the accessibility path, not a requirement.
+- **Screen reader compatibility:** Every author task must use semantic browser controls that work with VoiceOver, NVDA and comparable tools. Avoid visual-only indicators; use programmatic labels, status announcements and ordinary text for all states.
+- **Braille display support:** The browser author path must expose ordinary accessible text and labeled controls compatible with refreshable braille displays. Full-screen curses is not an authoring dependency.
 - **Fatigue-aware UX:** All progress is auto-saved. The author can stop at any point and resume (§5.3 session resumption). No time pressure anywhere in the interface.
 
 ## 13. Delivery Channels
@@ -3252,7 +3276,7 @@ These are NOT in v1 scope but should inform architecture:
   deployment and opens `.lateletter` bundles with client-side decryption.
 - The **email notification script** is a standalone `notify.py` that the author/steward runs via cron to send due-date email prompts.
 - The recipient is not expected to install Python, use `pip`, edit shell config, or invoke CLI commands manually.
-- Author mode runs on macOS (primary) and Linux (development target, not release-blocking). Windows author support is out of scope for v1.0.
+- Author mode is served locally in a modern browser on macOS (primary) and Linux (development target, not release-blocking). Windows author support is out of scope for v1.0.
 
 ### 15.1 Handoff package
 
@@ -3300,7 +3324,7 @@ The author can customize the handoff folder path during export. The folder is cr
 - Post-completion state (§6.7) in both channels
 - Authenticated bundle sealing and tamper handling
 - Append-later author flow for adding new messages
-- Accessible `--accessible` author path and external-editor path
+- Accessible semantic-browser author path, including keyboard-only and screen-reader operation
 - Atomic writes for canonical bundle/session data
 - Self-hosted email notification script
 - Handoff package generation during export
@@ -3330,9 +3354,9 @@ The author can customize the handoff folder path during export. The folder is cr
 - **Interrupted export or append:** Use temp-file + `fsync` + atomic rename. On failure, keep the previous valid bundle and report that export did not complete.
 - **Interrupted session-data write:** Preserve the last valid `session.json`; if recovery data cannot be loaded, show a recovery warning and do not silently discard existing files.
 - **Disk full / permission denied:** Show a blocking error naming the affected path and abort the write without deleting the prior canonical file.
-- **Terminal too small:** Full-screen interactive TUI screens require at least **80 columns x 24 rows**. Below that threshold, show a resize-required screen or offer/auto-switch to the `--accessible` line-mode flow instead of rendering truncated UI.
+- **Recipient terminal too small:** Full-screen Garden screens require at least **80 columns x 24 rows**. Below that threshold, show a resize-required screen and direct the recipient to the browser viewer instead of rendering truncated UI.
 - **No printer backend available:** Offer save-to-text-file only; printer absence is not fatal to letter reading.
-- **Unsupported terminal features or screen-reader conflict:** Offer or automatically switch to `--accessible` line-mode author flow.
+- **Unsupported terminal features or screen-reader conflict:** Direct the recipient to the accessible browser viewer. Authoring never depends on terminal capabilities.
 - **Unexpected crash during reading:** No read receipt is written until the message overlay is successfully opened and the message is marked read on clean exit from that read flow.
 - **Lost `.lateletter` file:** Irrecoverable — all letters are permanently lost. The export flow (§5.4) warns the author and recommends copies. The handoff README (§15.1) does not address this (avoid alarming the recipient); the backup responsibility is the author's.
 - **Browser viewer: invalid or excessive KDF profile:** Reject unsupported or
@@ -3356,13 +3380,13 @@ The product is not shippable until all of the following are true:
 - The secure-default export path deletes finalized plaintext drafts while preserving unfinished notes when the author chooses to keep them.
 - The export flow generates a complete handoff package (§15.1) with README, the
   verified browser dependency closure, and optional notification script.
-- The `--accessible` author path can complete the full author workflow without requiring full-screen curses.
+- The semantic browser author path can complete the full workflow with keyboard-only navigation and a screen reader, without requiring a terminal.
 - The macOS release artifact installs and runs on a clean macOS 14+ machine with no developer tooling preinstalled.
 - The browser viewer works in current versions of Safari, Chrome, and Firefox without plugins or extensions.
 - The self-hosted email notification script sends a due-date email correctly when run via cron.
 - The product can read bundles created by prior v1 builds used during the release cycle.
 
-**Runtime audit update (2026-07-21):** The three implementation gaps recorded on 2026-04-27 are now closed in code: `lateletter --write` reaches Q&A, reviewed drafting, real sealing, and canonical export/append; the browser enforces launch-time checksum validation; and `demo_author.py` emits a checksummed, HMAC-authenticated real sealed bundle. The same generated artifact passed Python checksum/HMAC/decryption checks and an automated interactive HTML unlock/read check. Corrupted-file negative-path human QA, the full browser matrix, handoff-package generation, and the other release criteria above remain open until separately verified.
+**Runtime audit correction (2026-08-10):** The July 21 terminal-author result is retained only as historical diagnostic evidence. Its direct writer duplicated the author-service boundary and has been deleted. The author service still passes real sealing/export tests and the question, Q&A, resume and draft domain components remain intact, but the author workflow is not release-complete until `web/author-app.mjs` drives that service through the full browser E2E. Browser viewer checksum validation and the real sealed-bundle demo remain separate recipient-side evidence; neither closes author control.
 
 ## 19. Test Matrix
 
@@ -3372,7 +3396,7 @@ Minimum pre-release coverage:
 - **Offline authoring test:** Network disabled, full author flow using only the bundled question bank.
 - **Append/update test:** Export a bundle, append later, confirm old receipts still map correctly by `bundle_id`.
 - **Corruption/tamper fixtures:** Bad checksum, bad HMAC, truncated file, unknown future version, and altered message date.
-- **Accessibility test:** Complete author flow in `--accessible` mode with keyboard-only navigation and pasted dictation text.
+- **Accessibility test:** Complete the browser author flow with keyboard-only navigation, a screen reader, and pasted dictation text.
 - **Terminal constraints test:** Exactly 80x24, below 80x24, no-color/limited-color terminal, and resize while overlay is open.
 - **Crash-safety test:** Kill the app during session save and during bundle export; confirm the previous canonical file remains valid.
 - **Performance sanity test:** Startup, unlock, and long-letter scrolling remain acceptable with a realistically sized bundle.
@@ -3485,18 +3509,19 @@ The earlier 4h–4l items remain useful visual work, but no longer define the re
    - ~~Local storage model (session.json, questions_asked.json, atomic writes, permissions)~~ ✓
    - ~~`pyproject.toml` with declared dependencies (cryptography, argon2-cffi, pytest)~~ ✓
    - ~~Intake data model with validation (intake.py) — passphrase never persisted~~ ✓
-   - ~~TUI intake form (curses) with field navigation, passphrase masking, inline errors~~ ✓
-   - ~~`--accessible` line-mode path for consent + intake~~ ✓
-   - ~~Minimal curses draft editor (§8.4) — arrow keys, Ctrl+S/X, atomic draft saves~~ ✓
-   - ~~External-editor path via LATELETTER_EDITOR env var~~ ✓
-   - ~~CLI entry point (`lateletter --write`, `--accessible`, `--garden`, `--wipe-session`)~~ ✓
-6. **[DONE — 2026-07-21]** Build the offline author workflow
-   - ~~Temporary reviewed seed bank (`src/lateletter/data/question_bank_seed.v0.json`)~~ ✓
+   - Legacy TUI/line-mode intake and curses draft components are retained only as disconnected implementation material; they are not product authoring routes.
+   - **[OPEN]** Browser intake form with validation, autosave and passphrase handling
+   - **[OPEN]** Semantic browser accessibility path for consent, intake, Q&A and drafting
+   - **[OPEN]** Browser draft editor (§8.4) with atomic draft saves
+   - Maintenance CLI entry point retains `--garden` and `--wipe-session`; the duplicate `--write` and `--accessible` author routes were deleted on 2026-08-10.
+6. **[REOPENED — 2026-08-10]** Build the offline browser author workflow
+   - Research-informed seed banks remain bundled: the 30-question universal bank describes its prompts as reviewed but still labels itself a temporary prototype, while the 101-question conditional bank explicitly says draft/not editorially reviewed. Item-level evidence lineage and canonical approval remain open for both.
    - ~~Offline question selector (universal base set + personalization + gating)~~ ✓
    - ~~Q&A session loop with autosave~~ ✓
    - ~~Session resumption with split-state healing~~ ✓
    - ~~Incapacitation/steward handling (§5.6) — steward info, handoff summary, session compaction~~ ✓
-   - ~~End-to-end `lateletter --write` integration (message list → Q&A → draft → export / append-later)~~ ✓ — canonical owner in `src/lateletter/author.py`; real sealing/export is regression-tested
+   - The terminal E2E owner was deleted; `author_service.py` remains the sole tested seal/export owner.
+   - **[BLOCKED]** Browser E2E integration (message list → Q&A → draft → export / append-later) requires `web/author-app.mjs`.
 
 ### Recipient experience and delivery
 
@@ -3636,13 +3661,13 @@ The earlier 4h–4l items remain useful visual work, but no longer define the re
     - Clean-machine install test on stock macOS 14+
 
 16. Hardening and accessibility:
-    - `--accessible` author mode end-to-end verification
+    - Semantic browser author mode end-to-end verification
     - Recipient-side accessible reading path (screen-reader-compatible letter display, non-curses fallback for overlays)
     - Browser viewer accessibility: keyboard navigation, screen-reader-compatible HTML, sufficient contrast
     - Braille display compatibility audit
     - Bundle backward-compatibility testing across v1 builds
     - `--wipe-session` non-interactive secure deletion
-    - Minimum terminal size handling (80×24 gate or auto-switch to `--accessible`)
+    - Recipient Garden minimum terminal size handling (80×24 gate with browser-viewer handoff)
 
 17. Release acceptance: run the full §18 matrix and §19 test matrix. Ship v1.0 only after every required criterion passes.
 

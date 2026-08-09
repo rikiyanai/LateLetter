@@ -112,16 +112,13 @@
   {
    "gate": 8,
    "name": "Author control",
-   "status": "PASS",
+   "status": "BLOCKED",
    "evidence": [
-    "tests/garden_acceptance/test_release_acceptance.py",
-    "tests/test_author.py",
-    "tests/test_cli.py"
+    "tests/test_author_service.py",
+    "docs/FAILURE_LOG.md"
    ],
-   "automated_checks": [
-    "tests/garden_acceptance/test_release_acceptance.py::test_normal_sealed_v2_bundle_drives_authored_arc_with_exact_preview_trace"
-   ],
-   "blocker": ""
+   "automated_checks": [],
+   "blocker": "The second terminal bundle writer was deleted under the delete-first ownership decision. The canonical author service validates and exports bundles, and the conditional question/Q&A domain remains intact, but web/author-app.mjs does not exist yet; no first-time author can currently drive the intended browser questionnaire through export and recipient handoff."
   },
   {
    "gate": 9,
