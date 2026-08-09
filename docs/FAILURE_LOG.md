@@ -14495,3 +14495,289 @@ restore remains recorded and undecided.
 - **Status:** IMPLEMENTED, VISUALLY INSPECTED BY AGENT — NOT OPERATOR-ACCEPTED.
   The four granted gifts can now be offered to an author as drawn.
   ComplaintRefs: 7551269; 39a0477; 20027eb; 9bf3147.
+
+### Architectural decision: delete the old export owner, preserve the question corpus (2026-08-10)
+
+The operator resolved the ownership fork: **delete the old direct bundle-export
+owner before adding the browser authoring owner, but preserve the questions.**
+This decision narrows the deletion target. It does not authorize deleting the
+question banks, selector, Q&A persistence, session resumption, or authored
+answers.
+
+**Current ownership contradiction.** `src/lateletter/author_service.py` says it
+is the single canonical owner of bundle construction and that terminal entry
+points are adapters. `make_letter.py` obeys that boundary. The still-live
+`src/lateletter/author.py::run_author_workflow` does not: it independently
+loads or creates a bundle, seals messages and Garden state, calls
+`seal_bundle`, and writes with `write_bundle` at lines 1538-1540. The CLI still
+routes `lateletter --write` into that path. Building `web/author-app.mjs` while
+this owner remains would create a new authoritative authoring path beside an
+old one, violating the delete-first/no-mixed-ownership law.
+
+**Question-corpus truth, checked before deletion.** The operational corpus is
+conditional, but it is not yet an approved research-backed canon:
+
+- `question_bank_seed.v0.json` contains 30 universal prompts;
+  `question_bank_domain_pools.v0.json` contains 101 occasion, relationship and
+  heavy-gated prompts.
+- `QuestionSelector` applies a three-question universal ramp, occasion and
+  relationship scoring, prerequisites, exclusion flags, cross-session
+  deduplication, skip/easier/more-specific controls, and intensity gating.
+  Heavy prompts are never first and intensity 3 requires explicit opt-in or
+  session progression.
+- Both banks label themselves `draft — not editorially reviewed, prototype
+  only`. They carry category metadata but no item-level research citations.
+- The later research child names ethical-will and legacy-letter templates,
+  Dignity Therapy, the Stanford Letter Project, Byock, guided journals and
+  bereavement literature, and proposes a different 40-question tree. The
+  promised 533-line `scratchpad/research-question-tree.md` is absent from the
+  checkout and git history, so its individual questions and citations cannot
+  currently be audited.
+
+Therefore the preserved domain term is **conditional prompt candidate**: a
+tracked question plus its selection/gating metadata, safe to retain and
+evaluate, but not automatically required, editorially approved, or
+research-grounded at item level. The avoided term is “canonical research-backed
+question” until lineage and operator approval exist.
+
+**Accepted ownership after the deletion child:**
+
+- `author_service.py` exclusively validates and constructs sealed bundles.
+- The browser authoring module is an adapter and draft-state owner, not a
+  second bundle constructor.
+- Question banks, `QuestionSelector`, Q&A persistence and session resumption
+  remain content/domain components. They do not retain export authority merely
+  because the old terminal workflow used them.
+- Any surviving CLI may exist only after its old direct export path is gone and
+  only as a thin adapter to `author_service.py`.
+
+- **Status:** ARCHITECTURAL DECISION RECORDED; NO OWNER DELETED IN THIS
+  WAYFINDING PASS. ComplaintRefs: Wayfinder map: the whole web product,
+  authoring through recipient (2026-08-05); Authoring web app has no
+  application module and has never had one (2026-08-05); Question-tree
+  research: the genre forgets to release the reader (2026-08-07).
+
+### Wayfinder child: delete the terminal direct-export owner without deleting questions (2026-08-10)
+
+Question:
+Remove `src/lateletter/author.py::run_author_workflow` and the `lateletter
+--write` route as direct sealing/writing owners before any browser application
+owner is added. Preserve the two question-bank JSON files,
+`question_selector.py`, `qa_loop.py`, `session_resumer.py`, `draft_editor.py`,
+saved Q&A and their focused tests. If a CLI remains, introduce it only after
+the old owner is absent and make it a thin adapter to `author_service.py`, with
+no local bundle loading, message sealing, Garden-program installation, HMAC
+sealing or bundle writing. Exit evidence: repository search finds no
+`seal_bundle`/`write_bundle` call in `author.py`; both retained front doors
+delegate bundle construction to `author_service.py`; question-selector/Q&A
+tests prove the preserved conditional corpus still loads, gates, resumes and
+saves authored answers. Type: task. ComplaintRefs: Architectural decision:
+delete the old export owner, preserve the question corpus (2026-08-10);
+Wayfinder map: the whole web product, authoring through recipient (2026-08-05).
+
+### Wayfinder child: recover and audit the research question tree (2026-08-10)
+
+Question:
+Recover or reconstruct the missing 40-question research proposal from its
+named primary/clinical/template sources, then compare it item by item with the
+131 preserved prototype prompts. For each surviving prompt record source
+lineage or “editorial candidate only”, required versus optional status,
+intensity, opt-in/gating rule, relationship/occasion conditions and the bundle
+field or letter-body destination. Do not silently promote the existing banks
+or use the failure-log summary as a substitute for the missing tree. Deliver
+the resulting candidate set for operator redline and approval; implementation
+may consume only approved rows. Type: research, followed by grilling.
+ComplaintRefs: Question-tree research: the genre forgets to release the reader
+(2026-08-07); Architectural decision: delete the old export owner, preserve
+the question corpus (2026-08-10); Wayfinder map: the whole web product,
+authoring through recipient (2026-08-05).
+
+### Wayfinder map update: delete-first authoring route and preserved questions (2026-08-10)
+
+Index refresh for “Wayfinder map: the whole web product, authoring through
+recipient (2026-08-05)”. The destination is unchanged. This update supersedes
+the 2026-08-06 frontier that called the browser questionnaire “front-end only”
+and immediately unblocked: source now proves a second live direct-export owner,
+and the operator has chosen delete-first ownership transfer.
+
+Decisions so far:
+
+- Direct terminal export ownership — DELETE BEFORE BROWSER OWNERSHIP; question
+  content and authored answers survive the deletion.
+- Preserved questions — CONDITIONAL CANDIDATES. The selector mechanics are
+  real; editorial approval and item-level research lineage are not.
+- Question-tree research — THEMATICALLY GROUNDED BUT INCOMPLETE AS A DURABLE
+  ARTIFACT; the named 533-line tree is missing and must be recovered or
+  reconstructed before operator approval.
+- Author page — still ships as a browser questionnaire; `author_service.py`
+  remains the exclusive sealed-bundle owner.
+- Undated letters — still binding: persist in the draft, visibly excluded from
+  the bundle, and named before and after export.
+- Garden authoring — remains deferred except for letter timing/delivery and
+  the bounded accepted static-gift path already decided.
+
+Frontier child selected: **delete the terminal direct-export owner without
+deleting questions**. The research-tree audit may run after that ownership
+boundary is safe; `web/author-app.mjs` remains blocked until both the old owner
+is gone and the question rows it presents have an approved disposition.
+
+Not yet specified:
+
+- Whether the retained CLI is removed completely or reintroduced later as a
+  thin service adapter; either route deletes its current authority first.
+- Which of the 131 prototype prompts survive the research/ editorial audit.
+- Passphrase-hint placement and steward fields raised by the research child.
+- Exact browser transport for the approved question data; no copied
+  JavaScript question bank may become a second content owner.
+
+Out of scope: terminal Garden parity, transcription conversion, release
+cutover and deploy gates. The whole recipient Garden has its own nested map
+below.
+
+RQ projection: not projected. Ownership is sharp enough for one delete-first
+execution child; question content still requires research and operator
+approval.
+
+### Wayfinder map: the whole recipient Garden, nested under product E2E (2026-08-10)
+
+Overlay-kind: planned. Area: garden-product. Priority: P1.
+
+Destination:
+A recipient opens a real sealed `.lateletter` on desktop or phone and gets one
+coherent, alive Garden whose accepted ink, seeded composition, motion,
+navigation, interactions and persisted consequences all agree. Every intended
+recipient action is visible and finger-reachable or is explicitly removed from
+the product contract; pan/resize/reopen do not change canonical membership or
+lose state; no rejected or unreviewed art reaches the release surface. Reaching
+the end means the operator drives the real sealed-bundle Garden through its
+current acceptance scenarios on desktop and phone and raises no remaining
+Garden defect. Machine suites and captures are diagnostics; visual acceptance
+is operator-only.
+
+Notes:
+
+- This is a child map of “Wayfinder map: the whole web product, authoring
+  through recipient”. It owns the recipient Garden, not authoring questions,
+  bundle construction, letter typography or deployment.
+- The narrower 2026-08-05 panning-Garden map is retained as resolved lineage,
+  not duplicated: `gardenTerrainFrame`, one globally ordered billboard owner,
+  projected spacing and the denser atlas pond motion landed in 9d9d45d; the
+  two stale terrain-row tests were reconciled in 6dfd628.
+- Persisted seeded fixture-room variants landed in 1e1c8f4, but six variant
+  assets remain `not_reviewed`; implementation and agent inspection are not an
+  operator verdict.
+- The browser presentation path is the product owner. Terminal Garden parity
+  was withdrawn. Accepted/granted asset authority is the only paint authority.
+- The four granted gifts now preserve their own anchor glyph. The broader
+  fixture anchor stamp remains a second art mutation owner for existing
+  fixtures; removing it reveals an appearance the operator has not approved.
+- Current diagnostic baseline from the 2026-08-09 audit: Node Garden 204/204;
+  Python Garden 323 pass / 2 release-matrix failures caused by the missing
+  `tests/test_garden_review_e2e_browser.py`. Those counts are not visual
+  acceptance.
+
+Decisions so far:
+
+- Panning composition ownership — RESOLVED by the prior field-review map.
+- Accepted ink only — LOCKED; candidate variants never inherit base-asset
+  acceptance.
+- Browser Garden is authoritative — LOCKED; terminal parity is out of route.
+- Gift anchor workaround — IMPLEMENTED for four granted gifts, but does not
+  close the general anchor-stamp ownership defect.
+- Garden author influence — DEFERRED until the end-to-end product works;
+  starting presets/placement/randomized seed remain later design territory.
+
+Not yet specified:
+
+- The exact visual vocabulary for touch controls without restoring rejected
+  cards, labels or action sheets.
+- Operator verdicts for the six seeded fixture variants and any successor
+  appearance exposed by deleting the anchor stamp.
+- Whether the neutral-horizon consumers (`drawAmbient` and the memorial
+  marker) should follow projected terrain during vertical pan.
+- The intended default roster/density after the recipient can actually reach
+  its interactions.
+- The exact-font `platform_glyphs` acceptance state on the current product.
+
+Out of scope:
+
+- Author questionnaire content and export ownership (parent E2E map).
+- Terminal Garden parity, transcription conversion and letter typography.
+- Release cutover, Pages deployment and promotion of unreviewed art.
+
+### Wayfinder child: capture the current whole-Garden acceptance surface (2026-08-10)
+
+Question:
+Drive a real sealed bundle through the current browser Garden at desktop and
+phone sizes and produce one current, internally consistent field-review
+package covering initial composition, horizontal/vertical pan, resize, live
+motion, season/weather changes, hover/tap/keyboard routes, archive/journal/
+inventory visibility, one accepted interaction, persistence after reopen and
+the exact accepted-versus-candidate asset inventory. Record runtime metadata
+and source/commit/dirty-state refs with every capture. This package establishes
+the actual present mismatch and falsifies stale 2026-08-05 findings; it does
+not grant visual acceptance. Type: task. ComplaintRefs: Wayfinder map: the
+whole recipient Garden, nested under product E2E (2026-08-10); Wayfinder map:
+operator field review of the panning garden (2026-08-05).
+
+### Wayfinder child: make intended Garden interactions finger-reachable (2026-08-10)
+
+Question:
+Resolve the already-recorded recipient interaction gap against the current
+runtime: animal feed opportunities, plant action, inspect/tend/collect,
+journal, inventory and motion pause must each receive a visible touch route or
+be explicitly removed from the intended product contract. Reuse canonical
+command dispatch and projection identity; do not add a UI-local gameplay
+owner, debug-only mutation or rejected generic action sheet. The operator must
+approve the visual control vocabulary before implementation. Type: grilling,
+then task. ComplaintRefs: Wayfinder map: the whole recipient Garden, nested
+under product E2E (2026-08-10); Wayfinder child: every modeled interaction
+needs a control a finger can reach (2026-08-05); Wayfinder map: the whole web
+product, authoring through recipient (2026-08-05).
+
+### Wayfinder child: prove Garden state survives the recipient journey (2026-08-10)
+
+Question:
+Using a real sealed bundle and ordinary product controls, identify the
+canonical state mutations for one reachable interaction, one scheduled gift
+or letter consequence, pan/camera state and journal/inventory state; then
+close and reopen the product and show exactly which states persist by contract.
+Any state that is intentionally session-only must be named as such. The proof
+must use authenticated product persistence, not debug injection or a synthetic
+world. Type: research, then task. ComplaintRefs: Wayfinder map: the whole
+recipient Garden, nested under product E2E (2026-08-10).
+
+### Wayfinder child: remove the fixture anchor stamp as an art owner (2026-08-10)
+
+Question:
+Prototype a delete-first replacement for the unguarded `render_cells` anchor
+stamp so canonical fixture art has one owner. Preserve the currently reviewed
+appearance as one comparison candidate, show the unstamped atlas-owned
+appearance as another, and identify any semantic information the stamp was
+carrying that must move into projection or interaction metadata rather than
+paint. No replacement may add a new paint owner while the stamp remains live;
+no appearance may inherit operator acceptance. Type: prototype, followed by
+grilling. ComplaintRefs: Wayfinder map: the whole recipient Garden, nested
+under product E2E (2026-08-10); Every fixture loses its anchor cell to an
+unguarded stamp, and always has (2026-08-07).
+
+### Wayfinder child: operator review of seeded fixture-room variants (2026-08-10)
+
+Question:
+Present the six `not_reviewed` seeded fixture variants in the current whole
+Garden across representative seeds and both desktop/mobile viewports, beside
+their accepted base assets and with motion shown for pond variants. Ask for an
+explicit per-asset accept/reject/redline verdict; do not infer acceptance from
+the earlier authorization to implement candidates. Type: grilling, blocked on
+the current whole-Garden acceptance package. ComplaintRefs: Wayfinder map: the
+whole recipient Garden, nested under product E2E (2026-08-10); Implementation
+record: canonical seeded fixture-room variants (2026-08-05).
+
+Frontier child selected: **capture the current whole-Garden acceptance
+surface**. It is the first unblocked child because the later interaction,
+anchor-stamp and asset-verdict decisions require a current product picture,
+not source inference or stale captures.
+
+RQ projection: not projected. The Garden route has sharp evidence-gathering
+children, but interaction vocabulary and visual verdicts remain operator
+decisions.
