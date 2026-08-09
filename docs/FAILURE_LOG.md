@@ -15105,3 +15105,18 @@ Not yet specified:
 
 RQ projection: not projected. The interaction decision is sharp but human-
 owned. The package remains diagnostic evidence until operator sign-off.
+
+### Commit receipt: recovered question audit and Garden review evidence (2026-08-10)
+
+Commit `c1ded3d` (`docs: recover question audit and garden review evidence`)
+contains the recovered 533-line tree, its exhaustive 40-row/131-ID audit, the
+current final Garden review package, and the FL/map records above. The commit
+contains no production-source change and no unrelated dirty hunk. Failed raw
+capture directories remain local and unstaged. The commit was not pushed:
+this branch already carries a large unrelated lead over upstream, so a push
+would exceed this task's scoped publication authority.
+
+- **Status:** COMMITTED LOCALLY; NOT PUSHED. ComplaintRefs: Recovery and audit
+  record: the 40-question research tree is restored and redlined (2026-08-10);
+  Garden capture attempt 3: current sealed-bundle desktop/mobile package
+  produced (2026-08-10).
