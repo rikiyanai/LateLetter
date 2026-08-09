@@ -72,10 +72,16 @@
         "make_letter.py",
         "demo_output.lateletter",
         "output/**",
+        "src/lateletter/author_questionnaire.py",
         "src/lateletter/author_service.py",
         "src/lateletter/author_web.py",
+        "src/lateletter/data/author_questionnaire.v1.json",
         "src/lateletter/recipient.py",
+        "web/author-app.mjs",
+        "tests/test_author_e2e_browser.py",
+        "tests/test_author_questionnaire.py",
         "tests/test_author_service.py",
+        "tests/test_author_web.py",
         "tests/test_recipient.py"
       ]
     },

@@ -14,9 +14,9 @@
   -----------------
   This is where someone writes the letters that another person will read
   later, possibly years later, possibly after the writer has died. It is a
-  quiet desk: a page to write on, a few questions to help start, a garden to
-  plant, and one careful moment at the end where the letters are locked with
-  a passphrase and saved as a single file.
+  quiet desk: a page to write on, a few questions to help start, optional
+  scheduled gifts, and one careful moment at the end where the letters are
+  locked with a passphrase and saved as a single file.
 
   WHAT THIS PAGE IS NOT
   ---------------------
@@ -49,11 +49,9 @@
 
   TYPOGRAPHY
   ----------
-  The letter preview is not an approximation. It runs the same vendored
-  PreText library the recipient's reading surface runs, from the same
-  `web/vendor/pretext/` files, with the same options — so a justified line
-  the author sees here is measured by the same code that will justify it when
-  it is read. See `renderLetterBody` in `web/author-app.mjs`.
+  The letter preview runs the same vendored PreText line-breaking library the
+  recipient's reading surface runs, from the same `web/vendor/pretext/` files.
+  See `renderLetterPreview` in `web/author-app.mjs`.
 
   LOOK
   ----
@@ -164,7 +162,7 @@
   #save-state[data-state="conflict"]{ color: var(--error); border-color: rgba(140,47,34,.45); }
 
   /* ── Progress rail ──────────────────────────────────────────────────
-     An ordered list, because it *is* an ordered list: seven steps in a
+     An ordered list, because it *is* an ordered list: five counted steps in a
      sequence. Screen readers get the ordinal for free, and `aria-current`
      marks where the author is. */
   #progress ol {
@@ -332,7 +330,7 @@
     font-size: .72rem; color: var(--ink-soft); letter-spacing: .04em;
     display: flex; justify-content: space-between; gap: 1rem;
   }
-  #letter-body-input { min-height: 340px; }
+  #f-letter-body { min-height: 340px; }
 
   /* The preview well. Paper-coloured and inset so it reads as "the page
      they will hold", not as another form field. */
@@ -376,7 +374,23 @@
   }
   #preview-mode[data-mode="unavailable"] { color: var(--error); }
 
-  /* ── Garden step ── */
+  /* ── Question seeds and scheduled gifts ── */
+  .question-band { margin-top: 1.2rem; }
+  .question-band > h3 { font-size: .82rem; font-weight: normal; color: var(--ink-soft); margin-bottom: .55rem; }
+  .seed-list { display: flex; flex-direction: column; gap: .45rem; }
+  .seed-button {
+    text-align: left; font-family: inherit; font-size: .82rem; line-height: 1.45;
+    color: var(--ink); background: var(--paper-sunk); border: 1px solid var(--rule);
+    border-radius: var(--r); padding: .65rem .8rem; cursor: pointer;
+  }
+  .seed-button:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .seed-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .gift-card { position: relative; }
+  .gift-card .remove-gift { align-self: flex-start; }
+  .warning-note {
+    border-left: 2px solid var(--warn); padding-left: .75rem;
+    color: var(--ink-soft); font-size: .8rem;
+  }
   .chip-set { display: flex; flex-wrap: wrap; gap: .5rem; }
   .chip-opt { position: relative; }
   .chip-opt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
@@ -389,19 +403,6 @@
     border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
   }
   .chip-opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
-
-  details.advanced {
-    margin-top: 1.6rem; border-top: 1px solid var(--rule); padding-top: 1rem;
-  }
-  details.advanced summary {
-    font-size: .8rem; color: var(--accent); cursor: pointer; list-style: revert;
-  }
-  details.advanced summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  details.advanced > *:not(summary) { margin-top: .9rem; }
-  #f-program-json {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: .78rem; min-height: 200px;
-  }
 
   /* ── Review and export ── */
   .review-block {
@@ -468,7 +469,7 @@
     .preview-well { min-height: 200px; }
     #desk-foot { gap: 1rem; }
     /* The rail stays horizontal and scrollable rather than collapsing to a
-       menu: seeing "4 of 7" in context is the whole point of it. */
+       menu: seeing the current step in context is the whole point of it. */
     .step { padding: .3rem .45rem; font-size: .7rem; }
   }
 
@@ -519,7 +520,7 @@
       </div>
     </section>
 
-    <!-- ── 2. Who these letters are for ───────────────────────────── -->
+    <!-- ── 1. Who these letters are for ───────────────────────────── -->
     <section class="stage" data-stage="people" aria-labelledby="t-people" hidden>
       <h2 class="stage-title" id="t-people" tabindex="-1">Who these are for</h2>
       <p class="stage-lede">
@@ -528,69 +529,48 @@
       </p>
       <div class="field-grid">
         <div class="field">
-          <label for="f-author-name">your name</label>
-          <input type="text" id="f-author-name" data-path="author.name" autocomplete="off">
+          <label for="f-author-name" data-row-label="P1"></label>
+          <input type="text" id="f-author-name" autocomplete="off">
+          <p class="note" data-row-note="P1"></p>
           <p class="field-error" id="e-author-name" role="alert"></p>
         </div>
         <div class="field">
-          <label for="f-author-relationship">who you are to them</label>
-          <input type="text" id="f-author-relationship" data-path="author.relationship"
-                 placeholder="mother, friend, grandfather" autocomplete="off">
+          <label for="f-author-relationship" data-row-label="P2"></label>
+          <input type="text" id="f-author-relationship" autocomplete="off">
           <p class="field-error" id="e-author-relationship" role="alert"></p>
         </div>
         <div class="field">
-          <label for="f-recipient-name">their name</label>
-          <input type="text" id="f-recipient-name" data-path="recipient.name" autocomplete="off">
+          <label for="f-recipient-name" data-row-label="P3"></label>
+          <input type="text" id="f-recipient-name" autocomplete="off">
+          <p class="note" data-row-note="P3"></p>
           <p class="field-error" id="e-recipient-name" role="alert"></p>
         </div>
         <div class="field">
-          <label for="f-recipient-relationship">who they are to you</label>
-          <input type="text" id="f-recipient-relationship" data-path="recipient.relationship"
-                 placeholder="daughter, oldest friend" autocomplete="off">
+          <label for="f-recipient-relationship" data-row-label="P4"></label>
+          <input type="text" id="f-recipient-relationship" autocomplete="off">
           <p class="field-error" id="e-recipient-relationship" role="alert"></p>
         </div>
         <div class="field">
           <label for="f-timezone">the dates you choose are read in this timezone</label>
-          <select id="f-timezone" data-path="author.timezone"></select>
+          <select id="f-timezone"></select>
           <p class="field-error" id="e-timezone" role="alert"></p>
         </div>
         <div class="field">
-          <label for="f-hint">passphrase reminder they will see</label>
-          <input type="text" id="f-hint" data-path="passphrase_hint" autocomplete="off"
-                 placeholder="the road behind grandma's house">
-          <p class="note">
-            A nudge only they would understand. Never the passphrase itself —
-            this line is stored unencrypted inside the file.
-          </p>
+          <label for="f-hint" data-row-label="X2"></label>
+          <input type="text" id="f-hint" autocomplete="off">
+          <p class="note" data-row-note="X2"></p>
           <p class="field-error" id="e-hint" role="alert"></p>
         </div>
-        <div class="field wide">
-          <label for="f-seed">garden seed</label>
-          <input type="text" id="f-seed" data-path="garden_seed" autocomplete="off">
-          <p class="note">
-            Decides how their garden is laid out. Any word works, and the same
-            word always grows the same garden.
-          </p>
-          <p class="field-error" id="e-seed" role="alert"></p>
+        <div class="field wide warning-note">
+          If the recipient cannot remember the passphrase, these letters are
+          lost forever. Write the reminder they would understand, and tell one
+          trusted person that this file exists.
         </div>
       </div>
+      <input type="hidden" id="f-seed">
     </section>
 
-    <!-- ── 3. Guided questions ────────────────────────────────────── -->
-    <section class="stage" data-stage="questions" aria-labelledby="t-questions" hidden>
-      <h2 class="stage-title" id="t-questions" tabindex="-1">A few things to start from</h2>
-      <p class="stage-lede">
-        Answer whichever ones open something. Skip the rest — none of them are
-        required, and none of them are shown to anyone. They are here to give
-        you somewhere to begin when the empty page is too wide.
-      </p>
-      <div class="card-list" id="question-list"></div>
-      <div class="row" style="margin-top:1.2rem">
-        <button class="btn" type="button" id="btn-add-question">add a question of your own</button>
-      </div>
-    </section>
-
-    <!-- ── 4. The letters ─────────────────────────────────────────── -->
+    <!-- ── 2. The letters and their optional question seeds ───────── -->
     <section class="stage" data-stage="letters" aria-labelledby="t-letters" hidden>
       <h2 class="stage-title" id="t-letters" tabindex="-1">The letters</h2>
       <p class="stage-lede">
@@ -607,22 +587,25 @@
 
       <div class="field-grid" style="margin-bottom:1.2rem">
         <div class="field">
-          <label for="f-letter-date">readable from</label>
+          <label for="f-letter-date" data-row-label="L1"></label>
           <input type="date" id="f-letter-date">
+          <p class="note" data-row-note="L1"></p>
           <p class="field-error" id="e-letter-date" role="alert"></p>
         </div>
         <div class="field">
-          <label for="f-letter-label">what they see in the list</label>
-          <input type="text" id="f-letter-label" autocomplete="off"
-                 placeholder="On your wedding day">
+          <label for="f-letter-label" data-row-label="L2"></label>
+          <input type="text" id="f-letter-label" autocomplete="off">
+          <p class="note" data-row-note="L2"></p>
           <p class="field-error" id="e-letter-label" role="alert"></p>
         </div>
       </div>
 
+      <div class="review-block" id="letter-shape-host"></div>
+
       <div class="compose">
         <div class="compose-col">
           <span class="col-label" id="l-body">
-            <label for="f-letter-body">what you want to say</label>
+            <label for="f-letter-body" data-row-label="L3"></label>
             <span id="letter-counter" aria-live="off"></span>
           </span>
           <textarea id="f-letter-body" aria-describedby="l-body"
@@ -643,49 +626,28 @@
           </div>
         </div>
       </div>
+
+      <div class="question-band" id="question-drawer">
+        <h3>A few things to start from</h3>
+        <p class="note">Use whichever opens something. Every prompt is optional and disappears after you place it on the page.</p>
+        <div id="question-list"></div>
+      </div>
     </section>
 
-    <!-- ── 5. The garden ──────────────────────────────────────────── -->
-    <section class="stage" data-stage="garden" aria-labelledby="t-garden" hidden>
-      <h2 class="stage-title" id="t-garden" tabindex="-1">The garden they arrive in</h2>
-      <p class="stage-lede">
-        Before they read anything they stand in a garden. Choose what is
-        already growing there.
-      </p>
+    <!-- ── 3. Optional scheduled gifts ────────────────────────────── -->
+    <section class="stage" data-stage="gifts" aria-labelledby="t-gifts" hidden>
+      <h2 class="stage-title" id="t-gifts" tabindex="-1">Something to leave for them</h2>
+      <p class="stage-lede" data-row-label="G1"></p>
 
       <div class="stack">
-        <fieldset class="field">
-          <legend class="col-label" style="margin-bottom:.5rem">plants</legend>
-          <div class="chip-set" id="garden-plants"></div>
-        </fieldset>
-        <fieldset class="field">
-          <legend class="col-label" style="margin-bottom:.5rem">things in the garden</legend>
-          <div class="chip-set" id="garden-fixtures"></div>
-        </fieldset>
-        <fieldset class="field">
-          <legend class="col-label" style="margin-bottom:.5rem">an animal who lives there</legend>
-          <div class="chip-set" id="garden-animal"></div>
-        </fieldset>
-        <p class="field-error" id="e-garden" role="alert"></p>
+        <div class="card-list" id="gift-list"></div>
+        <button class="btn" type="button" id="btn-add-gift">schedule a gift</button>
+        <p class="note" data-row-note="G1"></p>
+        <p class="note">If they do not open the garden that day, the gift waits for them.</p>
       </div>
-
-      <details class="advanced">
-        <summary>write the garden's timeline directly</summary>
-        <p class="note" style="max-width:46em">
-          For a garden that changes on its own — something that appears on an
-          anniversary, a letter that only unlocks after another has been read.
-          Leave this empty and the garden simply stays as you set it above.
-        </p>
-        <div class="field">
-          <label for="f-program-json">garden timeline</label>
-          <textarea id="f-program-json" spellcheck="false" autocomplete="off"
-                    placeholder='{"beats": []}'></textarea>
-          <p class="field-error" id="e-program-json" role="alert"></p>
-        </div>
-      </details>
     </section>
 
-    <!-- ── 6. Review ──────────────────────────────────────────────── -->
+    <!-- ── 4. Review ──────────────────────────────────────────────── -->
     <section class="stage" data-stage="review" aria-labelledby="t-review" hidden>
       <h2 class="stage-title" id="t-review" tabindex="-1">Read it back</h2>
       <p class="stage-lede">
@@ -703,7 +665,7 @@
       <ul id="review-errors" aria-label="Things to attend to"></ul>
     </section>
 
-    <!-- ── 7. Lock and save ───────────────────────────────────────── -->
+    <!-- ── 5. Lock and save ───────────────────────────────────────── -->
     <section class="stage" data-stage="export" aria-labelledby="t-export" hidden>
       <h2 class="stage-title" id="t-export" tabindex="-1">Lock it</h2>
       <p class="stage-lede">
@@ -717,16 +679,13 @@
           <!-- No `value` attribute, ever. `new-password` keeps a browser from
                offering a saved credential, and the module never reads these
                into the draft. -->
-          <label for="pp-new">passphrase</label>
+          <label for="pp-new" data-row-label="X1"></label>
           <input type="password" id="pp-new" autocomplete="new-password"
                  spellcheck="false" autocorrect="off" autocapitalize="off">
           <div class="strength" id="pp-strength" data-level="0" aria-hidden="true">
             <i></i><i></i><i></i><i></i>
           </div>
-          <p class="note" id="pp-advice">
-            Four unrelated words is stronger than one clever word. At least 12
-            characters.
-          </p>
+          <p class="note" id="pp-advice" data-row-note="X1"></p>
         </div>
         <div class="field">
           <label for="pp-confirm">passphrase again</label>
@@ -749,7 +708,7 @@
 
       <p class="note" style="margin-top:1.5rem; max-width:44em">
         Give them the file and, separately, the passphrase. Not in the same
-        message.
+        message. <span data-row-label="X3"></span>
       </p>
     </section>
 

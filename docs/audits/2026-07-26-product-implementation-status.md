@@ -4,6 +4,14 @@ This is an evidence audit of the dirty local checkout at `main` / `b274797`.
 It is not a completion or acceptance report. Nothing in this report authorizes
 a commit, push, deploy, deletion, or real personal letter.
 
+> **Successor note — 2026-08-10:** This dated audit remains historical evidence.
+> Its missing-browser-module finding is resolved in the current checkout:
+> `web/author-app.mjs` now drives the operator-approved five-stage questionnaire
+> through `author_service.py`, and focused Chromium E2E exports and opens a real
+> bundle. Dedicated corpus/API tests also exist. Recipient-viewer traversal,
+> phone and assistive-technology review, append-later, handoff shipping, Garden
+> capture verdicts and whole-product operator acceptance remain open.
+
 ## Executive truth
 
 LateLetter is intended to let an author create encrypted, scheduled letters

@@ -15194,3 +15194,148 @@ The commit remains local and was not pushed.
 - **Status:** COMMITTED LOCALLY; NOT PUSHED. ComplaintRefs: Operator decision:
   passphrase floor is four characters (2026-08-10); Passphrase-floor successor
   verification and parent frontier update (2026-08-10).
+
+### Batch operator decision: author corpus approved and product fog resolved (2026-08-10)
+
+The operator explicitly replaced the one-question-at-a-time grilling cadence
+with one batch decision and approved the browser-author route. These are now
+the binding choices for the parent product map:
+
+1. The required nonsecret passphrase hint is collected during intake and may
+   autosave. The passphrase is entered twice only at export. The permanent-loss
+   warning appears at both stages.
+2. No steward personal data is stored. The UI says: “Tell one person this file
+   exists.”
+3. The author flow has five counted stages — People, Letters/questions, Gifts,
+   Review, Export — with Resume as an uncounted door.
+4. Incomplete letters autosave but are excluded from export with explicit
+   before/after warnings.
+5. Gifts are optional and uncapped; one gift is one canonical beat.
+6. G6 placement is hidden until a real v2 placement policy exists.
+7. The prototype disposition is approved: merge 28 near-duplicates, archive
+   94 alternatives, and hide the nine unsafe/route-blocked prompts.
+8. The four-things review scan is omitted from MVP because it feels like
+   grading.
+9. MVP authoring ships through the local author server. The public recipient
+   viewer remains the shipped surface.
+
+The 40-row audit recommendation is approved wholesale with these binding
+edits: B2 uses the safer wording; B3 is removed from MVP; C1, C3, D1 and D5
+use only their redlined wording; D4 requires partner relationship plus
+explicit after-death/permission opt-in; G1 permits zero or more gifts; G2
+derives choices from accepted-art authority; G4 emits a canonical recurrence
+object; G6 is hidden; X3 becomes the no-storage instruction rather than a
+field. The already-set four-character passphrase floor remains unchanged.
+
+The operator also resolved the Garden/product design questions without
+claiming visual acceptance: opportunities use beside-object contextual
+controls with projection-owned identity; plants receive tend/water while the
+pond remains observational; one persistent journal HUD control opens unified
+journal/inventory; inspect/tend/collect use contextual controls and motion
+pause remains a separate subtle control; horizon and memorial consumers
+follow projected terrain unless captures falsify that choice;
+`platform_glyphs` remains unreachable for MVP; season/weather gains a
+review-only ordinary product route after core interactions; and the reading
+panel tries stronger scrim opacity plus a soft fade before suppressing Garden
+ink.
+
+Default Garden canon is now explicit and supersedes stale one-rose/six-fixture
+descriptions: **one flower, chosen deterministically from accepted flower
+assets by the bundle/Garden seed, placed in the center; no default animals,
+collectibles or fixture-room clutter.** Seeded fixture variants still require
+a separate review package, and stamped/unstamped/replacement anchor
+appearances still require an operator verdict from the planned prototype.
+
+- **Status:** QUESTION CORPUS AND AUTHOR FLOW APPROVED; BROWSER AUTHORING
+  UNBLOCKED. GARDEN VISUAL VERDICTS REMAIN OPEN FOR FULL E2E ACCEPTANCE.
+  ComplaintRefs: Wayfinder map: the whole web product, authoring through
+  recipient (2026-08-05); Recovery and audit record: the 40-question research
+  tree is restored and redlined (2026-08-10); Wayfinder map: the whole
+  recipient Garden, nested under product E2E (2026-08-10).
+
+### Wayfinder parent update: browser questionnaire becomes the execution frontier (2026-08-10)
+
+The prior approval frontier is resolved by the batch operator decision above.
+The first unblocked non-research child is now **build the authoring
+questionnaire module**. It must consume one canonical question/content owner,
+adapt the approved five-stage form into the flat draft and `garden_beats`
+contracts, autosave no secrets, and export only through
+`author_service.py`. The local server is the MVP reachability boundary.
+
+The independently approved Garden interaction vocabulary does not block this
+child. It remains the nested Garden map's next implementation frontier, while
+fixture-variant and anchor-appearance verdicts remain capture-dependent.
+Product E2E cannot close until both routes converge on one author-produced
+sealed artifact.
+
+RQ projection: not projected. The author child is sharp enough to execute;
+the remaining Garden visual questions stay operator-owned.
+
+- **Status:** PARENT FRONTIER ADVANCED TO BROWSER AUTHOR MODULE; ONE
+  NON-RESEARCH CHILD SELECTED. ComplaintRefs: Batch operator decision: author
+  corpus approved and product fog resolved (2026-08-10); Wayfinder child:
+  build the authoring questionnaire module (2026-08-05).
+
+### Browser author E2E attempt 1: one-based message placeholder rejected (2026-08-10)
+
+The first real Chromium pass reached Review after completing People, one
+letter, one intentionally incomplete letter and one accepted coffee-mug gift.
+The service refused the generated Garden beat, so the test timed out waiting
+for “1 letter ready.” A direct `validate_draft` probe isolated the error:
+`MESSAGE_1` is out of range for a one-message draft. The canonical service's
+placeholder contract is zero-based (`MESSAGE_0` is the first message); the
+browser adapter had incorrectly added one while mapping draft letter identity
+to service-owned sealed message identity.
+
+No alternate parser, message-ID owner or service exception was added. The
+failed run is retained as the regression reason for the successor test.
+
+- **Status:** FAILED; ROOT CAUSE IDENTIFIED IN BROWSER ADAPTER. ComplaintRefs:
+  Wayfinder child: build the authoring questionnaire module (2026-08-05);
+  Wayfinder parent update: browser questionnaire becomes the execution
+  frontier (2026-08-10).
+
+### Browser author questionnaire implementation and focused E2E receipt (2026-08-10)
+
+The selected Wayfinder child is implemented in the dirty local checkout:
+
+- `author_questionnaire.v1.json` is the sole approved browser corpus. It holds
+  all 40 audited row identities and their approval/removed/hidden status.
+  `author_questionnaire.py` validates that identity set and intersects G2's
+  four candidate gifts with generated accepted-paint authority before serving.
+- `author.html` and `web/author-app.mjs` expose five counted stages with Resume
+  as an uncounted door. The module renders canonical server copy, autosaves a
+  revisioned draft, keeps passphrases outside draft state, excludes incomplete
+  letters with warnings, gates D4 on partner plus explicit opt-in, hides B3/G6,
+  offers zero or more accepted gifts, and emits canonical yearly recurrence.
+- `author_web.py` serves the questionnaire and advisory passphrase-strength
+  endpoint while retaining Host/Origin/CSRF checks. It delegates validation
+  and every seal/export operation to `author_service.py`.
+- Attempt 1 was corrected by changing only the browser's placeholder adapter
+  from one-based to zero-based `MESSAGE_N`. The service remains the sole owner
+  that replaces placeholders with final random message IDs.
+
+The broad author/intake/question/resume/storage run passes **239/239**, including
+the corpus/API/service contracts and one real Chromium E2E. The browser test
+creates one complete letter plus one incomplete autosaved draft, schedules one
+accepted coffee mug, exports with the operator-approved four-character
+passphrase `1234`, parses the downloaded `.lateletter`, verifies its HMAC,
+decrypts the letter, decrypts the Garden program, confirms one entity and one
+event, and confirms the session file contains no passphrase key. `node --check`,
+JSON parsing and `git diff --check` also pass. This is focused author evidence,
+not recipient traversal, phone/accessibility review, Garden visual acceptance,
+append-later or whole-product acceptance.
+
+Wayfinder consequence: the author-questionnaire child is complete. Per the
+one-child execution boundary, this run does not begin the independent Garden
+interaction child. The parent frontier now requires the author-produced sealed
+artifact to traverse the recipient browser and nested Garden route; full E2E
+still waits on both evidence families and operator verdicts.
+
+RQ projection: not projected.
+
+- **Status:** AUTHOR QUESTIONNAIRE CHILD IMPLEMENTED AND FOCUSED E2E GREEN;
+  WHOLE PRODUCT E2E REMAINS OPEN. ComplaintRefs: Browser author E2E attempt 1:
+  one-based message placeholder rejected (2026-08-10); Batch operator decision:
+  author corpus approved and product fog resolved (2026-08-10); Wayfinder map:
+  the whole web product, authoring through recipient (2026-08-05).

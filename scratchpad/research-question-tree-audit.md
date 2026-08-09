@@ -2,7 +2,8 @@
 
 Date: 2026-08-10
 
-Status: research pass complete; no question row is canonical until operator approval
+Status: research pass complete; operator-approved with the successor redlines
+recorded below on 2026-08-10
 
 Parent: `Wayfinder map: the whole web product, authoring through recipient (2026-08-05)`
 
@@ -18,7 +19,12 @@ Child: `Wayfinder child: recover and audit the research question tree (2026-08-1
 
 ## Audit rules
 
-`KEEP` means the row is recommended for operator approval, not already approved. `REDLINE` means keep the product need but change the requirement, wording, gate, or destination. `HOLD` means an operator/schema decision is still required. Intensity uses the prototype scale: 0 operational, 1 gentle, 2 reflective, 3 emotionally heavy.
+The table below preserves the recommendation state presented to the operator.
+`KEEP` meant recommended for approval, `REDLINE` meant keep the need with a
+changed requirement/wording/gate/destination, and `HOLD` meant a decision was
+required. The operator subsequently approved the complete recommendation set
+with the exact successor decisions after the table. Intensity uses the
+prototype scale: 0 operational, 1 gentle, 2 reflective, 3 emotionally heavy.
 
 The 131-bank crosswalk establishes overlap only. A prototype prompt does not inherit clinical or template lineage merely because it resembles a sourced row. Conversely, the recovered wording is an adaptation, not a verbatim clinical protocol.
 
@@ -99,17 +105,35 @@ This is an exhaustive ID-level accounting of the 131 preserved prompts. `MERGE` 
 
 Accounting: 28 MERGE + 94 ALT + 9 HOLD = 131. The active MVP remains the redlined 40-row tree; this audit does not silently expand it with 94 alternates.
 
-## Operator decisions required before browser implementation
+## Operator decisions resolved for browser implementation
 
-These are ordered by dependency. Per the grilling workflow they should be decided one at a time.
+The operator resolved these as one batch on 2026-08-10:
 
-Resolved 2026-08-10: the blocking passphrase minimum is 4 characters. Strength feedback is advisory, and the floor may be revised later through the canonical service policy.
+1. The blocking passphrase minimum is 4 characters. Strength feedback is
+   advisory. The hint is required during intake and may autosave; the
+   passphrase is entered twice only at export; the permanent-loss warning is
+   shown at both stages.
+2. No steward personal data is stored. X3 is the no-storage instruction “Tell
+   one person this file exists.”
+3. The full 40-row recommendation is approved. Exact wording redlines are:
+   - B2: “What might they not think to ask on a day like this?”
+   - C1: “What are you thanking them for? Be specific.”
+   - C3: “Is there anything you want to release or forgive? ‘Nothing’ is a
+     complete answer.”
+   - D1: “Is there anything you want them to know they have your permission to
+     feel, choose, or do?”
+   - D5: “Is there a wish you want to name while leaving the choice with them?”
+   B3 is removed from MVP. D4 remains partner-only and additionally requires
+   explicit after-death/permission opt-in.
+4. Incomplete letters autosave and are excluded from export with warnings.
+   Gifts are optional and uncapped, with one gift per canonical beat; gift
+   fields are required only for each gift the author creates.
+5. G2 choices are derived from accepted-art authority, G4 emits the full
+   canonical recurrence object, and G6 stays hidden until a v2 placement owner
+   exists.
 
-1. Passphrase hint placement: keep SPEC intake timing, move only the hint field to export while repeating the warning earlier, or amend the SPEC completely.
-2. Steward data: store optional steward name/contact in the draft and handoff package, or collect no steward data and show only the no-storage instruction.
-3. Accept/redline the row recommendations, especially B3, C1, C3, D1, D4, D5 and the eight prototype-only prompts with no close bank counterpart.
-4. Confirm conditional-required semantics: undated/unfinished letters stay in draft; only dated nonblank letters are service messages; gift fields are required per created beat, never for skipping gifts.
-5. Decide G6 placement ownership. Until then, the browser may not ask where a gift should sit.
+The prototype disposition is likewise approved: 28 MERGE, 94 ALT/archive and
+9 HOLD/hidden. The four-things review scan is omitted from MVP.
 
 ## Verified lineage sources
 
@@ -119,4 +143,7 @@ Resolved 2026-08-10: the blocking passphrase minimum is 4 characters. Strength f
 
 ## Exit state
 
-Recovery is complete. The research comparison and redline are complete. The passphrase-minimum contradiction is resolved at a provisional 4-character floor. Operator approval remains open, so `web/author-app.mjs` remains blocked. The next decision is passphrase/hint placement.
+Recovery, comparison, redline and operator approval are complete. The approved
+corpus is packaged as `src/lateletter/data/author_questionnaire.v1.json`, and
+the browser module consumes it through the local author service. Garden visual
+verdicts and whole-product E2E remain independent open work.

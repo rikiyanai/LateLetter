@@ -236,43 +236,40 @@ constructs, seals and writes author-produced bundles; `lateletter-author` and
 the browser questionnaire are adapters. The bundled question banks, selector,
 Q&A persistence, session resumption, draft editing and authored answers remain
 independent domain content. Their retention does not retain terminal export
-authority. Until `web/author-app.mjs` lands and passes the E2E author path,
-author control is BLOCKED rather than satisfied by the service alone.
+authority. `web/author-app.mjs` is the browser adapter; focused browser E2E
+must still prove that every released change reaches `author_service.py` and
+produces a bundle that opens again. This does not by itself close recipient or
+Garden acceptance.
 
 ### 5.1 First launch (consent and intake)
 
-Before any letter writing begins, the author completes a combined **intake and wishes form**. The steward designation and wishes fields are integrated into the intake form (not a separate gate), because the wishes have no automation backing them in v1 — they are advisory records for the steward's guidance, not automated behaviors. The "release unfinished on date" option has no enforcement mechanism; the steward must manually act on it.
-
-**These choices are editable.** The author can return to the intake screen from the message list at any time to update steward, wishes, or other intake fields. A terminally ill author whose steward dies or whose prognosis changes must be able to revise without starting over.
-
-The **intake form** follows. Default presentation is the responsive browser
-questionnaire served from loopback. It uses ordinary labeled HTML controls,
-keyboard navigation, screen-reader semantics and autosave; there is no
-terminal author fallback. Fields:
+The responsive browser questionnaire is served from loopback and has five
+counted stages: **People, Letters/questions, Gifts, Review, Export**. Resume is
+an uncounted door. It uses ordinary labeled HTML controls, keyboard navigation,
+screen-reader semantics and autosave; there is no terminal author fallback.
+The People stage collects:
 
 ```
 Your name .............. [ Robert                    ]
 Your relationship ....... [ Father                    ]
 Recipient's name ........ [ Maya                      ]
 Recipient's relationship  [ Daughter                  ]
-Key dates (add many) .... [ Maya's birthday: June 15  ] [+ add]
-Shared memories/tags .... [ dogs, hiking, her laugh   ]
-Steward (optional) ...... [ Sarah Chen                ]
-Steward contact ......... [ sarah@example.com         ]
-If unable to finish ..... (•) Only deliver completed letters
-                          ( ) Release all on: [____________]
-Passphrase .............. [ **********************    ]
-Confirm passphrase ...... [ **********************    ]
 Passphrase hint ......... [ What we called our first dog ]
+Delivery timezone ....... [ America/New_York          ]
 ```
 
 **Validation:**
-- All fields except Shared memories/tags are required. **Passphrase hint is required** — a grieving recipient who hasn't thought about the passphrase in years deserves every available cue. The author can write anything, but the field cannot be left empty.
-- Passphrase mismatch: inline error below the Confirm field (not a modal). Author cannot proceed until matched.
-- Key dates: free text stored as label+date pairs. No format enforcement — the author knows their own dates.
+- Author name, recipient name, timezone and **passphrase hint are required**.
+  Relationships remain optional. A grieving recipient who has not thought
+  about the passphrase in years deserves every available cue, but the hint
+  must never contain the passphrase itself.
+- No steward name or contact is stored. The product instruction is: **“Tell
+  one person this file exists.”**
+- The passphrase is not collected during intake. It is entered twice only at
+  Export; mismatch is shown inline and blocks export.
 - Passphrases must contain at least **4 characters**. Below four is a blocking validation error; at four or more, short/common-passphrase guidance remains a **soft warning**: *"This passphrase is short. Someone who finds this file could guess it."* The author can proceed — memorability is a valid priority — but the risk is surfaced. Four is the current operator-set floor and may be revised later through the same canonical service policy.
-- **Passphrase communication warning** is shown immediately after the passphrase is confirmed during intake (not deferred to export): *"Important: If [recipient_name] cannot remember this passphrase, these letters are lost forever. Consider writing it down for someone you trust."* This ensures the warning fires even if the author loses capacity before the formal export flow.
-- Tab/Enter navigates between fields. `esc` exits intake (with confirmation if any field was filled).
+- The permanent-loss warning appears during intake beside the hint and again
+  at Export beside the passphrase controls.
 
 Intake data is stored locally in a **session file** (`~/.lateletter/author/session.json`). The passphrase is **never** written to `session.json` — it is held in memory only during the active session and used to derive keys at encryption time. See §9 for session file security.
 
@@ -288,11 +285,22 @@ After intake, author picks a message slot:
   [ Just a Tuesday          Mar 10, 2028  · pending  ]
 ```
 
-For each message, the author enters a label and a delivery date. "TBD" means the author intends to set a date later. **TBD-date messages cannot be exported** — the export flow prompts the author to set a date or discard any TBD messages before proceeding.
+For each message, the author enters an optional label, a delivery date, and a
+non-empty body. Incomplete letters remain autosaved on the local desk and are
+excluded from export with an explicit warning; they are not discarded and do
+not block a bundle containing at least one complete letter.
 
 > **Note:** "Ongoing" message types (no fixed date, appears on a schedule) are a future feature — see §14. They are not shown in the v1 interface.
 
 ### 5.3 LLM-guided Q&A session
+
+**MVP control (2026-08-10):** the browser does not conduct an LLM interview.
+It renders the 40 operator-approved rows from
+`src/lateletter/data/author_questionnaire.v1.json` as optional writing seeds
+inside the Letters stage. B3 is removed, heavy prompts are collapsed, and D4
+requires a partner relationship plus explicit after-death permission opt-in.
+The four-things grading scan is omitted. The adaptive Q&A material below is a
+future design and does not describe the current browser product.
 
 The Q&A session is the heart of author mode. It works like a gentle interview.
 
@@ -370,15 +378,17 @@ The Q&A session is the heart of author mode. It works like a gentle interview.
 
 ### 5.4 Encryption and export
 
-**Incremental export:** Each message is encrypted and appended to the bundle as soon as the author finalizes it (not batch-all-at-end). The `checksum` and `hmac` are recomputed and the bundle file rewritten after each message finalization, ensuring the on-disk file is always a valid, verifiable bundle. This means that if the author loses capacity unexpectedly, all completed messages are already safe.
+**MVP snapshot export:** Completed letters are sealed together when the author
+presses “make the letter file.” Incomplete letters stay in the autosaved local
+draft and are excluded with a warning. Append/incremental rewrite remains a
+later product child and must not be inferred from this MVP export.
 
-**Incremental handoff:** Every time the bundle is rewritten (message finalized),
+**Future incremental handoff:** When append/rewrite is implemented,
 the target handoff folder contains the current `.lateletter` file, the verified
 static viewer closure rooted at `viewer-bnw.html`, and a stub `README.txt`.
 This ensures the delivery artifact (not just the crypto artifact) stays current.
-If the author loses capacity before the formal "Export bundle" flow, the steward
-can find a complete handoff folder at the bundle's location. The formal action
-adds notification setup, backup guidance, and session wipe.
+The current local author server downloads one `.lateletter` file. Handoff-folder
+generation, notifications and session compaction below remain future work.
 
 Export flow:
 1. Author triggers "Export bundle".
@@ -421,9 +431,13 @@ The author dying or losing capacity before finishing is the **expected primary s
 
 **Design mitigations:**
 1. **Incremental export** (§5.4): Each message is encrypted into the bundle as soon as it is finalized. Partial progress is never lost — even one completed message produces a valid `.lateletter` file.
-2. **Steward role:** The author can designate a trusted person (a "steward") during intake. The steward's name is recorded in `session.json` and included in the handoff package README (§15.1). During intake, the app optionally asks for the steward's contact information (phone or email) so the README can direct the recipient to them for help. If the author cannot continue, the steward can use the session file and the passphrase to complete remaining messages on the author's machine.
-3. **Session file as handoff artifact:** `session.json` contains intake context and Q&A history but **never the passphrase**. The steward must already know the passphrase (or the author must communicate it separately). The steward opens the local browser author desk with the existing bundle and enters the passphrase to continue.
-4. **No unfinished-message exposure:** Messages that were started but not finalized remain only in `session.json` as Q&A notes — they are not exported to the bundle. The steward can review these notes and choose to complete or discard them. The default export wipe removes completed-message notes but keeps unfinished notes unless the author explicitly deletes them.
+2. **No stored steward identity:** The author desk stores no steward name or
+   contact. It tells the author to tell one person the file exists and to share
+   the passphrase separately.
+3. **Session file as resumable local draft:** `session.json` contains intake
+   context and letter drafts but **never the passphrase**.
+4. **No unfinished-message exposure:** Incomplete letters remain in the local
+   autosaved draft and are excluded from every exported bundle.
 
 ---
 
@@ -2948,7 +2962,7 @@ ASCII animation and motion language are therefore **not** one of the first few i
 - Refactor `garden.py` into modular structure: separate renderer, state manager, CLI parser
 - Create `pyproject.toml` with dependencies
 - Consent and wishes form (living will-inspired — §5.1)
-- Browser intake form with validation, steward field, passphrase hint
+- Browser intake form with validation, no stored steward identity, and a required passphrase hint
 - Temporary reviewed seed bank file for the first offline vertical slice (`src/lateletter/data/question_bank_seed.v0.json`) using the canonical question-entry shape where practical
 - Offline question selector: universal base set + personalization layer + pacing/gating rules
 - Reviewed question bank (80–120 questions covering all 16 domains, categorized, versioned, shipped read-only in app resources) — the primary question engine. The 500+ bank target is a post-v1 content milestone; 80–120 well-reviewed questions fully serve a 10-exchange session and the existing selector infrastructure.
@@ -3386,7 +3400,14 @@ The product is not shippable until all of the following are true:
 - The self-hosted email notification script sends a due-date email correctly when run via cron.
 - The product can read bundles created by prior v1 builds used during the release cycle.
 
-**Runtime audit correction (2026-08-10):** The July 21 terminal-author result is retained only as historical diagnostic evidence. Its direct writer duplicated the author-service boundary and has been deleted. The author service still passes real sealing/export tests and the question, Q&A, resume and draft domain components remain intact, but the author workflow is not release-complete until `web/author-app.mjs` drives that service through the full browser E2E. Browser viewer checksum validation and the real sealed-bundle demo remain separate recipient-side evidence; neither closes author control.
+**Runtime audit successor (2026-08-10):** The July 21 terminal-author result is
+retained only as historical diagnostic evidence. Its duplicate writer remains
+deleted. `web/author-app.mjs` now drives the approved five-stage browser flow
+through the canonical service, and a real Chromium test exports, HMAC-verifies,
+decrypts and inspects its Garden program. Recipient-viewer traversal, phone and
+assistive-technology review, append-later, handoff shipping, and operator visual
+acceptance remain separate open evidence; the focused author result does not
+close the whole product route.
 
 ## 19. Test Matrix
 
@@ -3510,18 +3531,19 @@ The earlier 4h–4l items remain useful visual work, but no longer define the re
    - ~~`pyproject.toml` with declared dependencies (cryptography, argon2-cffi, pytest)~~ ✓
    - ~~Intake data model with validation (intake.py) — passphrase never persisted~~ ✓
    - Legacy TUI/line-mode intake and curses draft components are retained only as disconnected implementation material; they are not product authoring routes.
-   - **[OPEN]** Browser intake form with validation, autosave and passphrase handling
+   - ~~Browser intake form with validation, autosave and export-only passphrase handling~~ ✓
    - **[OPEN]** Semantic browser accessibility path for consent, intake, Q&A and drafting
-   - **[OPEN]** Browser draft editor (§8.4) with atomic draft saves
+   - ~~Browser draft editor (§8.4) with revisioned atomic session saves~~ ✓
    - Maintenance CLI entry point retains `--garden` and `--wipe-session`; the duplicate `--write` and `--accessible` author routes were deleted on 2026-08-10.
-6. **[REOPENED — 2026-08-10]** Build the offline browser author workflow
-   - Research-informed seed banks remain bundled: the 30-question universal bank describes its prompts as reviewed but still labels itself a temporary prototype, while the 101-question conditional bank explicitly says draft/not editorially reviewed. Item-level evidence lineage and canonical approval remain open for both.
+6. **[PARTIAL — 2026-08-10]** Build the offline browser author workflow
+   - The operator-approved 40-row browser corpus is packaged separately from the preserved 131 prototype prompts; B3 and G6 remain present as non-presented editorial records.
    - ~~Offline question selector (universal base set + personalization + gating)~~ ✓
    - ~~Q&A session loop with autosave~~ ✓
    - ~~Session resumption with split-state healing~~ ✓
-   - ~~Incapacitation/steward handling (§5.6) — steward info, handoff summary, session compaction~~ ✓
+   - No steward personal data is stored; the current handoff instruction is “Tell one person this file exists.”
    - The terminal E2E owner was deleted; `author_service.py` remains the sole tested seal/export owner.
-   - **[BLOCKED]** Browser E2E integration (message list → Q&A → draft → export / append-later) requires `web/author-app.mjs`.
+   - ~~Browser E2E integration (intake → question seeds → drafts → optional gifts → review → canonical export)~~ ✓ focused Chromium path
+   - **[OPEN]** Append-later, recipient-viewer traversal, assistive-technology review, phone review and complete handoff shipping.
 
 ### Recipient experience and delivery
 

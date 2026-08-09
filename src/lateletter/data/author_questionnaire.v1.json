@@ -1,0 +1,199 @@
+{
+  "schema": 1,
+  "status": "operator_approved",
+  "approved_at": "2026-08-10",
+  "stages": [
+    {"id": "people", "label": "people"},
+    {"id": "letters", "label": "letters"},
+    {"id": "gifts", "label": "gifts"},
+    {"id": "review", "label": "review"},
+    {"id": "export", "label": "lock & save"}
+  ],
+  "rows": [
+    {
+      "id": "P1", "stage": "people", "role": "field", "required": true,
+      "draft_key": "author_name", "prompt": "What do they call you?",
+      "note": "This is how you are named at the top of every letter. ‘Dad’ is as good an answer as your name."
+    },
+    {
+      "id": "P2", "stage": "people", "role": "field", "required": false,
+      "draft_key": "author_relationship", "prompt": "And who are you to them?",
+      "placeholder": "their mother · their oldest friend · their grandfather"
+    },
+    {
+      "id": "P3", "stage": "people", "role": "field", "required": true,
+      "draft_key": "recipient_name", "prompt": "Who are you writing to?",
+      "note": "Used here to keep the letters straight and to name the file you save."
+    },
+    {
+      "id": "P4", "stage": "people", "role": "field", "required": false,
+      "draft_key": "recipient_relationship", "prompt": "Who are they to you?",
+      "placeholder": "daughter · oldest friend"
+    },
+    {
+      "id": "L0", "stage": "letters", "role": "letter_shape", "required": false,
+      "prompt": "What kind of letter is this?",
+      "options": [
+        {"value": "good_day", "label": "a good day", "note": "a day I know is coming, and I want to be there for it"},
+        {"value": "hard_day", "label": "a hard day", "note": "the day something goes wrong and I am not there"},
+        {"value": "ordinary", "label": "an ordinary day", "note": "no occasion. Just so there is one more."},
+        {"value": "first", "label": "the first one", "note": "the letter they open before any other"}
+      ]
+    },
+    {
+      "id": "L1", "stage": "letters", "role": "letter_field", "required": "for_export",
+      "field": "date", "input_type": "date", "prompt": "When should they be able to open this?",
+      "note": "This date is not encrypted. Anyone holding the file can see a letter exists for this day—but not a word of it."
+    },
+    {
+      "id": "L2", "stage": "letters", "role": "letter_field", "required": false,
+      "field": "label", "input_type": "text", "prompt": "What should this one be called in their list?",
+      "placeholder": "On your wedding day",
+      "note": "Sealed with the letter. They will not see it until they can open it."
+    },
+    {
+      "id": "L3", "stage": "letters", "role": "letter_field", "required": "for_export",
+      "field": "body", "input_type": "textarea", "prompt": "What do you want to say to {recipient}?"
+    },
+    {
+      "id": "A1", "stage": "letters", "role": "seed", "band": "grounding", "required": false,
+      "prompt": "Tell {recipient} about a day with them you would live again."
+    },
+    {
+      "id": "A2", "stage": "letters", "role": "seed", "band": "grounding", "required": false,
+      "prompt": "What is something they did that you have never told them you noticed?",
+      "child_prompt": "What did they do, when they were small, that you have never told them about?"
+    },
+    {
+      "id": "A3", "stage": "letters", "role": "seed", "band": "grounding", "required": false,
+      "prompt": "What is something ordinary about you that you would not want them to forget—the way you made coffee, a song you hummed, what you were like on a Sunday?"
+    },
+    {
+      "id": "B1", "stage": "letters", "role": "seed", "band": "occasion", "route": "good_day", "required": false,
+      "prompt": "What do you hope they are feeling today?"
+    },
+    {
+      "id": "B2", "stage": "letters", "role": "seed", "band": "occasion", "route": "good_day", "required": false,
+      "prompt": "What might they not think to ask on a day like this?"
+    },
+    {
+      "id": "B3", "stage": "letters", "role": "seed", "band": "occasion", "route": "good_day", "required": false,
+      "status": "removed_mvp", "prompt": "Who else should be in the room, and what would you say about them?"
+    },
+    {
+      "id": "B4", "stage": "letters", "role": "seed", "band": "occasion", "route": "hard_day", "required": false,
+      "prompt": "Write the first sentence they need to read. Not advice—just the sentence."
+    },
+    {
+      "id": "B5", "stage": "letters", "role": "seed", "band": "occasion", "route": "hard_day", "required": false,
+      "prompt": "Tell them about a time you were where they are now. What actually helped—not what you wish had helped."
+    },
+    {
+      "id": "B6", "stage": "letters", "role": "seed", "band": "occasion", "route": "hard_day", "required": false,
+      "prompt": "What are they allowed to do today that they think they are not allowed to do?"
+    },
+    {
+      "id": "B7", "stage": "letters", "role": "seed", "band": "occasion", "route": "ordinary", "required": false,
+      "prompt": "What would you be saying to them right now, if this were an ordinary afternoon?"
+    },
+    {
+      "id": "B8", "stage": "letters", "role": "seed", "band": "occasion", "route": "ordinary", "required": false,
+      "prompt": "Tell them something small and true that has nothing to do with any of this."
+    },
+    {
+      "id": "B9", "stage": "letters", "role": "seed", "band": "occasion", "route": "first", "required": false,
+      "heavy": true, "prompt": "Say why there are letters."
+    },
+    {
+      "id": "B10", "stage": "letters", "role": "seed", "band": "occasion", "route": "first", "required": false,
+      "prompt": "Tell them how to use these—all at once, one at a time, or never. Whatever you actually mean."
+    },
+    {
+      "id": "C1", "stage": "letters", "role": "seed", "band": "hard", "required": false, "heavy": true,
+      "prompt": "What are you thanking them for? Be specific."
+    },
+    {
+      "id": "C2", "stage": "letters", "role": "seed", "band": "hard", "required": false, "heavy": true,
+      "prompt": "What do you want to be forgiven for?"
+    },
+    {
+      "id": "C3", "stage": "letters", "role": "seed", "band": "hard", "required": false, "heavy": true,
+      "prompt": "Is there anything you want to release or forgive? ‘Nothing’ is a complete answer."
+    },
+    {
+      "id": "C4", "stage": "letters", "role": "seed", "band": "hard", "required": false, "heavy": true,
+      "prompt": "Say ‘I love you’ in your own words, in a way only you would say it."
+    },
+    {
+      "id": "D1", "stage": "letters", "role": "seed", "band": "permission", "required": false, "heavy": true,
+      "prompt": "Is there anything you want them to know they have your permission to feel, choose, or do?"
+    },
+    {
+      "id": "D2", "stage": "letters", "role": "seed", "band": "permission", "required": false, "heavy": true,
+      "prompt": "Tell them they are allowed to be angry at you."
+    },
+    {
+      "id": "D3", "stage": "letters", "role": "seed", "band": "permission", "required": false, "heavy": true,
+      "prompt": "Tell them they are allowed to stop reading these."
+    },
+    {
+      "id": "D4", "stage": "letters", "role": "seed", "band": "permission", "required": false, "heavy": true,
+      "partner_only": true, "requires_permission_opt_in": true,
+      "prompt": "Tell them they are allowed to love someone else."
+    },
+    {
+      "id": "D5", "stage": "letters", "role": "seed", "band": "permission", "required": false, "heavy": true,
+      "prompt": "Is there a wish you want to name while leaving the choice with them?"
+    },
+    {
+      "id": "E1", "stage": "letters", "role": "seed", "band": "closer", "required": false,
+      "always_last": true, "prompt": "Is there anything else you want in this letter?"
+    },
+    {
+      "id": "G1", "stage": "gifts", "role": "gift_gate", "required": false,
+      "prompt": "Do you want to schedule a gift in the garden for them?",
+      "note": "The garden is there either way. Add as many or as few gifts as you mean to leave."
+    },
+    {
+      "id": "G2", "stage": "gifts", "role": "gift_asset", "required": "per_gift",
+      "prompt": "Which one?",
+      "options": [
+        {"asset_id": "fixture.coffee_mug", "label": "a coffee mug"},
+        {"asset_id": "fixture.ice_cream_cone", "label": "an ice cream cone"},
+        {"asset_id": "fixture.mixtape", "label": "a mixtape"},
+        {"asset_id": "fixture.popsicle", "label": "a popsicle"}
+      ]
+    },
+    {
+      "id": "G3", "stage": "gifts", "role": "gift_date", "required": "per_gift",
+      "prompt": "What day should it be there?"
+    },
+    {
+      "id": "G4", "stage": "gifts", "role": "gift_recurrence", "required": false,
+      "prompt": "Should this return every year on this date?"
+    },
+    {
+      "id": "G5", "stage": "gifts", "role": "gift_letter", "required": "per_gift",
+      "prompt": "Which letter should it hand them?"
+    },
+    {
+      "id": "G6", "stage": "gifts", "role": "gift_placement", "required": false,
+      "status": "hidden_pending_v2_policy", "prompt": "Where should it sit?"
+    },
+    {
+      "id": "X1", "stage": "export", "role": "passphrase", "required": true,
+      "prompt": "Choose the passphrase and enter it twice.",
+      "note": "At least four characters. Four unrelated words is stronger than one clever word."
+    },
+    {
+      "id": "X2", "stage": "people", "role": "field", "required": true,
+      "draft_key": "passphrase_hint", "prompt": "What should the reminder say?",
+      "placeholder": "the road behind grandma’s house",
+      "note": "They may not think about this for years. Never write the passphrase itself; this reminder sits outside the lock."
+    },
+    {
+      "id": "X3", "stage": "export", "role": "instruction", "required": false,
+      "status": "no_storage", "prompt": "Tell one person this file exists."
+    }
+  ]
+}

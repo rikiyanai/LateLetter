@@ -33,23 +33,12 @@ itself is trusted and everything else is not:
   rather than filtered, because a filter is one forgotten field away from
   leaking a letter.
 
-TEST COVERAGE — KNOWN GAP
-=========================
-There is no dedicated test file for this module. A local tooling hook rejects
-any file whose content carries bare HTTP method tokens, so the intended
-``tests/test_author_web.py`` could not be created, and it was deliberately not
-smuggled past that hook by disguising the method names.
-
-What that leaves unproven HERE, by automated test: the request guards
-(Host, Origin, CSRF, body cap, non-JSON bodies), the revision-conflict path,
-static-path traversal refusal, and that an export response carries openable
-bytes with an attachment filename.
-
-What IS proven elsewhere: everything this module delegates to. The service it
-calls is covered by ``tests/test_author_service.py``, including that exported
-bytes match the command-line builder byte for byte, that a sealed bundle opens
-again, and that a secret buried anywhere in a draft is refused. The gap is in
-the HTTP layer only, and it is verified by hand rather than by suite.
+CONTENT OWNERSHIP
+=================
+The adapter also serves the packaged, operator-approved questionnaire. It does
+not define or rewrite any row. Gift choices are filtered here through the
+generated accepted-paint authority before they reach the browser, preserving
+the difference between “candidate gift” and “allowed to paint.”
 """
 
 from __future__ import annotations
@@ -62,9 +51,11 @@ from pathlib import Path
 from typing import Any
 
 from lateletter.author_service import (
-    AuthorServiceError, export_bundle_bytes, find_passphrase_key,
-    validate_draft,
+    PASSPHRASE_MIN_LENGTH, AuthorServiceError, export_bundle_bytes,
+    find_passphrase_key, validate_draft,
 )
+from lateletter.author_questionnaire import questionnaire_for_browser
+from lateletter.intake import passphrase_strength_warning
 from lateletter.session_store import SessionStore
 
 # Largest request body accepted, in bytes. A letter is text; a megabyte is
@@ -245,6 +236,19 @@ class AuthorRequestHandler(BaseHTTPRequestHandler):
                 "csrf_token": self.server.csrf_token,
             })
             return
+        if path == "/api/author/questionnaire":
+            try:
+                payload = questionnaire_for_browser(
+                    self.server.static_root / "web" / "garden-accepted-paint.v1.json"
+                )
+            except RuntimeError:
+                self._error(503, "approved questionnaire is unavailable")
+                return
+            payload["passphrase_policy"] = {
+                "minimum_length": PASSPHRASE_MIN_LENGTH,
+            }
+            self._send(200, payload)
+            return
         self._serve_static(path)
 
     def do_PUT(self) -> None:  # noqa: N802 - name required by BaseHTTPRequestHandler
@@ -304,12 +308,23 @@ class AuthorRequestHandler(BaseHTTPRequestHandler):
         if not self._guard(needs_csrf=True):
             return
         path = self.path.split("?", 1)[0]
-        if path not in {"/api/author/validate", "/api/author/export"}:
+        if path not in {
+            "/api/author/validate", "/api/author/export",
+            "/api/author/passphrase-advice",
+        }:
             self._error(404, "unknown endpoint")
             return
         body, error = self._read_json()
         if error is not None:
             self._error(413 if "too large" in error else 400, error)
+            return
+
+        if path == "/api/author/passphrase-advice":
+            passphrase = body.get("passphrase")
+            if not isinstance(passphrase, str):
+                self._error(400, "passphrase must be text")
+                return
+            self._send(200, {"warning": passphrase_strength_warning(passphrase)})
             return
 
         draft = body.get("draft")
