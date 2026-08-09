@@ -14841,3 +14841,267 @@ whole-Garden acceptance surface**.
   questions (2026-08-10); Wayfinder map update: delete-first authoring route
   and preserved questions (2026-08-10); Wayfinder map: the whole recipient
   Garden, nested under product E2E (2026-08-10).
+
+### Recovery and audit record: the 40-question research tree is restored and redlined (2026-08-10)
+
+The research half of “Wayfinder child: recover and audit the research question
+tree” is complete. The previously missing artifact now exists at
+`scratchpad/research-question-tree.md`: 533 lines, SHA-256
+`68311dbebaa1e7db60f91bb848300180fd34fa4583ed77d645e0d7e5dcb0ea48`.
+The earlier “513 questions” description was a count error. The artifact
+contains 40 author questions: 17 metadata/control questions and 23 optional
+letter-body prompt seeds.
+
+The item-level comparison is recorded at
+`scratchpad/research-question-tree-audit.md`. It accounts for all 131 preserved
+prototype IDs exactly once: 28 are near-duplicates recommended for merge into
+a recovered row, 94 remain archival alternatives outside the MVP, and 9 are
+held pending a route/safety decision. No prototype prompt inherits research
+lineage from thematic similarity, and neither prototype bank is promoted to a
+canonical content owner.
+
+The audit also found six product-contract redlines that must bind any approval:
+
+1. L1 cannot require a date while drafting. The locked undated-letter state
+   survives reload, is visibly “not ready”, and is excluded by construction
+   from the service's `messages[]` at export.
+2. G1 cannot promise exactly one authored gift. Gifts are uncapped, with one
+   gift per beat.
+3. G2's four proposed choices are legitimate accepted-art grants, but the
+   browser must derive that set from accepted-art authority rather than copy a
+   second list.
+4. G4 must emit a complete recurrence object; G6's legacy `placement_hint`
+   has no approved v2 authoring destination and stays hidden.
+5. X1 exposes a live contract conflict: `author_service.py` rejects fewer than
+   12 characters and tests lock that behavior, while SPEC §5.1 says a short
+   passphrase gets a warning but may proceed. The browser cannot choose a
+   policy independently; service, SPEC and copy must be reconciled by an
+   operator decision.
+6. X2's required hint is uncontested, but its stage placement still conflicts
+   with SPEC §5.1; X3's steward storage/handoff ownership is also undecided.
+
+External lineage was checked against the Dignity Therapy randomized-trial
+protocol, Stanford Medicine's Who Matters Most Letter tasks, and the publisher
+description of Ira Byock's four phrases. The audit names source-backed
+adaptations separately from editorial-only candidates. This is research
+evidence, not operator copy approval.
+
+- **Status:** RECOVERY AND RESEARCH AUDIT COMPLETE; OPERATOR REDLINE/APPROVAL
+  OPEN. The child now enters its required grilling phase. Browser authoring
+  remains blocked from consuming these rows. ComplaintRefs: Wayfinder child:
+  recover and audit the research question tree (2026-08-10); Question-tree
+  research: the genre forgets to release the reader (2026-08-07); Wayfinder
+  map: the whole web product, authoring through recipient (2026-08-05).
+
+### Wayfinder map update: recovered tree moves the parent frontier to approval (2026-08-10)
+
+Index refresh for “Wayfinder map: the whole web product, authoring through
+recipient (2026-08-05)”. The destination and ownership route are unchanged.
+This update supersedes only the stale claim that the 533-line research artifact
+is missing.
+
+Decisions so far:
+
+- Direct terminal export ownership — DELETED; `author_service.py` remains the
+  sole bundle writer and any browser module is its adapter.
+- Research tree recovery — COMPLETE with a verified 533-line receipt.
+- Forty-row versus 131-prompt audit — COMPLETE AS RESEARCH; all prototype IDs
+  have a candidate disposition, but no row is canonical before operator
+  approval.
+- Undated letters — LOCKED draft state; exported-message readiness is
+  conditional rather than a draft-entry requirement.
+- Garden authoring — zero or more static scheduled gifts, one per beat, and
+  only from accepted-art authority. Placement wording remains blocked.
+- Browser authoring — REQUIRED, but still blocked from implementation until
+  the redline decisions below are approved.
+- Terminal parity — WITHDRAWN from this product route.
+
+Frontier child selected: **operator redline/approval of the recovered
+question tree**, continuing the existing “recover and audit” child in its
+grilling phase. The first decision is the passphrase-minimum contradiction
+between the sole export service and SPEC; passphrase-hint placement follows
+because it changes stage ownership and no-recovery warning timing. Steward
+storage, heavy-row copy, conditional-required semantics and gift-placement
+ownership follow one at a time.
+
+Not yet specified:
+
+- Whether the live 12-character service minimum or SPEC's warning-only policy
+  is authoritative.
+- Passphrase-hint placement relative to SPEC §5.1's intake warning.
+- Whether optional steward name/contact are stored in the draft and handoff
+  package or replaced by no-storage guidance.
+- Operator accept/redline verdicts for the 40 rows, especially B3, C1, C3,
+  D1, D4 and D5.
+- A canonical v2 destination for G6 placement; the legacy hint is not one.
+- Exact browser transport for approved question data without copying a second
+  JavaScript content bank.
+
+The nested recipient-Garden map remains an independently runnable sibling
+lane under this product destination. Its frontier is still **capture the
+current whole-Garden acceptance surface**; product E2E cannot close until the
+approved author path and that recipient evidence converge on one sealed
+artifact.
+
+RQ projection: not projected. The author route is blocked on operator content
+decisions, while the Garden route already has a sharp evidence-gathering
+child.
+
+### Garden capture attempt 1: authenticated path reached, archive sequencing failed (2026-08-10)
+
+The first execution attempt for “capture the current whole-Garden acceptance
+surface” used a temporary v2 bundle written outside the worktree by the
+canonical `author_service.write_bundle_file`, uploaded it through the visible
+file control, authenticated through the visible passphrase form, and reached
+the real Garden at 1400x950. It captured initial composition, a primary
+pointer interaction, keyboard pan, keyboard focus/Enter, the journal key and a
+1000x700 resize. No product source was changed.
+
+The harness then waited for the ordinary `letters` button after the
+interaction/journal sequence. That button was no longer visible, so the
+attempt timed out instead of calling the page's internal `showArchive()`
+function. The partial package is preserved at
+`scratchpad/garden-acceptance-2026-08-10/`; it is failed diagnostic evidence,
+not a review package and not acceptance. The exact falsifier was a 30-second
+Playwright timeout waiting for the user-facing `letters` control.
+
+Successor decision: preserve attempt 1, capture archive/reading through the
+visible control immediately after authentication, return to the Garden through
+the visible back control, and only then run interaction/journal/persistence
+scenarios. Internal navigation remains forbidden.
+
+- **Status:** FAILED ATTEMPT RECORDED; SUCCESSOR UNBLOCKED. ComplaintRefs:
+  Wayfinder child: capture the current whole-Garden acceptance surface
+  (2026-08-10); Wayfinder map: the whole recipient Garden, nested under product
+  E2E (2026-08-10).
+
+### Correction and Garden capture attempt 2: the letters failure was a locator mismatch (2026-08-10)
+
+The attempt-1 record above over-interprets the Playwright timeout when it says
+the `letters` button was no longer visible. A focused DOM check after the same
+authenticated transition shows a concrete visible
+`#hud-btns > button` whose text is `letters`; `button:visible` and exact text
+lookup both find it. Playwright's `get_by_role("button", name="letters")`
+returns zero for this element, so the timed-out role locator is not evidence
+that the product control disappeared.
+
+Attempt 2 repeated the same role locator earlier in the sequence and failed
+immediately after the authenticated initial screenshot. Its partial package is
+preserved separately. Successor decision: click the concrete visible HUD
+button by its stable DOM home (`#hud-btns button`) and verify its text is
+`letters` before acting. This remains an ordinary user-facing control; no
+internal navigation function is introduced.
+
+- **Status:** FAILED HARNESS ATTEMPT RECORDED; PRIOR VISIBILITY CLAIM
+  CORRECTED; SUCCESSOR UNBLOCKED. ComplaintRefs: Garden capture attempt 1:
+  authenticated path reached, archive sequencing failed (2026-08-10);
+  Wayfinder child: capture the current whole-Garden acceptance surface
+  (2026-08-10).
+
+### Garden capture attempt 3: current sealed-bundle desktop/mobile package produced (2026-08-10)
+
+The successor completed at
+`scratchpad/garden-acceptance-2026-08-10/`. It is a candidate-only review
+package, not operator acceptance. `receipt.json` records commit
+`63edfb532ef38dfbc9ec895bb01f03f2b63bdddc`, the full dirty-state inventory,
+source refs, artifact hashes and before/after canonical state.
+
+The tracked demo could not supply the real path: README's documented `garden`
+password fails the tracked v2 artifact's HMAC, exactly as the existing demo
+defect predicts. Instead, `author_service.write_bundle_file` wrote a temporary
+v2 bundle outside the worktree with a known test passphrase. Its SHA-256 is
+`6dd138661daf11d4afab7abc7e9552e5b97e3a6f64000dad4555ea391de52a99`.
+The browser received it through the visible file input, authenticated it
+through the visible passphrase form, opened its archive and due letter, and
+then entered its Garden. The passphrase is not stored in the receipt.
+
+**Positive runtime evidence, not visual acceptance:**
+
+- Both 1400x950 desktop and 390x844 mobile produced 10 distinct Garden-text
+  hashes in 10 samples; the stale “mobile motionless” observation does not
+  describe this captured state.
+- Keyboard pan changed canonical camera `[83,55]` to `[85,75]`; touch drag
+  changed it to `[102,55]` on mobile.
+- Pointer click and touch tap both opened the canonical mailbox, incrementing
+  its interaction count and persisted `open` state.
+- Spatial keyboard focus moved mailbox to planter; Enter performed the
+  planter's canonical tend action.
+- Camera plus mailbox/planter state survived an ordinary reload, re-upload and
+  re-authentication on both viewports.
+- The 1000x700 resize repainted coherently in the recorded still. Videos are
+  exact 1400x950 and 390x844 at 25 fps. Operator visual verdict remains open.
+
+**Current mismatches established by the same package:**
+
+1. Pressing `j` produces no visible journal or inventory change on either
+   viewport. The only visible Garden HUD control remains `letters`.
+2. The Lantern carries a canonical `Light the lantern` opportunity, but no
+   opportunity control is painted. The pond and rose carry no primary action
+   or opportunity at all.
+3. Fresh provenance is one rose, six fixtures, zero animals and zero
+   collectibles. The review-verdict register's “current 2-plant, 5-fixture”
+   note is stale; feed/play/collect cannot be exercised in this default world.
+4. The current seed paints three of six `review_candidate_assets`:
+   `fixture.stepping_stones_five`, `fixture.planter_three` and
+   `fixture.pond_compact`. Their presence is not acceptance. The accepted-paint
+   manifest contains 15 unique accepted asset IDs and six candidate IDs.
+5. No ordinary recipient control forces season/weather transitions. The
+   package records summer evening only, so transition behavior remains
+   uncaptured rather than inferred.
+
+The localhost review accessor only read canonical camera, focus, provenance
+and state after ordinary user actions. It dispatched nothing. Attempts 1 and
+2 remain in sibling failed-package directories with the locator failure and
+its correction documented; nothing was deleted or overwritten.
+
+- **Status:** CURRENT SINGLE-SEED REVIEW PACKAGE PRODUCED; PARTIAL/MONITORING,
+  NOT ACCEPTED. ComplaintRefs: Wayfinder child: capture the current whole-
+  Garden acceptance surface (2026-08-10); Garden capture attempt 1:
+  authenticated path reached, archive sequencing failed (2026-08-10);
+  Correction and Garden capture attempt 2: the letters failure was a locator
+  mismatch (2026-08-10); Wayfinder map: the whole recipient Garden, nested
+  under product E2E (2026-08-10).
+
+### Wayfinder Garden map update: capture sharpens the interaction frontier (2026-08-10)
+
+Index refresh for “Wayfinder map: the whole recipient Garden, nested under
+product E2E (2026-08-10)”. The destination and browser ownership are
+unchanged. The current package replaces stale source-only assumptions with one
+authenticated current runtime state, but does not grant visual acceptance.
+
+Decisions so far:
+
+- Current fresh composition — OBSERVED as one rose/six fixtures/no animals/no
+  collectibles at generator/composition version 5; this is not a roster
+  verdict.
+- Motion — EXECUTED on desktop/mobile in this state; visual quality remains
+  operator-only.
+- Pan, one primary pointer/touch action, keyboard focus/Enter and fixture/camera
+  persistence — EXECUTED through ordinary controls.
+- Journal/inventory visibility — STILL ABSENT.
+- Opportunity reachability — STILL ABSENT even when projection carries a
+  concrete Lantern opportunity.
+- Candidate variants — THREE OF SIX EXPOSED in this seed, still unreviewed.
+- Season/weather transitions — NOT CAPTURED; no ordinary forced route exists.
+
+Frontier child selected: **make intended Garden interactions finger-
+reachable**, beginning with its existing grilling dependency. The operator
+must choose a visual vocabulary for opportunities, journal/inventory and
+non-interactive objects before implementation. The package establishes where
+the gaps are; it does not authorize a generic action sheet, labels over the
+Garden or UI-local gameplay ownership.
+
+Not yet specified:
+
+- Whether a projection opportunity paints as a beside-object control, a
+  persistent HUD affordance, or another operator-approved surface.
+- Whether pond/plant gain a canonical primary action or are explicitly
+  non-interactive.
+- How journal and inventory become visible without restoring rejected cards
+  or a second command owner.
+- Operator verdicts for all six seeded fixture variants; a dedicated multi-
+  seed package is still needed because this one exposes only three.
+- A bounded ordinary-product scenario for weather/season transitions.
+
+RQ projection: not projected. The interaction decision is sharp but human-
+owned. The package remains diagnostic evidence until operator sign-off.

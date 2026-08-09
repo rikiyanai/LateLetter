@@ -1,0 +1,1740 @@
+{
+  "acceptance_claim": false,
+  "accepted_paint_manifest": {
+    "data": {
+      "accepted_assets": [
+        "fixture.arbor",
+        "fixture.bench",
+        "fixture.birdbath",
+        "fixture.bridge",
+        "fixture.coffee_mug",
+        "fixture.coffee_mug",
+        "fixture.ice_cream_cone",
+        "fixture.ice_cream_cone",
+        "fixture.lantern",
+        "fixture.mailbox",
+        "fixture.mixtape",
+        "fixture.mixtape",
+        "fixture.planter",
+        "fixture.pond",
+        "fixture.popsicle",
+        "fixture.popsicle",
+        "fixture.stepping_stones",
+        "fixture.trellis",
+        "plant.rose"
+      ],
+      "accepted_laws": [
+        "recipe.animal.anchor_layout",
+        "recipe.animal.feed_reaction",
+        "recipe.animal.species_motion",
+        "recipe.animal.trust_tier_state_machine",
+        "recipe.feedback.hover_cursor_affordance",
+        "recipe.generation.autumn_recolour",
+        "recipe.generation.plant_templates",
+        "recipe.generation.population_density",
+        "recipe.generation.seasonal_grass_flowering",
+        "recipe.generation.seasonal_weights",
+        "recipe.motion.frame_cadence",
+        "recipe.motion.painter_order",
+        "recipe.motion.wind_law",
+        "recipe.palette.day_night_mutation",
+        "recipe.scene.ground_gradient",
+        "recipe.serialization.colored_rows",
+        "recipe.time.phase_selection",
+        "recipe.viewport.cell_measurement",
+        "recipe.viewport.resize_regeneration"
+      ],
+      "accepted_legacy_art": [
+        "animal.bird",
+        "animal.cat",
+        "plant.oak.large",
+        "plant.oak.medium",
+        "plant.oak.small",
+        "plant.pine.large",
+        "plant.pine.medium",
+        "plant.pine.small",
+        "plant.sunflower.large",
+        "plant.sunflower.medium",
+        "plant.sunflower.small",
+        "plant.water_lily.large",
+        "plant.water_lily.medium",
+        "plant.water_lily.small",
+        "plant.willow.large",
+        "plant.willow.medium",
+        "plant.willow.small"
+      ],
+      "accepted_recipes": [
+        "recipe.ambient.bird_traversal",
+        "recipe.ambient.butterfly",
+        "recipe.ambient.firefly",
+        "recipe.animal.absence_footprints",
+        "recipe.animal.pose_paint",
+        "recipe.delivery.bonded_animal",
+        "recipe.delivery.letterbird",
+        "recipe.feedback.click_leaf_burst",
+        "recipe.feedback.click_pine_rustle",
+        "recipe.feedback.feed_glyph",
+        "recipe.feedback.hover_rustle",
+        "recipe.ground.cover",
+        "recipe.scene.ground_line",
+        "recipe.scene.moon",
+        "recipe.scene.starfield",
+        "recipe.special.post_complete_marker",
+        "recipe.vegetation.canopy_shimmer",
+        "recipe.vegetation.grass_blades",
+        "recipe.vegetation.plant_paint",
+        "recipe.weather.falling_leaves",
+        "recipe.weather.rain",
+        "recipe.weather.rain_fragments",
+        "recipe.weather.rain_splashes",
+        "recipe.weather.snow",
+        "recipe.weather.snow_accumulation"
+      ],
+      "purpose": "Local runtime paint authority for the Garden composer, derived from the two verdict registers by scripts/prepare_pages_site.py. Accepted IDs and review-only candidate IDs remain separate; the release artifact always empties the candidate list. Regenerate with --write-paint-authority after any register change; a drift test fails while this file and the registers disagree.",
+      "registers": {
+        "asset_register": {
+          "path": "docs/garden-asset-acceptance.json",
+          "sha256": "a7913fc4c64bbfe77667243f08a17bc6f80a7002534e3922a733055aa3a60185"
+        },
+        "recipe_register": {
+          "path": "docs/garden-presentation-recipes.json",
+          "sha256": "a10b050513b649b1c2b383dfb6b10cf0a270e2df1023cd0b84a191684cc2f12a"
+        }
+      },
+      "review_candidate_assets": [
+        "fixture.planter_one",
+        "fixture.planter_three",
+        "fixture.pond_compact",
+        "fixture.pond_round",
+        "fixture.stepping_stones_five",
+        "fixture.stepping_stones_three"
+      ],
+      "schema": 2
+    },
+    "path": "web/garden-accepted-paint.v1.json",
+    "sha256": "e46577ba8097232be536d7dc932047200b81cd303bb920de894be9147199ddc7"
+  },
+  "artifacts": [
+    {
+      "bytes": 68386,
+      "path": "desktop-1400x950-01-authenticated-initial.png",
+      "sha256": "50ba89fc6e00abc862cf0ebd7026cbb9908dbec12961961a8442b7a1538ca1a7"
+    },
+    {
+      "bytes": 75523,
+      "path": "desktop-1400x950-02-archive.png",
+      "sha256": "48d24cb9363125080100f962b3dc6017d57fd676bc3987db06fe80bca71948a6"
+    },
+    {
+      "bytes": 75318,
+      "path": "desktop-1400x950-03-reading.png",
+      "sha256": "c7940fccba7f267f988cc0a4118affd345671551182fc30ed72d00529be03454"
+    },
+    {
+      "bytes": 70325,
+      "path": "desktop-1400x950-04-primary-interaction.png",
+      "sha256": "f0216edf781f6fcc94f26cecf7673a8a688207688d8fa8a1f3f633b8e3b8a63a"
+    },
+    {
+      "bytes": 68248,
+      "path": "desktop-1400x950-05-pan.png",
+      "sha256": "71fbffab31115701f424e6fa0d5510493599a18fdb39f8218badc486d939fb9a"
+    },
+    {
+      "bytes": 73237,
+      "path": "desktop-1400x950-06-keyboard-focus-enter.png",
+      "sha256": "3cf67e30d691f2db3e954c26dceb1c0a5ad5617a521e4ae767edd63a2d394378"
+    },
+    {
+      "bytes": 73113,
+      "path": "desktop-1400x950-07-journal-key.png",
+      "sha256": "d977abfad91dd2d8305d66b1aba74c782ad891448d5f94bcc3bbbf724a163baf"
+    },
+    {
+      "bytes": 68319,
+      "path": "desktop-1400x950-08-resize-1000x700.png",
+      "sha256": "d99ea5f9c679ae2f517fcb3a43961f58358d0bde4dc65ba7e746326efc7e4a11"
+    },
+    {
+      "bytes": 70781,
+      "path": "desktop-1400x950-09-reopen.png",
+      "sha256": "e37908fd837caadbdc8bc07aada9f170809f396c6834ccc284c06ba8dc6e214b"
+    },
+    {
+      "bytes": 1405086,
+      "path": "desktop-1400x950-session.webm",
+      "sha256": "98412f3793493387aba00065c549b9eecdaf74f751410e0dbccf887c9af4d714"
+    },
+    {
+      "bytes": 20718,
+      "path": "mobile-390x844-01-authenticated-initial.png",
+      "sha256": "48f7507a169d818892b1907312db700a73de400632789647a138bf4826a47ccb"
+    },
+    {
+      "bytes": 27239,
+      "path": "mobile-390x844-02-archive.png",
+      "sha256": "1992047b0c358b9380e4df979c7fc80890814798c71374833c4293ab8d6aa33b"
+    },
+    {
+      "bytes": 27275,
+      "path": "mobile-390x844-03-reading.png",
+      "sha256": "08cb1affe8decac127edc67b1a8734e72a966d3938d16359a30f37fbaa3acedd"
+    },
+    {
+      "bytes": 20039,
+      "path": "mobile-390x844-04-primary-interaction.png",
+      "sha256": "28c355997cb655a2785a4cf3d723015110e00517bf0acc5bf18ee50954365ded"
+    },
+    {
+      "bytes": 23195,
+      "path": "mobile-390x844-05-pan.png",
+      "sha256": "670932ab1d28154a9db61ccfd0646f70480e958be2601799438dac17806fcb99"
+    },
+    {
+      "bytes": 23286,
+      "path": "mobile-390x844-06-keyboard-focus-enter.png",
+      "sha256": "2780be974b7ddd67f92cb82f699b946904df8332ffbfc29d070d1a3439e2ecf8"
+    },
+    {
+      "bytes": 23075,
+      "path": "mobile-390x844-07-journal-key.png",
+      "sha256": "df6890c972fa4da7b29a3651da8a6ac70d6d5f01cacc42aa951dd0e6ab07a64f"
+    },
+    {
+      "bytes": 22881,
+      "path": "mobile-390x844-09-reopen.png",
+      "sha256": "624418c2983cd237aa626615401da78074398a45afea740026c94e4c51440847"
+    },
+    {
+      "bytes": 506342,
+      "path": "mobile-390x844-session.webm",
+      "sha256": "d3c8bcefa8d501e83b5d5102a3d9a534391b674fd1db079f0a0d14a1ac88de1e"
+    }
+  ],
+  "bundle": {
+    "garden_event_count": 0,
+    "message_count": 1,
+    "passphrase_recorded_in_receipt": false,
+    "path": "temporary outside worktree",
+    "sha256": "6dd138661daf11d4afab7abc7e9552e5b97e3a6f64000dad4555ea391de52a99",
+    "version": 2,
+    "writer": "lateletter.author_service.write_bundle_file"
+  },
+  "captured_at_utc": "2026-08-09T20:01:12.681360+00:00",
+  "child": "Wayfinder child: capture the current whole-Garden acceptance surface (2026-08-10)",
+  "coverage": {
+    "archive_letter": true,
+    "desktop_pointer": true,
+    "horizontal_vertical_pan": true,
+    "initial_composition": true,
+    "journal_visibility": true,
+    "keyboard_focus_enter": true,
+    "live_motion": true,
+    "mobile_touch": true,
+    "persistence_reopen": true,
+    "resize": true,
+    "season_weather_change": false,
+    "season_weather_note": "No ordinary recipient control changes season/weather; current summer-evening ambient state captured only."
+  },
+  "desktop": {
+    "archive": {
+      "buttons": [
+        {
+          "id": null,
+          "text": "letters"
+        },
+        {
+          "id": null,
+          "text": "August 10, 2026"
+        },
+        {
+          "id": "btn-arc-back",
+          "text": "\u2190 garden"
+        }
+      ],
+      "screens": [
+        "s-archive"
+      ],
+      "text": "planted for you by Garden Capture Fixture.\n\nAugust 10, 2026\n\u2190 garden"
+    },
+    "bad_responses": [],
+    "console_errors": [
+      "Failed to load resource: the server responded with a status of 404 (File not found)"
+    ],
+    "final_buttons": [
+      {
+        "id": null,
+        "text": "letters"
+      }
+    ],
+    "initial": {
+      "aria": "storybook sky. summer evening. Garden with 1 plants, 6 fixtures. Inventory: empty.",
+      "buttons": [
+        {
+          "id": null,
+          "text": "letters"
+        }
+      ],
+      "camera": [
+        60,
+        51
+      ],
+      "focus": null,
+      "provenance": {
+        "load_origin": "generated",
+        "world_origin": {
+          "census": {
+            "animals": 0,
+            "collectibles": 0,
+            "fixtures": 6,
+            "plants": 1
+          },
+          "composition_fingerprint": "plants=rose@70,820|fixtures=bench@400,300,lantern@480,200,mailbox@700,700,planter@850,820,pond@400,900,stepping_stones@300,900|animals=|collectibles=",
+          "composition_version": 5,
+          "generator_version": 5,
+          "is_fresh": true,
+          "label": "fresh",
+          "migrated": false,
+          "observed_fingerprint": "plants=rose@70,820|fixtures=bench@400,300,lantern@480,200,mailbox@700,700,planter@850,820,pond@400,900,stepping_stones@300,900|animals=|collectibles=",
+          "reasons": [],
+          "schema_version": 1
+        }
+      },
+      "state": {
+        "actions_open_for": null,
+        "fixtures": [
+          {
+            "authored_state": {
+              "fixture_room_role": "independent",
+              "visual_asset_id": "fixture.mailbox"
+            },
+            "catalog": "mailbox",
+            "id": "fixture:5a95055aa3f94b011bafe1fd",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "approach",
+              "side": "left",
+              "visual_asset_id": "fixture.stepping_stones_five"
+            },
+            "catalog": "stepping_stones",
+            "id": "fixture:a893055b32e3fbd993205c8c",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "independent",
+              "visual_asset_id": "fixture.lantern"
+            },
+            "catalog": "lantern",
+            "id": "fixture:ab3b97a964615492a610c640",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "container",
+              "visual_asset_id": "fixture.planter_three"
+            },
+            "catalog": "planter",
+            "id": "fixture:de1d8d355e9e3f1306a70fc9",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "water",
+              "visual_asset_id": "fixture.pond_compact"
+            },
+            "catalog": "pond",
+            "id": "fixture:f34a67e1ae130e3dff94dbeb",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "seat-facing-water",
+              "visual_asset_id": "fixture.bench",
+              "x_offset": 0,
+              "y_anchor": 340
+            },
+            "catalog": "bench",
+            "id": "fixture:f74e340bf95d33256eedde15",
+            "interaction_count": 0,
+            "last_interaction": null
+          }
+        ],
+        "objects": [
+          {
+            "id": "fixture:5a95055aa3f94b011bafe1fd",
+            "name": "Memory mailbox",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "open"
+              },
+              "command": "primary_interact",
+              "label": "Open the memory mailbox"
+            }
+          },
+          {
+            "id": "fixture:a893055b32e3fbd993205c8c",
+            "name": "Stepping stones",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "walk"
+              },
+              "command": "primary_interact",
+              "label": "Walk the stepping stones"
+            }
+          },
+          {
+            "id": "fixture:ab3b97a964615492a610c640",
+            "name": "Lantern",
+            "opportunities": [
+              {
+                "args": {
+                  "fixture_action": "light"
+                },
+                "command": "primary_interact",
+                "label": "Light the lantern",
+                "opportunity_id": "fixture:ab3b97a964615492a610c640:light"
+              }
+            ],
+            "primary_action": {
+              "args": {
+                "fixture_action": "observe"
+              },
+              "command": "primary_interact",
+              "label": "Look at the lantern"
+            }
+          },
+          {
+            "id": "fixture:de1d8d355e9e3f1306a70fc9",
+            "name": "Planter",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "tend"
+              },
+              "command": "primary_interact",
+              "label": "Tend the planter"
+            }
+          },
+          {
+            "id": "fixture:f34a67e1ae130e3dff94dbeb",
+            "name": "Pond",
+            "opportunities": [],
+            "primary_action": null
+          },
+          {
+            "id": "fixture:f74e340bf95d33256eedde15",
+            "name": "Garden bench",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "sit"
+              },
+              "command": "primary_interact",
+              "label": "Sit on the garden bench"
+            }
+          },
+          {
+            "id": "plant:628efca43975f23321246f78",
+            "name": "rose",
+            "opportunities": [],
+            "primary_action": null
+          }
+        ]
+      }
+    },
+    "interaction": {
+      "accepted_change": true,
+      "after_fixture": {
+        "authored_state": {
+          "fixture_room_role": "independent",
+          "open": true,
+          "visual_asset_id": "fixture.mailbox"
+        },
+        "catalog": "mailbox",
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "interaction_count": 1,
+        "last_interaction": "open"
+      },
+      "before_fixture": {
+        "authored_state": {
+          "fixture_room_role": "independent",
+          "visual_asset_id": "fixture.mailbox"
+        },
+        "catalog": "mailbox",
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "interaction_count": 0,
+        "last_interaction": null
+      },
+      "object": {
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "name": "Memory mailbox",
+        "opportunities": [],
+        "primary_action": {
+          "args": {
+            "fixture_action": "open"
+          },
+          "command": "primary_interact",
+          "label": "Open the memory mailbox"
+        }
+      },
+      "rect": {
+        "height": 15,
+        "width": 7.828125,
+        "x": 915.890625,
+        "y": 750
+      },
+      "route": "pointer click"
+    },
+    "journal": {
+      "after": {
+        "buttons": [
+          {
+            "id": null,
+            "text": "letters"
+          }
+        ],
+        "screens": []
+      },
+      "before": {
+        "buttons": [
+          {
+            "id": null,
+            "text": "letters"
+          }
+        ],
+        "screens": []
+      },
+      "visible_change": false
+    },
+    "keyboard": {
+      "enter_changed_state": true,
+      "focus_after": {
+        "id": "fixture:de1d8d355e9e3f1306a70fc9",
+        "name": "Planter",
+        "primary_action": {
+          "args": {
+            "fixture_action": "tend"
+          },
+          "command": "primary_interact",
+          "label": "Tend the planter"
+        }
+      },
+      "focus_before": {
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "name": "Memory mailbox",
+        "primary_action": {
+          "args": {
+            "fixture_action": "open"
+          },
+          "command": "primary_interact",
+          "label": "Open the memory mailbox"
+        }
+      },
+      "focus_changed": true
+    },
+    "mobile_emulation": false,
+    "motion": {
+      "hashes": [
+        "efa103876da80c9925e105ebb235b050dca6f701173a74a100518d57fc7340f5",
+        "172d5c9448a266a044c4ebfde29613e2d32c2388256b8ed373ca45dad90a1b0d",
+        "7e6a3af3cfd2ed53f499a93323a4a917ca2d7cac0620357eaea2e051b54f2743",
+        "ef720e06077679518e03b50400588b7de9ec62bd6fe1b85c8306289adad86a35",
+        "368e457a438e4f6160db7b43c7f9af3f9c63872c1b7bfcc56f740d8c81af149e",
+        "8e16db6cdf8b3297cedc2a19a15b45026865a3ef0f0b4a01120443d384d4e2ac",
+        "837f39bcdea5f55997153662eba947c7c8eac047b677b8c07c4d404efe593935",
+        "c47656fb8aed6b4e39075b3aea2f3c29fccd4864010b0cbbc68105a905ffd313",
+        "f8f27a3042274d438ba4a40de91403f7278f35e198db5a9826a8c4879f41dbf5",
+        "f6beb4815c0b71bd95888549a016f99c90117c28c9c5190a2a5cd345a5a1ca3e"
+      ],
+      "samples": 10,
+      "unique_text_hashes": 10
+    },
+    "page_errors": [],
+    "pan": {
+      "after": [
+        85,
+        75
+      ],
+      "before": [
+        83,
+        55
+      ],
+      "changed": true,
+      "route": "keyboard d,d,s"
+    },
+    "persistence": {
+      "after": {
+        "camera": [
+          99,
+          64
+        ],
+        "state": {
+          "actions_open_for": null,
+          "fixtures": [
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "open": true,
+                "visual_asset_id": "fixture.mailbox"
+              },
+              "catalog": "mailbox",
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "interaction_count": 1,
+              "last_interaction": "open"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "approach",
+                "side": "left",
+                "visual_asset_id": "fixture.stepping_stones_five"
+              },
+              "catalog": "stepping_stones",
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "visual_asset_id": "fixture.lantern"
+              },
+              "catalog": "lantern",
+              "id": "fixture:ab3b97a964615492a610c640",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "container",
+                "linked_plant_id": "plant:628efca43975f23321246f78",
+                "tend_count": 1,
+                "visual_asset_id": "fixture.planter_three"
+              },
+              "catalog": "planter",
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "interaction_count": 1,
+              "last_interaction": "tend"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "water",
+                "visual_asset_id": "fixture.pond_compact"
+              },
+              "catalog": "pond",
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "seat-facing-water",
+                "visual_asset_id": "fixture.bench",
+                "x_offset": 0,
+                "y_anchor": 340
+              },
+              "catalog": "bench",
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "interaction_count": 0,
+              "last_interaction": null
+            }
+          ],
+          "objects": [
+            {
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "name": "Memory mailbox",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "open"
+                },
+                "command": "primary_interact",
+                "label": "Open the memory mailbox"
+              }
+            },
+            {
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "name": "Stepping stones",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "walk"
+                },
+                "command": "primary_interact",
+                "label": "Walk the stepping stones"
+              }
+            },
+            {
+              "id": "fixture:ab3b97a964615492a610c640",
+              "name": "Lantern",
+              "opportunities": [
+                {
+                  "args": {
+                    "fixture_action": "light"
+                  },
+                  "command": "primary_interact",
+                  "label": "Light the lantern",
+                  "opportunity_id": "fixture:ab3b97a964615492a610c640:light"
+                }
+              ],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "observe"
+                },
+                "command": "primary_interact",
+                "label": "Look at the lantern"
+              }
+            },
+            {
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "name": "Planter",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "tend"
+                },
+                "command": "primary_interact",
+                "label": "Tend the planter"
+              }
+            },
+            {
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "name": "Pond",
+              "opportunities": [],
+              "primary_action": null
+            },
+            {
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "name": "Garden bench",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "sit"
+                },
+                "command": "primary_interact",
+                "label": "Sit on the garden bench"
+              }
+            },
+            {
+              "id": "plant:628efca43975f23321246f78",
+              "name": "rose",
+              "opportunities": [],
+              "primary_action": null
+            }
+          ]
+        }
+      },
+      "before": {
+        "camera": [
+          99,
+          64
+        ],
+        "state": {
+          "actions_open_for": null,
+          "fixtures": [
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "open": true,
+                "visual_asset_id": "fixture.mailbox"
+              },
+              "catalog": "mailbox",
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "interaction_count": 1,
+              "last_interaction": "open"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "approach",
+                "side": "left",
+                "visual_asset_id": "fixture.stepping_stones_five"
+              },
+              "catalog": "stepping_stones",
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "visual_asset_id": "fixture.lantern"
+              },
+              "catalog": "lantern",
+              "id": "fixture:ab3b97a964615492a610c640",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "container",
+                "linked_plant_id": "plant:628efca43975f23321246f78",
+                "tend_count": 1,
+                "visual_asset_id": "fixture.planter_three"
+              },
+              "catalog": "planter",
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "interaction_count": 1,
+              "last_interaction": "tend"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "water",
+                "visual_asset_id": "fixture.pond_compact"
+              },
+              "catalog": "pond",
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "seat-facing-water",
+                "visual_asset_id": "fixture.bench",
+                "x_offset": 0,
+                "y_anchor": 340
+              },
+              "catalog": "bench",
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "interaction_count": 0,
+              "last_interaction": null
+            }
+          ],
+          "objects": [
+            {
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "name": "Memory mailbox",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "open"
+                },
+                "command": "primary_interact",
+                "label": "Open the memory mailbox"
+              }
+            },
+            {
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "name": "Stepping stones",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "walk"
+                },
+                "command": "primary_interact",
+                "label": "Walk the stepping stones"
+              }
+            },
+            {
+              "id": "fixture:ab3b97a964615492a610c640",
+              "name": "Lantern",
+              "opportunities": [
+                {
+                  "args": {
+                    "fixture_action": "light"
+                  },
+                  "command": "primary_interact",
+                  "label": "Light the lantern",
+                  "opportunity_id": "fixture:ab3b97a964615492a610c640:light"
+                }
+              ],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "observe"
+                },
+                "command": "primary_interact",
+                "label": "Look at the lantern"
+              }
+            },
+            {
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "name": "Planter",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "tend"
+                },
+                "command": "primary_interact",
+                "label": "Tend the planter"
+              }
+            },
+            {
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "name": "Pond",
+              "opportunities": [],
+              "primary_action": null
+            },
+            {
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "name": "Garden bench",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "sit"
+                },
+                "command": "primary_interact",
+                "label": "Sit on the garden bench"
+              }
+            },
+            {
+              "id": "plant:628efca43975f23321246f78",
+              "name": "rose",
+              "opportunities": [],
+              "primary_action": null
+            }
+          ]
+        }
+      },
+      "camera_survived": true,
+      "fixture_state_survived": true
+    },
+    "reading": {
+      "buttons": [
+        {
+          "id": null,
+          "text": "letters"
+        },
+        {
+          "id": "btn-save",
+          "text": "save"
+        },
+        {
+          "id": "btn-all",
+          "text": "all letters"
+        },
+        {
+          "id": "btn-rd-back",
+          "text": "\u2190 back"
+        }
+      ],
+      "screens": [
+        "s-reading"
+      ],
+      "text": "Authenticated Garden capture fixture."
+    },
+    "resize": {
+      "aria": "storybook sky. summer evening. Garden with 1 plants, 6 fixtures. Inventory: empty. Memorial lasting; 0 gifts remembered.",
+      "camera_after": [
+        99,
+        64
+      ],
+      "camera_before": [
+        99,
+        64
+      ],
+      "from": {
+        "height": 950,
+        "width": 1400
+      },
+      "to": {
+        "height": 700,
+        "width": 1000
+      }
+    },
+    "viewport": {
+      "height": 950,
+      "width": 1400
+    }
+  },
+  "git": {
+    "commit": "63edfb532ef38dfbc9ec895bb01f03f2b63bdddc",
+    "dirty": true,
+    "status": [
+      " M ascii-animations/creatures/birds-and-insects.txt",
+      " M docs/FAILURE_LOG.md",
+      " M tests/garden_acceptance/test_release_paint_manifest.py",
+      " M tests/garden_adapters/test_garden_renderer.mjs",
+      " M viewer-bnw.html",
+      "?? ascii-animations/creatures/anim_snail.py",
+      "?? dumpster/router-calibrations-pre-baseline-gate-2026-08-06/",
+      "?? scratchpad/",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin-combining.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-row-ocr-gap.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-all-positive-covered.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj-2.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-emoji-zwj.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-mixed-script.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v11-d1-width-mixture.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v11-d2-rank1-positive.json",
+      "?? tests/fixtures/transcription-v2/recognizer-benchmark-v11-post-geometry.json",
+      "?? tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted-2.json",
+      "?? tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted-3.json",
+      "?? tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted.json",
+      "?? tests/fixtures/transcription-v2/recognizer-profile-v10.json",
+      "?? tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry.json",
+      "?? tests/test_letter_typography_e2e_browser.py",
+      "?? tracked/LateLetterResearch/transcription-parity/queue-diagnostic-replays/"
+    ]
+  },
+  "map": "Wayfinder map: the whole recipient Garden, nested under product E2E (2026-08-10)",
+  "mobile": {
+    "archive": {
+      "buttons": [
+        {
+          "id": null,
+          "text": "letters"
+        },
+        {
+          "id": null,
+          "text": "August 10, 2026"
+        },
+        {
+          "id": "btn-arc-back",
+          "text": "\u2190 garden"
+        }
+      ],
+      "screens": [
+        "s-archive"
+      ],
+      "text": "planted for you by Garden Capture Fixture.\n\nAugust 10, 2026\n\u2190 garden"
+    },
+    "bad_responses": [],
+    "console_errors": [],
+    "final_buttons": [
+      {
+        "id": null,
+        "text": "letters"
+      }
+    ],
+    "initial": {
+      "aria": "storybook sky. summer evening. Garden with 1 plants, 6 fixtures. Inventory: empty.",
+      "buttons": [
+        {
+          "id": null,
+          "text": "letters"
+        }
+      ],
+      "camera": [
+        60,
+        51
+      ],
+      "focus": null,
+      "provenance": {
+        "load_origin": "generated",
+        "world_origin": {
+          "census": {
+            "animals": 0,
+            "collectibles": 0,
+            "fixtures": 6,
+            "plants": 1
+          },
+          "composition_fingerprint": "plants=rose@70,820|fixtures=bench@400,300,lantern@480,200,mailbox@700,700,planter@850,820,pond@400,900,stepping_stones@300,900|animals=|collectibles=",
+          "composition_version": 5,
+          "generator_version": 5,
+          "is_fresh": true,
+          "label": "fresh",
+          "migrated": false,
+          "observed_fingerprint": "plants=rose@70,820|fixtures=bench@400,300,lantern@480,200,mailbox@700,700,planter@850,820,pond@400,900,stepping_stones@300,900|animals=|collectibles=",
+          "reasons": [],
+          "schema_version": 1
+        }
+      },
+      "state": {
+        "actions_open_for": null,
+        "fixtures": [
+          {
+            "authored_state": {
+              "fixture_room_role": "independent",
+              "visual_asset_id": "fixture.mailbox"
+            },
+            "catalog": "mailbox",
+            "id": "fixture:5a95055aa3f94b011bafe1fd",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "approach",
+              "side": "left",
+              "visual_asset_id": "fixture.stepping_stones_five"
+            },
+            "catalog": "stepping_stones",
+            "id": "fixture:a893055b32e3fbd993205c8c",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "independent",
+              "visual_asset_id": "fixture.lantern"
+            },
+            "catalog": "lantern",
+            "id": "fixture:ab3b97a964615492a610c640",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "container",
+              "visual_asset_id": "fixture.planter_three"
+            },
+            "catalog": "planter",
+            "id": "fixture:de1d8d355e9e3f1306a70fc9",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "water",
+              "visual_asset_id": "fixture.pond_compact"
+            },
+            "catalog": "pond",
+            "id": "fixture:f34a67e1ae130e3dff94dbeb",
+            "interaction_count": 0,
+            "last_interaction": null
+          },
+          {
+            "authored_state": {
+              "fixture_room_role": "seat-facing-water",
+              "visual_asset_id": "fixture.bench",
+              "x_offset": 0,
+              "y_anchor": 340
+            },
+            "catalog": "bench",
+            "id": "fixture:f74e340bf95d33256eedde15",
+            "interaction_count": 0,
+            "last_interaction": null
+          }
+        ],
+        "objects": [
+          {
+            "id": "fixture:5a95055aa3f94b011bafe1fd",
+            "name": "Memory mailbox",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "open"
+              },
+              "command": "primary_interact",
+              "label": "Open the memory mailbox"
+            }
+          },
+          {
+            "id": "fixture:a893055b32e3fbd993205c8c",
+            "name": "Stepping stones",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "walk"
+              },
+              "command": "primary_interact",
+              "label": "Walk the stepping stones"
+            }
+          },
+          {
+            "id": "fixture:ab3b97a964615492a610c640",
+            "name": "Lantern",
+            "opportunities": [
+              {
+                "args": {
+                  "fixture_action": "light"
+                },
+                "command": "primary_interact",
+                "label": "Light the lantern",
+                "opportunity_id": "fixture:ab3b97a964615492a610c640:light"
+              }
+            ],
+            "primary_action": {
+              "args": {
+                "fixture_action": "observe"
+              },
+              "command": "primary_interact",
+              "label": "Look at the lantern"
+            }
+          },
+          {
+            "id": "fixture:de1d8d355e9e3f1306a70fc9",
+            "name": "Planter",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "tend"
+              },
+              "command": "primary_interact",
+              "label": "Tend the planter"
+            }
+          },
+          {
+            "id": "fixture:f34a67e1ae130e3dff94dbeb",
+            "name": "Pond",
+            "opportunities": [],
+            "primary_action": null
+          },
+          {
+            "id": "fixture:f74e340bf95d33256eedde15",
+            "name": "Garden bench",
+            "opportunities": [],
+            "primary_action": {
+              "args": {
+                "fixture_action": "sit"
+              },
+              "command": "primary_interact",
+              "label": "Sit on the garden bench"
+            }
+          },
+          {
+            "id": "plant:628efca43975f23321246f78",
+            "name": "rose",
+            "opportunities": [],
+            "primary_action": null
+          }
+        ]
+      }
+    },
+    "interaction": {
+      "accepted_change": true,
+      "after_fixture": {
+        "authored_state": {
+          "fixture_room_role": "independent",
+          "open": true,
+          "visual_asset_id": "fixture.mailbox"
+        },
+        "catalog": "mailbox",
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "interaction_count": 1,
+        "last_interaction": "open"
+      },
+      "before_fixture": {
+        "authored_state": {
+          "fixture_room_role": "independent",
+          "visual_asset_id": "fixture.mailbox"
+        },
+        "catalog": "mailbox",
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "interaction_count": 0,
+        "last_interaction": null
+      },
+      "object": {
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "name": "Memory mailbox",
+        "opportunities": [],
+        "primary_action": {
+          "args": {
+            "fixture_action": "open"
+          },
+          "command": "primary_interact",
+          "label": "Open the memory mailbox"
+        }
+      },
+      "rect": {
+        "height": 15,
+        "width": 7.828125,
+        "x": 328.78125,
+        "y": 675
+      },
+      "route": "touch tap"
+    },
+    "journal": {
+      "after": {
+        "buttons": [
+          {
+            "id": null,
+            "text": "letters"
+          }
+        ],
+        "screens": []
+      },
+      "before": {
+        "buttons": [
+          {
+            "id": null,
+            "text": "letters"
+          }
+        ],
+        "screens": []
+      },
+      "visible_change": false
+    },
+    "keyboard": {
+      "enter_changed_state": true,
+      "focus_after": {
+        "id": "fixture:de1d8d355e9e3f1306a70fc9",
+        "name": "Planter",
+        "primary_action": {
+          "args": {
+            "fixture_action": "tend"
+          },
+          "command": "primary_interact",
+          "label": "Tend the planter"
+        }
+      },
+      "focus_before": {
+        "id": "fixture:5a95055aa3f94b011bafe1fd",
+        "name": "Memory mailbox",
+        "primary_action": {
+          "args": {
+            "fixture_action": "open"
+          },
+          "command": "primary_interact",
+          "label": "Open the memory mailbox"
+        }
+      },
+      "focus_changed": true
+    },
+    "mobile_emulation": true,
+    "motion": {
+      "hashes": [
+        "1e2642fb0fd5bc73f16ebbba217634fa3e34318ed63eb45232a4142746c1b6f8",
+        "0b6a129df3792ef8b76989c94d4aa1b530492f31bebe9f2d3dcab32632e0dad2",
+        "abe60e1120a5f5872cd492ae0feeba90e41d31ade991991327a56660fd6c798b",
+        "96d53e032aef2d488430a35b7ee54aec1558913451fb8efa54aa834c14aee64b",
+        "16baceb9e2c161e90746e8805565e11c9ed6e733bba8e3031b2788e7d2eb86bb",
+        "a189cb0694676df04e8baa7c7fdc5f03dce716b865355a422465ba337a4854f7",
+        "525cfbe2536fb4a933e6bd5f94c9808aa70d14912cdd0cafb6060896ea892f17",
+        "c6a858759076cfd39deb5ef59e534ee66016a54a34f58a71ff636dc01f3fe75d",
+        "c30d9f1f83c77c46387d5a93483c3d1375c7d70a3fd228f40c5b791624445827",
+        "a6b58c21a875c2bc054784c7d199c966533ab50ee0f6888b03bd77eddc78ccad"
+      ],
+      "samples": 10,
+      "unique_text_hashes": 10
+    },
+    "page_errors": [],
+    "pan": {
+      "after": [
+        102,
+        55
+      ],
+      "before": [
+        83,
+        55
+      ],
+      "changed": true,
+      "route": "touch drag"
+    },
+    "persistence": {
+      "after": {
+        "camera": [
+          99,
+          64
+        ],
+        "state": {
+          "actions_open_for": null,
+          "fixtures": [
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "open": true,
+                "visual_asset_id": "fixture.mailbox"
+              },
+              "catalog": "mailbox",
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "interaction_count": 1,
+              "last_interaction": "open"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "approach",
+                "side": "left",
+                "visual_asset_id": "fixture.stepping_stones_five"
+              },
+              "catalog": "stepping_stones",
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "visual_asset_id": "fixture.lantern"
+              },
+              "catalog": "lantern",
+              "id": "fixture:ab3b97a964615492a610c640",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "container",
+                "linked_plant_id": "plant:628efca43975f23321246f78",
+                "tend_count": 1,
+                "visual_asset_id": "fixture.planter_three"
+              },
+              "catalog": "planter",
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "interaction_count": 1,
+              "last_interaction": "tend"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "water",
+                "visual_asset_id": "fixture.pond_compact"
+              },
+              "catalog": "pond",
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "seat-facing-water",
+                "visual_asset_id": "fixture.bench",
+                "x_offset": 0,
+                "y_anchor": 340
+              },
+              "catalog": "bench",
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "interaction_count": 0,
+              "last_interaction": null
+            }
+          ],
+          "objects": [
+            {
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "name": "Memory mailbox",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "open"
+                },
+                "command": "primary_interact",
+                "label": "Open the memory mailbox"
+              }
+            },
+            {
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "name": "Stepping stones",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "walk"
+                },
+                "command": "primary_interact",
+                "label": "Walk the stepping stones"
+              }
+            },
+            {
+              "id": "fixture:ab3b97a964615492a610c640",
+              "name": "Lantern",
+              "opportunities": [
+                {
+                  "args": {
+                    "fixture_action": "light"
+                  },
+                  "command": "primary_interact",
+                  "label": "Light the lantern",
+                  "opportunity_id": "fixture:ab3b97a964615492a610c640:light"
+                }
+              ],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "observe"
+                },
+                "command": "primary_interact",
+                "label": "Look at the lantern"
+              }
+            },
+            {
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "name": "Planter",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "tend"
+                },
+                "command": "primary_interact",
+                "label": "Tend the planter"
+              }
+            },
+            {
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "name": "Pond",
+              "opportunities": [],
+              "primary_action": null
+            },
+            {
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "name": "Garden bench",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "sit"
+                },
+                "command": "primary_interact",
+                "label": "Sit on the garden bench"
+              }
+            },
+            {
+              "id": "plant:628efca43975f23321246f78",
+              "name": "rose",
+              "opportunities": [],
+              "primary_action": null
+            }
+          ]
+        }
+      },
+      "before": {
+        "camera": [
+          99,
+          64
+        ],
+        "state": {
+          "actions_open_for": null,
+          "fixtures": [
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "open": true,
+                "visual_asset_id": "fixture.mailbox"
+              },
+              "catalog": "mailbox",
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "interaction_count": 1,
+              "last_interaction": "open"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "approach",
+                "side": "left",
+                "visual_asset_id": "fixture.stepping_stones_five"
+              },
+              "catalog": "stepping_stones",
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "independent",
+                "visual_asset_id": "fixture.lantern"
+              },
+              "catalog": "lantern",
+              "id": "fixture:ab3b97a964615492a610c640",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "container",
+                "linked_plant_id": "plant:628efca43975f23321246f78",
+                "tend_count": 1,
+                "visual_asset_id": "fixture.planter_three"
+              },
+              "catalog": "planter",
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "interaction_count": 1,
+              "last_interaction": "tend"
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "water",
+                "visual_asset_id": "fixture.pond_compact"
+              },
+              "catalog": "pond",
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "interaction_count": 0,
+              "last_interaction": null
+            },
+            {
+              "authored_state": {
+                "fixture_room_role": "seat-facing-water",
+                "visual_asset_id": "fixture.bench",
+                "x_offset": 0,
+                "y_anchor": 340
+              },
+              "catalog": "bench",
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "interaction_count": 0,
+              "last_interaction": null
+            }
+          ],
+          "objects": [
+            {
+              "id": "fixture:5a95055aa3f94b011bafe1fd",
+              "name": "Memory mailbox",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "open"
+                },
+                "command": "primary_interact",
+                "label": "Open the memory mailbox"
+              }
+            },
+            {
+              "id": "fixture:a893055b32e3fbd993205c8c",
+              "name": "Stepping stones",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "walk"
+                },
+                "command": "primary_interact",
+                "label": "Walk the stepping stones"
+              }
+            },
+            {
+              "id": "fixture:ab3b97a964615492a610c640",
+              "name": "Lantern",
+              "opportunities": [
+                {
+                  "args": {
+                    "fixture_action": "light"
+                  },
+                  "command": "primary_interact",
+                  "label": "Light the lantern",
+                  "opportunity_id": "fixture:ab3b97a964615492a610c640:light"
+                }
+              ],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "observe"
+                },
+                "command": "primary_interact",
+                "label": "Look at the lantern"
+              }
+            },
+            {
+              "id": "fixture:de1d8d355e9e3f1306a70fc9",
+              "name": "Planter",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "tend"
+                },
+                "command": "primary_interact",
+                "label": "Tend the planter"
+              }
+            },
+            {
+              "id": "fixture:f34a67e1ae130e3dff94dbeb",
+              "name": "Pond",
+              "opportunities": [],
+              "primary_action": null
+            },
+            {
+              "id": "fixture:f74e340bf95d33256eedde15",
+              "name": "Garden bench",
+              "opportunities": [],
+              "primary_action": {
+                "args": {
+                  "fixture_action": "sit"
+                },
+                "command": "primary_interact",
+                "label": "Sit on the garden bench"
+              }
+            },
+            {
+              "id": "plant:628efca43975f23321246f78",
+              "name": "rose",
+              "opportunities": [],
+              "primary_action": null
+            }
+          ]
+        }
+      },
+      "camera_survived": true,
+      "fixture_state_survived": true
+    },
+    "reading": {
+      "buttons": [
+        {
+          "id": null,
+          "text": "letters"
+        },
+        {
+          "id": "btn-save",
+          "text": "save"
+        },
+        {
+          "id": "btn-all",
+          "text": "all letters"
+        },
+        {
+          "id": "btn-rd-back",
+          "text": "\u2190 back"
+        }
+      ],
+      "screens": [
+        "s-reading"
+      ],
+      "text": "Authenticated Garden capture fixture."
+    },
+    "resize": null,
+    "viewport": {
+      "height": 844,
+      "width": 390
+    }
+  },
+  "operator_signoff_required": true,
+  "review_status": "candidate_only",
+  "review_verdicts": {
+    "data": {
+      "how_a_verdict_is_recorded": "Watch the package named in `evidence`, at both required sizes, all the way through. Then set `verdict` to accepted or rejected, `decided_by` to the operator, `decided_at_utc`, and for a rejection say what is wrong in `notes`. A verdict binds to the exact evidence sha256 it was given: re-rendering the product produces new artifacts and inherits nothing, because approval attaches to what was actually watched.",
+      "operator": null,
+      "purpose": "The operator's DIRECT ACCEPTANCE of the Garden, recorded in four separate verdicts. This is the one gate no machine can clear: every other check in this repository measures structure, and none of them can say whether the Garden is worth looking at.",
+      "standing": "ALL FOUR are not_reviewed as of 2026-08-03, and a root-product release is blocked while any of them is. Nothing in this file has ever been accepted.",
+      "verdicts": {
+        "assets": {
+          "decided_at_utc": null,
+          "decided_by": null,
+          "evidence": null,
+          "notes": "Ten fixtures carry per-asset acceptance in docs/garden-asset-acceptance.json. No plant and no animal does. This slot covers the scene as drawn today; it is not a substitute for those per-asset rows.",
+          "question": "Is each individual drawing right -- glyph forms, palette, the states each object can be in?",
+          "verdict": "not_reviewed"
+        },
+        "composition": {
+          "decided_at_utc": null,
+          "decided_by": null,
+          "evidence": null,
+          "notes": "Binds to a composition revision AND its authored roster/anchor fingerprint, through docs/garden-composition-acceptance.json. The current 2-plant, 5-fixture starter is not accepted merely by being current.",
+          "question": "Is this the right starter -- which objects, how many, where, and how much empty space between them?",
+          "verdict": "not_reviewed"
+        },
+        "emotional_moments": {
+          "decided_at_utc": null,
+          "decided_by": null,
+          "evidence": null,
+          "notes": "Cannot be reviewed yet and must not be marked otherwise: delivery, bonded-animal delivery, item discovery and the memorial state all depend on plant and animal art that carries no verdict, so there is nothing honest to show.",
+          "question": "The five moments: the waiting, the delivery, the animal trust arc, post-completion, and item discovery.",
+          "verdict": "not_reviewed"
+        },
+        "motion": {
+          "decided_at_utc": null,
+          "decided_by": null,
+          "evidence": null,
+          "notes": "Requires at least ten seconds of real motion at 1600x1000 and 390x844. As of 2026-08-03 the mobile capture is motionless, which is a recorded defect rather than something for this slot to excuse.",
+          "question": "Does it live? Sway, wind, weather, calm, and the transitions between them, watched moving rather than as stills.",
+          "verdict": "not_reviewed"
+        }
+      },
+      "vocabulary": [
+        "accepted",
+        "rejected",
+        "not_reviewed"
+      ],
+      "what_cannot_stand_in_for_a_verdict": [
+        "a test suite with no failures",
+        "a reference composer or an optional guard",
+        "a registry file, a static analyzer, or a density number",
+        "a DOM dump or an unopened screenshot",
+        "a localhost flag or a successful build",
+        "the assistant's opinion of a capture it opened"
+      ],
+      "where_evidence_must_live": "docs/visual-review/ -- a verdict binds to an artifact that was watched. A registry file or a JSON document whose digest happens to match is not evidence of having watched anything, and the checker now refuses it.",
+      "who_the_operator_is": "The person whose judgement these four verdicts record, written here once so that `decided_by` can be checked against something instead of merely being non-empty. While this is null NO verdict can be accepted, which is the intended state: an approval by nobody in particular is not an approval, and only the operator can say who the operator is. The assistant must not fill this in.",
+      "why_four_and_not_one": "They fail independently and for different reasons. Every drawing can be accepted while the composition they form is wrong. A correct still composition can be dead in motion. And a garden can be dense, correct and moving and still not feel like anything, which is the only one that actually matters. Collapsing them into a single 'approved' would let three unexamined judgements ride on whichever one was easiest to give."
+    },
+    "path": "docs/garden-review-verdicts.json",
+    "sha256": "873efb7dd6e50e1b20ca278b1e293992830583e7549a474c9ab6f7c02713ecb7"
+  },
+  "schema_version": 1,
+  "source_refs": [
+    "viewer-bnw.html:1290",
+    "viewer-bnw.html:1307",
+    "viewer-bnw.html:2390",
+    "viewer-bnw.html:2570",
+    "web/garden-renderer.mjs",
+    "src/lateletter/author_service.py:571"
+  ]
+}
