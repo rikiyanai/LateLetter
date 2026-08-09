@@ -15182,3 +15182,15 @@ or alternate bundle/content owner was added.
   NEXT GRILLING QUESTION IS PASSPHRASE/HINT PLACEMENT. ComplaintRefs: Operator
   decision: passphrase floor is four characters (2026-08-10); Wayfinder map:
   the whole web product, authoring through recipient (2026-08-05).
+
+### Commit receipt: provisional four-character passphrase floor (2026-08-10)
+
+Commit `914edf3` (`author: set provisional four-character passphrase floor`)
+contains the canonical service-policy change, deletion of the CLI-local
+12-character owner, intake delegation, tests, SPEC update, question-audit
+update and the FL verification records. No unrelated dirty file was staged.
+The commit remains local and was not pushed.
+
+- **Status:** COMMITTED LOCALLY; NOT PUSHED. ComplaintRefs: Operator decision:
+  passphrase floor is four characters (2026-08-10); Passphrase-floor successor
+  verification and parent frontier update (2026-08-10).
