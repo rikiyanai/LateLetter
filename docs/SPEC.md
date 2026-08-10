@@ -3404,10 +3404,13 @@ The product is not shippable until all of the following are true:
 retained only as historical diagnostic evidence. Its duplicate writer remains
 deleted. `web/author-app.mjs` now drives the approved five-stage browser flow
 through the canonical service, and a real Chromium test exports, HMAC-verifies,
-decrypts and inspects its Garden program. Recipient-viewer traversal, phone and
-assistive-technology review, append-later, handoff shipping, and operator visual
-acceptance remain separate open evidence; the focused author result does not
-close the whole product route.
+decrypts and inspects its Garden program. A successor Chromium test now carries
+one exact author-downloaded artifact through the recipient file input, pre-auth
+Garden, passphrase, archive and exact plaintext on desktop and touch-mobile.
+Assistive-technology review, phone visual review, append-later, handoff
+shipping, full authored-Garden control and operator visual acceptance remain
+separate open evidence; the automated handoff does not close the whole product
+route.
 
 ## 19. Test Matrix
 
@@ -3543,7 +3546,8 @@ The earlier 4h–4l items remain useful visual work, but no longer define the re
    - No steward personal data is stored; the current handoff instruction is “Tell one person this file exists.”
    - The terminal E2E owner was deleted; `author_service.py` remains the sole tested seal/export owner.
    - ~~Browser E2E integration (intake → question seeds → drafts → optional gifts → review → canonical export)~~ ✓ focused Chromium path
-   - **[OPEN]** Append-later, recipient-viewer traversal, assistive-technology review, phone review and complete handoff shipping.
+   - ~~Exact author download → recipient file input → Garden → passphrase → archive → due plaintext~~ ✓ desktop and touch-mobile Chromium, one byte-identical artifact
+   - **[OPEN]** Append-later, assistive-technology review, phone visual review and complete handoff shipping.
 
 ### Recipient experience and delivery
 

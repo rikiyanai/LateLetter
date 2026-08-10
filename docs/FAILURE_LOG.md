@@ -15354,3 +15354,114 @@ unstaged. The commit is local and was not pushed.
   questionnaire implementation and focused E2E receipt (2026-08-10); Batch
   operator decision: author corpus approved and product fog resolved
   (2026-08-10).
+
+### Wayfinder child: prove browser-author handoff through the recipient product (2026-08-10)
+
+Question:
+Build a durable successor browser harness that drives one ordinary product
+lineage: the approved author questionnaire downloads a `.lateletter`; that
+exact byte artifact is supplied to the recipient viewer's file input; the
+viewer paints its pre-auth Garden, accepts the separately entered passphrase,
+opens the archive and due letter, and paints the exact authored plaintext.
+Run the same artifact through desktop and touch-mobile Chromium contexts.
+
+This child establishes author-to-recipient handoff as Executed and Verified.
+It cannot grant Garden visual acceptance and must not repair the default
+roster, add Garden controls, change persistence, restore the deleted
+`tests/test_garden_review_e2e_browser.py`, or begin capture/visual-verdict work.
+Gate 8 may be corrected only after replacement handoff evidence exists; gates
+2 and 12 remain untouched until their own successor evidence exists. Type:
+task. ComplaintRefs: Wayfinder map:
+the whole web product, authoring through recipient (2026-08-05); Wayfinder map:
+the whole recipient Garden, nested under product E2E (2026-08-10); Browser
+author questionnaire implementation and focused E2E receipt (2026-08-10).
+
+### Browser-author handoff attempt 1: exact-artifact successor harness (2026-08-10)
+
+Hypothesis: the current author download already satisfies the recipient's
+authenticated product contract, so a new E2E harness can close this child
+without modifying either product owner. The harness will start the loopback
+author service and a local static recipient server, export once through real
+Chromium controls, hash and parse the download, then upload the unchanged path
+into fresh desktop and mobile recipient contexts. Each context must visibly
+reach Garden, passphrase, archive and reading screens and reconstruct the exact
+short multiline plaintext from painted line rows. Browser page errors, console
+errors and non-favicon HTTP failures are hard failures.
+
+Falsifier: any format, date, crypto, Garden-startup, archive, responsive or
+painted-text mismatch blocks the child and must be recorded before a successor.
+The existing dirty Garden/viewer/typography/transcription work is user-owned
+and remains untouched. The repository still lacks
+`scripts/analyze_failure_log.py`, `scripts/analyze_runs.py` and overlay IDs, so
+this append-only entry is the available attempt ledger.
+
+- **Status:** ATTEMPT 1 STARTED; NO PRODUCT CHANGE AUTHORIZED. ComplaintRefs:
+  Wayfinder child: prove browser-author handoff through the recipient product
+  (2026-08-10).
+
+### Browser-author handoff broad verification attempt: three unrelated contract reds (2026-08-10)
+
+After the exact-artifact E2E passed, a 286-test author/recipient/viewer sweep
+finished **283 passed / 3 failed**. All three failures are pre-existing static
+contract drift outside this child:
+
+1. `test_reproducible_review_clock_is_local_only_and_resets_world_persistence`
+   expects the old literal `const worldPersistence=persistent&&reviewTime===null`.
+2. `test_viewer_derives_modality_and_implements_reduced_motion_and_modal_contracts`
+   expects the old literal
+   `reducedMotionQuery.matches||gardenReviewTime()!==null`.
+3. `test_pages_deploy_builds_and_verifies_transitive_browser_asset_closure`
+   expects a Pages workflow command no longer present in the tracked workflow.
+
+The handoff test itself passed in that run. These failures do not falsify the
+download hash, bundle authentication, desktop/mobile recipient traversal or
+painted plaintext, and correcting them would enter Garden/deployment owners
+explicitly outside this child. Successor: rerun the same set with only those
+three named stale assertions deselected, then keep their red state visible in
+the handoff receipt rather than fixing or hiding it.
+
+- **Status:** BROAD ATTEMPT PARTIAL; 3 OUT-OF-SCOPE PRE-EXISTING FAILURES
+  RECORDED; BOUNDED SUCCESSOR UNBLOCKED. ComplaintRefs: Browser-author handoff
+  attempt 1: exact-artifact successor harness (2026-08-10).
+
+### Browser-author handoff successor: exact artifact verified on desktop and mobile (2026-08-10)
+
+Attempt 1 passed without a product-source intervention. The durable successor
+harness is `tests/test_product_handoff_e2e_browser.py`; it does not restore or
+import the deleted Garden mechanics test. One installed Chromium process:
+
+1. completed the real five-stage author questionnaire through its loopback
+   service and downloaded one due-letter `.lateletter`;
+2. parsed and HMAC-verified those bytes and decrypted the expected plaintext;
+3. uploaded the same file path, with one unchanged SHA-256, into a fresh
+   1280x900 recipient context and a fresh 390x844 touch-mobile context;
+4. in both contexts reached the nonempty pre-auth Garden, visible passphrase
+   screen, authenticated archive, one due letter, exact five painted plaintext
+   rows, read archive state and return to Garden; and
+5. observed no page errors, console errors or non-favicon HTTP failures.
+
+The exact-artifact test passes **1/1**. The bounded author/recipient successor
+passes **283/283** with three named stale assertions deselected and eight
+existing split-state-healing warnings. The preceding broad run remains
+recorded at 283 pass / 3 fail; no Garden or deployment owner was edited to make
+it green.
+
+Gate consequence: gate 8's claim that `web/author-app.mjs` is absent is
+retracted and the new handoff check is cited. Gate 8 remains BLOCKED on its
+actual §7.8.13 contract: the MVP author UI cannot express and preview the full
+letter-read/rabbit/plant/revisit/autumn-gift chain or compare preview/runtime
+traces. Gates 2 and 12 still cite a deleted test and remain intentionally
+unchanged until their interaction/accessibility successor exists.
+
+Wayfinder consequence: this child is complete and parent handoff is Executed
+and Verified, not Garden Accepted. The next parent child is the already-locked
+default Garden correction: one seed-selected accepted flower centered, with
+no fixtures, animals or collectibles. Per the one-child boundary, that product
+change does not begin in this run. RQ projection remains unnecessary.
+
+- **Status:** HANDOFF CHILD COMPLETE; EXACT ARTIFACT VERIFIED DESKTOP/MOBILE;
+  GARDEN ACCEPTANCE OPEN. ComplaintRefs: Wayfinder child: prove browser-author
+  handoff through the recipient product (2026-08-10); Browser-author handoff
+  broad verification attempt: three unrelated contract reds (2026-08-10);
+  Wayfinder map: the whole web product, authoring through recipient
+  (2026-08-05).
