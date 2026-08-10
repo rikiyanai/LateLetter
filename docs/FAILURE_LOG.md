@@ -15465,3 +15465,25 @@ change does not begin in this run. RQ projection remains unnecessary.
   broad verification attempt: three unrelated contract reds (2026-08-10);
   Wayfinder map: the whole web product, authoring through recipient
   (2026-08-05).
+
+### Commit receipt: exact browser author-to-recipient handoff successor (2026-08-10)
+
+The scoped author-product successor was committed as
+`c68ac0c6a59419000a76c2cf95c55d1b5cc42715` (`test: prove browser author
+recipient handoff`). The separate Garden bookkeeping correction was committed
+as `7091dfb5342cc99a18be72a823ab24fdf280fe28` (`docs: correct author control
+gate evidence`). This split follows `docs/ownership-lanes.json`: the first
+commit owns the browser lineage harness and shared canon; the second owns the
+lane manifest and gate-8 evidence. Neither commit changes product runtime
+source.
+
+Receipt verification: the exact-artifact Chromium test passes **1/1**; the
+bounded author/recipient sweep passes **283/283**, with three separately logged
+pre-existing Garden/deployment assertions deselected. Both lane-boundary
+checks, JSON parsing, Python compilation and `git diff --check` passed. Gates 2
+and 12 remain unchanged. User-owned dirty and untracked work remained unstaged.
+The commits are local and were not pushed.
+
+- **Status:** COMMITTED LOCALLY; NOT PUSHED. ComplaintRefs: Browser-author
+  handoff successor: exact artifact verified on desktop and mobile
+  (2026-08-10).
