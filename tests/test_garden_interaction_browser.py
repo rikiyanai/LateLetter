@@ -198,50 +198,31 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             _open_standalone(desktop, origin)
             assert desktop.locator("#garden-context-actions").count() == 0
 
-            # The ordinary live route must actually repaint over time. A
-            # canonical "pause motion" value alone cannot prove presentation
-            # frames are advancing; compare the rendered Garden bytes.
+            # The accepted Garden is a static picture: no autonomous repaint
+            # may mutate its visible bytes.
             live_frames: set[str] = set()
             for _ in range(8):
                 live_frames.add(desktop.locator("#g").inner_text())
                 desktop.wait_for_timeout(125)
-            assert len(live_frames) > 1, "ordinary Garden presentation is motionless"
+            assert len(live_frames) == 1, "ordinary Garden presentation animated"
 
             initial = _state(desktop)
             plant_id = initial["plants"][0]["plant_id"]
+            mailbox_id = next(
+                fixture["fixture_id"] for fixture in initial["fixtures"]
+                if fixture["catalog_id"] == "mailbox"
+            )
 
-            # The one-second canonical live refresh must preserve the DOM
-            # identity held by keyboard and assistive-technology clients.
-            # Locator-based activation would silently re-resolve replacement
-            # nodes and therefore cannot prove this invariant.
-            desktop.evaluate(
-                """() => {
-                    window.__gardenStableControls = {
-                        journal: document.querySelector(
-                            '#hud-actions [data-garden-command="open_journal"]'
-                        ),
-                        motion: document.querySelector(
-                            '#hud-actions [data-garden-command="pause_motion"]'
-                        ),
-                    };
-                    window.__gardenStableControls.journal.focus();
-                }"""
-            )
-            desktop.wait_for_timeout(1_250)
-            assert desktop.evaluate(
-                """() => {
-                    const saved = window.__gardenStableControls;
-                    return saved.journal === document.querySelector(
-                        '#hud-actions [data-garden-command="open_journal"]'
-                    ) && saved.motion === document.querySelector(
-                        '#hud-actions [data-garden-command="pause_motion"]'
-                    ) && document.activeElement === saved.journal;
-                }"""
-            )
+            assert desktop.locator(
+                '#hud-actions [data-garden-command="open_journal"]'
+            ).count() == 0
+            assert desktop.locator(
+                '#hud-actions [data-garden-command="pause_motion"]'
+            ).count() == 0
 
             # The rose is an interaction in the picture, not a permanently
             # painted object-name/action label. A real coordinate click both
-            # tends the canonical plant and emits visible picture feedback.
+            # tends the canonical plant and reports outside the picture.
             _keyboard_focus_object(
                 desktop,
                 plant_id,
@@ -253,11 +234,10 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 "before => JSON.parse(window.__gardenReview.canonicalStateJson()).plants[0].tended_count > before",
                 arg=tended_before,
             )
-            desktop.wait_for_function(
-                "() => window.__gardenReview.visiblePaint().source_ids.includes('recipe.feedback.click_leaf_burst')"
-            )
+            desktop.locator("#garden-status").wait_for(state="visible")
+            assert "tend" in desktop.locator("#garden-status").inner_text().lower()
 
-            # Keyboard focus, primary interaction, tend, journal, pause and pan
+            # Keyboard focus, primary interaction, tend and pan
             # all traverse the document's recorded keyboard routes.
             tended_before = _state(desktop)["plants"][0]["tended_count"]
             desktop.keyboard.press("Enter")
@@ -271,15 +251,18 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 "before => JSON.parse(window.__gardenReview.canonicalStateJson()).plants[0].tended_count > before",
                 arg=tended_before,
             )
-            desktop.keyboard.press("Space")
-            desktop.wait_for_function(
-                "() => JSON.parse(window.__gardenReview.canonicalStateJson()).ui.motion_paused"
+            before_global_keys = desktop.evaluate(
+                "window.__gardenReview.canonicalStateJson()"
             )
             desktop.keyboard.press("Space")
-            desktop.wait_for_function(
-                "() => !JSON.parse(window.__gardenReview.canonicalStateJson()).ui.motion_paused"
-            )
             desktop.keyboard.press("j")
+            assert desktop.evaluate(
+                "window.__gardenReview.canonicalStateJson()"
+            ) == before_global_keys
+
+            # Journal has no HUD label. Once tending creates content, the
+            # canonical mailbox becomes its direct picture-owned entrance.
+            _activate_garden_object(desktop, mailbox_id, touch=False)
             desktop.locator("#garden-journal").wait_for(state="visible")
             desktop.evaluate(
                 """() => {
@@ -330,10 +313,7 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             )
             assert zoom["scale"] == pytest.approx(2, abs=0.05)
             assert zoom["width"] <= zoom["inner"] / 1.9
-            journal = desktop.locator(
-                '#hud-actions [data-garden-command="open_journal"]'
-            )
-            _coordinate_activate(desktop, journal, touch=False)
+            _activate_garden_object(desktop, mailbox_id, touch=False)
             desktop.locator("#garden-journal").wait_for(state="visible")
             desktop.keyboard.press("Escape")
             cdp.send("Emulation.setPageScaleFactor", {"pageScaleFactor": 1})
@@ -342,7 +322,7 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             desktop.wait_for_timeout(200)
             _assert_touch_floor_and_css_fit(
                 desktop,
-                "#hud-actions button",
+                "#hud-btns button",
                 320,
             )
             desktop_context.close()
@@ -364,11 +344,8 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             assert touch_page.locator("#g").inner_text().strip()
             touch_state = _state(touch_page)
             touch_id = touch_state["plants"][0]["plant_id"]
-            # The accepted full Garden keeps its rose at the open left edge;
-            # the narrow initial crop is centred on the fixture room. Traverse
-            # the real keyboard ring to frame it before proving the touch-only
-            # action route. This preserves the accepted composition instead of
-            # moving the flower merely to make a test selector convenient.
+            # Traverse the real keyboard ring before proving the touch-only
+            # action route; focus and pointer still use canonical identity.
             _keyboard_focus_object(
                 touch_page,
                 touch_id,
@@ -398,7 +375,7 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             )
             _assert_touch_floor_and_css_fit(
                 touch_page,
-                "#hud-actions button",
+                "#hud-btns button",
                 390,
             )
             touch_context.close()

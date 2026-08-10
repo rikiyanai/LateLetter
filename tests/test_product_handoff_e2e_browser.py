@@ -46,11 +46,9 @@ _PAINT_AUTHORITY = json.loads(
 )
 ACCEPTED_FULL_GARDEN_PAINT = (
     set(_PAINT_AUTHORITY["accepted_assets"])
+    | set(_PAINT_AUTHORITY["accepted_legacy_art"])
     | set(_PAINT_AUTHORITY["review_candidate_assets"])
     | set(_PAINT_AUTHORITY["accepted_recipes"])
-    # The visible primitive is the bird actor; the authority record names the
-    # complete traversal recipe. Both are the accepted runnable Garden path.
-    | {"recipe.ambient.bird"}
 )
 
 
@@ -428,11 +426,11 @@ def _open_exact_artifact_as_recipient(
         }
         assert provenance["world_origin"]["composition_fingerprint"] == expected_fingerprint
         assert len(positions) == 7
-        state_review = page.evaluate("window.__gardenReview.state()")
-        plant_id = next(
-            item["id"] for item in state_review["objects"]
-            if item["name"] == "rose"
-        )
+        authenticated_state = json.loads(page.evaluate(
+            "window.__gardenReview.canonicalStateJson()"
+        ))
+        plant_id = authenticated_state["plants"][0]["plant_id"]
+        flower_source = f"plant.{authenticated_state['plants'][0]['species_id']}"
         plant_position = next(
             item["position"] for item in positions if item["id"] == plant_id
         )
@@ -443,17 +441,17 @@ def _open_exact_artifact_as_recipient(
         assert set(visible_paint["object_ids"]) <= canonical_ids, visible_paint
         assert set(visible_paint["source_ids"]) <= ACCEPTED_FULL_GARDEN_PAINT, visible_paint
         source_ids = set(visible_paint["source_ids"])
-        assert {
-            "recipe.ground.cover", "recipe.vegetation.plant_paint",
-        } <= source_ids, visible_paint
+        assert "recipe.ground.cover" not in source_ids, visible_paint
+        assert "recipe.vegetation.plant_paint" not in source_ids, visible_paint
+        assert not any("ambient" in source or "weather" in source for source in source_ids)
         if viewport[0] >= 1000:
-            assert "plant.rose" in source_ids, visible_paint
+            assert flower_source in source_ids, visible_paint
             assert any(source.startswith("fixture.pond") for source in source_ids)
             assert any(source.startswith("fixture.stepping_stones") for source in source_ids)
         page.screenshot(path=str(capture_path))
         assert _png_dimensions(capture_path) == viewport
 
-        # These are real coordinate-driven pointer routes. The rose is acted on
+        # These are real coordinate-driven pointer routes. The flower is acted on
         # through its ink; no object-name/action label is painted over the
         # Garden. Canonical bytes prove the gesture reached the world.
         initial_state = json.loads(page.evaluate(
@@ -462,7 +460,8 @@ def _open_exact_artifact_as_recipient(
         plant_id = initial_state["plants"][0]["plant_id"]
         _keyboard_focus_object(page, plant_id)
         page.wait_for_function(
-            "() => window.__gardenReview.visiblePaint().source_ids.includes('plant.rose')"
+            "source => window.__gardenReview.visiblePaint().source_ids.includes(source)",
+            arg=flower_source,
         )
         assert page.locator("#garden-context-actions").count() == 0
         control_capture = capture_path.with_name(
@@ -479,10 +478,17 @@ def _open_exact_artifact_as_recipient(
         )
         assert len(tended["journal"]) == len(initial_state["journal"]) + 1
 
-        journal_control = page.locator(
+        assert page.locator(
             '#hud-actions [data-garden-command="open_journal"]'
+        ).count() == 0
+        assert page.locator(
+            '#hud-actions [data-garden-command="pause_motion"]'
+        ).count() == 0
+        mailbox_id = next(
+            fixture["fixture_id"] for fixture in tended["fixtures"]
+            if fixture["catalog_id"] == "mailbox"
         )
-        _activate_real_pointer(page, journal_control, touch=touch)
+        _activate_garden_object(page, mailbox_id, touch=touch)
         page.locator("#garden-journal").wait_for(state="visible")
         assert page.locator("#garden-journal-list li").count() >= 1
         _activate_real_pointer(
@@ -490,16 +496,10 @@ def _open_exact_artifact_as_recipient(
         )
         page.locator("#garden-journal").wait_for(state="hidden")
 
-        motion_control = page.locator(
-            '#hud-actions [data-garden-command="pause_motion"]'
-        )
-        _activate_real_pointer(page, motion_control, touch=touch)
-        motion_control.filter(has_text="resume motion").wait_for(state="visible")
-        paused = json.loads(page.evaluate(
+        final_interaction_state = json.loads(page.evaluate(
             "window.__gardenReview.canonicalStateJson()"
         ))
-        assert paused["ui"]["motion_paused"] is True
-        assert motion_control.inner_text() == "resume motion"
+        assert final_interaction_state["ui"]["motion_paused"] is False
 
         letters_control = page.locator("#hud-btns button").filter(has_text="letters")
         assert letters_control.count() == 1
@@ -547,9 +547,9 @@ def _open_exact_artifact_as_recipient(
             "control_capture": control_capture,
             "reading_capture": reading_capture,
             "pointer_modality": "touch" if touch else "mouse",
-            "journal_entries": len(paused["journal"]),
-            "tended_count": paused["plants"][0]["tended_count"],
-            "motion_paused": paused["ui"]["motion_paused"],
+            "journal_entries": len(final_interaction_state["journal"]),
+            "tended_count": final_interaction_state["plants"][0]["tended_count"],
+            "motion_paused": final_interaction_state["ui"]["motion_paused"],
         }
     finally:
         context.close()
@@ -648,12 +648,10 @@ def test_one_browser_author_download_reaches_desktop_and_mobile_recipients(tmp_p
     }
     assert {result["census"]["fixtures"] for result in results} == {6}
     assert {result["composition_fingerprint"] for result in results} == {
-        "plants=rose@70,820|fixtures=bench@400,300,lantern@480,200,"
-        "mailbox@700,700,planter@850,820,pond@400,900,"
-        "stepping_stones@300,900|animals=|collectibles=",
+        expected_fingerprint,
     }
-    assert {result["composition_verdict"] for result in results} == {"accepted"}
-    assert {result["flower_position"] for result in results} == {(11, 63)}
+    assert {result["composition_verdict"] for result in results} == {"not_reviewed"}
+    assert {result["flower_position"] for result in results} == {expected_position}
     assert all(result["capture"].is_file() for result in results)
     assert all(result["control_capture"].is_file() for result in results)
     assert all(result["reading_capture"].is_file() for result in results)
@@ -663,7 +661,7 @@ def test_one_browser_author_download_reaches_desktop_and_mobile_recipients(tmp_p
     assert {result["pointer_modality"] for result in results} == {"mouse", "touch"}
     assert all(result["journal_entries"] >= 1 for result in results)
     assert all(result["tended_count"] == 1 for result in results)
-    assert all(result["motion_paused"] is True for result in results)
+    assert all(result["motion_paused"] is False for result in results)
 
 
 def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tmp_path):
@@ -726,15 +724,17 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                     arg=camera_before,
                 )
 
-                motion = page.locator(
+                assert page.locator(
                     '#hud-actions [data-garden-command="pause_motion"]'
-                )
-                _activate_real_pointer(page, motion, touch=False)
-                motion.filter(has_text="resume motion").wait_for(state="visible")
-                journal = page.locator(
+                ).count() == 0
+                assert page.locator(
                     '#hud-actions [data-garden-command="open_journal"]'
+                ).count() == 0
+                mailbox_id = next(
+                    fixture["fixture_id"] for fixture in _canonical_state(page)["fixtures"]
+                    if fixture["catalog_id"] == "mailbox"
                 )
-                _activate_real_pointer(page, journal, touch=False)
+                _activate_garden_object(page, mailbox_id, touch=False)
                 page.locator("#garden-journal").wait_for(state="visible")
 
                 before_reload_json = page.evaluate(
@@ -742,7 +742,7 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                 )
                 before_reload = json.loads(before_reload_json)
                 assert before_reload["ui"]["journal_open"] is True
-                assert before_reload["ui"]["motion_paused"] is True
+                assert before_reload["ui"]["motion_paused"] is False
                 assert before_reload["ui"]["camera"] != camera_before
                 assert before_reload_json in _indexeddb_values(page), (
                     "the canonical state was not the exact value persisted to IndexedDB"
@@ -751,7 +751,7 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                 page.reload(wait_until="networkidle")
                 # Screen/modal presentation is session state: it resets before
                 # an artifact is uploaded. Canonical camera, journal-open and
-                # pause state remain in IndexedDB. Object-action labels have no
+                # legacy pause field remain in IndexedDB. Object-action labels have no
                 # product DOM owner at all.
                 assert page.locator("#s-welcome.active").is_visible()
                 assert page.locator("#garden-journal").is_hidden()
@@ -771,7 +771,7 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                 )
                 assert page.locator(
                     '#hud-actions [data-garden-command="pause_motion"]'
-                ).inner_text() == "resume motion"
+                ).count() == 0
             finally:
                 context.close()
                 browser.close()
@@ -990,48 +990,16 @@ def test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen(tmp_p
                     "timestamp => { globalThis.__lateletterReviewNow=Date.parse(timestamp); }",
                     after_gift,
                 )
-                clock_control = page.locator(
+                assert page.locator(
                     '#hud-actions [data-garden-command="pause_motion"]'
-                )
-                _activate_real_pointer(page, clock_control, touch=touch)
-                clock_control.filter(has_text="resume motion").wait_for(state="visible")
-                _activate_real_pointer(page, clock_control, touch=touch)
-                clock_control.filter(has_text="pause motion").wait_for(state="visible")
-                crossed = _canonical_state(page)
-                expected_observed = int(
-                    page.evaluate("timestamp => Date.parse(timestamp) / 1000", after_gift)
-                )
-                assert crossed["last_observed_wall_time"] >= expected_observed, {
-                    "expected": expected_observed,
-                    "observed": crossed["last_observed_wall_time"],
-                    "motion_paused": crossed["ui"]["motion_paused"],
-                }
-                page.wait_for_function(
-                    "() => JSON.parse(window.__gardenReview.canonicalStateJson()).fixtures.length === 7"
-                )
-                gifted = _canonical_state(page)
-                assert {
-                    fixture["catalog_id"] for fixture in gifted["fixtures"]
-                } == STARTER_FIXTURE_CATALOGS | {"coffee_mug"}
-                assert gifted["program_state"]["applied_occurrences"]
-                journey.append("gift")
-
-                _activate_real_pointer(page, page.locator(
-                    '#hud-actions [data-garden-command="pause_motion"]'
-                ), touch=touch)
-                page.locator(
-                    '#hud-actions [data-garden-command="pause_motion"]'
-                ).filter(has_text="resume motion").wait_for(state="visible")
-                _activate_real_pointer(page, page.locator(
+                ).count() == 0
+                assert page.locator(
                     '#hud-actions [data-garden-command="open_journal"]'
-                ), touch=touch)
-                page.locator("#garden-journal").wait_for(state="visible")
-                before = _canonical_state(page)
-                assert json.dumps(before, separators=(",", ":"), ensure_ascii=False) in (
-                    value for value in _indexeddb_values(page) if isinstance(value, str)
-                )
-                journey.append("persistence")
+                ).count() == 0
 
+                # With no autonomous product loop, reopening is the explicit
+                # observation boundary that reconciles wall time and evaluates
+                # the newly due authored occurrence.
                 page.reload(wait_until="networkidle")
                 page.evaluate(
                     "timestamp => { globalThis.__lateletterReviewNow=Date.parse(timestamp); }",
@@ -1048,12 +1016,46 @@ def test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen(tmp_p
                 ).inner_text() == LETTER_LABEL
                 page.locator("#btn-arc-back").click()
                 page.locator("#hud.vis").wait_for(state="visible")
-                restored = _canonical_state(page)
-                assert _persisted_state_subset(restored) == _persisted_state_subset(before)
+                journey.append("reopen")
+
+                page.wait_for_function(
+                    "() => JSON.parse(window.__gardenReview.canonicalStateJson()).fixtures.length === 7"
+                )
+                crossed = _canonical_state(page)
+                expected_observed = int(
+                    page.evaluate("timestamp => Date.parse(timestamp) / 1000", after_gift)
+                )
+                assert crossed["last_observed_wall_time"] >= expected_observed, {
+                    "expected": expected_observed,
+                    "observed": crossed["last_observed_wall_time"],
+                    "motion_paused": crossed["ui"]["motion_paused"],
+                }
+                gifted = _canonical_state(page)
+                assert {
+                    fixture["catalog_id"] for fixture in gifted["fixtures"]
+                } == STARTER_FIXTURE_CATALOGS | {"coffee_mug"}
+                assert gifted["program_state"]["applied_occurrences"]
+                journey.append("gift")
+
+                mailbox_id = next(
+                    fixture["fixture_id"] for fixture in gifted["fixtures"]
+                    if fixture["catalog_id"] == "mailbox"
+                )
+                # The earlier real drag is intentionally persistent, so the
+                # mailbox may be outside the restored viewport. Frame it via
+                # the product keyboard route before proving direct pointer or
+                # touch activation on its actual painted art.
+                _keyboard_focus_object(page, mailbox_id)
+                _activate_garden_object(page, mailbox_id, touch=touch)
+                page.locator("#garden-journal").wait_for(state="visible")
+                before = _canonical_state(page)
+                assert json.dumps(before, separators=(",", ":"), ensure_ascii=False) in (
+                    value for value in _indexeddb_values(page) if isinstance(value, str)
+                )
+                journey.append("persistence")
                 assert page.evaluate(
                     "window.__gardenReview.provenance().load_origin"
                 ) == "loaded"
-                journey.append("reopen")
 
                 results.append({
                     "viewport": viewport, "touch": touch,
@@ -1072,9 +1074,9 @@ def test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen(tmp_p
     assert {result["touch"] for result in results} == {False, True}
     assert all(result["journey"] == [
         "author", "export", "Garden", "unlock", "archive", "unread label",
-        "reading", "interactions", "gift", "persistence", "reopen",
+        "reading", "interactions", "reopen", "gift", "persistence",
     ] for result in results)
     assert all(result["gift_count"] == 7 for result in results)
-    assert all(result["tended"] == 1 and result["paused"] for result in results)
+    assert all(result["tended"] == 1 and not result["paused"] for result in results)
     assert all(result["errors"] == [] for result in results)
     assert all(result["bad_responses"] == [] for result in results)

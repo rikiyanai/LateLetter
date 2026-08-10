@@ -9,7 +9,7 @@ import {
   STARTER_ANIMAL_SPECIES,
   STARTER_COLLECTIBLES,
   STARTER_FIXTURES,
-  STARTER_PLANT_SPECIES,
+  STARTER_FLOWER_POOL,
   canonicalWorldJson,
   generateInitialWorld,
   projectGardenScene,
@@ -256,8 +256,9 @@ test('initial generation and projection are viewport-independent', async () => {
   const before = canonicalWorldJson(left);
   const projection = await projectGardenScene(left);
   assert.equal(projection.objects.length,
-    STARTER_FIXTURES.length + STARTER_PLANT_SPECIES.length +
+    STARTER_FIXTURES.length + 1 +
     STARTER_COLLECTIBLES.length + STARTER_ANIMAL_SPECIES.length);
+  assert.ok(STARTER_FLOWER_POOL.includes(left.plants[0].species_id));
   for (const plant of left.plants) {
     const visibleCount = plant.topology.filter(node => node.birth_time <= 0).length;
     assert.ok(visibleCount >= 4 && visibleCount < plant.topology.length);

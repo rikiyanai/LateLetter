@@ -19,6 +19,33 @@ class SpeciesDefinition:
     glyph_families: tuple[str, ...]
 
 
+# Canonical identities of the exact static pictures indexed from the approved
+# flower corpus. The browser keeps the same ordered tuple and the conformance
+# lane compares seed-selected outputs, so ordering is part of the generator
+# contract rather than a renderer-local preference.
+APPROVED_STARTER_FLOWER_SPECIES: tuple[str, ...] = (
+    "rose",
+    "legacy_rose",
+    "legacy_sunflower_sunglasses",
+    "legacy_sunflower",
+    "legacy_tulip",
+    "legacy_small_flower",
+    "legacy_daisy_round",
+    "legacy_daisy_at",
+    "legacy_daisy_brace",
+    "legacy_small_rose_short",
+    "legacy_small_rose_long",
+    "legacy_medium_flower_round",
+    "legacy_medium_flower_plain",
+    "legacy_medium_flower_at",
+    "legacy_tall_sunflower",
+    "legacy_lily_double",
+    "legacy_lily_round",
+    "legacy_lily_bud",
+    "legacy_bloom_full",
+)
+
+
 SPECIES_CATALOG: dict[str, SpeciesDefinition] = {
     "oak": SpeciesDefinition("oak", "tree", 18, 30, 86_400, ("trunk", "branch", "broadleaf")),
     "pine": SpeciesDefinition("pine", "tree", 16, 26, 86_400, ("trunk", "conifer", "needle")),
@@ -34,6 +61,22 @@ SPECIES_CATALOG: dict[str, SpeciesDefinition] = {
     "sunflower": SpeciesDefinition("sunflower", "flower", 7, 12, 32_400, ("stem", "broadleaf", "sunflower-bloom")),
     "water_lily": SpeciesDefinition("water_lily", "aquatic", 7, 13, 43_200, ("rhizome", "lily-pad", "water-bloom")),
 }
+
+# The exact drawing is sealed presentation art, while this definition supplies
+# the persistent growth/care topology needed by canonical commands. Every
+# legacy starter flower shares the ordinary flower behavior; art identity is
+# still distinct because the species ID itself is distinct.
+for _species_id in APPROVED_STARTER_FLOWER_SPECIES:
+    if _species_id == "rose":
+        continue
+    SPECIES_CATALOG[_species_id] = SpeciesDefinition(
+        _species_id,
+        "flower",
+        6,
+        10,
+        21_600,
+        ("stem", "flower-leaf", "flower-bloom"),
+    )
 
 
 def _organ_kind(definition: SpeciesDefinition, index: int, total: int) -> str:
@@ -200,20 +243,23 @@ def care_for_plant(
 ) -> PlantState:
     """Apply one humane, persistent shaping action to an existing topology.
 
-    Care never destroys an organ or changes its identity/parent. Pruning marks a
-    mature terminal organ as shaped, training changes one future organ's final
-    direction, watering reveals bounded growth, and rest only pauses automatic
-    growth until the next active care action.
+    Care never destroys an organ or changes its identity/parent. Tending is the
+    quiet default act, watering reveals more bounded growth, pruning and
+    training shape the topology, and rest pauses automatic growth.
     """
     care = str(care_action)
-    if care not in {"observe", "water", "prune", "train", "rest"}:
+    if care not in {"observe", "tend", "water", "prune", "train", "rest"}:
         raise ValueError(f"unsupported care action {care}")
     if care == "observe":
         return plant
     topology = plant.topology
     dormant = care == "rest"
     growth_gain = 0
-    if care == "water":
+    if care == "tend":
+        growth_gain = 1
+        dormant = False
+        topology = advance_topology(plant, effective_time, growth_gain).topology
+    elif care == "water":
         growth_gain = 2
         dormant = False
         topology = advance_topology(plant, effective_time, growth_gain).topology

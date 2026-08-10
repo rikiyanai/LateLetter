@@ -15,7 +15,7 @@ from .program import GardenProgram
 from .state import TerminalViewport
 from .world.clock import OfflineReport, reconcile_offline
 from .world.engine import CommandResult, activate_memorial, advance_live_world, dispatch
-from .world.generation import generate_initial_world
+from .world.generation import generate_initial_world, upgrade_untouched_legacy_starter
 from .world.model import WorldState
 from .world.model import MILESTONE_RECEIPT_LIMIT, compact_recent_strings
 from .world.persistence import WorldPersistenceError, WorldStore
@@ -97,6 +97,7 @@ class TerminalWorldSession:
             world = store.load()
             if world.world_id != world_id:
                 raise WorldPersistenceError("stored Garden world ID does not match requested world")
+            world = upgrade_untouched_legacy_starter(world, seed)
         else:
             world = generate_initial_world(world_id, seed)
         # The author program owns the complete relationship-animal roster.

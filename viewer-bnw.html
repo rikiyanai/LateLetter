@@ -377,6 +377,7 @@
   <p id="hud-author" class="t2"></p>
   <div id="hud-btns"></div>
   <div id="hud-actions" aria-label="garden actions" aria-live="polite"></div>
+  <p id="garden-status" class="t4" role="status" aria-live="polite" hidden></p>
   <p id="hud-animal" class="t4" style="margin-top:.5rem"></p>
 </div>
 
@@ -509,7 +510,6 @@
     <button class="btn" type="button" data-garden-action="pan" data-dy="-20">pan up</button>
     <button class="btn" type="button" data-garden-action="pan" data-dy="20">pan down</button>
     <button class="btn" type="button" data-garden-action="frame">frame garden</button>
-    <button class="btn" type="button" data-garden-action="open_journal">journal</button>
     <button class="btn" type="button" data-garden-action="undo">undo</button>
     <label class="t3" for="garden-place-kind">place</label>
     <select class="btn" id="garden-place-kind"><option value="plant">plant</option><option value="fixture">fixture</option></select>
@@ -519,7 +519,6 @@
     <label class="t3" for="garden-place-y">y</label><input class="btn" id="garden-place-y" type="number" value="10" min="0">
     <button class="btn" type="button" data-garden-action="place">place here</button>
     <button class="btn" type="button" data-garden-action="dwell">dwell 30 seconds</button>
-    <button class="btn" type="button" data-garden-action="pause_motion">pause motion</button>
     <button class="btn" type="button" data-garden-action="back">back</button>
   </div>
   <fieldset class="garden-global-actions">
@@ -787,28 +786,13 @@ function closeGardenControls(){
 }
 
 function syncAmbientMotion(){
-  const motionPaused=Boolean(gardenRuntime?.state?.ui?.motion_paused);
-  // A fixed localhost review clock is also a resettable presentation-frame
-  // boundary. Freeze disposable animation without changing canonical pause
-  // state, elapsed Garden time, or authored schedule semantics.
-  garden?.setReducedMotion?.(
-    reducedMotionQuery.matches||
-      (gardenReviewTime()!==null&&!GARDEN_REVIEW_MOTION_REQUESTED),
-  );
+  // The accepted product Garden is a static picture. Motion preference and a
+  // persisted legacy pause bit cannot turn presentation animation back on.
+  garden?.setReducedMotion?.(true);
   updateCanonicalLiveLoop();
 }
 function updateCanonicalLiveLoop(){
-  if(!gardenRuntime)return;
-  const visible=document.getElementById('hud')?.classList.contains('vis')===true;
-  // Reduced motion changes presentation only. The saved canonical pause is
-  // the sole control allowed to stop Garden time and authored schedules.
-  const enabled=visible&&!Boolean(gardenRuntime.state?.ui?.motion_paused);
-  if(enabled&&!gardenRuntime.liveTimer)gardenRuntime.startLive({
-    intervalMs:1000,prefersReducedMotion:reducedMotionQuery.matches,
-    onProjection:()=>refreshAfterCanonicalLiveAdvance()
-      .catch(error=>console.error('[garden live]',error)),
-  });
-  else if(!enabled&&gardenRuntime.liveTimer)gardenRuntime.stopLive();
+  gardenRuntime?.stopLive?.();
 }
 async function refreshAfterCanonicalLiveAdvance(){
   if(gardenProgram&&authenticated&&!bundleCorrupted){
@@ -821,6 +805,8 @@ async function refreshAfterCanonicalLiveAdvance(){
 function clearCanonicalGardenUi(){
   const summary=document.getElementById('garden-scene-summary');
   if(summary)summary.textContent='Garden preparing.';
+  const status=document.getElementById('garden-status');
+  if(status){status.textContent='';status.hidden=true;}
 }
 
 // ── Storage ───────────────────────────────────────────────────────────
@@ -1346,6 +1332,14 @@ function dispatchGardenDeclaredAction(record,object,event,control){
     metadata:{control},
   });
 }
+function declaredGardenDirectAction(object){
+  if(object?.kind==='plant'&&Array.isArray(object.opportunities)){
+    const water=object.opportunities.find(record=>
+      record?.command==='tend'&&record?.args?.care_action==='water');
+    if(water)return water;
+  }
+  return object?.primary_action||null;
+}
 /**
  * Read-only review accessor, localhost only.
  *
@@ -1464,6 +1458,8 @@ async function renderCanonicalGarden(){
   garden?.setFocusedObject?.(gardenRuntime.state.ui.focus_id);
   garden?.render(gardenRuntime.projection);
   _renderGardenActions();
+  const status=document.getElementById('garden-status');
+  if(status){status.textContent=gardenNotice;status.hidden=!gardenNotice;}
   if(syncGardenControlsAvailability())
     document.getElementById('garden-scene-summary').textContent=
       [gardenNotice,gardenRuntime.sceneSummary()].filter(Boolean).join(' ');
@@ -1564,14 +1560,7 @@ function showScreen(name){
   for(const id of SIDS)
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
-  // The garden stays ALIVE beneath overlay screens (operator field
-  // rejection, 2026-08-04): the select scrim, the passphrase prompt and the
-  // dimmed reading surface all leave the picture visible, and the deployed
-  // page never froze it. Freezing also stranded click-burst feedback on
-  // screen forever, because bursts age by presentation ticks. The loop is
-  // simply active once a garden exists; it no-ops without a projection and
-  // pauses naturally with reduced motion, canonical pause, or a hidden tab.
-  garden?.setPresentationActive?.(true);
+  garden?.setPresentationActive?.(false);
   if(name!=='garden')closeGardenControls();
   syncGardenControlsAvailability();
   _renderGardenActions();
@@ -1734,33 +1723,11 @@ function _renderJournalAndInventory(){
   document.getElementById('garden-inventory-empty').textContent=
     inventory.length?'':'Nothing is being carried.';
 }
-/**
- * Ordinary Garden controls are deliberately narrow. The picture itself owns
- * object interaction; this HUD carries only persistent global journal and
- * motion commands. Object names or verbs must never become labels over ink.
- */
+/** Ordinary Garden controls never expose object-action or motion labels. */
 function _renderGardenActions(){
   const actions=document.getElementById('hud-actions');
   if(!actions)return;
   const specs=[];
-  if(gardenRuntime){
-    specs.push({
-      key:'global:journal',label:'journal & inventory',shortcut:'j',
-      command:'open_journal',activate:event=>dispatchGardenUi(
-        inputModalityFromBrowserEvent(event),'open_journal',{
-          metadata:{control:'garden-hud-journal'},
-        }),
-    });
-    const paused=Boolean(gardenRuntime.state?.ui?.motion_paused);
-    specs.push({
-      key:'global:motion',label:paused?'resume motion':'pause motion',
-      shortcut:'Space',command:'pause_motion',pressed:paused,
-      activate:event=>dispatchGardenUi(
-        inputModalityFromBrowserEvent(event),'pause_motion',{
-          args:{paused:!paused},metadata:{control:'garden-hud-motion'},
-        }),
-    });
-  }
   const memories=_gardenMemories();
   if(memories.length)
     specs.push({
@@ -2568,8 +2535,8 @@ function wire(){
       // opening the sheet at all.
       if(e.key==='Enter'&&focus){
         e.preventDefault();gardenContextObjectId=focus.object_id;
-        if(focus.primary_action)
-          await dispatchGardenDeclaredAction(focus.primary_action,focus,e,'keyboard');
+        const action=declaredGardenDirectAction(focus);
+        if(action)await dispatchGardenDeclaredAction(action,focus,e,'keyboard');
         _renderGardenActions();
         return;
       }
@@ -2604,10 +2571,9 @@ function wire(){
         a:['pan',{args:{dx:-1,dy:0}}],d:['pan',{args:{dx:1,dy:0}}],
         w:['pan',{args:{dx:0,dy:-20}}],s:['pan',{args:{dx:0,dy:20}}],
         g:['inspect',{target_id:focus?.object_id||null}],
-        t:['tend',{target_id:focus?.object_id||null,args:{care_action:'water'}}],
+        t:['tend',{target_id:focus?.object_id||null,args:{care_action:'tend'}}],
         f:['feed',{target_id:focus?.object_id||null}],p:['play',{target_id:focus?.object_id||null}],
-        c:['collect',{target_id:focus?.object_id||null}],j:['open_journal',{}],
-        z:['undo',{}],' ':['pause_motion',{args:{paused:!gardenRuntime.state.ui.motion_paused}}],
+        c:['collect',{target_id:focus?.object_id||null}],z:['undo',{}],
         Escape:['back',{}],
       };
       const binding=bindings[e.key];
@@ -2741,7 +2707,7 @@ async function init(){
       // Accepted art composes on every host; unreviewed ink composes on
       // none; and this value is never null here -- absence already refused.
       paintAuthority:gardenPaintAuthority,
-      prefersReducedMotion:reducedMotionQuery.matches,
+      prefersReducedMotion:true,
       readerRegion,
       onTheme:applyGardenPageTheme,
       // SPEC 7.8.3.1: a click or tap on an object PERFORMS its declared primary
@@ -2760,11 +2726,10 @@ async function init(){
         // centring belongs to KEYBOARD focus navigation only, which has its
         // own dispatch path. An object may declare no primary action; the
         // browser invents no label or secondary menu for it either way.
-        if(object.primary_action)
-          await dispatchGardenDeclaredAction(object.primary_action,object,event,'canonical-raster');
+        const action=declaredGardenDirectAction(object);
+        if(action)await dispatchGardenDeclaredAction(action,object,event,'canonical-raster');
       },
     });
-    garden.startPresentation();
     // ── Single-pointer pan (SPEC 7.8.13 gate 2: pan passes through touch, ──
     // ── mouse, keyboard and terminal with identical state transitions). ────
     //

@@ -22,53 +22,76 @@ from .model import (
     new_world,
     stable_id,
 )
-from .plants import SPECIES_CATALOG, create_plant
+from .plants import APPROVED_STARTER_FLOWER_SPECIES, SPECIES_CATALOG, create_plant
 from .rng import DeterministicRNG, derive_seed
 
 
 MINIMUM_WORLD_WIDTH = 64
 MINIMUM_WORLD_HEIGHT = 40
 
-# EMPTIED 2026-07-31, pending per-asset visual approval.
-#
-# The starter world used to place five plants, one cat and one collectible by
-# default. The operator reviewed and accepted the ten fixtures; none of this
-# content was ever submitted, and on seeing it in the scene they rejected it.
-#
-# This is not a capability removal. Every species remains defined and placeable
-# and the catalogues are untouched -- an author can still place any of them.
-# What changes is that the DEFAULT scene no longer ships art nobody approved.
-# Each entry returns here once its drawing has been through per-asset
-# acceptance under SPEC 7.10.
-#
-# These tuples must stay in step with `STARTER_*` in `web/garden-world.mjs`;
-# the two implementations are held to identical starter output by the world
-# conformance tests.
-# PARTIALLY REFILLED 2026-08-01, from the legacy art port.
-#
-# The operator granted the legacy archive a standing visual approval on
-# 2026-08-01 ("PLANTS ANIMATIONS IN LEGACY ARE APPROVED VISUALLY") and ordered
-# the archived drawings to replace the unapproved placeholders. `oak` and
-# `sunflower` are now drawn entirely from the archive -- picture and wind sway
-# both -- so they are approved art and may stand in the default scene again.
-#
-# The other three species the default scene carried before the removal
-# (`hydrangea`, `meadow_grass`, `lavender`) are NOT back, because the archive
-# does not draw them: it names oak, willow, pine, sunflower and lily and nothing
-# else. They would still be renderer-authored placeholders, which is the exact
-# thing the removal was for.
-#
-# The cat is not back either, and the reason is narrower. Its walk, its face and
-# its retreat are all archived, but a resting animal in this Garden is asleep
-# and the archive contains no sleeping anything -- so a cat that settles would
-# fall through to a renderer-authored pose. One unapproved pose is enough to
-# keep it out; see `web/garden-legacy-art.mjs`, the deliberate absence of a
-# `rest` entry.
-#
-# Collectibles remain empty. Nothing in the archive draws them.
-STARTER_PLANT_SPECIES: tuple[str, ...] = ("rose",)
+# The default contains exactly one plant. Its identity is selected from this
+# ordered, accepted pool by a domain-separated stream; viewport and renderer
+# state never enter the choice. The browser owns the same ordered tuple.
+STARTER_FLOWER_POOL: tuple[str, ...] = APPROVED_STARTER_FLOWER_SPECIES
 STARTER_ANIMAL_SPECIES: tuple[str, ...] = ()
 STARTER_COLLECTIBLES: tuple[str, ...] = ()
+
+LEGACY_ACCEPTED_STARTER_FINGERPRINT = (
+    "plants=rose@70,820|fixtures=bench@400,300,lantern@480,200,"
+    "mailbox@700,700,planter@850,820,pond@400,900,"
+    "stepping_stones@300,900|animals=|collectibles="
+)
+
+
+def starter_flower_species(seed: int | str | bytes) -> str:
+    """Choose the one canonical starter flower from the accepted pool."""
+    return DeterministicRNG(derive_seed(
+        seed, "starter-flower", "species",
+    )).choice(STARTER_FLOWER_POOL)
+
+
+def is_untouched_legacy_starter(state: WorldState) -> bool:
+    """Recognize only the exact unmodified revision-five starter.
+
+    This is deliberately conservative: a panned, tended, focused, authored,
+    program-seeded, or otherwise used Garden is recipient data and remains
+    byte-for-byte under the restore path's ownership.
+    """
+    expected_camera = _scaled_anchor(state, (500, 650), margin=0)
+    return (
+        state.generator_version == 5
+        and state.composition_version == 5
+        and state.composition_fingerprint == LEGACY_ACCEPTED_STARTER_FINGERPRINT
+        and state.command_sequence == 0
+        and len(state.plants) == 1
+        and state.plants[0].species_id == "rose"
+        and state.plants[0].tended_count == 0
+        and {fixture.catalog_id for fixture in state.fixtures} == set(STARTER_FIXTURES)
+        and all(not fixture.authored and fixture.interaction_count == 0
+                and fixture.last_interaction is None for fixture in state.fixtures)
+        and not state.animals and not state.collectibles
+        and not state.inventory and not state.journal and not state.undo_stack
+        and not state.milestone_receipts and not state.program_state
+        and not state.processed_commands and not state.event_trace
+        and state.ui.camera == expected_camera
+        and state.ui.focus_id is None and state.ui.actions_open_for is None
+        and not state.ui.journal_open and not state.ui.motion_paused
+    )
+
+
+def upgrade_untouched_legacy_starter(
+    state: WorldState,
+    seed: int | str | bytes,
+) -> WorldState:
+    """Move only an untouched accepted starter to the current composition."""
+    if not is_untouched_legacy_starter(state):
+        return state
+    return generate_initial_world(
+        state.world_id,
+        seed,
+        world_width=state.world_width,
+        world_height=state.world_height,
+    )
 
 # Exactly what the default scene carried until 2026-07-31, kept as a named set
 # rather than deleted outright.
@@ -101,15 +124,15 @@ REVIEW_PENDING_COLLECTIBLES: tuple[str, ...] = ("fallen_acorn",)
 # the far transition band near that room. This belongs here because a renderer
 # that drags props together would create a second, viewport-dependent owner.
 STARTER_FIXTURE_ANCHORS = {
-    "pond": (400, 900),
+    "pond": (250, 900),
     "bridge": (180, 450),
     "birdbath": (80, 720),
     "trellis": (720, 450),
     "arbor": (830, 700),
     # ── the authored water/sitting room ──
-    "stepping_stones": (300, 900),
-    "bench": (400, 300),
-    "lantern": (480, 200),
+    "stepping_stones": (150, 900),
+    "bench": (250, 300),
+    "lantern": (100, 200),
     "mailbox": (700, 700),
     "planter": (850, 820),
 }
@@ -137,7 +160,7 @@ PLANTER_VISUAL_ASSETS: tuple[str, ...] = (
 )
 BENCH_X_OFFSETS: tuple[int, ...] = (-35, 0, 35)
 BENCH_Y_ANCHORS: tuple[int, ...] = (260, 300, 340)
-# THE DEFAULT ROSE SITS OUTSIDE THE FIXTURE ROW
+# THE DEFAULT FLOWER SITS AT CANONICAL CENTRE
 # ------------------------------------------------------------------------
 # `oak` and `sunflower` were anchored at 330 and 590 thousandths, which was a
 # sound composition while the world had depth: the oak stood behind the bench
@@ -152,25 +175,23 @@ BENCH_Y_ANCHORS: tuple[int, ...] = (260, 300, 340)
 # and sunflower where the operator's own verification requires bench, mailbox
 # and lantern.
 #
-# The operator-authored rose accepted on 2026-08-03 is the canonical starter
-# plant: it is the exact approved six-line asset, not the old local placeholder.
-# Its earlier interior anchors put the wide drawing inside a fixture room and
-# forced the compositor to move canonical fixtures. At 10 it owns the extreme
-# left edge without rewriting the pond/stones relationship. Oak and sunflower
-# remain available to authored programs; the deployed presentation-native
-# planting layer supplies the dense seasonal planting around all six objects.
-#
-# The remaining six entries are not in the default scene and keep their original
-# relationship anchors for authored programs.
+# Every accepted starter identity shares the centre anchor. The fixtures leave
+# that cell free, and layout safety still makes any unexpected overlap fail
+# before a composition stamp can be written.
 STARTER_PLANT_ANCHORS = {
     "water_lily": (220, 420),
     "oak": (150, 300),
     "hydrangea": (360, 570),
     "willow": (900, 180),
-    "rose": (70, 820),
+    "rose": (500, 500),
     "meadow_grass": (470, 590),
     "lavender": (570, 760),
     "sunflower": (850, 320),
+    **{
+        species_id: (500, 500)
+        for species_id in STARTER_FLOWER_POOL
+        if species_id != "rose"
+    },
 }
 STARTER_ANIMAL_ANCHORS = {
     "bird": (100, 680),
@@ -238,15 +259,11 @@ def _fixture_room_plan(
     generation contract in SPEC 7.3.  Values are thousandth anchors or atlas
     identities; no viewport or renderer input exists here.
     """
-    pond_asset = DeterministicRNG(derive_seed(
-        state.seed, "fixture-room", "pond", "visual-asset",
-    )).choice(POND_VISUAL_ASSETS)
-    stone_asset = DeterministicRNG(derive_seed(
-        state.seed, "fixture-room", "stepping-stones", "visual-asset",
-    )).choice(STEPPING_STONE_VISUAL_ASSETS)
-    planter_asset = DeterministicRNG(derive_seed(
-        state.seed, "fixture-room", "planter", "visual-asset",
-    )).choice(PLANTER_VISUAL_ASSETS)
+    # Candidate silhouettes never enter the ordinary starter. Seed streams
+    # still own relational placement, but the pictures are accepted base IDs.
+    pond_asset = "fixture.pond"
+    stone_asset = "fixture.stepping_stones"
+    planter_asset = "fixture.planter"
     stone_side = DeterministicRNG(derive_seed(
         state.seed, "fixture-room", "stepping-stones", "side",
     )).choice(("left", "right"))
@@ -399,21 +416,15 @@ def generate_initial_world(
 ) -> WorldState:
     """Generate canonical world coordinates; viewport size is not an input.
 
-    :param plant_species: Species to plant, defaulting to `STARTER_PLANT_SPECIES`.
+    :param plant_species: Explicit species to plant. ``None`` selects one
+        accepted starter flower deterministically from the world seed.
     :param animal_species: Species to place, defaulting to `STARTER_ANIMAL_SPECIES`.
     :param collectibles: Catalog ids to place, defaulting to `STARTER_COLLECTIBLES`.
 
-    The three species arguments exist because the default starter lists were
-    emptied on 2026-07-31: their art had never been through per-asset visual
-    approval, and the operator rejected it on sight. The CAPABILITY had to
-    survive that removal, though -- plant growth, animal behaviour and
-    collectible pickup are all still real features with real tests, and those
-    tests need a world that actually contains such things.
-
-    So the default answers "what does a recipient see", which is currently only
-    approved fixtures, while a caller that needs populated content asks for it
-    explicitly. Anything relying on the implicit old default now fails loudly
-    rather than quietly rendering unapproved art.
+    The default scene contains one seed-selected flower from the accepted pool,
+    the six accepted base fixtures, and no animals or collectibles. Explicit
+    arguments keep the lower-level plant, animal, and collectible capabilities
+    testable without silently adding anything to the recipient starter scene.
 
     Keep these parameters in step with `generateInitialWorld` in
     `web/garden-world.mjs`; the two implementations are held to identical
@@ -439,8 +450,9 @@ def generate_initial_world(
     # "deliberately none", and the two must stay distinguishable.
     # Validated before anything is placed, so a bad roster fails with a clear
     # message instead of a partial world or a duplicated object id.
+    default_plants = (starter_flower_species(state.seed),)
     requested_plants = _validated_roster("plant species", (
-        STARTER_PLANT_SPECIES if plant_species is None else tuple(plant_species)
+        default_plants if plant_species is None else tuple(plant_species)
     ), STARTER_PLANT_ANCHORS)
     requested_animals = _validated_roster("animal species", (
         STARTER_ANIMAL_SPECIES if animal_species is None else tuple(animal_species)
@@ -500,18 +512,10 @@ def generate_initial_world(
 
     if not layout_is_safe(state):
         raise ValueError("generated Garden layout failed safety validation")
-    # Frame the central path room. Wide viewports see both flanking garden
-    # rooms; narrow viewports intentionally crop rather than shrinking every
-    # canonical object into a single unreadable heap.
-    # Horizontally the camera is exactly centred, which is what "canonically
-    # centred" means and what the projection contract asserts: with an anchor of
-    # 500 the scaling above reduces to world_width // 2 at every world size.
-    # The previous 490 was a tenth of a percent short of centre and produced 31
-    # in a 64-wide world where 32 is required — visually indistinguishable, but
-    # it made the camera depend on world width in a way nothing else did.
-    # Vertically the anchor stays at 650 so the frame still sits down in the
-    # planted rooms rather than on the horizon.
-    camera = _scaled_anchor(state, (500, 650), margin=0)
+    # Fresh worlds open on the selected flower itself. Both anchor components
+    # are 500, so this is the exact canonical centre at every supported world
+    # size and not a viewport-derived approximation.
+    camera = _scaled_anchor(state, (500, 500), margin=0)
     state = replace(state, ui=replace(state.ui, camera=camera))
 
     # Stamp the composition ONLY here, at the end, after every placement has
@@ -540,7 +544,7 @@ def generate_initial_world(
     # accepted by a fresh-composition review guard. A number that every roster
     # receives identifies nothing.
     is_declared_starter = (
-        tuple(requested_plants) == tuple(STARTER_PLANT_SPECIES)
+        tuple(requested_plants) == default_plants
         and tuple(requested_animals) == tuple(STARTER_ANIMAL_SPECIES)
         and tuple(requested_collectibles) == tuple(STARTER_COLLECTIBLES)
     )

@@ -25,8 +25,10 @@ from pathlib import Path
 import pytest
 
 from lateletter.garden.world.generation import (
-    STARTER_PLANT_SPECIES,
+    LEGACY_ACCEPTED_STARTER_FINGERPRINT,
+    STARTER_FLOWER_POOL,
     generate_initial_world,
+    upgrade_untouched_legacy_starter,
 )
 from lateletter.garden.world.model import (
     COMPOSITION_VERSION,
@@ -57,6 +59,24 @@ def _generated() -> WorldState:
     starter through it is how 0/0/0/0 came to be certified as a composition.
     """
     return generate_initial_world("world-1", "seed-1")
+
+
+def _untouched_revision_five() -> WorldState:
+    world = generate_initial_world("world-1", "seed-1", plant_species=("rose",))
+    old_camera = replace(
+        world.ui,
+        camera=type(world.ui.camera)(
+            ((world.world_width - 1) * 500 + 500) // 1_000,
+            ((world.world_height - 1) * 650 + 500) // 1_000,
+        ),
+    )
+    return replace(
+        world,
+        generator_version=5,
+        composition_version=5,
+        composition_fingerprint=LEGACY_ACCEPTED_STARTER_FINGERPRINT,
+        ui=old_camera,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -109,14 +129,15 @@ def test_the_stamp_describes_the_roster_the_generator_actually_produced():
     """
     world = _generated()
     census = world_census(world)
-    assert census["plants"] == len(STARTER_PLANT_SPECIES) == 1
+    assert census["plants"] == 1
+    assert world.plants[0].species_id in STARTER_FLOWER_POOL
     assert census == {"plants": 1, "fixtures": 6, "animals": 0, "collectibles": 0}
     assert world.composition_fingerprint == composition_fingerprint(world)
     # Species AND the authored anchor each was placed against. Names alone were
     # not enough: moving every anchor produces a visibly different garden out of
     # an identical species list, so a verdict bound to names would survive a
     # layout nobody had seen.
-    assert "plants=rose@70,820" in world.composition_fingerprint
+    assert f"plants={world.plants[0].species_id}@500,500" in world.composition_fingerprint
 
 
 def test_moving_an_authored_anchor_changes_the_fingerprint():
@@ -129,12 +150,13 @@ def test_moving_an_authored_anchor_changes_the_fingerprint():
 
     world = _generated()
     before = composition_fingerprint(world)
-    original = generation_module.STARTER_PLANT_ANCHORS["rose"]
-    generation_module.STARTER_PLANT_ANCHORS["rose"] = (999, 999)
+    species_id = world.plants[0].species_id
+    original = generation_module.STARTER_PLANT_ANCHORS[species_id]
+    generation_module.STARTER_PLANT_ANCHORS[species_id] = (999, 999)
     try:
         assert composition_fingerprint(world) != before
     finally:
-        generation_module.STARTER_PLANT_ANCHORS["rose"] = original
+        generation_module.STARTER_PLANT_ANCHORS[species_id] = original
 
 
 def test_a_version_stamp_is_never_an_operator_approval():
@@ -147,8 +169,8 @@ def test_a_version_stamp_is_never_an_operator_approval():
     """
     world = _generated()
     assert characterize_world(world).is_fresh, "fresh is about lineage"
-    assert composition_acceptance(world) == "accepted", (
-        "approval comes from the committed operator verdict, not the stamp"
+    assert composition_acceptance(world) == "not_reviewed", (
+        "the new seed-selected composition awaits live operator review"
     )
 
 
@@ -173,9 +195,21 @@ def test_acceptance_binds_to_the_roster_and_not_only_to_the_revision_number():
     assert composition_acceptance(rerostered, register) == "not_reviewed"
 
 
-def test_the_committed_acceptance_register_names_the_approved_full_garden():
-    """The on-disk verdict binds the operator-approved revision and roster."""
-    assert composition_acceptance(_generated()) == "accepted"
+def test_the_committed_acceptance_register_does_not_preapprove_the_new_pool():
+    """The new seed-selected revision inherits no old visual verdict."""
+    assert composition_acceptance(_generated()) == "not_reviewed"
+
+
+def test_only_an_untouched_revision_five_starter_moves_to_the_new_composition():
+    legacy = _untouched_revision_five()
+    upgraded = upgrade_untouched_legacy_starter(legacy, "seed-1")
+    assert upgraded.generator_version == GENERATOR_VERSION
+    assert upgraded.composition_version == COMPOSITION_VERSION
+    assert upgraded.ui.camera == upgraded.plants[0].position
+    assert len(upgraded.fixtures) == 6
+
+    panned = replace(legacy, ui=replace(legacy.ui, camera=type(legacy.ui.camera)(59, 51)))
+    assert upgrade_untouched_legacy_starter(panned, "seed-1") is panned
 
 
 # ---------------------------------------------------------------------------

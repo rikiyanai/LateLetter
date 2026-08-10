@@ -18,9 +18,10 @@ from lateletter.garden.world.generation import (
     REVIEW_PENDING_PLANT_SPECIES,
     STARTER_ANIMAL_SPECIES,
     STARTER_COLLECTIBLES,
-    STARTER_PLANT_SPECIES,
+    STARTER_FLOWER_POOL,
     generate_initial_world,
     required_catalog_coverage,
+    starter_flower_species,
 )
 from lateletter.garden.world.plants import SPECIES_CATALOG
 from lateletter.garden.world.model import (
@@ -34,10 +35,10 @@ from lateletter.garden.world.projection import PLANT_MATURITY_STAGES, project_sc
 
 
 def _canonical_starter_camera(world_width: int, world_height: int) -> Vec2:
-    """Scale the canonical 500/650 composition anchor, not a viewport centre."""
+    """Scale the canonical 500/500 flower anchor, not a viewport centre."""
     return Vec2(
         ((world_width - 1) * 500 + 500) // 1_000,
-        ((world_height - 1) * 650 + 500) // 1_000,
+        ((world_height - 1) * 500 + 500) // 1_000,
     )
 
 
@@ -46,7 +47,9 @@ def test_initial_generation_is_deterministic_and_cozy_not_a_catalog_dump():
     second = generate_initial_world("world", 42, world_width=64, world_height=40)
     assert first.canonical_bytes() == second.canonical_bytes()
     coverage = required_catalog_coverage(first)
-    assert coverage["plants"] == frozenset(STARTER_PLANT_SPECIES)
+    assert coverage["plants"] == frozenset({first.plants[0].species_id})
+    assert first.plants[0].species_id in STARTER_FLOWER_POOL
+    assert first.plants[0].species_id == starter_flower_species(first.seed)
     assert coverage["fixtures"] == frozenset(STARTER_FIXTURES)
     assert coverage["animals"] == frozenset(STARTER_ANIMAL_SPECIES)
     assert tuple(animal.species_id for animal in first.animals) == STARTER_ANIMAL_SPECIES
@@ -56,7 +59,7 @@ def test_initial_generation_is_deterministic_and_cozy_not_a_catalog_dump():
     }
     assert coverage["collectibles"] < frozenset(COLLECTIBLE_FAMILIES)
     assert len(first.fixtures) < len(REQUIRED_FUNCTIONAL_FIXTURES)
-    assert set(STARTER_PLANT_SPECIES) < set(SPECIES_CATALOG)
+    assert set(STARTER_FLOWER_POOL) < set(SPECIES_CATALOG)
     assert first.ui.camera == _canonical_starter_camera(
         first.world_width,
         first.world_height,
@@ -74,7 +77,8 @@ def test_one_thousand_initial_layouts_are_safe_and_viewport_independent():
             world_height=40,
         )
         assert layout_is_safe(world), seed
-        assert len(world.plants) == len(STARTER_PLANT_SPECIES)
+        assert len(world.plants) == 1
+        assert world.plants[0].species_id in STARTER_FLOWER_POOL
         for plant in world.plants:
             visible_count = sum(node.birth_time <= 0 for node in plant.topology)
             assert 4 <= visible_count < len(plant.topology), (seed, plant.plant_id)
@@ -100,11 +104,11 @@ def test_generation_refuses_unsupported_and_duplicated_starter_rosters():
     # so the caller does not have to go reading anchor tables.
     with pytest.raises(ValueError) as unknown:
         generate_initial_world("x", 1, plant_species=("nope",))
-    assert str(unknown.value) == (
+    assert str(unknown.value).startswith(
         "unsupported plant species requested: 'nope' (supported: "
-        "hydrangea, lavender, meadow_grass, oak, rose, sunflower, "
-        "water_lily, willow)"
     )
+    for species_id in STARTER_FLOWER_POOL:
+        assert species_id in str(unknown.value)
 
     # Duplicates matter because every object id is a pure function of the
     # species: asking twice used to yield two records sharing one id.
@@ -156,20 +160,34 @@ def test_point_and_click_model_declares_primary_actions_and_opportunities():
     scene = project_scene(world)
     bench = next(item for item in scene.objects if item.semantic_name == "Garden bench")
     lantern = next(item for item in scene.objects if item.semantic_name == "Lantern")
-    rose = next(item for item in scene.objects if item.kind == "plant")
+    flower = next(item for item in scene.objects if item.kind == "plant")
 
-    assert rose.primary_action == {
-        "command": "tend", "args": {"care_action": "water"},
-        "label": "water the rose",
+    assert flower.primary_action == {
+        "command": "tend", "args": {"care_action": "tend"},
+        "label": f"tend the {flower.semantic_name}",
     }
-    assert rose.opportunities == ()
-    watered, water_result = dispatch(world, command(
+    assert flower.opportunities == ()
+    tended, tend_result = dispatch(world, command(
         world.world_id, world.command_sequence + 1,
-        rose.primary_action["command"], target_id=rose.object_id,
-        args=rose.primary_action["args"],
+        flower.primary_action["command"], target_id=flower.object_id,
+        args=flower.primary_action["args"],
     ))
-    assert water_result.accepted
-    assert watered.plants[0].tended_count == world.plants[0].tended_count + 1
+    assert tend_result.accepted
+    assert tended.plants[0].tended_count == world.plants[0].tended_count + 1
+
+    dormant_world = replace(
+        world,
+        plants=(replace(world.plants[0], dormant=True),),
+    )
+    dormant_flower = next(
+        item for item in project_scene(dormant_world).objects if item.kind == "plant"
+    )
+    assert dormant_flower.opportunities == ({
+        "opportunity_id": f"{dormant_flower.object_id}:water",
+        "command": "tend",
+        "args": {"care_action": "water"},
+        "label": f"water the {dormant_flower.semantic_name}",
+    },)
 
     # The world declares the act and its wording, so a renderer reading this
     # has nothing left to infer.

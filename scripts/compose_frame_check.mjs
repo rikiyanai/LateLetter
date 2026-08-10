@@ -95,24 +95,16 @@ const context = {
   acceptedManifest: AUTHORITY,
   environment: { readerRegion: null, reducedMotion: false },
 };
-// Warm the LIFECYCLE before judging (reopened step 5): birds, weather
-// particles and snow depth are stateful actors owned by the presentation
-// advance, and the deployed engine accumulates -- snow falls for hundreds of
-// ticks before it lies, and the first bird spawns after 251+ ticks. 600
-// ticks is thirty garden seconds at the accepted 50ms cadence: enough for
-// weather to exist, accumulate and react, so the gate judges a LIVED frame
-// rather than frame zero's empty sky.
+// The accepted recipient Garden is static. Advance exactly one deterministic
+// frame so this gate proves the composer without manufacturing ambient life.
 const sceneEvent = { kind: 'scene', projection, viewport: VIEWPORT };
-let warmed = null;
-for (let frame = 0; frame < 600; frame += 1) {
-  warmed = advancePresentationState(warmed, [sceneEvent], { frame });
-}
+const initialState = advancePresentationState(null, [sceneEvent], { frame: 0 });
 
 const input = {
   projection,
-  previousState: warmed,
+  previousState: initialState,
   presentationEvents: [sceneEvent],
-  tick: { frame: 600, seconds: 720 },
+  tick: { frame: 0, seconds: 0 },
   context,
 };
 

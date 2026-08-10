@@ -198,12 +198,10 @@ def test_starter_composition_is_authoritative_and_identical_in_both_generators()
         observed_sides.add(rooms["stepping_stones"]["side"])
 
     assert observed_sides == {"left", "right"}
-    assert {
-        "fixture.pond", "fixture.pond_compact", "fixture.pond_round",
-        "fixture.stepping_stones", "fixture.stepping_stones_three",
-        "fixture.stepping_stones_five", "fixture.planter",
-        "fixture.planter_one", "fixture.planter_three",
-    } <= observed_assets
+    assert observed_assets == {
+        "fixture.bench", "fixture.lantern", "fixture.mailbox",
+        "fixture.planter", "fixture.pond", "fixture.stepping_stones",
+    }
 
 
 @pytest.mark.skipif(shutil.which("node") is None, reason="Node.js is unavailable")

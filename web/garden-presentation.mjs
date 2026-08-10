@@ -48,12 +48,11 @@ import { resolveBrowserSky } from './garden-sky.mjs';
 import { validatePaintAuthority } from './garden-paint-authority.mjs';
 import {
   Raster,
-  drawSky, drawSkyLife, drawPondButterflies, drawGround, drawGardenBillboards, drawAmbient,
-  drawWeather, drawObject,
+  drawSky, drawGround, drawGardenBillboards,
   gardenPresentationProfile, gardenTerrainFrame,
   layoutGardenObjects, gardenDepthCohorts,
-  timeOfDay, seasonOf, DAY, NIGHT, EVENING, paletteColor,
-  objectBurstPattern, connectedMasks, objectPresentationArt,
+  timeOfDay, seasonOf, DAY, NIGHT, EVENING,
+  connectedMasks, objectPresentationArt,
   measuredAssetPlacement, escapeHtml, stringHash,
   AMBIENT_BIRD_FRAMES, AMBIENT_BIRD_COMPACT_FRAMES,
 } from './garden-painting.mjs';
@@ -76,7 +75,8 @@ const BURST_LIFETIME_FRAMES = 12;
 const MINIMUM_TARGET_PX = 44;
 
 // ---------------------------------------------------------------------------
-// The presentation LIFECYCLE: the legacy engine's persistent actors, seeded.
+// The quarantined legacy presentation lifecycle: deterministic and testable,
+// but not advanced or painted by the recipient product.
 //
 // Reopened step 5 (2026-08-04 architecture route): ambient birds, weather
 // particles and snow accumulation are STATEFUL in the deployed viewer --
@@ -89,7 +89,8 @@ const MINIMUM_TARGET_PX = 44;
 // recorded deviations are the entropy source (seeded streams instead of
 // `Math.random()`/`Date.now()`, with every distribution kept verbatim,
 // because the presentation contract forbids unseeded randomness) and the
-// authored-scene weather override, which the legacy page did not have.
+// authored-scene weather override, which the legacy page did not have. The
+// approved static Garden contract leaves this machinery disconnected.
 // ---------------------------------------------------------------------------
 
 /**
@@ -705,15 +706,7 @@ export function composePresentationFrame(projection, state, context) {
   const depthCohorts = gardenDepthCohorts(layout, profile, terrain);
 
   drawSky(raster, projection, sky, palette, profile, mode);
-  // Sky life is drawn straight after the stars so that ground, planting and
-  // objects all paint over it. The birds are the LIFECYCLE's actors --
-  // spawned and stepped by the state advance, painted here from state alone.
-  // (Recorded painter-order divergence, unchanged by the lifecycle port: the
-  // deployed page painted creatures after plants; this backdrop position
-  // predates the port and moves, if it moves, with the painter-order law.)
-  drawSkyLife(raster, state.lifecycle, palette);
   drawGround(raster, palette, season, terrain);
-  drawAmbient(raster, projection, palette, season, horizon, profile);
   const view = {
     visualFrame: state.visualFrame,
     hoverCell: state.hoverCell,
@@ -725,28 +718,19 @@ export function composePresentationFrame(projection, state, context) {
   // Backdrop plants and canonical objects now share one baseline/depth sort.
   drawGardenBillboards(
     raster, projection, palette, season, profile, terrain, state.visualFrame,
-    state.hoverCell, lifecycleWindAt(state.lifecycle?.tick ?? state.visualFrame),
+    state.hoverCell, 0,
     layout, view,
   );
-  drawPondButterflies(raster, state.lifecycle, palette);
-  const weatherReactions = drawWeather(raster, state.lifecycle, palette);
+  const weatherReactions = [];
   if (projection.scene?.memorial?.active) {
     const center = Math.floor(viewport[0] / 2);
     raster.art(center, horizon - 1, ['  @  ', ' @@@ ', '  |  '], palette.flower,
       { source: 'recipe.special.post_complete_marker' });
   }
 
-  const motionSuppressed = Boolean(projection.motion_paused || environment.reducedMotion);
-  if (!motionSuppressed) {
-    for (const burst of state.clickBursts ?? []) {
-      const age = state.visualFrame - burst.frame;
-      for (const [dx, dy, glyph, color] of objectBurstPattern(burst, age)) {
-        raster.put(burst.x + dx, burst.y + dy, glyph,
-          paletteColor(palette, color, season), true,
-          null, { source: 'recipe.feedback.click_leaf_burst' });
-      }
-    }
-  }
+  // The product Garden has no autonomous or feedback animation. Canonical
+  // interactions report through the status line; they do not mutate glyphs.
+  const motionSuppressed = true;
 
   // ---- frame assembly ----------------------------------------------------
   const attempted = raster.attempted.map(entry => ({

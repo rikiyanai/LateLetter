@@ -33,7 +33,7 @@ import { projectSkyPoints } from './garden-sky.mjs';
 import {
   legacyAnimalPresentation, legacyPlantPresentation,
 } from './garden-legacy-art.mjs';
-import { operatorPlantPresentation } from './garden-approved-art.mjs';
+import { approvedStarterFlowerPresentation } from './garden-approved-art.mjs';
 import { compareCodePoints } from './garden-world.mjs';
 
 const DEPTH = Object.freeze({ stars: 0.02, distant: 0.20, far: 0.55, world: 1, foreground: 1.15 });
@@ -544,7 +544,7 @@ export function gardenPresentationProfile(viewport, worldSize = [120, 80]) {
 // the viewport.  Keeping the neutral camera beside the projection law makes
 // the vertical pan transform explicit and prevents a second screen-space
 // owner from appearing in the viewer or painter.
-const GARDEN_HOME_CAMERA_Y = 51;
+const GARDEN_HOME_CAMERA_Y = 40;
 const FAR_TERRAIN_DEPTH = 0.52;
 const NEAR_TERRAIN_DEPTH = 1.0;
 
@@ -1196,11 +1196,12 @@ function legacyPlantArt(object, frame, hovered, lod) {
 
 function plantArt(object, frame, hovered = false, lod = 'full') {
   const species = String(object.semantic_state?.species_id ?? 'plant');
-  // Exact operator-authored assets outrank both the legacy archive and every
-  // renderer fallback.  Rose's former local placeholder was deleted in the
-  // same patch, so there is no second drawing that can silently return.
-  const operatorArt = operatorPlantPresentation(species);
-  if (operatorArt) return { ...operatorArt, color: 'flower' };
+  // Exact approved starter flowers outrank both the legacy stage painter and
+  // every renderer fallback. Their species identity is seed-selected by the
+  // canonical world; this lookup may present that identity but cannot choose
+  // a different flower on its own.
+  const approvedArt = approvedStarterFlowerPresentation(species);
+  if (approvedArt) return { ...approvedArt, color: 'flower' };
   // The archive first: where it draws a species, its drawing is the approved
   // one and everything below is a placeholder awaiting review.
   const legacy = legacyPlantArt(object, frame, hovered, lod);
@@ -1419,7 +1420,8 @@ export function objectPresentationArt(object, frame, lod = 'full', emphasized = 
   if (object.kind === 'plant') {
     const art = plantArt(object, frame, emphasized, lod);
     return { ...art, identity: art.identity ?? null, lines: art.purposeDrawn
-      ? art.lines : presentationLod(art.lines, object.kind, lod), animated: true };
+      ? art.lines : presentationLod(art.lines, object.kind, lod),
+    animated: art.animated ?? true };
   }
   if (object.kind === 'animal') {
     const animal = animalArt(object, frame, lod);
@@ -1846,9 +1848,9 @@ export function drawSky(raster, projection, sky, palette, profile, mode) {
 /**
  * Paint the two authoritative contours of the receding ground plane.
  *
- * Presentation-native ground cover fills the bounded space between them in
- * `drawGardenBillboards`; this painter owns the uninterrupted far transition
- * and near soil edges that make those intermediate marks read as terrain.
+ * These uninterrupted far-transition and near-soil edges are the only
+ * renderer-owned marks on the ground. Population comes exclusively from the
+ * canonical projection.
  */
 export function drawGround(raster, palette, season, terrain) {
   // `profile.horizon` is deliberately NOT read here. It is a neutral viewport
@@ -2158,184 +2160,21 @@ export function drawGardenBillboards(
   raster, projection, palette, season, profile, terrain, frame, hoverCell,
   wind = 0, canonicalEntries = [], view = {},
 ) {
-  const worldId = String(projection.world_id ?? projection.scene?.world_id ?? 'lateletter-garden');
-  const authoredSeed = String(projection.presentation_seed ?? '');
-  const seed = worldId === 'standalone:local' ? 12345
-    : /^\d+$/.test(authoredSeed) ? Number(authoredSeed) >>> 0
-      : stringHash(authoredSeed || worldId);
-  const ink = palette === NIGHT ? LEGACY_INK_NIGHT : LEGACY_INK_DAY;
-  const farGroundY = terrain.farGroundY;
-  const camera = Array.isArray(projection.camera) ? projection.camera : [0, 0];
-  const viewport = [raster.width, raster.height];
-  // One projection for every layer, horizontally AND vertically. The terrain
-  // coordinate is converted to a canonical y once and then goes through the
-  // same camera transform as gameplay objects. Dragging cannot change which
-  // plants exist; it only changes where the fixed population is projected.
-  const screenPointOf = (worldX, plane, depth) => {
-    const worldY = LEGACY_HOME_CAMERA_Y +
-      (plane - LEGACY_TERRAIN_CENTER) * LEGACY_WORLD_ROWS / depth;
-    return worldToGardenScreen([worldX, worldY], camera, viewport, depth);
-  };
-  const neutralViewport = [160, 66];
-  const neutralCamera = [60, LEGACY_HOME_CAMERA_Y];
-  const neutralCanonicalRects = (projection.objects ?? []).map(object => {
-    const depth = Number(object.depth ?? 100) / 100;
-    const anchor = worldToGardenScreen(
-      object.position, neutralCamera, neutralViewport, depth,
-    );
-    return footprintRect(anchor, stableArtFootprint(object, 'full'));
-  });
-
-  // Canonical objects reserve rooms in WORLD/TERRAIN space. The deleted owner
-  // performed this test against current screen rectangles; changing the camera
-  // therefore changed membership and made vegetation pop in and out. These
-  // rooms depend only on the authored scene, so pan and resize cannot alter
-  // the population.
-  const canonicalRooms = (projection.objects ?? []).map(object => {
-    const footprint = stableArtFootprint(object, 'full');
-    return {
-      x: Number(object.position?.[0] ?? object.hotspot?.x ?? 0),
-      plane: clamp(
-        LEGACY_TERRAIN_CENTER +
-          (Number(object.position?.[1] ?? object.hotspot?.y ?? LEGACY_HOME_CAMERA_Y) -
-            LEGACY_HOME_CAMERA_Y) / LEGACY_WORLD_ROWS,
-        0, 1,
-      ),
-      // Reserve the picture, not the one-cell gameplay hotspot. The pond is
-      // 24 columns wide; the old hotspot-derived room was seven, which is how
-      // presentation plants were admitted behind its empty interior and then
-      // appeared sliced at the bank.
-      halfWidth: Math.max(4, footprint.width / 2 + 3),
-    };
-  });
-  const roomIsFree = (worldX, plane, halfWidth = 0) => !canonicalRooms.some(room =>
-    Math.abs(plane - room.plane) < 0.13 &&
-    Math.abs(worldX - room.x) < halfWidth + room.halfWidth);
-
-  // Ground cover: keyed on WORLD columns so the texture travels with the
-  // pan, projected at fast-foreground depth. The sampled world range covers
-  // the whole raster at this depth from any reachable camera.
-  const coverFirst = -LEGACY_BACKDROP_MARGIN;
-  const coverLast = LEGACY_WORLD_COLUMNS + LEGACY_BACKDROP_MARGIN;
-  // Cover occupies the plane BETWEEN the far grass edge and the canonical
-  // fixture surface. Each glyph receives a stable depth from its world-column
-  // hash, so it pans at the same depth at which it is vertically placed. The
-  // far edge remains continuous because cover starts on the following row.
-  const coverTop = Math.min(terrain.groundFront, farGroundY + 1);
-  const coverSpan = Math.max(1, terrain.groundFront - coverTop);
-  for (let worldX = coverFirst; worldX <= coverLast; worldX += 1) {
-    const hash = (Math.imul(worldX + 1013, 0x9e3779b1) ^ seed) >>> 0;
-    const nearness = ((hash >>> 8) % 1000) / 999;
-    const coverDepth = 0.68 + nearness * (LEGACY_COVER_DEPTH - 0.68);
-    if (!roomIsFree(worldX, nearness, 1)) continue;
-    const [column, coverRow] = screenPointOf(worldX, nearness, coverDepth);
-    if (column < 0 || column >= raster.width || coverRow < coverTop - 2 ||
-        coverRow > terrain.groundFront + 2) continue;
-    const value = hash % 1000 / 1000;
-    if (value < (season === 'winter' ? 0.82 : 0.48)) continue;
-    let glyph, color;
-    if (value > 0.92) { glyph = '"'; color = 'green'; }
-    else if (value > 0.72) { glyph = ';'; color = 'deep_green'; }
-    else { glyph = hash & 1 ? '.' : ','; color = 'dim_green'; }
-    if (hash % 11 === 0) glyph = LEGACY_GRASS_FAMILIES[3][(hash + Math.floor(frame * 0.12)) % 3];
-    if (season === 'winter') { glyph = hash & 1 ? '.' : '*'; color = hash & 2 ? 'white' : 'dim'; }
-    else if (season === 'autumn' && value > 0.85) color = 'yellow';
-    raster.put(column, coverRow, glyph, ink[color], true, null, { source: 'recipe.ground.cover' });
-  }
-
-  const hoverRow = Number(hoverCell?.[1] ?? -999);
-  const hoverColumn = Number(hoverCell?.[0] ?? -999);
+  // The ordinary picture contains only canonical world objects. Older code
+  // populated this queue with renderer-owned plants and ground cover, so the
+  // Garden visibly contained objects that persistence, hit testing, and
+  // commands could not name. Canonical projection identity is now the only
+  // route into this painter.
   const cards = canonicalEntries.map(entry => ({
     kind: 'canonical', baseline: entry.groundRow,
     depth: Number(entry.object.depth ?? 100) / 100,
     stableId: entry.object.object_id, entry,
   }));
-
-  // Presentation-native planting joins canonical objects as cards.  It is no
-  // longer painted in a backdrop phase that guarantees every fixture will
-  // erase it.  Membership is still seed/world-owned; only final painter order
-  // is derived here from the projected baseline.
-  for (const { plant, x, depth, plane } of legacyPlantLayout(seed, season)) {
-    const isTree = plant.type === 'oak' || plant.type === 'pine';
-    const halfWidth = Math.floor(plant.width / 2) + (isTree ? 1 : 3);
-    if (!roomIsFree(x, plane, halfWidth)) continue;
-    const neutralWorldY = LEGACY_HOME_CAMERA_Y +
-      (plane - LEGACY_TERRAIN_CENTER) * LEGACY_WORLD_ROWS / depth;
-    const neutralAnchor = worldToGardenScreen(
-      [x, neutralWorldY], neutralCamera, neutralViewport, depth,
-    );
-    const neutralPlantRect = legacyPlantCardRect(
-      plant, neutralAnchor[0], neutralAnchor[1], 2,
-    );
-    if (neutralCanonicalRects.some(rect => intersectionArea(neutralPlantRect, rect, 2) > 0))
-      continue;
-    const [anchorX, baseline] = screenPointOf(x, plane, depth);
-    if (anchorX < -plant.width - 2 || anchorX > raster.width + plant.width + 2) continue;
-    cards.push({
-      kind: 'plant', baseline, depth, stableId: `legacy:${x}:${plane}`,
-      plant, anchorX,
-    });
-  }
-
   cards.sort((left, right) =>
     left.baseline - right.baseline || left.depth - right.depth ||
     compareCodePoints(left.stableId, right.stableId));
-
   for (const card of cards) {
-    if (card.kind === 'canonical') {
-      drawObject(raster, card.entry, projection, palette, season, view);
-      continue;
-    }
-    const { plant, anchorX, baseline } = card;
-    if (plant.blades) {
-      for (const blade of plant.blades) {
-        const lean = wind * 1.6 + Math.sin((frame / 200 + blade.seed * 0.37) * 6.2832) * 0.6;
-        for (let height = 1; height <= blade.height; height += 1) {
-          const fraction = height / blade.height;
-          const column = anchorX + blade.dx + Math.round(lean * fraction * 1.2);
-          const glyph = height === blade.height
-            ? (blade.flower ? ['*', '+', '*'] : LEGACY_GRASS_FAMILIES[blade.family])[(blade.seed + Math.floor(frame * 0.12)) % 3]
-            : lean * fraction > 0.3 ? '/' : lean * fraction < -0.3 ? '\\' : '|';
-          const color = height === blade.height ? (blade.flower ? 'bright_yellow' : 'bright_green')
-            : fraction < 0.4 ? 'deep_green' : fraction < 0.75 ? 'green' : 'bright_green';
-          raster.put(column, baseline - height, glyph, ink[color], true, null,
-            { source: 'recipe.vegetation.plant_paint' });
-        }
-      }
-      continue;
-    }
-    const canopyShimmer = LEGACY_CANOPY_SHIMMER.has(plant.type);
-    const shimmerIntensity = 0.55 + Math.abs(wind) * 1.1;
-    for (const [dy, dx, text, color] of plant.rows) {
-      const row = baseline - dy;
-      [...text].forEach((original, offset) => {
-        const column = anchorX + dx + offset, dr = row - hoverRow, dc = column - hoverColumn;
-        const distance = dr * dr + dc * dc;
-        let glyph = original, animated = false;
-        // Restore the deployed wind-driven canopy shimmer.  The first port
-        // copied cursor rustle but omitted this fixed 1-in-8 subset, leaving a
-        // tree visually inert unless the pointer happened to cross one of the
-        // few mutable foliage glyphs.
-        if (canopyShimmer && dy >= 2 && glyph !== ' ') {
-          const hash = Math.imul(row * 73 + column * 151 + 7, 0x9e3779b1) >>> 0;
-          if (hash % 8 === 0) {
-            const next = legacyRustle(
-              glyph, shimmerIntensity, frame * 0.06 + (hash % 97) * 0.7,
-            );
-            if (next !== glyph) { glyph = next; animated = true; }
-          }
-        }
-        if (distance < 25 && glyph !== ' ') {
-          const next = legacyRustle(
-            glyph, (1 - Math.sqrt(distance) / 5) * 1.2,
-            frame * 0.4 + column * 1.9 + row * 2.7,
-          );
-          if (next !== glyph) { glyph = next; animated = true; }
-        }
-        raster.put(column, row, glyph, ink[color], animated, null,
-          { source: 'recipe.vegetation.plant_paint' });
-      });
-    }
+    drawObject(raster, card.entry, projection, palette, season, view);
   }
 }
 export function drawAmbient(raster, projection, palette, season, horizon, profile) {

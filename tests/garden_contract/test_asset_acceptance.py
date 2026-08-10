@@ -164,19 +164,11 @@ def test_nothing_rejected_is_licensed_to_render():
     )
 
 
-def test_the_local_scene_draws_only_accepted_assets_or_explicit_review_candidates():
-    """Accepted catalog assets may appear; candidates must appear for review.
-
-    Catalog completeness is not scene composition, so accepted assets are not
-    required to appear. Unaccepted candidates are the opposite: every one must
-    appear locally or the registry becomes a permission slip for unseen art.
-    """
+def test_the_default_scene_draws_only_accepted_base_fixture_assets():
+    """Review-only fixture variants never enter the ordinary starter."""
     from lateletter.garden.world.generation import generate_initial_world
 
     registry = _registry()
-    # Five deterministic candidates cover every independently seeded variant.
-    # Read the persisted visual identity the product projects, rather than
-    # assuming catalog id and art id are forever the same fact.
     drawn = {
         str(fixture.authored_state["visual_asset_id"])
         for seed_index in range(5)
@@ -189,14 +181,8 @@ def test_the_local_scene_draws_only_accepted_assets_or_explicit_review_candidate
         if row["verdict"] == "accepted"
     }
     candidates = set(registry["review_candidates"])
-    assert drawn <= accepted | candidates, (
-        "the local scene draws assets with neither acceptance nor review permission: "
-        f"{sorted(drawn - accepted - candidates)}"
-    )
-    assert candidates <= drawn, (
-        "review candidates are licensed but absent from the review scene: "
-        f"{sorted(candidates - drawn)}"
-    )
+    assert drawn <= accepted
+    assert drawn.isdisjoint(candidates)
 
 
 def test_recovered_operator_fixture_approvals_cannot_be_erased_again():
@@ -1109,7 +1095,13 @@ def test_the_real_runtime_report_reflects_the_product_not_a_stub():
     report = runtime_frame_report()
     assert report["violations"] == [], report["violations"]
     assert report["stats"]["suppressed"] == 0
-    assert report["stats"]["attempted"] > 500, "the gate frame is not vacuously small"
+    assert report["stats"]["attempted"] > 300, "the gate frame is not vacuously small"
+    assert report["stats"]["regions"] == 7, "one flower plus six fixtures must be interactive"
+    assert not {
+        "recipe.ground.cover", "recipe.vegetation.plant_paint",
+        "recipe.ambient.bird_traversal", "recipe.ambient.pond_butterfly",
+        "recipe.weather.rain",
+    } & set(report["stats"]["painted_sources"])
     recipes = _recipes()["records"]
     expected_divergent = {
         source for source in report["stats"]["painted_sources"]

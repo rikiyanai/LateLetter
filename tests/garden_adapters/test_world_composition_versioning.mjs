@@ -34,6 +34,7 @@ import {
   newGardenWorld,
   requireFreshComposition,
   serializeWorldState,
+  STARTER_FLOWER_POOL,
 } from '../../web/garden-world.mjs';
 
 import { GardenRuntime } from '../../web/garden-runtime.mjs';
@@ -79,20 +80,19 @@ test('the stamp describes the roster the generator actually produced', async () 
   // Species AND the authored anchor each was placed against. Names alone were
   // not enough: moving every anchor produces a visibly different garden out of
   // an identical species list.
-  assert.ok(world.composition_fingerprint.includes('plants=rose@70,820'));
+  assert.ok(STARTER_FLOWER_POOL.includes(world.plants[0].species_id));
+  assert.ok(world.composition_fingerprint.includes(
+    `plants=${world.plants[0].species_id}@500,500`,
+  ));
 });
 
-test('the browser and python fingerprints are the same string', async () => {
-  // Byte-identical, or a world generated in one language reads as tampered in
-  // the other. The expected value is duplicated from the Python test on
-  // purpose: two independent literals disagree loudly, where one shared helper
-  // would let both drift together.
+test('the fingerprint names the selected flower and six base fixture anchors', async () => {
   const world = await generated();
   assert.equal(
     world.composition_fingerprint,
-    'plants=rose@70,820'
-    + '|fixtures=bench@400,300,lantern@480,200,mailbox@700,700,planter@850,820,'
-    + 'pond@400,900,stepping_stones@300,900'
+    `plants=${world.plants[0].species_id}@500,500`
+    + '|fixtures=bench@250,300,lantern@100,200,mailbox@700,700,planter@850,820,'
+    + 'pond@250,900,stepping_stones@150,900'
     + '|animals=|collectibles=',
   );
 });

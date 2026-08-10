@@ -1744,15 +1744,18 @@ the projected records verbatim:
   may reach the same projected object outside that hotspot, so a large bloom
   never requires finding an invisible one-cell stem anchor; the art still owns
   no eligibility, command, arguments or label.
-- The current flower's projected safe primary action is **water/tend**. Click,
-  tap or Enter performs it directly through the drawing and produces
-  picture-owned feedback. The viewer paints no flower name, verb label or
-  beside-object action group.
-- One persistent HUD control opens the canonical journal and inventory, and one visually
-  separate HUD control toggles canonical motion pause. Journal-open and motion-pause are saved
-  world state; DOM panels, hover, drag residue and presentation phase are session-only.
+- The current flower's projected safe primary action is **tend**. A dormant
+  flower may project **water** as its direct state-dependent opportunity. Click,
+  tap or Enter performs the declared record directly through the drawing. The
+  viewer paints no flower name, verb label, beside-object action group, or
+  animated feedback; a small status line outside the art reports the result.
+- Journal and inventory have no permanent HUD label. The canonical mailbox
+  opens them only when canonical journal or inventory content exists. The
+  ordinary Garden has no motion-pause control because its picture has no
+  autonomous animation. Legacy saved UI fields remain readable for persistence
+  compatibility but do not create ordinary controls.
 - Browser keyboard may move canonical focus, Enter may perform the projected primary action,
-  and the recorded inspect/tend/journal/pause/pan bindings dispatch the same commands.
+  and the recorded inspect/tend/pan bindings dispatch the same commands.
 
 This approval does **not** restore the rejected generic object list, opportunity card stack,
 beside-object verb labels, hover instructions, object-name panel, “More actions” sheet or
@@ -1787,12 +1790,12 @@ Each required fixture has at least one direct interaction and one systemic or na
 
 Fixture placement cannot trap animals, hide required actions, break connected paths, or make collectibles unreachable. Undo and reset-to-safe-layout are mandatory.
 
-Presentation-native planting and ground cover may surround canonical objects but may not
-overpaint or visually crowd their final composed ink. The exclusion room is derived from the
-canonical object's post-layout screen rectangle; it may cull a disposable backdrop candidate,
-but it may never move the canonical object or become a second layout authority. Authored
-connected rooms such as pond plus stepping stones may waive the extra padding so their edges
-meet, while direct cell overlap remains forbidden.
+The ordinary product painter receives object population only from canonical
+projection. It must not synthesize planting, ground cover, stones, animals,
+birds, insects, weather particles, or other object-like ambience. The sparse
+sky field and structural ground plane are presentation layers, not inventory.
+Authored connected rooms such as pond plus stepping stones may meet, while
+direct canonical cell overlap remains forbidden.
 
 An exact operator-authored picture may declare semantic part roles (for example bloom, stem
 and vessel) for palette resolution. A picture declared sealed replaces renderer-local topology
@@ -1804,13 +1807,15 @@ above say what the product must be able to draw. They do not say what a new gard
 with, and the two must not be conflated: a scene that shows everything the catalog can do is
 a showroom, not a place someone lives.
 
-The **accepted default canonical scene** is composition revision 5: one rose,
-six fixtures (pond, stepping stones, mailbox, bench, lantern and planter), no
-canonical animals and no collectibles. The exact fingerprint is recorded in
-`docs/garden-composition-acceptance.json`. The rose owns normalized anchor
-`[70,820]`; the initial camera remains `[500,650]` so the fixture room opens as
-the centre of the same larger world rather than moving every object into a
-narrow viewport.
+The **current default candidate** is composition revision 7: exactly one
+deterministically seed-selected flower from the hash-bound approved pool, six
+base fixtures (pond, stepping stones, mailbox, bench, lantern and planter), no
+animals and no collectibles. Every pool flower owns normalized anchor
+`[500,500]`, and the fresh-world camera uses the same anchor. Flower identity is
+independent of viewport and stays stable across reload, reupload and
+reauthentication. The pool is recorded in
+`docs/garden-asset-acceptance.json`; composition verdicts remain separate in
+`docs/garden-composition-acceptance.json` and revision 7 is not pre-approved.
 
 The pond, stepping stones and bench form one water/sitting room: stones approach
 the pond from one side and visually meet its bank, the bench sits generally
@@ -1819,19 +1824,15 @@ lantern belongs to the far transition band. Those relationships are canonical
 generator data, never renderer packing. An authored scheduled fixture joins this
 starter; it does not replace the room.
 
-The accepted full Garden presentation also includes its seeded planting,
-ground-cover and ambient lifecycle layer. Those disposable presentation actors
-are not canonical inventory and own no recipient actions, but they are part of
-the approved visible composition: they may surround canonical objects, move
-continuously, and react to season or time without repacking or occluding the
-canonical room. The rejected 1/0/0/0 experiment that suppressed this layer and
-emptied `STARTER_FIXTURES` is not the product baseline and must not return.
+The ordinary presentation adds no renderer-generated population and performs no
+autonomous animation. The rejected 1/0/0/0 experiment that emptied
+`STARTER_FIXTURES` is not the product baseline and must not return; removing
+ownerless paint does not remove the six canonical fixtures.
 
 Everything under `REVIEW_PENDING_*` — additional canonical plants, the cat, and
 the collectible — stays **absent from the default canonical roster** until each
 drawing is separately accepted under §7.10. Presentation-native planting and
-ambience are governed by the accepted full-Garden presentation contract above;
-they must not be misreported as extra canonical objects.
+ordinary presentation remains restricted to the canonical projection above.
 
 #### 7.8.5 Stable procedural plant growth
 

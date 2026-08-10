@@ -79,6 +79,217 @@
       "effect": "Pendant necklace, both brooches, bone and teddy bear remain granted ART but are not paintable: every non-ASCII codepoint in them is absent from the cmap of web/fonts/lateletter-garden.woff, and the atlas additionally requires an ascii-safe profile of one printable ASCII character per cell for every asset. Each needs an ASCII redraw, or font work plus an ASCII fallback drawing anyway. The sideways rose is pure ASCII but is a letter-ending decoration seventeen columns wide, so it belongs to the letter surface rather than to the garden atlas. None of the six has an atlas identity and none may acquire one on the strength of this grant. Recorded here so the absence is a decision rather than an oversight."
     }
   ],
+  "starter_flower_pool": {
+    "decision": "The 2026-08-11 batch operator decision selects exactly one deterministic starter flower from each suitable standalone drawing in the approved flower corpus. Composite scenes (cat panorama, repeating flower row, bouquet and mandala) are excluded. Animation sources contribute static frames only; no autonomous Garden animation is permitted.",
+    "required_viewports": [
+      "desktop-1400x950",
+      "mobile-390x844",
+      "phone-320x568"
+    ],
+    "source_files": {
+      "ascii-animations/flowers/collected-flowers.txt": "80f8d345c1d8d95166b0de3dbbd377d9fa4a7d538c9b660d3acddfe11e5e60d9",
+      "ascii-animations/flowers/flower-animations.txt": "be4e5388056ba39d102e782c352b53b092ebd5cb92314d04e53f2f2bb4bc14c5",
+      "tracked/LateLetterResearch/transcription-parity/eb861dc84400fc36/accepted.txt": "04bce501c712fc071523711a3ea1b67a8af302434a66f0e638c2bdc144b0baac"
+    },
+    "excluded_sections": [
+      "FLOWER ROW (Laura Brown)",
+      "FLOWER MANDALA (Joan Stark)",
+      "FLOWER BOUQUET (Marie Bird / Valkyrie)",
+      "CAT IN THE GARDEN (Laura Brown)"
+    ],
+    "entries": [
+      {
+        "species_id": "rose",
+        "asset_id": "plant.rose",
+        "authority": "operator_grant",
+        "source": "tracked/LateLetterResearch/transcription-parity/eb861dc84400fc36/accepted.txt",
+        "section": "operator-authored rose bush",
+        "art_sha256": "63800e1f023504ce988110687edd30e87ffe442715002aad4b0fceaf08c32a58",
+        "width": 23,
+        "height": 6
+      },
+      {
+        "species_id": "legacy_rose",
+        "asset_id": "plant.legacy_rose",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "ROSE (Unknown artist)",
+        "art_sha256": "0b67f7c8a496f15e73fca9c499dd16413e567af55ff4a13b10e28927a677cf56",
+        "width": 27,
+        "height": 29
+      },
+      {
+        "species_id": "legacy_sunflower_sunglasses",
+        "asset_id": "plant.legacy_sunflower_sunglasses",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "SUNFLOWER w/ SUNGLASSES (Laura Brown)",
+        "art_sha256": "c6387c957b5d6d3e46b1d4a5c9355b9643ee44f35859d1eea1ef4d784af7c106",
+        "width": 21,
+        "height": 14
+      },
+      {
+        "species_id": "legacy_sunflower",
+        "asset_id": "plant.legacy_sunflower",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "SUNFLOWER (Hayley Jane Wakenshaw / Flump)",
+        "art_sha256": "782b3731328e976d1df9dd7f0ca60f3e354fa29ed4053d85c843031e7bfa5027",
+        "width": 35,
+        "height": 15
+      },
+      {
+        "species_id": "legacy_tulip",
+        "asset_id": "plant.legacy_tulip",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "TULIP (Sebastian Stöcker)",
+        "art_sha256": "abd6a73fcecf2daba920829c5fa3f0066d9a1d8a5274c8fa845c32f6437dd8f7",
+        "width": 18,
+        "height": 14
+      },
+      {
+        "species_id": "legacy_small_flower",
+        "asset_id": "plant.legacy_small_flower",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "SMALL FLOWER (Joan Stark)",
+        "art_sha256": "3a4bd23d41d791718cbc491c2b907c623a2580e9ae64d91e3e881a90753ee67b",
+        "width": 17,
+        "height": 10
+      },
+      {
+        "species_id": "legacy_daisy_round",
+        "asset_id": "plant.legacy_daisy_round",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Tiny Daisy :: (*)",
+        "art_sha256": "0fda363e14b34e1c9d014e23008f8fd8cb1941c220293f55dc8eae0e61507c25",
+        "width": 3,
+        "height": 3
+      },
+      {
+        "species_id": "legacy_daisy_at",
+        "asset_id": "plant.legacy_daisy_at",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Tiny Daisy :: (@)",
+        "art_sha256": "46af5cc01594aed5371110d29c8421048e1788451174fa4561f7a4970db3ca27",
+        "width": 3,
+        "height": 3
+      },
+      {
+        "species_id": "legacy_daisy_brace",
+        "asset_id": "plant.legacy_daisy_brace",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Tiny Daisy :: {*}",
+        "art_sha256": "0fbdd07fd9c9165c71ba857e567a8aca3ffe0405f05da8ae77176f4f9122e9c0",
+        "width": 3,
+        "height": 3
+      },
+      {
+        "species_id": "legacy_small_rose_short",
+        "asset_id": "plant.legacy_small_rose_short",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Small Rose :: short",
+        "art_sha256": "f99ccb5b62653dc36bffaa4b944794ecd4ff08f2418354660e3c3f51a62a5354",
+        "width": 6,
+        "height": 1
+      },
+      {
+        "species_id": "legacy_small_rose_long",
+        "asset_id": "plant.legacy_small_rose_long",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Small Rose :: long",
+        "art_sha256": "37161bc8994e2281940c0f9605ae730d0af6f7f44186159f09facfac1a99a294",
+        "width": 8,
+        "height": 1
+      },
+      {
+        "species_id": "legacy_medium_flower_round",
+        "asset_id": "plant.legacy_medium_flower_round",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Medium Flower :: round",
+        "art_sha256": "6608762f730dc63bbbd15b14709428f6673b983e655da62ff9381ae2b37ea741",
+        "width": 7,
+        "height": 5
+      },
+      {
+        "species_id": "legacy_medium_flower_plain",
+        "asset_id": "plant.legacy_medium_flower_plain",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Medium Flower :: plain",
+        "art_sha256": "db7c90415fd146141d9e34ae14809f863cfa184a21f8ad05d50f2eaf6ba9c393",
+        "width": 7,
+        "height": 5
+      },
+      {
+        "species_id": "legacy_medium_flower_at",
+        "asset_id": "plant.legacy_medium_flower_at",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Medium Flower :: at",
+        "art_sha256": "16acf37be3ceac2c6f2513fe4d4d640c313d02e3727cedc16e5272c35c440353",
+        "width": 7,
+        "height": 5
+      },
+      {
+        "species_id": "legacy_tall_sunflower",
+        "asset_id": "plant.legacy_tall_sunflower",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Tall Sunflower",
+        "art_sha256": "41b270c253f0488f5e4e29f3ec738d874f9dd2b1d80932f6f9225657c65b5706",
+        "width": 5,
+        "height": 6
+      },
+      {
+        "species_id": "legacy_lily_double",
+        "asset_id": "plant.legacy_lily_double",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Lily :: double",
+        "art_sha256": "6d24bf87fded29c4b8f136683e16a33db2f5124ffe0a9d9799e54b53bd53e51a",
+        "width": 5,
+        "height": 4
+      },
+      {
+        "species_id": "legacy_lily_round",
+        "asset_id": "plant.legacy_lily_round",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Lily :: round",
+        "art_sha256": "bfe4ec4eebd1798edd153b8205c54fc0a718d7b5cc42fcdb4e9604153cb0b00c",
+        "width": 5,
+        "height": 4
+      },
+      {
+        "species_id": "legacy_lily_bud",
+        "asset_id": "plant.legacy_lily_bud",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/collected-flowers.txt",
+        "section": "Lily :: bud",
+        "art_sha256": "93aa190e4fe6763a4990a92b66ceee3970995b13d79678e8f479d4000d3cc792",
+        "width": 4,
+        "height": 4
+      },
+      {
+        "species_id": "legacy_bloom_full",
+        "asset_id": "plant.legacy_bloom_full",
+        "authority": "legacy_grant",
+        "source": "ascii-animations/flowers/flower-animations.txt",
+        "section": "BLOOM ANIMATION: Flower Opening :: Frame 6 (full)",
+        "art_sha256": "33b99195f0efe46d912e0232a63e9b412e229507aabfdab73c1106e1f80bf3e1",
+        "width": 9,
+        "height": 5
+      }
+    ]
+  },
   "withdrawn_acceptances": [],
   "review_candidates": [
     "fixture.planter_one",

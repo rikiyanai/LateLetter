@@ -16394,3 +16394,61 @@ The repository has no `scripts/analyze_failure_log.py`,
 entry is the available Wayfinder/attempt ledger. No overlay or RQ row was
 manufactured. RQ projection: not projected; the operator decision is sharp
 and the first execution child is unblocked.
+
+### Approved flower pool, six-fixture starter and static direct-action Garden implemented (2026-08-11)
+
+Resolves execution children 1–3 from “Recipient Garden destination and
+execution children accepted” above. The operator accepted all recommended
+bindings: one deterministic accepted flower at canonical centre; bench,
+mailbox, stepping stones, planter, lantern and pond; no default animal or
+collectible; no ownerless ambience or autonomous product animation; no
+permanent journal/pause labels; picture-owned direct actions and a small status
+line outside the artwork.
+
+- **Canonical flower owner:** `web/garden-approved-art.mjs` contains nineteen
+  exact static flower drawings. `docs/garden-asset-acceptance.json` binds their
+  source files, source hashes, per-drawing hashes, ordered species IDs,
+  dimensions and exclusions. The cat panorama, repeating flower row, bouquet
+  and mandala remain excluded. Python and JavaScript share the ordered pool and
+  domain-separated seeded selection.
+- **Composition owner:** generator/composition revision 7 creates exactly one
+  selected flower at `[500,500]`, centers a fresh camera on it, and retains the
+  six accepted base fixtures with only their base visual identities. The
+  fixture room was shifted left enough to keep the largest accepted flower and
+  every fixture visible and non-overlapping. Animals and collectibles remain
+  absent by default.
+- **Restore boundary:** only the exact untouched revision-5 starter is upgraded
+  to revision 7. Any pan, focus, tend, authored content, program state,
+  inventory, journal, receipt or other recipient mutation preserves the stored
+  world byte-for-byte. Reload, re-upload and reauthentication retain canonical
+  camera and world state.
+- **Presentation owner:** the product composer paints sparse sky, the neutral
+  ground contours and canonical projection objects only. Renderer-local ground
+  cover, fake planting, birds, insects, pond ambience, weather reactions,
+  click bursts and the autonomous live loop are disconnected from the ordinary
+  recipient path. The legacy lifecycle remains quarantined for lower-level
+  compatibility tests and cannot add product paint.
+- **Interaction owner:** a flower picture dispatches canonical `tend`; dormant
+  water is selected only when the projection declares that opportunity.
+  Fixtures dispatch their declared primary actions directly. A mailbox exposes
+  `open_journal` only when canonical journal/inventory content exists. No
+  beside-object verb labels, action sheet, permanent journal button or pause
+  control is present; accepted results use `#garden-status` outside the art.
+  Diagnostics remain limited to trusted localhost with `?garden_debug=1`.
+- **Executed evidence:** Python canonical/model/conformance groups 178/178;
+  tracked JavaScript Garden adapters 205/205; Garden contract rose/asset checks
+  44/44; release-acceptance gates 11/11; real-browser interaction review 2/2;
+  exact product handoff 5/5. Syntax/compile checks pass. The frame check paints
+  seven canonical interaction regions and reports no suppressed or provenance
+  violations. Computer Use opened the live standalone product in Chrome,
+  observed the one-plant/six-fixture summary, and exercised a direct fixture
+  action through the keyboard route with status feedback.
+- **Acceptance boundary:** `docs/garden-composition-acceptance.json` and the
+  generated presentation report deliberately keep revision 7 `not_reviewed`.
+  Machine verification is complete for this child, but only the operator can
+  accept the final desktop/phone appearance. Physical-device touch,
+  VoiceOver/NVDA, no-color use, default-animal/default-collectible actions and
+  the complete remaining action matrix are not claimed.
+- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED; OPERATOR
+  VISUAL ACCEPTANCE REMAINS OPEN. ComplaintRefs: “OK DO” execution order
+  (2026-08-11); Wayfinder destination accepted (2026-08-11).

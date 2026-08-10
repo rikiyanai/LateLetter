@@ -16,6 +16,7 @@ import {
   stepGardenAnimals,
   EVENT_TRACE_LIMIT,
   FIXTURE_VERBS,
+  STARTER_FLOWER_POOL,
   MILESTONE_RECEIPT_LIMIT,
   PROCESSED_COMMAND_LIMIT,
   UNDO_STACK_LIMIT,
@@ -408,9 +409,9 @@ if (process.argv.includes('--emit')) {
     // drifting into accepting different rosters.
     await assert.rejects(
       () => generateInitialWorld('x', '1', { plant_species: ['nope'] }),
-      { message: "unsupported plant species requested: 'nope' (supported: "
-        + 'hydrangea, lavender, meadow_grass, oak, rose, sunflower, '
-        + 'water_lily, willow)' },
+      error => error.message.startsWith(
+        "unsupported plant species requested: 'nope' (supported: ",
+      ) && STARTER_FLOWER_POOL.every(species => error.message.includes(species)),
     );
     // Duplicates matter because every object id is a pure function of the
     // species: asking twice used to yield two records sharing one id.
@@ -458,19 +459,30 @@ if (process.argv.includes('--emit')) {
     const scene = await projectGardenScene(world);
     const bench = scene.objects.find(item => item.semantic_name === 'Garden bench');
     const lantern = scene.objects.find(item => item.semantic_name === 'Lantern');
-    const rose = scene.objects.find(item => item.kind === 'plant');
+    const flower = scene.objects.find(item => item.kind === 'plant');
 
-    assert.deepEqual(rose.primary_action, {
-      command: 'tend', args: { care_action: 'water' }, label: 'water the rose',
+    assert.deepEqual(flower.primary_action, {
+      command: 'tend', args: { care_action: 'tend' },
+      label: `tend the ${flower.semantic_name}`,
     });
-    assert.deepEqual(rose.opportunities, []);
-    const [watered, waterResult] = await dispatchGardenCommand(world, {
+    assert.deepEqual(flower.opportunities, []);
+    const [tended, tendResult] = await dispatchGardenCommand(world, {
       world_id: world.world_id, sequence: world.command_sequence + 1,
-      kind: rose.primary_action.command, target_id: rose.object_id,
-      args: rose.primary_action.args, command_id: 'command:water-rose',
+      kind: flower.primary_action.command, target_id: flower.object_id,
+      args: flower.primary_action.args, command_id: 'command:tend-flower',
     });
-    assert.equal(waterResult.accepted, true);
-    assert.equal(watered.plants[0].tended_count, world.plants[0].tended_count + 1);
+    assert.equal(tendResult.accepted, true);
+    assert.equal(tended.plants[0].tended_count, world.plants[0].tended_count + 1);
+
+    const dormantWorld = structuredClone(world);
+    dormantWorld.plants[0].dormant = true;
+    const dormantFlower = (await projectGardenScene(dormantWorld)).objects
+      .find(item => item.kind === 'plant');
+    assert.deepEqual(dormantFlower.opportunities, [{
+      opportunity_id: `${dormantFlower.object_id}:water`,
+      command: 'tend', args: { care_action: 'water' },
+      label: `water the ${dormantFlower.semantic_name}`,
+    }]);
 
     // 7.8.3.1: the world declares the act and its wording. A renderer reading
     // this cannot invent behaviour, because there is nothing left to infer.

@@ -272,10 +272,17 @@ def project_scene(state: WorldState) -> SceneProjection:
             },
             primary_action={
                 "command": "tend",
-                "args": {"care_action": "water"},
-                "label": f"water the {plant.species_id.replace('_', ' ')}",
+                "args": {"care_action": "tend"},
+                "label": f"tend the {plant.species_id.replace('_', ' ')}",
             },
-            opportunities=(),
+            opportunities=(
+                ({
+                    "opportunity_id": f"{plant.plant_id}:water",
+                    "command": "tend",
+                    "args": {"care_action": "water"},
+                    "label": f"water the {plant.species_id.replace('_', ' ')}",
+                },) if plant.dormant else ()
+            ),
         ))
     for fixture in state.fixtures:
         definition = FIXTURE_CATALOG[fixture.catalog_id]
@@ -313,11 +320,19 @@ def project_scene(state: WorldState) -> SceneProjection:
             # would have dispatched -- `primary_interact` carrying a fixture
             # verb. Nothing new is invented for the point-and-click path; only
             # the route to it is shorter.
-            primary_action=None if definition.primary_verb is None else {
-                "command": "primary_interact",
-                "args": {"fixture_action": definition.primary_verb},
-                "label": definition.primary_label,
-            },
+            primary_action=(
+                {
+                    "command": "open_journal",
+                    "args": {},
+                    "label": "open the memory mailbox",
+                }
+                if fixture.catalog_id == "mailbox" and (state.journal or state.inventory)
+                else None if definition.primary_verb is None else {
+                    "command": "primary_interact",
+                    "args": {"fixture_action": definition.primary_verb},
+                    "label": definition.primary_label,
+                }
+            ),
             opportunities=tuple(
                 {
                     "opportunity_id": offer["opportunity_id"],

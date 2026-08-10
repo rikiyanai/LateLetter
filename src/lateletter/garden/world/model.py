@@ -39,8 +39,12 @@ ENGINE_VERSION = "garden-world-internal-v1"
 # starter reads as today's candidate, which is how a persisted 13-plant /
 # 22-fixture / 4-animal / 8-collectible world came to be reviewed as though it
 # were the current starter.
-GENERATOR_VERSION = 5
-COMPOSITION_VERSION = 5
+GENERATOR_VERSION = 6
+# Revision 6 was a rejected, never-committed 1/0/0/0 experiment. Revision 7
+# names the full six-fixture candidate with one seed-selected approved flower
+# at canonical centre; the separate verdict register still decides whether a
+# concrete fingerprint has received visual acceptance.
+COMPOSITION_VERSION = 7
 PROCESSED_COMMAND_LIMIT = 512
 EVENT_TRACE_LIMIT = 512
 LIVE_TRACE_LIMIT = 120

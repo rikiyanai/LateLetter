@@ -561,27 +561,22 @@ test('a sleeping animal is not faked from a still one', () => {
     'the sleeping pose was sourced from the archive, which draws no sleep');
 });
 
-test('ported plants leave an explicit fixture review room alone', async () => {
-  // Catalog-capability review must not be confused with default population.
-  // The room is supplied explicitly, then the same canonical fixtures are
-  // compared with and without the review-pending plant roster.
-  const columnsOf = (data, viewport) => {
-    const element = new FakeElement();
-    [element.clientWidth, element.clientHeight] = viewport;
-    const frame = rendererUnderAuthority(element).render(data);
-    return new Map(frame.layout
-      .filter(entry => entry.object.kind === 'fixture')
-      .map(entry => [entry.object.semantic_state?.catalog_id,
-        `${entry.rect.left}-${entry.rect.right}`]));
-  };
-  const bare = columnsOf(await explicitFixtureReviewProjection(), [1600, 1000]);
-  const planted = columnsOf(
-    await explicitFixtureReviewProjection(REVIEW_PENDING_PLANT_SPECIES),
-    [1600, 1000],
-  );
-  for (const [catalog, span] of bare) {
-    assert.equal(planted.get(catalog), span,
-      `${catalog} moved from ${span} to ${planted.get(catalog)} when the plants returned`);
+test('the centered starter flower and all six base fixtures compose without overlap', async () => {
+  const state = await generateInitialWorld('starter-room', 'starter-room-seed');
+  const element = new FakeElement();
+  [element.clientWidth, element.clientHeight] = [1600, 1000];
+  const frame = rendererUnderAuthority(element).render(await projectGardenScene(state));
+  const flower = frame.layout.find(entry => entry.object.kind === 'plant');
+  const fixtures = frame.layout.filter(entry => entry.object.kind === 'fixture');
+  assert.ok(flower);
+  assert.equal(fixtures.length, 6);
+  for (const fixture of fixtures) {
+    const horizontal = Math.min(flower.rect.right, fixture.rect.right) -
+      Math.max(flower.rect.left, fixture.rect.left) + 1;
+    const vertical = Math.min(flower.rect.bottom, fixture.rect.bottom) -
+      Math.max(flower.rect.top, fixture.rect.top) + 1;
+    assert.ok(horizontal <= 0 || vertical <= 0,
+      `${fixture.object.semantic_state.catalog_id} overlaps the centered flower`);
   }
 });
 
@@ -840,7 +835,7 @@ test('presentation loop sleeps without a visible moving Garden', () => {
   }
 });
 
-test('click and feed bursts are suppressed or cleared when motion is suppressed', () => {
+test('the product painter never draws click or feed bursts', () => {
   const element = new FakeElement();
   const renderer = rendererUnderAuthority(element);
   let data = projectionCenteredOn('plant:a', { isolate: true });
@@ -853,11 +848,9 @@ test('click and feed bursts are suppressed or cleared when motion is suppressed'
   assert.equal(renderer.presentationState.clickBursts.length, 1);
   const burstInk = frame => frame.visible_primitives
     .filter(item => item.source_id === 'recipe.feedback.click_leaf_burst');
-  // While motion runs, the burst paints. When motion is suppressed the
-  // observable guarantees are: no burst INK reaches the picture, and no new
-  // burst EVENT is even recorded. (The state list itself now merely ages
-  // out; what the old cleared-list assertion protected was the ink.)
-  assert.ok(burstInk(renderer.lastFrame).length > 0);
+  // Interaction feedback belongs in the external status line, so even a
+  // lower-layer burst event can never add glyphs to the accepted picture.
+  assert.deepEqual(burstInk(renderer.lastFrame), []);
   data = { ...data, motion_paused: true };
   assert.deepEqual(burstInk(renderer.render(data)), []);
   renderer._burstAt(event);
@@ -945,7 +938,7 @@ test('browser renderer covers all connected masks and animal species tiers', () 
   }
 });
 
-test('rich projection restores layered plant animal palette and weather presentation', () => {
+test('rich projection keeps canonical plant and animal art but omits weather ink', () => {
   const data = projection();
   data.effective_time = Date.UTC(2026, 9, 22, 12) / 1000;
   data.scene = { sky_mode: 'storybook_fallback', palette: 'autumn', weather: 'rain' };
@@ -960,23 +953,13 @@ test('rich projection restores layered plant animal palette and weather presenta
   const element = new FakeElement();
   element.clientWidth = 960;
   element.clientHeight = 720;
-  // Weather is lifecycle-owned (reopened step 5): rain has to FALL before it
-  // paints, so the renderer runs for six garden seconds of ticks first.
   const renderer = rendererUnderAuthority(element, { prefersReducedMotion: true });
-  let frame = null;
-  for (let tick = 0; tick <= 120; tick += 1) {
-    renderer.visualFrame = tick;
-    frame = renderer.render(data);
-  }
+  const frame = renderer.render(data);
   assert.equal(frame.season, 'autumn');
   assert.equal(frame.timeOfDay, 'day');
-  // Painted rain carries its accepted identity and only the deployed glyphs
-  // (the lean follows the wind at spawn: '|', '\' or '/').
   const rainInk = frame.attempted_primitives.filter(item =>
     item.source_id === 'recipe.weather.rain' && item.glyph.trim());
-  assert.ok(rainInk.length > 0, 'no rain fell in 120 ticks');
-  assert.ok(rainInk.every(item => ['|', '\\', '/'].includes(item.glyph)),
-    'rain painted a glyph outside the deployed lean set');
+  assert.deepEqual(rainInk, []);
   const catEntry = frame.layout.find(entry => entry.object.object_id === cat.object_id);
   assert.ok(catEntry, 'canonical camera crop lost the separated animal target');
   assert.equal(catEntry.art.poseFamily, 'rest');

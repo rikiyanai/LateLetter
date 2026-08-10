@@ -14,6 +14,7 @@ import {
   reconcileGardenOffline,
   requireFreshComposition,
   seedGardenProgramState,
+  upgradeUntouchedLegacyStarter,
 } from './garden-world.mjs';
 
 export const WORLD_STORAGE_PREFIX = 'lateletter_garden_world_v1_';
@@ -215,6 +216,9 @@ export class GardenRuntime {
         // can answer this: being loaded is an event, not a lineage.
         this.loadOrigin = loaded.loadOrigin;
         if (state.world_id !== this.worldId) throw new Error('stored Garden world identity mismatch');
+        if (composition === 'accept_restored') {
+          state = await upgradeUntouchedLegacyStarter(state, this.seed);
+        }
       } else {
         state = await generateInitialWorld(this.worldId, this.seed);
         this.loadOrigin = LOAD_GENERATED;

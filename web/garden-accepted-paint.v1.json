@@ -4,7 +4,7 @@
   "registers": {
     "asset_register": {
       "path": "docs/garden-asset-acceptance.json",
-      "sha256": "a7913fc4c64bbfe77667243f08a17bc6f80a7002534e3922a733055aa3a60185"
+      "sha256": "7d85d42b821d30b5db2ac065712c1ca0f8b4bf31751cb15fde48dc2ba68c1ba1"
     },
     "recipe_register": {
       "path": "docs/garden-presentation-recipes.json",
@@ -91,6 +91,24 @@
   "accepted_legacy_art": [
     "animal.bird",
     "animal.cat",
+    "plant.legacy_bloom_full",
+    "plant.legacy_daisy_at",
+    "plant.legacy_daisy_brace",
+    "plant.legacy_daisy_round",
+    "plant.legacy_lily_bud",
+    "plant.legacy_lily_double",
+    "plant.legacy_lily_round",
+    "plant.legacy_medium_flower_at",
+    "plant.legacy_medium_flower_plain",
+    "plant.legacy_medium_flower_round",
+    "plant.legacy_rose",
+    "plant.legacy_small_flower",
+    "plant.legacy_small_rose_long",
+    "plant.legacy_small_rose_short",
+    "plant.legacy_sunflower",
+    "plant.legacy_sunflower_sunglasses",
+    "plant.legacy_tall_sunflower",
+    "plant.legacy_tulip",
     "plant.oak.large",
     "plant.oak.medium",
     "plant.oak.small",

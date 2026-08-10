@@ -471,15 +471,13 @@ def test_replay_camera_pan_and_hit_testing_are_deterministic_but_not_a_p95_claim
     assert at_sixty.hit_test(screen, target)
 
 
-def test_accessibility_static_contract_keeps_motion_controls_without_rejected_action_chrome():
+def test_accessibility_static_contract_keeps_status_and_targets_without_rejected_action_chrome():
     source = VIEWER.read_text(encoding="utf-8")
     required = {
         '@media (prefers-reduced-motion: reduce)',
         'id="garden-scene-summary"',
         'role="status" aria-live="polite"',
         'min-width: 44px; min-height: 44px',
-        'data-garden-action="pause_motion"',
-        'data-garden-action="open_journal"',
         'data-garden-action="undo"',
     }
     missing = sorted(value for value in required if value not in source)
@@ -497,6 +495,15 @@ def test_accessibility_static_contract_keeps_motion_controls_without_rejected_ac
     }
     returned = sorted(value for value in forbidden if value in source)
     assert not returned
+
+    # The accepted static Garden has no permanent pause or journal label.
+    # Canonical mailbox content remains directly reachable through its painted
+    # object, while diagnostics stay behind the explicit debug surface.
+    removed_permanent_controls = {
+        'data-garden-action="pause_motion"',
+        'data-garden-action="open_journal"',
+    }
+    assert not removed_permanent_controls.intersection(source)
 
 
 def test_sky_audit_covers_twelve_trusted_privacy_safe_vectors():

@@ -758,7 +758,48 @@ def _accepted_legacy_art_ids(register: dict) -> list[str]:
     :returns: Sorted grant-backed legacy art identities.
     """
     ported = register.get("legacy_ported_renderer_art", {}).get("ported", {})
-    return sorted(ported.keys())
+    accepted = set(ported.keys())
+
+    # The starter pool is a second, finite projection of the same 2026-08-01
+    # legacy grant. Unlike the older prose-only `ported` map, it binds every
+    # source file and extracted art body to hashes. The operator-authored rose
+    # remains in `accepted_assets`; only `legacy_grant` rows enter this legacy
+    # identity namespace.
+    pool = register.get("starter_flower_pool", {})
+    sources = pool.get("source_files", {})
+    entries = pool.get("entries", [])
+    if not isinstance(sources, dict) or not isinstance(entries, list):
+        raise RuntimeError("starter_flower_pool must contain source_files and entries")
+    for source, expected in sources.items():
+        if not isinstance(source, str) or not isinstance(expected, str):
+            raise RuntimeError("starter flower source hashes must be string pairs")
+        source_path = REPOSITORY_ROOT / source
+        if not source_path.is_file() or _sha256_path(source_path) != expected:
+            raise RuntimeError(
+                f"starter flower source {source!r} does not match its hash-bound file"
+            )
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise RuntimeError("starter flower entries must be records")
+        required = {
+            "species_id", "asset_id", "authority", "source", "section",
+            "art_sha256", "width", "height",
+        }
+        if not required <= set(entry):
+            raise RuntimeError(
+                f"starter flower entry is missing fields: {sorted(required - set(entry))}"
+            )
+        if entry["source"] not in sources:
+            raise RuntimeError(
+                f"starter flower {entry['asset_id']!r} names an unbound source"
+            )
+        if entry["authority"] == "legacy_grant":
+            accepted.add(entry["asset_id"])
+        elif entry["authority"] != "operator_grant":
+            raise RuntimeError(
+                f"starter flower {entry['asset_id']!r} has unknown authority"
+            )
+    return sorted(accepted)
 
 
 def _artifact_file_hashes(site_root: Path) -> dict[str, str]:

@@ -54,7 +54,7 @@ def test_operator_authored_rose_is_hash_bound_and_not_mislabeled_as_pipeline_wor
     assert manifest["runtime_integration"] == "pending_delete_first_owner_transfer"
 
 
-def test_acceptance_register_records_exact_grant_without_releasing_old_rose_placeholder():
+def test_acceptance_register_keeps_operator_rose_separate_from_legacy_rose_art():
     register = json.loads(REGISTER.read_text(encoding="utf-8"))
     grant = next(
         item for item in register["operator_grants"]
@@ -71,4 +71,17 @@ def test_acceptance_register_records_exact_grant_without_releasing_old_rose_plac
     assert "does not approve or release the different renderer-local rose placeholder" in grant["effect"]
 
     authority = json.loads((ROOT / "web" / "garden-accepted-paint.v1.json").read_text(encoding="utf-8"))
-    assert not any("rose" in identity for identity in authority["accepted_legacy_art"])
+    # The operator-authored rose is atlas-owned and must never inherit the old
+    # renderer placeholder. Separately hash-bound legacy rose drawings are now
+    # legitimate starter-pool entries and retain their own identities.
+    assert "plant.rose" not in authority["accepted_legacy_art"]
+    register_legacy_roses = {
+        entry["asset_id"] for entry in register["starter_flower_pool"]["entries"]
+        if entry["authority"] == "legacy_grant" and "rose" in entry["species_id"]
+    }
+    assert register_legacy_roses == {
+        "plant.legacy_rose",
+        "plant.legacy_small_rose_short",
+        "plant.legacy_small_rose_long",
+    }
+    assert register_legacy_roses.issubset(authority["accepted_legacy_art"])

@@ -171,6 +171,7 @@ REGISTRY_INVARIANTS = {
 # the point.
 ACCEPTANCE_FIELDS = frozenset({
     "schema", "purpose", "operator_grants", "withdrawn_acceptances",
+    "starter_flower_pool",
     "review_candidates", "review_candidates_note", "legacy_ported_renderer_art",
     "assets", "presentation_recipe_register", "release_policy",
     "active_release_blockers", "registry_invariants_note", "registry_invariants",
@@ -543,6 +544,68 @@ def validate_registers(acceptance: dict, recipes: dict) -> list[str]:
             )
         for field in sorted(allowed - set(register)):
             problems.append(f"{label}: required top-level field {field!r} is missing")
+
+    # The starter pool is executable identity data, not free-form policy. Its
+    # exact art bytes are checked against these hashes during build.
+    pool = acceptance.get("starter_flower_pool")
+    if not isinstance(pool, dict):
+        problems.append("starter_flower_pool must be an object")
+    else:
+        expected_pool_fields = {
+            "decision", "required_viewports", "source_files",
+            "excluded_sections", "entries",
+        }
+        if set(pool) != expected_pool_fields:
+            problems.append(
+                "starter_flower_pool must contain exactly "
+                + ", ".join(sorted(expected_pool_fields))
+            )
+        sources = pool.get("source_files")
+        if not isinstance(sources, dict) or not sources:
+            problems.append("starter_flower_pool.source_files must be a non-empty object")
+        elif any(not isinstance(path, str) or not isinstance(digest, str)
+                 or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+                 for path, digest in sources.items()):
+            problems.append("starter_flower_pool.source_files must map paths to sha256 hex")
+        entries = pool.get("entries")
+        if not isinstance(entries, list) or not entries:
+            problems.append("starter_flower_pool.entries must be a non-empty list")
+        else:
+            expected_entry_fields = {
+                "species_id", "asset_id", "authority", "source", "section",
+                "art_sha256", "width", "height",
+            }
+            species_ids: list[str] = []
+            asset_ids: list[str] = []
+            for index, entry in enumerate(entries):
+                if not isinstance(entry, dict) or set(entry) != expected_entry_fields:
+                    problems.append(
+                        f"starter_flower_pool.entries[{index}] has an invalid field set"
+                    )
+                    continue
+                species_ids.append(entry["species_id"])
+                asset_ids.append(entry["asset_id"])
+                if entry["authority"] not in {"operator_grant", "legacy_grant"}:
+                    problems.append(
+                        f"starter_flower_pool.entries[{index}] has unknown authority"
+                    )
+                if entry["source"] not in (sources or {}):
+                    problems.append(
+                        f"starter_flower_pool.entries[{index}] names an unbound source"
+                    )
+                if re.fullmatch(r"[0-9a-f]{64}", entry["art_sha256"]) is None:
+                    problems.append(
+                        f"starter_flower_pool.entries[{index}] has invalid art_sha256"
+                    )
+                if not isinstance(entry["width"], int) or entry["width"] < 1 or \
+                        not isinstance(entry["height"], int) or entry["height"] < 1:
+                    problems.append(
+                        f"starter_flower_pool.entries[{index}] has invalid dimensions"
+                    )
+            if len(set(species_ids)) != len(species_ids):
+                problems.append("starter_flower_pool repeats a species_id")
+            if len(set(asset_ids)) != len(asset_ids):
+                problems.append("starter_flower_pool repeats an asset_id")
 
     # --- The registry may only assert invariants this module defines ---------
     # There is no free-form rules list to write a new policy into, and no

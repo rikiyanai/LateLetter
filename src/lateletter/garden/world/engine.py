@@ -710,7 +710,7 @@ def dispatch(state: WorldState, value: GardenCommand) -> tuple[WorldState, Comma
         if plant is None and fixture is None:
             return state, _reject("tend target is not a plant or tending fixture")
         care = str(value.args.get("care_action", "water"))
-        supported = {"observe", "water", "prune", "train", "transplant", "rest"}
+        supported = {"observe", "tend", "water", "prune", "train", "transplant", "rest"}
         if plant is not None and care not in supported:
             return state, _reject("unsupported care action")
         if fixture is not None:
