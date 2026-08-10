@@ -28,7 +28,26 @@
           ]
         }
       ]
+    },
+    "7:plants=legacy_sunflower_sunglasses@500,500|fixtures=bench@250,300,lantern@100,200,mailbox@700,700,planter@850,820,pond@250,900,stepping_stones@150,900|animals=|collectibles=": {
+      "verdict": "accepted",
+      "decided_by": "the-operator",
+      "decided_at_utc": "2026-08-10T23:23:30Z",
+      "evidence": [
+        {
+          "kind": "operator_statement",
+          "recorded_in": "docs/FAILURE_LOG.md",
+          "quote": "Visual composition passes at desktop, 390×844, and 320×568: centered flower, sparse scene, no overflow, and no browser errors.",
+          "meaning": "The exact revision-7 standalone composition is visually approved; commit acceptance was separately blocked on missing recenter controls."
+        },
+        {
+          "kind": "exact_commit_review",
+          "commit": "485d0be",
+          "route": "standalone:local / lateletter-standalone-v1",
+          "required_viewports": ["desktop", "390x844", "320x568"]
+        }
+      ]
     }
   },
-  "standing": "Composition revision 5 remains the historical accepted full-Garden record. The current revision 7 restores its six canonical base fixtures, replaces the fixed off-centre rose with one centered deterministic seed-selected flower from the separately approved pool, and removes renderer-generated planting, ground cover and ambient actors under the operator's 2026-08-11 direction. Revision 7 has no accepted record yet: only a live operator verdict on its concrete fingerprint can add one. The rejected revision-6 1/0/0/0 experiment and its capture sets remain rejected evidence."
+  "standing": "Composition revision 5 remains the historical accepted full-Garden record. The exact revision-7 standalone fingerprint with legacy_sunflower_sunglasses is visually accepted at desktop, 390x844 and 320x568. Approval binds only to that concrete fingerprint; another seed-selected flower produces a different fingerprint and inherits nothing until separately observed. Commit acceptance is distinct from composition acceptance and remained blocked at the verdict time on missing Home and empty-ground double-gesture recenter routes. The rejected revision-6 1/0/0/0 experiment and its capture sets remain rejected evidence."
 }

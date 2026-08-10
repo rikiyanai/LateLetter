@@ -196,8 +196,17 @@ def test_acceptance_binds_to_the_roster_and_not_only_to_the_revision_number():
 
 
 def test_the_committed_acceptance_register_does_not_preapprove_the_new_pool():
-    """The new seed-selected revision inherits no old visual verdict."""
+    """An uninspected seed-selected fingerprint inherits no visual verdict."""
     assert composition_acceptance(_generated()) == "not_reviewed"
+
+
+def test_the_inspected_standalone_fingerprint_records_visual_approval():
+    """The operator's verdict binds to the exact standalone composition seen."""
+    standalone = generate_initial_world(
+        "standalone:local", "lateletter-standalone-v1",
+    )
+    assert standalone.plants[0].species_id == "legacy_sunflower_sunglasses"
+    assert composition_acceptance(standalone) == "accepted"
 
 
 def test_only_an_untouched_revision_five_starter_moves_to_the_new_composition():
