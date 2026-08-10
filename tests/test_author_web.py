@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import contextlib
 import http.client
+import io
 import json
 import threading
+import zipfile
 from pathlib import Path
 
 from lateletter.author_web import create_author_server
@@ -173,3 +175,35 @@ def test_passphrase_advice_is_advisory_and_four_characters_export(tmp_path):
         assert ".lateletter" in headers["Content-Disposition"]
         bundle = Bundle.from_dict(json.loads(payload))
         assert verify_bundle_hmac(bundle, "1234")
+
+
+def test_complete_handoff_package_contains_closed_viewer_bundle_and_instructions(tmp_path):
+    with _author_server(tmp_path) as server:
+        _, _, data = _request(server, "GET", "/api/author/session")
+        csrf = json.loads(data)["csrf_token"]
+        status, headers, payload = _request(
+            server, "POST", "/api/author/export-package",
+            payload={"draft": _export_draft(), "passphrase": "1234",
+                     "passphrase_confirm": "1234"},
+            csrf=csrf,
+        )
+        assert status == 200
+        assert headers["Content-Type"] == "application/zip"
+        with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+            names = set(archive.namelist())
+            assert "LateLetter-handoff/index.html" in names
+            assert "LateLetter-handoff/README.txt" in names
+            assert "LateLetter-handoff/start.py" in names
+            assert "LateLetter-handoff/web/vendor/pretext/LICENSE" in names
+            packaged = [
+                Bundle.from_dict(json.loads(archive.read(name)))
+                for name in names
+                if name.endswith(".lateletter") and name.count("/") == 1
+            ]
+            authored = [bundle for bundle in packaged if verify_bundle_hmac(bundle, "1234")]
+            assert len(authored) == 1
+            authority = json.loads(archive.read(
+                "LateLetter-handoff/web/garden-accepted-paint.v1.json"
+            ))
+            assert authority["review_candidate_assets"] == []
+            assert b"Passphrase reminder" in archive.read("LateLetter-handoff/README.txt")

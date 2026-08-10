@@ -147,7 +147,9 @@ def test_a_version_stamp_is_never_an_operator_approval():
     """
     world = _generated()
     assert characterize_world(world).is_fresh, "fresh is about lineage"
-    assert composition_acceptance(world) == "not_reviewed", "and says nothing about approval"
+    assert composition_acceptance(world) == "accepted", (
+        "approval comes from the committed operator verdict, not the stamp"
+    )
 
 
 def test_acceptance_binds_to_the_roster_and_not_only_to_the_revision_number():
@@ -171,14 +173,9 @@ def test_acceptance_binds_to_the_roster_and_not_only_to_the_revision_number():
     assert composition_acceptance(rerostered, register) == "not_reviewed"
 
 
-def test_the_committed_acceptance_register_grants_nothing():
-    """No starter composition has ever been submitted for review.
-
-    A register that quietly held an accepted record would make this whole
-    mechanism report an approval that did not happen, so the on-disk state is
-    asserted rather than assumed.
-    """
-    assert composition_acceptance(_generated()) == "not_reviewed"
+def test_the_committed_acceptance_register_names_the_approved_full_garden():
+    """The on-disk verdict binds the operator-approved revision and roster."""
+    assert composition_acceptance(_generated()) == "accepted"
 
 
 # ---------------------------------------------------------------------------
@@ -225,11 +222,15 @@ def test_a_custom_roster_is_not_the_named_composition_and_cannot_be_reviewed():
         require_fresh_composition(custom, LOAD_GENERATED)
 
 
-def test_the_fingerprint_ignores_positions_so_two_seeds_are_one_composition():
-    """Positions are seed-derived; the composition is the roster."""
+def test_the_fingerprint_ignores_seed_derived_state_for_the_same_species():
+    """IDs, topology and planted age do not change one species/anchor recipe."""
     assert (
-        generate_initial_world("world-1", "seed-1").composition_fingerprint
-        == generate_initial_world("world-2", "seed-2").composition_fingerprint
+        generate_initial_world(
+            "world-1", "seed-1", plant_species=("rose",),
+        ).composition_fingerprint
+        == generate_initial_world(
+            "world-2", "seed-2", plant_species=("rose",),
+        ).composition_fingerprint
     )
 
 

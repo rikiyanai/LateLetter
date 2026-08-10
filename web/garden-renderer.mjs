@@ -123,9 +123,9 @@ export class CanonicalGardenRenderer {
     // are only valid under the assumptions it was constructed with, so a
     // changed cell size means a new object, never an edited one.
     //
-    // Affine-only: hit identity comes from canonical hotspot rectangles, which
-    // are integers converted by units alone. No text is measured to decide what
-    // was clicked, and passing a measurer here would imply otherwise.
+    // Affine hotspot conversion uses canonical integers and units alone. The
+    // separate accepted-art rectangle has already been composed; this geometry
+    // never re-measures text or invents an object's identity or action.
     this.geometry = createGeometry({
       ...(this.measurer && this.font ? { measurer: this.measurer, font: this.font } : {}),
       cellAdvance: this.cellWidth,
@@ -319,31 +319,57 @@ export class CanonicalGardenRenderer {
     if (!this.cellGeometryMeasured) this.refreshCellGeometry();
     return this.geometry.hotspotToRect(hitRectToHotspot(entry.hitRect));
   }
+  /** Final accepted-art bounds for an object in the currently painted frame. */
+  _artRectPixels(entry) {
+    const rect = this.measuredAssetRects.get(String(entry.object.object_id));
+    if (rect && rect.width > 0 && rect.height > 0) return rect;
+    // Lattice/degraded paint has no measured overlay map. Derive a tight bound
+    // from FINAL VISIBLE primitives already attributed to this projected
+    // object. Spaces never entered the raster, and occluded/suppressed writes
+    // are absent, so a picture with authored leading whitespace (the rose) does
+    // not turn that whitespace into a giant invisible target.
+    const primitives = (this.lastFrame?.visible_primitives ?? []).filter(
+      primitive => primitive.object_id === String(entry.object.object_id),
+    );
+    if (!primitives.length) return null;
+    const xs = primitives.map(primitive => Number(primitive.x));
+    const ys = primitives.map(primitive => Number(primitive.y));
+    const left = Math.min(...xs), right = Math.max(...xs);
+    const top = Math.min(...ys), bottom = Math.max(...ys);
+    return this.geometry.hotspotToRect({
+      x: left, y: top, width: right - left + 1, height: bottom - top + 1,
+    });
+  }
   _layoutCandidatesAt(pixel) {
     const geometry = this.geometry;
-    return [...(this.lastFrame?.layout ?? [])].filter(entry =>
-      geometry.containsPoint(
-        geometry.expandTarget(this._hitRectPixels(entry)), pixel[0], pixel[1],
-      ));
+    return [...(this.lastFrame?.layout ?? [])].filter(entry => {
+      const hotspot = geometry.expandTarget(this._hitRectPixels(entry));
+      const art = this._artRectPixels(entry);
+      return geometry.containsPoint(hotspot, pixel[0], pixel[1]) ||
+        Boolean(art && geometry.containsPoint(art, pixel[0], pixel[1]));
+    });
   }
   /**
    * Order the objects under a pointer, most-selected first.
    *
-   * Hit identity comes from the projection's canonical hotspot rectangles and
-   * from nothing else. Painted artwork is deliberately not consulted: art is
-   * allowed to overhang its declared footprint, so if visible ink decided what
-   * was clicked, redrawing a picture would silently change the garden's
-   * affordances.
+   * Identity and action still come only from the canonical projected object.
+   * The accepted drawing may extend beyond its one-cell world hotspot, so the
+   * final painted art rectangle is also a way to reach that SAME object. This
+   * is presentation hit geometry, not a second action owner: art with no
+   * projected object id or no projected primary action cannot invent one.
    *
    * Ordering, and the reason for each step:
    *
    *   1. An object whose UNEXPANDED hotspot contains the pointer outranks every
    *      merely-nearby one. Accessibility expansion must never take a click
    *      from an object the player actually touched.
-   *   2. Then nearest centre, which is the least surprising rule when several
+   *   2. Directly touching accepted object art outranks a merely-nearby 44px
+   *      accessibility expansion. This makes the visible bloom act like the
+   *      rose instead of requiring discovery of its invisible stem anchor.
+   *   3. Then nearest centre, which is the least surprising rule when several
    *      forgiving targets overlap.
-   *   3. Then depth, so a foreground object wins over one behind it.
-   *   4. Then object id by code point, so the result is identical on every
+   *   4. Then depth, so a foreground object wins over one behind it.
+   *   5. Then object id by code point, so the result is identical on every
    *      machine. Determinism matters more here than which object wins: the
    *      same tap on the same scene has to do the same thing every time.
    */
@@ -351,9 +377,11 @@ export class CanonicalGardenRenderer {
     const geometry = this.geometry;
     return this._layoutCandidatesAt(pixel).map(entry => {
       const rect = this._hitRectPixels(entry);
+      const art = this._artRectPixels(entry);
       return {
         entry,
         exact: geometry.containsPoint(rect, pixel[0], pixel[1]),
+        art: Boolean(art && geometry.containsPoint(art, pixel[0], pixel[1])),
         distance: Math.hypot(
           pixel[0] - (rect.x + rect.width / 2),
           pixel[1] - (rect.y + rect.height / 2),
@@ -361,19 +389,17 @@ export class CanonicalGardenRenderer {
       };
     }).sort((left, right) =>
       Number(right.exact) - Number(left.exact) ||
+      Number(right.art) - Number(left.art) ||
       left.distance - right.distance ||
       Number(right.entry.object.depth ?? 100) - Number(left.entry.object.depth ?? 100) ||
       compareCodePoints(left.entry.object.object_id, right.entry.object.object_id),
     ).map(candidate => candidate.entry);
   }
   /**
-   * Where an object currently sits on screen, in pixels relative to the grid.
-   *
-   * Exposed so a caller can position a control BESIDE an object -- the spawned
-   * opportunity of SPEC 7.8.3.2 -- without re-deriving cell geometry and
-   * risking a control that drifts away from the thing it belongs to. It
-   * returns the same accessibility-expanded rectangle the hit test uses, so
-   * "where it looks" and "where it is clickable" cannot disagree.
+   * Where an object's canonical hotspot currently sits on screen, in pixels
+   * relative to the grid. This remains distinct from accepted-art bounds:
+   * diagnostics may inspect both, and selection can reach the same projected
+   * identity through either one without painting a label or action control.
    *
    * @param objectId Canonical object id from the projection.
    * @returns `{x, y, width, height}` in CSS pixels, or `null` when the object
@@ -399,9 +425,9 @@ export class CanonicalGardenRenderer {
    * across its drawing -- occlusion is a fact about ink, and the hotspot does
    * not know where the ink is.
    *
-   * Hit testing deliberately keeps using the hotspot: art may overhang its
-   * declared footprint, and if visible ink decided what was clickable, redrawing
-   * a picture would silently change the Garden's affordances.
+   * Selection uses this accepted-art rectangle only to resolve which canonical
+   * projected object was visibly touched. Eligibility, command and arguments
+   * remain projection-owned; repainting cannot manufacture a new action.
    *
    * @param objectId Canonical object id.
    * @returns `{x, y, width, height}` in CSS pixels, or null when the object is
@@ -413,9 +439,13 @@ export class CanonicalGardenRenderer {
     );
     if (!entry) return null;
     if (!this.cellGeometryMeasured) this.refreshCellGeometry();
-    const measured = this.measuredAssetRects.get(String(objectId));
+    const measured = this._artRectPixels(entry);
     if (measured) return { ...measured };
-    return this.geometry.hotspotToRect(hitRectToHotspot(entry.rect));
+    return null;
+  }
+  /** Read-only diagnostic: which projected object the current hit law resolves. */
+  objectAtPixels(x, y) {
+    return this._rankedLayoutCandidatesAt([Number(x), Number(y)])[0]?.object?.object_id ?? null;
   }
   _hoverAt(event) {
     // Approved picture-owned hover: the hover cell drives rustle/emphasis and

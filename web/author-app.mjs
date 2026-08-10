@@ -37,6 +37,7 @@ let conflictOpen = false;
 let previewPrepared = null;
 let previewPreparedText = null;
 let adviceTimer = null;
+let appendBundleText = null;
 
 
 function randomId(prefix) {
@@ -108,6 +109,9 @@ function normalizeDraft(source) {
     garden_seed: Number.isSafeInteger(seed) && seed >= 0 ? seed : newGardenSeed(),
     letters,
     gifts: Array.isArray(value.gifts) ? value.gifts.map(newGift) : [],
+    garden_story_enabled: value.garden_story_enabled === true,
+    rabbit_name: typeof value.rabbit_name === 'string' && value.rabbit_name.trim()
+      ? value.rabbit_name : 'Clover',
   };
 }
 
@@ -255,7 +259,7 @@ async function flushSave() {
 function hasMeaningfulDraft() {
   return Boolean(
     draft.author_name.trim() || draft.recipient_name.trim()
-    || draft.passphrase_hint.trim() || draft.gifts.length
+    || draft.passphrase_hint.trim() || draft.gifts.length || draft.garden_story_enabled
     || draft.letters.some(letter => letter.date || letter.label || letter.body),
   );
 }
@@ -765,6 +769,9 @@ function setGiftValue(gift, key, value) {
 
 
 function renderGifts() {
+  $('#f-story-arc').checked=draft.garden_story_enabled;
+  $('#f-rabbit-name').value=draft.rabbit_name;
+  $('#f-rabbit-name').disabled=!draft.garden_story_enabled;
   const host = $('#gift-list');
   host.replaceChildren();
   if (draft.gifts.length === 0) {
@@ -906,7 +913,7 @@ function buildExportDraft() {
       {type: 'letter.present', target: null, params: {letter_id: `MESSAGE_${ordinal.get(gift.letter_id)}`}},
     ],
   }));
-  return {
+  const exported = {
     author_name: draft.author_name.trim(),
     author_relationship: draft.author_relationship.trim(),
     recipient_name: draft.recipient_name.trim(),
@@ -917,11 +924,19 @@ function buildExportDraft() {
     messages: complete.map(letter => ({
       date: letter.date, label: letter.label, body: letter.body,
     })),
-    garden_beats: {
-      author_timezone: draft.author_timezone,
-      variables: {}, entities, animals: [], beats,
-    },
   };
+  if(draft.garden_story_enabled){
+    exported.garden_template={
+      kind:'letter_rabbit_autumn',letter_index:0,
+      rabbit_name:draft.rabbit_name.trim()||'Clover',
+    };
+  }else{
+    exported.garden_beats={
+      author_timezone:draft.author_timezone,
+      variables:{},entities,animals:[],beats,
+    };
+  }
+  return exported;
 }
 
 
@@ -938,6 +953,10 @@ function clientBlockers() {
       problems.push(`Gift ${index + 1} needs an accepted drawing, a date, and a ready letter.`);
     }
   });
+  if(draft.garden_story_enabled&&draft.gifts.length)
+    problems.push('Use either the living Garden story or scheduled gifts, not both.');
+  if(draft.garden_story_enabled&&!draft.rabbit_name.trim())
+    problems.push('Name the rabbit in the living Garden story.');
   return problems;
 }
 
@@ -957,6 +976,7 @@ function renderReview() {
     ['ready letters', String(complete.length)],
     ['incomplete drafts staying on desk', String(excluded)],
     ['scheduled gifts', String(draft.gifts.length)],
+    ['living Garden story', draft.garden_story_enabled?'rabbit · third visit · autumn gift':'not added'],
     ['timezone', draft.author_timezone],
   ];
   for (const [name, value] of entries) {
@@ -1000,9 +1020,54 @@ async function validateWithService() {
   }
   const errors = [...clientBlockers(), ...(payload.errors || [])];
   renderErrorList($('#review-errors'), errors);
+  const story=payload.preview?.garden_story_preview;
+  const storyHost=$('#garden-story-preview'),stageHost=$('#garden-story-preview-stages');
+  stageHost.replaceChildren();storyHost.hidden=!story;
+  if(story){
+    for(const stage of story.stages){
+      const item=document.createElement('li');
+      item.textContent=`${stage.name}: ${stage.applied_events.join(', ')||'waiting'}`;
+      stageHost.append(item);
+    }
+    storyHost.dataset.trace=JSON.stringify(story.trace);
+  }else delete storyHost.dataset.trace;
   $('#validate-state').textContent = errors.length
     ? `${errors.length} thing${errors.length === 1 ? '' : 's'} to attend to`
     : `${payload.preview.message_count} letter${payload.preview.message_count === 1 ? '' : 's'} ready`;
+}
+
+
+async function appendLater(){
+  const state=$('#append-state');
+  const passphrase=$('#append-passphrase').value;
+  const message={
+    date:$('#append-date').value,
+    label:$('#append-label').value,
+    body:$('#append-body').value,
+  };
+  if(!appendBundleText||!message.date||!message.body.trim()||passphrase.length<passphraseMinimum){
+    state.textContent='Choose the existing file, date and letter, then enter its passphrase.';
+    return;
+  }
+  state.textContent='verifying and appending…';
+  const response=await fetch('/api/author/append',{
+    method:'POST',headers:{'Content-Type':'application/json','X-LateLetter-CSRF':csrfToken},
+    body:JSON.stringify({bundle:appendBundleText,messages:[message],passphrase}),
+  });
+  $('#append-passphrase').value='';
+  if(!response.ok){
+    const payload=await response.json();
+    state.textContent=(payload.issues||[payload.error||'append failed']).join(' ');
+    return;
+  }
+  const blob=await response.blob();
+  appendBundleText=await blob.text();
+  const url=URL.createObjectURL(new Blob([appendBundleText],{type:'application/json'}));
+  const anchor=document.createElement('a');
+  anchor.href=url;anchor.download='LateLetter-appended.lateletter';anchor.click();
+  URL.revokeObjectURL(url);
+  $('#append-body').value='';$('#append-label').value='';
+  state.textContent='updated file saved; the earlier encrypted letters were preserved.';
 }
 
 
@@ -1029,6 +1094,7 @@ function updateExportGate() {
     clientBlockers().length || length < passphraseMinimum
     || passphrase !== confirmation,
   );
+  $('#btn-export-package').disabled=$('#btn-export').disabled;
   window.clearTimeout(adviceTimer);
   if (!passphrase) {
     $('#pp-advice').textContent = row('X1').note;
@@ -1051,7 +1117,7 @@ function updateExportGate() {
 }
 
 
-async function exportBundle() {
+async function exportBundle(packageMode=false) {
   const passphraseInput = $('#pp-new');
   const confirmationInput = $('#pp-confirm');
   const passphrase = passphraseInput.value;
@@ -1064,7 +1130,7 @@ async function exportBundle() {
   await flushSave();
   $('#export-state').textContent = 'sealing and opening it again to verify…';
   try {
-    const response = await fetch('/api/author/export', {
+    const response = await fetch(packageMode?'/api/author/export-package':'/api/author/export', {
       method: 'POST',
       headers: {'Content-Type': 'application/json', 'X-LateLetter-CSRF': csrfToken},
       body: JSON.stringify({draft: buildExportDraft(), passphrase, passphrase_confirm: confirmation}),
@@ -1089,7 +1155,7 @@ async function exportBundle() {
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
     const excluded = draft.letters.length - completeLetters().length;
-    $('#export-state').textContent = `file saved; ${completeLetters().length} ready letter${completeLetters().length === 1 ? '' : 's'} sealed${excluded ? `; ${excluded} incomplete draft${excluded === 1 ? '' : 's'} stayed on this desk` : ''}. Tell one person this file exists.`;
+    $('#export-state').textContent = `${packageMode?'handoff package':'file'} saved; ${completeLetters().length} ready letter${completeLetters().length === 1 ? '' : 's'} sealed${excluded ? `; ${excluded} incomplete draft${excluded === 1 ? '' : 's'} stayed on this desk` : ''}. Tell one person this file exists.`;
   } catch (error) {
     $('#export-state').textContent = `export failed: ${error.message}`;
   } finally {
@@ -1121,10 +1187,28 @@ function bindControls() {
     markChanged();
     renderGifts();
   });
+  $('#f-story-arc').addEventListener('change',event=>{
+    draft.garden_story_enabled=event.currentTarget.checked;
+    markChanged();renderGifts();
+  });
+  $('#f-rabbit-name').addEventListener('input',event=>{
+    draft.rabbit_name=event.currentTarget.value;
+    markChanged();
+  });
   $('#btn-validate').addEventListener('click', validateWithService);
   $('#pp-new').addEventListener('input', updateExportGate);
   $('#pp-confirm').addEventListener('input', updateExportGate);
-  $('#btn-export').addEventListener('click', exportBundle);
+  $('#btn-export').addEventListener('click',()=>exportBundle(false));
+  $('#btn-export-package').addEventListener('click',()=>exportBundle(true));
+  $('#append-file').addEventListener('change',async event=>{
+    const file=event.currentTarget.files?.[0]||null;
+    appendBundleText=file?await file.text():null;
+    $('#append-state').textContent=file?`ready to append to ${file.name}`:'';
+  });
+  $('#btn-append').addEventListener('click',()=>appendLater().catch(error=>{
+    $('#append-passphrase').value='';
+    $('#append-state').textContent=`append failed: ${error.message}`;
+  }));
   new ResizeObserver(() => {
     if (activeStage === 'letters') renderLetterPreview();
   }).observe($('#letter-preview'));

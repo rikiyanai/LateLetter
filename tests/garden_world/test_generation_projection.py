@@ -23,7 +23,13 @@ from lateletter.garden.world.generation import (
     required_catalog_coverage,
 )
 from lateletter.garden.world.plants import SPECIES_CATALOG
-from lateletter.garden.world.model import OrganNode, Vec2, WorldState, canonical_json_bytes
+from lateletter.garden.world.model import (
+    FixtureState,
+    OrganNode,
+    Vec2,
+    WorldState,
+    canonical_json_bytes,
+)
 from lateletter.garden.world.projection import PLANT_MATURITY_STAGES, project_scene
 
 
@@ -137,10 +143,33 @@ def test_point_and_click_model_declares_primary_actions_and_opportunities():
     from lateletter.garden.world.commands import command
     from lateletter.garden.world.engine import dispatch
 
-    world = generate_initial_world("interaction:contract", "slice")
+    world = replace(
+        generate_initial_world(
+            "interaction:contract", "slice",
+            animal_species=(), collectibles=(),
+        ),
+        fixtures=(
+            FixtureState("fixture:bench", "bench", Vec2(10, 10)),
+            FixtureState("fixture:lantern", "lantern", Vec2(20, 10)),
+        ),
+    )
     scene = project_scene(world)
     bench = next(item for item in scene.objects if item.semantic_name == "Garden bench")
     lantern = next(item for item in scene.objects if item.semantic_name == "Lantern")
+    rose = next(item for item in scene.objects if item.kind == "plant")
+
+    assert rose.primary_action == {
+        "command": "tend", "args": {"care_action": "water"},
+        "label": "water the rose",
+    }
+    assert rose.opportunities == ()
+    watered, water_result = dispatch(world, command(
+        world.world_id, world.command_sequence + 1,
+        rose.primary_action["command"], target_id=rose.object_id,
+        args=rose.primary_action["args"],
+    ))
+    assert water_result.accepted
+    assert watered.plants[0].tended_count == world.plants[0].tended_count + 1
 
     # The world declares the act and its wording, so a renderer reading this
     # has nothing left to infer.

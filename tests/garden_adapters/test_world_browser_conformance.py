@@ -159,6 +159,13 @@ def test_starter_composition_is_authoritative_and_identical_in_both_generators()
             "world_width": world.world_width,
             "world_height": world.world_height,
             "camera": [world.ui.camera.x, world.ui.camera.y],
+            "plants": [
+                {
+                    "species_id": plant.species_id,
+                    "position": [plant.position.x, plant.position.y],
+                }
+                for plant in world.plants
+            ],
             "fixtures": [
                 {
                     "catalog_id": fixture.catalog_id,
@@ -694,7 +701,18 @@ def test_spatial_focus_agrees_exactly_between_the_two_engines():
     world_id, seed = "parity:spatial", "parity-seed"
     directions = ("left", "right", "up", "down")
 
-    state = generate_initial_world(world_id, seed)
+    from lateletter.garden.world.generation import (
+        REVIEW_PENDING_ANIMAL_SPECIES,
+        REVIEW_PENDING_COLLECTIBLES,
+        REVIEW_PENDING_PLANT_SPECIES,
+    )
+
+    state = generate_initial_world(
+        world_id, seed,
+        plant_species=REVIEW_PENDING_PLANT_SPECIES,
+        animal_species=REVIEW_PENDING_ANIMAL_SPECIES,
+        collectibles=REVIEW_PENDING_COLLECTIBLES,
+    )
     canonical: dict[str, str] = {}
     for source in state.object_ids():
         for direction in directions:
@@ -718,7 +736,10 @@ def test_spatial_focus_agrees_exactly_between_the_two_engines():
             shutil.which("node") or "node", "--input-type=module", "-e",
             f"""
             import {{ generateInitialWorld, dispatchGardenCommand }} from '{module}';
-            const state = await generateInitialWorld({world_id!r}, {seed!r});
+            const state = await generateInitialWorld({world_id!r}, {seed!r}, {{
+              plant_species: ['oak', 'hydrangea', 'meadow_grass', 'lavender', 'sunflower'],
+              animal_species: ['cat'], collectibles: ['fallen_acorn'],
+            }});
             const ids = [
               ...state.plants.map(item => item.plant_id),
               ...state.fixtures.map(item => item.fixture_id),

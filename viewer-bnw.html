@@ -121,10 +121,16 @@
       color: var(--text); opacity: var(--opacity-muted);
       cursor: pointer; padding: 0;
       transition: opacity .12s; letter-spacing: .02em;
+      -webkit-tap-highlight-color: transparent;
     }
     .btn::before { content: '['; }
     .btn::after  { content: ']'; }
     .btn:hover   { opacity: 1; }
+    .btn:active  { opacity: 1; }
+    .btn:focus-visible {
+      outline: 1px solid color-mix(in srgb, var(--text) 58%, transparent);
+      outline-offset: 2px;
+    }
     .btn.hi      { opacity: .8; }
     .btn-row     { display: flex; gap: 1.75rem; flex-wrap: wrap; }
     button, [role="button"], .fi {
@@ -170,6 +176,22 @@
       background: color-mix(in srgb, var(--bg) 58%, transparent);
       backdrop-filter: blur(2px);
     }
+    #garden-journal {
+      position: fixed; z-index: 8; right: max(1rem, env(safe-area-inset-right));
+      top: max(1rem, env(safe-area-inset-top));
+      width: min(390px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem);
+      overflow: auto; padding: 1rem;
+      background: var(--scrim-bg);
+      border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+      box-shadow: 0 12px 42px rgba(0,0,0,.08); backdrop-filter: blur(8px);
+    }
+    #garden-journal[hidden] { display: none; }
+    #garden-journal-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    #garden-journal h2, #garden-journal h3 { font: inherit; font-weight: normal; }
+    #garden-journal-list { list-style: none; margin: .75rem 0 1rem; padding: 0; }
+    #garden-journal-list li + li { margin-top: .8rem; }
+    #garden-journal-list p { margin-top: .15rem; }
+    #garden-inventory-list { margin: .4rem 0 0; padding-left: 1.25rem; }
     #garden-controls {
       position: fixed; right: 1rem; top: 1rem; z-index: 7;
       width: min(360px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem);
@@ -222,6 +244,11 @@
     #s-reading .scrim {
       width: min(520px, 88vw);
       display: flex; flex-direction: column; max-height: 72vh;
+      overflow: visible;
+      background: color-mix(in srgb, var(--bg) 96%, transparent);
+      backdrop-filter: blur(18px) contrast(.9);
+      -webkit-backdrop-filter: blur(18px) contrast(.9);
+      box-shadow: 0 0 38px 24px color-mix(in srgb, var(--bg) 82%, transparent);
     }
     .lm-from   { margin-bottom: .15rem; }
     .lm-label  { font-size: 1.1rem; margin-bottom: .15rem; }
@@ -232,6 +259,7 @@
     }
     .letter-body.fallback { white-space: pre-wrap; }
     .letter-body .ll { white-space: pre; display: block; }
+    .letter-body .ll:empty::after { content: "\200B"; }
     .letter-body .ll-j { display: flex; align-items: baseline; white-space: nowrap; }
     .letter-body .ll-j .sp { flex-shrink: 0; }
 
@@ -352,6 +380,18 @@
   <p id="hud-animal" class="t4" style="margin-top:.5rem"></p>
 </div>
 
+<aside id="garden-journal" role="dialog" aria-labelledby="garden-journal-title" hidden>
+  <div id="garden-journal-head">
+    <h2 id="garden-journal-title" class="t2">journal &amp; inventory</h2>
+    <button id="garden-journal-close" class="btn" type="button" aria-label="close journal">close</button>
+  </div>
+  <p id="garden-journal-empty" class="t4"></p>
+  <ol id="garden-journal-list"></ol>
+  <h3 class="t3">inventory</h3>
+  <p id="garden-inventory-empty" class="t4"></p>
+  <ul id="garden-inventory-list"></ul>
+</aside>
+
 <div id="frb">
   <p id="frb-text"></p>
 </div>
@@ -365,7 +405,10 @@
       <p class="t3" style="margin-top:.5rem">or <button class="btn hi" id="btn-browse"
           type="button" style="font-size:.75rem">browse files</button></p>
     </div>
-    <input type="file" id="file-input" accept=".lateletter,.json">
+    <!-- Chrome/macOS treats the custom .lateletter suffix as an unknown UTI
+         and can disable it when accept is present. handleFile/loadBundle own
+         validation, so the native chooser must not pre-filter valid bundles. -->
+    <input type="file" id="file-input">
       <p style="margin-top:1.2rem"><button class="btn" id="btn-demo"
         type="button" style="font-size:.7rem;opacity:.25">get demo letter</button>
       <button class="btn" id="btn-demo-sealed"
@@ -1293,9 +1336,9 @@ async function dispatchGardenUi(modality,intent,{target_id=null,args={},metadata
   }
   return result;
 }
-// A click, tap or Enter on a painted object dispatches the action declared by
-// the canonical projection. The viewer does not render action labels, cards,
-// opportunity buttons, object lists or overflow sheets over the Garden.
+// Every object action rendered or performed here is a record declared by the
+// canonical projection. The viewer never infers eligibility or manufactures a
+// Garden verb; it only supplies the input modality and canonical target id.
 function dispatchGardenDeclaredAction(record,object,event,control){
   return dispatchGardenUi(inputModalityFromBrowserEvent(event),record.command,{
     target_id:object.object_id,
@@ -1324,6 +1367,11 @@ function installGardenReviewAccessor(){
       const rect=garden?.objectRectPixels?.(id);
       return rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null;
     },
+    objectArtRectPixels:id=>{
+      const rect=garden?.objectArtRectPixels?.(id);
+      return rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null;
+    },
+    objectAtPixels:(x,y)=>garden?.objectAtPixels?.(x,y)??null,
     // The keyboard reader's CURRENT CANONICAL FOCUS, read off the runtime.
     //
     // The destination's review package (goal §13) requires "keyboard focus and
@@ -1377,6 +1425,23 @@ function installGardenReviewAccessor(){
       world_origin:gardenRuntime.worldOrigin
         ?JSON.parse(JSON.stringify(gardenRuntime.worldOrigin)):null,
     }:null,
+    canonicalStateJson:()=>gardenRuntime?.canonicalStateJson?.()??null,
+    presentation:()=>garden?.lastFrame?{
+      season:garden.lastFrame.season,
+      time_of_day:garden.lastFrame.timeOfDay,
+      sky_label:garden.lastFrame.sky?.label??null,
+      review_time:gardenReviewTime(),
+    }:null,
+    // Final visible paint provenance, after authority and occlusion. This is
+    // the falsifier for a clean census that still paints a legacy fixture or
+    // ambient animal: the canonical object list alone cannot prove the picture
+    // the recipient actually saw.
+    visiblePaint:()=>garden?.lastFrame?{
+      source_ids:[...new Set(garden.lastFrame.visible_primitives
+        .map(item=>item.source_id).filter(Boolean))].sort(),
+      object_ids:[...new Set(garden.lastFrame.visible_primitives
+        .map(item=>item.object_id).filter(Boolean))].sort(),
+    }:null,
     state:()=>gardenRuntime?{
       fixtures:gardenRuntime.state.fixtures.map(fixture=>({
         id:fixture.fixture_id,catalog:fixture.catalog_id,
@@ -1398,6 +1463,7 @@ async function renderCanonicalGarden(){
   syncAmbientMotion();
   garden?.setFocusedObject?.(gardenRuntime.state.ui.focus_id);
   garden?.render(gardenRuntime.projection);
+  _renderGardenActions();
   if(syncGardenControlsAvailability())
     document.getElementById('garden-scene-summary').textContent=
       [gardenNotice,gardenRuntime.sceneSummary()].filter(Boolean).join(' ');
@@ -1423,7 +1489,20 @@ async function _runAuthenticatedGardenProgramNow(){
     hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23',
   }).formatToParts(now).filter(item=>item.type!=='literal').map(item=>[item.type,item.value]));
   const localIso=`${localParts.year}-${localParts.month}-${localParts.day}T${localParts.hour}:${localParts.minute}:${localParts.second}`;
-  const lastSeconds=Number(runtime.previousObservedWallTime??Math.max(0,observed-1));
+  // The first authenticated evaluation of a generated world has no offline
+  // cursor. Start at the canonical session-open boundary, then advance this
+  // runtime cursor only after successful materialization below. Falling back
+  // to `observed - 1` dropped scheduled gifts whenever a foreground tab or a
+  // pause/resume crossed more than one wall-clock second at once.
+  const priorProgramSeconds=Number(
+    runtime.previousObservedWallTime??gardenSessionStarted,
+  );
+  // An initial evaluation exactly on a scheduled second must include that
+  // boundary. Once the runtime owns an earlier cursor, keep the whole elapsed
+  // interval so later foreground/resume jumps cannot skip occurrences.
+  const lastSeconds=Number.isFinite(priorProgramSeconds)
+    &&priorProgramSeconds>0&&priorProgramSeconds<observed
+    ?priorProgramSeconds:Math.max(0,observed-1);
   const eligible={},missedSummaries=[];
   for(const event of program.events){
     if(!event.schedule)continue;
@@ -1469,6 +1548,9 @@ async function _runAuthenticatedGardenProgramNow(){
   if(!isCurrent())return;
   await runtime.materializeProgram(program,result);
   if(!isCurrent())return;
+  // Do not consume the schedule window until the canonical effects and ledger
+  // are persisted. A failed evaluation must retry the same interval.
+  runtime.previousObservedWallTime=observed;
   gardenProgramState={...result.state,visit_total:visitCount};
   giftDiscovered={};
   for(const gift of bundle.garden_gifts||[])
@@ -1492,6 +1574,7 @@ function showScreen(name){
   garden?.setPresentationActive?.(true);
   if(name!=='garden')closeGardenControls();
   syncGardenControlsAvailability();
+  _renderGardenActions();
   updateCanonicalLiveLoop();
 }
 
@@ -1566,6 +1649,43 @@ function _mkHudButton(label,fn,key=null){
   if(key){b.setAttribute('aria-keyshortcuts',key);b.title=`keyboard: ${key}`;}
   return b;
 }
+// Canonical live projection refreshes once per second. Replacing action nodes
+// on every refresh invalidates the element identity held by VoiceOver and can
+// discard keyboard focus between announcement and activation. Reconcile by a
+// projection-derived key so presentation refreshes update controls in place.
+function _reconcileGardenButtons(host,specs){
+  const existing=new Map(Array.from(host.children).map(node=>[
+    node.dataset.gardenControlKey,node,
+  ]));
+  const retained=new Set();
+  specs.forEach((spec,index)=>{
+    let button=existing.get(spec.key);
+    if(!button){
+      button=document.createElement('button');
+      button.className='btn';button.type='button';
+      button.dataset.gardenControlKey=spec.key;
+    }
+    retained.add(button);
+    if(button.textContent!==spec.label)button.textContent=spec.label;
+    button.onclick=spec.activate;
+    button.onpointerdown=spec.pointerdown||null;
+    if(spec.shortcut){
+      button.setAttribute('aria-keyshortcuts',spec.shortcut);
+      button.title=`keyboard: ${spec.shortcut}`;
+    }else{
+      button.removeAttribute('aria-keyshortcuts');button.removeAttribute('title');
+    }
+    if(spec.pressed===undefined)button.removeAttribute('aria-pressed');
+    else button.setAttribute('aria-pressed',String(spec.pressed));
+    if(spec.command===undefined)delete button.dataset.gardenCommand;
+    else button.dataset.gardenCommand=spec.command;
+    if(spec.objectId===undefined)delete button.dataset.gardenObjectId;
+    else button.dataset.gardenObjectId=spec.objectId;
+    const current=host.children[index];
+    if(current!==button)host.insertBefore(button,current||null);
+  });
+  for(const node of Array.from(host.children))if(!retained.has(node))node.remove();
+}
 async function focusGardenObject(direction,event=null,source='context-navigation'){
   if(!gardenRuntime)return;
   const modality=inputModalityFromBrowserEvent(event);
@@ -1582,38 +1702,73 @@ async function focusGardenObject(direction,event=null,source='context-navigation
   gardenContextObjectId=focused?.object_id||null;
   _renderGardenActions();
 }
+function _renderJournalAndInventory(){
+  const panel=document.getElementById('garden-journal');
+  if(!panel)return;
+  const visible=document.getElementById('hud')?.classList.contains('vis')&&
+    Boolean(gardenRuntime?.state?.ui?.journal_open);
+  panel.hidden=!visible;
+  if(!visible)return;
+  const scene=gardenRuntime?.projection?.scene||{};
+  const entries=Array.isArray(scene.journal_entries)?scene.journal_entries:[];
+  const inventory=Array.isArray(scene.inventory)?scene.inventory:[];
+  const signature=JSON.stringify({entries,inventory});
+  if(panel.dataset.gardenContentsSignature===signature)return;
+  panel.dataset.gardenContentsSignature=signature;
+  const list=document.getElementById('garden-journal-list');
+  list.replaceChildren();
+  for(const entry of entries){
+    const item=document.createElement('li');
+    const label=document.createElement('p');label.className='t3';label.textContent=entry.label;
+    const description=document.createElement('p');description.className='t4';description.textContent=entry.description;
+    item.append(label,description);list.appendChild(item);
+  }
+  document.getElementById('garden-journal-empty').textContent=
+    entries.length?'':'Nothing has been recorded yet.';
+  const inventoryList=document.getElementById('garden-inventory-list');
+  inventoryList.replaceChildren();
+  for(const value of inventory){
+    const item=document.createElement('li');item.className='t4';item.textContent=String(value);
+    inventoryList.appendChild(item);
+  }
+  document.getElementById('garden-inventory-empty').textContent=
+    inventory.length?'':'Nothing is being carried.';
+}
 /**
- * The HUD's garden strip: LETTERS ONLY.
- *
- * TWO DELETIONS, both on 2026-08-01
- * ---------------------------------
- * First, this function looped over `focused.actions` and built a button for
- * every one -- "look closer at bench", "sit bench", "feed cat" -- plus a
- * standalone "feed <species>" button with its own private eligibility rule.
- * That made the HUD a THIRD owner of every object action, alongside the object
- * itself and the action sheet. 7.8.3.3 requires exactly one home per act, and
- * each of the three decided availability independently, so they could disagree.
- *
- * Then the operator looked at what was left -- a panel reading
- * "Stepping stones [previous] [next]" laid over the scene -- and rejected it as
- * content they had not approved. They are right, and the reason is worth
- * writing down rather than merely obeying: an object's NAME printed in a
- * floating panel is a label, and this Garden's whole premise is that a place
- * should be readable without labels. Navigation between objects already exists
- * in the semantic control layer, where it is reachable by keyboard and screen
- * reader without painting anything over the picture. The HUD was a second,
- * unreviewed copy of it that only pointer users could see.
- *
- * What remains is the one thing that was never about the Garden at all: the way
- * into the letters. That is the product's purpose, not decoration on top of it.
+ * Ordinary Garden controls are deliberately narrow. The picture itself owns
+ * object interaction; this HUD carries only persistent global journal and
+ * motion commands. Object names or verbs must never become labels over ink.
  */
 function _renderGardenActions(){
   const actions=document.getElementById('hud-actions');
   if(!actions)return;
-  actions.innerHTML='';
+  const specs=[];
+  if(gardenRuntime){
+    specs.push({
+      key:'global:journal',label:'journal & inventory',shortcut:'j',
+      command:'open_journal',activate:event=>dispatchGardenUi(
+        inputModalityFromBrowserEvent(event),'open_journal',{
+          metadata:{control:'garden-hud-journal'},
+        }),
+    });
+    const paused=Boolean(gardenRuntime.state?.ui?.motion_paused);
+    specs.push({
+      key:'global:motion',label:paused?'resume motion':'pause motion',
+      shortcut:'Space',command:'pause_motion',pressed:paused,
+      activate:event=>dispatchGardenUi(
+        inputModalityFromBrowserEvent(event),'pause_motion',{
+          args:{paused:!paused},metadata:{control:'garden-hud-motion'},
+        }),
+    });
+  }
   const memories=_gardenMemories();
   if(memories.length)
-    actions.appendChild(_mkHudButton(memories.length===1?'examine memory':'examine memories',showGardenMemories,'i'));
+    specs.push({
+      key:'global:memories',label:memories.length===1?'examine memory':'examine memories',
+      shortcut:'i',activate:showGardenMemories,
+    });
+  _reconcileGardenButtons(actions,specs);
+  _renderJournalAndInventory();
 }
 function showGardenMemories(){
   const memories=_gardenMemories();
@@ -1747,7 +1902,8 @@ function showLetterSelect(){
   const list=document.getElementById('pick-list');
   list.innerHTML=dueIdxs.map(idx=>{
     const m=bundle.messages[idx];
-    return`<li><button class="pick-btn" data-idx="${idx}">${htmlEsc(fmtDate(m.date))}</button></li>`;
+    const label=decoded[m.id]?.label||fmtDate(m.date);
+    return`<li><button class="pick-btn" data-idx="${idx}">${htmlEsc(label)}</button></li>`;
   }).join('');
   list.querySelectorAll('button').forEach(b=>
     b.onclick=()=>openLetter(parseInt(b.dataset.idx,10)));
@@ -1869,7 +2025,7 @@ function buildArchive(){
     const isRead=readIds.has(msg.id),due=new Date(msg.date+'T00:00:00')<=today||presented.has(msg.id);
     let cls,lbl,canOpen;
     if(isRead){cls='read';canOpen=true;lbl=decoded[msg.id]?.label||fmtDate(msg.date);}
-    else if(due){cls='unread';canOpen=true;lbl=fmtDate(msg.date);}
+    else if(due){cls='unread';canOpen=true;lbl=decoded[msg.id]?.label||fmtDate(msg.date);}
     else{cls='locked';canOpen=false;lbl=fmtDate(msg.date);}
     html+=`<li class="inbox-row"><button class="inbox-btn ${cls}"${canOpen?` data-mid="${htmlEsc(msg.id)}"`:' tabindex="-1"'}>${htmlEsc(lbl)}</button></li>`;
   }
@@ -1938,13 +2094,20 @@ function trapMemoryFocus(event){
 }
 
 // ── Pretext letter body ───────────────────────────────────────────────
-const LETTER_FONT='13px "Times New Roman", Times, serif', LETTER_LH=21;
-let _resizeObs=null,_prepared=null,_preparedText='';
+let _resizeObs=null,_prepared=null,_preparedText='',_preparedFont='';
+function letterMetrics(el){
+  const cs=getComputedStyle(el);
+  const font=`${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const lineHeight=parseFloat(cs.lineHeight)||parseFloat(cs.fontSize)*1.2;
+  const w=Math.max(1,el.clientWidth
+    -(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0));
+  return{font,lineHeight,w};
+}
 function renderBodyFallback(text,el){
   el.classList.add('fallback');
   el.textContent=text;
   requestAnimationFrame(()=>{
-    const lh=parseFloat(getComputedStyle(el).lineHeight)||LETTER_LH;
+    const{lineHeight:lh}=letterMetrics(el);
     _lineCount=Math.max(text.split('\n').length,Math.round(el.scrollHeight/lh));
     _updateLineCt();
   });
@@ -1952,7 +2115,7 @@ function renderBodyFallback(text,el){
 function disablePretext(error){
   console.warn('[viewer] bundled PreText layout failed; using browser text fallback',error);
   prepareWithSegments=null;layoutWithLines=null;clearCache=()=>{};
-  _prepared=null;_preparedText='';_textLayoutMode='fallback';
+  _prepared=null;_preparedText='';_preparedFont='';_textLayoutMode='fallback';
 }
 // Segment kinds that represent a stretchable gap between words.
 //
@@ -2063,12 +2226,12 @@ function buildJustifiedLine(prepared,line,width,isLast){
 }
 function renderBodyWithPretext(text,el){
   el.classList.remove('fallback');
-  const w=el.clientWidth;if(!w)return;
-  if(text!==_preparedText){
-    _prepared=prepareWithSegments(text,LETTER_FONT,{whiteSpace:'pre-wrap'});
-    _preparedText=text;
+  const{font,lineHeight,w}=letterMetrics(el);if(!w)return;
+  if(text!==_preparedText||font!==_preparedFont){
+    _prepared=prepareWithSegments(text,font,{whiteSpace:'pre-wrap'});
+    _preparedText=text;_preparedFont=font;
   }
-  const layout=layoutWithLines(_prepared,w,LETTER_LH);
+  const layout=layoutWithLines(_prepared,w,lineHeight);
   const{lines}=layout;
   _lineCount=lines.length;
   const frag=document.createDocumentFragment();
@@ -2299,6 +2462,10 @@ function wire(){
     };
   });
   document.getElementById('garden-controls-close').onclick=closeGardenControls;
+  document.getElementById('garden-journal-close').onclick=event=>dispatchGardenUi(
+    inputModalityFromBrowserEvent(event),'back',{
+      metadata:{control:'garden-journal-close'},
+    });
   document.getElementById('sky-opt-in').onclick=async event=>{
     event.currentTarget.disabled=true;
     try{

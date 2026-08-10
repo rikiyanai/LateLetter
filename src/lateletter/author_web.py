@@ -44,14 +44,16 @@ the difference between “candidate gift” and “allowed to paint.”
 from __future__ import annotations
 
 import json
+import io
 import mimetypes
 import secrets
+import zipfile
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
 from lateletter.author_service import (
-    PASSPHRASE_MIN_LENGTH, AuthorServiceError, export_bundle_bytes,
+    PASSPHRASE_MIN_LENGTH, AuthorServiceError, append_bundle_bytes, export_bundle_bytes,
     find_passphrase_key, validate_draft,
 )
 from lateletter.author_questionnaire import questionnaire_for_browser
@@ -310,7 +312,8 @@ class AuthorRequestHandler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path not in {
             "/api/author/validate", "/api/author/export",
-            "/api/author/passphrase-advice",
+            "/api/author/export-package", "/api/author/passphrase-advice",
+            "/api/author/append",
         }:
             self._error(404, "unknown endpoint")
             return
@@ -327,6 +330,27 @@ class AuthorRequestHandler(BaseHTTPRequestHandler):
             self._send(200, {"warning": passphrase_strength_warning(passphrase)})
             return
 
+        if path == "/api/author/append":
+            try:
+                payload, summary = append_bundle_bytes(
+                    body.get("bundle"), body.get("messages"), body.get("passphrase"),
+                )
+            except AuthorServiceError as exc:
+                self._send(422, {"error": "letter could not be appended", "issues": exc.issues})
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header(
+                "Content-Disposition", 'attachment; filename="LateLetter-appended.lateletter"',
+            )
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-LateLetter-Messages", str(summary["message_count"]))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
         draft = body.get("draft")
         if not isinstance(draft, dict):
             self._error(400, "draft must be an object")
@@ -339,9 +363,9 @@ class AuthorRequestHandler(BaseHTTPRequestHandler):
             })
             return
 
-        self._export(draft, body)
+        self._export(draft, body, package=path == "/api/author/export-package")
 
-    def _export(self, draft: dict, body: dict) -> None:
+    def _export(self, draft: dict, body: dict, *, package: bool = False) -> None:
         """Seal the draft and return the bundle as a download.
 
         The passphrase and its confirmation exist only as local variables for
@@ -366,8 +390,17 @@ class AuthorRequestHandler(BaseHTTPRequestHandler):
             return
 
         filename = self._download_filename(draft)
+        if package:
+            try:
+                payload = self._handoff_package(payload, filename, draft)
+            except RuntimeError as exc:
+                self._send(500, {"error": "handoff package could not be built", "issues": [str(exc)]})
+                return
+            filename = f"{Path(filename).stem}-handoff.zip"
         self.send_response(200)
-        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header(
+            "Content-Type", "application/zip" if package else "application/octet-stream",
+        )
         self.send_header("Content-Length", str(len(payload)))
         self.send_header(
             "Content-Disposition", f'attachment; filename="{filename}"',
@@ -379,6 +412,51 @@ class AuthorRequestHandler(BaseHTTPRequestHandler):
         self.send_header("X-LateLetter-Garden-Events", str(summary["garden_event_count"]))
         self.end_headers()
         self.wfile.write(payload)
+
+    def _handoff_package(self, bundle: bytes, bundle_name: str, draft: dict) -> bytes:
+        """Build a closed, accepted-paint viewer package around exact bundle bytes."""
+        from scripts.prepare_pages_site import (  # imported only for packaging
+            PAINT_AUTHORITY_FILE, THIRD_PARTY_NOTICES,
+            browser_dependency_closure, paint_authority,
+        )
+
+        root = self.server.static_root.resolve()
+        closure, errors = browser_dependency_closure(root / "viewer-bnw.html", root)
+        if errors:
+            raise RuntimeError("handoff browser graph is not closed: " + "; ".join(errors))
+        accepted_authority = (
+            json.dumps(paint_authority(root, include_review_candidates=False), indent=2)
+            + "\n"
+        ).encode("utf-8")
+        prefix = "LateLetter-handoff/"
+        stream = io.BytesIO()
+        with zipfile.ZipFile(stream, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+            for source in sorted(closure):
+                relative = source.relative_to(root)
+                target = Path("index.html") if relative == Path("viewer-bnw.html") else relative
+                data = accepted_authority if relative == PAINT_AUTHORITY_FILE else source.read_bytes()
+                archive.writestr(prefix + target.as_posix(), data)
+            for relative in THIRD_PARTY_NOTICES:
+                archive.writestr(prefix + relative.as_posix(), (root / relative).read_bytes())
+            archive.writestr(prefix + bundle_name, bundle)
+            archive.writestr(prefix + "README.txt", (
+                "LateLetter handoff\n\n"
+                "Keep this folder together. Run `python3 start.py`, then choose the "
+                f"file `{bundle_name}` in the page that opens.\n\n"
+                f"Passphrase reminder: {draft.get('passphrase_hint') or 'none supplied'}\n"
+                "Share the passphrase separately; it is not in this package.\n"
+            ))
+            archive.writestr(prefix + "start.py", (
+                "from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler\n"
+                "from pathlib import Path\nimport os, threading, webbrowser\n"
+                "os.chdir(Path(__file__).resolve().parent)\n"
+                "server=ThreadingHTTPServer(('127.0.0.1',0),SimpleHTTPRequestHandler)\n"
+                "url=f'http://127.0.0.1:{server.server_address[1]}/'\n"
+                "threading.Timer(.2,lambda:webbrowser.open(url)).start()\n"
+                "print(f'LateLetter is open at {url}; press Ctrl-C to close.')\n"
+                "server.serve_forever()\n"
+            ))
+        return stream.getvalue()
 
     @staticmethod
     def _download_filename(draft: dict) -> str:

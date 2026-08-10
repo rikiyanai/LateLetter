@@ -206,7 +206,7 @@ export class GardenRuntime {
         // This is the path where the defect actually happened: a persisted
         // browser world of 13 plants / 22 fixtures / 4 animals / 8
         // collectibles was opened and read as the current starter, which
-        // makes 2 / 5 / 0 / 0. Loading it raw meant nothing in the runtime
+        // makes 1 / 6 / 0 / 0. Loading it raw meant nothing in the runtime
         // knew, or could say, that the world had come out of storage.
         const loaded = loadMigratedGardenWorld(stored);
         state = loaded.state;
@@ -464,6 +464,12 @@ export class GardenRuntime {
 
   focusedObject() {
     return this.projection?.objects.find(item => item.object_id === this.state?.ui.focus_id) ?? null;
+  }
+
+  /** Read-only canonical bytes for diagnostics and persistence comparison. */
+  canonicalStateJson() {
+    if (!this.state) throw new Error('Garden runtime is not open');
+    return canonicalWorldJson(this.state);
   }
 
   /**

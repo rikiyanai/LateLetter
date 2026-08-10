@@ -16,9 +16,9 @@ A tool for writing time-delayed letters to loved ones, delivered through a livin
 
 Open `viewer-bnw.html` in a browser. Click **[get demo letter]** to load the demo bundle, or drop your own `.lateletter` file.
 
-Demo passphrase: `garden`
+Demo passphrase: `garden-biscuit-2026`
 
-**[get passcode-locked demo]** loads a demo whose private content can only be opened with passcode `garden`. A wrong passcode is rejected. Internally, the output bundle uses PBKDF2-SHA256 and AES-256-GCM.
+**[get passcode-locked demo]** loads a demo whose private content can only be opened with passcode `garden-biscuit-2026`. A wrong passcode is rejected. Internally, the output bundle uses PBKDF2-SHA256 and AES-256-GCM.
 
 ## Send a real letter
 
@@ -55,7 +55,7 @@ After the Pages deploy, share `https://rikiworld.com/lateletter/to-personx/`
 Heads-up: your author name, the passphrase hint, and delivery dates are
 plaintext in the bundle, so anyone with the URL (or browsing the repo)
 can see those — the letter body and gift sentiments stay sealed.
-Demo link once deployed: https://rikiworld.com/lateletter/to-a-friend/ (passcode `garden`).
+Demo link once deployed: https://rikiworld.com/lateletter/to-a-friend/ (passcode `garden-biscuit-2026`).
 
 ## Project structure
 

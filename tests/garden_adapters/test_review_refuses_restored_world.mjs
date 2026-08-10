@@ -61,6 +61,21 @@ function runtimeOverStorage(stored) {
 /** A stored world in the condition the browser one was found in: no stamps. */
 async function restoredWorldWithoutStamps() {
   const document = serializeWorldState(await generateInitialWorld('world-1', 'seed-1'));
+  // Make the stored population visibly different from today's accepted full
+  // default. Otherwise the product-preservation assertion could pass after
+  // silently regenerating the world it was meant to preserve.
+  document.fixtures = [{
+    fixture_id: 'fixture:persisted-bench',
+    catalog_id: 'bench',
+    position: [17, 23],
+    rotation: 90,
+    authored: true,
+    interaction_count: 4,
+    last_interaction: 'sit',
+    authored_state: { recipient_note: 'keep me' },
+  }];
+  document.ui.camera = [17, 23];
+  document.ui.motion_paused = true;
   delete document.generator_version;
   delete document.composition_version;
   delete document.composition_fingerprint;
@@ -114,7 +129,7 @@ test('a review opens a world it generated itself, and it is the exact starter', 
   assert.deepEqual(runtime.worldOrigin.census, {
     plants: 1, fixtures: 6, animals: 0, collectibles: 0,
   });
-  assert.ok(runtime.projection.objects.length > 0, 'the fresh world projected nothing');
+  assert.equal(runtime.projection.objects.length, 7);
 });
 
 test('the product opens a restored world rather than destroying it', async () => {
@@ -126,7 +141,15 @@ test('the product opens a restored world rather than destroying it', async () =>
 
   assert.equal(runtime.worldOrigin.label, 'restored');
   assert.equal(runtime.worldOrigin.is_fresh, false);
-  assert.ok(runtime.projection.objects.length > 0);
+  assert.deepEqual(runtime.worldOrigin.census, {
+    plants: 1, fixtures: 1, animals: 0, collectibles: 0,
+  });
+  assert.equal(runtime.projection.objects.length, 2);
+  assert.equal(runtime.state.composition_version, null);
+  assert.deepEqual(runtime.state.ui.camera, [17, 23]);
+  assert.equal(runtime.state.fixtures[0].fixture_id, 'fixture:persisted-bench');
+  assert.equal(runtime.state.fixtures[0].interaction_count, 4);
+  assert.equal(runtime.state.fixtures[0].authored_state.recipient_note, 'keep me');
   assert.ok(saves.length > 0, 'the recipient world was opened but never written back');
 });
 

@@ -90,6 +90,20 @@ def test_viewer_uses_canonical_runtime_for_live_garden_actions():
     assert 'aria-label="garden actions" aria-live="polite"' in source
 
 
+def test_native_file_chooser_does_not_filter_the_product_lateletter_extension():
+    source = _viewer_source()
+
+    # macOS Chrome can classify the custom suffix as an unknown UTI and leave
+    # the chooser's Open button disabled when an HTML accept filter is present.
+    # The normal load path remains the authority for validation and errors.
+    assert '<input type="file" id="file-input">' in source
+    assert 'id="file-input" accept=' not in source
+    handle_file = source[source.index("async function handleFile"):
+                         source.index("// ── Dev tools")]
+    assert "await loadBundle(file,options);" in handle_file
+    assert "showScreen('error');" in handle_file
+
+
 def test_viewer_keeps_garden_actions_on_the_picture_without_labels_or_cards():
     source = _viewer_source()
 
@@ -115,6 +129,9 @@ def test_viewer_keeps_garden_actions_on_the_picture_without_labels_or_cards():
         "showGardenInvitation",
         "paintGardenInvitation",
         "gardenSecondaryActions",
+        'id="garden-context-actions"',
+        "nearby flower actions",
+        "_renderContextPlantActions",
         "More actions",
         "besideObjectPlacement",
     )
@@ -158,9 +175,9 @@ def test_reproducible_review_clock_is_local_only_and_resets_world_persistence():
     assert "new URLSearchParams(location.search).get('garden_review_time')" in source
     assert "hostname==='localhost'||hostname==='127.0.0.1'||hostname==='::1'" in source
     assert "GARDEN_REVIEW_IS_LOCAL&&GARDEN_REVIEW_TIME_SECONDS!==null" in source
-    assert "const worldPersistence=persistent&&reviewTime===null" in source
+    assert "const worldPersistence=persistent&&!freshCompositionReview" in source
     assert "now:()=>reviewTime??Math.floor(Date.now()/1000)" in source
-    assert "reducedMotionQuery.matches||gardenReviewTime()!==null" in source
+    assert "gardenReviewTime()!==null&&!GARDEN_REVIEW_MOTION_REQUESTED" in source
     assert "async function _receiptGet(key)" in source
     assert "async function _receiptSet(key,value)" in source
     assert "return gardenReviewTime()===null?kvGet(key):null" in source
@@ -284,7 +301,7 @@ def test_viewer_derives_modality_and_implements_reduced_motion_and_modal_contrac
     assert "dispatchGardenUi('mouse'" not in source
     assert "const nativeButtonActivation=" in source
     assert "garden?.setReducedMotion?.(" in source
-    assert "reducedMotionQuery.matches||gardenReviewTime()!==null" in source
+    assert "gardenReviewTime()!==null&&!GARDEN_REVIEW_MOTION_REQUESTED" in source
     assert "const enabled=visible&&!Boolean(gardenRuntime.state?.ui?.motion_paused)" in source
     assert "refreshAfterCanonicalLiveAdvance()" in source
     assert "reducedMotionQuery.addEventListener('change',syncAmbientMotion)" in source
@@ -363,15 +380,22 @@ def test_legacy_corner_camera_is_migrated_through_the_canonical_reducer():
     assert "Standalone is the Garden itself; it has no synthetic letter archive." in source
 
 
-def test_pages_deploy_builds_and_verifies_transitive_browser_asset_closure(tmp_path):
+def test_pages_deploy_keeps_the_frozen_legacy_snapshot_until_root_release_cutover():
     deploy = DEPLOY.read_text(encoding="utf-8")
-    assert "python3 scripts/prepare_pages_site.py _site" in deploy
+    assert "workflow_dispatch" in deploy
     assert "python3 -m pip install ." in deploy
-    assert "python3 scripts/verify_release_install.py" in deploy
+    assert "python3 scripts/prepare_legacy_site.py _site" in deploy
+    assert "run: python3 scripts/prepare_pages_site.py _site" not in deploy
+
+
+def test_root_pages_candidate_builds_and_verifies_transitive_browser_asset_closure(tmp_path):
 
     site = tmp_path / "site"
     prepared = subprocess.run(
-        ["python3", "scripts/prepare_pages_site.py", str(site)],
+        [
+            "python3", "scripts/prepare_pages_site.py", str(site),
+            "--skip-release-gate",
+        ],
         cwd=ROOT, check=False, capture_output=True, text=True,
     )
     assert prepared.returncode == 0, prepared.stdout + prepared.stderr

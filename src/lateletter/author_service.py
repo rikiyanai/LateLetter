@@ -36,11 +36,15 @@ from typing import Any
 
 from lateletter.bundle import (
     BUNDLE_VERSION_WITH_GARDEN_PROGRAM, Bundle, BundleValidationError,
-    Notification, read_bundle, validate_bundle_dict, write_bundle,
+    Notification, read_bundle, validate_bundle_dict, verify_checksum, write_bundle,
 )
 from lateletter.garden.program import (
     GardenProgram, ProgramValidationError, parse_program,
 )
+from lateletter.garden.authoring import (
+    build_letter_rabbit_autumn_arc, compile_timeline,
+)
+from lateletter.garden.evaluator import evaluate_program
 from lateletter.sealed import (
     open_garden_program, open_message, seal_bundle, seal_garden_program,
     seal_message, verify_bundle_hmac,
@@ -224,8 +228,41 @@ def garden_program_from_draft(draft: dict, message_ids: list[str]) -> dict | Non
     Returns None when the draft has neither, which the caller treats as an
     error — a bundle without a Garden program cannot be presented.
     """
-    if "garden_program" in draft and "garden_beats" in draft:
-        raise ValueError("use either 'garden_program' or 'garden_beats', not both")
+    supplied = [
+        key for key in ("garden_program", "garden_beats", "garden_template")
+        if key in draft
+    ]
+    if len(supplied) > 1:
+        raise ValueError(
+            "use exactly one of 'garden_program', 'garden_beats', or "
+            "'garden_template'"
+        )
+    template = draft.get("garden_template")
+    if template is not None:
+        if not isinstance(template, dict):
+            raise ValueError("'garden_template' must be an object")
+        if template.get("kind") != "letter_rabbit_autumn":
+            raise ValueError("garden_template.kind is not supported")
+        index = template.get("letter_index", 0)
+        if isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(message_ids):
+            raise ValueError("garden_template.letter_index is out of range")
+        rabbit_name = template.get("rabbit_name", "Clover")
+        if not isinstance(rabbit_name, str) or not rabbit_name.strip():
+            raise ValueError("garden_template.rabbit_name must be non-empty text")
+        recipient_name = draft.get("recipient_name", "you")
+        if not isinstance(recipient_name, str):
+            raise ValueError("recipient_name must be text")
+        timeline = build_letter_rabbit_autumn_arc(
+            recipient_name=recipient_name,
+            letter_id=message_ids[index],
+            author_timezone=str(draft.get("author_timezone", "UTC")),
+            rabbit_name=rabbit_name.strip(),
+        )
+        return program_to_mapping(compile_timeline(
+            timeline,
+            known_letter_ids=set(message_ids),
+            known_asset_ids={"collectible.seed_packet"},
+        ))
     raw = draft.get("garden_program")
     if raw is None and "garden_beats" in draft:
         beats_source = draft["garden_beats"]
@@ -290,6 +327,39 @@ def garden_program_from_draft(draft: dict, message_ids: list[str]) -> dict | Non
     return program_to_mapping(parse_program(
         substituted, known_letter_ids=set(message_ids),
     ))
+
+
+def _garden_template_preview(
+    program_mapping: dict[str, Any], *, letter_id: str, seed: int,
+) -> dict[str, Any]:
+    """Evaluate the guided author story at its three named review boundaries."""
+    program = parse_program(program_mapping, known_letter_ids={letter_id})
+    state: dict[str, Any] = {"applied_occurrences": [], "variables": {}}
+    stages = [
+        ("after the letter", {
+            "letter.read": [letter_id], "visit.total": 1,
+            "animal.bond_tier": 0, "season.current": "summer",
+        }),
+        ("third visit", {
+            "letter.read": [letter_id], "visit.total": 3,
+            "animal.bond_tier": 1, "season.current": "summer",
+        }),
+        ("bonded autumn", {
+            "letter.read": [letter_id], "visit.total": 4,
+            "animal.bond_tier": 3, "season.current": "autumn",
+        }),
+    ]
+    rendered = []
+    applied: list[str] = []
+    for name, facts in stages:
+        result = evaluate_program(program, state, {"seed": seed, "facts": facts})
+        state = result.state
+        stage_applied = [
+            row["event_id"] for row in result.trace if row["status"] == "applied"
+        ]
+        applied.extend(stage_applied)
+        rendered.append({"name": name, "applied_events": stage_applied})
+    return {"kind": "letter_rabbit_autumn", "stages": rendered, "trace": applied}
 
 
 def message_specs(draft: dict) -> list[tuple[str, dict]]:
@@ -414,6 +484,16 @@ def validate_draft(draft: Any) -> ValidationResult:
                 "a full encrypted garden_program or garden_beats timeline is required"
             )
 
+    garden_story_preview = None
+    if program_mapping is not None and draft.get("garden_template") is not None and specs:
+        try:
+            garden_story_preview = _garden_template_preview(
+                program_mapping, letter_id=specs[0][0],
+                seed=seed if isinstance(seed, int) and not isinstance(seed, bool) else 0,
+            )
+        except (ValueError, ProgramValidationError) as exc:
+            errors.append(f"garden preview could not run: {exc}")
+
     preview = {
         "author_name": author_name if isinstance(author_name, str) else "",
         "passphrase_hint": hint,
@@ -431,6 +511,7 @@ def validate_draft(draft: Any) -> ValidationResult:
         "garden_animal_count":
             len(program_mapping["animals"]) if program_mapping else 0,
         "has_garden_program": program_mapping is not None,
+        "garden_story_preview": garden_story_preview,
     }
     return ValidationResult(errors=errors, preview=preview)
 
@@ -558,6 +639,56 @@ def export_bundle_bytes(draft: dict, passphrase: str) -> tuple[bytes, dict[str, 
     # class of bug that leaves a recipient with an unopenable file.
     reread = Bundle.from_dict(json.loads(payload.decode("utf-8")))
     summary = verify_bundle_roundtrip(reread, passphrase)
+    return payload, summary
+
+
+def append_bundle_bytes(
+    existing_payload: bytes | str,
+    new_messages: Any,
+    passphrase: str,
+) -> tuple[bytes, dict[str, Any]]:
+    """Append independently sealed messages without changing bundle identity.
+
+    Existing ciphertext, bundle id, authentication salt and encrypted Garden
+    program are preserved byte-for-byte at the field level. Only the message
+    list, HMAC and checksum change.
+    """
+    problem = passphrase_problem(passphrase)
+    if problem is not None:
+        raise AuthorServiceError([problem])
+    try:
+        text = existing_payload.decode("utf-8") if isinstance(existing_payload, bytes) else existing_payload
+        if not isinstance(text, str):
+            raise ValueError("existing bundle must be UTF-8 text")
+        bundle = Bundle.from_dict(json.loads(text))
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError, KeyError) as exc:
+        raise AuthorServiceError([f"existing bundle is invalid: {exc}"]) from exc
+    if not verify_checksum(bundle) or not verify_bundle_hmac(bundle, passphrase):
+        raise AuthorServiceError([
+            "existing bundle is damaged or the passphrase is incorrect"
+        ])
+    secret_at = find_passphrase_key(new_messages)
+    if secret_at is not None:
+        raise AuthorServiceError([f"remove the secret field at '{secret_at}'"])
+    try:
+        specs = message_specs({"messages": new_messages})
+    except ValueError as exc:
+        raise AuthorServiceError([str(exc)]) from exc
+
+    old_ids = {message.id for message in bundle.messages}
+    appended = [
+        seal_message(
+            passphrase, message_id=message_id, date=message["date"],
+            label=message.get("label", ""), body=message["body"],
+        )
+        for message_id, message in specs if message_id not in old_ids
+    ]
+    bundle.messages.extend(appended)
+    seal_bundle(bundle, passphrase)
+    payload = serialize_bundle(bundle)
+    reread = Bundle.from_dict(json.loads(payload.decode("utf-8")))
+    summary = verify_bundle_roundtrip(reread, passphrase)
+    summary["appended_message_count"] = len(appended)
     return payload, summary
 
 

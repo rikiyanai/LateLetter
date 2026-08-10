@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import contextlib
 import json
+import shutil
+import subprocess
 import threading
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -85,10 +88,8 @@ def test_author_can_resume_write_schedule_and_export_one_canonical_bundle(tmp_pa
             page.locator("#btn-next").click()
             page.locator('section[data-stage="gifts"]').wait_for(state="visible")
 
-            page.locator("#btn-add-gift").click()
-            page.locator(".gift-card select").nth(0).select_option("fixture.coffee_mug")
-            page.locator('.gift-card input[type="date"]').fill("2032-06-14")
-            page.locator(".gift-card select").nth(1).select_option(index=1)
+            page.locator("#f-story-arc").check()
+            page.locator("#f-rabbit-name").fill("Juniper")
             page.locator("#btn-next").click()
             page.locator('section[data-stage="review"]').wait_for(state="visible")
             assert "1" in page.locator("#review-summary-host").inner_text()
@@ -96,6 +97,15 @@ def test_author_can_resume_write_schedule_and_export_one_canonical_bundle(tmp_pa
 
             page.locator("#btn-validate").click()
             page.locator("#validate-state").filter(has_text="1 letter ready").wait_for()
+            page.locator("#garden-story-preview").wait_for(state="visible")
+            preview_trace = json.loads(
+                page.locator("#garden-story-preview").get_attribute("data-trace")
+            )
+            assert preview_trace == [
+                "arc.rabbit-arrives",
+                "arc.third-visit-rose",
+                "arc.bonded-autumn-gift",
+            ]
             page.locator("#btn-next").click()
             page.locator('section[data-stage="export"]').wait_for(state="visible")
             page.locator("#pp-new").fill("1234")
@@ -113,11 +123,54 @@ def test_author_can_resume_write_schedule_and_export_one_canonical_bundle(tmp_pa
             assert len(bundle.messages) == 1
             assert open_message("1234", bundle.messages[0])["body"].startswith("Dear Mara")
             program = open_garden_program("1234", bundle.garden_program)
-            assert program["entities"][0]["catalog_id"] == "fixture.coffee_mug"
-            assert len(program["events"]) == 1
-            reveal = program["events"][0]["actions"][0]
-            assert reveal["type"] == "entity.reveal"
-            assert reveal["params"] == {"state": "ready"}  # G6 owns no placement.
+            assert program["animals"][0]["name"] == "Juniper"
+            assert [event["id"] for event in program["events"]] == preview_trace
+
+            node = shutil.which("node")
+            if node is None:  # pragma: no cover - release environment has Node
+                pytest.skip("Node.js is unavailable for browser-runtime parity")
+            script = """
+              import {evaluateGardenProgram} from './web/garden-program.mjs';
+              let raw=''; for await (const chunk of process.stdin) raw+=chunk;
+              const {program,letterId,seed}=JSON.parse(raw);
+              let state={applied_occurrences:[],variables:{}};
+              const stages=[
+                {'letter.read':[letterId],'visit.total':1,'animal.bond_tier':0,'season.current':'summer'},
+                {'letter.read':[letterId],'visit.total':3,'animal.bond_tier':1,'season.current':'summer'},
+                {'letter.read':[letterId],'visit.total':4,'animal.bond_tier':3,'season.current':'autumn'},
+              ];
+              const applied=[];
+              for(const facts of stages){
+                const result=await evaluateGardenProgram(program,state,{seed,facts});
+                state=result.state;
+                applied.push(...result.trace.filter(row=>row.status==='applied').map(row=>row.event_id));
+              }
+              process.stdout.write(JSON.stringify({applied,state}));
+            """
+            completed = subprocess.run(
+                [node, "--input-type=module", "-e", script], cwd=ROOT,
+                input=json.dumps({"program": program,
+                                  "letterId": bundle.messages[0].id,
+                                  "seed": bundle.garden_seed}),
+                text=True, capture_output=True, check=True,
+            )
+            runtime = json.loads(completed.stdout)
+            assert runtime["applied"] == preview_trace
+            assert runtime["state"]["entities"]["arc.rabbit"]["present"] is True
+            assert runtime["state"]["entities"]["arc.autumn-rose"]["planted"] is True
+            assert runtime["state"]["entities"]["arc.autumn-gift"]["revealed"] is True
+
+            page.locator("#pp-new").fill("1234")
+            page.locator("#pp-confirm").fill("1234")
+            with page.expect_download() as package_info:
+                page.locator("#btn-export-package").click()
+            package_path = tmp_path / "handoff.zip"
+            package_info.value.save_as(package_path)
+            with zipfile.ZipFile(package_path) as package:
+                names = set(package.namelist())
+                assert "LateLetter-handoff/index.html" in names
+                assert "LateLetter-handoff/README.txt" in names
+                assert "LateLetter-handoff/start.py" in names
 
             session_text = (tmp_path / "session" / "session.json").read_text(encoding="utf-8")
             assert '"passphrase"' not in session_text

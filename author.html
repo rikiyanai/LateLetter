@@ -517,6 +517,36 @@
           Starting again clears the draft on this desk. It never touches a
           letter file you have already saved.
         </p>
+        <div class="review-block" id="append-later">
+          <h3>Add a letter to an existing file</h3>
+          <p class="note">The existing letters stay encrypted exactly as they are. Choose the saved file and enter its passphrase only for this append.</p>
+          <div class="field-grid" style="margin-top:1rem">
+            <div class="field wide">
+              <label for="append-file">existing .lateletter file</label>
+              <input type="file" id="append-file" accept=".lateletter,.json">
+            </div>
+            <div class="field">
+              <label for="append-date">delivery date</label>
+              <input type="date" id="append-date">
+            </div>
+            <div class="field">
+              <label for="append-label">letter name</label>
+              <input type="text" id="append-label" autocomplete="off">
+            </div>
+            <div class="field wide">
+              <label for="append-body">letter</label>
+              <textarea id="append-body" rows="7"></textarea>
+            </div>
+            <div class="field">
+              <label for="append-passphrase">existing passphrase</label>
+              <input type="password" id="append-passphrase" autocomplete="off">
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn hi" type="button" id="btn-append">append and save updated file</button>
+            <span class="note" id="append-state" role="status" aria-live="polite"></span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -640,6 +670,19 @@
       <p class="stage-lede" data-row-label="G1"></p>
 
       <div class="stack">
+        <div class="card" id="garden-story-card">
+          <h3>A living Garden story</h3>
+          <label>
+            <input type="checkbox" id="f-story-arc">
+            After the first letter, welcome a rabbit; grow a rose on the third
+            visit; let the bonded rabbit bring an autumn keepsake.
+          </label>
+          <div class="field" style="margin-top:.8rem">
+            <label for="f-rabbit-name">What is the rabbit called?</label>
+            <input type="text" id="f-rabbit-name" maxlength="80" value="Clover">
+          </div>
+          <p class="note">The review shows the exact three runtime events before anything is sealed.</p>
+        </div>
         <div class="card-list" id="gift-list"></div>
         <button class="btn" type="button" id="btn-add-gift">schedule a gift</button>
         <p class="note" data-row-note="G1"></p>
@@ -656,6 +699,10 @@
       </p>
 
       <div id="review-summary-host"></div>
+      <div class="review-block" id="garden-story-preview" hidden>
+        <h3>Garden story preview</h3>
+        <ol id="garden-story-preview-stages"></ol>
+      </div>
 
       <div class="row" style="margin:1.2rem 0">
         <button class="btn hi" type="button" id="btn-validate">check everything</button>
@@ -702,6 +749,7 @@
 
         <div class="row">
           <button class="btn hi" type="button" id="btn-export" disabled>make the letter file</button>
+          <button class="btn" type="button" id="btn-export-package" disabled>make complete handoff package</button>
           <span id="export-state" role="status" aria-live="polite" class="note"></span>
         </div>
       </div>

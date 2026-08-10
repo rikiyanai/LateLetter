@@ -38,17 +38,13 @@
  *
  * WHO OWNS A CLICK
  * ----------------
- * Canonical hotspot rectangles own hit identity. When the player taps the
- * screen, this module converts each object's integer hotspot into a pixel
- * rectangle and asks which rectangle was hit. It does NOT ask which glyph was
- * under the finger.
- *
- * The distinction is not pedantic. Art is allowed to overhang its declared
- * footprint -- a tree's canopy may visually spill past the cells it occupies.
- * If visible ink decided what you clicked, then redrawing a picture would
- * silently change the game's affordances, and an artist could invent an action
- * target by accident. Measured glyph extents are therefore used only for
- * painting, hover highlighting, and diagnostics.
+ * Canonical hotspot rectangles remain the exact, highest-priority hit region.
+ * The browser renderer may also resolve a pointer inside accepted painted art
+ * to the SAME projected object identity. That is necessary for a large flower:
+ * its bloom must not look clickable while only an invisible one-cell stem
+ * anchor works. The art rectangle never owns eligibility or a command; those
+ * remain canonical projection records, so an anonymous drawing cannot invent
+ * an action target by accident.
  *
  * WHAT THIS FILE DELIBERATELY DOES NOT DO
  * ---------------------------------------
@@ -242,8 +238,8 @@ export function createPreTextMeasurer(pretext, options = {}) {
  * @typedef {object} MeasuredAsset
  * @property {MeasuredRow[]} rows
  * @property {number} width - Widest row, in pixels. May EXCEED the pixel width
- *   of the declared cell footprint; overhang is legal and does not affect
- *   occupancy or hit identity.
+ *   of the declared cell footprint; overhang does not affect occupancy or the
+ *   canonical hotspot, but accepted visible art can reach the same object.
  * @property {number} height - Row count multiplied by line height, in pixels.
  */
 
@@ -259,11 +255,11 @@ export function createPreTextMeasurer(pretext, options = {}) {
  * measurer to contribute, and demanding one would be asking a caller to supply
  * a dependency that provably cannot affect the answer.
  *
- * The renderer's hit testing is exactly this case: it already knows its cell
- * size, and hit identity comes from canonical hotspot rectangles, which are
- * integers converted by units alone. In affine-only mode every function that
- * would need to measure text throws rather than guessing, so the restriction is
- * enforced instead of merely documented.
+ * Canonical hotspot conversion is exactly this case: the renderer already
+ * knows its cell size and converts the integer rectangle by units alone. A
+ * separately composed accepted-art rectangle may reach the same projected
+ * object; this geometry does not measure or decide it. In affine-only mode
+ * every function that would need to measure text throws rather than guessing.
  *
  * @param {object} config
  * @param {object} [config.measurer] - Injected measurement capability. Must
@@ -536,11 +532,10 @@ export function createGeometry(config) {
   /**
    * Convert a canonical integer hotspot into a pixel rectangle.
    *
-   * The hotspot comes from the projection layer, which is the authority on hit
-   * identity (see `garden-world.mjs` and `projection.py`). This function only
-   * changes its units. It performs no measurement whatsoever -- which is the
-   * entire point, because it means an object's clickable area is immune to
-   * changes in its own or anyone else's artwork.
+   * The hotspot comes from the projection layer and remains the exact,
+   * highest-priority target. This function only changes its units and performs
+   * no measurement; accepted-art reachability is handled separately and still
+   * resolves to the projection's object identity and declared action.
    *
    * @param {{x: number, y: number, width: number, height: number}} hotspot -
    *   Integer world cells.

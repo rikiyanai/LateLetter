@@ -270,6 +270,12 @@ def project_scene(state: WorldState) -> SceneProjection:
                 ),
                 "visible_organs": _visible_organ_geometry(plant, state.effective_time),
             },
+            primary_action={
+                "command": "tend",
+                "args": {"care_action": "water"},
+                "label": f"water the {plant.species_id.replace('_', ' ')}",
+            },
+            opportunities=(),
         ))
     for fixture in state.fixtures:
         definition = FIXTURE_CATALOG[fixture.catalog_id]

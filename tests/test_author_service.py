@@ -18,11 +18,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from lateletter.author_service import (  # noqa: E402
-    AuthorServiceError, build_bundle, export_bundle_bytes, find_passphrase_key,
+    AuthorServiceError, append_bundle_bytes, build_bundle, export_bundle_bytes, find_passphrase_key,
     passphrase_problem, serialize_bundle, validate_draft, write_bundle_file,
 )
 from lateletter.bundle import Bundle, read_bundle, write_bundle  # noqa: E402
-from lateletter.sealed import open_message, verify_bundle_hmac  # noqa: E402
+from lateletter.sealed import open_garden_program, open_message, verify_bundle_hmac  # noqa: E402
 
 STRONG_PASSPHRASE = "correct-horse-battery-staple-2026"
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
@@ -75,6 +75,28 @@ def test_preview_never_contains_message_bodies():
     assert result.preview["messages"][0]["body_characters"] > 0
 
 
+def test_guided_rabbit_story_previews_and_exports_the_same_three_events():
+    value = draft()
+    del value["garden_program"]
+    value["recipient_name"] = "Mara"
+    value["author_timezone"] = "UTC"
+    value["garden_template"] = {
+        "kind": "letter_rabbit_autumn", "letter_index": 0,
+        "rabbit_name": "Clover",
+    }
+    result = validate_draft(value)
+    assert result.ok, result.errors
+    assert result.preview["garden_story_preview"]["trace"] == [
+        "arc.rabbit-arrives", "arc.third-visit-rose", "arc.bonded-autumn-gift",
+    ]
+    payload, _summary = export_bundle_bytes(value, STRONG_PASSPHRASE)
+    bundle = Bundle.from_dict(json.loads(payload))
+    program = open_garden_program(STRONG_PASSPHRASE, bundle.garden_program)
+    assert [event["id"] for event in program["events"]] == result.preview[
+        "garden_story_preview"
+    ]["trace"]
+
+
 # ── passphrase policy ───────────────────────────────────────────────────────
 
 @pytest.mark.parametrize("value", ["", "a", "abc", 12, None])
@@ -98,6 +120,26 @@ def test_export_refuses_a_passphrase_below_four_characters():
 def test_export_accepts_a_four_character_passphrase():
     payload, _summary = export_bundle_bytes(draft(), "1234")
     assert verify_bundle_hmac(Bundle.from_dict(json.loads(payload)), "1234")
+
+
+def test_append_preserves_identity_auth_salt_old_ciphertext_and_program():
+    original_payload, _ = export_bundle_bytes(draft(), STRONG_PASSPHRASE)
+    original = Bundle.from_dict(json.loads(original_payload))
+    old_messages = [message.to_dict() for message in original.messages]
+    old_program = original.garden_program.to_dict()
+    appended_payload, summary = append_bundle_bytes(
+        original_payload,
+        [{"date": "2027-01-01", "label": "A new year", "body": "Still with you."}],
+        STRONG_PASSPHRASE,
+    )
+    appended = Bundle.from_dict(json.loads(appended_payload))
+    assert appended.bundle_id == original.bundle_id
+    assert appended.bundle_auth_salt == original.bundle_auth_salt
+    assert [message.to_dict() for message in appended.messages[:2]] == old_messages
+    assert appended.garden_program.to_dict() == old_program
+    assert open_message(STRONG_PASSPHRASE, appended.messages[-1])["label"] == "A new year"
+    assert summary["appended_message_count"] == 1
+    assert summary["message_count"] == 3
 
 
 # ── validation ──────────────────────────────────────────────────────────────

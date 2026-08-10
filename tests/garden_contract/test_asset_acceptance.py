@@ -168,7 +168,7 @@ def test_the_local_scene_draws_only_accepted_assets_or_explicit_review_candidate
     """Accepted catalog assets may appear; candidates must appear for review.
 
     Catalog completeness is not scene composition, so accepted assets are not
-    required to appear.  Unaccepted candidates are the opposite: every one must
+    required to appear. Unaccepted candidates are the opposite: every one must
     appear locally or the registry becomes a permission slip for unseen art.
     """
     from lateletter.garden.world.generation import generate_initial_world

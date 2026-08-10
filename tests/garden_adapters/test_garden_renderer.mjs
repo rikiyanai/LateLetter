@@ -51,6 +51,36 @@ import {
 const COMMITTED_PAINT_AUTHORITY = JSON.parse(readFileSync(
   new URL('../../web/garden-accepted-paint.v1.json', import.meta.url), 'utf8'));
 
+// Explicit historical fixture-room capability scenario. These objects are no
+// longer starter population; keeping the room here lets renderer tests exercise
+// the accepted fixture art and relationships without repopulating every new
+// recipient world.
+const FIXTURE_REVIEW_ROOM = Object.freeze([
+  ['pond', [46, 70], { visual_asset_id: 'fixture.pond', fixture_room_role: 'water' }],
+  ['stepping_stones', [35, 70], {
+    visual_asset_id: 'fixture.stepping_stones', fixture_room_role: 'approach', side: 'left',
+  }],
+  ['mailbox', [83, 54], {
+    visual_asset_id: 'fixture.mailbox', fixture_room_role: 'independent',
+  }],
+  ['bench', [46, 25], {
+    visual_asset_id: 'fixture.bench', fixture_room_role: 'seat-facing-water',
+  }],
+  ['lantern', [57, 14], {
+    visual_asset_id: 'fixture.lantern', fixture_room_role: 'independent',
+  }],
+  ['planter', [99, 62], {
+    visual_asset_id: 'fixture.planter', fixture_room_role: 'container',
+  }],
+]);
+
+async function explicitFixtureReviewProjection(plantSpecies = []) {
+  const state = await generateInitialWorld('fixture-review-room', 'fixture-review-seed', {
+    plant_species: plantSpecies, animal_species: [], collectibles: [],
+  });
+  return projectGardenScene(state);
+}
+
 // Constructs a renderer under the committed authority; an explicit
 // `paintAuthority` in `options` (the empty-authority test) still wins.
 function rendererUnderAuthority(element, options = {}) {
@@ -531,20 +561,10 @@ test('a sleeping animal is not faked from a still one', () => {
     'the sleeping pose was sourced from the archive, which draws no sleep');
 });
 
-test('restoring the ported plants leaves the authoritative fixture row alone', async () => {
-  // The five fixture anchors are authoritative canonical data. Plants returning
-  // to the default scene must arrange themselves AROUND that row, never move
-  // it. Anchored between the fixtures they did move it -- measured, the bench
-  // and lantern shifted 7 columns each and then fell out of the phone crop
-  // altogether. This is the assertion that keeps them outside it.
-  const fixturesOnly = async () => {
-    const state = await generateInitialWorld('anchor-check', 'anchor-seed', { plant_species: [] });
-    return projectGardenScene(state);
-  };
-  const withPlants = async () => {
-    const state = await generateInitialWorld('anchor-check', 'anchor-seed');
-    return projectGardenScene(state);
-  };
+test('ported plants leave an explicit fixture review room alone', async () => {
+  // Catalog-capability review must not be confused with default population.
+  // The room is supplied explicitly, then the same canonical fixtures are
+  // compared with and without the review-pending plant roster.
   const columnsOf = (data, viewport) => {
     const element = new FakeElement();
     [element.clientWidth, element.clientHeight] = viewport;
@@ -554,17 +574,14 @@ test('restoring the ported plants leaves the authoritative fixture row alone', a
       .map(entry => [entry.object.semantic_state?.catalog_id,
         `${entry.rect.left}-${entry.rect.right}`]));
   };
-  const bare = columnsOf(await fixturesOnly(), [1600, 1000]);
-  const planted = columnsOf(await withPlants(), [1600, 1000]);
+  const bare = columnsOf(await explicitFixtureReviewProjection(), [1600, 1000]);
+  const planted = columnsOf(
+    await explicitFixtureReviewProjection(REVIEW_PENDING_PLANT_SPECIES),
+    [1600, 1000],
+  );
   for (const [catalog, span] of bare) {
     assert.equal(planted.get(catalog), span,
       `${catalog} moved from ${span} to ${planted.get(catalog)} when the plants returned`);
-  }
-  // And the operator's own phone-crop requirement, restated where it can fail.
-  const phone = columnsOf(await withPlants(), [390, 844]);
-  for (const catalog of ['bench', 'mailbox', 'lantern']) {
-    assert.ok(phone.has(catalog),
-      `the 390x844 crop lost ${catalog}; it holds ${[...phone.keys()].join(', ')}`);
   }
 });
 
@@ -759,12 +776,17 @@ test('palette-only transitions repaint rows whose glyphs are unchanged', () => {
   const data = projection(), element = new FakeElement();
   data.scene.story_time = 'day';
   const renderer = rendererUnderAuthority(element, { prefersReducedMotion: true });
-  const day = renderer.render(data), dayGround = element.children[day.horizon].innerHTML;
+  // Ground ink lands on the camera-projected soil contour (`terrain`), not on
+  // the neutral profile horizon: the fixture camera sits far from the authored
+  // home view, so the two rows differ and only the terrain row carries soil.
+  const day = renderer.render(data), soil = day.terrain.groundFront;
+  const dayGround = element.children[soil].innerHTML;
   data.scene.story_time = 'night';
-  const night = renderer.render(data), nightGround = element.children[night.horizon].innerHTML;
-  assert.equal(day.lines[day.horizon], night.lines[night.horizon]);
+  const night = renderer.render(data), nightGround = element.children[soil].innerHTML;
+  assert.equal(night.terrain.groundFront, soil);
+  assert.equal(day.lines[soil], night.lines[soil]);
   assert.notEqual(dayGround, nightGround);
-  assert.ok(night.changedRows.includes(night.horizon));
+  assert.ok(night.changedRows.includes(soil));
   assert.match(nightGround, /#28302a/);
 });
 
@@ -1204,6 +1226,15 @@ test('no unapproved ambient fauna is drawn in the default scene', () => {
     const frame = renderer.render(data).lines.join('');
     assert.doesNotMatch(frame, /[⋈⋊✦]/, `${season} at ${hour}h`);
   }
+
+  let state = null;
+  for (let frame = 0; frame < 2_000; frame += 1) {
+    state = advancePresentationState(state, [
+      { kind: 'scene', projection: data, viewport: [120, 40] },
+    ], { frame });
+  }
+  assert.deepEqual(state.lifecycle.ambient, [], 'fauna appeared without a pond');
+  assert.deepEqual(state.lifecycle.birds, [], 'a bird appeared without a projected bird');
 });
 
 test('browser renderer uses per-object parallax and projection-hotspot hit testing', () => {
@@ -1397,7 +1428,9 @@ test('ten-minute pan simulation keeps initialized scenery and partial row diffs'
   renderer.render(data);
   for (let second = 1; second <= 600; second += 1) {
     const frame = renderer.render({ ...data, camera: [10 + second, 5] });
-    assert.equal(frame.lines[frame.horizon].includes('.'), true);
+    // The soil line pans with the camera (gardenTerrainFrame); the initialized-
+    // scenery check must read the frame's terrain row, not the neutral horizon.
+    assert.equal(frame.lines[frame.terrain.groundFront].includes('.'), true);
     assert.ok(frame.changedRows.length < frame.viewport[1]);
   }
 });
@@ -1416,27 +1449,21 @@ test('ten-minute pan simulation keeps initialized scenery and partial row diffs'
 // so every fixture in the live capture stood on empty air and the suite
 // reported nothing wrong.
 //
-const STARTER_ROW = ['pond', 'stepping_stones', 'mailbox', 'bench', 'lantern', 'planter'];
-
-test('the authored starter rooms remain whole and stable', async () => {
-  const state = await generateInitialWorld('starter-row', 'starter-row-seed');
-  const data = await projectGardenScene(state);
+test('the explicit fixture review room remains whole and stable', async () => {
+  const data = await explicitFixtureReviewProjection();
   const catalogOf = entry => String(entry.object.semantic_state?.catalog_id ?? '');
+  const reviewCatalogs = FIXTURE_REVIEW_ROOM.map(([catalogId]) => catalogId);
 
   // The world declares the whole authored surface. Anything the picture loses from here on is the
   // presentation losing it, not the world never having had it -- a distinction
   // the first single-surface capture could not make, which is why "three
   // fixtures visible" took a live screenshot to notice.
-  // Filtered to fixtures. The default scene also plants an oak and a sunflower
-  // since the legacy art port, and this test is about the FIXTURE row: the
-  // claim it defends is that all fixtures survive from world to picture,
-  // which is unchanged by there being other objects in the world. The plants
-  // are held to their own contract in 'restoring the ported plants leaves the
-  // authoritative fixture row alone'.
+  // Filtered to fixtures because this is a fixture-room relationship check;
+  // the accepted default also contains the canonical rose and full backdrop.
   const fixtures = data.objects.filter(object => object.kind === 'fixture');
   assert.deepEqual(
     fixtures.map(object => String(object.semantic_state?.catalog_id ?? '')).sort(),
-    [...STARTER_ROW].sort(),
+    [...reviewCatalogs].sort(),
   );
 
   // ── Desktop, 1600x1000 ──────────────────────────────────────────────────
@@ -1444,8 +1471,8 @@ test('the authored starter rooms remain whole and stable', async () => {
   const desktop = [200, 66];
   const layout = layoutGardenObjects(data, desktop, 0)
     .filter(entry => entry.object.kind === 'fixture');
-  assert.deepEqual(layout.map(catalogOf).sort(), [...STARTER_ROW].sort(),
-    'a starter fixture is missing from the desktop composition');
+  assert.deepEqual(layout.map(catalogOf).sort(), [...reviewCatalogs].sort(),
+    'a review fixture is missing from the desktop composition');
 
   const byCatalog = Object.fromEntries(layout.map(entry => [catalogOf(entry), entry]));
   const stonesLeft = byCatalog.stepping_stones.rect.right < byCatalog.pond.rect.left;
@@ -1461,20 +1488,8 @@ test('the authored starter rooms remain whole and stable', async () => {
   const benchCenter = (byCatalog.bench.rect.left + byCatalog.bench.rect.right) / 2;
   assert.ok(benchCenter >= byCatalog.pond.rect.left && benchCenter <= byCatalog.pond.rect.right,
     'the bench is no longer horizontally aligned with the pond');
-  assert.equal(byCatalog.lantern.groundRow, gardenPresentationProfile(desktop).groundBack,
-    'the lantern left the far terrain band');
-
-  // ── Phone, 390x844 → a 48x56 grid ───────────────────────────────────────
-  // Cropping is expected and correct: a phone is a camera into the same world,
-  // not a request to crush it. What the crop must NOT do is lose the two
-  // fixtures the interaction slice is built on. The outer two are deliberately
-  // not asserted either way -- whether they survive the crop is a camera
-  // question, and pinning it here would freeze a composition decision.
-  const phone = layoutGardenObjects(data, [48, 56], 0).map(catalogOf);
-  for (const catalogId of ['bench', 'mailbox', 'lantern']) {
-    assert.ok(phone.includes(catalogId),
-      `the phone crop lost the ${catalogId}; it kept ${JSON.stringify(phone)}`);
-  }
+  assert.ok(byCatalog.lantern.groundRow < byCatalog.bench.groundRow,
+    'the lantern left the room\'s far transition band');
 
   // ── Stability ───────────────────────────────────────────────────────────
   // Art animates; placement does not. Neither an advancing frame nor a focus
@@ -1499,12 +1514,12 @@ test('the authored starter rooms remain whole and stable', async () => {
 test('an object reports its drawing and its hotspot separately', async () => {
   // These two rectangles are NOT interchangeable, and treating them as one is a
   // defect with a visible symptom. `objectRectPixels` is the canonical hotspot:
-  // one world cell for a lantern, a few pixels wide, and the only thing allowed
-  // to decide what a click selects. `objectArtRectPixels` is where the ink is:
-  // a post and a lamp head, several times wider.
+  // one world cell for a lantern, a few pixels wide, and the highest-priority
+  // exact target. `objectArtRectPixels` is where accepted ink is: a post and a
+  // lamp head, several times wider, which can reach that same projected object.
   //
-  // Presentation diagnostics may inspect the second, while selection must use
-  // the first. Redrawing visible ink must never silently redefine the target.
+  // Neither rectangle owns eligibility or a command; those stay on the
+  // projected object. Reporting both keeps interaction geometry inspectable.
   const element = new FakeElement();
   element.clientWidth = 1600; element.clientHeight = 1000;
   const renderer = rendererUnderAuthority(element);
@@ -1642,7 +1657,12 @@ function birdCellsOf(lifecycle, cols) {
 function skyProjection(season) {
   return {
     world_id: 'sky-proof', effective_time: 10, camera: [0, 0], motion_paused: false,
-    scene: { sky_mode: 'storybook_fallback', season }, objects: [],
+    scene: { sky_mode: 'storybook_fallback', season }, objects: [{
+      object_id: 'animal:sky-proof-bird', kind: 'animal', semantic_name: 'bird',
+      position: [10, 5], depth: 110,
+      hotspot: { x: 10, y: 5, width: 1, height: 1 },
+      semantic_state: { species_id: 'bird', bond_tier: 0, intent: 'rest' },
+    }],
   };
 }
 

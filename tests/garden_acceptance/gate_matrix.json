@@ -22,20 +22,18 @@
     "docs/GARDEN_QA_2026-07-21.md",
     "tests/garden_adapters/test_input_adapters.py",
     "tests/garden_adapters/test_world_browser_conformance.py",
-    "tests/test_garden_review_e2e_browser.py"
+    "tests/test_garden_interaction_browser.py",
+    "tests/test_product_handoff_e2e_browser.py"
    ],
    "automated_checks": [
     "tests/garden_adapters/test_input_adapters.py::test_all_modalities_normalize_to_byte_identical_commands",
     "tests/garden_adapters/test_world_browser_conformance.py::test_every_fixture_verb_has_exact_browser_python_linked_world_effects",
-    "tests/test_garden_review_e2e_browser.py::test_clicking_EVERY_accepted_fixture_reaches_the_canonical_world",
-    "tests/test_garden_review_e2e_browser.py::test_keyboard_focus_reaches_every_accepted_fixture_and_ENTER_performs_its_action",
-    "tests/test_garden_review_e2e_browser.py::test_the_full_recorded_key_map_pans_and_focuses_without_shadowing",
-    "tests/test_garden_review_e2e_browser.py::test_touch_can_bring_an_off_screen_fixture_into_reach",
-    "tests/test_garden_review_e2e_browser.py::test_a_single_tap_performs_the_primary_action_on_touch",
-    "tests/test_garden_review_e2e_browser.py::test_a_drag_that_pans_never_performs_the_action_under_the_pointer",
-    "tests/test_garden_review_e2e_browser.py::test_hovering_accepted_ink_changes_the_picture"
+    "tests/test_garden_interaction_browser.py::test_garden_controls_cover_required_browser_inputs_and_viewports",
+    "tests/test_product_handoff_e2e_browser.py::test_one_browser_author_download_reaches_desktop_and_mobile_recipients",
+    "tests/test_product_handoff_e2e_browser.py::test_canonical_garden_state_survives_reload_reupload_and_reauthentication",
+    "tests/test_product_handoff_e2e_browser.py::test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen"
    ],
-   "blocker": "Real Chrome now proves pointer and Enter dispatch for all five accepted starter fixtures, reversible hover presentation, native touch pan that brings both initially off-screen fixtures into reach at 390x844, one-tap primary action, drag-release suppression, and every recorded focus/pan key binding. Cross-runtime adapter tests prove canonical command bytes and fixture effects. Gate 2 remains PARTIAL because its required matrix is larger: plant water/interact, animal feed/play, inspect, collect, journal, pan, and pause have not each been driven through touch, mouse, keyboard, and terminal on one normal sealed product path with identical persisted state transitions; author placement/move/rotate/undo and recipient absence of those commands also need their separate product-path sweep."
+   "blocker": "The current real-Chrome successor proves default-flower inspect/tend, journal, pause and pan across recorded keyboard routes, coordinate mouse input, native CDP touch tap/drag, desktop, 390px, 320px, 200% page scale and reduced motion. One normal sealed product path now carries the exact artifact through both 390x844 and 320x568 native-touch recipient routes; the narrow-phone action group uses a non-overlapping vertical fallback when neither flower edge has room. The final desktop/phone journey asserts the exact author-to-reopen order, including a scheduled gift that crosses its wall-time boundary only after reading/interactions, plus canonical persistence on both contexts. Gate 2 remains PARTIAL because the default has no animals or collectibles, so feed/play/collect remain unexercised; physical-device input, terminal parity, author placement/move/rotate/undo, no-color use and the full remaining action matrix are also unproved."
   },
   {
    "gate": 3,
@@ -112,9 +110,10 @@
   {
    "gate": 8,
    "name": "Author control",
-   "status": "BLOCKED",
+   "status": "PASS",
    "evidence": [
     "web/author-app.mjs",
+    "src/lateletter/author_service.py",
     "tests/test_author_service.py",
     "tests/test_author_e2e_browser.py",
     "tests/test_product_handoff_e2e_browser.py",
@@ -122,9 +121,12 @@
    ],
    "automated_checks": [
     "tests/test_author_e2e_browser.py::test_author_can_resume_write_schedule_and_export_one_canonical_bundle",
-    "tests/test_product_handoff_e2e_browser.py::test_one_browser_author_download_reaches_desktop_and_mobile_recipients"
+    "tests/test_author_service.py::test_guided_rabbit_story_previews_and_exports_the_same_three_events",
+    "tests/garden_acceptance/test_release_acceptance.py::test_normal_sealed_v2_bundle_drives_authored_arc_with_exact_preview_trace",
+    "tests/test_product_handoff_e2e_browser.py::test_one_browser_author_download_reaches_desktop_and_mobile_recipients",
+    "tests/test_product_handoff_e2e_browser.py::test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen"
    ],
-   "blocker": "The five-stage browser author now exports through the sole canonical service, and one byte-identical artifact traverses the recipient Garden, passphrase, archive and exact due plaintext on desktop and touch-mobile Chromium. Gate 8 remains BLOCKED because the MVP author surface cannot yet express and preview the full letter-read → rabbit-arrival → third-revisit plant-growth → bonded-rabbit autumn-gift chain without JSON, or prove preview/runtime trace agreement."
+   "blocker": ""
   },
   {
    "gate": 9,
@@ -173,19 +175,16 @@
    "evidence": [
     "docs/GARDEN_QA_2026-07-21.md",
     "tests/garden_adapters/test_garden_renderer.mjs",
-    "tests/test_garden_review_e2e_browser.py",
+    "tests/test_garden_interaction_browser.py",
+    "tests/test_product_handoff_e2e_browser.py",
     "tests/test_viewer_contract.py"
    ],
    "automated_checks": [
-    "tests/test_garden_review_e2e_browser.py::test_no_action_chrome_at_every_required_size",
-    "tests/test_garden_review_e2e_browser.py::test_keyboard_focus_reaches_every_accepted_fixture_and_ENTER_performs_its_action",
-    "tests/test_garden_review_e2e_browser.py::test_the_full_recorded_key_map_pans_and_focuses_without_shadowing",
-    "tests/test_garden_review_e2e_browser.py::test_touch_can_bring_an_off_screen_fixture_into_reach",
-    "tests/test_garden_review_e2e_browser.py::test_a_single_tap_performs_the_primary_action_on_touch",
-    "tests/test_garden_review_e2e_browser.py::test_the_44px_floor_is_applied_where_it_decides_a_click",
-    "tests/test_garden_review_e2e_browser.py::test_reduced_motion_still_paints_the_garden"
+    "tests/test_garden_interaction_browser.py::test_garden_controls_cover_required_browser_inputs_and_viewports",
+    "tests/test_product_handoff_e2e_browser.py::test_one_browser_author_download_reaches_desktop_and_mobile_recipients",
+    "tests/test_product_handoff_e2e_browser.py::test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen"
    ],
-   "blocker": "Real Chrome now proves the 44px target floor, reduced-motion painting, canonical keyboard focus and action, every recorded focus/pan key, native touch reach and one-tap action at 390x844, and absence of rejected action chrome at desktop, 390px, and 320px widths. Gate 12 remains PARTIAL: full action reachability has not been exercised at 320 CSS pixels or at actual 200% browser zoom; VoiceOver and NVDA traversal, no-color use, physical-device touch, and the complete recipient action set still require direct accessibility verification."
+   "blocker": "Real Chrome now proves the 44px target floor and horizontal fit of the persistent journal/inventory and motion controls at 320 and 390 CSS pixels, reduced-motion painting, keyboard focus/action, coordinate pointer input, native touch tap/drag, and action activation at actual 200% CDP page scale. The exact artifact additionally activates the flower through its measured picture region at 390x844 and 320x568 while proving the rejected object-name/verb control surface is absent; clean reading paint suppresses the native blue tap highlight while retaining an explicit keyboard focus-visible outline. Gate 12 remains PARTIAL because VoiceOver/NVDA were excluded from this review by operator direction, and no-color use, physical-device touch, animal and collectible controls, and the complete remaining recipient action matrix still require direct verification."
   },
   {
    "gate": 13,

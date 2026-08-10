@@ -21,9 +21,9 @@
  *
  * WHAT IS DELIBERATELY UNCHANGED
  * ------------------------------
- * Hit identity still comes from the projection's hotspots. This is a change of
- * units, not of authority. The tests below therefore assert on canonical object
- * ids, never on what was painted.
+ * Hit identity and action still come from projected canonical objects. Exact
+ * hotspots win first; accepted painted art may reach that same identity so a
+ * visible bloom does not require finding its invisible one-cell anchor.
  */
 
 import assert from 'node:assert/strict';
@@ -337,23 +337,42 @@ test('hit testing distinguishes positions inside a single cell', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Authority: hotspots decide, artwork does not
+// Authority: projected identity/actions; exact hotspot first, accepted art next
 // ---------------------------------------------------------------------------
 
-test('overhanging art never widens what a click can reach', () => {
-  // The bench draws eighteen columns of picture from a one-cell hotspot. If ink
-  // decided hit identity, a click far to the side of its cell would select it.
-  // Only the hotspot -- expanded to the accessible minimum -- may.
+test('accepted overhanging art reaches its canonical projected object', () => {
+  // The bench draws eighteen columns of accepted picture from a one-cell
+  // hotspot. A click on that visible picture must resolve to the SAME projected
+  // object; the art supplies no command or eligibility of its own.
   const { renderer, selected, pixels } = hitScene([
     { id: 'fixture:bench', rect: cellRect(30, 10) },
   ]);
   const rect = pixels('fixture:bench');
   const centreX = (rect.left + rect.right) / 2;
+  renderer.measuredAssetRects.set('fixture:bench', {
+    x: centreX - 72, y: rect.top, width: 144, height: rect.bottom - rect.top,
+  });
 
-  // The drawing spans roughly 144px, so 60px from centre is under the picture
-  // but well outside the hotspot's 44px target.
+  // Sixty pixels from centre is inside the accepted drawing but well outside
+  // the hotspot's 44px accessibility expansion.
   renderer._selectAt({ clientX: centreX + 60, clientY: (rect.top + rect.bottom) / 2 });
-  assert.equal(selected(), null, 'overhanging art must not become an action target');
+  assert.equal(selected(), 'fixture:bench');
+});
+
+test('an exact canonical hotspot still outranks overlapping accepted art', () => {
+  const { renderer, selected, pixels } = hitScene([
+    { id: 'fixture:pond', rect: cellRect(20, 8) },
+    { id: 'plant:rose', rect: cellRect(28, 8) },
+  ]);
+  const pond = pixels('fixture:pond');
+  renderer.measuredAssetRects.set('plant:rose', {
+    x: pond.left - 10, y: pond.top - 10, width: 100, height: 40,
+  });
+  renderer._selectAt({
+    clientX: (pond.left + pond.right) / 2,
+    clientY: (pond.top + pond.bottom) / 2,
+  });
+  assert.equal(selected(), 'fixture:pond');
 });
 
 test('hit identity comes from the hotspot rectangle, not the object position', () => {

@@ -551,7 +551,7 @@ def test_the_gate_matrix_cites_the_current_browser_e2e_contract():
     the retracted claims from the status surface itself.
     """
     matrix = json.loads(GATE_MATRIX.read_text(encoding="utf-8"))
-    e2e = ROOT / "tests" / "test_garden_review_e2e_browser.py"
+    e2e = ROOT / "tests" / "test_garden_interaction_browser.py"
     recorded = e2e.read_text(encoding="utf-8")
     functions = {
         node.name: node for node in ast.parse(recorded).body
@@ -560,13 +560,13 @@ def test_the_gate_matrix_cites_the_current_browser_e2e_contract():
     accessibility = next(g for g in matrix["gates"] if g["name"] == "Accessibility")
     parity = next(g for g in matrix["gates"] if g["name"] == "Input parity")
     for gate in (accessibility, parity):
-        assert "tests/test_garden_review_e2e_browser.py" in gate["evidence"], (
+        assert "tests/test_garden_interaction_browser.py" in gate["evidence"], (
             f"gate {gate['gate']} does not cite the browser review that measures it"
         )
         assert gate["status"] == "PARTIAL"
         browser_selectors = [
             selector for selector in gate["automated_checks"]
-            if selector.startswith("tests/test_garden_review_e2e_browser.py::")
+            if selector.startswith("tests/test_garden_interaction_browser.py::")
         ]
         assert browser_selectors, f"gate {gate['gate']} cites no browser checks"
         for selector in browser_selectors:
@@ -587,6 +587,7 @@ def test_the_gate_matrix_cites_the_current_browser_e2e_contract():
     ):
         assert retracted.lower() not in claims, f"stale gate claim survived: {retracted}"
 
-    assert "one normal sealed product path" in parity["blocker"]
-    assert "200% browser zoom" in accessibility["blocker"]
+    assert "one normal sealed product path" in parity["blocker"].lower()
+    assert "200% cdp page scale" in accessibility["blocker"].lower()
+    assert "physical-device" in accessibility["blocker"].lower()
     assert "voiceover" in accessibility["blocker"].lower()

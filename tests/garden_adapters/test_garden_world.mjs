@@ -265,6 +265,10 @@ async function runStarterCompositionScenario(seed = 'starter-seed') {
     world_width: state.world_width,
     world_height: state.world_height,
     camera: state.ui.camera,
+    plants: state.plants.map(plant => ({
+      species_id: plant.species_id,
+      position: plant.position,
+    })),
     fixtures: state.fixtures.map(fixture => ({
       catalog_id: fixture.catalog_id,
       position: fixture.position,
@@ -436,10 +440,37 @@ if (process.argv.includes('--emit')) {
     // BEHAVIOURAL, deliberately. The composition this runs on is under review
     // and not approved, so nothing here asserts a glyph, a colour or a
     // position -- only what the world OFFERS and what performing it does.
-    const world = await generateInitialWorld('interaction:contract', 'slice');
+    const world = await generateInitialWorld('interaction:contract', 'slice', {
+      animal_species: [], collectibles: [],
+    });
+    world.fixtures = [
+      {
+        fixture_id: 'fixture:bench', catalog_id: 'bench', position: [10, 10],
+        rotation: 0, authored: false, interaction_count: 0,
+        last_interaction: null, authored_state: {},
+      },
+      {
+        fixture_id: 'fixture:lantern', catalog_id: 'lantern', position: [20, 10],
+        rotation: 0, authored: false, interaction_count: 0,
+        last_interaction: null, authored_state: {},
+      },
+    ];
     const scene = await projectGardenScene(world);
     const bench = scene.objects.find(item => item.semantic_name === 'Garden bench');
     const lantern = scene.objects.find(item => item.semantic_name === 'Lantern');
+    const rose = scene.objects.find(item => item.kind === 'plant');
+
+    assert.deepEqual(rose.primary_action, {
+      command: 'tend', args: { care_action: 'water' }, label: 'water the rose',
+    });
+    assert.deepEqual(rose.opportunities, []);
+    const [watered, waterResult] = await dispatchGardenCommand(world, {
+      world_id: world.world_id, sequence: world.command_sequence + 1,
+      kind: rose.primary_action.command, target_id: rose.object_id,
+      args: rose.primary_action.args, command_id: 'command:water-rose',
+    });
+    assert.equal(waterResult.accepted, true);
+    assert.equal(watered.plants[0].tended_count, world.plants[0].tended_count + 1);
 
     // 7.8.3.1: the world declares the act and its wording. A renderer reading
     // this cannot invent behaviour, because there is nothing left to infer.

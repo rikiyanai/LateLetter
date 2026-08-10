@@ -1,27 +1,15 @@
-"""The Garden's no-action-chrome rule, exercised in a real browser.
+"""Durable real-browser successor for Garden gates 2 and 12.
 
-Why this file exists
---------------------
-The rejected implementation painted opportunity cards, hover instructions, an
-object list and a "More actions" sheet over the Garden.  Source tests then
-required those unapproved controls to exist.  This test drives the localhost
-review surface and asserts both sides of the operator's decision: the picture
-is painted, while the rejected product UI cannot return over it.
-
-Running it
-----------
-``playwright`` and system Google Chrome must already be installed; the test
-skips when they are not, exactly like ``scripts/capture_html_garden_review.py``,
-which shares the same requirement and the same policy of never downloading a
-browser.  The project's own virtual environment does not carry ``playwright``,
-so this is normally run from an interpreter that does::
-
-    python3 -m pytest tests/test_garden_interaction_browser.py
+The deleted mechanics harness must not return. This test drives the ordinary
+viewer at desktop, 390px touch, 320px CSS width, and an actual 200% CDP page
+scale. Product actions use coordinate mouse/touch input or real keyboard input;
+Locator.click is reserved for entering the standalone setup route.
 """
 
 from __future__ import annotations
 
 import contextlib
+import json
 import socket
 import subprocess
 import sys
@@ -37,12 +25,9 @@ playwright_api = pytest.importorskip(
 )
 
 ROOT = Path(__file__).parents[1]
-DESKTOP = (1600, 1000)
-MOBILE = (390, 844)
 
 
 def _free_port() -> int:
-    """Ask the OS for a port nobody is using, and let go of it immediately."""
     with socket.socket() as probe:
         probe.bind(("127.0.0.1", 0))
         return int(probe.getsockname()[1])
@@ -50,11 +35,6 @@ def _free_port() -> int:
 
 @contextlib.contextmanager
 def _static_server():
-    """Serve the repository over HTTP for the duration of the test.
-
-    The viewer is an ES module and fetches sibling files, so ``file://`` will
-    not do — the browser refuses cross-origin module imports from it.
-    """
     port = _free_port()
     process = subprocess.Popen(
         [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
@@ -69,7 +49,7 @@ def _static_server():
                 if probe.connect_ex(("127.0.0.1", port)) == 0:
                     break
             time.sleep(0.05)
-        else:  # pragma: no cover - only on a badly wedged machine
+        else:  # pragma: no cover
             raise RuntimeError("the static server never came up")
         yield f"http://127.0.0.1:{port}"
     finally:
@@ -77,56 +57,388 @@ def _static_server():
         process.wait(timeout=10)
 
 
-def test_garden_renders_no_object_action_labels_cards_or_lists():
+def _watch(page) -> list[str]:
     errors: list[str] = []
+    page.on("pageerror", lambda error: errors.append(f"pageerror: {error}"))
+    page.on(
+        "console",
+        lambda message: errors.append(f"console.{message.type}: {message.text}")
+        if message.type == "error"
+        and "favicon.ico" not in ((message.location or {}).get("url", "") + message.text)
+        else None,
+    )
+    return errors
+
+
+def _open_standalone(page, origin: str) -> None:
+    page.goto(f"{origin}/viewer-bnw.html?garden_debug=1", wait_until="networkidle")
+    page.locator("#btn-standalone").click()
+    page.locator("#hud.vis").wait_for(state="visible")
+    page.locator("#g .garden-lattice-row").first.wait_for(state="attached")
+
+
+def _state(page) -> dict[str, object]:
+    return json.loads(page.evaluate("window.__gardenReview.canonicalStateJson()"))
+
+
+def _coordinate_activate(page, locator, *, touch: bool) -> None:
+    locator.wait_for(state="visible")
+    box = None
+    for _ in range(10):
+        box = locator.bounding_box()
+        if box is not None:
+            break
+        page.wait_for_timeout(50)
+    assert box is not None
+    x = box["x"] + box["width"] / 2
+    y = box["y"] + box["height"] / 2
+    if touch:
+        page.touchscreen.tap(x, y)
+    else:
+        page.mouse.click(x, y)
+
+
+def _activate_garden_object(page, object_id: str, *, touch: bool) -> None:
+    """Activate accepted object art away from its invisible anchor target."""
+    page.wait_for_function(
+        "id => window.__gardenReview.objectRectPixels(id) !== null && "
+        "window.__gardenReview.objectArtRectPixels(id) !== null", arg=object_id,
+    )
+    point = page.evaluate(
+        """id => {
+          const hotspot = window.__gardenReview.objectRectPixels(id);
+          const art = window.__gardenReview.objectArtRectPixels(id);
+          if (!hotspot || !art) return null;
+          const width = Math.max(44, hotspot.width);
+          const height = Math.max(44, hotspot.height);
+          const expanded = {
+            left: hotspot.x - (width - hotspot.width) / 2,
+            right: hotspot.x + hotspot.width + (width - hotspot.width) / 2,
+            top: hotspot.y - (height - hotspot.height) / 2,
+            bottom: hotspot.y + hotspot.height + (height - hotspot.height) / 2,
+          };
+          const xs = [.08, .25, .5, .75, .92].map(f => art.x + art.width * f);
+          const ys = [.08, .25, .5, .75, .92].map(f => art.y + art.height * f);
+          const garden = document.querySelector('#g');
+          for (const y of ys) for (const x of xs) {
+            const outsideAnchor = x < expanded.left || x >= expanded.right ||
+              y < expanded.top || y >= expanded.bottom;
+            const element = document.elementFromPoint(x, y);
+            if (outsideAnchor && x >= 0 && y >= 0 && x < innerWidth && y < innerHeight &&
+                element && (element === garden || element.closest('#g') === garden)) {
+              return {x, y};
+            }
+          }
+          return null;
+        }""",
+        object_id,
+    )
+    assert point is not None, "no exposed rose-art point exists outside its anchor target"
+    x, y = point["x"], point["y"]
+    assert page.evaluate(
+        "p => window.__gardenReview.objectAtPixels(p.x, p.y)", point,
+    ) == object_id, "visible rose art did not resolve to its projected identity"
+    if touch:
+        page.touchscreen.tap(x, y)
+    else:
+        page.mouse.click(x, y)
+
+
+def _keyboard_focus_object(page, object_id: str, *, object_count: int) -> None:
+    """Reach one canonical object through the product's real ring navigation."""
+    for _ in range(object_count + 1):
+        previous = page.evaluate("window.__gardenReview.focus()?.id ?? null")
+        page.keyboard.press("]")
+        page.wait_for_function(
+            "before => (window.__gardenReview.focus()?.id ?? null) !== before",
+            arg=previous,
+        )
+        if page.evaluate("window.__gardenReview.focus()?.id") == object_id:
+            page.wait_for_function(
+                """id => {
+                  const target = window.__gardenReview.positions().find(item => item.id === id);
+                  return target &&
+                    JSON.stringify(window.__gardenReview.camera()) ===
+                      JSON.stringify(target.position) &&
+                    window.__gardenReview.objectRectPixels(id) !== null &&
+                    window.__gardenReview.objectArtRectPixels(id) !== null;
+                }""",
+                arg=object_id,
+            )
+            return
+    raise AssertionError(f"keyboard ring never reached {object_id}")
+
+
+def _assert_touch_floor_and_css_fit(page, selector: str, width: int) -> None:
+    rectangles = page.locator(selector).evaluate_all(
+        "nodes => nodes.filter(node => getComputedStyle(node).display !== 'none').map(node => {"
+        " const r=node.getBoundingClientRect();"
+        " return {left:r.left,right:r.right,width:r.width,height:r.height}; })"
+    )
+    assert rectangles
+    for rect in rectangles:
+        assert rect["width"] >= 44 and rect["height"] >= 44, rect
+        assert rect["left"] >= -0.5 and rect["right"] <= width + 0.5, rect
+
+
+def test_garden_controls_cover_required_browser_inputs_and_viewports():
+    error_streams: list[list[str]] = []
     with _static_server() as origin, playwright_api.sync_playwright() as driver:
         try:
             browser = driver.chromium.launch(channel="chrome")
         except Exception as failure:  # pragma: no cover - environment dependent
             pytest.skip(f"system Google Chrome is unavailable: {failure}")
-        context = browser.new_context(
-            viewport={"width": DESKTOP[0], "height": DESKTOP[1]},
-        )
-        page = context.new_page()
-        page.on("pageerror", lambda error: errors.append(f"pageerror: {error}"))
-        page.on(
-            "console",
-            lambda message: errors.append(f"console.{message.type}: {message.text}")
-            if message.type == "error"
-            and "/favicon.ico" not in (message.location or {}).get("url", "")
-            else None,
-        )
         try:
-            # Localhost paints the tracked candidate without any permission
-            # query. The public workflow still serves the legacy Garden.
-            page.goto(f"{origin}/viewer-bnw.html", wait_until="networkidle")
-            page.locator("#btn-demo").click()
-            page.locator("#hud.vis").wait_for(state="visible")
-            page.locator("#g .garden-lattice-row").first.wait_for(state="attached")
-
-            assert page.locator("#g .garden-lattice-row").evaluate_all(
-                "rows => rows.reduce((count, row) => count + row.textContent.trim().length, 0)"
-            ) > 0, "localhost review must paint the Garden picture"
-
-            forbidden = (
-                "#garden-affordances",
-                "#garden-semantics",
-                "#garden-object-list",
-                "#garden-action-sheet",
-                ".garden-opportunity",
-                "#garden-invitation",
+            desktop_context = browser.new_context(
+                viewport={"width": 1600, "height": 1000},
             )
-            for selector in forbidden:
-                assert page.locator(selector).count() == 0, selector
-            assert page.locator("#g button").count() == 0
+            desktop = desktop_context.new_page()
+            desktop.set_default_timeout(30_000)
+            error_streams.append(_watch(desktop))
+            _open_standalone(desktop, origin)
+            assert desktop.locator("#garden-context-actions").count() == 0
 
-            page.set_viewport_size({"width": MOBILE[0], "height": MOBILE[1]})
-            page.wait_for_timeout(250)
-            for selector in forbidden:
-                assert page.locator(selector).count() == 0, selector
-            assert page.locator("#g button").count() == 0
+            # The ordinary live route must actually repaint over time. A
+            # canonical "pause motion" value alone cannot prove presentation
+            # frames are advancing; compare the rendered Garden bytes.
+            live_frames: set[str] = set()
+            for _ in range(8):
+                live_frames.add(desktop.locator("#g").inner_text())
+                desktop.wait_for_timeout(125)
+            assert len(live_frames) > 1, "ordinary Garden presentation is motionless"
+
+            initial = _state(desktop)
+            plant_id = initial["plants"][0]["plant_id"]
+
+            # The one-second canonical live refresh must preserve the DOM
+            # identity held by keyboard and assistive-technology clients.
+            # Locator-based activation would silently re-resolve replacement
+            # nodes and therefore cannot prove this invariant.
+            desktop.evaluate(
+                """() => {
+                    window.__gardenStableControls = {
+                        journal: document.querySelector(
+                            '#hud-actions [data-garden-command="open_journal"]'
+                        ),
+                        motion: document.querySelector(
+                            '#hud-actions [data-garden-command="pause_motion"]'
+                        ),
+                    };
+                    window.__gardenStableControls.journal.focus();
+                }"""
+            )
+            desktop.wait_for_timeout(1_250)
+            assert desktop.evaluate(
+                """() => {
+                    const saved = window.__gardenStableControls;
+                    return saved.journal === document.querySelector(
+                        '#hud-actions [data-garden-command="open_journal"]'
+                    ) && saved.motion === document.querySelector(
+                        '#hud-actions [data-garden-command="pause_motion"]'
+                    ) && document.activeElement === saved.journal;
+                }"""
+            )
+
+            # The rose is an interaction in the picture, not a permanently
+            # painted object-name/action label. A real coordinate click both
+            # tends the canonical plant and emits visible picture feedback.
+            _keyboard_focus_object(
+                desktop,
+                plant_id,
+                object_count=len(desktop.evaluate("window.__gardenReview.state().objects")),
+            )
+            tended_before = _state(desktop)["plants"][0]["tended_count"]
+            _activate_garden_object(desktop, plant_id, touch=False)
+            desktop.wait_for_function(
+                "before => JSON.parse(window.__gardenReview.canonicalStateJson()).plants[0].tended_count > before",
+                arg=tended_before,
+            )
+            desktop.wait_for_function(
+                "() => window.__gardenReview.visiblePaint().source_ids.includes('recipe.feedback.click_leaf_burst')"
+            )
+
+            # Keyboard focus, primary interaction, tend, journal, pause and pan
+            # all traverse the document's recorded keyboard routes.
+            tended_before = _state(desktop)["plants"][0]["tended_count"]
+            desktop.keyboard.press("Enter")
+            desktop.wait_for_function(
+                "before => JSON.parse(window.__gardenReview.canonicalStateJson()).plants[0].tended_count > before",
+                arg=tended_before,
+            )
+            tended_before = _state(desktop)["plants"][0]["tended_count"]
+            desktop.keyboard.press("t")
+            desktop.wait_for_function(
+                "before => JSON.parse(window.__gardenReview.canonicalStateJson()).plants[0].tended_count > before",
+                arg=tended_before,
+            )
+            desktop.keyboard.press("Space")
+            desktop.wait_for_function(
+                "() => JSON.parse(window.__gardenReview.canonicalStateJson()).ui.motion_paused"
+            )
+            desktop.keyboard.press("Space")
+            desktop.wait_for_function(
+                "() => !JSON.parse(window.__gardenReview.canonicalStateJson()).ui.motion_paused"
+            )
+            desktop.keyboard.press("j")
+            desktop.locator("#garden-journal").wait_for(state="visible")
+            desktop.evaluate(
+                """() => {
+                    window.__gardenStableJournal = {
+                        close: document.querySelector('#garden-journal-close'),
+                        entry: document.querySelector('#garden-journal-list > li'),
+                    };
+                    window.__gardenStableJournal.close.focus();
+                }"""
+            )
+            desktop.wait_for_timeout(1_250)
+            assert desktop.evaluate(
+                """() => {
+                    const saved = window.__gardenStableJournal;
+                    return saved.close === document.querySelector('#garden-journal-close')
+                        && saved.entry === document.querySelector('#garden-journal-list > li')
+                        && document.activeElement === saved.close;
+                }"""
+            )
+            desktop.keyboard.press("Escape")
+            desktop.locator("#garden-journal").wait_for(state="hidden")
+            camera = desktop.evaluate("window.__gardenReview.camera()")
+            desktop.keyboard.press("Shift+ArrowRight")
+            desktop.wait_for_function(
+                "before => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(before)",
+                arg=camera,
+            )
+
+            # A coordinate mouse drag pans canonically and does not rely on a
+            # locator-generated click event.
+            camera = desktop.evaluate("window.__gardenReview.camera()")
+            desktop.mouse.move(240, 760)
+            desktop.mouse.down()
+            desktop.mouse.move(140, 760, steps=5)
+            desktop.mouse.up()
+            desktop.wait_for_function(
+                "before => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(before)",
+                arg=camera,
+            )
+
+            # CDP page scale is the browser's actual visual zoom boundary, not
+            # a CSS transform. Measure the resulting CSS visual viewport and
+            # activate a real control while it is at 200%.
+            cdp = desktop_context.new_cdp_session(desktop)
+            cdp.send("Emulation.setPageScaleFactor", {"pageScaleFactor": 2})
+            zoom = desktop.evaluate(
+                "() => ({scale:visualViewport.scale,width:visualViewport.width,inner:innerWidth})"
+            )
+            assert zoom["scale"] == pytest.approx(2, abs=0.05)
+            assert zoom["width"] <= zoom["inner"] / 1.9
+            journal = desktop.locator(
+                '#hud-actions [data-garden-command="open_journal"]'
+            )
+            _coordinate_activate(desktop, journal, touch=False)
+            desktop.locator("#garden-journal").wait_for(state="visible")
+            desktop.keyboard.press("Escape")
+            cdp.send("Emulation.setPageScaleFactor", {"pageScaleFactor": 1})
+
+            desktop.set_viewport_size({"width": 320, "height": 568})
+            desktop.wait_for_timeout(200)
+            _assert_touch_floor_and_css_fit(
+                desktop,
+                "#hud-actions button",
+                320,
+            )
+            desktop_context.close()
+
+            # A separate 390x844 mobile context supplies native CDP touch
+            # events and a reduced-motion media preference. Tap and drag both
+            # have to mutate the canonical world while the Garden still paints.
+            touch_context = browser.new_context(
+                viewport={"width": 390, "height": 844},
+                has_touch=True,
+                is_mobile=True,
+                reduced_motion="reduce",
+            )
+            touch_page = touch_context.new_page()
+            touch_page.set_default_timeout(30_000)
+            error_streams.append(_watch(touch_page))
+            _open_standalone(touch_page, origin)
+            assert touch_page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
+            assert touch_page.locator("#g").inner_text().strip()
+            touch_state = _state(touch_page)
+            touch_id = touch_state["plants"][0]["plant_id"]
+            # The accepted full Garden keeps its rose at the open left edge;
+            # the narrow initial crop is centred on the fixture room. Traverse
+            # the real keyboard ring to frame it before proving the touch-only
+            # action route. This preserves the accepted composition instead of
+            # moving the flower merely to make a test selector convenient.
+            _keyboard_focus_object(
+                touch_page,
+                touch_id,
+                object_count=len(touch_page.evaluate("window.__gardenReview.state().objects")),
+            )
+            assert touch_page.locator("#garden-context-actions").count() == 0
+            _activate_garden_object(touch_page, touch_id, touch=True)
+            touch_page.wait_for_function(
+                "() => JSON.parse(window.__gardenReview.canonicalStateJson()).plants[0].tended_count === 1"
+            )
+
+            camera = touch_page.evaluate("window.__gardenReview.camera()")
+            touch_cdp = touch_context.new_cdp_session(touch_page)
+            touch_cdp.send("Input.dispatchTouchEvent", {
+                "type": "touchStart", "touchPoints": [{"x": 320, "y": 700}],
+            })
+            for x in (300, 280, 260, 240):
+                touch_cdp.send("Input.dispatchTouchEvent", {
+                    "type": "touchMove", "touchPoints": [{"x": x, "y": 700}],
+                })
+            touch_cdp.send("Input.dispatchTouchEvent", {
+                "type": "touchEnd", "touchPoints": [],
+            })
+            touch_page.wait_for_function(
+                "before => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(before)",
+                arg=camera,
+            )
+            _assert_touch_floor_and_css_fit(
+                touch_page,
+                "#hud-actions button",
+                390,
+            )
+            touch_context.close()
         finally:
-            context.close()
             browser.close()
 
-    assert errors == [], f"the localhost review surface logged errors: {errors}"
+    all_errors = [error for stream in error_streams for error in stream]
+    assert all_errors == [], all_errors
+
+
+def test_local_fixed_time_is_an_executable_four_season_review_route():
+    cases = {
+        "2026-01-15T12:00:00Z": "winter",
+        "2026-04-15T12:00:00Z": "spring",
+        "2026-07-15T12:00:00Z": "summer",
+        "2026-10-15T12:00:00Z": "autumn",
+    }
+    streams: list[list[str]] = []
+    with _static_server() as origin, playwright_api.sync_playwright() as driver:
+        try:
+            browser = driver.chromium.launch(channel="chrome")
+        except Exception as failure:  # pragma: no cover
+            pytest.skip(f"system Google Chrome is unavailable: {failure}")
+        try:
+            for timestamp, expected in cases.items():
+                context = browser.new_context(viewport={"width": 1280, "height": 900})
+                page = context.new_page()
+                streams.append(_watch(page))
+                page.goto(
+                    f"{origin}/viewer-bnw.html?garden_debug=1&garden_review_time={timestamp}",
+                    wait_until="networkidle",
+                )
+                page.locator("#btn-standalone").click()
+                page.locator("#hud.vis").wait_for(state="visible")
+                presentation = page.evaluate("window.__gardenReview.presentation()")
+                assert presentation["season"] == expected
+                assert presentation["review_time"] is not None
+                assert presentation["sky_label"]
+                context.close()
+        finally:
+            browser.close()
+    errors = [error for stream in streams for error in stream]
+    assert errors == []

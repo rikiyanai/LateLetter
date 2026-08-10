@@ -2638,10 +2638,12 @@ export async function projectGardenScene(sourceState) {
         semantic_description: `${plant.species_id.replaceAll('_', ' ')} at ${plant.position[0]},${plant.position[1]}; ${plant.dormant ? 'resting' : 'growing'}, ${visible.length} visible organs.`,
         visible_organs: visibleOrganGeometry(plant, state.effective_time),
       },
-      // Plants declare no primary action and offer no opportunities yet. The
-      // fields are still present so every projected object has one shape and a
-      // renderer never has to test whether a key exists.
-      primary_action: null,
+      // A flower is acted on through its drawing, not through a browser-painted
+      // object label. Projection still owns the exact command and arguments.
+      primary_action: {
+        command: 'tend', args: { care_action: 'water' },
+        label: `water the ${plant.species_id.replaceAll('_', ' ')}`,
+      },
       opportunities: [],
     });
   }

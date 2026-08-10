@@ -17,6 +17,7 @@ does not fail when the thing it guards is broken is not a check.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 import sys
@@ -115,8 +116,25 @@ def test_rejected_and_unreviewed_paint_is_absent_from_the_authority(built_site):
 
     Cross-checked against the registers directly rather than trusting the
     builder's own helper twice: the accepted lists must be exactly the IDs
-    whose register verdict is accepted, so a rejected or not-reviewed ID in
-    the manifest is unreachable rather than merely unlikely.
+    the register grants, so a rejected or not-reviewed ID in the manifest is
+    unreachable rather than merely unlikely.
+
+    Reconciliation, 2026-08-05: this assertion was written when the atlas
+    verdict table (`assets[]`) was the register's ONLY way to grant an asset
+    ID. f05658a added a second, narrower door -- `operator_grants[]`, for an
+    exact operator-authored TXT that entered through the grant ledger instead
+    of the atlas review table (today: `plant.rose`). The builder admits such a
+    grant only after resolving its declared `source` and matching the recorded
+    `source_sha256`, and raises otherwise; prose alone is never paint
+    authority there. So the expected set below is verdict-accepted IDs UNION
+    hash-verified grant IDs. The hash is recomputed HERE, from the register
+    and the file on disk, rather than read back from the builder, so the two
+    derivations stay independent and a grant whose bytes drifted would still
+    be caught by this test rather than only by the builder it is checking.
+
+    Nothing about this widens what may paint: the two anti-leak assertions
+    below are unchanged, and a grant is still refused unless its source file
+    exists and hashes exactly.
     """
     manifest = json.loads((built_site / PAINT_MANIFEST_NAME).read_text(encoding="utf-8"))
 
@@ -124,9 +142,43 @@ def test_rejected_and_unreviewed_paint_is_absent_from_the_authority(built_site):
     by_verdict: dict[str, set[str]] = {}
     for record in assets["assets"]:
         by_verdict.setdefault(record["verdict"], set()).add(record["asset_id"])
+
+    # Independently re-derive the grant ledger's contribution. A ledger entry
+    # only counts when it names an asset ID, names a source path, records the
+    # expected digest, the file is present, and the bytes hash to exactly that
+    # digest. Any entry missing a field is a non-grant (the register keeps
+    # prose-only historical rows in the same list), and is skipped -- matching
+    # the builder's own admission rule without importing it.
+    granted_assets: set[str] = set()
+    for grant in assets.get("operator_grants", []):
+        asset_id = grant.get("asset_id")
+        source = grant.get("source")
+        expected = grant.get("source_sha256")
+        if not (
+            isinstance(asset_id, str)
+            and isinstance(source, str)
+            and isinstance(expected, str)
+        ):
+            continue
+        source_path = REPOSITORY_ROOT / source
+        assert source_path.is_file(), (
+            f"operator grant {asset_id!r} names a source that is not on disk: {source}"
+        )
+        # sha256 of the raw bytes -- the same identity the grant recorded.
+        digest = hashlib.sha256(source_path.read_bytes()).hexdigest()
+        assert digest == expected, (
+            f"operator grant {asset_id!r} no longer matches its hash-bound source"
+        )
+        granted_assets.add(asset_id)
+    assert granted_assets, (
+        "no hash-bound operator grant remains; this half of the proof went vacuous"
+    )
+
     accepted_assets = set(manifest["accepted_assets"])
-    assert accepted_assets == by_verdict.get("accepted", set()) | by_verdict.get(
-        "accepted_as_deployed", set()
+    assert accepted_assets == (
+        by_verdict.get("accepted", set())
+        | by_verdict.get("accepted_as_deployed", set())
+        | granted_assets
     )
     assert not accepted_assets & by_verdict.get("rejected", set())
     assert not accepted_assets & by_verdict.get("not_reviewed", set())
