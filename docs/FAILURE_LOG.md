@@ -16443,12 +16443,52 @@ line outside the artwork.
   violations. Computer Use opened the live standalone product in Chrome,
   observed the one-plant/six-fixture summary, and exercised a direct fixture
   action through the keyboard route with status feedback.
-- **Acceptance boundary:** `docs/garden-composition-acceptance.json` and the
-  generated presentation report deliberately keep revision 7 `not_reviewed`.
-  Machine verification is complete for this child, but only the operator can
-  accept the final desktop/phone appearance. Physical-device touch,
-  VoiceOver/NVDA, no-color use, default-animal/default-collectible actions and
-  the complete remaining action matrix are not claimed.
-- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED; OPERATOR
-  VISUAL ACCEPTANCE REMAINS OPEN. ComplaintRefs: “OK DO” execution order
-  (2026-08-11); Wayfinder destination accepted (2026-08-11).
+- **Acceptance boundary:** the operator subsequently approved the visual
+  composition at desktop, 390×844 and 320×568, with centered flower, sparse
+  scene, no overflow and no browser errors. Commit `485d0be` itself remained
+  unaccepted because recommendation 20's Home and empty-ground double-gesture
+  recenter routes were absent. Physical-device touch, VoiceOver/NVDA, no-color
+  use, default-animal/default-collectible actions and the complete remaining
+  action matrix are not claimed.
+- **Status:** VISUAL DESIGN ACCEPTED; COMMIT ACCEPTANCE BLOCKED ON RECENTER
+  ROUTES. ComplaintRefs: “OK DO” execution order (2026-08-11); Wayfinder
+  destination accepted (2026-08-11); operator verification of exact `485d0be`
+  (2026-08-11).
+
+### Recommendation 20 recenter routes implemented after operator rejection of 485d0be (2026-08-11)
+
+The operator verified exact commit `485d0be`, approved its composition at all
+three required viewports, then falsified the interaction destination: after a
+drag to camera `[69,42]`, `Home` left the camera at `[69,42]`. Source inspection
+confirmed no Home binding and no double-click/double-tap route. Port 8898 was
+rejected as evidence because it served excluded dirty edits; the operator used
+a temporary exact-commit server and removed it recoverably afterward.
+
+- **Cause:** canonical `pan` already owned camera mutation and persistence, but
+  `viewer-bnw.html` emitted no command for either accepted recenter gesture.
+  The debug-only “frame garden” button separately inferred a fixture-average
+  camera, leaving a second stale definition of home.
+- **Intervention:** one `gardenHomeCamera`/`recenterGardenCamera` route now
+  derives canonical world center and dispatches the existing persistent `pan`.
+  `Home`, the debug frame button, mouse double-click on empty Garden ground and
+  touch double-tap on empty Garden ground all use it. Double gestures over
+  projected object art remain object actions. The touch recognizer suppresses
+  the synthetic second click and any subsequent synthesized `dblclick`, so one
+  gesture produces one canonical recenter dispatch.
+- **Executable proof:** the real-browser Garden interaction test first performs
+  a coordinate mouse drag, then proves `Home` returns the exact initial camera;
+  it displaces again and proves empty-ground mouse double-click returns the
+  same camera. A separate 390×844 native-touch context performs CDP touch drag
+  followed by two touchscreen taps on measured empty Garden ground and proves
+  the same canonical result. Browser review is 2/2 and release acceptance is
+  11/11 with no page or console errors. An index-only snapshot of the exact
+  staged result passes 235/235 viewer/Garden/release checks and 5/5 sealed
+  product handoff journeys.
+- **Falsifier:** any route returns somewhere other than canonical world center,
+  fires only on a visible debug label, acts on an object during an empty-ground
+  recenter, emits duplicate touch commands, fails after a real drag, or is
+  demonstrated only from a dirty server rather than the exact staged commit.
+- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED; operator
+  acceptance of the follow-up commit remains required. ComplaintRefs: batch
+  operator decision item 4 / recommendation 20 (2026-08-11); exact `485d0be`
+  operator rejection (2026-08-11).

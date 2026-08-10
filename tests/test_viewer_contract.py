@@ -150,8 +150,10 @@ def test_viewer_keeps_garden_actions_on_the_picture_without_labels_or_cards():
     # Direct interaction remains on the drawing. Pointer/touch and keyboard
     # dispatch the action declared by the canonical projection; no viewer-local
     # label or menu decides what the act is.
-    assert "await dispatchGardenDeclaredAction(object.primary_action,object,event,'canonical-raster')" in source
-    assert "await dispatchGardenDeclaredAction(focus.primary_action,focus,e,'keyboard')" in source
+    assert "const action=declaredGardenDirectAction(object);" in source
+    assert "if(action)await dispatchGardenDeclaredAction(action,object,event,'canonical-raster')" in source
+    assert "const action=declaredGardenDirectAction(focus);" in source
+    assert "if(action)await dispatchGardenDeclaredAction(action,focus,e,'keyboard')" in source
     assert "if((e.key==='m'||e.key==='M')&&focus)" not in source
 
     # The old HUD action owner remains absent too.
@@ -177,7 +179,7 @@ def test_reproducible_review_clock_is_local_only_and_resets_world_persistence():
     assert "GARDEN_REVIEW_IS_LOCAL&&GARDEN_REVIEW_TIME_SECONDS!==null" in source
     assert "const worldPersistence=persistent&&!freshCompositionReview" in source
     assert "now:()=>reviewTime??Math.floor(Date.now()/1000)" in source
-    assert "gardenReviewTime()!==null&&!GARDEN_REVIEW_MOTION_REQUESTED" in source
+    assert "garden_review_motion" not in source
     assert "async function _receiptGet(key)" in source
     assert "async function _receiptSet(key,value)" in source
     assert "return gardenReviewTime()===null?kvGet(key):null" in source
@@ -300,10 +302,10 @@ def test_viewer_derives_modality_and_implements_reduced_motion_and_modal_contrac
     assert "dispatchGardenUi('touch'" not in source
     assert "dispatchGardenUi('mouse'" not in source
     assert "const nativeButtonActivation=" in source
-    assert "garden?.setReducedMotion?.(" in source
-    assert "gardenReviewTime()!==null&&!GARDEN_REVIEW_MOTION_REQUESTED" in source
-    assert "const enabled=visible&&!Boolean(gardenRuntime.state?.ui?.motion_paused)" in source
-    assert "refreshAfterCanonicalLiveAdvance()" in source
+    assert "garden?.setReducedMotion?.(true)" in source
+    assert "gardenRuntime?.stopLive?.()" in source
+    assert "const enabled=visible&&!Boolean(gardenRuntime.state?.ui?.motion_paused)" not in source
+    assert "refreshAfterCanonicalLiveAdvance" not in source
     assert "reducedMotionQuery.addEventListener('change',syncAmbientMotion)" in source
     assert 'aria-labelledby="mem-type" aria-describedby="mem-text"' in source
     assert "element.setAttribute('inert','')" in source

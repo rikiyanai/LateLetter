@@ -650,12 +650,6 @@ const GARDEN_VISUAL_CHECK_REQUESTED=Boolean(
   new URLSearchParams(location.search).get('visual_check'),
 );
 const GARDEN_REVIEW_TIME_TEXT=new URLSearchParams(location.search).get('garden_review_time');
-// Local visual review may hold civil time on a season/hour while leaving the
-// disposable presentation clock alive. The default remains a frozen frame for
-// deterministic asset captures; `garden_review_motion=1` is the temporal
-// review surface for weather, wind, pond water and ambient actors.
-const GARDEN_REVIEW_MOTION_REQUESTED=
-  new URLSearchParams(location.search).get('garden_review_motion')==='1';
 const GARDEN_REVIEW_TIME_SECONDS=(()=>{
   if(!GARDEN_REVIEW_TIME_TEXT||
     !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(GARDEN_REVIEW_TIME_TEXT))return null;
@@ -793,13 +787,6 @@ function syncAmbientMotion(){
 }
 function updateCanonicalLiveLoop(){
   gardenRuntime?.stopLive?.();
-}
-async function refreshAfterCanonicalLiveAdvance(){
-  if(gardenProgram&&authenticated&&!bundleCorrupted){
-    await runAuthenticatedGardenProgram();
-    dueIdxs=computeDue();
-  }
-  await renderCanonicalGarden();
 }
 
 function clearCanonicalGardenUi(){
@@ -1339,6 +1326,22 @@ function declaredGardenDirectAction(object){
     if(water)return water;
   }
   return object?.primary_action||null;
+}
+function gardenHomeCamera(){
+  if(!gardenRuntime?.state)return null;
+  return[
+    Math.floor(Number(gardenRuntime.state.world_width)/2),
+    Math.floor(Number(gardenRuntime.state.world_height)/2),
+  ];
+}
+async function recenterGardenCamera(modality,metadata={}){
+  const target=gardenHomeCamera();
+  if(!target)return null;
+  const camera=gardenRuntime.state.ui.camera;
+  return dispatchGardenUi(modality,'pan',{
+    args:{dx:target[0]-camera[0],dy:target[1]-camera[1]},
+    metadata:{...metadata,recenter:'canonical-home'},
+  });
 }
 /**
  * Read-only review accessor, localhost only.
@@ -2400,13 +2403,10 @@ function wire(){
       const focus=gardenRuntime?.focusedObject();let args={};let target_id=null;
       if(action==='pan')args={dx:Number(button.dataset.dx||0),dy:Number(button.dataset.dy||0)};
       else if(action==='frame'){
-        const objects=gardenRuntime?.projection?.objects||[];
-        if(!objects.length)return;
-        const fixtures=objects.filter(object=>object.kind==='fixture');
-        const frameObjects=fixtures.length?fixtures:objects;
-        const target=[Math.floor(gardenRuntime.state.world_width/2),
-          Math.round(frameObjects.reduce((total,object)=>total+object.position[1],0)/frameObjects.length)];
-        args={dx:target[0]-gardenRuntime.state.ui.camera[0],dy:target[1]-gardenRuntime.state.ui.camera[1]};
+        await recenterGardenCamera(inputModalityFromBrowserEvent(event),{
+          control:'debug-frame-garden',
+        });
+        return;
       }
       else if(action==='pause_motion')args={paused:!gardenRuntime?.state.ui.motion_paused};
       else if(action==='dwell'){
@@ -2423,7 +2423,7 @@ function wire(){
           y:Number(document.getElementById('garden-place-y').value),
         };
       }else if(['inspect','tend','feed','play','collect','move_fixture'].includes(action))target_id=focus?.object_id||null;
-      await dispatchGardenUi(inputModalityFromBrowserEvent(event),action==='frame'?'pan':action,{
+      await dispatchGardenUi(inputModalityFromBrowserEvent(event),action,{
         target_id,args,metadata:{control:'global-actions'},
       });
     };
@@ -2525,6 +2525,16 @@ function wire(){
         await focusGardenObject(e.key==='['?'previous':'next',e,'keyboard-navigation');
         return;
       }
+      // Recommendation 20 (operator decision, 2026-08-11): Home is the
+      // label-free keyboard route back to the centered starter flower. It
+      // dispatches canonical pan rather than creating a second camera owner.
+      if(e.key==='Home'){
+        e.preventDefault();
+        await recenterGardenCamera('browser_keyboard',{
+          key:e.key,code:e.code,repeat:e.repeat,control:'keyboard-home',
+        });
+        return;
+      }
       // Enter performs the focused object's declared PRIMARY action.
       //
       // It used to dispatch `open_actions`, which meant the keyboard reader got
@@ -2546,6 +2556,7 @@ function wire(){
       //   Shift+Arrow   camera pan (the arrows' old job, still reachable)
       //   W A S D       camera pan, for hands that live on letters
       //   [ and ]       previous/next around the object ring
+      //   Home          recenter the camera on canonical world center
       //   Enter         the focused object's declared primary action
       // Arrows previously panned, so no direction ever reached `move_focus`
       // from a keyboard and the spatial half of the command sat unreachable.
@@ -2743,7 +2754,9 @@ async function init(){
     // A drag that moved the camera swallows the click that Chrome fires at
     // pointerup, so releasing a pan cannot ALSO perform whatever primary
     // action happens to sit under the finger -- panning must never act.
-    let gardenDrag=null;
+    let gardenDrag=null,gardenLastEmptyTap=null,gardenSuppressClick=false;
+    let gardenLastTouchRecenterAt=-Infinity;
+    const emptyGardenPoint=event=>!garden?.objectAtPixels?.(event.clientX,event.clientY);
     gardenElement.style.touchAction='none';
     gardenElement.addEventListener('pointerdown',e=>{
       if(!e.isPrimary)return;
@@ -2760,17 +2773,51 @@ async function init(){
         args:{dx,dy},metadata:{gesture:'drag',pointer_type:e.pointerType},
       });
     });
-    const endGardenDrag=()=>{
+    const endGardenDrag=async e=>{
       // The moved flag survives until the click event so it can be swallowed;
       // it is cleared there, or on the next pointerdown.
-      if(gardenDrag&&!gardenDrag.moved)gardenDrag=null;
+      if(!gardenDrag||e.pointerId!==gardenDrag.id)return;
+      if(gardenDrag.moved){gardenLastEmptyTap=null;return;}
+      if(e.pointerType==='touch'&&emptyGardenPoint(e)){
+        const prior=gardenLastEmptyTap;
+        const close=prior&&e.timeStamp-prior.time<=450&&
+          Math.hypot(e.clientX-prior.x,e.clientY-prior.y)<=28;
+        if(close){
+          gardenLastEmptyTap=null;gardenDrag=null;gardenSuppressClick=true;
+          gardenLastTouchRecenterAt=e.timeStamp;
+          e.preventDefault();
+          await recenterGardenCamera(inputModalityFromBrowserEvent(e),{
+            gesture:'double-tap',pointer_type:e.pointerType,
+          });
+          return;
+        }
+        gardenLastEmptyTap={time:e.timeStamp,x:e.clientX,y:e.clientY};
+      }else gardenLastEmptyTap=null;
+      gardenDrag=null;
     };
     gardenElement.addEventListener('pointerup',endGardenDrag);
     gardenElement.addEventListener('pointercancel',()=>{gardenDrag=null;});
     gardenElement.addEventListener('click',e=>{
+      if(gardenSuppressClick){
+        e.stopImmediatePropagation();e.preventDefault();gardenSuppressClick=false;
+        return;
+      }
       if(gardenDrag&&gardenDrag.moved){
         e.stopImmediatePropagation();e.preventDefault();gardenDrag=null;
       }
+    },{capture:true});
+    // Mouse double-click mirrors touch double-tap, but only on empty ground.
+    // A touch browser that also synthesizes `dblclick` is ignored after the
+    // pointer-owned double-tap, preventing duplicate canonical dispatch.
+    gardenElement.addEventListener('dblclick',async e=>{
+      if(e.timeStamp-gardenLastTouchRecenterAt<600){
+        e.preventDefault();e.stopImmediatePropagation();return;
+      }
+      if(e.button!==0||!emptyGardenPoint(e))return;
+      e.preventDefault();e.stopImmediatePropagation();gardenDrag=null;
+      await recenterGardenCamera(inputModalityFromBrowserEvent(e),{
+        gesture:'double-click',pointer_type:'mouse',
+      });
     },{capture:true});
     installGardenReviewAccessor();
     syncAmbientMotion();

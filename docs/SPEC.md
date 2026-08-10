@@ -1829,6 +1829,12 @@ autonomous animation. The rejected 1/0/0/0 experiment that emptied
 `STARTER_FIXTURES` is not the product baseline and must not return; removing
 ownerless paint does not remove the six canonical fixtures.
 
+Camera recentering is label-free on the ordinary surface. `Home` and a
+double-click or double-tap on empty Garden ground return the camera to canonical
+world center through the same persistent `pan` command as dragging and keyboard
+pan. A double gesture on projected object art remains that object's direct
+action and does not become a second camera owner.
+
 Everything under `REVIEW_PENDING_*` — additional canonical plants, the cat, and
 the collectible — stays **absent from the default canonical roster** until each
 drawing is separately accepted under §7.10. Presentation-native planting and

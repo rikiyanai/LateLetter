@@ -144,6 +144,26 @@ def _activate_garden_object(page, object_id: str, *, touch: bool) -> None:
         page.mouse.click(x, y)
 
 
+def _empty_garden_ground_point(page) -> dict[str, float]:
+    """Find visible lower-Garden paint that resolves to no canonical object."""
+    point = page.evaluate(
+        """() => {
+          const garden = document.querySelector('#g');
+          const rect = garden.getBoundingClientRect();
+          for (let y = rect.top + rect.height * .55; y < rect.bottom - 8; y += 12) {
+            for (let x = rect.left + 8; x < rect.right - 8; x += 12) {
+              const element = document.elementFromPoint(x, y);
+              if (element && (element === garden || element.closest('#g') === garden) &&
+                  window.__gardenReview.objectAtPixels(x, y) === null) return {x, y};
+            }
+          }
+          return null;
+        }"""
+    )
+    assert point is not None, "no visible empty Garden ground point exists"
+    return point
+
+
 def _keyboard_focus_object(page, object_id: str, *, object_count: int) -> None:
     """Reach one canonical object through the product's real ring navigation."""
     for _ in range(object_count + 1):
@@ -207,6 +227,7 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             assert len(live_frames) == 1, "ordinary Garden presentation animated"
 
             initial = _state(desktop)
+            home_camera = initial["ui"]["camera"]
             plant_id = initial["plants"][0]["plant_id"]
             mailbox_id = next(
                 fixture["fixture_id"] for fixture in initial["fixtures"]
@@ -303,6 +324,26 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 arg=camera,
             )
 
+            # Recommendation 20: after a real drag, Home returns to canonical
+            # home. Empty-ground double-click is an independent label-free
+            # route to that exact camera.
+            desktop.keyboard.press("Home")
+            desktop.wait_for_function(
+                "home => JSON.stringify(window.__gardenReview.camera()) === JSON.stringify(home)",
+                arg=home_camera,
+            )
+            desktop.keyboard.press("Shift+ArrowRight")
+            desktop.wait_for_function(
+                "home => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(home)",
+                arg=home_camera,
+            )
+            empty_ground = _empty_garden_ground_point(desktop)
+            desktop.mouse.dblclick(empty_ground["x"], empty_ground["y"])
+            desktop.wait_for_function(
+                "home => JSON.stringify(window.__gardenReview.camera()) === JSON.stringify(home)",
+                arg=home_camera,
+            )
+
             # CDP page scale is the browser's actual visual zoom boundary, not
             # a CSS transform. Measure the resulting CSS visual viewport and
             # activate a real control while it is at 200%.
@@ -343,6 +384,7 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             assert touch_page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
             assert touch_page.locator("#g").inner_text().strip()
             touch_state = _state(touch_page)
+            touch_home_camera = touch_state["ui"]["camera"]
             touch_id = touch_state["plants"][0]["plant_id"]
             # Traverse the real keyboard ring before proving the touch-only
             # action route; focus and pointer still use canonical identity.
@@ -372,6 +414,13 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             touch_page.wait_for_function(
                 "before => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(before)",
                 arg=camera,
+            )
+            empty_ground = _empty_garden_ground_point(touch_page)
+            touch_page.touchscreen.tap(empty_ground["x"], empty_ground["y"])
+            touch_page.touchscreen.tap(empty_ground["x"], empty_ground["y"])
+            touch_page.wait_for_function(
+                "home => JSON.stringify(window.__gardenReview.camera()) === JSON.stringify(home)",
+                arg=touch_home_camera,
             )
             _assert_touch_floor_and_css_fit(
                 touch_page,
