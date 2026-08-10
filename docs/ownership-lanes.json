@@ -82,6 +82,7 @@
         "tests/test_author_questionnaire.py",
         "tests/test_author_service.py",
         "tests/test_author_web.py",
+        "tests/test_product_handoff_e2e_browser.py",
         "tests/test_recipient.py"
       ]
     },
