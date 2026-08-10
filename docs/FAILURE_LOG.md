@@ -16195,3 +16195,202 @@ promoting the first partial run.
 - **Status:** ALL MACHINE-EXECUTABLE WEB-E2E REQUIREMENTS VERIFIED; FINAL
   OPERATOR VISUAL ACCEPTANCE PENDING. ComplaintRefs: Exact Web E2E Order
   (2026-08-10); operator restoration and direct-rose decisions (2026-08-11).
+
+### Operator return review: three observations logged before the visual verdict (2026-08-11)
+
+- **Complaint (operator, 2026-08-11):** returning to the pending final visual
+  review, the operator reports (a) a remembered "txt file with a bunch of
+  approved flowers" is not findable, (b) the journal and diagnostics surfaces
+  are unrecognized, and (c) minor defects in dragging for position.
+- **Flower-source finding (no fog, no child):** the flower text sources exist.
+  `ascii-animations/flowers/collected-flowers.txt` (238 lines, Christopher
+  Johnson collection, extracted 2026-04-18) and
+  `ascii-animations/flowers/flower-animations.txt` are present at HEAD, with
+  copies under `legacy/` and `archive/legacy-repo-7b9389d/`. The
+  operator-approved plant/gift bytes live in `web/garden-approved-art.mjs`
+  (approved 2026-08-03, receipt
+  `tracked/LateLetterResearch/transcription-parity/eb861dc84400fc36/`) and
+  `src/lateletter/garden/data/operator-granted-art/` (granted in `bf50d7f`,
+  deleted in `1bdea41`, re-promoted in `b57441f`). Nothing is missing from the
+  worktree; this observation closes as a location answer.
+- **Journal provenance:** the visible `journal & inventory` control
+  (`viewer-bnw.html:1748`, shortcut `j`) was implemented during the 2026-08-10
+  web-E2E completion, after the Garden map recorded journal/inventory
+  visibility as ABSENT fog. It is machine-verified but has never received an
+  operator verdict, so the operator not recognizing it is expected, not a
+  regression signal by itself.
+- **Diagnostics provenance:** the "Garden diagnostic controls" aside
+  (`viewer-bnw.html:500`) is gated on `garden_debug=1` AND a
+  localhost/standalone page; the presentation frame's `diagnostics` field
+  (`web/garden-presentation.mjs:927`) is provenance data the painter never
+  reads. Neither is on the ordinary product route. If the operator saw a
+  diagnostics surface without the debug query, that is a gate escape and must
+  be recorded as a defect.
+- **Status:** COMPLAINTS RECORDED; TWO CHILDREN CHARTED BELOW; FINAL OPERATOR
+  VISUAL ACCEPTANCE REMAINS OPEN. ComplaintRefs: Wayfinder map: the whole
+  recipient Garden, nested under product E2E (2026-08-10); Final
+  requirement-mapped audit after visible-ink correction (2026-08-11).
+
+### Wayfinder child: operator verdict on the journal & inventory and diagnostic surfaces (2026-08-11)
+
+Question:
+Walk the operator through the `journal & inventory` control and panel as
+implemented in the 2026-08-10 web-E2E completion and obtain an explicit
+accept/reject/change verdict, and confirm whether any diagnostics surface was
+visible to the operator on the ordinary (query-free) product route. A debug
+aside visible without `garden_debug=1` graduates into its own defect entry.
+Type: grilling. ComplaintRefs: Wayfinder map: the whole recipient Garden,
+nested under product E2E (2026-08-10); Operator return review: three
+observations logged before the visual verdict (2026-08-11).
+
+### Wayfinder child: reproduce and specify the operator's drag-position defects (2026-08-11)
+
+Question:
+Capture exactly what the operator calls "minor bugs in dragging for position":
+which surface (camera pan drag in `viewer-bnw.html` around line 2774-2795
+versus object drag ownership in `web/garden-painting.mjs`), which device and
+pointer type, and the expected-versus-observed motion for each case. Each
+reproduced behavior becomes one falsifiable defect record with a capture ref;
+none is fixed inside this child. Type: grilling. ComplaintRefs: Wayfinder map:
+the whole recipient Garden, nested under product E2E (2026-08-10); Operator
+return review: three observations logged before the visual verdict
+(2026-08-11).
+
+### Batch operator decision: restored Garden destination after return review (2026-08-11)
+
+The operator explicitly replaced the one-question-at-a-time cadence with one
+batch and accepted all 23 recommended answers. This decision supersedes both
+unanswered grilling children immediately above; they remain lineage, not open
+questions.
+
+The binding destination is:
+
+1. Preserve the accepted `e4eea8a` full-Garden composition: bench, mailbox,
+   stepping stones, planter, lantern and pond, with one starter flower. Use
+   only the six accepted base fixture drawings; the six seeded fixture
+   variants remain excluded and unreviewed.
+2. Replace the fixed edge-positioned rose with exactly one flower chosen
+   deterministically by the sealed bundle/Garden seed from accepted flower
+   sources. The pool comprises each suitable standalone flower in
+   `ascii-animations/flowers/collected-flowers.txt`, the exact operator-granted
+   rose and suitable static frames from `flower-animations.txt`. The cat
+   panorama, repeating flower border, bouquet and mandala are excluded from
+   starter selection because they are composed scenes rather than individual
+   Garden plants.
+3. Preserve every selected flower's exact characters and proportions. Do not
+   redraw, crop or substitute glyphs. A drawing that cannot fit every required
+   viewport is excluded from the starter pool, so viewport size never changes
+   the selected identity. Selection must remain stable across reload,
+   re-upload, desktop and phone for the same authenticated artifact.
+4. Place the selected flower at canonical world center and center the initial
+   camera on it. Existing authenticated recipients retain their last camera;
+   double-click/double-tap on empty ground and `Home` recenter without adding a
+   visible label. Only untouched starter worlds migrate; authored or
+   recipient-modified populations remain exact.
+5. Remove decorative birds, insects, fake plants and ownerless ground objects.
+   Retain the accepted sky field, ground plane and full six-fixture Garden.
+   Garden presentation has no autonomous animation; therefore the visible
+   `pause motion` control is removed.
+6. The picture owns interaction. Activating a flower performs a real `tend`
+   command immediately, with watering offered only when canonical state calls
+   for it. Activating a fixture performs its safe projected primary action.
+   No object name, verb list, card, action sheet or permanent label may be
+   painted over or beside Garden art. A static object-state change plus one
+   unobtrusive status line outside the artwork carries feedback.
+7. Remove the permanent `journal & inventory` HUD label. The mailbox exposes
+   the unified journal/inventory only when canonical content exists.
+   Diagnostics remain developer tooling behind explicit `garden_debug=1` in a
+   trusted standalone/dev route and are absent from every ordinary recipient
+   and standalone URL.
+8. Mouse and touch dragging move the visible Garden one-to-one with the
+   pointer, retain pointer capture beyond the Garden bounds, clamp at world
+   edges and never activate an object after a drag. Presentation may move
+   smoothly during the gesture, then commits one canonical cell camera
+   position when movement settles. The authenticated camera position persists.
+9. Required product proof covers real mouse and keyboard on desktop and real
+   touchscreen tap/drag at 390x844 and 320x568. VoiceOver is excluded by
+   operator direction. No screenshot, source inspection or passing suite
+   substitutes for the operator's final inspection of the same authenticated
+   artifact on desktop and phone.
+
+This decision also resolves a prior canon conflict. The 2026-08-10 decision
+for one centered seed-selected flower remains binding, but its "no fixture-room
+clutter" clause is superseded by the later explicit restoration of the
+operator-approved `e4eea8a` full Garden. The result is one centered selected
+flower inside that accepted six-fixture composition, not revision 6's minimal
+1/0/0/0 proposal and not the current fixed rose at `[70,820]`.
+
+- **Status:** DESTINATION APPROVED IN ONE BATCH; NO PRODUCT IMPLEMENTATION IN
+  THIS WAYFINDER PASS. ComplaintRefs: Batch operator decision: author corpus
+  approved and product fog resolved (2026-08-10); Operator return review:
+  three observations logged before the visual verdict (2026-08-11); Final
+  requirement-mapped audit after visible-ink correction (2026-08-11).
+
+### Wayfinder map update: approved flowers, quiet controls and exact dragging (2026-08-11)
+
+Overlay-kind: planned. Area: garden-product. Priority: P1.
+
+**Destination.** One authenticated artifact opens the same full accepted
+Garden on desktop and phone: six accepted base fixtures, one exact
+seed-selected accepted flower at canonical center, no ownerless decoration or
+autonomous motion, direct picture-owned actions, conditional mailbox-owned
+journal access and stable one-to-one camera dragging. Existing modified worlds
+survive; untouched starter worlds migrate. Completion requires the operator to
+accept the actual desktop and phone product, not only its diagnostics.
+
+**Observed mismatch and responsible owners.** The source corpus exists and is
+hash-identical to its archive, but `STARTER_PLANT_SPECIES` in Python and
+JavaScript admits only `rose`; `STARTER_PLANT_ANCHORS` places it at `[70,820]`;
+and `web/garden-approved-art.mjs` presents only that operator rose. The
+accepted-source register names the broader legacy corpus but the runtime has
+not indexed its standalone flowers as a selectable product pool. Today's
+`viewer-bnw.html` adds permanent global journal and pause labels that were not
+in the accepted clone. Its July pointer handler quantizes and awaits every
+move without pointer capture. Renderer-local ambience remains capable of
+painting noncanonical scenery. These are the stale owners to delete or narrow;
+projection identity, canonical command dispatch, authenticated persistence and
+accepted-paint authority remain the owners to preserve.
+
+**Falsifiers.** The destination is not reached if two devices select different
+flowers for one artifact; any selected drawing changes bytes, crops or paints
+outside its owner; a candidate fixture variant or ownerless bird/insect enters
+an ordinary frame; an object needs a visible label to act; journal/pause or
+diagnostics remain permanently visible; a drag loses capture, jumps, activates
+an object, fails to clamp or reopens at the wrong authenticated camera; an
+existing modified world is regenerated; or the operator rejects either final
+viewport.
+
+Execution children, in dependency order:
+
+1. **Canonicalize the accepted starter-flower pool.** Inventory each eligible
+   exact drawing and static state, bind source hashes and accepted-paint
+   identities, define viewport eligibility, and make Python/JavaScript seeded
+   choice bytes conform. Do not infer approval for redrawn or composite art.
+2. **Reconcile generation, placement and migration.** Preserve the six base
+   fixtures, generate one selected flower at world center, center fresh camera
+   state, and migrate only untouched starter worlds. Update SPEC, composition
+   register and stale 1/0/0/0 or fixed-rose tests in the same child.
+3. **Narrow presentation and interaction owners.** Remove autonomous and
+   ownerless ambience, the pause HUD and permanent journal HUD; route
+   picture-owned flower/fixture activation through projection identity and
+   canonical dispatch; make mailbox journal access conditional on content.
+4. **Repair camera gesture ownership.** Add pointer capture, smooth gesture
+   presentation, bounded canonical settlement, click suppression, persistence
+   and label-free recenter routes for mouse, touch and keyboard. Keep drag
+   residue session-only and canonical camera state persistent.
+5. **Run one exact-artifact acceptance journey.** Exercise desktop mouse and
+   keyboard plus actual touch at 390x844 and 320x568, including deterministic
+   flower identity, exact ink, direct actions, drag bounds, recenter,
+   reload/re-upload and untouched-versus-modified migration. Present those
+   live product surfaces for the operator's final verdict.
+
+Frontier child selected: **canonicalize the accepted starter-flower pool**.
+Every downstream composition and browser assertion depends on a finite,
+hash-bound pool rather than the current ambiguous distinction between an
+approved source file and the few plant identities the runtime can paint.
+
+The repository has no `scripts/analyze_failure_log.py`,
+`scripts/analyze_runs.py` or `scripts/fl_overlay_set.py`, so this append-only
+entry is the available Wayfinder/attempt ledger. No overlay or RQ row was
+manufactured. RQ projection: not projected; the operator decision is sharp
+and the first execution child is unblocked.
