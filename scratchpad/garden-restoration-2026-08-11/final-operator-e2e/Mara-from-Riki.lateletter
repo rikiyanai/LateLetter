@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "bundle_id": "348bb12c-080e-426a-9e75-92d8dd8ba5ec",
+  "author_name": "Riki",
+  "passphrase_hint": "the room with the yellow table",
+  "bundle_auth_salt": "WwhD+sq/8TGIvsn++oH1rg==",
+  "garden_seed": 3960681577,
+  "messages": [
+    {
+      "id": "3ed2a51b-400d-4cdc-a7d7-1fd55796a145",
+      "date": "2026-08-11",
+      "ciphertext": "RKKLcncsSq+IRFWx1PvSgfamvPog36CF8dkci5lj9se4fNeyTGCgX2r7y/+2Cci1xlBNn2dLYtkW6NL+eW0F9IgRKAtZSsnhZWltn+5LxJrZ6SiC9jbuVRNLO3nUG7IaUBIUa1ytb26C+A==",
+      "salt": "Q1391i+LDx06YBiKZ1Wrtg==",
+      "nonce": "TYmrkKYKQAMCIOVV",
+      "kdf_params": {
+        "name": "PBKDF2",
+        "hash": "SHA-256",
+        "iterations": 600000
+      }
+    }
+  ],
+  "garden_gifts": [],
+  "notification": null,
+  "bundle_auth_kdf_params": {
+    "name": "PBKDF2",
+    "hash": "SHA-256",
+    "iterations": 600000
+  },
+  "garden_program": {
+    "version": 1,
+    "ciphertext": "1fIUlY+Xru5hxKbLXp9R0bKl6pfwG+ehZH/Nm0Le76UnzSNbn9OorD/bVHKdo/Fra9sSwQUjndg3IRS78uy48O1uzWKcDHD1a6f/mWOIi87/Mu5+yvPS2+vvUrClixAHrriWNNjiSN9Xt4ds4sEUMoyHeWghEXADwidKUO4JMemPnu+KufymgVtOdfthiuCOcVBKC+eXLk6VXjUvJD0jv7Atcagf8w0i6ygKJGtaLggp3VlBqdvvmKABEG9DuMjuv6we+ml8UmWlTLfFVcrkhFVQeuAaZP5a+JGlDvS8SV1Ksp9/WmFbNbWDj8fdo7f5gda750pQRFcKpLJhdaJLIDJo2+kfDOqyIn/U2rqtTbcElZsXmLigm/L5QMEMmIIQ4E6DaKZvhKzxOpcZp6bcsKrNMNQHZacTxotvFwbK2s9vcY8YHOMZDzouBPwbJM515irFiLp6/9GmZaFnm1gMN08gGSm3qCTn+UWqTIpuFW5aJCrLzWpUcptRUONSH4Ij1VZwRaMo0onEq8C+6+PQASzBiVscosFaf0i2/j9ZV6YGXHALrX8F+5XEnbUsMl06/BWanOQ3nUi+KdYmXA8udaPy6GIn+hP3PebaIvklxMnQDLbzFC+otCSljmixRCgiL99odMD7zCqqqhER/w7jVsjVrbvxo384oLRlitaiJo8iBr+muuguOnHCEfBTUnL4BX9gSBAcyF5OS+U97kY53KksvJgnACGhGvJjKAukLLfBnFjI7bbRESRQpgI6JxTU5W5932o7M5pQv6NYY2DZlQTQsGGUlCT4yPhlXBtXT5/6R0LsbOU5lfRNVfVjrTCTdUef71+w23/EtqSEZR8MxFRQVfxikQAdL6g+aL+u3Y3tsqBjaAUYmsM6+5O5OBiNmzYzUtHnXrPuJEQwdJYMkTsqabVlsVtNtfSRle5ieZhM8IoVYjFD5ceX+Uf8gSksAI34G0xvL4xFNe2hapxleDvzsbKKl0K5sInHYHQySyGeLfhs2ZLf8ddzLKw7NYFCNSMBozm06cSg9X+lPfc/JVDkJ/6LtviSsgD8oi+g9X5sqnoLcTS7sYQ7we1FEsQOd1HoBMOGseP2TVDkOElkGn6ojpb64Jil3Y1d/6EsKV6UEJBf3xhk3GwE0ZBrr3kTQlTFXALCvOizFj/GPfhPOeLnfIc6Cdt4",
+    "salt": "QuxzXBaOZ1Ko7FhB2TGodA==",
+    "nonce": "xXT7rC3VuwElo+q1",
+    "kdf_params": {
+      "name": "PBKDF2",
+      "hash": "SHA-256",
+      "iterations": 600000
+    }
+  },
+  "checksum": "6d6095df4ee7670f8982e7661e09808aba9dd6bb5fb0047ccd17116799ceaaeb",
+  "hmac": "449c78a1f17f65d1e8bb909747f2ee391d537aeed2a3687d17bcdd7b049ef24d"
+}

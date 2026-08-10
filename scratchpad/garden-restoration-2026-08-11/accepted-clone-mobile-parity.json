@@ -1,0 +1,50 @@
+{
+  "comparison": "approved durable clone versus current root product",
+  "approved_clone": "scratchpad/accepted-garden-e4eea8a-runnable",
+  "root_url": "http://127.0.0.1:8880/viewer-bnw.html?garden_debug=1",
+  "fixed_time": "2026-08-11T12:00:00Z",
+  "browser": "system Google Chrome via Playwright Chromium channel",
+  "input": "native CDP touch sequence on an exposed Garden surface",
+  "results": [
+    {
+      "viewport": [1400, 950],
+      "garden_text_identical": true,
+      "garden_text_length": 2105,
+      "canonical_object_count_identical": true,
+      "canonical_object_count": 7,
+      "camera_before_identical": true,
+      "camera_before": [60, 51],
+      "touch_drag_camera_identical": true,
+      "camera_after": [50, 51],
+      "approved_clone_page_errors": [],
+      "root_page_errors": []
+    },
+    {
+      "viewport": [390, 844],
+      "garden_text_identical": true,
+      "garden_text_length": 575,
+      "canonical_object_count_identical": true,
+      "canonical_object_count": 7,
+      "camera_before_identical": true,
+      "camera_before": [60, 51],
+      "touch_drag_camera_identical": true,
+      "camera_after": [50, 51],
+      "approved_clone_page_errors": [],
+      "root_page_errors": []
+    },
+    {
+      "viewport": [320, 568],
+      "garden_text_identical": true,
+      "garden_text_length": 533,
+      "canonical_object_count_identical": true,
+      "canonical_object_count": 7,
+      "camera_before_identical": true,
+      "camera_before": [60, 51],
+      "touch_drag_camera_identical": true,
+      "camera_after": [60, 46],
+      "approved_clone_page_errors": [],
+      "root_page_errors": []
+    }
+  ],
+  "claim_boundary": "Machine parity for canonical membership, Garden text, camera, and touch-drag only; operator visual acceptance remains human-owned."
+}

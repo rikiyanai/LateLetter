@@ -514,17 +514,22 @@ Pressing `e`:
 
 4. If the HMAC passes, the app computes due messages from authenticated dates and local read receipts. If none are due, the overlay shows: *"No letters today."* and returns to the garden.
 
-5. **If multiple messages are due**, a selection overlay appears:
+5. **If multiple messages are due**, a selection overlay appears. After bundle
+   authentication the browser has already decrypted each complete message
+   transaction, so it shows the authored L2 labels for due unread letters; a
+   date is used only when an older message has no label:
    ```
      Letters waiting:
      ─────────────────────────────────
-     1. June 15, 2027
-     2. December 25, 2027
-     3. March 10, 2028
+     1. Her 30th birthday
+     2. That first Christmas
+     3. The road behind grandma's house
      ─────────────────────────────────
      ↑/↓ select · enter to read · esc to return
    ```
-   Messages are listed by date (ascending). Labels are not shown until after per-message decryption — only authenticated dates are visible in this list. If only one message is due, this selection is skipped.
+   Messages remain ordered by date. Locked delivery state never exposes a
+   label; the authenticated due-letter surface does. If only one message is
+   due, this selection is skipped.
 
 6. When the recipient opens a due message, the label is decrypted and shown ("For your 30th birthday"), then the full message renders in the overlay with word-wrap. For long messages, `↑/↓` or `j/k` scrolls within the overlay. A soft indicator at the bottom shows scroll position (*"↓ scroll for more"* or *"end of letter"*). Full-screen interactive TUI screens require a minimum terminal size of **80 columns x 24 rows**; below that, the app shows a resize-required screen and directs the recipient to the browser viewer instead of rendering a truncated interface. Pressing `p` attempts to print if a supported printer backend is available; otherwise it offers save-to-text-file for manual printing.
 
@@ -565,7 +570,8 @@ A grieving person will want to re-read their loved one's words. The read-receipt
 
 - `✓` marks read letters. They can be re-read at any time by selecting them.
 - `◻` marks future-dated letters. They are listed (date visible) but locked. Selecting a locked letter shows: *"This letter arrives on [date]."*
-- Labels are decrypted and shown for read letters (the passphrase is cached). Unread-but-due letters show dates only (same as the §6.4 step 5 selection overlay). Future letters show only dates.
+- Labels are decrypted and shown for read letters and for authenticated,
+  unread-but-due letters. Future locked letters show only dates.
 - The archive is available even when no new letters are due. The bird controls delivery excitement; the archive is the quiet bookshelf.
 - The `e` key opens the delivery flow for new due letters. The `l` key opens the archive directly at any time.
 
@@ -1727,40 +1733,33 @@ Humane-progression rules are non-negotiable:
 - Clock rollback clamps elapsed time to zero; it never reverses growth, duplicates rewards, or locks the player out.
 - A recipient may leave after one action without losing an opportunity.
 
-#### 7.8.3 Picture-owned interaction; no visible action chrome
+#### 7.8.3 Projection-owned, finger-reachable interaction
 
-The shared world may continue to declare primary actions, opportunities and secondary
-commands. Those records are gameplay data; they do **not** authorize a renderer to print
-their labels as product UI.
+The canonical projection owns object identity, action eligibility, command, arguments and
+wording. The browser may render only the following narrow recipient controls and must dispatch
+the projected records verbatim:
 
-**Operator decision, 2026-08-01.** The browser Garden is the picture. It must not paint
-buttons, cards, hover instructions, object names, object lists, spawned-opportunity labels,
-or a “More actions” sheet on or beside the scene. Review and diagnostic query parameters do
-not relax this rule. The deployed Garden at `https://rikiworld.com/lateletter/` is the visual
-baseline while the canonical renderer is rebuilt; a local review mode is not permission to
-invent a second interaction surface.
+- Click or tap on visible object ink performs that object's projected safe primary action.
+- Exact canonical hotspots win overlap resolution. Accepted final visible art
+  may reach the same projected object outside that hotspot, so a large bloom
+  never requires finding an invisible one-cell stem anchor; the art still owns
+  no eligibility, command, arguments or label.
+- The current flower's projected safe primary action is **water/tend**. Click,
+  tap or Enter performs it directly through the drawing and produces
+  picture-owned feedback. The viewer paints no flower name, verb label or
+  beside-object action group.
+- One persistent HUD control opens the canonical journal and inventory, and one visually
+  separate HUD control toggles canonical motion pause. Journal-open and motion-pause are saved
+  world state; DOM panels, hover, drag residue and presentation phase are session-only.
+- Browser keyboard may move canonical focus, Enter may perform the projected primary action,
+  and the recorded inspect/tend/journal/pause/pan bindings dispatch the same commands.
 
-- Click or tap on visible object ink performs that object's single safe primary action as
-  declared by the canonical projection. The viewer dispatches the declaration verbatim and
-  derives no gameplay behavior from the glyph, catalog id, name or kind.
-- Hover may change the picture itself (for example, rustle or emphasis) but may not reveal a
-  textual instruction, tooltip, card or label.
-- Browser keyboard may move canonical focus with the existing spatial/object navigation and
-  Enter may perform the focused object's declared primary action. A physical key is not an
-  acceptable hidden route to a browser-only menu.
-- Opportunities and secondary actions remain canonical world capabilities, but the browser
-  does not expose them until the operator approves a picture-native, non-label interaction
-  language. The rejected opportunity-card, object-list and action-sheet model must not be
-  retained behind a gate or as unreachable dead code.
-- Terminal commands may remain textual because the terminal is itself a textual control
-  surface. That does not license equivalent labels over the browser picture.
-- Author/diagnostic controls remain outside the product Garden, locally gated, and absent
-  from recipient mode.
-
-The prior §7.8.3.1–§7.8.3.3 contract—direct primary plus beside-object opportunity controls
-plus an overflow action sheet—is withdrawn. Its implementation was visually rejected after
-live comparison with the deployed Garden. Browser keyboard and screen-reader parity for
-secondary actions is therefore **OPEN**, not satisfied by reinstating the rejected labels.
+This approval does **not** restore the rejected generic object list, opportunity card stack,
+beside-object verb labels, hover instructions, object-name panel, “More actions” sheet or
+browser-owned availability rules. Hover and activation may alter picture presentation only.
+Author/diagnostic controls remain locally gated and absent from recipient mode. Terminal
+commands may remain textual because the terminal itself is a textual control surface;
+terminal parity remains a separate gate.
 
 #### 7.8.4 Hybrid world composition and content inventory
 
@@ -1805,21 +1804,34 @@ above say what the product must be able to draw. They do not say what a new gard
 with, and the two must not be conflated: a scene that shows everything the catalog can do is
 a showroom, not a place someone lives.
 
-The **default starter scene is exactly six fixtures** — pond, stepping stones, mailbox,
-bench, lantern, planter — held in `STARTER_FIXTURES` in both implementations. The pond,
-stepping stones and bench form one water/sitting room: stones approach the pond from one
-side and visually meet its bank, the bench sits generally above it, and the pond's sparse
-interior ripples oscillate laterally by a perceptible distance at the product lattice and
-cadence. The street lantern belongs to the far transition
-band near that room, rather than sharing the pond's near surface.
-Those relationships are canonical generator data, never renderer packing. An accepted fixture
-drawing is an approved **catalog asset**, available to authored programs, progression, and
-later compositions; acceptance never obliges it to appear at the start.
+The **accepted default canonical scene** is composition revision 5: one rose,
+six fixtures (pond, stepping stones, mailbox, bench, lantern and planter), no
+canonical animals and no collectibles. The exact fingerprint is recorded in
+`docs/garden-composition-acceptance.json`. The rose owns normalized anchor
+`[70,820]`; the initial camera remains `[500,650]` so the fixture room opens as
+the centre of the same larger world rather than moving every object into a
+narrow viewport.
 
-Everything under `REVIEW_PENDING_*` — unaccepted starter plants, the cat, the starter collectible —
-stays **absent from the default scene** until each drawing is separately accepted under
-§7.10. Composition arguments must be made against the six, not against every drawing that
-has been approved.
+The pond, stepping stones and bench form one water/sitting room: stones approach
+the pond from one side and visually meet its bank, the bench sits generally
+above it, and the pond's sparse interior ripples oscillate laterally. The street
+lantern belongs to the far transition band. Those relationships are canonical
+generator data, never renderer packing. An authored scheduled fixture joins this
+starter; it does not replace the room.
+
+The accepted full Garden presentation also includes its seeded planting,
+ground-cover and ambient lifecycle layer. Those disposable presentation actors
+are not canonical inventory and own no recipient actions, but they are part of
+the approved visible composition: they may surround canonical objects, move
+continuously, and react to season or time without repacking or occluding the
+canonical room. The rejected 1/0/0/0 experiment that suppressed this layer and
+emptied `STARTER_FIXTURES` is not the product baseline and must not return.
+
+Everything under `REVIEW_PENDING_*` — additional canonical plants, the cat, and
+the collectible — stays **absent from the default canonical roster** until each
+drawing is separately accepted under §7.10. Presentation-native planting and
+ambience are governed by the accepted full-Garden presentation contract above;
+they must not be misreported as extra canonical objects.
 
 #### 7.8.5 Stable procedural plant growth
 
@@ -3406,11 +3418,30 @@ deleted. `web/author-app.mjs` now drives the approved five-stage browser flow
 through the canonical service, and a real Chromium test exports, HMAC-verifies,
 decrypts and inspects its Garden program. A successor Chromium test now carries
 one exact author-downloaded artifact through the recipient file input, pre-auth
-Garden, passphrase, archive and exact plaintext on desktop and touch-mobile.
-Assistive-technology review, phone visual review, append-later, handoff
-shipping, full authored-Garden control and operator visual acceptance remain
-separate open evidence; the automated handoff does not close the whole product
-route.
+Garden, passphrase, archive and exact plaintext on desktop, touch-mobile
+390x844 and narrow-phone 320x568. The phone routes use native CDP touch input;
+the rose is activated through its measured picture region and no object-action
+labels are painted over the Garden.
+The final one-artifact browser route now records and asserts the requested
+ordered journey on both desktop and 390x844 touch-mobile: author, export,
+Garden, unlock, archive, unread authored label, reading, interactions,
+scheduled gift, exact canonical persistence, and reload/re-upload/
+reauthenticated reopen. A scheduled boundary crossed during the live session
+uses the last successfully materialized program-evaluation time, so a
+foreground/resume jump cannot silently skip a `deliver_on_next_visit` gift.
+An initial evaluation exactly on a scheduled second includes that second;
+later evaluations retain the whole elapsed interval from their successful
+runtime cursor.
+Append-later, complete handoff-package export and full authored-Garden control
+now have executable browser/service evidence. The tracked root sealed-demo
+button also unlocks in a real browser with the single documented passphrase,
+`garden-biscuit-2026`. The production Pages workflow remains deliberately on
+the frozen legacy snapshot, and the root candidate remains fail-closed behind
+its separate release-paint/operator gates; public cutover is outside this
+web-E2E route. Physical-phone visual review,
+public deployment and operator visual acceptance remain separate open
+evidence; VoiceOver/NVDA traversal is outside the current operator-directed
+scope. The automated handoff does not close the whole product route.
 
 ## 19. Test Matrix
 
@@ -3547,7 +3578,9 @@ The earlier 4h–4l items remain useful visual work, but no longer define the re
    - The terminal E2E owner was deleted; `author_service.py` remains the sole tested seal/export owner.
    - ~~Browser E2E integration (intake → question seeds → drafts → optional gifts → review → canonical export)~~ ✓ focused Chromium path
    - ~~Exact author download → recipient file input → Garden → passphrase → archive → due plaintext~~ ✓ desktop and touch-mobile Chromium, one byte-identical artifact
-   - **[OPEN]** Append-later, assistive-technology review, phone visual review and complete handoff shipping.
+   - ~~Append-later preserves bundle identity, old ciphertext, encrypted Garden program and recipient receipts~~ ✓ service and browser E2E
+   - ~~Complete handoff ZIP contains the exact bundle, closed viewer dependency set, README and local launcher~~ ✓ HTTP and browser E2E
+   - **[OPEN]** Assistive-technology review, physical-phone visual review and public handoff deployment.
 
 ### Recipient experience and delivery
 

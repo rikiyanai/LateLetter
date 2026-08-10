@@ -1,0 +1,21 @@
+{
+  "artifact": "accepted-garden-e4eea8a-runnable",
+  "source_commit": "e4eea8a256af060fa4c22deba257f3f16995f54e",
+  "source_commit_date": "2026-08-07T04:11:21+09:00",
+  "operator_confirmation": {
+    "timestamp": "2026-08-11T00:50:19+09:00",
+    "statement": "CORRECT BUT I CANT DRAG OR NOTHING WHY",
+    "transcript": "/Users/r/.codex/sessions/2026/08/10/rollout-2026-08-10T23-01-17-019febfa-4cf1-76f0-8d6b-13cd5e419a48.jsonl",
+    "transcript_line": 3074
+  },
+  "repair": {
+    "file": "viewer-bnw.html",
+    "description": "Declare _preparedFont beside the existing Pretext cache state so teardownResize does not throw in module strict mode.",
+    "source_sha256": "e3f84bc83d34dd608a2cddfa895cd525f1fef5c91557937ce44cbed709247396",
+    "repaired_sha256": "057fe29163a65a6c99ded7760f9984e9b0093a8b4052bbbff14027fd92fa06c0"
+  },
+  "launch": "./run-garden.sh",
+  "verify": "./verify-baseline.sh",
+  "integrity_manifest": "baseline-files.sha256",
+  "default_url": "http://127.0.0.1:8878/viewer-bnw.html?garden_debug=1"
+}

@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "bundle_id": "e24579a6-295c-43fb-b985-9bfd8372afc6",
+  "author_name": "Riki",
+  "passphrase_hint": "the room with the yellow table",
+  "bundle_auth_salt": "Mu1oHYhpohX6I4gDkG35/Q==",
+  "garden_seed": 2781222855,
+  "messages": [
+    {
+      "id": "01b906ff-7e4f-42e8-af51-8a5e8e6793af",
+      "date": "2026-08-11",
+      "ciphertext": "hTxap3KGt4NQH6528Tbrs7RRuOGaq8vr0SGarJ4ZlRSjbtyCwJPbe97XcxswExwcMJ9r+Wms4c898tOHaVYLnrsI4nKJe8UDOPZ7o7pqORsOsUCJIySLcdC8gAiub00mo4bzhPTD8AJsdw==",
+      "salt": "efW+nttKh5Gd3qFfqGvPCg==",
+      "nonce": "Ap++a8KgF/QIrV2n",
+      "kdf_params": {
+        "name": "PBKDF2",
+        "hash": "SHA-256",
+        "iterations": 600000
+      }
+    }
+  ],
+  "garden_gifts": [],
+  "notification": null,
+  "bundle_auth_kdf_params": {
+    "name": "PBKDF2",
+    "hash": "SHA-256",
+    "iterations": 600000
+  },
+  "garden_program": {
+    "version": 1,
+    "ciphertext": "Y6GRjrG9sK5zlta6k8iYna/OOVUfCDbpWm9m8ut//83Ui2yz5/r3H+JRI+o30mHZTBxGBGCydlVBRLhwQVVSj9/dM2X76vLJmm3bb6e+Tsb2kzz9l0atrJSBb+11hSYbmtBFZy1CrAalzgJofwMHWWen3C5bFRhTlPGfF2QNNoWaE8aH/f8U0br1lik7boqlnQSGS+nPGL35++nUWvbGeJUBpQFWlpF/NzrF3NAZ9ye6f3sUreJnU3tsJVCDXiac/3kKA2lZqL31mGCrYIFDJN6iBlIi+7U9Fetg7/AREkk8W3Kop/iu",
+    "salt": "U0imQqxjiXYKvknWlBRBmg==",
+    "nonce": "vqJbGnPjHRElB7L9",
+    "kdf_params": {
+      "name": "PBKDF2",
+      "hash": "SHA-256",
+      "iterations": 600000
+    }
+  },
+  "checksum": "f451dc61ed0e80a48b374730015e6d6ae12b12d21d3c9ca38f4c9790dd8ea8c7",
+  "hmac": "769128646d497422917bdb8b4b1cb545d94371b686abc176e7cc4e5c87544754"
+}

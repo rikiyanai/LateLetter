@@ -15487,3 +15487,711 @@ The commits are local and were not pushed.
 - **Status:** COMMITTED LOCALLY; NOT PUSHED. ComplaintRefs: Browser-author
   handoff successor: exact artifact verified on desktop and mobile
   (2026-08-10).
+
+### Fresh default composition and exact-artifact handoff successor (2026-08-10)
+
+The next two ordered web-E2E children are implemented and executed in the
+dirty local checkout.
+
+**Composition owner.** Both canonical generators now carry generator and
+composition revision 6. `STARTER_FIXTURES` is empty in Python and JavaScript;
+animals and collectibles remain empty. The default plant path executes an
+independently derived deterministic choice from the accepted-flower pool using
+the bundle/Garden seed. The pool is currently the singleton `plant.rose`, and
+a drift assertion binds it to bloom-bearing `plant.*` identities in the
+committed accepted-paint authority. The selected flower and initial camera
+share normalized anchor `[500,500]`. In the default 120x80 world both runtimes
+measure the rose and camera at canonical `[60,40]` with fingerprint
+`plants=rose@500,500|fixtures=|animals=|collectibles=` and census 1/0/0/0.
+
+Fixture catalog capability was not deleted or repopulated. Renderer capability
+tests now construct the former water/sitting room explicitly, and fixture
+review candidates remain outside the default composition. The composition
+verdict register remains empty; the authoritative verdict obtained for
+revision 6 is therefore `not_reviewed`, not an acceptance inferred from green
+checks or captures.
+
+**Persistence falsifier.** The product runtime still loads stored state before
+considering generation and opens it under `accept_restored`. The executed
+regression now seeds a visibly different pre-stamp recipient world containing
+a rotated, interacted, authored-state-bearing bench and a nondefault camera.
+Open preserves its 1/1/0/0 population, object identity, interaction count,
+authored state and camera. A test that regenerated revision 6 over the stored
+world would now fail rather than accidentally comparing 1/0/0/0 with itself.
+
+**Exact artifact evidence.** `tests/test_product_handoff_e2e_browser.py` still
+authors one bundle once and verifies one SHA-256 across fresh desktop 1280x900
+and touch-mobile 390x844 contexts. Each recipient context now proves its
+IndexedDB store has zero records before upload, authenticates the artifact,
+returns from the archive to the authenticated bundle-seeded Garden before
+reading, and records the 1/0/0/0 census, revision fingerprint, one projected
+rose at `[60,40]`, camera at the same point and the `not_reviewed` verdict.
+It captures an exact-size PNG in each context before the due letter can enable
+post-complete presentation, then completes the existing exact painted-text and
+read-receipt traversal. The pre-auth fixed preview seed is not used as
+composition evidence.
+
+**Verification.** The complete Node Garden adapter run passes **204/204**. The
+focused real-Chromium exact-artifact handoff passes **1/1**. The broad Python
+Garden world/adapter/contract/acceptance run reaches **360 passed / 2 failed**;
+both remaining failures are the already-recorded gates-2/12 assertions that
+still dereference the intentionally deleted
+`tests/test_garden_review_e2e_browser.py`. They are not hidden or restored:
+the ordered successor interaction/accessibility harness must exist before
+those selectors move. `git diff --check` passes.
+
+The contended `viewer-bnw.html` was not edited for this child; its existing
+typography hunks remain untouched. The separately dirty renderer test retained
+its terrain-row hunks while two stale default-fixture cases were moved to an
+explicit review scenario.
+
+Wayfinder consequence: ordered steps 1 and 2 are Implemented, Connected,
+Executed and machine-Verified. Visual acceptance remains operator-only and the
+composition verdict remains `not_reviewed`. The next execution frontier is the
+approved finger-reachable Garden control vocabulary and ordinary-product
+persistence successor; gates 2 and 12 remain PARTIAL until that successor
+exists. RQ projection remains unnecessary.
+
+- **Status:** DEFAULT COMPOSITION AND EXACT-ARTIFACT SUCCESSOR VERIFIED;
+  COMPOSITION VISUAL VERDICT NOT_REVIEWED; GARDEN CONTROLS NEXT. ComplaintRefs:
+  Batch operator decision: author corpus approved and product fog resolved
+  (2026-08-10); Browser-author handoff successor: exact artifact verified on
+  desktop and mobile (2026-08-10); Wayfinder map: the whole recipient Garden,
+  nested under product E2E (2026-08-10).
+
+### Web-E2E completion: controls, persistence, author arc and parent handoff (2026-08-10)
+
+The remaining machine-executable children of the ordered web route are now
+implemented and exercised. Human visual and assistive-technology verdicts are
+kept separate below.
+
+**Projection-owned recipient controls.** Plant projections in Python and
+JavaScript now declare one `inspect` primary action and one canonical
+`tend(care_action=water)` opportunity. The ordinary viewer renders those two
+records beside the flower's measured art rectangle, plus separate persistent
+journal/inventory and motion-pause HUD controls. The browser invents neither
+eligibility nor a verb. Journal close dispatches canonical `back`; resize and
+visual-viewport changes recompute the beside-object position. The generic
+object list/action sheet remains absent.
+
+The exact-artifact handoff drives those controls by CSS-pixel mouse coordinates
+at 1400x950 and by `Touchscreen.tap` at 390x844. It observes canonical journal,
+tended-count and pause mutations, not DOM-only effects. The durable gates-2/12
+successor is `tests/test_garden_interaction_browser.py`; the deleted
+`tests/test_garden_review_e2e_browser.py` was not restored. Real Chrome covers
+desktop, 390 touch, 320 CSS pixels, 44px targets, keyboard focus/Enter/tend/
+journal/pause/pan, coordinate mouse drag, CDP touch drag, reduced motion and a
+measured 200% CDP page scale. Gate-matrix selectors now name only live tests.
+Gates 2 and 12 remain PARTIAL for animal/collectible actions absent from the
+default, physical devices, VoiceOver/NVDA, no-color use, terminal parity and
+the remaining complete action matrix.
+
+**Ordinary persistence.** A second browser-authored artifact schedules an
+accepted coffee-mug gift at the deterministic 09:00 boundary. One recipient
+context inspects and tends the flower, pans, pauses and leaves journal/inventory
+open. The test proves the canonical JSON is the exact string in IndexedDB,
+reloads before upload, proves session-only DOM panels reset while stored bytes
+remain, re-uploads the same artifact, reauthenticates, observes `load_origin`
+`loaded`, and compares the persistent plant, fixture, journal, inventory,
+program and complete canonical `ui` subset. Camera, journal-open and pause are
+explicitly persistent under the current contract; modal visibility, context
+control DOM, hover/drag residue and presentation phase are session-only.
+
+**Recipient label and scrim.** Authenticated unread due rows and the multi-due
+selector now show decrypted authored L2 labels; future locked letters remain
+date-only. The exact handoff asserts the label before opening. Reading scrims
+now use a 96% background field, stronger blur/contrast suppression and a soft
+outer fade. Fresh Garden and reading PNGs are captured at 1400x950 and 390x844
+inside the executed handoff. These captures are machine evidence only: the
+composition remains `not_reviewed`, and the scrim still needs an operator
+visual verdict.
+
+**Full Gate-8 author control.** The browser author desk exposes a no-JSON
+living-story choice and rabbit-name field. The canonical author service expands
+that request through `build_letter_rabbit_autumn_arc`, previews the three named
+boundaries, and exports the same encrypted program. The browser E2E records
+`arc.rabbit-arrives`, `arc.third-visit-rose`, and
+`arc.bonded-autumn-gift`; the JavaScript recipient evaluator produces the exact
+same ordered trace and terminal entity states from the exported program. Gate
+8 is therefore PASS on executable author control and preview/runtime equality;
+asset visual acceptance remains governed by the separate paint and human gates.
+
+**Append and package operations.** The author desk can select an existing
+bundle, enter its passphrase for one transaction, append a new independently
+sealed message and download the update. The service preserves bundle ID,
+bundle-auth salt, every old message envelope and the encrypted Garden program,
+then recomputes HMAC/checksum and round-trips all content. A recipient-browser
+test reads the old letter, appends through the author UI, reopens the update in
+the same recipient context, and proves the old receipt remains read while the
+new authored label is independently unread. README now names the verified demo
+passphrase `garden-biscuit-2026`.
+
+The author also offers a complete handoff ZIP. It contains the exact bundle, a
+transitively closed viewer renamed to `index.html`, accepted-only paint
+authority, third-party dependencies, generated README and a local `start.py`
+launcher. HTTP and browser E2Es inspect the ZIP. A localhost fixed-time route
+executes winter, spring, summer and autumn review frames without changing
+canonical time.
+
+**Final one-artifact traversal.** One hash-stable browser-authored scheduled-
+gift artifact traverses desktop 1400x950 and phone-emulated 390x844 contexts:
+export, Garden, unlock, archive, authenticated unread L2 label, exact plaintext,
+flower inspect/tend, gift materialization, journal, pause and desktop reload /
+re-upload / reauthentication. That test passes alone in 11.41 seconds. The
+complete Node adapter suite passes 204/204. A broad parallel verification run
+reached 435 pass / 4 fail: one resource-contended copy of this browser test
+passed immediately when rerun alone; two viewer string contracts were updated
+to the current fresh-review/reduced-motion contract and pass; the remaining
+deployment-workflow assertion is pre-existing and intentionally outside this
+web-E2E route because deployment/pushing are explicitly out of scope.
+
+**Still open, without proxy promotion.** Physical iOS/Android visual review,
+VoiceOver and NVDA traversal, the scrim and composition operator verdicts, and
+final operator acceptance cannot be established by Chromium emulation. Fixture
+variants and anchor-stamp work remain conditional on accepted assets. The
+public deployment workflow remains on the frozen legacy snapshot until the
+separate release gate authorizes root cutover; no deploy or push was performed.
+
+**Final convergence receipt (2026-08-11).** The serial author/service/browser,
+gate and viewer-contract selection reached 65 pass / 1 timeout when the
+persistence case waited for its projected rose control after earlier browser
+work. That exact case passed immediately alone, and the complete recipient
+handoff plus interaction pair then passed 6/6 together. Independent default-
+composition and browser-conformance tests passed 88/88; the complete JavaScript
+Garden adapter suite passed 204/204. `git diff --check`, both changed JSON
+documents and the changed Python modules passed structural validation. This
+records the timeout as suite-level browser contention rather than hiding it or
+promoting the first partial run.
+
+- **Status:** WEB E2E MACHINE PATH IMPLEMENTED, CONNECTED, EXECUTED AND
+  VERIFIED; OPERATOR VISUAL/AT ACCEPTANCE OPEN; DEPLOYMENT OUT OF SCOPE.
+  ComplaintRefs: Exact Web E2E Order (2026-08-10); Batch operator decision:
+  author corpus approved and product fog resolved (2026-08-10); Wayfinder map:
+  the whole recipient Garden, nested under product E2E (2026-08-10).
+
+### Live review surfaced the wrong restored world and exposed census/paint drift (2026-08-11)
+
+- **Operator rejection:** the live screenshot showed disconnected stepping
+  stones, clipped bridge/pond-room ink, a large legacy trellis/plant assembly,
+  animal-like ambient marks and a missing visual top edge. The operator's exact
+  response included “stepping stones exist without a … pond,” “even a … bird,”
+  and “where is the … top line?” This picture is rejected evidence.
+- **Route error:** the assistant opened localhost standalone mode inside the
+  operator's existing Chrome profile. `accept_restored` correctly preserved
+  that profile's historical standalone world (13 plants / 22 fixtures / 4
+  relationship animals / 8 collectibles). It was not the clean authenticated
+  one-flower artifact and must never have been presented as its review surface.
+  The tab and scoped localhost server were closed immediately; stored user data
+  was not cleared or rewritten to manufacture a clean result.
+- **Correction after inspecting the replacement pixels:** the route error did
+  not explain the whole rejection. The isolated authenticated 1/0/0/0 capture
+  still showed a screen-filling population of synthetic trees, flower beds,
+  ground-cover marks and structure-like silhouettes. `drawGardenBillboards`
+  regenerated that population from viewport capacity and world seed with null
+  canonical object IDs. The assistant's first “old restored world” explanation
+  was therefore incomplete and was withdrawn as soon as the clean pixels were
+  inspected.
+- **Population-owner fix:** product composition no longer enables the legacy
+  billboard/ground-cover population. `drawGardenBillboards` paints canonical
+  projection entries only; the preserved legacy generator is reachable solely
+  through an explicit diagnostic `view.includeLegacyBackdrop` capability flag
+  that the product adapter never supplies. The accepted ground and sparse sky
+  fields remain, but they cannot impersonate Garden population.
+- **Secondary defect:** the canonical 1/0/0/0 census was still too weak an
+  acceptance signal because presentation could create ownerless butterflies,
+  fireflies and crossing birds. `advanceLifecycle` now creates pond-local
+  insects only when a canonical pond is projected and advances ambient bird
+  traversal only when a canonical relationship bird is projected. Removing the
+  owner clears the corresponding disposable actors.
+- **Proof repair:** the localhost read-only review accessor now exposes final
+  visible paint provenance after paint authority and occlusion. The exact
+  authenticated desktop/mobile handoff asserts that the only visible canonical
+  object ID is the seed-selected rose, that `plant.rose` actually paints, and
+  an exact allowlist: `plant.rose`, `recipe.scene.ground_line`, and
+  `recipe.scene.starfield`. This rejects fixture, ambient, synthetic vegetation,
+  and synthetic ground-cover sources without relying on a growing blacklist. The default renderer
+  contract advances 2,000 presentation frames and proves both ambient actor and
+  bird collections remain empty without their canonical owners.
+- **Accessibility defect found during the same live audit:** the one-second
+  canonical refresh rebuilt HUD and beside-flower buttons, invalidating the
+  element identity held by macOS accessibility clients. Controls now reconcile
+  by stable projection-derived keys and unchanged journal contents are retained.
+  The browser successor holds raw node references and focused elements across
+  multiple live refreshes, which a re-resolving locator could not prove.
+- **Executed evidence:** the exact authenticated capture route passed after the
+  stronger paint assertion; the complete JavaScript Garden adapter suite passed
+  204/204; the recipient handoff/interaction/viewer selection passed 23 in-scope
+  tests. Its only failure was the already-recorded frozen Pages-workflow
+  assertion, which remains outside this route. Fresh replacement captures live
+  final replacement set lives under
+  `scratchpad/garden-acceptance-2026-08-11/minimal-captures/`; both the earlier
+  standalone screenshot and the first still-cluttered “clean” set are rejected
+  evidence.
+- **Status:** WRONG REVIEW ROUTE IDENTIFIED; SYNTHETIC BACKDROP POPULATION,
+  OWNERLESS FAUNA, AND AX-IDENTITY DEFECTS FIXED AND MACHINE-VERIFIED;
+  REPLACEMENT CAPTURES STILL REQUIRE THE OPERATOR'S VISUAL VERDICT.
+
+### Correction: the durable full Garden is the approved baseline, not the minimal replacement (2026-08-11)
+
+- **Falsified intervention:** The preceding 1/0/0/0 response solved the wrong
+  problem. The operator was not asking for a canonical census to be made
+  visually literal; they were asking for the last full standalone Garden they
+  had approved to be recovered. Suppressing the established planting,
+  ground-cover and ambient lifecycle and emptying `STARTER_FIXTURES` therefore
+  destroyed approved product composition. The `minimal-captures` set remains
+  rejected evidence and no longer describes the target state.
+- **History owner and acceptance:** Transcript/history audit identified commit
+  `e4eea8a256af060fa4c22deba257f3f16995f54e` after 2026-08-06 as the last
+  approved source state. A durable runnable copy is preserved at
+  `scratchpad/accepted-garden-e4eea8a-runnable/`. Its only source delta is the
+  missing `_preparedFont` declaration that had crashed standalone transition
+  before pointer handlers were installed. With that declaration present the
+  operator reviewed the full Garden in Chrome and said, “CORRECT BUT I CANT
+  DRAG OR NOTHING WHY”; the appearance was accepted and interaction remained
+  the named defect. The same saved copy then proved pointer drag
+  `[105,51] -> [80,51]` and keyboard pan `[80,51] -> [81,51]`.
+- **Restored owners:** `web/garden-painting.mjs` again paints the established
+  seeded planting and cover; `web/garden-presentation.mjs` again advances the
+  accepted ambient lifecycle; both generators again use revision 5, the rose
+  anchor `[70,820]`, camera `[500,650]`, and the six-fixture starter room
+  (bench, mailbox, stepping stones, planter, lantern and pond). The Python and
+  JavaScript owners match. The unrelated contended typography work in
+  `viewer-bnw.html` was preserved.
+- **Controls retained on top of the approved picture:** The projection-owned
+  inspect/water declarations, persistent journal/inventory and separate motion
+  pause remain. The ordinary viewer's single-pointer pan dispatches the same
+  canonical `pan` command as keyboard input. No generic object list or action
+  sheet was restored.
+- **Independent browser convergence:** At fixed review time and 1600x1000, the
+  durable copy and root product emitted identical 2,307-character Garden text,
+  the same seven canonical projected objects, the same six fixture identities,
+  the same initial camera `[60,51]`, and the same real mouse-drag result
+  `[85,51]`, with zero page errors. Captures are
+  `scratchpad/garden-restoration-2026-08-11/accepted-full.png` and
+  `scratchpad/garden-restoration-2026-08-11/root-full.png`.
+- **Executable evidence:** The real-Chrome interaction successor passes desktop
+  mouse, keyboard, 320px, 390px native touch/CDP drag, actual 200% page scale
+  and reduced-motion checks. The exact-artifact path passes desktop and phone;
+  a browser-authored scheduled coffee mug joins the six-fixture room and exact
+  canonical camera, journal, pause, plant and program state survives reload,
+  re-upload and reauthentication. The focused Python selection passes 102/102;
+  the complete JavaScript Garden adapter selection passes 204/204 after the
+  explicit fixture-room test was reconnected to generated canonical anchors.
+- **Canon consequence:** `docs/SPEC.md` and the composition verdict register now
+  name revision 5's full Garden. The operator verdict is bound to the exact
+  fingerprint rather than inferred from tests. Gates 2 and 12 remain PARTIAL
+  for physical devices, VoiceOver/NVDA, no-color use, terminal parity, animals,
+  collectibles and the remaining action matrix; full release acceptance is not
+  promoted by this composition correction.
+- **Status:** FULL GARDEN COMPOSITION OPERATOR-ACCEPTED; ROOT VISUAL AND DRAG
+  PARITY VERIFIED; BROADER RELEASE/AT GATES REMAIN OPEN. ComplaintRefs: Live
+  review surfaced the wrong restored world and exposed census/paint drift
+  (2026-08-11); Web-E2E completion: controls, persistence, author arc and parent
+  handoff (2026-08-10).
+
+### Recipient reading proof after the full-Garden restoration (2026-08-11)
+
+- **Named unknown:** restoring the accepted full Garden could have preserved
+  the due-letter label while leaving the reading surface dependent on an
+  unmeasured visual approximation. That would not close the reported desktop
+  bleed/mobile hard-edge defect.
+- **Direct browser result:** the self-contained system-Chrome typography E2E
+  opens the real demo, unlocks it, selects the letter and measures the painted
+  rows at 1280x800 and touch-mobile 390x844. It proves the authored L2 label
+  remains available before and during reading, the measured font/line-break
+  contract remains exact, and the reading veil itself retains a 96% translucent
+  field, `blur(18px) contrast(0.9)`, a 38px/24px soft outer fade, visible
+  overflow and non-fullscreen geometry at both widths. The test passes 1/1
+  with no page or console errors.
+- **Visual diagnostics:** bounded real-browser captures are stored at
+  `scratchpad/garden-restoration-2026-08-11/reading-scrim-desktop.png` and
+  `scratchpad/garden-restoration-2026-08-11/reading-scrim-mobile.png`. They are
+  machine diagnostics, not a substitute for the operator's visual verdict.
+- **Documentation tooling limitation:** this repository does not contain the
+  installed hygiene skill's `scripts/analyze_failure_log.py`,
+  `scripts/analyze_runs.py` or `scripts/fl_overlay_set.py`; this dated ledger
+  entry and the synchronized SPEC status are therefore the durable manual
+  attempt record. No false overlay or automated attempt count is claimed.
+- **Status:** RECIPIENT LABEL, PAINTED TYPOGRAPHY AND SCRIM CONTRACT VERIFIED;
+  OPERATOR VISUAL/AT ACCEPTANCE REMAINS OPEN. ComplaintRefs: Web-E2E
+  completion: controls, persistence, author arc and parent handoff (2026-08-10);
+  Correction: the durable full Garden is the approved baseline, not the
+  minimal replacement (2026-08-11).
+
+### Narrow-phone exact-artifact review closes two mobile paint defects (2026-08-11)
+
+- **Falsified proxy:** the prior 320px harness proved target size and viewport
+  containment, while the exact artifact ran only at 390x844. Carrying the same
+  sealed bytes through a new 320x568 touch context showed that the whole
+  inspect/water group could fit on neither horizontal side of the focused rose;
+  the old clamp painted the controls 46px into its measured art rectangle.
+- **Placement correction:** the beside-object owner still tries the right and
+  left edges first. When neither can contain the whole group, it now centers
+  the controls below the flower, or above it when the lower edge is full. The
+  exact browser assertion measures the complete action-group and flower
+  rectangles, requires non-overlap, and requires an edge gap no larger than
+  18px. It then activates inspect and water through native touch and observes
+  canonical journal/tend mutations.
+- **Reading correction:** the new phone screenshots exposed Chrome's native
+  88x44px pale-blue tap highlight from the underlying pause button through the
+  96% reading veil. The browser's computed rectangle and `elementsFromPoint`
+  identified that exact button rather than the letter or Garden painter. The
+  generic button owner now disables the UA tap highlight, supplies product
+  opacity feedback for active touch, and retains an explicit `:focus-visible`
+  outline for keyboard users.
+- **Direct result:** one browser-authored artifact now passes desktop 1400x950,
+  touch-mobile 390x844 and narrow-phone 320x568 in one test, including clean
+  storage, identical SHA, accepted full-Garden fingerprint, authenticated
+  unread L2 label, exact letter rows, inspect, water, journal, pause and
+  current-size Garden/control/reading captures. The successor passes 1/1 in
+  8.07 seconds.
+- **Evidence:** the current durable set is under
+  `scratchpad/garden-restoration-2026-08-11/mobile-review-final/test_one_browser_author_downlo0/`, including
+  `handoff-mobile-390x844-controls.png`,
+  `handoff-mobile-390x844-reading.png`,
+  `handoff-phone-320x568-controls.png`, and
+  `handoff-phone-320x568-reading.png`. The earlier `mobile-review-captures`
+  and `mobile-review-captures-fixed` directories are attempt evidence, not the
+  final visual set.
+- **Boundary:** no iPhone, iPad or Android device is attached to this host and
+  `simctl` is unavailable. These are exact mobile-browser emulation results,
+  not physical-device evidence. VoiceOver review was explicitly excluded by
+  the operator and is not claimed.
+- **Status:** PHONE/MOBILE MACHINE ROUTES IMPLEMENTED, EXECUTED AND VERIFIED;
+  PHYSICAL-DEVICE AND OPERATOR VISUAL VERDICTS REMAIN OPEN. ComplaintRefs:
+  Recipient reading proof after the full-Garden restoration (2026-08-11);
+  Exact Web E2E Order item 8 (2026-08-10).
+
+### Final ordered E2E finds and fixes a live-session schedule gap (2026-08-11)
+
+- **Acceptance contradiction:** the prior test named as the final handoff did
+  not execute the required order. The gift was already materialized at unlock,
+  inspect/tend happened before archive and reading, and only the desktop route
+  exercised reload, re-upload and reauthentication. Passing it did not prove
+  the requested author-to-reopen journey.
+- **Failed attempt 1:** starting at 08:59:58, completing archive/reading and
+  Garden interactions, then advancing the controlled browser clock beyond
+  09:00:00 did not deliver the scheduled coffee mug after a 30-second wait.
+  Clock mutation alone was therefore not the missing trigger.
+- **Failed attempt 2:** dispatching the ordinary pause/resume control after the
+  clock jump did advance canonical `last_observed_wall_time`, but the gift
+  still did not appear. This falsified the hypothesis that the canonical clock
+  owner was failing to observe the foreground transition.
+- **Root cause:** a newly generated authenticated runtime had no
+  `previousObservedWallTime`. Each program evaluation therefore rebuilt its
+  schedule window as only `observed - 1`. A foreground or pause/resume jump of
+  more than one second placed the due occurrence before that synthetic window,
+  silently skipping a `deliver_on_next_visit` gift.
+- **Correction:** the first authenticated program evaluation now starts at the
+  canonical session-open boundary. The runtime cursor advances only after
+  program materialization and persistence succeed, so an evaluation failure
+  retries the same interval instead of consuming it.
+- **Boundary regression and correction:** the first broader suite run showed
+  that using session-open time verbatim excluded a gift when authentication
+  happened exactly at 09:00:00. The initial evaluation now uses a one-second
+  inclusive lookback only when it has no genuinely earlier cursor; every later
+  evaluation keeps the full prior-to-observed interval. This preserves exact-
+  boundary delivery without restoring the live-session skip.
+- **Input-proof correction:** the ordered test's hard-coded drag coordinates
+  could land under mobile HUD/action chrome, producing intermittent inspect or
+  pan timeouts. It now searches the rendered page for an exposed Garden start
+  and end point, then performs a real coordinate mouse drag or native CDP touch
+  sequence across that surface. No synthetic DOM click or review-only dispatch
+  was substituted.
+- **Direct result:** one exact browser-authored artifact now asserts, on both
+  desktop 1400x950 and native-CDP-touch 390x844, the sequence `author ->
+  export -> Garden -> unlock -> archive -> unread label -> reading ->
+  interactions -> gift -> persistence -> reopen`. The coffee mug is absent
+  before the scheduled boundary, appears only after the post-reading
+  pause/resume crosses it, and the read receipt plus exact persistent Garden
+  subset survive reload, re-upload and reauthentication in both contexts. The
+  exact ordered test passes 1/1 in 16.15 seconds; the complete product-handoff
+  browser file passes 4/4 in 38.26 seconds.
+- **Browser boundary:** only the installed Chromium executable is available on
+  this host; Playwright WebKit and Firefox executables are absent. No
+  independent-engine or physical-device result is claimed. VoiceOver remains
+  excluded by explicit operator direction.
+- **Status:** FINAL ORDERED DESKTOP/TOUCH-MOBILE JOURNEY MACHINE-VERIFIED;
+  OPERATOR VISUAL ACCEPTANCE REMAINS OPEN. ComplaintRefs: Exact Web E2E Order
+  item 9 (2026-08-10); Narrow-phone exact-artifact review closes two mobile
+  paint defects (2026-08-11).
+
+### Approved-clone parity now covers phone/mobile touch drag (2026-08-11)
+
+- **Remaining proof gap:** the prior direct comparison between the durable
+  operator-approved clone and current root covered only the 1600x1000 Garden.
+  The exact-artifact tests proved current-root behavior at 390x844 and 320x568,
+  but did not directly prove those sizes still matched the saved working
+  version the operator selected.
+- **Direct comparison:** at fixed review time, system Chrome opened both the
+  durable clone and root product independently at 1400x950, 390x844 and
+  320x568. Each execution used a clean browser context and a native CDP touch
+  sequence across a measured exposed Garden surface.
+- **Converged evidence:** both sources emitted byte-identical Garden text at
+  each viewport (2,105 / 575 / 533 characters), the same seven projected
+  canonical objects, and the same initial camera `[60,51]`. Their post-drag
+  cameras also matched exactly: `[50,51]`, `[50,51]` and `[60,46]`
+  respectively. All six page-error streams were empty.
+- **Durable receipt:**
+  `scratchpad/garden-restoration-2026-08-11/accepted-clone-mobile-parity.json`.
+  The temporary clone server was stopped after the comparison; the root server
+  remains live on port 8880.
+- **Documentation tooling limitation:** the repository still lacks the
+  hygiene skill's `scripts/analyze_failure_log.py`, `scripts/analyze_runs.py`
+  and `scripts/fl_overlay_set.py`. This dated entry is therefore the manual
+  attempt record; no automated attempt-count or overlay mutation is claimed.
+- **Boundary:** this closes machine parity for membership, Garden text, camera
+  and native-touch drag. It does not convert browser emulation into physical-
+  device proof or machine comparison into the operator's visual verdict.
+- **Status:** APPROVED-CLONE DESKTOP/MOBILE/PHONE RUNTIME PARITY VERIFIED;
+  OPERATOR FINAL VISUAL ACCEPTANCE REMAINS OPEN. ComplaintRefs: Correction: the
+  durable full Garden is the approved baseline, not the minimal replacement
+  (2026-08-11); Exact Web E2E Order items 2, 5 and 9 (2026-08-10).
+
+### Completion audit corrects the demo passphrase and shipping claim (2026-08-11)
+
+- **Observed contradiction:** the tracked sealed bundle, Quick start and
+  verifier all use `garden-biscuit-2026`, while the public-route sentence in
+  `README.md` still told the recipient to enter `garden`. The same audit found
+  that the manually triggered Pages workflow intentionally builds the frozen
+  legacy snapshot, not the current root product.
+- **Passphrase correction:** the public-route candidate documentation now
+  names `garden-biscuit-2026` consistently. A new system-Chrome test activates
+  the root viewer's ordinary `get passcode-locked demo` button by coordinates,
+  opens letters, enters the documented passphrase and reaches one decrypted
+  unread archive row with the authenticated demo program adopted.
+- **Failed proof attempt 1:** the first browser assertion asked
+  `__gardenReview.provenance().world_id`, which the read-only accessor does not
+  publish. Authentication had already succeeded; the assertion was replaced
+  with the observable decrypted unread row, generated authenticated world
+  provenance and canonical authored-program identities.
+- **Failed proof attempt 2:** the next assertion expected four canonical
+  `program_state.entities`, copying the encrypted program's four ordinary
+  entities while ignoring its separately declared rabbit. The runtime
+  correctly adopts five identities. The proof now requires the named rabbit,
+  rose and autumn keepsake instead of imposing the wrong aggregate.
+- **Shipping boundary:** a direct root Pages build was attempted and correctly
+  refused by `enforce_release_gate`: operator review, accepted-atlas and paint-
+  ownership blockers remain. The active workflow continues to publish
+  `legacy/` through `prepare_legacy_site.py`. Public deployment was explicitly
+  excluded from this web-E2E objective, so neither condition is relabeled as a
+  current-root deployment. The verified current-product shipping path is the
+  self-contained handoff ZIP, whose viewer closure, sealed bundle,
+  instructions and start helper execute under the author-web contract.
+- **Direct result:** the local sealed-demo browser test, handoff-package test,
+  canonical public-demo verifier and installed-resource verifier pass 4/4.
+- **Stale contract correction:** the viewer test that required the production
+  workflow to invoke `prepare_pages_site.py` contradicted the current release
+  boundary. It is now two checks: one pins the manual production workflow to
+  `prepare_legacy_site.py` until cutover, and one builds the root candidate only
+  with the explicit `--skip-release-gate` marker before verifying its complete
+  transitive closure and fail-closed missing-asset behavior. Both pass 2/2.
+- **Final regression convergence:** the real-browser aggregate passes 9/9 in
+  64.76 seconds. Author service/web, viewer, release-matrix and discovered
+  browser-module contracts pass 61/61 in 22.77 seconds. Changed JSON, diff
+  whitespace, deleted-harness absence and the live root HTTP route validate.
+- **Status:** ROOT KNOWN-PASSPHRASE DEMO AND HANDOFF SHIPPING PATH VERIFIED;
+  ROOT PUBLIC DEPLOYMENT EXPLICITLY OUT OF ROUTE AND STILL BLOCKED. ComplaintRefs:
+  Wayfinder map: the whole web product, authoring through recipient
+  (2026-08-05); Exact Web E2E Order item 8 (2026-08-10).
+
+### Final operator review receives a durable browser-authored artifact (2026-08-11)
+
+- **Remaining acceptance owner:** item 9 explicitly requires machine
+  verification first and the operator's visual acceptance second. Automation
+  cannot supply the second verdict, and a temporary pytest download is not a
+  usable operator handoff.
+- **Prepared review input:** the real browser author flow exported
+  `scratchpad/garden-restoration-2026-08-11/final-operator-e2e/Mara-from-Riki.lateletter`
+  with one scheduled gift. Its SHA-256 is
+  `0596236572c4f7edb9ad1a8a0260eece4723151fa96734e13d58356adfccf1fd`;
+  HMAC verification succeeds with the review passphrase `1234`.
+- **Review receipt:** adjacent `review-receipt.json` records the exact bytes,
+  scheduled boundary, live viewer, fixed pre/post-boundary URLs and the machine
+  test that proves the uninterrupted ordered crossing. Its operator verdict is
+  deliberately `pending` until the operator supplies it.
+- **Status:** FINAL OPERATOR INPUT PREPARED; VISUAL VERDICT PENDING.
+  ComplaintRefs: Exact Web E2E Order item 9 (2026-08-10); Approved-clone parity
+  now covers phone/mobile touch drag (2026-08-11).
+
+### Native macOS Chrome chooser rejects the product suffix before validation (2026-08-11)
+
+- **Observed on the direct acceptance surface:** the headed macOS Chrome file
+  chooser displayed `Mara-from-Riki.lateletter`, but its Open button remained
+  disabled. Changing the chooser's Format control to All Files did not enable
+  the selected product artifact.
+- **Ownership finding:** `viewer-bnw.html` supplied
+  `accept=".lateletter,.json"` on the hidden file input. Chrome/macOS treated
+  the custom `.lateletter` suffix as an unknown UTI and rejected it in the
+  native chooser before the viewer's normal parsing and cryptographic checks
+  could run. The Playwright `set_input_files` path bypassed this native gate,
+  so its prior green result was only a proxy for ordinary recipient upload.
+- **Correction:** the native pre-filter is removed. `handleFile` and
+  `loadBundle` remain the sole validation/error owner for selected and dropped
+  files; invalid content is still rejected by the same production path.
+- **Regression owner:**
+  `tests/test_viewer_contract.py::test_native_file_chooser_does_not_filter_the_product_lateletter_extension`
+  pins both absence of the native filter and continued delegation to
+  `loadBundle` with the ordinary error screen.
+- **Headed retry:** after a hard reload, Computer Use navigated the real
+  macOS chooser to the browser-authored artifact. Selecting
+  `Mara-from-Riki.lateletter` changed Open from disabled to enabled, and the
+  native Open action closed the chooser. This closes the chooser gate itself;
+  the final operator Garden verdict remains separate.
+- **Documentation tooling limitation:** the repository still lacks
+  `scripts/analyze_failure_log.py`, `scripts/analyze_runs.py` and
+  `scripts/fl_overlay_set.py`. This is the manual dated attempt record.
+- **Status:** NATIVE CHOOSER VERIFIED; FINAL OPERATOR VISUAL VERDICT REMAINS
+  OPEN. ComplaintRefs: Exact Web E2E Order
+  items 2, 8 and 9 (2026-08-10); operator instruction to use Computer Use
+  (2026-08-11).
+
+### Correction: rose verbs are labels, not contextual Garden behaviour (2026-08-11)
+
+- **Direct operator rejection:** the always-visible `[inspect the rose]` and
+  `[water the rose]` group is literal labeling over the picture, not an
+  acceptable context action. Activating the rose appeared to do nothing, and
+  the staged Garden showed no motion.
+- **Ownership evidence:** the saved approved `e4eea8a` viewer contains no
+  `#garden-context-actions` surface. The successor added one and
+  `_currentContextPlant` fell back to `plants[0]` even when no context object
+  had been selected, so the first flower's name and verbs were painted
+  unconditionally. Its direct primary action was `inspect`, whose durable
+  effect was a journal entry hidden from the picture.
+- **Independent motion cause:** Computer Use read the actual Chrome state as
+  canonical `motion_paused=true`; the review URL also supplied a fixed
+  `garden_review_time` without `garden_review_motion=1`, which intentionally
+  freezes disposable presentation frames. The live product renderer was not
+  missing its animation loop. Motion was resumed through the visible control;
+  final live review must use the ordinary query-free-time route.
+- **Correction:** the beside-flower DOM/CSS/positioning owner is deleted.
+  Python and JavaScript projections now declare `tend(care_action=water)` as
+  the flower's safe primary action and no flower opportunities. Mouse, touch
+  and Enter dispatch that exact record through the drawing. The existing
+  picture-owned click burst supplies visible feedback when canonical pause and
+  reduced-motion gates allow it; no browser label decides the act.
+- **Proof contract:** the browser successor requires the label surface to be
+  absent, clicks the rose's measured canonical interaction region, observes
+  tended-count and journal mutation, and on ordinary desktop motion observes
+  `recipe.feedback.click_leaf_burst`. Native touch exercises the same direct
+  region under reduced motion without claiming animation there.
+- **Execution evidence:** the viewer/Python/JavaScript projection contracts
+  pass 41/41. The complete real-browser Garden and browser-authored handoff
+  files pass 7/7 in 53.60 seconds after the interaction rewrite; the direct
+  persistence and final ordered-artifact cases pass 2/2 in 22.94 seconds after
+  waiting for the post-focus painted hit rectangle. The durable Garden
+  interaction successor additionally samples eight ordinary-route frames and
+  requires more than one rendered Garden value, then observes the click burst;
+  it passes 2/2 in 12.42 seconds. Broader JavaScript Garden adapters pass
+  114/114 and Python Garden/conformance/asset contracts pass 149/149.
+- **Headed state:** Computer Use opened the ordinary live URL
+  `http://127.0.0.1:8880/viewer-bnw.html?garden_debug=1`; its current
+  accessibility tree contains only global journal and `pause motion`, with no
+  nearby-flower/name/verb controls and canonical pause false. Multiple Chrome
+  windows share the `LateLetter` title, and Computer Use returned a screenshot
+  that did not converge with that tree, so the screenshot is rejected as
+  visual acceptance rather than silently promoted.
+- **Documentation tooling limitation:** this repository still lacks
+  `scripts/analyze_failure_log.py`, `scripts/analyze_runs.py` and
+  `scripts/fl_overlay_set.py`; this dated section is the manual attempt record.
+- **Status:** IMPLEMENTED, EXECUTED AND MACHINE-VERIFIED; OPERATOR VISUAL
+  ACCEPTANCE REMAINS OPEN. ComplaintRefs: Narrow-phone exact-artifact review closes two mobile
+  paint defects (2026-08-11), superseded for the rejected beside-flower action
+  group; operator rejection of literal rose labels and motionless review route
+  (2026-08-11).
+
+### Runnable pre-intervention backup and acceptance-record reconciliation (2026-08-11)
+
+- **Operator precondition:** Before any further Garden intervention, preserve
+  the complete current workspace as a fully runnable clone under
+  `/Volumes/CodexBackup`.
+- **Durable clone:** `LateLetter-2026-08-11-current-runnable` contains the full
+  2.1 GB source tree, `.git`, all 57 dirty/untracked status records, 11,181
+  regular files and 10 symlinks. Source and clone matched on HEAD, branch,
+  status hash, binary tracked-diff hash and a checksum-mode full-tree dry run.
+  The one intentional post-verification addition is
+  `CODEX_BACKUP_RECEIPT.md` inside the clone.
+- **Runnable proof:** The clone's real-Chrome Garden interaction file passed
+  2/2 from the backup volume. Its independent HTTP server returned 200 for the
+  viewer, author and Garden world module and remains available on localhost
+  port 8891 for operator inspection.
+- **Audit correction:** Gate 12 still described the earlier rejected
+  beside/below-flower label group. The matrix now records the implemented
+  contract: persistent global controls meet the touch floor, while flower
+  activation occurs through its measured picture region and the rejected
+  object-name/verb surface is absent.
+- **Status:** BACKUP PRECONDITION VERIFIED; STALE GATE EVIDENCE RECONCILED;
+  FINAL OPERATOR VISUAL VERDICT REMAINS OPEN.
+
+### The visible rose ink, not its hidden stem cell, owns pointer reach (2026-08-11)
+
+- **Observed defect:** the direct-action rewrite removed the rejected labels,
+  but the browser target remained the canonical one-cell stem hotspot expanded
+  to the 44 px accessibility floor. The approved rose drawing is much larger:
+  in the failing desktop frame its raw hotspot was only 7.83 x 15 px while its
+  tight visible art occupied 70.45 x 90 px. A person clicking the bloom could
+  therefore see no response even though tests clicking the hidden anchor passed.
+- **False-negative encountered while proving it:** the first combined browser
+  run passed 8/9. Its persistence case sampled the target rectangle after focus
+  changed but before the ensuing asynchronous camera pan and repaint completed.
+  The helper now waits for canonical camera convergence and both freshly painted
+  rectangles before sending real mouse or touchscreen input.
+- **Ownership correction:** `CanonicalGardenRenderer` derives a tight rectangle
+  from final visible primitives already attributed to the canonical object.
+  Accepted rose ink may now resolve to that same projected rose outside the
+  hotspot; it cannot create an object, verb, eligibility rule or arguments.
+  Exact canonical hotspots retain priority where drawings overlap. A localhost-
+  only read accessor reports the resolved object identity for falsifiable tests.
+- **Direct proof:** browser tests select an exposed point in the visible rose art
+  outside the old 44 px anchor, require that point to resolve to the rose, then
+  deliver actual mouse and touchscreen input and observe canonical tended-count,
+  journal and click-burst effects. Garden interaction plus exact-artifact handoff
+  pass 7/7; author plus typography browser paths pass 2/2; the viewer contract
+  passes 20/20; relevant JavaScript renderer/input/world adapters pass 121/121.
+- **Broad Python run boundary:** a 180-test aggregate reached 173 passes before
+  the internal volume reported `Errno 28`. The seven affected cases were rerun
+  serially with an external-volume base temp and passed 7/7. The verdict register
+  remained byte-identical to the runnable backup and valid JSON, so the storage
+  failure is not reported as a product regression.
+- **Headed ordinary route:** system Chrome now holds
+  `http://127.0.0.1:8880/viewer-bnw.html` with the restored one-plant/six-fixture
+  Garden. The visible control set is exactly `journal & inventory` and
+  `pause motion`; the context-label surface count is zero, canonical pause is
+  false, and six samples produced six distinct rendered frames. The visible
+  rose bloom was exercised directly before the clean ordinary tab was left open.
+- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED; OPERATOR
+  VISUAL ACCEPTANCE REMAINS OPEN. ComplaintRefs: operator rejection of inert
+  rose behavior and literal context labels (2026-08-11).
+
+### Final requirement-mapped audit after visible-ink correction (2026-08-11)
+
+- **Binding scope:** the nine-item web-E2E order is evaluated with the
+  operator's later decisions applied: revision 6's minimal 1/0/0/0 proposal is
+  superseded by the accepted revision 5 full Garden; beside-flower verb labels
+  are superseded by direct picture-owned rose activation; VoiceOver is excluded;
+  deployment, terminal parity and pushing remain outside this route.
+- **Current executed convergence:** one serial requirement-mapped selection
+  passed 158/158 in 101.19 seconds. It includes both recipient browser files,
+  browser authoring, reading typography, viewer and author contracts, gate
+  guards, Python/browser conformance, composition versioning and asset policy.
+  The run used an external-volume base temp to prevent the prior internal disk
+  exhaustion from influencing the result. The complete JavaScript Garden
+  adapter selection passed 205/205 in 4.11 seconds on the same source.
+- **Artifact audit:** the final browser-authored artifact still hashes to
+  `0596236572c4f7edb9ad1a8a0260eece4723151fa96734e13d58356adfccf1fd`.
+  Desktop/mobile/phone controls and reading captures, clone-parity receipt,
+  reading-scrim captures and final review receipt all exist. The prior ledger
+  listed the mobile filenames one directory too shallow; the durable path is
+  `scratchpad/garden-restoration-2026-08-11/mobile-review-final/test_one_browser_author_downlo0/`.
+- **Ordinary headed surface:** system Chrome holds the query-free product route
+  with one plant, six fixtures, only the journal/inventory and pause controls,
+  no context-label DOM, pause false and six distinct rendered values in six
+  samples. The visible bloom was exercised directly before the clean view was
+  left open.
+- **Acceptance boundary:** items 1-8 as superseded are machine-verified and the
+  ordered item-9 traversal is machine-verified. Item 9 explicitly assigns the
+  final visual verdict to the operator. That human verdict remains pending and
+  is the only unclosed requirement; no test or screenshot is promoted into it.
+- **Status:** ALL MACHINE-EXECUTABLE WEB-E2E REQUIREMENTS VERIFIED; FINAL
+  OPERATOR VISUAL ACCEPTANCE PENDING. ComplaintRefs: Exact Web E2E Order
+  (2026-08-10); operator restoration and direct-rose decisions (2026-08-11).
