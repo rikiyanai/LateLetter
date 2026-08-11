@@ -1,0 +1,96 @@
+{
+  "date": "2026-08-12",
+  "source_commit": "cfabe67",
+  "checkpoint_commit_before_receipt": "ce90373",
+  "source_archive": "/private/tmp/lateletter-operator-cfabe67.4jBj7X",
+  "deployment_changed": false,
+  "artifact": {
+    "path": "/Users/r/Downloads/Mara-from-Riki (1).lateletter",
+    "sha256": "0e0e294c1be54ccacec30f4660e706f99ba8b0e0496cf93fb15d120d456639b4",
+    "bytes": 2459,
+    "bundle_id": "3b998461-46aa-4629-b0a9-6aa024ee8457",
+    "hmac_valid": true,
+    "author": "Riki",
+    "recipient": "Mara",
+    "letter_label": "The yellow kitchen",
+    "letter_rows": [
+      "Dear Mara,",
+      "",
+      "The yellow kitchen.",
+      "",
+      "Love, Riki"
+    ],
+    "scheduled_gift": {
+      "kind": "coffee_mug",
+      "start_local": "2026-08-11T09:00:00",
+      "timezone": "Asia/Tokyo",
+      "missed_policy": "deliver_on_next_visit"
+    }
+  },
+  "desktop": {
+    "viewport": "1280x900",
+    "pre_auth_census": {"plants": 1, "fixtures": 6},
+    "post_auth_census": {"plants": 1, "fixtures": 7},
+    "scheduled_gift_materialized": true,
+    "flower_pointer_action": "tend",
+    "pointer_drag": "passed",
+    "home_recenter": "passed",
+    "double_click_recenter": "passed",
+    "picture_owned_mailbox_journal": "passed",
+    "exact_plaintext_reading": "passed",
+    "reload_reupload_reauthentication": "passed",
+    "read_state_persisted": true,
+    "camera_and_journal_state_persisted": true,
+    "gift_duplicate_prevented": true,
+    "zoom_200_percent": {
+      "visual_viewport_scale": 2,
+      "visual_viewport": "640x450",
+      "keyboard_action": "walk at Stepping stones",
+      "result": "passed"
+    }
+  },
+  "mobile": {
+    "surface": "real Chrome with CDP native touch events",
+    "viewports": ["390x844", "320x568"],
+    "touch_tap_flower": "passed",
+    "touch_drag": "passed",
+    "touch_double_tap_recenter": "passed",
+    "touch_mailbox_journal": "passed",
+    "exact_plaintext_reading": "passed",
+    "horizontal_overflow": false,
+    "minimum_control_height_px": 44,
+    "reduced_motion": {
+      "preference_active": true,
+      "comparison_interval_ms": 900,
+      "visible_paint_bytes_a": 6185,
+      "visible_paint_bytes_b": 6185,
+      "exactly_equal": true
+    },
+    "physical_device_claimed": false,
+    "voiceover_claimed": false
+  },
+  "accepted_captures": {
+    "desktop-1280x900-zoom-200-action.png": "d8db8d18dcea13fc16f6f81da02391a24286219662e2489d2a817861d600a756",
+    "desktop-authenticated-garden.png": "94eee65386e01db369363097adabcc7b49c796d47e3985fd1f1552e65907a939",
+    "desktop-reading.png": "505914ef770c7ca9fe7aefc09029b5315d4de88ef832336c08e9c23a272e932c",
+    "desktop-restored-journal.png": "967d9e435fe3d5d49660a9886b4e78225df99361245780a51ac7d48c0783c6d0",
+    "mobile-320x568-garden.png": "bfdbb34be3417dc07da2969fc58d9ebbac660773589c93398ae11d37f90d487e",
+    "mobile-320x568-reading.png": "acdc7a3814696c5be5fc9ccb3f23c3fa08540f974b56158d76f6146b03e0cff5",
+    "mobile-390x844-garden.png": "fad2ee40daf26560889450d699b50e022aa383a0629df31b66905a44459d9972",
+    "mobile-390x844-reading.png": "1acc1dc334549830bf40cb72c7a3333b252da79c2841ef34e8962c3f7c2e4176",
+    "mobile-390x844-reduced-motion.png": "fad2ee40daf26560889450d699b50e022aa383a0629df31b66905a44459d9972"
+  },
+  "rejected_diagnostic": {
+    "mobile-320x568-zoom-200.png": "This produced a 160x284 visual viewport and is not 200-percent desktop acceptance evidence."
+  },
+  "browser_console": {
+    "product_errors_observed": 0,
+    "third_party_extension_noise_observed": true,
+    "third_party_source": "MetaMask/message-channel injection"
+  },
+  "verdict": {
+    "product_e2e_desktop": "verified",
+    "product_e2e_emulated_phone": "verified",
+    "garden_interaction_lane": "independent; operator acceptance remains open"
+  }
+}

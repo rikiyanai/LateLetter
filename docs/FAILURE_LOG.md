@@ -16793,3 +16793,55 @@ Status: EXACT DESKTOP SUCCESSOR READY; RECIPIENT UPLOAD AWAITS CHROME EXTENSION
 FILE-ACCESS PERMISSION. ComplaintRefs: Product E2E operator journey stopped:
 due authored gift did not apply (2026-08-11); Wayfinder child: first
 authenticated visit must deliver an overdue authored gift (2026-08-12).
+
+### Exact repaired artifact passes desktop persistence and native-touch phone routes (2026-08-12)
+
+Attempt 3 for the Product E2E frontier after the Chrome file-access permission
+blocker was removed.
+
+- **Exact identity:** Chrome loaded the unchanged browser-authored artifact
+  `/Users/r/Downloads/Mara-from-Riki (1).lateletter`, SHA-256
+  `0e0e294c1be54ccacec30f4660e706f99ba8b0e0496cf93fb15d120d456639b4`,
+  bundle `3b998461-46aa-4629-b0a9-6aa024ee8457`, from the exact `cfabe67`
+  archive. HMAC, Riki→Mara metadata, `The yellow kitchen` five-row plaintext,
+  and the 2026-08-11 09:00 Asia/Tokyo coffee-mug schedule all matched the
+  authored artifact. No deployed endpoint changed.
+- **Desktop result:** before authentication the Garden projected one plant and
+  six fixtures. First authentication after the scheduled instant projected one
+  plant and seven fixtures, proving the overdue authored coffee mug
+  materialized. Direct flower tend, pointer drag, Home recenter, empty-ground
+  double-click recenter and picture-owned mailbox journal all executed without
+  permanent action labels. The exact letter was unread before reading and read
+  afterwards. Reload, re-upload and reauthentication restored the exact panned
+  flower geometry and open journal state, retained the read label and kept the
+  fixture count at seven, proving persistence without duplicate delivery.
+- **Zoom and keyboard:** at the authoritative 1280×900 desktop layout, CDP page
+  scale 2 produced a 640×450 visual viewport. Keyboard focus plus Enter
+  executed `walk at Stepping stones`; the 320-layout/160×284 diagnostic is
+  explicitly rejected as 200-percent acceptance evidence.
+- **Phone/mobile result:** the same authenticated artifact passed 390×844 and
+  320×568 in real Chrome using native CDP touch events, not locator clicks in a
+  merely touch-capable context. Flower tap, drag, empty-ground double-tap
+  recenter and mailbox journal tap executed; the exact five plaintext rows and
+  reachable 44-pixel controls remained visible with no horizontal overflow.
+- **Reduced motion:** with `prefers-reduced-motion: reduce` active at 390×844,
+  the complete visible Garden paint serialization was exactly equal before and
+  after 900 ms (6185 bytes each). Chrome was returned to normal media and input
+  settings after capture. This is browser-emulated native touch evidence, not
+  a physical-device, VoiceOver or NVDA claim; VoiceOver was explicitly
+  excluded by the operator.
+- **Evidence:** hashes, exact assertions and accepted capture paths are in
+  `scratchpad/product-e2e-operator-2026-08-12/receipt.json`. Browser console
+  inspection found no product error; MetaMask/message-channel injection noise
+  remains classified as third-party extension output rather than hidden.
+- **Independent lane boundary:** the Product E2E desktop and emulated-phone
+  successor is Executed and Verified. The Garden drag-position repair remains
+  a separate machine-verified lane awaiting operator interaction acceptance;
+  this result does not accept or commit its concurrent source edits.
+
+Status: PRODUCT E2E DESKTOP AND EMULATED-PHONE SUCCESSOR VERIFIED; PHYSICAL
+DEVICE AND SCREEN-READER CLAIMS REMAIN OUTSIDE THIS RUN. ComplaintRefs: Product
+E2E operator journey stopped: due authored gift did not apply (2026-08-11);
+Wayfinder child: first authenticated visit must deliver an overdue authored
+gift (2026-08-12); Wayfinder refinement: close product E2E and Garden as
+independent acceptance lanes (2026-08-11).
