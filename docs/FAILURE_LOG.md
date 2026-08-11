@@ -16492,3 +16492,252 @@ a temporary exact-commit server and removed it recoverably afterward.
   acceptance of the follow-up commit remains required. ComplaintRefs: batch
   operator decision item 4 / recommendation 20 (2026-08-11); exact `485d0be`
   operator rejection (2026-08-11).
+
+### Wayfinder refinement: close product E2E and Garden as independent acceptance lanes (2026-08-11)
+
+This refinement answers the operator's request to state what happens next for
+E2E and Garden independently. It refines, rather than replaces, “Wayfinder
+map: the whole web product, authoring through recipient (2026-08-05)” and
+“Wayfinder map: the whole recipient Garden, nested under product E2E
+(2026-08-10)”.
+
+Destination:
+
+- **Product E2E:** one operator-driven local browser journey authors and
+  downloads one sealed artifact, records its SHA-256, uploads those exact
+  bytes to the recipient, authenticates, reads the due letter, observes the
+  scheduled gift, returns to the Garden, and proves the same artifact and
+  canonical state survive reload, re-upload and reauthentication on desktop
+  and phone-sized touch routes. This lane proves artifact lineage and the
+  recipient lifecycle; it does not grant Garden visual or interaction
+  acceptance.
+- **Garden:** the exact accepted composition remains fixed while direct flower
+  and fixture actions, one-to-one pan, persistent camera, Home recenter and
+  empty-ground mouse/touch recenter behave correctly on desktop, 390x844 and
+  320x568. The operator accepts the live current Garden itself. This lane may
+  use one already-authenticated artifact and standalone mode; it does not need
+  to repeat authoring to prove Garden behavior.
+
+Decisions so far:
+
+- Product E2E is Implemented, Connected, Executed and machine-Verified by the
+  five-test durable browser handoff harness. Gate 8 is PASS. Its remaining
+  local frontier is direct operator acceptance of the whole exact-artifact
+  journey, because the parent map defines completion by operator operation,
+  not a test count.
+- Garden composition is operator-Accepted at desktop, 390x844 and 320x568 and
+  its exact fingerprint is recorded. Recenter is committed and pushed in
+  `6218179` and machine-Verified. The separately owned pan-stability repair is
+  still uncommitted, machine-Verified and awaiting a clean submission plus
+  operator drag acceptance.
+- A failed Garden interaction cannot invalidate the proven bundle hash,
+  authentication, letter plaintext or scheduled-event lineage. A green E2E
+  journey cannot approve Garden appearance, feel or usefulness.
+- The current default deliberately has no animal or collectible. Feed, play
+  and collect are therefore not required to accept this default composition;
+  adding those populations is a later destination change, not a hidden
+  blocker. Terminal parity remains withdrawn, and author placement/move/
+  rotate/undo remain outside the accepted MVP. The corresponding Gate 2/12
+  blocker wording is stale and must be reconciled without promoting the gates
+  beyond their actual evidence.
+
+Frontier children selected:
+
+1. **E2E — operator-drive the exact local artifact journey.** Use the current
+   committed branch and one newly browser-authored artifact. Record its one
+   hash and visible checkpoints through author download, recipient upload,
+   unlock, due-letter read, scheduled gift, Garden return, reload, re-upload
+   and reauthentication at desktop and phone-sized touch viewports. Stop on
+   any mismatch; do not repair Garden inside this child.
+2. **Garden — submit and accept the current interaction build.** First isolate
+   the already machine-verified pan-stability hunks from unrelated dirty work
+   and commit/push that coherent repair without deployment. Then run the exact
+   committed Garden and ask the operator to exercise pointer/touch pan, Home,
+   mouse double-click and touch double-tap recenter, direct flower/fixture
+   actions and reopen persistence at the three accepted viewports. Stop on the
+   first visible or behavioral rejection and record it as a Garden defect.
+
+Not yet specified / fog left:
+
+- Whether “phone” completion requires a physical handset in addition to the
+  current Chromium native-touch contexts. This affects the strength of the
+  Garden input claim, not the local artifact-lineage claim.
+- The direct operator verdict on standalone usefulness (Gate 3) and final
+  whole-Garden acceptance (Gate 14).
+- The supported-platform screenshot/performance evidence still named by Gates
+  6 and 10; these do not belong inside the next E2E artifact child.
+
+Out of scope:
+
+- Any Pages/deployed-endpoint mutation or replay; the operator explicitly
+  prohibited changing the deployed endpoint.
+- VoiceOver/NVDA, by operator direction; terminal parity; default animals or
+  collectibles; broader author Garden placement controls; and new Garden
+  visuals or animation.
+
+RQ projection: not projected. Both next children are sharp and executable;
+the remaining physical-handset question can be decided after the required
+local operator runs without blocking them.
+
+### Product E2E operator journey stopped: due authored gift did not apply (2026-08-11)
+
+The operator-driven Product E2E frontier ran against a temporary archive of
+exact committed HEAD `fad00c6`, served only on loopback. The author UI created
+one final sealed artifact at `/Users/r/Downloads/Mara-from-Riki.lateletter`.
+Its SHA-256 remained
+`7d500c8bb81b892d8d0dc36b6578002802d856df51807820f45dfcd8e4feca44`
+before initial upload, before re-upload and after reauthentication; size was
+2459 bytes. An earlier UTC-timed preflight export was abandoned before any
+recipient upload and moved recoverably to Trash rather than confused with the
+final artifact.
+
+- **Confirmed path:** the loopback author validated `1 letter ready`, sealed
+  the final artifact, and reported success. The recipient uploaded those exact
+  bytes, showed `planted for you by Riki`, authenticated with the separately
+  entered passphrase, exposed the unread label `The yellow kitchen`, and
+  rendered the exact five plaintext rows `Dear Mara,`, blank, `The yellow
+  kitchen.`, blank, `Love, Riki`. After reload, re-upload and reauthentication,
+  the archive retained the same label as read and canonical provenance changed
+  from `load_origin: generated` to `load_origin: loaded`.
+- **Scheduled occurrence owned by the artifact:** decrypting the authenticated
+  Garden program through the exact committed Python reader showed one event,
+  `gift.540c374d4af64e9a8c14dbf3b96c5527.delivery`, scheduled for
+  `2026-08-11T09:00:00` in `Asia/Tokyo`, with
+  `missed: deliver_on_next_visit`, revealing the coffee-mug fixture entity and
+  presenting the authored letter. The real recipient clock read after 09:00 in
+  the same timezone; no review-clock substitution was used.
+- **Mismatch:** after returning to the Garden and again after the required
+  reload/re-upload/reauthentication, canonical state still contained only the
+  six starter fixtures. The gift entity remained `revealed: false`,
+  `applied_occurrence_total` and `applied_occurrences` remained zero, while
+  `offline_reconciliation_total` was one and `load_origin` was `loaded`.
+  Visible read-letter persistence therefore passed, but the required scheduled
+  gift checkpoint failed.
+- **Decision:** stopped on the first mismatch as the frontier required. No
+  Garden interaction repair, fake clock, deployed-endpoint change or gate
+  promotion was attempted. Product E2E remains machine-Verified by 5/5 but is
+  not operator-Accepted. The independent Garden acceptance lane is unchanged.
+- **Named next unknown:** determine whether a first authenticated observation
+  already after the scheduled instant incorrectly seeds the observation
+  interval at `now`, preventing `deliver_on_next_visit` reconciliation, and
+  why the post-completion memorial does not reveal the pending authored entity.
+  A repair belongs to a successor E2E defect child, not this stopped journey.
+
+Status: PRODUCT E2E OPERATOR ACCEPTANCE BLOCKED ON SCHEDULED GIFT APPLICATION.
+ComplaintRefs: Wayfinder refinement: close product E2E and Garden as independent
+acceptance lanes (2026-08-11), frontier child 1.
+
+### Wayfinder child: first authenticated visit must deliver an overdue authored gift (2026-08-12)
+
+Question:
+Repair and prove the first authenticated schedule-observation boundary. When a
+recipient first opens a newly generated authenticated world after a one-time
+authored event's scheduled instant, `deliver_on_next_visit` must apply the
+latest eligible occurrence exactly once, materialize its canonical entity and
+receipt, and preserve both across reload, re-upload and reauthentication. The
+proof must use a normal browser-authored artifact and a first recipient clock
+meaningfully later than the scheduled instant; setting the clock exactly on
+the boundary or first opening before it does not exercise this defect.
+
+Type: task.
+
+Source-grounded diagnosis:
+
+- `GardenRuntime.open()` records `previousObservedWallTime` while a newly
+  generated world still has no observation watermark, then
+  `reconcileGardenOffline()` initializes `last_observed_wall_time` to the
+  current real clock.
+- `publishCanonicalGardenRuntime()` consequently initializes
+  `gardenSessionStarted` to that same current instant.
+- `_runAuthenticatedGardenProgramNow()` in `viewer-bnw.html` has neither a
+  previous program cursor nor an earlier session boundary, so its fallback is
+  `observed - 1`. `expandGardenSchedule()` then correctly sees only that
+  one-second interval and cannot return a gift scheduled hours earlier.
+- The current browser tests do not falsify this path. One opens at exactly
+  `09:00:00`; the final artifact journey first opens at `08:59:58` and later
+  advances to `09:00:02`. Both manufacture a cursor crossing that occurrence.
+  Neither first authenticates meaningfully after a due instant with no prior
+  persisted program watermark.
+
+Acceptance surface:
+
+1. Add a regression that browser-authors one one-time coffee-mug gift for an
+   already-passed local time, then first authenticates at the real/later clock.
+2. Prove one and only one occurrence ID is applied, `revealed` is true, the
+   seventh canonical fixture is the authored coffee mug, and the visible
+   product exposes the resulting gift/letter consequence.
+3. Reload, re-upload and reauthenticate the unchanged artifact and prove the
+   same receipt/entity persist without duplication.
+4. Preserve the already-green exact-boundary and before→after crossing cases,
+   schedule conformance, authenticated persistence and unchanged artifact
+   SHA.
+5. Rerun the stopped desktop operator journey from a newly authored artifact.
+   Only after it passes does the E2E frontier proceed to its phone leg.
+
+Decision recorded for the parent map: Product E2E remains operator-blocked on
+first-visit gift materialization; the successful authoring, artifact identity,
+authentication, plaintext reading and read-state persistence checkpoints stay
+verified and are not reopened by this child.
+
+Fog left: the implementation must choose one canonical initial program cursor
+that is bounded for recurring schedules and conforms between browser and
+Python materialization. That choice is inside this task; silently using the
+artifact creation time, Unix epoch or current time without cross-runtime
+tests is not accepted.
+
+Out of scope: Garden composition, drag/recenter acceptance, phone execution
+before the desktop successor passes, deployment, and any review-clock-only
+workaround.
+
+RQ projection: not projected. The defect, owner, falsifier and executable
+acceptance surface are sharp.
+
+### First-visit overdue gift cursor repaired and machine-verified (2026-08-12)
+
+Fix attempt 1 for “Wayfinder child: first authenticated visit must deliver an
+overdue authored gift (2026-08-12)”.
+
+- **Pinned failure before intervention:** the durable browser regression
+  authored a one-time coffee-mug gift, first authenticated meaningfully after
+  its 09:00 instant and failed with six fixtures, `revealed: false` and zero
+  applied occurrences. This reproduced the operator's exact state mismatch.
+- **Cause confirmed:** `GardenRuntime.open()` correctly initializes ordinary
+  world observation before authentication. The viewer incorrectly reused that
+  just-initialized time as though the authenticated author program had already
+  been evaluated, reducing a fresh world's program interval to one second.
+  `expandGardenSchedule()` then correctly found no occurrence in the interval
+  it was given. The stale owner was the viewer's initial cursor selection, not
+  author export, timezone resolution, the evaluator or entity materialization.
+- **Intervention:** `web/garden-program.mjs` now exports the browser schedule
+  engine's canonical 366-day catch-up bound. On a fresh authenticated world,
+  `_runAuthenticatedGardenProgramNow()` uses that bounded initial window; once
+  a persisted cursor exists, it preserves that exact cursor for normal,
+  equal-time and rollback-safe expansion. The cursor still advances only after
+  successful canonical materialization and persistence.
+- **Real-path regression:** the author helper now supports an explicit author
+  timezone and gift date. The failing case uses `Asia/Tokyo`, a gift dated the
+  previous day at 09:00 and the browser's real clock—no review-clock or exact-
+  boundary substitution. It asserts exactly one delivery occurrence, one
+  coffee-mug seventh fixture and exact non-duplicating state across reload,
+  re-upload and reauthentication.
+- **Executable proof:** the new real-clock Asia/Tokyo regression passes 1/1;
+  viewer/schedule/author contracts pass 28/28; JavaScript live-runtime passes
+  25/25; and release acceptance passes 11/11. The pre-intervention focused run
+  remains recorded as a real failing test. A complete run from the shared dirty
+  worktree reached and passed the repaired gift checkpoint, then finished 4
+  pass / 1 fail on a later Garden-only keyboard-framing timeout for the
+  mailbox. An isolated archive of exact staged tree
+  `602c4a0ac189fd274355067fc6a01bd178e4d067`, excluding the concurrent dirty
+  pan/presentation edits, passes the complete handoff file 5/5. The discrepancy
+  is therefore preserved as evidence against those independent Garden edits;
+  it is not attributed to, hidden by or repaired inside this E2E child.
+- **Acceptance boundary:** implementation is Connected, Executed and machine-
+  Verified. Product E2E is not yet operator-Accepted: the operator must rerun
+  the stopped desktop journey on the repaired commit and, only after it passes,
+  continue to the phone leg. Garden composition and interaction acceptance are
+  unchanged.
+
+Status: REPAIR MACHINE-VERIFIED; DESKTOP OPERATOR SUCCESSOR REQUIRED.
+ComplaintRefs: Product E2E operator journey stopped: due authored gift did not
+apply (2026-08-11); Wayfinder refinement: close product E2E and Garden as
+independent acceptance lanes (2026-08-11), frontier child 1.

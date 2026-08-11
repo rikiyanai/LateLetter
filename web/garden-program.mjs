@@ -26,6 +26,10 @@ const BUNDLE_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$/;
 const TIMEZONE_ID = /^[A-Za-z_+-]+(?:\/[A-Za-z0-9_+.-]+)*$/;
 const MAX_STRING_LENGTH = 16384;
 const MAX_SAFE_JSON_DEPTH = 20;
+// Schedule expansion is deliberately bounded in both runtimes. Export the
+// browser value so the recipient's first authenticated cursor cannot drift
+// from the expander's canonical catch-up window.
+export const GARDEN_SCHEDULE_MAX_CATCH_UP_SECONDS = 366 * 86400;
 const clone = value => JSON.parse(canonicalJson(value));
 const PLACEMENT_HINTS = new Set([
   'random', 'authored', 'path', 'near_tallest_tree', 'near_bench', 'by_edge',
@@ -1005,7 +1009,9 @@ export function expandGardenSchedule(ruleInput, options) {
   const rule = ruleInput.start && Array.isArray(ruleInput.start) ? ruleInput : parseGardenSchedule(ruleInput);
   const last = new Date(options.last_seen_utc).getTime(); const now = new Date(options.now_utc).getTime();
   if (now < last) return { occurrences: [], summarized_missed: 0, skipped_missed: 0, catch_up_truncated: false, rollback_detected: true };
-  const catchupStart = Math.max(last, now - 366 * 86400000);
+  const catchupStart = Math.max(
+    last, now - GARDEN_SCHEDULE_MAX_CATCH_UP_SECONDS * 1000,
+  );
   let truncated = last < catchupStart;
   const recurrence = rule.recurrence;
   const candidates = []; let emitted = 0;

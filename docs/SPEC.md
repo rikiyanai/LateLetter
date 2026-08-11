@@ -3436,9 +3436,12 @@ scheduled gift, exact canonical persistence, and reload/re-upload/
 reauthenticated reopen. A scheduled boundary crossed during the live session
 uses the last successfully materialized program-evaluation time, so a
 foreground/resume jump cannot silently skip a `deliver_on_next_visit` gift.
-An initial evaluation exactly on a scheduled second includes that second;
-later evaluations retain the whole elapsed interval from their successful
-runtime cursor.
+On a newly generated authenticated world with no prior program cursor, the
+first evaluation owns the schedule engine's bounded 366-day catch-up window;
+initializing ordinary world observation before authentication must not discard
+an already-due `deliver_on_next_visit` occurrence. An initial evaluation
+exactly on a scheduled second includes that second; later evaluations retain
+the whole elapsed interval from their successful runtime cursor.
 Append-later, complete handoff-package export and full authored-Garden control
 now have executable browser/service evidence. The tracked root sealed-demo
 button also unlocks in a real browser with the single documented passphrase,

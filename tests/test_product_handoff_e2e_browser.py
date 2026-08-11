@@ -13,7 +13,7 @@ import hashlib
 import json
 import struct
 import threading
-from datetime import date
+from datetime import date, timedelta
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -315,13 +315,14 @@ def _upload_unlock_and_return_to_garden(page, artifact: Path, origin: str) -> No
 
 def _export_once_through_author(
     page, origin: str, tmp_path: Path, *, scheduled_gift: bool = False,
+    author_timezone: str = "UTC", scheduled_gift_date: str | None = None,
 ) -> Path:
     page.goto(f"{origin}/", wait_until="networkidle")
     page.locator("#btn-start-fresh").click()
     page.locator('section[data-stage="people"]').wait_for(state="visible")
     page.locator("#f-author-name").fill("Riki")
     page.locator("#f-recipient-name").fill("Mara")
-    page.locator("#f-timezone").select_option("UTC")
+    page.locator("#f-timezone").select_option(author_timezone)
     page.locator("#f-hint").fill("the room with the yellow table")
     page.locator("#btn-next").click()
     page.locator('section[data-stage="letters"]').wait_for(state="visible")
@@ -334,7 +335,7 @@ def _export_once_through_author(
         page.locator("#btn-add-gift").click()
         page.locator(".gift-card select").nth(0).select_option("fixture.coffee_mug")
         page.locator('.gift-card input[type="date"]').fill(
-            date.today().isoformat()
+            scheduled_gift_date or date.today().isoformat()
         )
         page.locator(".gift-card select").nth(1).select_option(index=1)
     page.locator("#btn-next").click()
@@ -680,17 +681,17 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
             author_errors, author_bad_responses = _watch_browser(author_page)
             artifact = _export_once_through_author(
                 author_page, author_origin, tmp_path, scheduled_gift=True,
+                author_timezone="Asia/Tokyo",
+                scheduled_gift_date=(date.today() - timedelta(days=1)).isoformat(),
             )
             author_page.close()
 
             page = context.new_page()
             page.set_default_timeout(30_000)
             # The author UI fixes scheduled deliveries at 09:00 local time.
-            # Open at that exact boundary so the first authenticated interval
-            # crosses the browser-authored occurrence deterministically.
-            page.add_init_script(
-                f"Date.now = () => Date.parse('{date.today().isoformat()}T09:00:00Z');"
-            )
+            # First authenticate meaningfully later: an exact-boundary clock
+            # hid the real recipient defect where a due deliver-on-next-visit
+            # occurrence had no earlier persisted program cursor.
             recipient_errors, recipient_bad_responses = _watch_browser(page)
             try:
                 _upload_unlock_and_return_to_garden(page, artifact, recipient_origin)
@@ -699,9 +700,12 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                 assert {
                     fixture["catalog_id"] for fixture in state["fixtures"]
                 } == STARTER_FIXTURE_CATALOGS | {"coffee_mug"}, state["program_state"]
-                assert state["program_state"]["applied_occurrences"], (
+                applied_occurrences = state["program_state"]["applied_occurrences"]
+                assert len(applied_occurrences) == 1, (
                     "the browser-authored overdue scheduled gift did not trigger"
                 )
+                assert applied_occurrences[0].startswith("gift.")
+                assert ".delivery@" in applied_occurrences[0]
 
                 plant_id = state["plants"][0]["plant_id"]
                 _keyboard_focus_object(page, plant_id)
@@ -766,6 +770,9 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                 assert _persisted_state_subset(restored) == _persisted_state_subset(
                     before_reload
                 )
+                assert restored["program_state"]["applied_occurrences"] == (
+                    applied_occurrences
+                ), "reauthentication duplicated the overdue gift occurrence"
                 assert page.locator("#garden-journal").is_visible(), (
                     "canonical journal_open did not restore its ordinary HUD surface"
                 )

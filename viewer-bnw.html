@@ -549,6 +549,7 @@ import {
 import {
   evaluateGardenProgram,
   expandGardenSchedule,
+  GARDEN_SCHEDULE_MAX_CATCH_UP_SECONDS,
   migrateAuthenticatedLegacyGifts,
   parseGardenProgram,
   validateBundleIdentityShape,
@@ -1488,20 +1489,21 @@ async function _runAuthenticatedGardenProgramNow(){
     hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23',
   }).formatToParts(now).filter(item=>item.type!=='literal').map(item=>[item.type,item.value]));
   const localIso=`${localParts.year}-${localParts.month}-${localParts.day}T${localParts.hour}:${localParts.minute}:${localParts.second}`;
-  // The first authenticated evaluation of a generated world has no offline
-  // cursor. Start at the canonical session-open boundary, then advance this
-  // runtime cursor only after successful materialization below. Falling back
-  // to `observed - 1` dropped scheduled gifts whenever a foreground tab or a
-  // pause/resume crossed more than one wall-clock second at once.
-  const priorProgramSeconds=Number(
-    runtime.previousObservedWallTime??gardenSessionStarted,
-  );
-  // An initial evaluation exactly on a scheduled second must include that
-  // boundary. Once the runtime owns an earlier cursor, keep the whole elapsed
-  // interval so later foreground/resume jumps cannot skip occurrences.
-  const lastSeconds=Number.isFinite(priorProgramSeconds)
-    &&priorProgramSeconds>0&&priorProgramSeconds<observed
-    ?priorProgramSeconds:Math.max(0,observed-1);
+  // Advance the authenticated program cursor only after successful canonical
+  // materialization. Runtime observation begins before authentication, so it
+  // is not itself proof that the authored schedule has been evaluated.
+  const priorProgramSeconds=Number(runtime.previousObservedWallTime);
+  const hasPersistedProgramCursor=runtime.previousObservedWallTime!==null
+    &&runtime.previousObservedWallTime!==undefined
+    &&Number.isFinite(priorProgramSeconds)&&priorProgramSeconds>=0;
+  // A fresh authenticated world has no persisted program cursor. Its first
+  // visit therefore owns the schedule expander's full bounded catch-up window;
+  // using the just-initialized world observation time here silently discarded
+  // overdue deliver-on-next-visit gifts. Once a cursor exists, preserve it
+  // exactly, including equal-time and rollback cases handled by the expander.
+  const lastSeconds=hasPersistedProgramCursor
+    ?priorProgramSeconds
+    :Math.max(0,observed-GARDEN_SCHEDULE_MAX_CATCH_UP_SECONDS);
   const eligible={},missedSummaries=[];
   for(const event of program.events){
     if(!event.schedule)continue;
