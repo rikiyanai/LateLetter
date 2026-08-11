@@ -544,6 +544,7 @@ export function gardenPresentationProfile(viewport, worldSize = [120, 80]) {
 // the viewport.  Keeping the neutral camera beside the projection law makes
 // the vertical pan transform explicit and prevents a second screen-space
 // owner from appearing in the viewer or painter.
+const GARDEN_HOME_CAMERA_X = 60;
 const GARDEN_HOME_CAMERA_Y = 40;
 const FAR_TERRAIN_DEPTH = 0.52;
 const NEAR_TERRAIN_DEPTH = 1.0;
@@ -610,9 +611,18 @@ export function worldToGardenScreen(
   point, camera, viewport, depth = DEPTH.world, worldSize = [120, 80],
 ) {
   const profile = gardenPresentationProfile(viewport, worldSize);
+  // The point and camera terms are rounded SEPARATELY, anchored at the home
+  // camera. Rounding (point - camera) as one term made each object cross cell
+  // boundaries on its own fractional phase, so a pan wobbled neighbours'
+  // relative spacing by ±1 cell — the operator's "plants jump around while
+  // dragging" defect. Split this way, every point in one depth layer steps on
+  // the SAME camera cell boundary, and at the home camera the camera term is
+  // exactly zero, so the authored neutral view is byte-identical.
+  const xTerm = value => roundHalfAway((value - GARDEN_HOME_CAMERA_X) * profile.xScale * depth);
+  const yTerm = value => roundHalfAway((value - GARDEN_HOME_CAMERA_Y) * profile.yScale * depth);
   return [
-    profile.centerX + roundHalfAway((point[0] - camera[0]) * profile.xScale * depth),
-    profile.centerY + roundHalfAway((point[1] - camera[1]) * profile.yScale * depth),
+    profile.centerX + xTerm(point[0]) - xTerm(camera[0]),
+    profile.centerY + yTerm(point[1]) - yTerm(camera[1]),
   ];
 }
 

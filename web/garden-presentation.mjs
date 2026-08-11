@@ -448,13 +448,24 @@ function advanceLifecycle(previous, scene, frame) {
     ? [Math.round((pond.rect.left + pond.rect.right) / 2), pond.rect.top - 1]
     : null;
   const ambientRng = new LifecycleRng(state.ambientRng);
-  const ambientKey = `${season}:${mode}:${cols}:${groundY}:${pondCenter?.join(',') ?? 'no-pond'}`;
+  // The key names the population's REASON to exist (season, daylight, room
+  // width), never a projected coordinate. groundY and the pond's screen
+  // centre used to be part of it, so every one-cell camera pan re-rolled all
+  // butterflies and fireflies from the RNG — the operator's "flies above the
+  // pond jump around while dragging" defect. Projected positions are handled
+  // below by re-anchoring the SAME actors instead.
+  const ambientKey = `${season}:${mode}:${cols}`;
   let ambient = state.ambientKey === ambientKey
     ? state.ambient.map(actor => ({ ...actor }))
     : createAmbientActors(ambientRng, season, mode, cols, groundY, pondCenter);
   for (const actor of ambient) {
     if (actor.kind === 'butterfly' && actor.orbit && pondCenter) {
       actor.centerX = pondCenter[0]; actor.centerY = pondCenter[1];
+      // Refresh the drawn position too, so a repaint that advances no tick
+      // (steps === 0) still shows the fly beside the pond it orbits rather
+      // than at the pond's previous screen position.
+      actor.x = actor.centerX + Math.cos(actor.angle) * actor.radiusX;
+      actor.y = actor.centerY + Math.sin(actor.angle) * actor.radiusY;
     }
   }
   if (steps === 0) {

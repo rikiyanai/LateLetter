@@ -16395,6 +16395,63 @@ entry is the available Wayfinder/attempt ledger. No overlay or RQ row was
 manufactured. RQ projection: not projected; the operator decision is sharp
 and the first execution child is unblocked.
 
+### Drag-jump child resolved: two mechanisms identified, repaired and machine-verified (2026-08-11)
+
+Resolves "Wayfinder child: reproduce and specify the operator's drag-position
+defects (2026-08-11)". The operator's specification: dragging makes some
+things, like plants or the flies above the pond, jump around. Both mechanisms
+were identified in source, pinned by failing tests BEFORE repair, then
+repaired.
+
+- **Mechanism A — pond flies regenerate on every pan step.** The lifecycle's
+  ambient actor cache key (`web/garden-presentation.mjs`, `ambientKey`)
+  included the projected ground row and the pond's projected screen centre.
+  Any one-cell pan changed that key, so every butterfly and firefly was
+  re-rolled from the RNG with fresh random angle/radius/position — a visible
+  teleport on each drag step. The adjacent comment promised "repainting after
+  a pointer event cannot regenerate or teleport them"; pan falsified it.
+  Probe evidence: at the fixture-review starter camera the key was
+  `summer:day:120:37:51,30`; one pan step produced a different key and three
+  re-rolled butterflies.
+- **Repair A:** the key now names only the population's reason to exist
+  (`season:mode:cols`). Projected coordinates are handled by re-anchoring the
+  SAME actors: the orbit re-anchor now also refreshes the drawn x/y so a
+  tick-free repaint (steps === 0) shows a fly beside the pond's current
+  screen position.
+- **Mechanism B — single-term rounding wobbles neighbour spacing.**
+  `worldToGardenScreen` (`web/garden-painting.mjs`) rounded
+  `(point - camera) * scale * depth` as ONE term, so each object crossed cell
+  boundaries on its own fractional phase; with xScale 0.80 a pan moved
+  same-depth neighbours by different amounts on the same step and their
+  relative spacing wobbled ±1 cell — plants visibly jumping against each
+  other while dragging. Every painter and the hotspot hit-test funnel through
+  this one function.
+- **Repair B:** rounding is decomposed around the home camera
+  ([60, 40]): `round((point - home) * s * d) - round((camera - home) * s * d)`.
+  Every point in one depth layer now steps on the same camera cell boundary;
+  at the home camera the camera term is exactly zero, so the authored neutral
+  view is byte-identical to the accepted baseline.
+- **Falsification before repair:** new
+  `tests/garden_adapters/test_garden_pan_stability.mjs` failed 3/3 on the
+  unrepaired source (actor regeneration observed; horizontal spacing wobble
+  at camera 42→43; vertical spacing wobble 0 vs 1) and passes 3/3 after.
+- **Proof after repair:** the current complete JavaScript Garden adapter run
+  passes 212/212, including the three new pan-stability cases; the real-Chrome
+  `test_garden_interaction_browser.py` passes 2/2. The exact product handoff
+  previously passed 5/5 on these same hunks, and the direct Chrome successor
+  receipt is committed at `c8905ab`. This commit makes the machine-verified
+  repair durable without converting it into an operator visual verdict.
+- **Residual bound:** the layout packer (`layoutGardenObjects`) still
+  recomputes collision nudges per frame with no hysteresis; with same-depth
+  geometry now pan-rigid its inputs are stable for neighbours in one layer,
+  but a cross-depth overlap crossing the viewport edge can still flip a nudge
+  by a bounded ±cells. If the operator still sees residual jumps after this
+  repair, that packer is the named next suspect.
+- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED; OPERATOR
+  DRAG ACCEPTANCE REMAINS OPEN. ComplaintRefs: Wayfinder child: reproduce and
+  specify the operator's drag-position defects (2026-08-11); Wayfinder map:
+  the whole recipient Garden, nested under product E2E (2026-08-10).
+
 ### Approved flower pool, six-fixture starter and static direct-action Garden implemented (2026-08-11)
 
 Resolves execution children 1–3 from “Recipient Garden destination and
