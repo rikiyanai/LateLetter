@@ -16741,3 +16741,13 @@ Status: REPAIR MACHINE-VERIFIED; DESKTOP OPERATOR SUCCESSOR REQUIRED.
 ComplaintRefs: Product E2E operator journey stopped: due authored gift did not
 apply (2026-08-11); Wayfinder refinement: close product E2E and Garden as
 independent acceptance lanes (2026-08-11), frontier child 1.
+
+### Commit receipt: overdue gifts apply on the first authenticated visit (2026-08-12)
+
+The scoped schedule-cursor repair, real-clock Asia/Tokyo regression, SPEC
+correction and E2E lineage entries were committed and pushed as `cfabe67`
+(`Fix overdue gifts on first recipient visit`) on
+`restore/pre-jul19-viewer`. The commit excludes the concurrent Garden
+pan/presentation changes, their untracked stability test, creature art and all
+transcription/scratchpad work. No deployed endpoint or Pages configuration was
+changed.
