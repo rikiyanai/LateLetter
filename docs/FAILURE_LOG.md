@@ -16751,3 +16751,45 @@ correction and E2E lineage entries were committed and pushed as `cfabe67`
 pan/presentation changes, their untracked stability test, creature art and all
 transcription/scratchpad work. No deployed endpoint or Pages configuration was
 changed.
+
+### Product E2E operator successor prepared on exact repaired commit; Chrome upload permission blocks recipient leg (2026-08-12)
+
+Attempt 2 for the Product E2E frontier after `cfabe67` repaired first-visit
+overdue gift materialization.
+
+- **Provenance correction before recipient mutation:** the first temporary
+  process imported the archived Python package but resolved the browser test
+  helper from the dirty workspace, so its static roots were not exact
+  `cfabe67`. The ChatGPT Chrome Extension refused that artifact's upload before
+  any recipient state was created. The 2459-byte artifact and its author
+  session were rejected and moved recoverably to Trash. They are not evidence.
+- **Exact source owner:** a replacement server now runs with working directory
+  `/tmp/lateletter-operator-cfabe67.4jBj7X`, extracted from `git archive
+  cfabe67`. SHA-256 comparison against `git show cfabe67:<path>` converges for
+  `viewer-bnw.html`, `web/garden-program.mjs`, `web/author-app.mjs` and the
+  durable product-handoff browser test before launch. The exact local author
+  and recipient URLs are `http://127.0.0.1:57782/` and
+  `http://127.0.0.1:57783/viewer-bnw.html`; no deployed endpoint changed.
+- **Exact browser-authored artifact:** ordinary visible Chrome controls created
+  `/Users/r/Downloads/Mara-from-Riki (1).lateletter`, SHA-256
+  `0e0e294c1be54ccacec30f4660e706f99ba8b0e0496cf93fb15d120d456639b4`,
+  2459 bytes, bundle ID `3b998461-46aa-4629-b0a9-6aa024ee8457`.
+  Exact-archive Python verification reports HMAC valid, one five-row due letter
+  labelled `The yellow kitchen`, author timezone `Asia/Tokyo`, and one
+  `deliver_on_next_visit` event starting `2026-08-11T09:00:00`.
+- **Current boundary:** Chrome is open on the exact recipient welcome surface,
+  but the ChatGPT Chrome Extension returns `Not allowed` from the browser file
+  chooser because “Allow access to file URLs” is disabled. No artifact has
+  been uploaded to this exact recipient, so unlock, overdue-gift application,
+  desktop verdict and phone leg have not begun. This is a browser-control
+  permission blocker, not a product failure and not acceptance evidence.
+- **Next action:** enable file-URL access in the ChatGPT Chrome Extension, then
+  upload the exact artifact above, unlock with the separately retained local
+  test passphrase, and resume the desktop journey at Garden → archive → unread
+  label → reading → gift → persistence → reopen. Only a passing desktop leg
+  permits the phone leg.
+
+Status: EXACT DESKTOP SUCCESSOR READY; RECIPIENT UPLOAD AWAITS CHROME EXTENSION
+FILE-ACCESS PERMISSION. ComplaintRefs: Product E2E operator journey stopped:
+due authored gift did not apply (2026-08-11); Wayfinder child: first
+authenticated visit must deliver an overdue authored gift (2026-08-12).
