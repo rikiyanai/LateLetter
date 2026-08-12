@@ -106,7 +106,8 @@
         "docs/audits/**",
         "docs/visual-review/**",
         "archive/**",
-        "dumpster/**"
+        "dumpster/**",
+        "docs/GARDEN_QA_2026-07-21.md"
       ]
     }
   },

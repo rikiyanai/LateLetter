@@ -17023,3 +17023,20 @@ and are accepted. This entry records the corrected frontier's items 1-4.
   Wayfinder map update: approved flowers, quiet controls and exact dragging
   (2026-08-11), execution child 4; Wayfinder refinement: close product E2E
   and Garden as independent acceptance lanes (2026-08-11), frontier child 2.
+
+### Gate 2/12 blocker wording reconciled without gate promotion (2026-08-13)
+
+`docs/GARDEN_QA_2026-07-21.md` "Remaining release evidence" still demanded
+terminal traversal (withdrawn 2026-08-11), animal/collectible action coverage
+absent from the accepted default composition, and VoiceOver/NVDA (excluded by
+operator direction). Each bullet now states what its gate still requires
+under the recorded supersessions, with evidence refs to `cfabe67` and
+`bdab368`. Gates 3/14 (operator observation), Gate 6 (browser screenshot
+matrix), Gate 10 (frame-time p95), physical-handset touch and no-color
+evidence remain OPEN exactly as before — nothing is promoted. The QA ledger
+is assigned to the shared-canon lane in `docs/ownership-lanes.json`; it was
+previously unowned, which the manifest itself defines as an error.
+
+- **Status:** RECONCILED; OPEN ITEMS UNCHANGED. ComplaintRefs: Wayfinder
+  refinement: close product E2E and Garden as independent acceptance lanes
+  (2026-08-11), decision 4; Corrected audit accepted (2026-08-13).
