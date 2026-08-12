@@ -366,18 +366,25 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 viewport={"width": 1600, "height": 1000},
             )
             desktop = desktop_context.new_page()
-            desktop.set_default_timeout(30_000)
+            desktop.set_default_timeout(60_000)
             error_streams.append(_watch(desktop))
             _open_standalone(desktop, origin)
             assert desktop.locator("#garden-context-actions").count() == 0
 
-            # The accepted Garden is a static picture: no autonomous repaint
-            # may mutate its visible bytes.
+            # Operator live rejection (2026-08-13) of the 485d0be static
+            # freeze: the Garden breathes by default — the pond water cycles
+            # on the accepted 50ms-floor cadence. The picture must visibly
+            # change over ordinary time, and the rejected fauna glyphs must
+            # NOT ride back in with the ticker.
             live_frames: set[str] = set()
-            for _ in range(8):
+            for _ in range(10):
                 live_frames.add(desktop.locator("#g").inner_text())
-                desktop.wait_for_timeout(125)
-            assert len(live_frames) == 1, "ordinary Garden presentation animated"
+                desktop.wait_for_timeout(300)
+            assert len(live_frames) > 1, "the ordinary Garden is a frozen picture"
+            for glyph in ("\u22c8", "\u22ca", "\u2726", "\\v/", "_v_", "/v\\"):
+                assert not any(glyph in frame for frame in live_frames), (
+                    f"rejected ambient glyph {glyph!r} returned with the motion"
+                )
 
             initial = _state(desktop)
             home_camera = initial["ui"]["camera"]
@@ -489,12 +496,6 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
             desktop.wait_for_function(
                 "() => JSON.stringify(window.__gardenReview.camera()) === '[47,40]'"
             )
-            keyboard_rects = {
-                object_id: desktop.evaluate(
-                    "id => window.__gardenReview.objectArtRectPixels(id).x", object_id
-                )
-                for object_id in (plant_id, pond_id)
-            }
             desktop.keyboard.press("Shift+ArrowLeft")
             desktop.wait_for_function(
                 "() => JSON.stringify(window.__gardenReview.camera()) === '[46,40]'"
@@ -515,20 +516,15 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 "() => !document.getElementById('g').style"
                 ".getPropertyValue('--garden-drag-x')"
             )
-            pointer_rects = {
-                object_id: desktop.evaluate(
-                    "id => window.__gardenReview.objectArtRectPixels(id).x", object_id
-                )
-                for object_id in (plant_id, pond_id)
-            }
-            for object_id in (plant_id, pond_id):
-                assert pointer_rects[object_id] == pytest.approx(
-                    keyboard_rects[object_id], abs=0.5
-                ), {
-                    "object_id": object_id,
-                    "keyboard_x": keyboard_rects[object_id],
-                    "pointer_x": pointer_rects[object_id],
-                }
+            # Route identity is a CANONICAL claim: keyboard and settled drag
+            # reach byte-identical camera state, proven by the two exact
+            # camera waits above. Pixel-rect equality across the two routes
+            # is deliberately NOT asserted: under the restored live loop
+            # (operator rejection of the 485d0be static freeze, 2026-08-13)
+            # canonical growth advances between samples and legitimately
+            # repacks the plant, and presentation route-independence is
+            # already pinned where it is owned — composePresentationFrame
+            # composes twice and compares in the presentation contract.
 
             # A coordinate mouse drag pans canonically and does not rely on a
             # locator-generated click event.
@@ -596,7 +592,7 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 reduced_motion="reduce",
             )
             touch_page = touch_context.new_page()
-            touch_page.set_default_timeout(30_000)
+            touch_page.set_default_timeout(60_000)
             error_streams.append(_watch(touch_page))
             _open_standalone(touch_page, origin)
             assert touch_page.evaluate("matchMedia('(prefers-reduced-motion: reduce)').matches")
@@ -677,7 +673,7 @@ def test_drag_capture_clamp_and_release_suppression_own_the_gesture():
         try:
             context = browser.new_context(viewport={"width": 1600, "height": 1000})
             page = context.new_page()
-            page.set_default_timeout(30_000)
+            page.set_default_timeout(60_000)
             errors = _watch(page)
             _open_standalone(page, origin)
 

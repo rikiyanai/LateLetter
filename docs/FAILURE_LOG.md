@@ -17104,3 +17104,64 @@ were found by executing the combined sweep and repaired in the same pass.
   falsification of the 2026-08-13 audit's documentation and execution
   claims (2026-08-13); Corrected audit accepted (2026-08-13); batch operator
   decision item 8 (2026-08-11).
+
+### Operator destination change: the Garden lives again — static freeze rejected in live review (2026-08-13)
+
+- **Operator decision (explicit, in the operator's own words):** reviewing the
+  live product, the operator rejected the dead pond outright ("the lake has no
+  animation??"). This supersedes the "Garden presentation has no autonomous
+  animation" clause (item 5) of the 2026-08-11 batch decision. Everything else
+  in that decision stands: no decorative birds/insects, no ownerless objects,
+  no rejected label surfaces, mailbox-owned conditional journal. The removed
+  `pause motion` HUD control is NOT restored by this entry; whether it returns
+  is a fresh operator question now that motion exists again.
+- **Restoration (four pieces the 485d0be freeze had cut, recovered from its
+  parent, not invented):** `viewer-bnw.html` again (1) follows the visitor's
+  reduced-motion preference and the localhost review clock instead of a
+  hardcoded `setReducedMotion(true)`; (2) runs the canonical live loop while
+  the HUD is visible and canonical pause is off, with
+  `refreshAfterCanonicalLiveAdvance` re-evaluating authenticated schedules;
+  (3) calls `garden.startPresentation()` so the accepted 50ms-floor cadence
+  ticks pond water, sway and click-burst aging; (4) restores the
+  `garden_review_motion=1` temporal review flag. A debug-gated
+  `presentationTicker` accessor names each ticker gate so a frozen picture is
+  diagnosable to ONE gate — that is how the missing `startPresentation` call
+  was found (`wanted:false` with every other gate true).
+- **Live proof:** the ordinary route paints 3+ distinct frames over four
+  seconds with zero page errors; under `prefers-reduced-motion: reduce` the
+  paint is byte-stable (1 frame); none of the twice-rejected fauna glyphs
+  (⋈ ⋊ ✦, bird wing frames) appear in any sampled frame.
+- **Four defects surfaced by executing the sweep against the living page, all
+  repaired:** (1) the per-second live refresh had no re-entry guard, so slow
+  refreshes stacked behind one-second ticks until page waits starved — now
+  coalesced with a busy flag; (2) frozen-era tests asserted byte-equality of
+  canonical snapshots across live seconds — persistence is now proven by a
+  paired atomic capture (`_assert_canonical_state_persisted_exactly`) and
+  reload-survival by the semantic core, with time-driven plant growth fields
+  excluded deliberately; (3) the drag determinism block compared pixel rects
+  across routes, which live growth legitimately repacks — it now pins the
+  sound law (byte-identical canonical camera per route) and leaves
+  presentation route-independence to the composer contract that owns it;
+  (4) one inline drag sampled state before the release settle — the cleared
+  residue property is now awaited there too. Browser harness patience was
+  raised 30s→60s: a living page under parallel suite load is not a static
+  one.
+- **Executed proof:** across the final seven full-suite sweeps, five were
+  completely green (356 passed / 1 environment skip each) and JS adapters
+  held 213/213 throughout. The two non-green sweeps failed on DIFFERENT
+  harness waits (a focus-change wait and a locator wait) while sweep duration
+  inflated from 1:38 to 3:29 on a visibly saturating machine; no product
+  assertion failed in any of them.
+- **Named residual, OPEN:** under saturated-machine load, individual harness
+  waits can still exceed 60 s (occurrences 2026-08-13 at
+  `test_garden_interaction_browser.py:411` and
+  `test_product_handoff_e2e_browser.py:715`). Not attributed to the product;
+  next occurrence on a quiet machine should be investigated before any
+  further patience increase.
+- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED; OPERATOR
+  LIVE ACCEPTANCE OF THE MOVING GARDEN REMAINS THE OPEN FRONTIER, on an
+  exact-commit server per the operator's audit directive. ComplaintRefs:
+  operator live rejection of the static pond (2026-08-13); Batch operator
+  decision: restored Garden destination after return review (2026-08-11),
+  item 5 superseded; Wayfinder refinement: close product E2E and Garden as
+  independent acceptance lanes (2026-08-11).

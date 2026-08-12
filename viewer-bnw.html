@@ -725,6 +725,11 @@ let gardenNotice='';
 const reducedMotionQuery=window.matchMedia?.('(prefers-reduced-motion: reduce)')??{
   matches:false,addEventListener:()=>{},
 };
+// A fixed review clock freezes disposable animation for deterministic asset
+// captures; `garden_review_motion=1` is the temporal review surface for
+// weather, wind, pond water and ambient actors.
+const GARDEN_REVIEW_MOTION_REQUESTED=
+  new URLSearchParams(location.search).get('garden_review_motion')==='1';
 let _memoryInvoker=null,_memoryBackground=[];
 
 function gardenReviewTime(){
@@ -786,13 +791,45 @@ function closeGardenControls(){
 }
 
 function syncAmbientMotion(){
-  // The accepted product Garden is a static picture. Motion preference and a
-  // persisted legacy pause bit cannot turn presentation animation back on.
-  garden?.setReducedMotion?.(true);
+  // Operator live review (2026-08-13): the static-picture freeze is
+  // REJECTED — the pond must live. Motion follows the visitor's own
+  // reduced-motion preference and the review clock, exactly as the accepted
+  // e4eea8a Garden behaved before the 485d0be freeze.
+  garden?.setReducedMotion?.(
+    reducedMotionQuery.matches||
+      (gardenReviewTime()!==null&&!GARDEN_REVIEW_MOTION_REQUESTED),
+  );
   updateCanonicalLiveLoop();
 }
+let _liveRefreshBusy=false;
 function updateCanonicalLiveLoop(){
-  gardenRuntime?.stopLive?.();
+  if(!gardenRuntime)return;
+  const visible=document.getElementById('hud')?.classList.contains('vis')===true;
+  // Reduced motion changes presentation only. The saved canonical pause is
+  // the sole control allowed to stop Garden time and authored schedules.
+  const enabled=visible&&!Boolean(gardenRuntime.state?.ui?.motion_paused);
+  if(enabled&&!gardenRuntime.liveTimer)gardenRuntime.startLive({
+    intervalMs:1000,prefersReducedMotion:reducedMotionQuery.matches,
+    // Coalesced: a slow refresh (program re-evaluation plus a full repaint)
+    // must skip ticks rather than stack behind them — an unguarded callback
+    // let one-second ticks pile up under load until every other page wait
+    // starved.
+    onProjection:()=>{
+      if(_liveRefreshBusy)return;
+      _liveRefreshBusy=true;
+      refreshAfterCanonicalLiveAdvance()
+        .catch(error=>console.error('[garden live]',error))
+        .finally(()=>{_liveRefreshBusy=false;});
+    },
+  });
+  else if(!enabled&&gardenRuntime.liveTimer)gardenRuntime.stopLive();
+}
+async function refreshAfterCanonicalLiveAdvance(){
+  if(gardenProgram&&authenticated&&!bundleCorrupted){
+    await runAuthenticatedGardenProgram();
+    dueIdxs=computeDue();
+  }
+  await renderCanonicalGarden();
 }
 
 function clearCanonicalGardenUi(){
@@ -1375,6 +1412,18 @@ function installGardenReviewAccessor(){
       return rect?{x:rect.x,y:rect.y,width:rect.width,height:rect.height}:null;
     },
     objectAtPixels:(x,y)=>garden?.objectAtPixels?.(x,y)??null,
+    // Presentation-ticker gates, so a frozen picture is diagnosable to ONE
+    // named gate instead of guessed at. Diagnostic only: reads five booleans
+    // and a counter, dispatches nothing.
+    presentationTicker:()=>garden?{
+      wanted:Boolean(garden.presentationWanted),
+      active:Boolean(garden.presentationActive),
+      reduced:Boolean(garden.prefersReducedMotion),
+      timer:Boolean(garden.presentationTimer),
+      projection:Boolean(garden.projection),
+      motion_paused:Boolean(garden.projection?.motion_paused),
+      visualFrame:Number(garden.visualFrame)||0,
+    }:null,
     // The keyboard reader's CURRENT CANONICAL FOCUS, read off the runtime.
     //
     // The destination's review package (goal §13) requires "keyboard focus and
@@ -1570,7 +1619,15 @@ function showScreen(name){
   for(const id of SIDS)
     document.getElementById(id).classList.toggle('active',id==='s-'+name);
   document.getElementById('hud').classList.toggle('vis',name==='garden');
-  garden?.setPresentationActive?.(false);
+  // The garden stays ALIVE beneath overlay screens (operator field
+  // rejection, 2026-08-04, reaffirmed by the 2026-08-13 live rejection of
+  // the static pond): the select scrim, the passphrase prompt and the
+  // dimmed reading surface all leave the picture visible, and the deployed
+  // page never froze it. Freezing also stranded click-burst feedback on
+  // screen forever, because bursts age by presentation ticks. The loop is
+  // simply active once a garden exists; it no-ops without a projection and
+  // pauses naturally with reduced motion, canonical pause, or a hidden tab.
+  garden?.setPresentationActive?.(true);
   if(name!=='garden')closeGardenControls();
   syncGardenControlsAvailability();
   _renderGardenActions();
@@ -2748,6 +2805,12 @@ async function init(){
         if(action)await dispatchGardenDeclaredAction(action,object,event,'canonical-raster');
       },
     });
+    // The presentation ticker is the accepted 50ms-floor cadence law that
+    // moves pond water, sway and click bursts. The 485d0be static-picture
+    // freeze removed this call; the operator rejected that freeze in live
+    // review (2026-08-13) — the Garden breathes again. It still pauses with
+    // reduced motion, canonical pause, and the fixed review clock.
+    garden.startPresentation();
     // ── Single-pointer pan (SPEC 7.8.13 gate 2: pan passes through touch, ──
     // ── mouse, keyboard and terminal with identical state transitions). ────
     //

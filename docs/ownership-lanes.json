@@ -12,6 +12,7 @@
       "summary": "The Garden: browser and terminal renderers, world/projection, atlas, presentation registers, and their tests. The lane executing the operator route.",
       "owns": [
         "viewer-bnw.html",
+        "tests/test_viewer_contract.py",
         "web/garden-*.mjs",
         "web/fonts/**",
         "src/lateletter/garden/**",
@@ -117,6 +118,7 @@
     "docs/FAILURE_LOG.md was modified on disk by another session during this session's edit. The Garden lane holds no exclusive claim to it, and neither does any other lane."
   ],
   "contended_resolution": {
-    "resolved_2026-08-13": "The four contended rows recorded UNCOMMITTED cross-lane diffs from 2026-08-02. On 2026-08-13 tests/test_viewer_contract.py, scripts/prepare_pages_site.py and tests/test_prepare_pages_site.py are byte-clean against HEAD, and the only viewer-bnw.html diff is the Garden gesture-ownership repair (118 changed lines, zero letter/typography mentions). viewer-bnw.html is assigned to garden-presentation; letter-typography asks this lane for viewer changes per rule 4."
+    "resolved_2026-08-13": "The four contended rows recorded UNCOMMITTED cross-lane diffs from 2026-08-02. On 2026-08-13 tests/test_viewer_contract.py, scripts/prepare_pages_site.py and tests/test_prepare_pages_site.py are byte-clean against HEAD, and the only viewer-bnw.html diff is the Garden gesture-ownership repair (118 changed lines, zero letter/typography mentions). viewer-bnw.html is assigned to garden-presentation; letter-typography asks this lane for viewer changes per rule 4.",
+    "viewer_contract_2026-08-13": "tests/test_viewer_contract.py follows viewer-bnw.html into garden-presentation: the contract file tests the viewer it moves with. letter-typography asks this lane for changes per rule 4, exactly as for the viewer itself."
   }
 }
