@@ -17040,3 +17040,67 @@ previously unowned, which the manifest itself defines as an error.
 - **Status:** RECONCILED; OPEN ITEMS UNCHANGED. ComplaintRefs: Wayfinder
   refinement: close product E2E and Garden as independent acceptance lanes
   (2026-08-11), decision 4; Corrected audit accepted (2026-08-13).
+
+### Drag contract executed, gate ledgers reconciled, and two real races surfaced by the sweep (2026-08-13)
+
+Two delegated implementation tasks were independently reviewed hunk-by-hunk
+and verified by fresh local runs before acceptance; two additional defects
+were found by executing the combined sweep and repaired in the same pass.
+
+- **Drag-contract execution proof (was Implemented-only):**
+  `test_drag_capture_clamp_and_release_suppression_own_the_gesture` in
+  `tests/test_garden_interaction_browser.py` executes the three previously
+  untested clauses of batch decision item 8: pointer capture keeps the pan
+  alive while the pointer crosses a HUD control; the camera clamps exactly to
+  `[0, world_width-1]` under oversized drags and still reverses; and a drag
+  released on the rose's visible art leaves plants, journal, fixture
+  interaction counts and `actions_open_for` byte-unchanged while a plain
+  click on the same point (positive control) tends the plant. Each clause was
+  falsified by mutating the real implementation and watching the targeted
+  failure (capture removal; both redundant clamps disabled -> camera
+  `[189,40]`; suppression removal -> tended_count 0->1), then reverting —
+  `viewer-bnw.html`/`web/` carry no implementation change from that task.
+  Full log: /tmp/claude-drag-contract-tests.md.
+- **Gate ledger reconciliation (falsified bookkeeping red):**
+  `tests/garden_acceptance/gate_matrix.json` (Gates 2/6/12 blockers) and
+  `docs/GARDEN_PARITY.md` (dated reconciliation section plus nine row
+  updates) now carry the recorded supersessions — terminal WITHDRAWN,
+  feed/play/collect and author placement breadth SUPERSEDED for the accepted
+  composition, VoiceOver/NVDA EXCLUDED with nothing claimed either way —
+  with EXECUTED refs `cfabe67`/`bdab368`. The machine-checked status map is
+  byte-identical (verified by rerun: garden acceptance 28/28); no gate
+  promoted; open items (physical handset, no-color, Gates 3/6/10/14
+  evidence) retained. Full log: /tmp/claude-gate-matrix-reconcile.md.
+- **Real defect 1 — stale-drag motion pans without a held button:** the drag
+  record deliberately outlives pointerup so the trailing click can be
+  swallowed, and mouse pointer ids repeat; plain pointer MOTION between a
+  release and its click event therefore matched the stale record and
+  enqueued late canonical pans behind the settle signal, racing state
+  capture (first seen as the persistence journey's IndexedDB equality
+  failing at two different lines on different runs). `viewer-bnw.html`'s
+  move handler now requires `e.buttons & 1`. The persistence journey then
+  passed 3/3 consecutively in isolation.
+- **Real defect 2 — seed-collision in the handoff verdict law:** the
+  download journey asserted every fresh artifact's composition is
+  `not_reviewed`, but the flower is seed-selected from the 19-drawing pool
+  and revision 7 with `legacy_sunflower_sunglasses@500,500` is an ACCEPTED
+  record, so roughly one seed in nineteen legitimately reproduces the
+  reviewed composition and the correct verdict is `accepted`. The law is now
+  device-independence: one artifact yields exactly one verdict across all
+  three viewports and that verdict is never `rejected`.
+- **Executed proof:** three consecutive full sweeps green — 356 passed /
+  1 environment skip (missing bundled headless-shell; system-Chrome fallback
+  proven in-file) across garden acceptance, world, contract, viewer
+  contract, interaction (now 3 tests), handoff, author E2E and typography;
+  JS adapters 213/213.
+- **Named residual, OPEN:** `test_garden_controls_cover_required_browser_
+  inputs_and_viewports` twice hit a `Page.wait_for_function` 30 s timeout
+  under full-sweep load (2026-08-13), then refused to reproduce across seven
+  further sweeps including three full ones. Not attributed to the product;
+  the next occurrence should capture `--tb=native` line numbers before any
+  repair is attempted.
+- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED;
+  OPERATOR ACCEPTANCES REMAIN THE OPEN FRONTIER. ComplaintRefs: operator
+  falsification of the 2026-08-13 audit's documentation and execution
+  claims (2026-08-13); Corrected audit accepted (2026-08-13); batch operator
+  decision item 8 (2026-08-11).

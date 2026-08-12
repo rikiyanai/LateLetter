@@ -23,7 +23,8 @@
     "tests/garden_adapters/test_input_adapters.py",
     "tests/garden_adapters/test_world_browser_conformance.py",
     "tests/test_garden_interaction_browser.py",
-    "tests/test_product_handoff_e2e_browser.py"
+    "tests/test_product_handoff_e2e_browser.py",
+    "docs/FAILURE_LOG.md"
    ],
    "automated_checks": [
     "tests/garden_adapters/test_input_adapters.py::test_all_modalities_normalize_to_byte_identical_commands",
@@ -33,7 +34,7 @@
     "tests/test_product_handoff_e2e_browser.py::test_canonical_garden_state_survives_reload_reupload_and_reauthentication",
     "tests/test_product_handoff_e2e_browser.py::test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen"
    ],
-      "blocker": "One normal sealed product path now proves composition revision 7 in real Chrome through desktop mouse/keyboard and emulated native touch at 390 and 320 CSS pixels, including direct flower tend, mailbox journal access, drag persistence, Home recenter, empty-ground mouse double-click and touch double-tap recenter, reload, reupload and reauthentication. Gate 2 remains PARTIAL because the default has no animals or collectibles, so feed/play/collect remain unexercised; physical-device input, terminal parity, author placement/move/rotate/undo, no-color use and the full remaining action matrix are also unproved."
+      "blocker": "One normal sealed product path proves composition revision 7 in real Chrome through desktop mouse/keyboard and emulated native touch at 390 and 320 CSS pixels, including direct flower tend, mailbox journal access, drag persistence, Home recenter, empty-ground mouse double-click and touch double-tap recenter, reload, reupload and reauthentication; those traversals are EXECUTED on cfabe67 (2026-08-12 product E2E successor receipts) and bdab368 (2026-08-13 gesture-ownership repair). Reconciled 2026-08-13 against the recorded supersessions in docs/FAILURE_LOG.md: terminal traversal is WITHDRAWN, and feed/play/collect plus author placement/move/rotate/undo are SUPERSEDED as Gate 2 demands because the accepted default composition is one seed-selected flower inside six accepted base fixtures with no animals and no collectibles ('Batch operator decision: restored Garden destination after return review' 2026-08-11; 'Wayfinder refinement: close product E2E and Garden as independent acceptance lanes' 2026-08-11, decision 4). Gate 2 is not promoted and stays PARTIAL: physical-handset touch input and no-color use of the actions this composition exposes remain OPEN, and the operator's direct acceptance of live Garden interaction is not granted."
   },
   {
    "gate": 3,
@@ -84,10 +85,11 @@
    "status": "PARTIAL",
    "evidence": [
     "tests/garden_contract/test_atlas.py",
-    "tests/garden_adapters/test_garden_renderer.mjs"
+    "tests/garden_adapters/test_garden_renderer.mjs",
+    "docs/FAILURE_LOG.md"
    ],
    "automated_checks": [],
-   "blocker": "The single manifest and width/grapheme validation pass, but the supported browser/terminal screenshot matrix for tofu, overlap, and frame jitter remains."
+   "blocker": "The single manifest and width/grapheme validation are exercised by the cited atlas and renderer checks. The supported browser screenshot matrix for tofu, overlap, and frame jitter remains OPEN and is unchanged by the 2026-08-13 reconciliation. Its terminal half is WITHDRAWN together with terminal parity ('Wayfinder refinement: close product E2E and Garden as independent acceptance lanes' 2026-08-11, out-of-scope list), so the residual obligation is browser-only."
   },
   {
    "gate": 7,
@@ -177,14 +179,15 @@
     "tests/garden_adapters/test_garden_renderer.mjs",
     "tests/test_garden_interaction_browser.py",
     "tests/test_product_handoff_e2e_browser.py",
-    "tests/test_viewer_contract.py"
+    "tests/test_viewer_contract.py",
+    "docs/FAILURE_LOG.md"
    ],
    "automated_checks": [
     "tests/test_garden_interaction_browser.py::test_garden_controls_cover_required_browser_inputs_and_viewports",
     "tests/test_product_handoff_e2e_browser.py::test_one_browser_author_download_reaches_desktop_and_mobile_recipients",
     "tests/test_product_handoff_e2e_browser.py::test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen"
    ],
-      "blocker": "Real Chrome now proves the 44px target floor and horizontal fit at 320 and 390 CSS pixels, reduced-motion painting, keyboard focus/action, Home recenter, coordinate pointer input, native touch tap/drag, empty-ground double-click/double-tap recenter, direct mailbox journal access, and action activation at actual 200% CDP page scale. The exact artifact additionally activates the flower through its measured picture region at 390x844 and 320x568 while proving permanent journal/pause labels and the rejected object-name/verb control surface are absent; clean reading paint suppresses the native blue tap highlight while retaining an explicit keyboard focus-visible outline. Gate 12 remains PARTIAL because VoiceOver/NVDA were excluded from this review by operator direction, and no-color use, physical-device touch, animal and collectible controls, and the complete remaining recipient action matrix still require direct verification."
+      "blocker": "Real Chrome now proves the 44px target floor and horizontal fit at 320 and 390 CSS pixels, reduced-motion painting, keyboard focus/action, Home recenter, coordinate pointer input, native touch tap/drag, empty-ground double-click/double-tap recenter, direct mailbox journal access, and action activation at actual 200% CDP page scale. The exact artifact additionally activates the flower through its measured picture region at 390x844 and 320x568 while proving permanent journal/pause labels and the rejected object-name/verb control surface are absent; clean reading paint suppresses the native blue tap highlight while retaining an explicit keyboard focus-visible outline; these traversals are EXECUTED on cfabe67 (2026-08-12) and bdab368 (2026-08-13). Reconciled 2026-08-13 against docs/FAILURE_LOG.md: VoiceOver/NVDA are EXCLUDED by explicit operator direction ('Batch operator decision: restored Garden destination after return review' 2026-08-11, item 9), so no screen-reader behaviour is claimed here in either direction; animal and collectible controls are SUPERSEDED as Gate 12 demands because the accepted default composition contains neither, and the remaining recipient action matrix is scoped to the actions that composition exposes ('Wayfinder refinement: close product E2E and Garden as independent acceptance lanes' 2026-08-11, decision 4). Gate 12 is not promoted and stays PARTIAL: no-color use, physical-device touch, and direct operator observation of the accessible reading path remain OPEN."
   },
   {
    "gate": 13,

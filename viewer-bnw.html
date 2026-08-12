@@ -2817,6 +2817,12 @@ async function init(){
     gardenElement.addEventListener('pointermove',e=>{
       const drag=gardenDrag;
       if(!drag||e.pointerId!==drag.id)return;
+      // A gesture pans only while its contact is actually held down. The drag
+      // record deliberately outlives pointerup so the trailing click can be
+      // swallowed, and mouse pointer ids repeat -- without this guard, plain
+      // pointer MOTION between a release and its click event matched the
+      // stale record and enqueued late canonical pans behind the settle.
+      if(!(e.buttons&1))return;
       let dx=drag.x0-e.clientX,dy=drag.y0-e.clientY;
       if(drag.camera){
         // The finger cannot drag the camera past the canonical world edge;

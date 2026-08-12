@@ -98,8 +98,8 @@ def _coordinate_activate(page, locator, *, touch: bool) -> None:
         page.mouse.click(x, y)
 
 
-def _activate_garden_object(page, object_id: str, *, touch: bool) -> None:
-    """Activate accepted object art away from its invisible anchor target."""
+def _exposed_object_art_point(page, object_id: str) -> dict[str, float]:
+    """Visible accepted-art pixel of one object, away from its anchor target."""
     page.wait_for_function(
         "id => window.__gardenReview.objectRectPixels(id) !== null && "
         "window.__gardenReview.objectArtRectPixels(id) !== null", arg=object_id,
@@ -134,10 +134,16 @@ def _activate_garden_object(page, object_id: str, *, touch: bool) -> None:
         object_id,
     )
     assert point is not None, "no exposed rose-art point exists outside its anchor target"
-    x, y = point["x"], point["y"]
     assert page.evaluate(
         "p => window.__gardenReview.objectAtPixels(p.x, p.y)", point,
     ) == object_id, "visible rose art did not resolve to its projected identity"
+    return point
+
+
+def _activate_garden_object(page, object_id: str, *, touch: bool) -> None:
+    """Activate accepted object art away from its invisible anchor target."""
+    point = _exposed_object_art_point(page, object_id)
+    x, y = point["x"], point["y"]
     if touch:
         page.touchscreen.tap(x, y)
     else:
@@ -162,6 +168,153 @@ def _empty_garden_ground_point(page) -> dict[str, float]:
     )
     assert point is not None, "no visible empty Garden ground point exists"
     return point
+
+
+def _empty_garden_row_x(page, y: float, near_x: float) -> float:
+    """Empty Garden ground on ONE unchanging row, nearest a wanted x.
+
+    A pan drag has to keep its vertical delta at zero to make the horizontal
+    world edge the only clamp under test, so both ends of the gesture must sit
+    on the same row -- and both must resolve to no canonical object, because a
+    gesture the world edge fully absorbs never crosses the movement threshold
+    and therefore releases as an ordinary click.
+    """
+    x = page.evaluate(
+        """([row, wanted]) => {
+          const garden = document.querySelector('#g');
+          for (let offset = 0; offset <= 600; offset += 4) {
+            for (const x of offset ? [wanted + offset, wanted - offset] : [wanted]) {
+              if (x < 8 || x > innerWidth - 8) continue;
+              const element = document.elementFromPoint(x, row);
+              if (element && (element === garden || element.closest('#g') === garden) &&
+                  window.__gardenReview.objectAtPixels(x, row) === null) return x;
+            }
+          }
+          return null;
+        }""",
+        [y, near_x],
+    )
+    assert x is not None, f"no empty Garden ground exists on row {y}"
+    return x
+
+
+def _wait_drag_settled(page) -> None:
+    """Wait for the gesture to finish, not merely for its first camera commit.
+
+    The canonical camera moves on the first mid-gesture commit, so a state
+    sample taken right after the release can read a half-finished gesture. The
+    cleared session-only custom property is the falsifiable signal that the
+    release settled onto a canonical cell and the residue transform is gone.
+    """
+    page.wait_for_function(
+        "() => !document.getElementById('g').style.getPropertyValue('--garden-drag-x')"
+    )
+
+
+def _wait_camera_quiescent(page) -> list[int]:
+    """The canonical camera once it has stopped moving.
+
+    Drag pans are dispatched off the pointer thread through a serialized queue,
+    so 'the camera differs from before' can be satisfied by a still-draining
+    queue rather than by new input. Every clause that must attribute a change
+    to input therefore starts from a camera that has demonstrably stopped.
+    """
+    previous = None
+    for _ in range(50):
+        current = page.evaluate("window.__gardenReview.camera()")
+        if current is not None and current == previous:
+            return current
+        previous = current
+        page.wait_for_timeout(100)
+    raise AssertionError("the canonical camera never stopped moving")
+
+
+def _mouse_drag(page, start: dict[str, float], end: dict[str, float], *, steps: int = 10) -> None:
+    page.mouse.move(start["x"], start["y"])
+    page.mouse.down()
+    page.mouse.move(end["x"], end["y"], steps=steps)
+    page.mouse.up()
+    _wait_drag_settled(page)
+
+
+def _wait_art_rect_quiescent(page, object_id: str) -> dict[str, float]:
+    """One object's art rectangle once the painted frame has stopped changing.
+
+    The review accessor reports geometry off the LAST PAINTED FRAME, and the
+    canonical camera reaches its new value before the repaint that follows it
+    lands. Reading a rectangle the instant a camera wait returns therefore hands
+    back the previous frame's geometry -- measured here as a whole 54-column
+    error -- so every pixel measurement waits for the paint, not the command.
+    """
+    previous = None
+    for _ in range(50):
+        current = page.evaluate(
+            "id => window.__gardenReview.objectArtRectPixels(id)", object_id,
+        )
+        if current is not None and current == previous:
+            return current
+        previous = current
+        page.wait_for_timeout(150)
+    raise AssertionError(f"the painted art rectangle for {object_id} never settled")
+
+
+def _wait_gesture_geometry_quiescent(page, object_id: str) -> dict[str, object]:
+    """One object's VISIBLE art mid-gesture, sampled from a single settled frame.
+
+    Two sources have to agree for this measurement to mean anything: the review
+    accessor's computed rectangle, which belongs to the last painted frame, and
+    the session-only residue transform, which is live inline style. The viewer
+    lands both in the same microtask burst precisely so a presented frame never
+    mixes a committed camera step with an uncorrected transform -- but a sample
+    taken while the serialized pan queue is still draining reads one of each.
+    So the pointer is held still and the pair is read until it repeats.
+    """
+    previous = None
+    for _ in range(50):
+        current = page.evaluate(
+            """id => {
+              const garden = document.getElementById('g');
+              const rect = window.__gardenReview.objectArtRectPixels(id);
+              if (!rect) return null;
+              return {
+                rect,
+                residue: [
+                  parseFloat(garden.style.getPropertyValue('--garden-drag-x')) || 0,
+                  parseFloat(garden.style.getPropertyValue('--garden-drag-y')) || 0,
+                ],
+                camera: window.__gardenReview.camera(),
+              };
+            }""",
+            object_id,
+        )
+        if current is not None and current == previous:
+            return current
+        previous = current
+        page.wait_for_timeout(150)
+    raise AssertionError(f"the visible art of {object_id} never settled mid-gesture")
+
+
+def _pixels_per_camera_cell_x(page, *, travel: float = 200.0) -> float:
+    """Measure the pointer-pixel to camera-cell pitch on the real drag route.
+
+    One camera cell paints `xScale` columns at world depth and the viewer keeps
+    that factor module-private, so the conversion is measured where it is
+    actually applied: a known pointer delta in, the canonical camera delta out.
+    Painted geometry is deliberately not used -- it snaps to whole character
+    columns, which makes a single-cell sample read 7.8px or 15.7px for the same
+    underlying pitch. Requires the camera to have room to absorb the travel.
+    """
+    row = _empty_garden_ground_point(page)["y"]
+    start_x = _empty_garden_row_x(page, row, travel + 140)
+    before = _wait_camera_quiescent(page)
+    _mouse_drag(page, {"x": start_x, "y": row}, {"x": start_x - travel, "y": row})
+    after = _wait_camera_quiescent(page)
+    cells = after[0] - before[0]
+    assert cells >= 8, {
+        "before": before, "after": after, "travel": travel,
+        "why": "the measuring drag did not pan far enough to divide",
+    }
+    return travel / cells
 
 
 def _keyboard_focus_object(page, object_id: str, *, object_count: int) -> None:
@@ -498,6 +651,308 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
 
     all_errors = [error for stream in error_streams for error in stream]
     assert all_errors == [], all_errors
+
+
+def test_drag_capture_clamp_and_release_suppression_own_the_gesture():
+    """Execute the three unexercised clauses of the Garden drag contract.
+
+    Batch operator decision item 8 (2026-08-11) states four laws for pointer
+    dragging: one-to-one visible movement settling onto a canonical cell,
+    pointer capture retained beyond the Garden bounds, a clamp at the world
+    edges, and never activating an object after a drag. Only the settle law had
+    a real-browser executor; the other three were implemented in
+    `viewer-bnw.html` with nothing driving them, which is exactly the shape of
+    the defects this lane keeps re-introducing.
+
+    Every verdict below is read off canonical state. The painted picture cannot
+    distinguish a gesture that dispatched a command from one that did not, and
+    the absence of DOM noise cannot prove the absence of an action.
+    """
+    errors: list[str] = []
+    with _static_server() as origin, playwright_api.sync_playwright() as driver:
+        try:
+            browser = driver.chromium.launch(channel="chrome")
+        except Exception as failure:  # pragma: no cover - environment dependent
+            pytest.skip(f"system Google Chrome is unavailable: {failure}")
+        try:
+            context = browser.new_context(viewport={"width": 1600, "height": 1000})
+            page = context.new_page()
+            page.set_default_timeout(30_000)
+            errors = _watch(page)
+            _open_standalone(page, origin)
+
+            initial = _state(page)
+            home_camera = initial["ui"]["camera"]
+            world_width = int(initial["world_width"])
+            plant_id = initial["plants"][0]["plant_id"]
+            object_count = len(page.evaluate("window.__gardenReview.state().objects"))
+            viewport = page.evaluate("() => [innerWidth, innerHeight]")
+
+            def go_home() -> None:
+                """Return to the canonical home camera between clauses."""
+                page.keyboard.press("Home")
+                page.wait_for_function(
+                    "home => JSON.stringify(window.__gardenReview.camera()) === "
+                    "JSON.stringify(home)",
+                    arg=home_camera,
+                )
+
+            # Size every gesture below in real camera cells, measured on the
+            # drag route itself rather than assumed from a pixel constant.
+            pitch = _pixels_per_camera_cell_x(page)
+
+            # ── Clause: CAPTURE BEYOND BOUNDS ────────────────────────────────
+            # `#g` is pinned to all four viewport edges, so a pointer cannot
+            # leave its box without leaving the window. The event-stealing case
+            # that actually matters is the pointer travelling OVER another
+            # interactive element: without `setPointerCapture` on pointerdown
+            # that element receives the pointer stream and the pan dies
+            # mid-gesture. So the proof is that the canonical camera keeps
+            # moving while the pointer sits on a HUD button, which is not a
+            # descendant of `#g`.
+            go_home()
+            ground = _empty_garden_ground_point(page)
+            overlay = page.evaluate(
+                """() => {
+                  const candidates = [...document.querySelectorAll('#hud button')]
+                    .map(node => ({node, rect: node.getBoundingClientRect()}))
+                    .filter(item => item.rect.width > 0 && item.rect.height > 0 &&
+                      getComputedStyle(item.node).pointerEvents === 'auto' &&
+                      getComputedStyle(item.node).visibility !== 'hidden')
+                    .sort((left, right) => right.rect.width - left.rect.width);
+                  for (const {node, rect} of candidates) {
+                    const hit = document.elementFromPoint(
+                      rect.x + rect.width / 2, rect.y + rect.height / 2);
+                    if (hit && (hit === node || node.contains(hit)) && !hit.closest('#g')) {
+                      window.__dragOverlayProbe = node;
+                      return {label: (node.textContent || '').trim(), x: rect.x, y: rect.y,
+                              width: rect.width, height: rect.height};
+                    }
+                  }
+                  return null;
+                }"""
+            )
+            assert overlay is not None, (
+                "no HUD control outside #g is on screen, so pointer capture has "
+                "no event thief to be proven against"
+            )
+
+            def overlay_owns(x: float, y: float) -> bool:
+                return page.evaluate(
+                    """p => {
+                      const node = window.__dragOverlayProbe;
+                      const hit = document.elementFromPoint(p.x, p.y);
+                      return Boolean(hit && (hit === node || node.contains(hit)) &&
+                        !hit.closest('#g'));
+                    }""",
+                    {"x": x, "y": y},
+                )
+
+            overlay_left = overlay["x"] + 3
+            overlay_right = overlay["x"] + overlay["width"] - 3
+            overlay_y = overlay["y"] + overlay["height"] / 2
+            assert overlay_right - overlay_left > pitch + 2, {
+                "overlay": overlay, "pitch": pitch,
+                "why": "the overlay is narrower than one camera cell",
+            }
+            # Pressing down directly below the overlay keeps the accumulated
+            # horizontal delta small, so neither sample can be sitting against
+            # the world-edge clamp that the next clause tests deliberately.
+            capture_start = {
+                "x": _empty_garden_row_x(
+                    page, ground["y"], (overlay_left + overlay_right) / 2),
+                "y": ground["y"],
+            }
+            page.mouse.move(capture_start["x"], capture_start["y"])
+            page.mouse.down()
+            page.mouse.move(overlay_left, overlay_y, steps=12)
+            assert overlay_owns(overlay_left, overlay_y), (
+                "the pointer is not over the overlay control after moving onto it"
+            )
+            camera_on_overlay = _wait_camera_quiescent(page)
+            page.mouse.move(overlay_right, overlay_y, steps=6)
+            assert overlay_owns(overlay_right, overlay_y), (
+                "the pointer left the overlay control while crossing it"
+            )
+            try:
+                page.wait_for_function(
+                    "before => window.__gardenReview.camera()[0] !== before",
+                    arg=camera_on_overlay[0],
+                    timeout=10_000,
+                )
+            except playwright_api.TimeoutError as failure:
+                raise AssertionError(
+                    "the pan stopped while the pointer was over "
+                    f"{overlay['label']!r}: the gesture did not retain pointer "
+                    "capture beyond the Garden's own hit surface"
+                ) from failure
+            camera_across_overlay = page.evaluate("window.__gardenReview.camera()")
+            assert camera_across_overlay[0] != camera_on_overlay[0]
+            assert 0 <= camera_across_overlay[0] <= world_width - 1, camera_across_overlay
+            # Release back over the Garden: this clause owns capture, not the
+            # question of what a release over a HUD control means.
+            page.mouse.move(capture_start["x"], capture_start["y"], steps=12)
+            page.mouse.up()
+            _wait_drag_settled(page)
+
+            # ── Clause: EDGE CLAMP ───────────────────────────────────────────
+            # A finger delta far larger than the world can absorb must leave the
+            # camera exactly AT the canonical bound, never beyond it, and must
+            # not wedge the gesture: a small reverse drag still pans normally.
+            go_home()
+            row_y = _empty_garden_ground_point(page)["y"]
+
+            def long_left_drag() -> list[int]:
+                """Drag the world as far left as the row allows, then settle."""
+                start = {"x": _empty_garden_row_x(page, row_y, viewport[0] - 100),
+                         "y": row_y}
+                end = {"x": _empty_garden_row_x(page, row_y, 140), "y": row_y}
+                # Both ends must be empty ground: once the clamp absorbs the
+                # whole delta the gesture never crosses the movement threshold,
+                # so it releases as an ordinary click on whatever it lands on.
+                _mouse_drag(page, start, end)
+                return _wait_camera_quiescent(page)
+
+            previous = page.evaluate("window.__gardenReview.camera()")
+            edge_camera = None
+            for _ in range(30):
+                camera = long_left_drag()
+                assert 0 <= camera[0] <= world_width - 1, {
+                    "camera": camera, "world_width": world_width,
+                    "why": "the drag pushed the camera outside the canonical world",
+                }
+                if camera == previous:
+                    edge_camera = camera
+                    break
+                previous = camera
+            assert edge_camera is not None, (
+                "thirty long left drags never brought the camera to rest"
+            )
+            assert edge_camera[0] == world_width - 1, {
+                "camera": edge_camera, "world_width": world_width,
+                "why": "the drag stopped short of the canonical world edge",
+            }
+            for _ in range(2):
+                assert long_left_drag() == edge_camera, {
+                    "expected": edge_camera,
+                    "why": "a further oversized drag moved the clamped camera",
+                }
+            reverse_start = {"x": _empty_garden_row_x(page, row_y, 300), "y": row_y}
+            _mouse_drag(page, reverse_start,
+                        {"x": reverse_start["x"] + 15 * pitch, "y": row_y})
+            reverse_camera = _wait_camera_quiescent(page)
+            assert reverse_camera[0] < edge_camera[0], {
+                "before": edge_camera, "after": reverse_camera,
+                "why": "the camera stayed wedged at the edge after a reverse drag",
+            }
+            assert reverse_camera[1] == edge_camera[1], (reverse_camera, edge_camera)
+
+            # ── Clause: RELEASE OVER OBJECT NEVER ACTS ───────────────────────
+            # The visible Garden follows the pointer one-to-one, so art pressed
+            # at pointerdown is still under the pointer at pointerup: this
+            # gesture releases on the flower's own ink. A pan must never also
+            # perform whatever primary action sits under the finger.
+            go_home()
+            _keyboard_focus_object(page, plant_id, object_count=object_count)
+            _wait_art_rect_quiescent(page, plant_id)
+            focused_camera = page.evaluate("window.__gardenReview.camera()")
+            art = _exposed_object_art_point(page, plant_id)
+            before = _state(page)
+
+            # Drag towards whichever world edge has room, so the clamp cannot
+            # break the one-to-one tracking this clause depends on. The measured
+            # pitch rounds up, so the room budget is taken conservatively.
+            room_right = world_width - 1 - focused_camera[0]
+            room_left = focused_camera[0]
+            direction = -1 if room_right >= room_left else 1
+            travel = min(240.0, max(room_left, room_right) * pitch * 0.8)
+            assert travel > 4 * pitch, {
+                "camera": focused_camera, "world_width": world_width, "pitch": pitch,
+                "why": "no room exists for a drag long enough to commit a pan",
+            }
+            release = {"x": art["x"] + direction * travel, "y": art["y"]}
+            assert 8 < release["x"] < viewport[0] - 8, release
+            page.mouse.move(art["x"], art["y"])
+            page.mouse.down()
+            page.mouse.move(release["x"], release["y"], steps=12)
+            page.wait_for_function(
+                "before => window.__gardenReview.camera()[0] !== before",
+                arg=focused_camera[0],
+            )
+            # The accessor reports COMPUTED art geometry while the live gesture
+            # residue is a CSS transform on the Garden's children, so the visible
+            # ink is the reported rectangle displaced by that residue. The pair
+            # is read from one settled frame with the pointer already parked at
+            # its release position, so what is judged here is exactly what the
+            # release will land on.
+            visible = _wait_gesture_geometry_quiescent(page, plant_id)
+            rect, residue = visible["rect"], visible["residue"]
+            inside = (
+                rect["x"] + residue[0] <= release["x"] <= rect["x"] + residue[0] + rect["width"]
+                and rect["y"] + residue[1] <= release["y"] <= rect["y"] + residue[1] + rect["height"]
+            )
+            assert inside, {
+                "release": release, "measured": visible,
+                "why": "the visible Garden did not track the pointer one-to-one, so "
+                       "this gesture would not release on the rose's art",
+            }
+            hit = page.evaluate(
+                "p => window.__gardenReview.objectAtPixels(p[0], p[1])",
+                [release["x"] - residue[0], release["y"] - residue[1]],
+            )
+            assert hit == plant_id, {
+                "release": release, "measured": visible, "hit": hit,
+                "why": "the release point does not identify the rose, so a plain "
+                       "click there would not have acted either",
+            }
+            page.mouse.up()
+            _wait_drag_settled(page)
+
+            after = _state(page)
+            assert after["plants"] == before["plants"], {
+                "before": before["plants"], "after": after["plants"],
+                "why": "releasing a pan on the rose's art tended it",
+            }
+            assert len(after["journal"]) == len(before["journal"]), (
+                "releasing a pan on the rose's art wrote a journal entry"
+            )
+            assert (
+                [fixture["interaction_count"] for fixture in after["fixtures"]]
+                == [fixture["interaction_count"] for fixture in before["fixtures"]]
+            ), "releasing a pan dispatched a fixture interaction"
+            assert page.evaluate(
+                "window.__gardenReview.state().actions_open_for"
+            ) is None
+            settled = _wait_camera_quiescent(page)
+            assert settled[0] != focused_camera[0], (
+                "the suppressed-activation gesture never panned, so it did not "
+                "exercise drag-click suppression at all"
+            )
+            assert 0 < settled[0] < world_width - 1, (
+                f"the suppression gesture ran into the world edge clamp: {settled}"
+            )
+
+            # Contrast fixture: the SAME art point, reached by the same keyboard
+            # route, does act on a plain click. Without this the clause above
+            # would also pass on a point that can never be activated.
+            _keyboard_focus_object(page, plant_id, object_count=object_count)
+            _wait_art_rect_quiescent(page, plant_id)
+            assert page.evaluate("window.__gardenReview.camera()") == focused_camera
+            control = _exposed_object_art_point(page, plant_id)
+            assert control["x"] == pytest.approx(art["x"], abs=0.5)
+            assert control["y"] == pytest.approx(art["y"], abs=0.5)
+            tended_before = _state(page)["plants"][0]["tended_count"]
+            page.mouse.click(control["x"], control["y"])
+            page.wait_for_function(
+                "before => JSON.parse(window.__gardenReview.canonicalStateJson())"
+                ".plants[0].tended_count > before",
+                arg=tended_before,
+            )
+            context.close()
+        finally:
+            browser.close()
+
+    assert errors == [], errors
 
 
 def test_local_fixed_time_is_an_executable_four_season_review_route():
