@@ -82,6 +82,11 @@
        measured layer, where every row is positioned from PreText prefix widths. */
     #g > .garden-lattice-row { position: relative; white-space: pre; height: 17px; overflow: visible; }
     #g > .garden-lattice-row > span { position: absolute; top: 0; }
+    /* Session-only drag residue: during a pointer gesture the painted rows
+       follow the finger exactly, while the canonical camera commits in whole
+       cells underneath. The variables are unset (0px) outside a gesture, so
+       this rule is inert everywhere except mid-drag. */
+    #g > * { transform: translate3d(var(--garden-drag-x, 0px), var(--garden-drag-y, 0px), 0); }
     #g > .garden-measured-layer { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
     #g > .garden-measured-layer > span { position: absolute; white-space: pre; line-height: 17px; }
 
@@ -554,7 +559,7 @@ import {
   parseGardenProgram,
   validateBundleIdentityShape,
 } from './web/garden-program.mjs';
-import { CanonicalGardenRenderer } from './web/garden-renderer.mjs';
+import { CanonicalGardenRenderer, gardenPresentationProfile } from './web/garden-renderer.mjs';
 import { isValidPaintAuthority } from './web/garden-paint-authority.mjs';
 import { createPreTextMeasurer } from './web/garden-geometry.mjs';
 import { requestRoughSkyLocation } from './web/garden-sky.mjs';
@@ -2746,40 +2751,109 @@ async function init(){
     // ── Single-pointer pan (SPEC 7.8.13 gate 2: pan passes through touch, ──
     // ── mouse, keyboard and terminal with identical state transitions). ────
     //
-    // One pointer, any type. Dragging moves the camera through the SAME
-    // canonical `pan` command the keyboard uses -- the gesture is an input
-    // route, never a second camera owner. The content follows the finger:
-    // dragging left brings the Garden's right side into view. Cell-quantised
-    // so each dispatched step is exactly one canonical camera unit, and the
-    // residue stays in the gesture, not in the world.
+    // One pointer, any type, with pointer capture so the gesture survives
+    // leaving the Garden bounds. The batch operator decision item 8
+    // (2026-08-11) owns this contract: the visible Garden follows the finger
+    // one-to-one through a session-only transform, the canonical `pan`
+    // command the keyboard uses remains the ONLY camera owner and commits in
+    // whole camera cells underneath the gesture, the finger cannot drag the
+    // camera past the world edges, and releasing the pointer settles the
+    // residue onto the nearest canonical cell. One camera cell paints
+    // `xScale` columns at world depth, so pixels convert to camera cells by
+    // cellWidth*xScale horizontally and cellHeight*yScale vertically -- the
+    // world under the finger moves with the finger on every viewport.
+    // Dispatches are serialized off the pointer thread: a move NEVER awaits
+    // canonical persistence, which is what made the previous handler stall.
     //
     // A drag that moved the camera swallows the click that Chrome fires at
     // pointerup, so releasing a pan cannot ALSO perform whatever primary
     // action happens to sit under the finger -- panning must never act.
     let gardenDrag=null,gardenLastEmptyTap=null,gardenSuppressClick=false;
     let gardenLastTouchRecenterAt=-Infinity;
+    let gardenDragTail=Promise.resolve();
     const emptyGardenPoint=event=>!garden?.objectAtPixels?.(event.clientX,event.clientY);
+    const setGardenDragOffset=(x,y)=>{
+      if(x||y){
+        gardenElement.style.setProperty('--garden-drag-x',`${x}px`);
+        gardenElement.style.setProperty('--garden-drag-y',`${y}px`);
+      }else{
+        gardenElement.style.removeProperty('--garden-drag-x');
+        gardenElement.style.removeProperty('--garden-drag-y');
+      }
+    };
+    const gardenDragResidue=drag=>setGardenDragOffset(
+      -(drag.dx-drag.applied[0]*drag.pxPerCamX),
+      -(drag.dy-drag.applied[1]*drag.pxPerCamY),
+    );
+    const enqueueGardenDragPan=(drag,cellsX,cellsY,modality,pointerType,settle)=>{
+      if(!cellsX&&!cellsY&&!settle)return;
+      drag.sent[0]+=cellsX;drag.sent[1]+=cellsY;
+      drag.queue=drag.queue.then(async()=>{
+        if(cellsX||cellsY)await dispatchGardenUi(modality,'pan',{
+          args:{dx:cellsX,dy:cellsY},
+          metadata:{gesture:'drag',pointer_type:pointerType},
+        });
+        drag.applied[0]+=cellsX;drag.applied[1]+=cellsY;
+        // The var update lands in the same microtask burst as the canonical
+        // repaint, so the presented frame never shows both the committed
+        // camera step and the uncorrected transform together.
+        if(settle)setGardenDragOffset(0,0);
+        else if(gardenDrag===drag)gardenDragResidue(drag);
+      });
+      gardenDragTail=drag.queue;
+    };
     gardenElement.style.touchAction='none';
     gardenElement.addEventListener('pointerdown',e=>{
       if(!e.isPrimary)return;
-      gardenDrag={id:e.pointerId,x:e.clientX,y:e.clientY,moved:false};
+      const camera=gardenRuntime?.state?.ui?.camera;
+      const profile=gardenPresentationProfile(garden?.measure?.()??[80,24]);
+      gardenDrag={id:e.pointerId,x0:e.clientX,y0:e.clientY,moved:false,
+        camera:Array.isArray(camera)?[...camera]:null,
+        pxPerCamX:(garden?.cellWidth||8)*profile.xScale,
+        pxPerCamY:(garden?.cellHeight||15)*Math.max(profile.yScale,0.05),
+        dx:0,dy:0,sent:[0,0],applied:[0,0],queue:gardenDragTail};
+      try{gardenElement.setPointerCapture(e.pointerId);}catch{}
     });
-    gardenElement.addEventListener('pointermove',async e=>{
-      if(!gardenDrag||e.pointerId!==gardenDrag.id)return;
-      const cellW=garden?.cellWidth||8,cellH=garden?.cellHeight||15;
-      const dx=Math.trunc((gardenDrag.x-e.clientX)/cellW);
-      const dy=Math.trunc((gardenDrag.y-e.clientY)/cellH);
-      if(!dx&&!dy)return;
-      gardenDrag.x-=dx*cellW;gardenDrag.y-=dy*cellH;gardenDrag.moved=true;
-      await dispatchGardenUi(inputModalityFromBrowserEvent(e),'pan',{
-        args:{dx,dy},metadata:{gesture:'drag',pointer_type:e.pointerType},
-      });
+    gardenElement.addEventListener('pointermove',e=>{
+      const drag=gardenDrag;
+      if(!drag||e.pointerId!==drag.id)return;
+      let dx=drag.x0-e.clientX,dy=drag.y0-e.clientY;
+      if(drag.camera){
+        // The finger cannot drag the camera past the canonical world edge;
+        // the canonical `pan` clamp is the owner, this mirror only keeps the
+        // session transform from overshooting what the world can absorb.
+        const w=Number(gardenRuntime?.state?.world_width)||120;
+        const h=Number(gardenRuntime?.state?.world_height)||80;
+        dx=Math.min(Math.max(dx,(0-drag.camera[0])*drag.pxPerCamX),
+          (w-1-drag.camera[0])*drag.pxPerCamX);
+        dy=Math.min(Math.max(dy,(0-drag.camera[1])*drag.pxPerCamY),
+          (h-1-drag.camera[1])*drag.pxPerCamY);
+      }
+      drag.dx=dx;drag.dy=dy;
+      if(!drag.moved&&
+        Math.abs(dx)<Math.max(4,drag.pxPerCamX/2)&&
+        Math.abs(dy)<Math.max(4,drag.pxPerCamY/2))return;
+      drag.moved=true;
+      gardenDragResidue(drag);
+      enqueueGardenDragPan(drag,
+        Math.trunc(dx/drag.pxPerCamX)-drag.sent[0],
+        Math.trunc(dy/drag.pxPerCamY)-drag.sent[1],
+        inputModalityFromBrowserEvent(e),e.pointerType,false);
     });
     const endGardenDrag=async e=>{
       // The moved flag survives until the click event so it can be swallowed;
       // it is cleared there, or on the next pointerdown.
       if(!gardenDrag||e.pointerId!==gardenDrag.id)return;
-      if(gardenDrag.moved){gardenLastEmptyTap=null;return;}
+      if(gardenDrag.moved){
+        gardenLastEmptyTap=null;
+        // Movement settled: commit the NEAREST canonical cell, then clear
+        // the session-only residue after its repaint lands.
+        enqueueGardenDragPan(gardenDrag,
+          Math.round(gardenDrag.dx/gardenDrag.pxPerCamX)-gardenDrag.sent[0],
+          Math.round(gardenDrag.dy/gardenDrag.pxPerCamY)-gardenDrag.sent[1],
+          inputModalityFromBrowserEvent(e),e.pointerType,true);
+        return;
+      }
       if(e.pointerType==='touch'&&emptyGardenPoint(e)){
         const prior=gardenLastEmptyTap;
         const close=prior&&e.timeStamp-prior.time<=450&&
@@ -2798,7 +2872,9 @@ async function init(){
       gardenDrag=null;
     };
     gardenElement.addEventListener('pointerup',endGardenDrag);
-    gardenElement.addEventListener('pointercancel',()=>{gardenDrag=null;});
+    gardenElement.addEventListener('pointercancel',()=>{
+      setGardenDragOffset(0,0);gardenDrag=null;
+    });
     gardenElement.addEventListener('click',e=>{
       if(gardenSuppressClick){
         e.stopImmediatePropagation();e.preventDefault();gardenSuppressClick=false;

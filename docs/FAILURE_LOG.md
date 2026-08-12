@@ -16902,3 +16902,124 @@ E2E operator journey stopped: due authored gift did not apply (2026-08-11);
 Wayfinder child: first authenticated visit must deliver an overdue authored
 gift (2026-08-12); Wayfinder refinement: close product E2E and Garden as
 independent acceptance lanes (2026-08-11).
+
+### Progress audit against the Exact Web E2E Order (2026-08-12)
+
+Requirement-mapped audit of the nine-item order under the recorded
+supersessions (revision-5 full Garden restoration; 2026-08-11 batch operator
+decision replacing beside-object controls, the permanent journal/pause HUD and
+ambient decoration with the static direct-action Garden). Live verification on
+the current dirty worktree at HEAD `eebd0c1`, this audit: JavaScript garden
+adapters 212/213 with ONE red — `test_presentation_contract.mjs:502` ("the
+live GardenPresentation owner conforms") no longer finds `plant.oak.*` ink,
+consistent with the uncommitted `xScale: 1` gesture-repair edits narrowing the
+projected slice; `tests/test_viewer_contract.py::
+test_behavioral_browser_modules_pass_node_contracts` is red as its wrapper.
+Viewer/garden contracts otherwise 221/222. Real-Chrome interaction plus
+product handoff now pass 7/7 ON THE DIRTY TREE, superseding the 2026-08-12
+keyboard-framing-timeout discrepancy recorded earlier — that timeout no longer
+reproduces; the conformance red above is the current, different discrepancy
+charged to the in-flight gesture edits.
+
+- Items 1–2 (composition, handoff census): Implemented, Verified, and the
+  composition itself operator-Accepted at desktop/390/320; census
+  superseded to one flower plus six fixtures at generator revision 7.
+- Item 3 (controls): superseded form Implemented and machine-Verified
+  (direct picture actions, conditional mailbox journal, recenter routes in
+  `6218179`); operator interaction acceptance still open.
+- Item 4 (persistence): Executed and Verified in the 2026-08-12 successor,
+  including the repaired first-visit overdue gift (`cfabe67`).
+- Item 5 (gates successor): coverage executed inside the E2E receipts
+  (zoom 200 percent via CDP scale, keyboard, native touch, reduced motion);
+  stale Gate 2/12 blocker wording still awaits reconciliation; PARTIAL
+  gates remain PARTIAL by design.
+- Item 6 (recipient defects): unread L2 label and reading-scrim repairs
+  recorded closed 2026-08-11/12.
+- Item 7 (full author control): outside the accepted MVP by the 2026-08-11
+  refinement; scheduled-gift authoring is the proven subset.
+- Item 8 (parent ops): demo-passphrase and handoff-package receipts exist;
+  physical-handset and Gates 6/10 platform evidence remain named fog;
+  fixture variants stay excluded.
+- Item 9 (final operator E2E): desktop and emulated-phone successor
+  Executed and Verified on exact `cfabe67` with one unchanged artifact
+  (SHA `0e0e294c…39b4`); the final human verdict on the live product and
+  the Garden drag-acceptance lane remain the open acceptances.
+
+Open frontier, in order: (a) reconcile the oak-conformance red inside the
+uncommitted gesture-repair work, then commit that lane cleanly; (b) operator
+drag/interaction acceptance at the three viewports; (c) final operator
+verdict on the exact-artifact journey; (d) Gate 2/12 wording reconciliation.
+No product files were changed during this audit; only this ledger entry was
+appended.
+
+- **Status:** AUDIT RECORDED; TWO OPERATOR ACCEPTANCES AND ONE IN-FLIGHT
+  REPAIR RED REMAIN. ComplaintRefs: Exact Web E2E Order (2026-08-10);
+  Wayfinder refinement: close product E2E and Garden as independent
+  acceptance lanes (2026-08-11); Exact repaired artifact passes desktop
+  persistence and native-touch phone routes (2026-08-12).
+
+### Corrected audit accepted; gesture ownership implemented and the projection settled without replacing accepted views (2026-08-13)
+
+The operator's counter-audit falsified the 2026-08-12 "only two operator
+acceptances remain" conclusion on four grounds: the uncommitted `xScale: 1`
+edits silently changed the operator-accepted desktop/390/320 compositions;
+the accepted drag contract (pointer capture, smooth session presentation,
+canonical settlement) was unimplemented; the phone mailbox route proved touch
+activation only after keyboard framing; and the oak conformance red was one
+symptom, not the defect. All four contradictions were verified against source
+and are accepted. This entry records the corrected frontier's items 1-4.
+
+- **Projection settled by deletion (frontier 1):** the uncommitted
+  `xScale: 1` and split-camera-term experiments in `web/garden-painting.mjs`
+  are deleted; the file is byte-identical to `eebd0c1`. A candidate
+  home-anchored split-scale law (point term keeps the viewport fit, camera
+  term steps whole columns) was prototyped and falsified before adoption: it
+  preserves home views and gives uniform steps, but drifts the camera's
+  look-at point by 0.2 columns per world cell from home, which pushed a
+  focused object ten columns off-centre at 29 columns and made wide art
+  unplaceable. The accepted composition therefore keeps its exact committed
+  projection; one-to-one feel is owned by the gesture layer, where the batch
+  operator decision item 8 placed it.
+- **Gesture ownership (frontier 2):** `viewer-bnw.html` now takes pointer
+  capture on pointerdown, follows the finger one-to-one through a
+  session-only `--garden-drag-x/y` transform on the painted rows, converts
+  pixels to camera cells by `cellWidth*xScale` / `cellHeight*yScale`, mirrors
+  the canonical world-edge clamp so the finger cannot overshoot what the
+  world can absorb, serializes canonical `pan` commits off the pointer thread
+  (a move never awaits persistence), and settles the NEAREST canonical cell
+  on release before clearing the residue. Canonical `pan` remains the only
+  camera owner; drag-click suppression and empty-ground double-tap/double-
+  click recenter are unchanged. The cleared custom property is the
+  falsifiable settle signal, and test helpers now wait on it — sampling
+  after the first camera change raced the trailing settle write, which one
+  persistence run caught in the flesh.
+- **Test reconciliation (frontier 3):** the oak conformance contract is
+  restored untouched and green. The uncommitted per-step pixel-uniformity
+  assertions (interaction browser; pan-stability test 4) encoded the
+  falsified `xScale: 1` law and are rewritten to the accepted laws:
+  same-camera/same-picture between keyboard and settled drag, rigid
+  same-depth cohorts, packer-nudge stability, per-step bound `ceil(xScale)`,
+  and aggregate one-to-one within one cell over a long pan. The phone
+  mailbox route replaces keyboard framing with `_pan_to_garden_object`:
+  reach AND activation now use the same touch modality end to end, on
+  desktop the same helper proves mouse-drag reach. The stale
+  `test_legacy_art_acceptance_is_exactly_the_ported_grant` is reconciled to
+  both recorded grants (2026-08-01 ported keys plus 2026-08-11 hash-bound
+  starter-pool `legacy_grant` rows; `not_ported` species still sweep
+  everything outside the pool ids) — this red pre-dated this work at HEAD
+  and was surfaced by running the acceptance gates on the live tree.
+- **Executed proof (frontier 4, this tree):** JavaScript garden adapters
+  213/213; one convergent Python selection 355 passed / 1 skipped in 99 s
+  covering garden acceptance gates, garden world, garden contract, viewer
+  contract, real-Chrome interaction 2/2, product handoff 5/5 including the
+  touch-only mailbox reach, author E2E and reading typography. The single
+  skip is the environment's missing bundled headless-shell binary with the
+  system-Chrome fallback proven in the same file. Out-of-lane dirty work
+  (creature snail art, transcription fixtures) is excluded from the commit.
+- **Status:** IMPLEMENTED, CONNECTED, EXECUTED AND MACHINE-VERIFIED;
+  OPERATOR GARDEN DRAG ACCEPTANCE AND FINAL EXACT-ARTIFACT VERDICT REMAIN
+  OPEN; GATE 2/12 WORDING RECONCILIATION REMAINS. ComplaintRefs: operator
+  counter-audit falsifying the 2026-08-12 progress audit (2026-08-12);
+  Wayfinder map update: approved flowers, quiet controls and exact dragging
+  (2026-08-11), execution child 4; Wayfinder refinement: close product E2E
+  and Garden as independent acceptance lanes (2026-08-11), frontier child 2.

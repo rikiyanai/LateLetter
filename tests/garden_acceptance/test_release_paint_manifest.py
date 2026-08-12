@@ -327,22 +327,45 @@ def test_an_unknown_verdict_refuses_to_build_rather_than_guess(built_site, tmp_p
 
 
 def test_legacy_art_acceptance_is_exactly_the_ported_grant(built_site):
-    """`accepted_legacy_art` is the register's ported list -- no more, no less.
+    """`accepted_legacy_art` is the register's grant-backed list, exactly.
 
-    The ported keys are exact archive transcriptions accepted through the
-    recorded 2026-08-01 operator grant, each with per-identity provenance.
-    The `not_ported` section names art that keeps renderer-authored
-    placeholders and carries NO acceptance; none of those names may appear.
+    Two projections of recorded operator grants qualify and nothing else: the
+    `legacy_ported_renderer_art.ported` keys (exact archive transcriptions
+    accepted through the 2026-08-01 grant, each with per-identity provenance)
+    and the `starter_flower_pool` entries whose authority is `legacy_grant`
+    (the hash-bound flower pool accepted in the 2026-08-11 batch operator
+    decision; the operator-authored rose stays in `accepted_assets`). The
+    `not_ported` section names art that keeps renderer-authored placeholders
+    and carries NO acceptance; none of those names may appear.
     """
     manifest = json.loads((built_site / PAINT_MANIFEST_NAME).read_text(encoding="utf-8"))
     register = json.loads((REPOSITORY_ROOT / ASSET_REGISTER).read_text(encoding="utf-8"))
     ported = register["legacy_ported_renderer_art"]["ported"]
-    assert sorted(manifest["accepted_legacy_art"]) == sorted(ported.keys())
+    granted = set(ported.keys()) | {
+        entry["asset_id"]
+        for entry in register["starter_flower_pool"]["entries"]
+        if entry["authority"] == "legacy_grant"
+    }
+    assert sorted(manifest["accepted_legacy_art"]) == sorted(granted)
     assert manifest["accepted_legacy_art"], "the grant-backed list went empty"
     # Nothing the register says was NOT ported may be granted paint identity.
+    # `not_ported.plants` names renderer placeholder SPECIES (e.g. "rose",
+    # "tulip") whose renderer-authored drawings carry no acceptance. A pool
+    # entry such as `plant.legacy_rose` is a DIFFERENT drawing — an archive
+    # transcription individually hash-bound by the 2026-08-11 grant — so the
+    # substring sweep runs over everything except those exact pool ids.
     not_ported = register["legacy_ported_renderer_art"]["not_ported"]
+    pool_granted = {
+        entry["asset_id"]
+        for entry in register["starter_flower_pool"]["entries"]
+        if entry["authority"] == "legacy_grant"
+    }
+    unpooled = [
+        art_id for art_id in manifest["accepted_legacy_art"]
+        if art_id not in pool_granted
+    ]
     for species in not_ported.get("plants", []):
-        assert not any(species in art_id for art_id in manifest["accepted_legacy_art"]), species
+        assert not any(species in art_id for art_id in unpooled), species
     for species in not_ported.get("animals", []):
         assert not any(f"animal.{species}" == art_id for art_id in manifest["accepted_legacy_art"]), species
 

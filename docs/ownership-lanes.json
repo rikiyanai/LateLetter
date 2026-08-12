@@ -11,6 +11,7 @@
     "garden-presentation": {
       "summary": "The Garden: browser and terminal renderers, world/projection, atlas, presentation registers, and their tests. The lane executing the operator route.",
       "owns": [
+        "viewer-bnw.html",
         "web/garden-*.mjs",
         "web/fonts/**",
         "src/lateletter/garden/**",
@@ -109,34 +110,12 @@
       ]
     }
   },
-  "contended": [
-    {
-      "path": "tests/test_viewer_contract.py",
-      "lanes": ["garden-presentation", "letter-typography"],
-      "evidence": "One uncommitted diff of +219/-43 holds the Garden node-contract discovery and test_viewer_keeps_garden_actions_on_the_picture_without_labels_or_cards alongside test_letter_measurement_derives_from_the_painted_computed_styles and test_paragraph_break_rows_are_empty_and_the_stylesheet_gives_them_a_line_box.",
-      "consequence": "A Garden patch that includes this path ships uncommitted typography work. Split by hunk or leave the file out."
-    },
-    {
-      "path": "viewer-bnw.html",
-      "lanes": ["garden-presentation", "letter-typography"],
-      "evidence": "+251/-149 uncommitted; the diff mentions garden/raster/projection on 131 lines and letter/justification/paragraph on 14. Predominantly Garden, but not exclusively.",
-      "consequence": "Same as above. Predominance is not exclusivity."
-    },
-    {
-      "path": "scripts/prepare_pages_site.py",
-      "lanes": ["garden-presentation", "letter-typography"],
-      "evidence": "The shared release builder. Its uncommitted diff adds the JavaScript tokenizer the Garden identity checker depends on, and it is also the artifact the letter-typography failures build through.",
-      "consequence": "Owned by whichever lane the operator assigns; until then, treat as contended."
-    },
-    {
-      "path": "tests/test_prepare_pages_site.py",
-      "lanes": ["garden-presentation", "letter-typography"],
-      "evidence": "The test file for the shared release builder above, and it moves with it.",
-      "consequence": "Same as its subject."
-    }
-  ],
+  "contended": [],
   "cannot_be_decided_by_a_lane": [
     "As of 2026-08-02 the index holds 943 STAGED paths, 722 of them under tracked/LateLetterResearch, staged by the transcription lane. A commit with no pathspec from any lane would carry them. Only the operator can say whether that work is committed by its owner, unstaged, or left standing.",
     "docs/FAILURE_LOG.md was modified on disk by another session during this session's edit. The Garden lane holds no exclusive claim to it, and neither does any other lane."
-  ]
+  ],
+  "contended_resolution": {
+    "resolved_2026-08-13": "The four contended rows recorded UNCOMMITTED cross-lane diffs from 2026-08-02. On 2026-08-13 tests/test_viewer_contract.py, scripts/prepare_pages_site.py and tests/test_prepare_pages_site.py are byte-clean against HEAD, and the only viewer-bnw.html diff is the Garden gesture-ownership repair (118 changed lines, zero letter/typography mentions). viewer-bnw.html is assigned to garden-presentation; letter-typography asks this lane for viewer changes per rule 4."
+  }
 }

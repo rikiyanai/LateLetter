@@ -233,6 +233,10 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 fixture["fixture_id"] for fixture in initial["fixtures"]
                 if fixture["catalog_id"] == "mailbox"
             )
+            pond_id = next(
+                fixture["fixture_id"] for fixture in initial["fixtures"]
+                if fixture["catalog_id"] == "pond"
+            )
 
             assert desktop.locator(
                 '#hud-actions [data-garden-command="open_journal"]'
@@ -311,6 +315,67 @@ def test_garden_controls_cover_required_browser_inputs_and_viewports():
                 "before => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(before)",
                 arg=camera,
             )
+
+            # The operator's residual drag defect, pinned through the full
+            # pointer -> canonical camera -> compositor -> pixel-layout path.
+            # The accepted contract (batch operator decision item 8) is that a
+            # drag settles onto a canonical cell camera position and that pan
+            # passes through mouse and keyboard with IDENTICAL state
+            # transitions and identical presentation: reaching camera [47,40]
+            # by a settled pointer drag must paint every object at exactly the
+            # pixel position the keyboard route paints it. (Per-step painted
+            # displacement legitimately varies with the viewport fit, so the
+            # law is same-camera/same-picture, not same-pixels-per-step.)
+            desktop.keyboard.press("Home")
+            desktop.wait_for_function(
+                "home => JSON.stringify(window.__gardenReview.camera()) === JSON.stringify(home)",
+                arg=home_camera,
+            )
+            for _ in range(13):
+                desktop.keyboard.press("Shift+ArrowLeft")
+            desktop.wait_for_function(
+                "() => JSON.stringify(window.__gardenReview.camera()) === '[47,40]'"
+            )
+            keyboard_rects = {
+                object_id: desktop.evaluate(
+                    "id => window.__gardenReview.objectArtRectPixels(id).x", object_id
+                )
+                for object_id in (plant_id, pond_id)
+            }
+            desktop.keyboard.press("Shift+ArrowLeft")
+            desktop.wait_for_function(
+                "() => JSON.stringify(window.__gardenReview.camera()) === '[46,40]'"
+            )
+
+            drag_start = _empty_garden_ground_point(desktop)
+            desktop.mouse.move(drag_start["x"], drag_start["y"])
+            desktop.mouse.down()
+            desktop.mouse.move(drag_start["x"] - 8, drag_start["y"])
+            desktop.mouse.up()
+            desktop.wait_for_function(
+                "() => JSON.stringify(window.__gardenReview.camera()) === '[47,40]'"
+            )
+            # The session-only gesture residue must be fully settled before
+            # sampling pixel rects: the cleared custom property is the
+            # falsifiable signal that the commit landed.
+            desktop.wait_for_function(
+                "() => !document.getElementById('g').style"
+                ".getPropertyValue('--garden-drag-x')"
+            )
+            pointer_rects = {
+                object_id: desktop.evaluate(
+                    "id => window.__gardenReview.objectArtRectPixels(id).x", object_id
+                )
+                for object_id in (plant_id, pond_id)
+            }
+            for object_id in (plant_id, pond_id):
+                assert pointer_rects[object_id] == pytest.approx(
+                    keyboard_rects[object_id], abs=0.5
+                ), {
+                    "object_id": object_id,
+                    "keyboard_x": keyboard_rects[object_id],
+                    "pointer_x": pointer_rects[object_id],
+                }
 
             # A coordinate mouse drag pans canonically and does not rely on a
             # locator-generated click event.
