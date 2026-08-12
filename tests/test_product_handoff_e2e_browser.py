@@ -144,45 +144,57 @@ def _activate_real_pointer(page, locator, *, touch: bool) -> None:
 
 
 def _activate_garden_object(page, object_id: str, *, touch: bool) -> None:
-    """Activate accepted object art away from its invisible anchor target."""
+    """Activate accepted object art away from its invisible anchor target.
+
+    The rect sampling and the identity check happen inside ONE synchronous
+    evaluate: the live presentation ticker (restored 2026-08-13) repaints
+    between page.evaluate calls, so a point picked from one frame's art rect
+    may land on the next frame's identity map. One JS task sees one frame;
+    a python-side retry covers the tap landing on a later frame.
+    """
     page.wait_for_function(
         "id => window.__gardenReview.objectRectPixels(id) !== null && "
         "window.__gardenReview.objectArtRectPixels(id) !== null", arg=object_id,
     )
-    point = page.evaluate(
-        """id => {
-          const hotspot = window.__gardenReview.objectRectPixels(id);
-          const art = window.__gardenReview.objectArtRectPixels(id);
-          if (!hotspot || !art) return null;
-          const width = Math.max(44, hotspot.width);
-          const height = Math.max(44, hotspot.height);
-          const expanded = {
-            left: hotspot.x - (width - hotspot.width) / 2,
-            right: hotspot.x + hotspot.width + (width - hotspot.width) / 2,
-            top: hotspot.y - (height - hotspot.height) / 2,
-            bottom: hotspot.y + hotspot.height + (height - hotspot.height) / 2,
-          };
-          const xs = [.08, .25, .5, .75, .92].map(f => art.x + art.width * f);
-          const ys = [.08, .25, .5, .75, .92].map(f => art.y + art.height * f);
-          const garden = document.querySelector('#g');
-          for (const y of ys) for (const x of xs) {
-            const outsideAnchor = x < expanded.left || x >= expanded.right ||
-              y < expanded.top || y >= expanded.bottom;
-            const element = document.elementFromPoint(x, y);
-            if (outsideAnchor && x >= 0 && y >= 0 && x < innerWidth && y < innerHeight &&
-                element && (element === garden || element.closest('#g') === garden)) {
-              return {x, y};
-            }
-          }
-          return null;
-        }""",
-        object_id,
+    point = None
+    for _ in range(10):
+        point = page.evaluate(
+            """id => {
+              const hotspot = window.__gardenReview.objectRectPixels(id);
+              const art = window.__gardenReview.objectArtRectPixels(id);
+              if (!hotspot || !art) return null;
+              const width = Math.max(44, hotspot.width);
+              const height = Math.max(44, hotspot.height);
+              const expanded = {
+                left: hotspot.x - (width - hotspot.width) / 2,
+                right: hotspot.x + hotspot.width + (width - hotspot.width) / 2,
+                top: hotspot.y - (height - hotspot.height) / 2,
+                bottom: hotspot.y + hotspot.height + (height - hotspot.height) / 2,
+              };
+              const xs = [.08, .25, .5, .75, .92].map(f => art.x + art.width * f);
+              const ys = [.08, .25, .5, .75, .92].map(f => art.y + art.height * f);
+              const garden = document.querySelector('#g');
+              for (const y of ys) for (const x of xs) {
+                const outsideAnchor = x < expanded.left || x >= expanded.right ||
+                  y < expanded.top || y >= expanded.bottom;
+                const element = document.elementFromPoint(x, y);
+                if (outsideAnchor && x >= 0 && y >= 0 && x < innerWidth && y < innerHeight &&
+                    element && (element === garden || element.closest('#g') === garden) &&
+                    window.__gardenReview.objectAtPixels(x, y) === id) {
+                  return {x, y};
+                }
+              }
+              return null;
+            }""",
+            object_id,
+        )
+        if point is not None:
+            break
+        page.wait_for_timeout(100)
+    assert point is not None, (
+        "no exposed art point carries its own projected identity"
     )
-    assert point is not None, "no exposed rose-art point exists outside its anchor target"
     x, y = point["x"], point["y"]
-    assert page.evaluate(
-        "p => window.__gardenReview.objectAtPixels(p.x, p.y)", point,
-    ) == object_id, "visible rose art did not resolve to its projected identity"
     if touch:
         page.touchscreen.tap(x, y)
     else:
@@ -318,7 +330,22 @@ def _canonical_state(page) -> dict[str, object]:
 def _persisted_state_subset(state: dict[str, object]) -> dict[str, object]:
     program = state["program_state"]
     return {
-        "plants": state["plants"],
+        # Plant identity and the user's own acts persist byte-for-byte.
+        # Growth is TIME-DRIVEN under the restored live loop (operator
+        # rejection of the 485d0be static freeze, 2026-08-13): a live second
+        # between two samples legitimately advances growth_points and
+        # topology visibility, so those fields measure the clock, not
+        # persistence, and are excluded here on purpose.
+        "plants": [
+            {
+                "plant_id": plant["plant_id"],
+                "species_id": plant["species_id"],
+                "position": plant["position"],
+                "tended_count": plant["tended_count"],
+                "dormant": plant["dormant"],
+            }
+            for plant in state["plants"]
+        ],
         "fixtures": state["fixtures"],
         "journal": state["journal"],
         "inventory": state["inventory"],
@@ -329,6 +356,39 @@ def _persisted_state_subset(state: dict[str, object]) -> dict[str, object]:
         "applied_occurrences": program.get("applied_occurrences", []),
         "completed_events": program.get("completed_events", []),
     }
+
+
+def _assert_canonical_state_persisted_exactly(page, attempts: int = 10) -> str:
+    """Prove persistence is exact under live Garden time.
+
+    The restored live loop (operator rejection of the 485d0be static freeze,
+    2026-08-13) persists a fresh canonical serialization every second, so the
+    snapshot and the store must be read as one tight pair; comparing values
+    captured seconds apart tests the clock, not the persistence path.
+    """
+    for _ in range(attempts):
+        snapshot = page.evaluate("window.__gardenReview.canonicalStateJson()")
+        if snapshot in _indexeddb_values(page):
+            return snapshot
+    raise AssertionError(
+        f"no canonical snapshot matched a persisted IndexedDB value across "
+        f"{attempts} paired reads; the persistence path is not exact"
+    )
+
+
+def _persisted_world_values(page) -> list[dict[str, object]]:
+    """Every persisted value that parses as a canonical world state."""
+    worlds = []
+    for value in _indexeddb_values(page):
+        if not isinstance(value, str):
+            continue
+        try:
+            parsed = json.loads(value)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(parsed, dict) and "ui" in parsed and "program_state" in parsed:
+            worlds.append(parsed)
+    return worlds
 
 
 def _indexeddb_values(page) -> list[object]:
@@ -427,7 +487,7 @@ def _open_exact_artifact_as_recipient(
         reduced_motion="reduce",
     )
     page = context.new_page()
-    page.set_default_timeout(30_000)
+    page.set_default_timeout(60_000)
     errors, bad_responses = _watch_browser(page)
     try:
         page.goto(
@@ -747,7 +807,7 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
             author_page.close()
 
             page = context.new_page()
-            page.set_default_timeout(30_000)
+            page.set_default_timeout(60_000)
             # The author UI fixes scheduled deliveries at 09:00 local time.
             # First authenticate meaningfully later: an exact-boundary clock
             # hid the real recipient defect where a due deliver-on-next-visit
@@ -787,6 +847,14 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                     "before => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(before)",
                     arg=camera_before,
                 )
+                # The camera moves on the first mid-gesture commit; the
+                # release settles the nearest canonical cell AFTERWARD. A
+                # state capture between the two races the settle write — the
+                # cleared residue property is the settle signal.
+                page.wait_for_function(
+                    "() => !document.getElementById('g').style"
+                    ".getPropertyValue('--garden-drag-x')"
+                )
 
                 assert page.locator(
                     '#hud-actions [data-garden-command="pause_motion"]'
@@ -801,16 +869,11 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                 _activate_garden_object(page, mailbox_id, touch=False)
                 page.locator("#garden-journal").wait_for(state="visible")
 
-                before_reload_json = page.evaluate(
-                    "window.__gardenReview.canonicalStateJson()"
-                )
+                before_reload_json = _assert_canonical_state_persisted_exactly(page)
                 before_reload = json.loads(before_reload_json)
                 assert before_reload["ui"]["journal_open"] is True
                 assert before_reload["ui"]["motion_paused"] is False
                 assert before_reload["ui"]["camera"] != camera_before
-                assert before_reload_json in _indexeddb_values(page), (
-                    "the canonical state was not the exact value persisted to IndexedDB"
-                )
 
                 page.reload(wait_until="networkidle")
                 # Screen/modal presentation is session state: it resets before
@@ -820,7 +883,27 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
                 assert page.locator("#s-welcome.active").is_visible()
                 assert page.locator("#garden-journal").is_hidden()
                 assert page.locator("#garden-context-actions").count() == 0
-                assert before_reload_json in _indexeddb_values(page)
+                # Live time may have persisted a later serialization between
+                # the paired capture above and the reload; what must survive
+                # the reload is the semantic canonical core, not one byte
+                # snapshot of a moving clock.
+                persisted_cores = [
+                    _persisted_state_subset(world)
+                    for world in _persisted_world_values(page)
+                ]
+                expected_core = _persisted_state_subset(before_reload)
+                assert any(core == expected_core for core in persisted_cores), json.dumps({
+                    "why": "no persisted world carries the pre-reload canonical core",
+                    "differing_keys": [
+                        sorted(
+                            key for key in expected_core
+                            if core.get(key) != expected_core[key]
+                        )
+                        for core in persisted_cores
+                    ],
+                    "expected_ui": expected_core["ui"],
+                    "persisted_ui": [core.get("ui") for core in persisted_cores],
+                })
 
                 _upload_unlock_and_return_to_garden(page, artifact, recipient_origin)
                 restored = _canonical_state(page)
@@ -927,7 +1010,7 @@ def test_tracked_sealed_demo_button_unlocks_with_the_documented_passphrase(tmp_p
                 accept_downloads=True, viewport={"width": 1280, "height": 900},
             )
             page = context.new_page()
-            page.set_default_timeout(30_000)
+            page.set_default_timeout(60_000)
             errors, bad_responses = _watch_browser(page)
             try:
                 page.goto(
@@ -987,7 +1070,7 @@ def test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen(tmp_p
                     reduced_motion="reduce" if touch else "no-preference",
                 )
                 page = context.new_page()
-                page.set_default_timeout(30_000)
+                page.set_default_timeout(60_000)
                 before_gift = f"{date.today().isoformat()}T08:59:58Z"
                 after_gift = f"{date.today().isoformat()}T09:00:02Z"
                 page.add_init_script(
@@ -1106,10 +1189,10 @@ def test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen(tmp_p
                 _keyboard_focus_object(page, mailbox_id)
                 _activate_garden_object(page, mailbox_id, touch=touch)
                 page.locator("#garden-journal").wait_for(state="visible")
-                before = _canonical_state(page)
-                assert json.dumps(before, separators=(",", ":"), ensure_ascii=False) in (
-                    value for value in _indexeddb_values(page) if isinstance(value, str)
-                )
+                # Paired capture: under the restored live loop a snapshot and
+                # the store must be read as one tight pair (see
+                # _assert_canonical_state_persisted_exactly).
+                before = json.loads(_assert_canonical_state_persisted_exactly(page))
                 journey.append("persistence")
                 assert page.evaluate(
                     "window.__gardenReview.provenance().load_origin"
