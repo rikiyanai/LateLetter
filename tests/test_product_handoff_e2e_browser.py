@@ -705,7 +705,16 @@ def test_one_browser_author_download_reaches_desktop_and_mobile_recipients(tmp_p
     assert {result["composition_fingerprint"] for result in results} == {
         expected_fingerprint,
     }
-    assert {result["composition_verdict"] for result in results} == {"not_reviewed"}
+    # The flower is seed-selected from the accepted pool, so a fresh bundle
+    # occasionally reproduces the exact composition the operator already
+    # reviewed — composition_acceptance then correctly answers "accepted"
+    # (records bind verdicts to revision:fingerprint). The device-independent
+    # law is that one artifact yields ONE verdict everywhere and that a
+    # rejected composition never reaches a recipient; "not_reviewed" versus
+    # "accepted" is a property of the random seed, not of the product.
+    verdicts = {result["composition_verdict"] for result in results}
+    assert len(verdicts) == 1, verdicts
+    assert verdicts <= {"not_reviewed", "accepted"}, verdicts
     assert {result["flower_position"] for result in results} == {expected_position}
     assert all(result["capture"].is_file() for result in results)
     assert all(result["control_capture"].is_file() for result in results)
