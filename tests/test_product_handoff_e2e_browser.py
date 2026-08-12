@@ -107,6 +107,18 @@ def _watch_browser(page) -> tuple[list[str], list[str]]:
     return errors, bad_responses
 
 
+def _launch_product_browser(driver):
+    """Prefer bundled Chromium, then use the installed Chrome proven by Garden E2E."""
+    failures: list[str] = []
+    for options in ({}, {"channel": "chrome"}):
+        try:
+            return driver.chromium.launch(**options)
+        except Exception as failure:  # pragma: no cover - environment dependent
+            label = "bundled Chromium" if not options else "system Google Chrome"
+            failures.append(f"{label}: {failure}")
+    pytest.skip("no product browser is available; " + " | ".join(failures))
+
+
 def _png_dimensions(path: Path) -> tuple[int, int]:
     payload = path.read_bytes()
     assert payload.startswith(b"\x89PNG\r\n\x1a\n")
@@ -177,11 +189,11 @@ def _activate_garden_object(page, object_id: str, *, touch: bool) -> None:
         page.mouse.click(x, y)
 
 
-def _drag_garden(page, *, touch: bool) -> None:
+def _drag_garden(page, *, touch: bool, deltas=None) -> None:
     """Pan through a real mouse/pointer or native CDP touch sequence."""
     before = page.evaluate("window.__gardenReview.camera()")
     gesture = page.evaluate(
-        """() => {
+        """deltas => {
           const garden = document.querySelector('#g');
           const exposed = (x, y) => {
             const element = document.elementFromPoint(x, y);
@@ -190,7 +202,6 @@ def _drag_garden(page, *, touch: bool) -> None:
               && !element.closest('button, #garden-journal')
             );
           };
-          const deltas = [[-80, 0], [80, 0], [0, -80], [0, 80]];
           for (let y = 50; y < innerHeight - 50; y += 40) {
             for (let x = 50; x < innerWidth - 50; x += 40) {
               for (const [dx, dy] of deltas) {
@@ -200,7 +211,8 @@ def _drag_garden(page, *, touch: bool) -> None:
             }
           }
           return null;
-        }"""
+        }""",
+        deltas if deltas is not None else [[-80, 0], [80, 0], [0, -80], [0, 80]],
     )
     assert gesture is not None, "no exposed Garden surface could receive a drag"
     start_x, start_y = gesture["start"]
@@ -231,6 +243,46 @@ def _drag_garden(page, *, touch: bool) -> None:
         "before => JSON.stringify(window.__gardenReview.camera()) !== JSON.stringify(before)",
         arg=before,
     )
+    # The camera moves on the first mid-gesture commit, but the gesture is
+    # only finished when the release settles the nearest canonical cell and
+    # clears the session-only residue. Sampling state before that settle races
+    # a trailing canonical write; the cleared property is the settle signal.
+    page.wait_for_function(
+        "() => !document.getElementById('g').style"
+        ".getPropertyValue('--garden-drag-x')"
+    )
+
+
+def _pan_to_garden_object(page, object_id: str, *, touch: bool) -> None:
+    """Bring an off-frame object into the composed picture with drags alone.
+
+    A phone is a narrower camera slice of the same one-cell world, so the
+    product route to a fixture the initial frame cannot hold is the gesture a
+    person actually makes: pan toward it. Touch parity is proven with the same
+    input modality end to end -- no keyboard framing stands in for reach.
+    """
+    for _ in range(24):
+        if page.evaluate(
+            "id => window.__gardenReview.objectArtRectPixels(id) !== null",
+            object_id,
+        ):
+            return
+        camera = page.evaluate("window.__gardenReview.camera()")
+        target = page.evaluate(
+            "id => window.__gardenReview.positions()"
+            ".find(item => item.id === id)?.position ?? null",
+            object_id,
+        )
+        assert target is not None, f"{object_id} is not a projected object"
+        move_x, move_y = target[0] - camera[0], target[1] - camera[1]
+        # Content follows the finger: moving the camera toward +x means the
+        # finger travels left. Take the axis with the larger remaining gap.
+        if abs(move_x) >= abs(move_y):
+            finger = [-80 if move_x > 0 else 80, 0]
+        else:
+            finger = [0, -80 if move_y > 0 else 80]
+        _drag_garden(page, touch=touch, deltas=[finger])
+    raise AssertionError(f"panning never brought {object_id} into the frame")
 
 
 def _keyboard_focus_object(page, object_id: str) -> None:
@@ -489,6 +541,11 @@ def _open_exact_artifact_as_recipient(
             fixture["fixture_id"] for fixture in tended["fixtures"]
             if fixture["catalog_id"] == "mailbox"
         )
+        # A phone is a narrower camera slice of the same one-cell world. Reach
+        # the mailbox through the product's own pan gesture in the SAME input
+        # modality as the activation that follows; keyboard framing would
+        # prove touch activation without proving touch reach.
+        _pan_to_garden_object(page, mailbox_id, touch=touch)
         _activate_garden_object(page, mailbox_id, touch=touch)
         page.locator("#garden-journal").wait_for(state="visible")
         assert page.locator("#garden-journal-list li").count() >= 1
@@ -559,10 +616,7 @@ def _open_exact_artifact_as_recipient(
 def test_one_browser_author_download_reaches_desktop_and_mobile_recipients(tmp_path):
     with _product_servers(tmp_path) as (author_origin, recipient_origin):
         with playwright_api.sync_playwright() as driver:
-            try:
-                browser = driver.chromium.launch()
-            except Exception as failure:  # pragma: no cover - environment dependent
-                pytest.skip(f"installed Chromium is unavailable: {failure}")
+            browser = _launch_product_browser(driver)
             try:
                 author_context = browser.new_context(
                     accept_downloads=True,
@@ -669,10 +723,7 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
     """One ordinary sealed product path persists interaction and scheduled gift state."""
     with _product_servers(tmp_path) as (author_origin, recipient_origin):
         with playwright_api.sync_playwright() as driver:
-            try:
-                browser = driver.chromium.launch()
-            except Exception as failure:  # pragma: no cover - environment dependent
-                pytest.skip(f"installed Chromium is unavailable: {failure}")
+            browser = _launch_product_browser(driver)
             context = browser.new_context(
                 accept_downloads=True,
                 viewport={"width": 1280, "height": 900},
@@ -792,10 +843,7 @@ def test_canonical_garden_state_survives_reload_reupload_and_reauthentication(tm
 def test_browser_append_keeps_the_old_receipt_and_old_ciphertext(tmp_path):
     with _product_servers(tmp_path) as (author_origin, recipient_origin):
         with playwright_api.sync_playwright() as driver:
-            try:
-                browser = driver.chromium.launch()
-            except Exception as failure:  # pragma: no cover
-                pytest.skip(f"installed Chromium is unavailable: {failure}")
+            browser = _launch_product_browser(driver)
             context = browser.new_context(
                 accept_downloads=True, viewport={"width": 1280, "height": 900},
             )
@@ -865,10 +913,7 @@ def test_tracked_sealed_demo_button_unlocks_with_the_documented_passphrase(tmp_p
 
     with _product_servers(tmp_path) as (_author_origin, recipient_origin):
         with playwright_api.sync_playwright() as driver:
-            try:
-                browser = driver.chromium.launch()
-            except Exception as failure:  # pragma: no cover
-                pytest.skip(f"installed Chromium is unavailable: {failure}")
+            browser = _launch_product_browser(driver)
             context = browser.new_context(
                 accept_downloads=True, viewport={"width": 1280, "height": 900},
             )
@@ -913,10 +958,7 @@ def test_tracked_sealed_demo_button_unlocks_with_the_documented_passphrase(tmp_p
 def test_final_one_artifact_traverses_author_desktop_phone_gift_and_reopen(tmp_path):
     with _product_servers(tmp_path) as (author_origin, recipient_origin):
         with playwright_api.sync_playwright() as driver:
-            try:
-                browser = driver.chromium.launch()
-            except Exception as failure:  # pragma: no cover
-                pytest.skip(f"installed Chromium is unavailable: {failure}")
+            browser = _launch_product_browser(driver)
             author_context = browser.new_context(
                 accept_downloads=True, viewport={"width": 1400, "height": 950},
             )
