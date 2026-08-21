@@ -1,0 +1,56 @@
+{
+  "purpose": "The operator's DIRECT ACCEPTANCE of the Garden, recorded in four separate verdicts. This is the one gate no machine can clear: every other check in this repository measures structure, and none of them can say whether the Garden is worth looking at.",
+  "why_four_and_not_one": "They fail independently and for different reasons. Every drawing can be accepted while the composition they form is wrong. A correct still composition can be dead in motion. And a garden can be dense, correct and moving and still not feel like anything, which is the only one that actually matters. Collapsing them into a single 'approved' would let three unexamined judgements ride on whichever one was easiest to give.",
+  "what_cannot_stand_in_for_a_verdict": [
+    "a test suite with no failures",
+    "a reference composer or an optional guard",
+    "a registry file, a static analyzer, or a density number",
+    "a DOM dump or an unopened screenshot",
+    "a localhost flag or a successful build",
+    "the assistant's opinion of a capture it opened"
+  ],
+  "how_a_verdict_is_recorded": "Watch the package named in `evidence`, at both required sizes, all the way through. Then set `verdict` to accepted or rejected, `decided_by` to the operator, `decided_at_utc`, and for a rejection say what is wrong in `notes`. A verdict binds to the exact evidence sha256 it was given: re-rendering the product produces new artifacts and inherits nothing, because approval attaches to what was actually watched.",
+  "vocabulary": [
+    "accepted",
+    "rejected",
+    "not_reviewed"
+  ],
+  "operator": null,
+  "who_the_operator_is": "The person whose judgement these four verdicts record, written here once so that `decided_by` can be checked against something instead of merely being non-empty. While this is null NO verdict can be accepted, which is the intended state: an approval by nobody in particular is not an approval, and only the operator can say who the operator is. The assistant must not fill this in.",
+  "where_evidence_must_live": "docs/visual-review/ -- a verdict binds to an artifact that was watched. A registry file or a JSON document whose digest happens to match is not evidence of having watched anything, and the checker now refuses it.",
+  "verdicts": {
+    "assets": {
+      "question": "Is each individual drawing right -- glyph forms, palette, the states each object can be in?",
+      "verdict": "not_reviewed",
+      "evidence": null,
+      "decided_by": null,
+      "decided_at_utc": null,
+      "notes": "Ten fixtures carry per-asset acceptance in docs/garden-asset-acceptance.json. No plant and no animal does. This slot covers the scene as drawn today; it is not a substitute for those per-asset rows."
+    },
+    "composition": {
+      "question": "Is this the right starter -- which objects, how many, where, and how much empty space between them?",
+      "verdict": "not_reviewed",
+      "evidence": null,
+      "decided_by": null,
+      "decided_at_utc": null,
+      "notes": "Binds to a composition revision AND its authored roster/anchor fingerprint, through docs/garden-composition-acceptance.json. The current 2-plant, 5-fixture starter is not accepted merely by being current."
+    },
+    "motion": {
+      "question": "Does it live? Sway, wind, weather, calm, and the transitions between them, watched moving rather than as stills.",
+      "verdict": "not_reviewed",
+      "evidence": null,
+      "decided_by": null,
+      "decided_at_utc": null,
+      "notes": "Requires at least ten seconds of real motion at 1600x1000 and 390x844. As of 2026-08-03 the mobile capture is motionless, which is a recorded defect rather than something for this slot to excuse."
+    },
+    "emotional_moments": {
+      "question": "The five moments: the waiting, the delivery, the animal trust arc, post-completion, and item discovery.",
+      "verdict": "not_reviewed",
+      "evidence": null,
+      "decided_by": null,
+      "decided_at_utc": null,
+      "notes": "Cannot be reviewed yet and must not be marked otherwise: delivery, bonded-animal delivery, item discovery and the memorial state all depend on plant and animal art that carries no verdict, so there is nothing honest to show."
+    }
+  },
+  "standing": "ALL FOUR are not_reviewed as of 2026-08-03, and a root-product release is blocked while any of them is. Nothing in this file has ever been accepted."
+}

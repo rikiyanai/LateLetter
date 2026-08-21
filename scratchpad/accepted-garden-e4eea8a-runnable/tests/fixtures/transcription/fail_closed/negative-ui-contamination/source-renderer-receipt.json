@@ -1,0 +1,20 @@
+{
+  "fixture_id": "negative-ui-contamination",
+  "renderer": "Pillow",
+  "pillow_version": "12.1.0",
+  "font_path": "/Library/Fonts/DejaVuSansMono.ttf",
+  "font_sha256": "dfbac4c793ca4b896c34af5c7ccbbaf37924b46cd521a5ecff9130b9c331f575",
+  "font_size_px": 22,
+  "foreground_rgb": [
+    34,
+    37,
+    41
+  ],
+  "background_rgb": [
+    255,
+    255,
+    255
+  ],
+  "degraded": false,
+  "generator": "tests/fixtures/transcription/build_corpus.py"
+}

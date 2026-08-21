@@ -1,0 +1,371 @@
+{
+  "adapter": "structural-unicode-row",
+  "adapter_counters": {
+    "budget_exceeded": false,
+    "memory_max_rss": 317538304,
+    "proposal_hypothesis_count": 16,
+    "retained_proposal_state_count": 1592,
+    "run_count": 32,
+    "unsupported_status": [
+      "run_level_budget_exceeded"
+    ]
+  },
+  "authority": "diagnostic_only",
+  "benchmark_status": "blocked_release_coverage",
+  "budget_seconds": 90.0,
+  "environment_lock_hash": "d2e0b9561eac6fb7072e15e3786abd052bfe8e659e63790684837f6387da6b40",
+  "error": null,
+  "fixture": "positive-degraded-fixed",
+  "ground_truth_passed_to_adapters": false,
+  "rss_max_platform_units": 317538304,
+  "rss_unit_note": "resource.getrusage ru_maxrss; bytes on macOS, kilobytes on Linux",
+  "runtime_ms": 67116.688,
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "stage_costs": [
+    {
+      "cumulative_time_ms": 325960.97,
+      "owner": "other_python",
+      "primitive_calls": 135730704,
+      "total_calls": 136503381,
+      "total_time_ms": 54419.796
+    },
+    {
+      "cumulative_time_ms": 201348.717,
+      "owner": "benchmark_harness",
+      "primitive_calls": 3,
+      "total_calls": 3,
+      "total_time_ms": 3.726
+    },
+    {
+      "cumulative_time_ms": 93729.435,
+      "owner": "structural_span_lattice",
+      "primitive_calls": 158253,
+      "total_calls": 158253,
+      "total_time_ms": 9640.478
+    },
+    {
+      "cumulative_time_ms": 12719.269,
+      "owner": "geometry",
+      "primitive_calls": 2042274,
+      "total_calls": 2042274,
+      "total_time_ms": 1163.846
+    },
+    {
+      "cumulative_time_ms": 6831.324,
+      "owner": "raster_comparison",
+      "primitive_calls": 232347,
+      "total_calls": 232347,
+      "total_time_ms": 1869.518
+    },
+    {
+      "cumulative_time_ms": 12.023,
+      "owner": "coverage_matrix",
+      "primitive_calls": 49,
+      "total_calls": 49,
+      "total_time_ms": 3.48
+    }
+  ],
+  "status": "completed",
+  "top_functions_by_self_time": [
+    {
+      "cumulative_time_ms": 10235.027,
+      "file": "~",
+      "function": "<method 'reduce' of 'numpy.ufunc' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 8976573,
+      "self_time_ms": 10235.027,
+      "total_calls": 8976573
+    },
+    {
+      "cumulative_time_ms": 12708.938,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/_methods.py",
+      "function": "_mean",
+      "line": 115,
+      "owner": "other_python",
+      "primitive_calls": 3106825,
+      "self_time_ms": 5014.908,
+      "total_calls": 3106825
+    },
+    {
+      "cumulative_time_ms": 57102.863,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_run_level_variants",
+      "line": 1780,
+      "owner": "structural_span_lattice",
+      "primitive_calls": 32,
+      "self_time_ms": 4836.132,
+      "total_calls": 32
+    },
+    {
+      "cumulative_time_ms": 17042.443,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_source_topology_bonus",
+      "line": 746,
+      "owner": "structural_span_lattice",
+      "primitive_calls": 112128,
+      "self_time_ms": 4196.538,
+      "total_calls": 112128
+    },
+    {
+      "cumulative_time_ms": 15137.423,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_structural_glyph_penalty",
+      "line": 961,
+      "owner": "other_python",
+      "primitive_calls": 112128,
+      "self_time_ms": 4040.563,
+      "total_calls": 112128
+    },
+    {
+      "cumulative_time_ms": 3036.646,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/_methods.py",
+      "function": "_count_reduce_items",
+      "line": 73,
+      "owner": "other_python",
+      "primitive_calls": 3322332,
+      "self_time_ms": 2690.972,
+      "total_calls": 3322332
+    },
+    {
+      "cumulative_time_ms": 30356.73,
+      "file": "~",
+      "function": "<built-in method builtins.sorted>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 20566,
+      "self_time_ms": 2689.33,
+      "total_calls": 20566
+    },
+    {
+      "cumulative_time_ms": 3237.728,
+      "file": "~",
+      "function": "<built-in method numpy.asarray>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 281151,
+      "self_time_ms": 1615.927,
+      "total_calls": 281151
+    },
+    {
+      "cumulative_time_ms": 2293.833,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/_methods.py",
+      "function": "_var",
+      "line": 148,
+      "owner": "other_python",
+      "primitive_calls": 215507,
+      "self_time_ms": 1431.559,
+      "total_calls": 215507
+    },
+    {
+      "cumulative_time_ms": 10004.115,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/_core/fromnumeric.py",
+      "function": "mean",
+      "line": 3699,
+      "owner": "other_python",
+      "primitive_calls": 2087772,
+      "self_time_ms": 1350.027,
+      "total_calls": 2087772
+    },
+    {
+      "cumulative_time_ms": 7642.854,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_normalized_shape",
+      "line": 692,
+      "owner": "other_python",
+      "primitive_calls": 112349,
+      "self_time_ms": 1319.854,
+      "total_calls": 112349
+    },
+    {
+      "cumulative_time_ms": 1422.0,
+      "file": "~",
+      "function": "<built-in method builtins.isinstance>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 9829019,
+      "self_time_ms": 1174.609,
+      "total_calls": 9912327
+    },
+    {
+      "cumulative_time_ms": 852.176,
+      "file": "~",
+      "function": "<method 'get' of 'dict' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 6814576,
+      "self_time_ms": 852.176,
+      "total_calls": 6814576
+    },
+    {
+      "cumulative_time_ms": 1505.434,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_mask_from_pixels",
+      "line": 2882,
+      "owner": "raster_comparison",
+      "primitive_calls": 4808,
+      "self_time_ms": 843.547,
+      "total_calls": 4808
+    },
+    {
+      "cumulative_time_ms": 2996.686,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py",
+      "function": "_measure_mixed_width_display",
+      "line": 962,
+      "owner": "geometry",
+      "primitive_calls": 1,
+      "self_time_ms": 840.479,
+      "total_calls": 1
+    },
+    {
+      "cumulative_time_ms": 756.297,
+      "file": "~",
+      "function": "<method 'append' of 'list' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 8390674,
+      "self_time_ms": 756.297,
+      "total_calls": 8390674
+    },
+    {
+      "cumulative_time_ms": 749.497,
+      "file": "~",
+      "function": "<built-in method builtins.len>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 9765823,
+      "self_time_ms": 749.478,
+      "total_calls": 9765924
+    },
+    {
+      "cumulative_time_ms": 795.779,
+      "file": "/opt/homebrew/lib/python3.14/site-packages/numpy/lib/_function_base_impl.py",
+      "function": "diff",
+      "line": 1402,
+      "owner": "other_python",
+      "primitive_calls": 214191,
+      "self_time_ms": 672.25,
+      "total_calls": 214191
+    },
+    {
+      "cumulative_time_ms": 621.713,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "<genexpr>",
+      "line": 2889,
+      "owner": "other_python",
+      "primitive_calls": 10381920,
+      "self_time_ms": 621.713,
+      "total_calls": 10381920
+    },
+    {
+      "cumulative_time_ms": 609.662,
+      "file": "~",
+      "function": "<built-in method builtins.max>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 4708283,
+      "self_time_ms": 609.634,
+      "total_calls": 4708283
+    },
+    {
+      "cumulative_time_ms": 1450.927,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/schema.py",
+      "function": "_jsonable",
+      "line": 21,
+      "owner": "other_python",
+      "primitive_calls": 7961,
+      "self_time_ms": 608.281,
+      "total_calls": 633111
+    },
+    {
+      "cumulative_time_ms": 745.675,
+      "file": "~",
+      "function": "<method 'sort' of 'list' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 5107,
+      "self_time_ms": 592.149,
+      "total_calls": 5107
+    },
+    {
+      "cumulative_time_ms": 530.263,
+      "file": "~",
+      "function": "<built-in method builtins.hasattr>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 4165628,
+      "self_time_ms": 530.263,
+      "total_calls": 4165628
+    },
+    {
+      "cumulative_time_ms": 4013.041,
+      "file": "~",
+      "function": "<method 'sum' of 'numpy.ndarray' objects>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 2135630,
+      "self_time_ms": 505.337,
+      "total_calls": 2135630
+    },
+    {
+      "cumulative_time_ms": 1285.563,
+      "file": "/Users/r/Library/Python/3.14/lib/python/site-packages/PIL/Image.py",
+      "function": "tobytes",
+      "line": 748,
+      "owner": "other_python",
+      "primitive_calls": 110666,
+      "self_time_ms": 495.647,
+      "total_calls": 110666
+    },
+    {
+      "cumulative_time_ms": 475.59,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "<lambda>",
+      "line": 2008,
+      "owner": "other_python",
+      "primitive_calls": 6123452,
+      "self_time_ms": 475.59,
+      "total_calls": 6123452
+    },
+    {
+      "cumulative_time_ms": 27134.551,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "rendered_cost",
+      "line": 2066,
+      "owner": "other_python",
+      "primitive_calls": 68720,
+      "self_time_ms": 461.303,
+      "total_calls": 68720
+    },
+    {
+      "cumulative_time_ms": 464.045,
+      "file": "~",
+      "function": "<built-in method builtins.issubclass>",
+      "line": 0,
+      "owner": "other_python",
+      "primitive_calls": 4027290,
+      "self_time_ms": 448.508,
+      "total_calls": 4027290
+    },
+    {
+      "cumulative_time_ms": 2143.404,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_template_run_residual",
+      "line": 3612,
+      "owner": "raster_comparison",
+      "primitive_calls": 1592,
+      "self_time_ms": 434.885,
+      "total_calls": 1592
+    },
+    {
+      "cumulative_time_ms": 17784.513,
+      "file": "/Users/r/Projects/LateLetter/src/lateletter/transcription/recognition.py",
+      "function": "_cluster_glyph_candidates",
+      "line": 1127,
+      "owner": "other_python",
+      "primitive_calls": 1400,
+      "self_time_ms": 420.789,
+      "total_calls": 1400
+    }
+  ]
+}

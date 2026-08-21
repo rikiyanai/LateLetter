@@ -183,3 +183,20 @@ Simple bee (2-char):
 
 Frame 1:    Frame 2:    Frame 3:    Frame 4:
   _/\~       ~/\_       _/\~       ~/\_
+
+
+── SNAIL (bonus ground creature) ─────────────────────────────
+   Hand-typed keyframes + inbetweens (Stone Story method)
+   Crawl cycle: reach -> pull shell -> reach -> bob
+   Implemented in anim_snail.py (mirrored frames for L/R)
+
+Snail crawl loop (4 frames, facing right):
+
+Frame 1 (reach):  Frame 2 (pull):   Frame 3 (reach):  Frame 4 (bob):
+ @    @            @  @              @    @            @  @
+  \  /              ||                \  /              \/
+ _/"--"\_          _/"--"\_          _/"--"\_          _/"--"\_
+/________\        /_______\         /________\        /________\
+
+Movement: one character of forward progress per 8 frames.
+Turnaround: mirror all frames horizontally (swap / and \, reverse lines).

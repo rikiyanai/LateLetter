@@ -1,0 +1,80 @@
+{
+  "calibration_count": 10,
+  "calibrations": {
+    "3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5": {
+      "artifact_path": "3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5/calibration.json",
+      "artifact_sha256": "142ada4a364854faba5676c0c8382dcf5ffaa2673fbae7d72abb011d22ad7609",
+      "receipt_path": "3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5/receipt.json",
+      "receipt_sha256": "07fc84a25e18eeffbd827f8cddf468023677bc4706cf0bce60dad838a2b1df5f",
+      "status": "router_emitted"
+    },
+    "3e2fcc96a30393245c68f88e2ebc3cf924d46ba9a67e725956bf630fd375d4b1": {
+      "artifact_path": "3e2fcc96a30393245c68f88e2ebc3cf924d46ba9a67e725956bf630fd375d4b1/calibration.json",
+      "artifact_sha256": "aea8a3df4b121d7bb158a13a6e4b622024a084172e4fc16bc5fd20ddcc219126",
+      "receipt_path": "3e2fcc96a30393245c68f88e2ebc3cf924d46ba9a67e725956bf630fd375d4b1/receipt.json",
+      "receipt_sha256": "23f614a63b8486629756002697baf12e1422585ae2d3c7f36a2ad5965ae8cd93",
+      "status": "router_emitted"
+    },
+    "4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b": {
+      "artifact_path": "4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b/calibration.json",
+      "artifact_sha256": "af16f84a21a69dc5f93c5dca207c8eb52a711e117971b642ed9cf938db4def09",
+      "receipt_path": "4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b/receipt.json",
+      "receipt_sha256": "035b0edaee1adc6ef85a9add2d3e41618f60fed14829a3bcd57f50b1d85cc36f",
+      "status": "router_emitted"
+    },
+    "7bef5889725fa6746d9ba624be98360ca8b53eabeace7a8f898c269eec591754": {
+      "artifact_path": "7bef5889725fa6746d9ba624be98360ca8b53eabeace7a8f898c269eec591754/calibration.json",
+      "artifact_sha256": "58ee3027f8302a5812a6d6d6b5a93a3624fd5370950f6dd30f306d9c8a3873b7",
+      "receipt_path": "7bef5889725fa6746d9ba624be98360ca8b53eabeace7a8f898c269eec591754/receipt.json",
+      "receipt_sha256": "90106fc9c8960c27289a4299988f18b72921ac8cda09539877c0c4be73d9834d",
+      "status": "router_emitted"
+    },
+    "8154e782230e033cafa392e9a75955198da31ed74ed095ce224edfa59caea29b": {
+      "artifact_path": "8154e782230e033cafa392e9a75955198da31ed74ed095ce224edfa59caea29b/calibration.json",
+      "artifact_sha256": "1f780eb2e5a8681506ee40ca06ef0008278d36c228753e94373682273b774e00",
+      "receipt_path": "8154e782230e033cafa392e9a75955198da31ed74ed095ce224edfa59caea29b/receipt.json",
+      "receipt_sha256": "2c0b9feda394645206da4ce1c51c57653e60496137ae6ce06d43dc476ae56fdf",
+      "status": "router_emitted"
+    },
+    "8a87b1d7f53a93aa297a36f11fe916eddf71afe470f3615abd931c5dac7f001b": {
+      "artifact_path": "8a87b1d7f53a93aa297a36f11fe916eddf71afe470f3615abd931c5dac7f001b/calibration.json",
+      "artifact_sha256": "c9f5a9ed0c477d92f0f89b523d676d083979691f2a3e59e1928518a45f8fc1c3",
+      "receipt_path": "8a87b1d7f53a93aa297a36f11fe916eddf71afe470f3615abd931c5dac7f001b/receipt.json",
+      "receipt_sha256": "009b1f9341c2158ba1ae4229599d83f261ccc117185aee71c8dc422023d18654",
+      "status": "router_emitted"
+    },
+    "976162d43548bbd8f59c9944c98c78e69a389eb1204438d14703cb355185c17f": {
+      "artifact_path": "976162d43548bbd8f59c9944c98c78e69a389eb1204438d14703cb355185c17f/calibration.json",
+      "artifact_sha256": "891505b1c8626d56bdf55b35bbeae570605f144dd68fe67ec88da8fdde56b5d8",
+      "receipt_path": "976162d43548bbd8f59c9944c98c78e69a389eb1204438d14703cb355185c17f/receipt.json",
+      "receipt_sha256": "e47bca2c91b16c2a6628cd7d03d7073e2873835d46dff8a72c5170723c6d3ff0",
+      "status": "router_emitted"
+    },
+    "9fee60dd442cc33cf875916a571d213ee06321c5898ee6020e32fad96fad536d": {
+      "artifact_path": "9fee60dd442cc33cf875916a571d213ee06321c5898ee6020e32fad96fad536d/calibration.json",
+      "artifact_sha256": "870ccf1a2c12b330776d8e70a74ea41c4f53870d34898917f053f1632cbfd4d7",
+      "receipt_path": "9fee60dd442cc33cf875916a571d213ee06321c5898ee6020e32fad96fad536d/receipt.json",
+      "receipt_sha256": "d5613d9099ba8e72e16676ccbcd957d0c86f098f65d5f6aeabc9e0cde711bb8e",
+      "status": "router_emitted"
+    },
+    "bfa54972c6b3d4cd297fe16a451d9eacae47fe07b84149447cd2315721402112": {
+      "artifact_path": "bfa54972c6b3d4cd297fe16a451d9eacae47fe07b84149447cd2315721402112/calibration.json",
+      "artifact_sha256": "bafd38420be35cf43709939a5b3d1e3f0b0c70db611fee3fc16fba40cee1bfe0",
+      "receipt_path": "bfa54972c6b3d4cd297fe16a451d9eacae47fe07b84149447cd2315721402112/receipt.json",
+      "receipt_sha256": "beab115eb619311d62ea8da77fdd26c5e865202095357ad79a2b09733941ecb7",
+      "status": "router_emitted"
+    },
+    "e37d0eb6da6755840401c9cc00d362e2da761b6df51de81eb2a069d4cc410dda": {
+      "artifact_path": "e37d0eb6da6755840401c9cc00d362e2da761b6df51de81eb2a069d4cc410dda/calibration.json",
+      "artifact_sha256": "ee89640414f7f3b7b905513afc5f75495b8a3311d309272d1b1e9e2efd5d32a0",
+      "receipt_path": "e37d0eb6da6755840401c9cc00d362e2da761b6df51de81eb2a069d4cc410dda/receipt.json",
+      "receipt_sha256": "68f023dd8562123902d72ae34950692464451a8990ba1bb082a166b8da64e2b7",
+      "status": "router_emitted"
+    }
+  },
+  "emitter": {
+    "name": "LateLetter router lattice calibration emitter",
+    "version": "router-calibration-emitter-1"
+  },
+  "schema": "router-emitted-calibration-index-1"
+}

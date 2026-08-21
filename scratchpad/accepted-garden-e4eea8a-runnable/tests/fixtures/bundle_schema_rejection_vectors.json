@@ -1,0 +1,10 @@
+[
+  {"name": "v2_legacy_gifts", "version": 2, "mutation": "add_legacy_gift"},
+  {"name": "boolean_seed", "version": 2, "mutation": "boolean_seed"},
+  {"name": "v1_missing_message_kdf", "version": 1, "mutation": "remove_message_kdf"},
+  {"name": "message_missing_date", "version": 1, "mutation": "remove_message_date"},
+  {"name": "v2_missing_auth_kdf", "version": 2, "mutation": "remove_auth_kdf"},
+  {"name": "v2_missing_program", "version": 2, "mutation": "remove_program"},
+  {"name": "notification_array", "version": 1, "mutation": "notification_array"},
+  {"name": "unsupported_version", "version": 1, "mutation": "unsupported_version"}
+]

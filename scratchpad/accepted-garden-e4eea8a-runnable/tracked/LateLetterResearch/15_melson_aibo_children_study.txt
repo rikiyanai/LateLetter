@@ -1,0 +1,30 @@
+Source: Children's Behavior toward and Understanding of Robotic and Living Dogs
+Authors: Gail F. Melson et al.
+Journal: Journal of Applied Developmental Psychology 30(2), 2009
+Record: https://eric.ed.gov/?id=EJ830357
+DOI page: https://www.sciencedirect.com/science/article/abs/pii/S0193397308001329
+Accessed: 2026-07-30
+Type: Peer-reviewed empirical study
+
+Relevant findings
+-----------------
+
+The study compared children's interaction with Sony AIBO and a living dog.
+Children distinguished the living dog in several judgments and physical
+behaviors, yet many still attributed mental states, sociality and moral standing
+to AIBO and interacted with it socially. Autonomous embodied behavior can
+therefore support meaningful social interpretation without erasing the
+artifact/living-animal distinction.
+
+LateLetter transfer
+-------------------
+
+Consistent autonomous behavior, recognition and memory deserve ethical care.
+The product should clearly remain a designed virtual animal and avoid claims of
+sentience or genuine emotion.
+
+Limit
+-----
+
+This study involved 72 children and a physical robot. It does not prove the
+same response for adults, grief contexts, text renderers or LateLetter.

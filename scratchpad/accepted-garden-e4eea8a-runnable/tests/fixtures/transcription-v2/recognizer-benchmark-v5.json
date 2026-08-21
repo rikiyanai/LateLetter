@@ -1,0 +1,3095 @@
+{
+  "capability_profiles": [
+    {
+      "adapter": "tesseract-offline",
+      "adapter_version": "5.5.1",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "extended-grapheme-candidate"
+      ],
+      "license": "Apache-2.0",
+      "model_hashes": {
+        "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+        "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+        "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+        "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+        "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+        "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548"
+      },
+      "offline": true,
+      "output_hash": "d2164aa7e29ed8822ae14de1c73f08f63a5340e2db3ff5ebba8b3b671f65b29a",
+      "runtime_hashes": {
+        "tesseract_binary": "f6684b4e366dfc22bc0f1a509a6c237df3833af4c7105ecd78b9c998a5ab4656"
+      },
+      "runtime_network": false,
+      "runtime_versions": {
+        "python": "3.14.3",
+        "tesseract": "5.5.1"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [
+        "arabic",
+        "ascii",
+        "cjk",
+        "digits",
+        "japanese",
+        "latin",
+        "vertical_text"
+      ],
+      "tested_fixture_families": [
+        "arabic",
+        "ascii",
+        "cjk",
+        "japanese",
+        "latin"
+      ],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "joined_text_art_runs",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "fixed-lattice-structural",
+      "adapter_version": "1",
+      "emoji_coverage": [],
+      "grapheme_coverage": [
+        "ascii-structural"
+      ],
+      "license": "CC0-1.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "b4870c7e126933be2d7266021e0e8394428a2f9c7bf58fba3b9e1b6966fec315",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {},
+      "status": "proposal_only",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "ascii",
+        "digits"
+      ],
+      "tested_fixture_families": [
+        "fixed_lattice_ascii"
+      ],
+      "unsupported_cases": [
+        "ambiguous_spill",
+        "emoji_zwj",
+        "proportional_runs",
+        "unicode_scripts"
+      ]
+    },
+    {
+      "adapter": "paddleocr-offline",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "Apache-2.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "b19b071997b5c86ad79398c155bc18469f8627959a094097f52521c798eac40e",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "paddleocr": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "arabic_model_not_verified",
+        "emoji_zwj",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "independent-offline-easyocr",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "Apache-2.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "d1ba9a33a4e1dd1d0a335700fe098d5c49a757d95256989df0a257fb9ad10fd6",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "easyocr": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "unverified_script_pack",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "independent-offline-surya",
+      "adapter_version": "unavailable",
+      "emoji_coverage": [],
+      "grapheme_coverage": [],
+      "license": "GPL-3.0",
+      "model_hashes": {},
+      "offline": true,
+      "output_hash": "8784ccf54b3080958deec4f9e95f26946c29be7bed05a407732a6660cc078e0b",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "surya": "unavailable"
+      },
+      "status": "unavailable",
+      "supported_directions": [
+        "ltr",
+        "rtl"
+      ],
+      "supported_scripts": [],
+      "tested_fixture_families": [],
+      "unsupported_cases": [
+        "emoji_zwj",
+        "unverified_script_pack",
+        "visual_unicode_collision"
+      ]
+    },
+    {
+      "adapter": "emoji-grapheme-atlas",
+      "adapter_version": "unicode-emoji-17.0",
+      "emoji_coverage": [
+        "RGI fully-qualified",
+        "count:1000"
+      ],
+      "grapheme_coverage": [
+        "extended-grapheme-cluster"
+      ],
+      "license": "OFL-1.1+Unicode-Terms-of-Use",
+      "model_hashes": {
+        "noto_color_emoji": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+        "unicode_emoji_test": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda"
+      },
+      "offline": true,
+      "output_hash": "41629769d7ba19555d49c21649a78898cb20c58d71d77afefeb71f216ae7a4ce",
+      "runtime_hashes": {},
+      "runtime_network": false,
+      "runtime_versions": {
+        "pillow": "12.1.0",
+        "regex": "2026.5.9",
+        "unicodedata": "16.0.0"
+      },
+      "status": "available",
+      "supported_directions": [
+        "ltr"
+      ],
+      "supported_scripts": [
+        "emoji"
+      ],
+      "tested_fixture_families": [
+        "emoji_variation_selector",
+        "emoji_zwj"
+      ],
+      "unsupported_cases": [
+        "font_strike_unavailable",
+        "partial_cluster",
+        "unconfigured_sequence",
+        "visual_unicode_collision"
+      ]
+    }
+  ],
+  "emoji_atlas": {
+    "font": "pinned NotoColorEmoji.ttf",
+    "full_atlas_adapter_available": true,
+    "max_sequences_for_run": 1000,
+    "sequence_data": "pinned UTS #51 emoji-test.txt"
+  },
+  "environment_lock": {
+    "capability_profiles": [
+      {
+        "adapter": "tesseract-offline",
+        "adapter_version": "5.5.1",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "extended-grapheme-candidate"
+        ],
+        "license": "Apache-2.0",
+        "model_hashes": {
+          "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+          "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+          "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+          "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+          "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+          "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548"
+        },
+        "offline": true,
+        "output_hash": "d2164aa7e29ed8822ae14de1c73f08f63a5340e2db3ff5ebba8b3b671f65b29a",
+        "runtime_hashes": {
+          "tesseract_binary": "f6684b4e366dfc22bc0f1a509a6c237df3833af4c7105ecd78b9c998a5ab4656"
+        },
+        "runtime_network": false,
+        "runtime_versions": {
+          "python": "3.14.3",
+          "tesseract": "5.5.1"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [
+          "arabic",
+          "ascii",
+          "cjk",
+          "digits",
+          "japanese",
+          "latin",
+          "vertical_text"
+        ],
+        "tested_fixture_families": [
+          "arabic",
+          "ascii",
+          "cjk",
+          "japanese",
+          "latin"
+        ],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "joined_text_art_runs",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "fixed-lattice-structural",
+        "adapter_version": "1",
+        "emoji_coverage": [],
+        "grapheme_coverage": [
+          "ascii-structural"
+        ],
+        "license": "CC0-1.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "b4870c7e126933be2d7266021e0e8394428a2f9c7bf58fba3b9e1b6966fec315",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {},
+        "status": "proposal_only",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "ascii",
+          "digits"
+        ],
+        "tested_fixture_families": [
+          "fixed_lattice_ascii"
+        ],
+        "unsupported_cases": [
+          "ambiguous_spill",
+          "emoji_zwj",
+          "proportional_runs",
+          "unicode_scripts"
+        ]
+      },
+      {
+        "adapter": "paddleocr-offline",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "Apache-2.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "b19b071997b5c86ad79398c155bc18469f8627959a094097f52521c798eac40e",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "paddleocr": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "arabic_model_not_verified",
+          "emoji_zwj",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "independent-offline-easyocr",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "Apache-2.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "d1ba9a33a4e1dd1d0a335700fe098d5c49a757d95256989df0a257fb9ad10fd6",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "easyocr": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "unverified_script_pack",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "independent-offline-surya",
+        "adapter_version": "unavailable",
+        "emoji_coverage": [],
+        "grapheme_coverage": [],
+        "license": "GPL-3.0",
+        "model_hashes": {},
+        "offline": true,
+        "output_hash": "8784ccf54b3080958deec4f9e95f26946c29be7bed05a407732a6660cc078e0b",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "surya": "unavailable"
+        },
+        "status": "unavailable",
+        "supported_directions": [
+          "ltr",
+          "rtl"
+        ],
+        "supported_scripts": [],
+        "tested_fixture_families": [],
+        "unsupported_cases": [
+          "emoji_zwj",
+          "unverified_script_pack",
+          "visual_unicode_collision"
+        ]
+      },
+      {
+        "adapter": "emoji-grapheme-atlas",
+        "adapter_version": "unicode-emoji-17.0",
+        "emoji_coverage": [
+          "RGI fully-qualified",
+          "count:1000"
+        ],
+        "grapheme_coverage": [
+          "extended-grapheme-cluster"
+        ],
+        "license": "OFL-1.1+Unicode-Terms-of-Use",
+        "model_hashes": {
+          "noto_color_emoji": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+          "unicode_emoji_test": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda"
+        },
+        "offline": true,
+        "output_hash": "41629769d7ba19555d49c21649a78898cb20c58d71d77afefeb71f216ae7a4ce",
+        "runtime_hashes": {},
+        "runtime_network": false,
+        "runtime_versions": {
+          "pillow": "12.1.0",
+          "regex": "2026.5.9",
+          "unicodedata": "16.0.0"
+        },
+        "status": "available",
+        "supported_directions": [
+          "ltr"
+        ],
+        "supported_scripts": [
+          "emoji"
+        ],
+        "tested_fixture_families": [
+          "emoji_variation_selector",
+          "emoji_zwj"
+        ],
+        "unsupported_cases": [
+          "font_strike_unavailable",
+          "partial_cluster",
+          "unconfigured_sequence",
+          "visual_unicode_collision"
+        ]
+      }
+    ],
+    "freetype": "not-recorded",
+    "harfbuzz": "not-installed",
+    "model_hashes": {
+      "ara": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+      "chi_sim": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+      "chi_tra": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+      "eng": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+      "jpn": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+      "jpn_vert": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548",
+      "osd": "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff"
+    },
+    "output_hash": "7bbd47f7a68189190ecda017a6a082668c25f7778f82dd5aed4c4eec7865be20",
+    "pillow_version": "12.1.0",
+    "preprocessing": {
+      "ground_truth_to_adapter": false,
+      "network": "disabled"
+    },
+    "script_packs": [
+      "ara",
+      "chi_sim",
+      "chi_tra",
+      "eng",
+      "jpn",
+      "jpn_vert",
+      "osd"
+    ],
+    "uax29": "regex/2026.5.9",
+    "unicode_database": "16.0.0",
+    "wcwidth_version": "0.3.3"
+  },
+  "false_unique_negative_fixtures": [],
+  "fixture_count": 10,
+  "ground_truth_passed_to_adapters": false,
+  "network": {
+    "disabled_during_run": true,
+    "required": false
+  },
+  "nondeterministic_adapters": [],
+  "positive_missing": [
+    "positive-fixed-ascii",
+    "positive-proportional-latin",
+    "positive-kana",
+    "positive-kanji",
+    "positive-combining",
+    "positive-width-mixture",
+    "positive-emoji-zwj",
+    "positive-mixed-script",
+    "positive-degraded-fixed"
+  ],
+  "reason": "offline ensemble does not cover the release gate",
+  "remote_proposals_allowed": false,
+  "results": [
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 52985856,
+          "proposed_logical_order": [
+            "I\\_|\n(=)"
+          ],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "bc00cba455b51d1e6cb7e2abb6236ad744c27a51b635d6aa72a260259044c0ef",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 352.084,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "I\\_|\n(=)"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 53018624,
+          "proposed_logical_order": [
+            "SIN\n="
+          ],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "a467197cf3ffd36c819e2b5f8313ddf4eb0e74484350d312adc5b331ae32cd30",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 524.418,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "SIN\n="
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 53067776,
+          "proposed_logical_order": [
+            "> ミン |\n( 三 )"
+          ],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "bb768a69a3853b0ed95ed408dfc3ff4e203f87461e59549f604a34bb5edd9f38",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 1257.537,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "> ミン |\n( 三 )"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 53067776,
+          "proposed_logical_order": [
+            "/١٠_-|\n))"
+          ],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "a59f72455a8e05962e1cee081a22001e89cd837182e552fd70f53c3727ef7808",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 158.906,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "/١٠_-|\n))"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 53067776,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "579b061482ddc608c31aee68b17776deee18ebeecf6e205926fd60189a6508e6",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.127,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "whole_run_proposal_unavailable"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 53067776,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "6f67ac16cee92f1a6506944faaccc549b6b0811509cd1cbb8a3516f8a9c70da9",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.366,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 53067776,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "ce7c446b8d8b7526a2a41a53a38111751f7bbef71d2a1333e48cbdbdb418e00b",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.208,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 53067776,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "189236352fdb497838e9bd5d20b0315cb896225b6edd4c527c2e858312c60d7c",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.181,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+          "repeat_run_hash": "a71d97860a6270f1239c6ecc67090469af3557e549952cf44cbb212dc368b93e",
+          "run_count": 2,
+          "run_input_hashes": [
+            "4d201420dd45349d5fe8ea7ed67927d9a4eae43c577a9b9ee1ceb5daef64d2d3",
+            "b6a449e39357db9c3473fa8a0c779885310f2286f64d5736ff896f742a7e1385"
+          ],
+          "run_spans": [],
+          "runtime_ms": 100.953,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-r000",
+        "row-r001",
+        "row-r000",
+        "row-r001",
+        "row-r000",
+        "row-r001",
+        "row-r000",
+        "row-r001"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-fixed-ascii",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "I\\_|\n(=)",
+        "SIN\n=",
+        "> ミン |\n( 三 )",
+        "/١٠_-|\n))"
+      ],
+      "recognition_input_hash": "eade6c73936e2161a75c8243b93524bbe1d64eb45502dba346d774a9d38ba443",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [
+            "| ateletter\nkindness"
+          ],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "3574606574cbe72af18b85142f32fcb04f4f0b6a9cc2572dd3edfc2035dd6176",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r001-000"
+          ],
+          "runtime_ms": 604.234,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "| ateletter\nkindness"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [
+            "| ateletter\nkindness"
+          ],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "3574606574cbe72af18b85142f32fcb04f4f0b6a9cc2572dd3edfc2035dd6176",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r001-000"
+          ],
+          "runtime_ms": 612.63,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "| ateletter\nkindness"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [
+            "| ateIGtter\nスー コロ ユ コ の na ヵ"
+          ],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "99ac4c052fb271136d6251bd0fc383b3eca89941db1d242f10a6e23ce52851dd",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r001-000"
+          ],
+          "runtime_ms": 2078.326,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "| ateIGtter\nスー コロ ユ コ の na ヵ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [
+            "16ح |611١٠\n>١0 ‏5؟>6‎"
+          ],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "baa27d5a929b1ab9edff5e19dab9b5a524abf7b6d231ae1fd23fb46e60f934af",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r001-000"
+          ],
+          "runtime_ms": 381.418,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "16ح |611١٠\n>١0 ‏5؟>6‎"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "b6722183d16754cd7902631dbb0c1896d71f0a496c2f6092b6556245d413326e",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.518,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "b913a57854604570c31210636878891b416e67542ec916c7bcbc7a91618508d8",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.577,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "934293bfdf0650ec526486d70b70216e6384cb20b4a2266deb35af4eb723b966",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.336,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 62685184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "04d4d41c22ca5e68083e779050ec20ef0f497b047d2993addb78a82f13319f02",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.242,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66633728,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+          "repeat_run_hash": "a4087d91efb7f7cf546787d5b6a338483080f15d06ac1d2441ec7e4dfb4f2e65",
+          "run_count": 3,
+          "run_input_hashes": [
+            "f94167d8eee7b5bef1914e6bd152cfe8ba1785510ad991df834de717bc741618",
+            "0031063b13f8401fefe7c82a3412f30bbfc7974ec218766791a9ffacb10c6f5d",
+            "2f807578db020864183ccc2c7c35d659ba170998887a1a98317247eb556230c0"
+          ],
+          "run_spans": [],
+          "runtime_ms": 151.175,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-001",
+        "r001-000",
+        "r000-000",
+        "r000-001",
+        "r001-000",
+        "r000-000",
+        "r000-001",
+        "r001-000",
+        "r000-000",
+        "r000-001",
+        "r001-000"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-proportional-latin",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "| ateletter\nkindness",
+        "| ateIGtter\nスー コロ ユ コ の na ヵ",
+        "16ح |611١٠\n>١0 ‏5؟>6‎"
+      ],
+      "recognition_input_hash": "2d07a0c7b03e5394fd09c9361b9a06609a1ef0461a938d53548e6508f838b003",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [
+            "DVIS7]+"
+          ],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "c9b43d2b0a0af77b228415db2c33ced7b4e3f98c4a8e597f495b97275ef70994",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 584.519,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "DVIS7]+"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [
+            "DVIS7]+"
+          ],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "c9b43d2b0a0af77b228415db2c33ced7b4e3f98c4a8e597f495b97275ef70994",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 576.858,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "DVIS7]+"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [
+            "と <力ナ"
+          ],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "54e025e660dec0d39f78582c60ab8116c64e7b59eb0844d43a80fd461df43add",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 1833.003,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "と <力ナ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [
+            "77177"
+          ],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "64607127a2daa13cbe0ceedbeea20f353f40a8470f2db2bb6c29641c80c6cffb",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 249.139,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "77177"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "29ba0d2a27fc3e5bceaabd5e58262742ed00117504873e8f50a4324b22cd94ce",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [],
+          "runtime_ms": 5.392,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "89caf700f18d07e7c13940fa729728ca3cb5369686f8aa691da3368406169c40",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.558,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "da556a2be6e65586c6b8a4af58a053330f9e91ce4c0d5a1c11455a0f0f1b53c1",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.265,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66650112,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "01f823d2e3086b103d94590a4bec8829072366a3e25cf8dea91c3e072b6cc1f6",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.207,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+          "repeat_run_hash": "9300e2e5fa496554aec16f66050d4708dcae4f4c36384af2628f03889535b15a",
+          "run_count": 3,
+          "run_input_hashes": [
+            "fe000d23d5497e5e19708a17cff3548554463780988690f2f9a29502551b7227",
+            "ad973b4825673e4666394562daa7d233ef1aea2f3a469f9d18d28b87aa80cf73",
+            "41f8176423b823b08eb0f717b528cbc4aca357a808f154648504790d9f675958"
+          ],
+          "run_spans": [],
+          "runtime_ms": 152.01,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-001",
+        "r000-002",
+        "r000-000",
+        "r000-001",
+        "r000-002",
+        "r000-000",
+        "r000-001",
+        "r000-002",
+        "r000-000",
+        "r000-001",
+        "r000-002"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-kana",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "DVIS7]+",
+        "と <力ナ",
+        "77177"
+      ],
+      "recognition_input_hash": "67d067e062eb76b834f3d2324948b2ef8b101e39ce108087536169083e27598b",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "=1F"
+          ],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "440eccea7121cb21cb9019be89a1da6bc80152e2d9c8e0b498b5f381440aac2e",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 384.425,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "=1F"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "F=31F"
+          ],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "c7cc67283eab5b6ef53a45d938e737baf9dd0bafda8627e48d094729af08378d",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 376.736,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "F=31F"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "春化"
+          ],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "eaa1975b9793fa46cb8012857cdb3d1e9c5eba51749e5454d00abc7d7983a568",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 1269.655,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "春化"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "2\"2"
+          ],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "700488a461cbb3a89c9d78253263e5883d5d74c800f043b081871ca95a589d96",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 191.683,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "2\"2"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "2fd34cc50547bb511dd41306bef308b552321da3fdb937b437787f4ce9d1aca6",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.308,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "44754e20e4545ffdcd5b1ac891cb9d42fd998222987911debe20cebcb3f29fc5",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.143,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "ba40403ac56f36d83d561e9ffa4b3262a7cd9f8cef469fffda70e0d325fb734f",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [],
+          "runtime_ms": 2.935,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "9b76b1a75e4182ca492edd0adefbb5a4faa05f7248247f1cf8a47512a20b6bbc",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [],
+          "runtime_ms": 2.89,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+          "repeat_run_hash": "19f9d306180a1edb462f137f166b0e26d8914dce6643190de70006f2dd8c62fb",
+          "run_count": 2,
+          "run_input_hashes": [
+            "3aaf137daf33ae430ee26b745f20ca347e17860990c2447ea3315953b385cdb9",
+            "c43fe3bed1d969360908da89dc0e9dcea1bf77fe717cfbac964158ba03a313bd"
+          ],
+          "run_spans": [],
+          "runtime_ms": 100.551,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-kanji",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "=1F",
+        "F=31F",
+        "春化",
+        "2\"2"
+      ],
+      "recognition_input_hash": "34ae17cde99ecff392a36c77297ad3d82442eb5349546996fae2fa4471551f39",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "Aw"
+          ],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "5211da6e7904d7407f84839b667002dd1350113d0e3d3e00955f394faf6db5c6",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [
+            "r000-000"
+          ],
+          "runtime_ms": 190.718,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "Aw"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "Aw"
+          ],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "5211da6e7904d7407f84839b667002dd1350113d0e3d3e00955f394faf6db5c6",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [
+            "r000-000"
+          ],
+          "runtime_ms": 190.875,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "Aw"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "SL"
+          ],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "e3ca6a543deae4ddfb38c9df4779e05b05626ae9359d411c530d49e0c298dd89",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [
+            "r000-000"
+          ],
+          "runtime_ms": 672.917,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "SL"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [
+            "سلام"
+          ],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "fcb5ad0bbbe8c00b0c7b5e4d846668d469c772b8d3c6336854bd3b8ac8af20be",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [
+            "r000-000"
+          ],
+          "runtime_ms": 86.545,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "سلام"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "bf7257f1dfc8badcca7ff5a33658abd6385f70646a1a2e975cee0fa71ef9191a",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 2.197,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "7b519bb7e7f0633c05a8aba2fdb61601a3c0af2d0182c5abe4886a933c9317d0",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 1.796,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "32f21391d7949373764cbe0477ab1af7a6eb4763f9dc72bc968c9fbe1a817428",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 1.555,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66699264,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "1452e0cf25e2057f209d2c1f2f079d3d8c78ba6c007dda77175c5c20a8233d6c",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 1.535,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+          "repeat_run_hash": "9f8587390b4d7a1dcb30709aea7da6c7f04a787289e6238a855029642342ef10",
+          "run_count": 1,
+          "run_input_hashes": [
+            "ac18dd99aa264bd902f9b65407a0b0b49ac56e36656a3ae5f198211dbe63c65e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 50.901,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-000",
+        "r000-000",
+        "r000-000"
+      ],
+      "exact_nfc_target_in_top_k": true,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-arabic",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "Aw",
+        "SL",
+        "سلام"
+      ],
+      "recognition_input_hash": "3376164dfd4f4ac28e987f2121a3e01a00e97d4e3fabd6b8de476c4a6ca102a9",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [
+            "cafe="
+          ],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "d5cea7292a5526cf08047448bd31469c7788dc58ac362a1e9279b7f6c1833032",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 385.044,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "cafe="
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [
+            "cafe="
+          ],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "d5cea7292a5526cf08047448bd31469c7788dc58ac362a1e9279b7f6c1833032",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 385.134,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "cafe="
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [
+            "Cafee"
+          ],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "dfe34f681253310d20795d0cad2e450cc5b0611d5b888f71a1bff9766e5f4766",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 1239.965,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "Cafee"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [
+            "مد2"
+          ],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "b2fd725e718ef29f86e01e87bef35a83165ce1dba3206123d9af788ccb184ee5",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 192.107,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "مد2"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "bee7937a83e76f1fe82d1d7aa80b8805546bbf34270b8d34a2403f7ed8f6d24c",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.396,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "6b89771938406c0004336a914a2cf87c2ed93d0a7d5b7e9275ed8a0c4712d3b7",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.129,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "25981c56a8aee2b1bf788223cd055ec71b49318eec58c36ee88a598d8290a344",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [],
+          "runtime_ms": 2.964,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66732032,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "65fdd22747ac2e79554257c96fc819f90c75932dfea313c7f4f59359306e6ad7",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [],
+          "runtime_ms": 2.89,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+          "repeat_run_hash": "a968f1f533a191de39b1f99d643b867ecb2a53d819129f371bcd79c6eee30968",
+          "run_count": 2,
+          "run_input_hashes": [
+            "770658dd98985a855cf62f3d500dcab01e915737b2f51a214eed3ec7bcbc2500",
+            "d41fb992b481a83faea488ecc85871be3e458fa521fc4938fda273edaf692372"
+          ],
+          "run_spans": [],
+          "runtime_ms": 101.438,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-combining",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "cafe=",
+        "Cafee",
+        "مد2"
+      ],
+      "recognition_input_hash": "1abca9cdc0d3fb547d4902bbae137e13f5e42b194f1c260713a7c9ef992cfe38",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [
+            "ABnT"
+          ],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "bb01f67f1fad9b30157f0bc4cf99694f09fda689e8cd71745c8132fb8b4563cb",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 577.438,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "ABnT"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [
+            "ABnT"
+          ],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "bb01f67f1fad9b30157f0bc4cf99694f09fda689e8cd71745c8132fb8b4563cb",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 561.861,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "ABnT"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [
+            "Aてニュ"
+          ],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "661c3d871f55ba2b676a2059cd6eed246db0b14760caeb8485118ae6881d0faf",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 1864.119,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "Aてニュ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [
+            "مر37"
+          ],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "8de593121e76df55e1f7c171f839d798fbbf52876c7372790428e3ebd972df09",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001",
+            "r000-002"
+          ],
+          "runtime_ms": 262.265,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "مر37"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "fdb9432a2c06055fa779b7e187b43f3aec1d7bba840075bf46f394c06ca50b9d",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.64,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "44c0dd36667ac504784d38ac483b47e146190ba043c262b7f06724bbdf3a17c5",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.561,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "3940ab8f38630e8c5b6c8983cc59f3eb0ec432326cbe06722b038c42de4c42cc",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.265,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 66781184,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "b63b422734d7c73ad26424801f9c4d885956f03643eb9d21e87b67ec449ad491",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.253,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+          "repeat_run_hash": "7cbcef669c41603f64e1ae44ff3e8c344482078013ba2cc4d442e5b7c9c7a380",
+          "run_count": 3,
+          "run_input_hashes": [
+            "a9c3f2608460193f5454452b367d7d82dd25184a30e1322c83e0bed184ccac4f",
+            "fa84ea5145105cc4d1d0915e31d763482b9c1d49da7b0816739f6ec9c7953358",
+            "39fb9d699a09a47ebb19a98d9299448a4e31d3987815a1eb9bcbc838db8df11d"
+          ],
+          "run_spans": [],
+          "runtime_ms": 150.782,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-001",
+        "r000-002",
+        "r000-000",
+        "r000-001",
+        "r000-002",
+        "r000-000",
+        "r000-001",
+        "r000-002",
+        "r000-000",
+        "r000-001",
+        "r000-002"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-width-mixture",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "ABnT",
+        "Aてニュ",
+        "مر37"
+      ],
+      "recognition_input_hash": "db4a7fbe6bd08e0578a11de08c346e2c94b960bf600fe7360125ae6bec428fe6",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [
+            "|S¥"
+          ],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "f7c7ac0b2a55e48d9e12211155df18a919370c2a6fe9250d74010cd83dba5f44",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 391.504,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "|S¥"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [
+            "Ell4"
+          ],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "eda7f07b2fe0b03c0e10828b28d66c5d75ea25387350bf0cbe6d0825c78b55b7",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 398.276,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "Ell4"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [
+            "3ツマ"
+          ],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "958be645a301ebfa451e06a2470a09da021f8b3cdb56bb28cb97c282ddf0aca0",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 1261.417,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "3ツマ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [
+            "©)َّ"
+          ],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "18d6783e4778cd9ab456e1ae61bf17769645058f1914b7565331d3f588412b24",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 181.693,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "©)َّ"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "3f505f133acc6a2532ee197ac62dee81f23f03c91b04b9b51a26ace5e6cc0651",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.447,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "040f4b71ff2f64f990a5046ddd1b1ed14a9f2f64e1903432ab0279325849c1ba",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.445,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "918bfc3bc30f6ef333fcdfb42100330e6e9e847a066c4ef2d480191d46035ce3",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.238,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 67469312,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "32c30c807a2de98d8979d597965488a67d9ab778f4a64a30cf18b0e38e760e46",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.21,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 195477504,
+          "proposed_logical_order": [
+            "💝",
+            "❤️‍🩹",
+            "💚",
+            "💜",
+            "🤎"
+          ],
+          "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+          "repeat_run_hash": "427817948ab79bf5b0818e430c0f02c37177401237e0a92d61b72756be8ce9f5",
+          "run_count": 2,
+          "run_input_hashes": [
+            "16bb6792c8cfa59ab35d21584aa807dfdfadbc443f038e76659a8eac2322eb08",
+            "5a94f0f1c90da1db7d4d4a27e3159fec46bddc8aa202e30007a76c1333ec1898"
+          ],
+          "run_spans": [
+            "r000-001"
+          ],
+          "runtime_ms": 44114.918,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "💝",
+            "❤️‍🩹",
+            "💚",
+            "💜",
+            "🤎"
+          ],
+          "unsupported_status": [
+            "unicode_visual_collision"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-001"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-emoji-zwj",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "|S¥",
+        "Ell4",
+        "3ツマ",
+        "©)َّ",
+        "💝",
+        "❤️‍🩹",
+        "💚",
+        "💜",
+        "🤎"
+      ],
+      "recognition_input_hash": "9adf4feaa3844c2ba1f9dc895429506b2da00a9b4447bf061b7cdc2b3881ea8b",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [
+            "ARNI"
+          ],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "26b274923c8fef062dafdcc7600a8cc085aeea5f9c2e4f877607a51e3c2b4242",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 381.051,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "ARNI"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [
+            "AZNI"
+          ],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "08221662eace221ecdc17afabd5db71316e178b0d8a4c6693f1a8abb361f487e",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 404.179,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "AZNI"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [
+            "ム A 党か"
+          ],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "6ec4885d5e447f27799208e72bc20e632cb3b8edd01c2f0609781becf94a1dfe",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 1300.327,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "ム A 党か"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [
+            "0سلاد"
+          ],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "1ed95e0d4adf8177ee74f2a7c97be085edafd067b65233ef96f67e6df9bd7744",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [
+            "r000-000",
+            "r000-001"
+          ],
+          "runtime_ms": 191.097,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "0سلاد"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "cf34c3ec2e8e30f216c215a134c59973f6f308820f01c58710de777ba0b8ed59",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.514,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "geometry_mode_mismatch"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "1aea6304144f701cfc48973b86af4290f83f91e512e668d8f863a0a296c7be17",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.21,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "748f8079f4ca67626c0fb098cd5478fc699998d3839d759737fac10af244d477",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 2.947,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 196067328,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "a805baa370542296483438fd83b999a32857f7a4062e615a445e75f8fb0f0979",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 2.93,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+          "repeat_run_hash": "42a212015128d829a2761181c28af4c53b6cf83f273818dde8eb4d86e8081895",
+          "run_count": 2,
+          "run_input_hashes": [
+            "329d0278ec5cfe0cef22ce0701b2226ae0bc3bf055bede07ba5a789c14d132d0",
+            "ce9c6ba96240a3ccb53a497637665aebe2bc53dc2a681bd9c73d1c2574d2035e"
+          ],
+          "run_spans": [],
+          "runtime_ms": 101.02,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001",
+        "r000-000",
+        "r000-001"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-mixed-script",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "ARNI",
+        "AZNI",
+        "ム A 党か",
+        "0سلاد"
+      ],
+      "recognition_input_hash": "cac07e801d2e68c5f8b0b9cce6b3829fc7567bd567842ebf2ca0cf327b0890fe",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    },
+    {
+      "adapters": [
+        {
+          "adapter": "psm7-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [
+            "FX\n-."
+          ],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "8def0829a163ad139601c226b48e43bd426c6e28f991037612c627c808c4d7be",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 413.1,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "FX\n-."
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm13-eng",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [
+            "IE 5.\nA"
+          ],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "56ad49ca3ba2ef9e9ce12f92aab81e46ed2a4df47a54191bbb55b5f5b6ea3f81",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 729.512,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "IE 5.\nA"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-jpn-cjk",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [
+            "マン\nレー"
+          ],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "535e2f6a19335899b90af70ee7d1e81773a69efc026d422aea82d6abc5b863c4",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 1372.665,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "マン\nレー"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "psm7-ara",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [
+            "7“\nا له"
+          ],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "c905c60c15f4e6b8853c8f2869d2297ce2d5003e618b35f2eb63709f79496bcd",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [
+            "row-r000",
+            "row-r001"
+          ],
+          "runtime_ms": 232.601,
+          "status": "proposal_only",
+          "top_k_logical_sequences": [
+            "7“\nا له"
+          ],
+          "unsupported_status": [],
+          "version": "5.5.1"
+        },
+        {
+          "adapter": "fixed-lattice-structural",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "10d3a2f27bbea6261057f341784e154d2c1ddd091228d7342782539f6ea59f9b",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.317,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "whole_run_proposal_unavailable"
+          ],
+          "version": "1"
+        },
+        {
+          "adapter": "paddleocr-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "d9997c40ac9c09b4eeafc1baf1b43e44077681e5f7c374c728e385d459a117fa",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [],
+          "runtime_ms": 4.218,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "83d832ceea34b787ef68fa5d62e55222594ccdf88a337a172d2ba418fdde2514",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.906,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "independent-offline",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "743182f64c5c7e0e38e86236e9b465ad20c022d45fc9159cb99ae78d11154acb",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [],
+          "runtime_ms": 3.858,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "recognizer_unavailable"
+          ],
+          "version": "unavailable"
+        },
+        {
+          "adapter": "emoji-grapheme-atlas",
+          "deterministic": true,
+          "geometry_rejection_codes": [],
+          "geometry_status": "proved",
+          "memory_max_rss": 197345280,
+          "proposed_logical_order": [],
+          "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+          "repeat_run_hash": "51e93e57985f0a7cc39f00e7b37f04343f9f11b222713d327344c1598a2edc8b",
+          "run_count": 2,
+          "run_input_hashes": [
+            "32e6a5b42d1a1ba523abc5f523f667bfd2477e72a532d2cf7fa9aa8d85b0fbd7",
+            "5c2a8b88e0e5dfdb456c3d79d6b144d42adddd6a2f51cd9b83553e4ee74bdfe5"
+          ],
+          "run_spans": [],
+          "runtime_ms": 103.262,
+          "status": "rejected",
+          "top_k_logical_sequences": [],
+          "unsupported_status": [
+            "emoji_modality_not_evidenced"
+          ],
+          "version": "unicode-emoji-17.0"
+        }
+      ],
+      "boxes_or_run_spans": [
+        "row-r000",
+        "row-r001",
+        "row-r000",
+        "row-r001",
+        "row-r000",
+        "row-r001",
+        "row-r000",
+        "row-r001"
+      ],
+      "exact_nfc_target_in_top_k": false,
+      "expected_outcome": "positive",
+      "false_unique_resolution": false,
+      "fixture": "positive-degraded-fixed",
+      "geometry_rejection_codes": [],
+      "geometry_status": "proved",
+      "proposed_logical_order": [
+        "FX\n-.",
+        "IE 5.\nA",
+        "マン\nレー",
+        "7“\nا له"
+      ],
+      "recognition_input_hash": "42026cfc516ba75c12ff345b2a293552c0d51474c398918bcae8111bed5c2a94",
+      "target_evaluated_after_proposals": true,
+      "unsupported": false
+    }
+  ],
+  "source_corpus": "tests/fixtures/transcription-v2/corpus-v2.json",
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "status": "blocked_release_coverage",
+  "top_k": 5
+}

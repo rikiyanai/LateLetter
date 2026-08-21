@@ -1,0 +1,29 @@
+Source: Minecraft Creator, World Generation Overview
+Publisher: Microsoft
+URL: https://learn.microsoft.com/en-us/minecraft/creator/documents/world-generation?view=minecraft-bedrock-stable
+Accessed: 2026-07-30
+Type: Official technical documentation
+
+Relevant findings
+-----------------
+
+Minecraft builds a world in ordered passes rather than scattering every kind
+of content in one operation. Terrain precedes biomes; structures and natural
+features are added later; entities arrive after the world substrate exists.
+Features such as trees and flowers are governed by biome and distribution
+rules. The seed supplies deterministic variation to algorithms with declared
+responsibilities.
+
+LateLetter transfer
+-------------------
+
+Generate room/terrain regions, fixtures and connected paths, plants, animal
+anchors, collectibles, and authored additions in stable passes. A later pass
+may depend on earlier successful placement. The seed selects among candidates
+that already satisfy the pass's legal rules.
+
+Limit
+-----
+
+Minecraft is a chunked voxel world. LateLetter adopts the ordering and rule
+separation, not Minecraft's scale, noise fields, or block representation.

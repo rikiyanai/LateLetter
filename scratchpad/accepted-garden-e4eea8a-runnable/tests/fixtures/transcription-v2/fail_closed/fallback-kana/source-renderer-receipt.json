@@ -1,0 +1,68 @@
+{
+  "background_rgb": [
+    255,
+    255,
+    255
+  ],
+  "coverage": {
+    "clusters": [
+      {
+        "covered": false,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [
+          "U+304B"
+        ],
+        "text": "か"
+      },
+      {
+        "covered": false,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [
+          "U+306A"
+        ],
+        "text": "な"
+      },
+      {
+        "covered": true,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [],
+        "text": " "
+      },
+      {
+        "covered": false,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [
+          "U+30AB"
+        ],
+        "text": "カ"
+      },
+      {
+        "covered": false,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [
+          "U+30CA"
+        ],
+        "text": "ナ"
+      }
+    ],
+    "complete": false
+  },
+  "degraded": false,
+  "fallback_box_expected": true,
+  "fixture_id": "fallback-kana",
+  "font_chain": {
+    "fallback": "DejaVuSans.ttf"
+  },
+  "font_hashes": {
+    "fallback": "DejaVuSans.ttf"
+  },
+  "font_size_px": 22,
+  "foreground_rgb": [
+    34,
+    37,
+    41
+  ],
+  "generator": "tests/fixtures/transcription-v2/build_corpus_v2.py",
+  "pillow_version": "12.1.0",
+  "renderer": "Pillow"
+}

@@ -1,0 +1,29 @@
+{
+  "author_name": "Riki",
+  "passphrase": "garden",
+  "passphrase_hint": "what all of this grows into (six letters)",
+  "garden_seed": 20260719,
+  "messages": [
+    {
+      "date": "2026-07-19",
+      "label": "A letter that waited for you",
+      "body": "Hey you.\n\nIf you're reading this, the passcode worked — which means you're exactly the person this was meant for.\n\nThis page you're looking at is a garden. It's alive: seasons change with the real calendar, rain falls in spring, snow settles in winter, and if you keep coming back, something small will start to trust you. Feed it. It remembers.\n\nI wanted to send you something that wasn't a text that scrolls away. So this is a letter with a lock on it, living inside a garden that was planted just for you — the arrangement of every tree and flower comes from a seed number only your file has.\n\nCome back tomorrow. Come back on an ordinary Tuesday. The garden will be here, and so will this.\n\n— R"
+    }
+  ],
+  "garden_gifts": [
+    {
+      "type": "animal",
+      "catalog_id": "cat",
+      "animal_name": "Mochi",
+      "trigger": { "type": "cumulative_visits", "value": "2" },
+      "sentiment": "She showed up because you kept coming back."
+    },
+    {
+      "type": "item",
+      "catalog_id": "coffee_mug",
+      "trigger": { "type": "post_letter", "value": "FIRST_MESSAGE" },
+      "placement_hint": "near_tallest_tree",
+      "sentiment": "Two sugars, always."
+    }
+  ]
+}

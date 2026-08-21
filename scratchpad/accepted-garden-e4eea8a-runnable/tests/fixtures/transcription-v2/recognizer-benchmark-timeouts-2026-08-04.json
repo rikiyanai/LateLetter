@@ -1,0 +1,26 @@
+{
+  "schema": "lateletter-recognizer-benchmark-timeout-1",
+  "source_corpus": "tests/fixtures/transcription-v2/corpus-v2.json",
+  "model_cache": "tracked/LateLetterResearch/transcription-model-cache",
+  "network_required": false,
+  "runs": [
+    {
+      "id": "v8",
+      "command": "scripts/benchmark_transcription_recognizers.py corpus-v2.json transcription-model-cache recognizer-benchmark-v8.json",
+      "status": "interrupted_runtime_ceiling",
+      "ceiling_seconds": 600,
+      "output_written": false,
+      "interrupt_stage": "EmojiAtlasAdapter.propose second deterministic replay"
+    },
+    {
+      "id": "v9",
+      "command": "scripts/benchmark_transcription_recognizers.py corpus-v2.json transcription-model-cache recognizer-benchmark-v9.json",
+      "status": "interrupted_runtime_ceiling",
+      "ceiling_seconds": 600,
+      "output_written": false,
+      "interrupt_stage": "StructuralUnicodeRowAdapter._run_level_variants"
+    }
+  ],
+  "authority": "diagnostic_only",
+  "candidate_or_acceptance_written": false
+}

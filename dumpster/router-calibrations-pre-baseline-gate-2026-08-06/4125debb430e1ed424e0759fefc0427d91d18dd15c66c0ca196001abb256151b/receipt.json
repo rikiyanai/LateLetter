@@ -1,0 +1,132 @@
+{
+  "artifact_path": "4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b/calibration.json",
+  "artifact_sha256": "af16f84a21a69dc5f93c5dca207c8eb52a711e117971b642ed9cf938db4def09",
+  "baseline_regularity": {
+    "baseline_delta_residual_max": 0,
+    "baseline_delta_residuals": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "baseline_deltas": [
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31,
+      31
+    ],
+    "line_height_px": 31.0,
+    "regular": true,
+    "terminal_baseline_clamped": false
+  },
+  "boundary_ink_legality": {
+    "all_ink_inside_cells": false,
+    "column_boundaries_with_ink": 13,
+    "column_boundary_count": 15,
+    "column_boundary_ink_max": 16,
+    "column_boundary_ink_pixels": 100,
+    "ink_coverage_fraction": 0.974966,
+    "ink_pixels_inside_cells": 7945,
+    "ink_pixels_outside_cells": 204,
+    "ink_pixels_total": 8149,
+    "row_seam_count": 19,
+    "row_seam_ink_pixels": 204,
+    "row_seams_with_ink": 13
+  },
+  "emitter": {
+    "name": "LateLetter router lattice calibration emitter",
+    "version": "router-calibration-emitter-1"
+  },
+  "evidence_sha256": "c03060da57cfd72da103fcd4c6d2a223148b2455e6e4703ad2c8c234d441b8bf",
+  "geometry_mode": "fixed_lattice",
+  "geometry_sha256": "b6153fcf19bc594a16e53dc00241afabc0545dbff09173e923c61dbe69485b9b",
+  "geometry_status": "proved",
+  "grid": {
+    "cell_advance_x_px": 18.0,
+    "cell_crop_bottom_offset_px": 1,
+    "cell_crop_top_offset_px": -29,
+    "columns": 16,
+    "first_baseline_y_px": 29.0,
+    "line_height_px": 31.0,
+    "origin_x_px": 0.0,
+    "row_crop_measurement": {
+      "bottom": 1,
+      "boundary_ink": 204,
+      "boundary_samples": 19,
+      "inter_row_clearance_px": 1,
+      "top": -29
+    },
+    "rows": 20,
+    "x_phase_px_mod_period": 0.0,
+    "y_phase_px_mod_period": 30
+  },
+  "implementation_sha256": {
+    "src/lateletter/transcription/geometry/calibration_emitter.py": "e284ce557af5be4a701aa49977c938bb9512fe9e6820638d80d0011bc9dd3ea5",
+    "src/lateletter/transcription/geometry/evidence.py": "bdeda7720135b43946d8c5dc5a03d7096a06ad2a987bf1f2f053f36627b3529d",
+    "src/lateletter/transcription/geometry/fixed_lattice.py": "18ebb806591a0dc609be280e44b0c806d60c007382949538066ef87753424f57",
+    "src/lateletter/transcription/geometry/router.py": "af4a2cdbb5829310cf72680115a91cad2d0375614d1d4de7a437d293e068322e",
+    "src/lateletter/transcription/geometry/shaped_runs.py": "402aa282d36438e91be9d9cffd6be975c4af77ac950ab3d930f8704a0f410692",
+    "src/lateletter/transcription/model.py": "970272eb46a723b0a35bb69c94440691b20655eb54f36e4580b075985dff10fe"
+  },
+  "ownership_completeness": {
+    "cross_row_continuation_count": 12,
+    "method": "pixel_interval_with_explicit_seam_continuation",
+    "owned_pixel_count": 8149,
+    "ownership_complete": true,
+    "signature": "93e0b9f031385e7ee8a91bd6e0d03d189b8d553ffc20af54ba54480583bd452f",
+    "unowned_pixel_count": 0
+  },
+  "phase_margins": {
+    "normalized_phase_margin": 0.1133428981348637,
+    "phase_margin_sufficient": true,
+    "phase_tie_equivalent": true,
+    "winning_phase": 30,
+    "winning_phase_group": "6a175c82ccdf68fde0e6156de01c43f7eff8ff2fca91e39817dbe9a644df3df0"
+  },
+  "pitch_margins": {
+    "authority_margin": 0.1,
+    "normalized_pitch_margin": 0.0,
+    "pitch_authority_stream": "seam_energy",
+    "pitch_margin_sufficient": false,
+    "pitch_streams_contested": false,
+    "pitch_tie_equivalent": false,
+    "seam_pitch_margin": 0.0,
+    "seam_winning_pitch": 31,
+    "winning_pitch": 31
+  },
+  "schema": "router-emitted-calibration-receipt-1",
+  "source_name": "a8283c5cdb63b130.png!cover_jpg.normalized.png",
+  "source_sha256": "4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b",
+  "status": "emitted",
+  "transcript_input": false
+}

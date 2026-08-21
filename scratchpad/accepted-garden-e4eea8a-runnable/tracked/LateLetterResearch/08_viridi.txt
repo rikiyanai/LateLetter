@@ -1,0 +1,26 @@
+Source: Viridi
+Publisher: Ice Water Games / Steam listing
+URL: https://store.steampowered.com/app/375950/Viridi/
+Accessed: 2026-07-30
+Type: Official publisher-supplied product description
+
+Relevant findings
+-----------------
+
+Viridi limits the simulation to a small pot of succulents growing in real time.
+It supports very short check-ins as well as passive companionship while another
+task is underway. Plants can be named, receive focused care, and eventually
+flower. The game is forgiving but still allows death from watering errors.
+
+LateLetter transfer
+-------------------
+
+Use slow persistent growth, small care rituals, named individual plants, and
+visible delayed flowering. Do not import plant death or a narrow correct-
+watering schedule; LateLetter plants recover and cannot be lost through absence.
+
+Limit
+-----
+
+The page is marketing material, not an independent usability or wellbeing
+study. Claims about calm describe intended experience.

@@ -1,0 +1,20 @@
+{
+  "schema_version": "lateletter-sitting-cat-evaluation-1",
+  "reference": "sitting-cat",
+  "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+  "transcript_path": "expected-transcript-candidate-003.txt",
+  "transcript_sha256": "6369ea4b05e50b5217f52f1c6a8e1d10859e879e4998d1f3eb97faa0d5d19cc7",
+  "row_count": 9,
+  "purpose": "evaluation_only",
+  "runtime_input": false,
+  "operator_review": "pending",
+  "authority": "operator_visual_audit_required",
+  "status": "not_ground_truth_until_operator_acceptance",
+  "supersedes": {
+    "transcript_path": "expected-transcript-candidate-002.txt",
+    "transcript_sha256": "fbbab93a69bb8b5e85b5d787a03d2a29a07e675e81be2d09a9822b86fd4cecd5",
+    "operator_verdict": "rejected_eye_alignment_offset",
+    "frozen": true
+  },
+  "notes": "Successor evaluation candidate with the eye glyphs restored to the source's wide-form placement. Benchmark-only evidence; never readable by geometry, recognition, or ranking runtime."
+}

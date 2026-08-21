@@ -1,0 +1,4 @@
+tracked/LateLetterResearch/transcription-model-cache/**/*.traineddata filter=lfs diff=lfs merge=lfs -text
+tracked/LateLetterResearch/transcription-model-cache/emoji/NotoColorEmoji.ttf filter=lfs diff=lfs merge=lfs -text
+tracked/LateLetterResearch/transcription-model-cache/fonts/*.ttf filter=lfs diff=lfs merge=lfs -text
+tracked/LateLetterResearch/transcription-model-cache/fonts/*.otf filter=lfs diff=lfs merge=lfs -text

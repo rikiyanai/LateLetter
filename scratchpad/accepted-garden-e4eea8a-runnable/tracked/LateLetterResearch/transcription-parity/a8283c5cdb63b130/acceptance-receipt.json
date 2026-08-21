@@ -1,0 +1,41 @@
+{
+  "reference_id": "a8283c5cdb63b130",
+  "recorded_at": "2026-08-02",
+  "operator_verdict": "approved",
+  "layout_parity": "accepted",
+  "human_visual_parity": "accepted",
+  "raster_parity": "not_run",
+  "raster_disclosure": "No parity renderer was run. TXT acceptance is font-independent; exact raster comparison remains a separate diagnostic and is not required for this operator-approved transcript.",
+  "source": {
+    "path": "source/source.normalized.png",
+    "sha256": "c50bcf5ded3a0499f762762f8bec75db6ac2c9176806061a86c2a6d8317bd8d8"
+  },
+  "candidate": {
+    "path": "attempts/015-final-structural-candidate/machine-row-joint.txt",
+    "sha256": "bcbf1901d86a9bd55a4861f8ff973b1315f3d7ae28f58e43536c7d0e005e4012"
+  },
+  "accepted": {
+    "path": "accepted.txt",
+    "sha256": "bcbf1901d86a9bd55a4861f8ff973b1315f3d7ae28f58e43536c7d0e005e4012",
+    "byte_for_byte_candidate_copy": true
+  },
+  "attempt": {
+    "id": "015-final-structural-candidate",
+    "manifest": "attempts/015-final-structural-candidate/manifest.json",
+    "manifest_sha256": "dc25c2172648dea61ee39729034ecfe4a32817f05197f0f3c025c1fdcd48ecb0",
+    "calibration": "attempts/008-dark-foreground-calibration/calibration.json",
+    "calibration_sha256": "ab495f3d9221e7059017ba590487cf815476157004a68e7d7ebe04b33ce334de",
+    "occupancy_review": "attempts/008-dark-foreground-calibration/occupancy-review.json",
+    "occupancy_review_sha256": "6ade24172ceb6cf629cdcdbc4f68ff30cf3c1eeb098e9750ba8703a7ddd4c7a5",
+    "unknown_cells": 0,
+    "low_confidence_cells": 0,
+    "structural_conflicts": 0,
+    "forced_blank_conflicts": 0,
+    "grid": {
+      "columns": 16,
+      "rows": 19,
+      "advance_x_px": 17.95,
+      "advance_y_px": 33.0
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "fixture_id": "positive-degraded-fixed",
+  "logical_rows": 2,
+  "direction": "ltr",
+  "mode": "fixed_lattice",
+  "anchors": [
+    {
+      "row": 0,
+      "x": 12,
+      "baseline": 29
+    },
+    {
+      "row": 1,
+      "x": 12,
+      "baseline": 59
+    }
+  ]
+}

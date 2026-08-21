@@ -1,0 +1,26 @@
+Source: The Garden Path
+Publisher: Mooncat Games, description hosted by Nintendo
+URL: https://www.nintendo.com/en-ca/store/products/the-garden-path-switch/
+Accessed: 2026-07-30
+Type: Official publisher-supplied product description
+
+Relevant findings
+-----------------
+
+The game is designed for short visits, mixes real-world and game time, changes
+while the player is away, and offers travelers, events, gardening and quiet
+observation. The listing frames the garden as a place that can be revisited
+when desired rather than a schedule that must be obeyed.
+
+LateLetter transfer
+-------------------
+
+Support glance, tend and dwell sessions. Offline reconciliation should surface
+at most a few notable changes and allow immediate interaction. Returning
+reveals life that continued; it never opens with a debt or repair checklist.
+
+Limit
+-----
+
+The Nintendo page reproduces the publisher's description. It establishes
+declared mechanics, not measured player behavior.

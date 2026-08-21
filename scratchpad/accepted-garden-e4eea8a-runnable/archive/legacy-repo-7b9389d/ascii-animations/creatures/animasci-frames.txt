@@ -1,0 +1,183 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Real Animation Frames from animasci.com
+  License: CC BY 3.0
+  Extracted: 2026-04-18
+  Full JSON data: /tmp/animasci-all-extracted.json
+═══════════════════════════════════════════════════════════════
+
+
+── CAT PEEKING OVER WALL (22 frames) ────────────────────────
+   Source: animasci.com Cat-walking-by
+   A cat peeks over a garden wall — perfect ambient animation
+
+Sequence breakdown:
+  Frame 0 (1000ms):  Empty wall
+  Frames 1-4 (200ms each): Cat tail ⌈ sweeps across wall R→L
+  Frame 5 (200ms): Wall clears
+  Frames 6-7 (200ms): Ears appear ,_, then ^_^
+  Frame 8 (1000ms hold): Full face  ^ ^  <~.~>
+  Frame 9 (1000ms hold): Eyes change  ^ ^  <θ.θ>
+  Frame 10 (200ms): Face  ^ ^  <~.~>
+  Frames 11-12 (200ms): Ears fold ^_^ → ,_,
+  Frames 13-20 (200ms each): Tail sweeps L→R exit
+  Frame 21 (200ms): Empty wall
+
+Key frames:
+
+Empty wall:                    Tail sweep:
+                               __________⌈
+___________                    __|___|___|
+__|___|___|                    |   |   |
+|   |   |
+
+Ears peeking:                  Full face:
+                                   ^ ^
+___,_,_____                    ___<~.~>___
+__|___|___|                    __|___|___|
+|   |   |                     |   |   |
+
+Eyes wide:
+    ^ ^
+___<θ.θ>___
+__|___|___|
+|   |   |
+
+Adaptation notes for LateLetter:
+  - Replace brick wall with garden fence/hedge
+  - Could peek over flower beds or tree trunk
+  - Total cycle: ~8.2 seconds
+
+
+── BIRD FLAPPING (9 frames, 150ms each) ─────────────────────
+   Source: animasci.com "bird" by Max Max Alternative
+   Full wing-flap cycle — 1.35s total per loop
+
+Frame 1:        Frame 2:        Frame 3:
+   \   /                             o
+    \o/          \_o_/            _/ \_
+
+Frame 4:        Frame 5:        Frame 6:
+     o               o               o
+    | |             | |              / \
+   /   \            \ /             |   |
+
+Frame 7:        Frame 8:        Frame 9:
+                                  ‾\o/‾
+   _o_           __o__
+  /   \         ‾     ‾
+
+
+── BIRD LANDING (2 frames, 849ms each) ──────────────────────
+   Source: animasci.com "Bird landing"
+   Based on asciiart.eu/animals/birds-land
+
+Frame 1 (in flight):             Frame 2 (landed):
+               /
+  \\\' ,      / //                  _   _      _  _  _
+   \\\//    _/ //'                // \_<-_' __ // <'-\`
+    \_-//' /  //<'                     /,)-^>>  _\`
+      \ ///  >   \\\`                  (/   \\ / \\\
+     /,)-^>>  _\`                           //  //\\\
+     (/   \\ / \\\                         ((`
+           //  //\\\
+          ((`
+
+
+── EARLY BIRD (9 frames) ────────────────────────────────────
+   Source: animasci.com "The early bird"
+   Bird and worm with speech — joke animation but good bird art
+
+Bird + worm character:
+  (°°>     ___
+ (| |)    (_  (
+  ΘΘ        |_|
+            | |
+
+
+── SNAIL (10 frames, 417ms each) ────────────────────────────
+   Source: animasci.com "Snail!"
+   Uses block characters — cute garden creature
+
+Snail (uses Unicode blocks):
+   ▄▄▄
+ ▄▀░▄░▀▄
+ █░█▄▀░█
+ █░▀▄▄▀█▄█▄▀
+▄▄█▄▄▄▄███▀
+
+Moves rightward across ground line, 3-frame crawl cycle
+
+
+── STAR TWINKLE (8 frames, 500ms each) ──────────────────────
+   Source: animasci.com "Star"
+   Rotating star — good for night sky/firefly substitute
+
+Star shape rotates:
+          /\
+      ___/  \__
+     /  /\  /  /
+    /__/  \/__/
+    \        /\
+     \      /  \
+     / ,´`. \  /
+    /-´    `-\/
+
+
+═══════════════════════════════════════════════════════════════
+  BIRD ART FROM RESEARCH (ascii.co.uk, ascii-art.de, etc.)
+═══════════════════════════════════════════════════════════════
+
+
+── LETTER-BIRD DESIGNS (custom for LateLetter) ───────────────
+
+Design A (perched, small):     Design B (dove-inspired):
+  \( )/                            _,
+   (o>                           _( _,\
+   /| [✉]                      ( \)/ [✉]
+  / |                            \/ )_/(
+                                  /( `-'
+
+Design C (simple carrier):     Design D (on branch):
+   __                                .-.
+  (o >--[✉]                        (o.o)
+  /_)                               |/ \| [✉]
+  " "                               /| |\
+                                   (_| |_)
+                                 ====="="=====
+
+
+── FLYING BIRD FRAMES ────────────────────────────────────────
+
+Singing bird (llizard/ejm, 2 frames):
+  Frame 1:          Frame 2:
+    <")               >")
+     ( >\              ( >\
+      " \\              " \\
+         \                 \
+
+Minimal flapping (2-frame, tiny — best for V-formation):
+  Frame 1: \./       Frame 2: /.\
+            V                  ^
+
+Medium flying (3-frame, good for crossing screen):
+  Frame 1:          Frame 2:          Frame 3:
+   , _ ,              ___               ___
+  ( o  )>            ( o  )>            ( o  )>
+   `---'              `---'              ,---,
+
+
+── PERCHED BIRDS ─────────────────────────────────────────────
+
+Tiny bird:        Mother + chicks:           Duck row:
+ __                  _
+('> or ('>          ('=   _     _            __(.)< __(.)> __(.)=
+/_)    /_)          /_)  >')   >')           \___)  \___)  \___)
+                    /||
+
+Small perched:     Compact flying:
+       _                 _
+  ----(O)               /.)
+       \               /)\|
+        \_            // /
+        ( `'--.,     /'" "
+         `,___/

@@ -1,0 +1,223 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Weather Effect ASCII Animations
+  Per docs/SPEC.md §7.2 and §7.3 (seasonal system)
+  Reference impl: anim_J_bounce.py (rain/lightning physics)
+═══════════════════════════════════════════════════════════════
+
+
+── RAIN (Spring/Autumn) ──────────────────────────────────────
+   Per spec: Dense | streaks falling, ground row shows splashes
+   Reference: anim_J_bounce.py uses \ for angled, | for vertical
+   Timing: 40ms frame rate (from reference)
+
+Rain characters by angle:
+  |   — vertical (near-zero vx)
+  \   — angled right (positive vx > 0.18)
+  /   — angled left (negative vx, rare)
+
+Ground splash characters (from reference):
+  '   — fresh splash (life > 4)
+  .   — fading splash (life <= 4)
+
+Fragment chars (bouncing off objects):
+  * (bold)  — fresh fragment (brightness > 0.65)
+  . (bold)  — medium fragment (brightness > 0.35)
+  ·         — fading fragment (brightness > 0.14)
+
+Rain density by intensity:
+  Light drizzle:  MAX_DROPS = 15, VY = (0.20, 0.80)
+  Normal rain:    MAX_DROPS = 35, VY = (0.35, 1.20)
+  Heavy rain:     MAX_DROPS = 55, VY = (0.35, 1.80)  [reference default]
+  Downpour:       MAX_DROPS = 80, VY = (0.50, 2.20)
+
+Light rain frame example (80x8):
+................................................................................
+........|.......\........|.........|.........\........|...........\..............
+....|........\........|.........\........|..........\........|.........\..........
+..........|.......\........|.........\........|.........\........|...............
+......|........\........|.........\........|..........\........|.........\........
+...........|.......\........|.........\........|.........\........|...............
+.............|........\........|.........\........|..........\........|...........
+________________________________________________________________________________
+
+Heavy rain frame example (80x8):
+...\....|...\...|....\...\...|...\....|...\...|...\....|...\...|....\...\...|..
+.|...\...|....\...\...|...\....|...\...|....\...\...|...\....|...\...|....\....
+...|...\....|...\...|....\...\...|...\....|...\...|...\....|...\...|....\...\..
+\...|...\...|....\...\...|...\....|...\...|....\...\...|...\....|...\...|......
+...\...|...\....|...\...|....\...\...|...\....|...\...|...\....|...\...|....\..
+|...\...|....\...\...|...\....|...\...|....\...\...|...\....|...\...|....\...\.
+...|...\....|...\...|....\...\...|...\....|...\...|...\....|...\...|....\...\..
+__'._.'__..'___'__.'__.'_.'__'.__.'__.'__..'___'__.'__.'_.'__'.__.'__.'__..'___
+
+
+── LIGHTNING (Storm events) ──────────────────────────────────
+   Per reference: Jagged bolt from sky to ground/shape
+   Segment chars age: bold # → bold + → *
+   Screen inverts for 2 frames (DECSCNM reverse video: \033[?5h)
+   Thunder bell (\a) after distance-proportional delay
+
+Bolt generation (from reference):
+  - Random column in center 75% of screen
+  - Walk downward: r += 1, c += random(-2..2) weighted center
+  - Up to 2 forks branch off after row > height/5
+  - Fork length: 3 to (ground - fork_row) / 2
+
+Example bolt (single frame):
+
+                    #
+                   #
+                  #
+                 #
+                #
+               # #
+              #   #
+             #     #
+            #       *
+           #
+          #
+         #
+        +
+       +
+      *
+
+
+── SNOW (Winter) ─────────────────────────────────────────────
+   Per spec: Sparse · or * drifting; accumulates on plant tops
+
+Snow particle characters:
+  ·    — small flake (most common)
+  *    — medium flake
+  ❄    — large flake (rare, if unicode supported)
+  .    — tiny flake
+
+Snow physics (contrast with rain):
+  - Much slower: VY = (0.05, 0.25)
+  - Horizontal drift: VX oscillates (sine wave) for floating effect
+  - No gravity acceleration (terminal velocity reached)
+  - MAX_DROPS = 20 (sparse)
+  - No splash on ground; instead, accumulates
+
+Accumulation layer:
+  Before snow:    After snow:
+  .-'-.           .·'·-.
+ ( @ @ )         ·( @ @ )·
+  `-.-'           `-.-'
+    |               |
+   /|\             /|\
+  _____           ___·__
+                  ·····
+
+Snow drift pattern (per-frame, showing horizontal oscillation):
+  Frame 1:    Frame 2:    Frame 3:    Frame 4:
+     ·           ·          ·          ·
+      ·           ·        ·          ·
+    *              *        *           *
+       ·            ·     ·          ·
+  ·            ·          ·             ·
+
+Snow on ground (accumulation chars):
+  _ → _· → ·_ → ·· → ·*· → **· → ***
+
+
+── CLOUDS (All seasons) ──────────────────────────────────────
+   Per spec: (~~~) shapes drifting slowly left at sky row
+
+Cloud shapes (various sizes):
+
+Tiny:       Small:        Medium:           Large:
+ (~)        (~~~)       .--~~~--.        .~~~--~~~~--.
+                        '~~~~~~'        (~~~~~~~~~~~~~)
+                                         '~~~~~~~~~~'
+
+Storm cloud:              Rain cloud:
+  .-~~~=~~-.              .--~~~--.
+ (=~~=~~~=~~)            (~~//~~//~)
+  '-~~~=~~-'              '--||--'
+                             ||
+
+Cloud drift animation (3 frames showing leftward motion):
+
+Frame 1: ............(~~~)...........(.--~~~--.)..........
+Frame 2: ...........(~~~)..........(.--~~~--.)...........
+Frame 3: ..........(~~~)..........(.--~~~--.)............
+
+
+── FALLING LEAVES (Autumn) ───────────────────────────────────
+   Per spec: * or , drift diagonally downward
+   Inspired by rovira_isabela_leaffalling.gif (dark tree + falling leaves)
+
+Leaf characters (by type/size):
+  ,    — tiny leaf, most common
+  '    — tiny leaf, alternate
+  *    — medium leaf
+  ~    — curled leaf
+  }    — small leaf shape
+  >    — falling leaf, angled
+  %    — cluster
+
+Leaf physics:
+  - VY = (0.10, 0.40) — slower than rain
+  - VX = oscillating sine wave + random gusts
+  - Tumble: character changes each frame (rotation illusion)
+    , → ' → , → ' → ...
+    * → ~ → * → ~ → ...
+  - No splash; leaf settles on ground row
+
+Leaf tumble sequence (single leaf across frames):
+  Frame 1:  ,
+  Frame 2:   '
+  Frame 3:    ,
+  Frame 4:      '
+  Frame 5:       ,
+  Frame 6:        '  (lands on ground)
+
+Multiple leaves falling (80x10 snapshot):
+
+      ,           *                    '
+         '              ~       ,
+   ,          '                          *
+                  ,          '
+        *                         ,
+                       '
+   '         ,                 '         ,
+                    *                       '
+  ,      '              ,          '
+________,____'_______,___*____'________,_____
+
+
+── WIND GUST EFFECT ──────────────────────────────────────────
+   Not in spec but implied by wind sway (§7.1)
+   Affects rain angle, leaf drift, snow drift, plant sway simultaneously
+
+Wind indicator (optional status bar or subtle):
+  Calm:     ~~~
+  Breeze:   ~~>
+  Wind:     ~>>
+  Gust:     >>>
+
+Wind modifies all particle VX by a gust factor:
+  gust = sin(time * 0.3) * wind_strength + random_noise
+
+
+── SEASONAL COMBINATIONS (per SPEC §7.3) ────────────────────
+
+Winter (Dec-Feb):
+  Active: Snow, bare trees
+  Palette: Muted, conifers, dead oak
+  Weather: Snow particles + occasional wind gusts
+
+Spring (Mar-May):
+  Active: Butterflies, light rain
+  Palette: Flowers dominant, bright greens
+  Weather: Light drizzle + occasional sun breaks
+
+Summer (Jun-Aug):
+  Active: Fireflies at dusk, birds
+  Palette: Full palette, lush
+  Weather: Warm breeze (plants sway gently), occasional thunderstorm
+
+Autumn (Sep-Nov):
+  Active: Falling leaves, rain
+  Palette: Warm colors (yellows, reds), dead trees
+  Weather: Rain + falling leaves + wind gusts

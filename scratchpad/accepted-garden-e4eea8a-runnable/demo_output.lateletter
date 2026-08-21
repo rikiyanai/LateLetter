@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "bundle_id": "2f61ac24-bc31-40a0-b29a-97503ba18fdd",
+  "author_name": "Robert",
+  "passphrase_hint": "The name of our first dog",
+  "bundle_auth_salt": "DnEll0475Z+QGWkGqu6FEA==",
+  "garden_seed": 42301,
+  "messages": [
+    {
+      "id": "01bce374-a7dd-45e2-b88c-4de7516b374f",
+      "date": "2026-06-25",
+      "ciphertext": "eyJsYWJlbCI6ICJGb3IgeW91ciAzMHRoIGJpcnRoZGF5IiwgImJvZHkiOiAiRGVhciBNYXlhLFxuXG5UaGlydHkgeWVhcnMuIEkgcmVtZW1iZXIgdGhlIGRheSB5b3Ugd2VyZSBib3JuIGxpa2UgaXQgd2FzXG5sYXN0IHdlZWsgXHUyMDE0IHlvdXIgbW90aGVyJ3MgZmFjZSwgdGhlIHdheSB5b3UgZ3JhYmJlZCBteSBmaW5nZXJcbmFuZCB3b3VsZG4ndCBsZXQgZ28uIFlvdSBzdGlsbCBoYXZlbid0LCBub3QgcmVhbGx5LlxuXG5JIHdvbid0IHByZXRlbmQgSSdtIG5vdCBzYWQgdG8gbWlzcyB0aGlzIG9uZS4gQnV0IEkgd2FudCB5b3VcbnRvIGtub3cgc29tZXRoaW5nOiBldmVyeSBzaW5nbGUgZGF5IEkgZ290IHdpdGggeW91IHdhcyBhIGdpZnQuXG5Ob3QgdGhlIGtpbmQgeW91IHdyYXAgXHUyMDE0IHRoZSBraW5kIHRoYXQgcmV3aXJlcyB5b3VyIHdob2xlIGhlYXJ0LlxuXG5Zb3UgYXJlIGJyYXZlIGFuZCBmdW5ueSBhbmQgc3R1YmJvcm4gaW4gdGhlIGJlc3Qgd2F5LiBZb3UgZ290XG50aGF0IGZyb20geW91ciBtb3RoZXIuIChEb24ndCB0ZWxsIGhlciBJIHNhaWQgdGhlIHN0dWJib3JuIHBhcnQuKVxuXG5IYXBweSBiaXJ0aGRheSwga2lkLiBJJ20gc28gcHJvdWQgb2Ygd2hvIHlvdSBhcmUuXG5cbkxvdmUgYWx3YXlzLFxuRGFkIn0=",
+      "salt": "",
+      "nonce": "",
+      "kdf_params": null
+    },
+    {
+      "id": "fe26ae10-7e61-4237-89b1-3b5957c7c252",
+      "date": "2026-09-24",
+      "ciphertext": "eyJsYWJlbCI6ICJUaGF0IGZpcnN0IENocmlzdG1hcyIsICJib2R5IjogIkRlYXIgTWF5YSxcblxuSSBrbm93IHRvZGF5IG1pZ2h0IGJlIGhhcmQuIE91ciBraXRjaGVuIGFsd2F5cyBzbWVsbGVkIGxpa2VcbmNpbm5hbW9uIGFuZCBidXJuZWQgcGllIGNydXN0IGJ5IG5vb24gXHUyMDE0IEkgbmV2ZXIgZGlkIGZpZ3VyZSBvdXRcbnRoZSBvdmVuIHRpbWVyLiBZb3UnZCBzaXQgb24gdGhlIGNvdW50ZXIgYW5kICdzdXBlcnZpc2UsJyB3aGljaFxubWVhbnQgZWF0aW5nIGFsbCB0aGUgY2hvY29sYXRlIGNoaXBzLlxuXG5JIHdhbnQgeW91IHRvIG1ha2Ugc29tZXRoaW5nIHRvZGF5LiBBbnl0aGluZy4gRXZlbiB0b2FzdC5cblN0YW5kIGluIHRoZSBraXRjaGVuIGFuZCBsZXQgaXQgc21lbGwgbGlrZSBzb21ldGhpbmcgd2FybS5cblxuSSdtIG5vdCBnb25lIGZyb20gdGhhdCBraXRjaGVuLCBub3QgcmVhbGx5LiBFdmVyeSB0aW1lIHlvdVxuYnVybiBzb21ldGhpbmcgYW5kIGxhdWdoIGFib3V0IGl0LCB0aGF0J3MgbWUuXG5cbk1lcnJ5IENocmlzdG1hcywgc3dlZXRoZWFydC5cblxuRGFkIn0=",
+      "salt": "",
+      "nonce": "",
+      "kdf_params": null
+    },
+    {
+      "id": "79e0043d-96eb-4f9a-aa9c-0c0a98292453",
+      "date": "2029-06-25",
+      "ciphertext": "eyJsYWJlbCI6ICJKdXN0IGFuIG9yZGluYXJ5IFR1ZXNkYXkiLCAiYm9keSI6ICJEZWFyIE1heWEsXG5cblRoZXJlJ3Mgbm8gb2NjYXNpb24gdG9kYXkuIFRoYXQncyB0aGUgcG9pbnQuXG5cbkkgd2FudGVkIHlvdSB0byBrbm93IHRoYXQgSSB0aGluayBhYm91dCBvcmRpbmFyeSBkYXlzIHRoZSBtb3N0LlxuTm90IHRoZSBiaXJ0aGRheXMgb3IgdGhlIGhvbGlkYXlzIFx1MjAxNCB0aGUgVHVlc2RheXMuIFRoZSBvbmVzXG53aGVyZSB3ZSB3YWxrZWQgQmlzY3VpdCBhcm91bmQgdGhlIGJsb2NrIGFuZCBkaWRuJ3Qgc2F5IG11Y2hcbmFuZCBpdCB3YXMgcGVyZmVjdC5cblxuSSBob3BlIHlvdSdyZSBoYXZpbmcgYSBnb29kIG9yZGluYXJ5IGRheS4gSSBob3BlIHRoZSB3ZWF0aGVyXG5pcyBuaWNlIHdoZXJlIHlvdSBhcmUuIEkgaG9wZSBzb21lb25lIG1hZGUgeW91IGxhdWdoIHRvZGF5LlxuXG5UaGF0J3MgYWxsLiBKdXN0IHdhbnRlZCB0byBzYXkgaGkuXG5cbkxvdmUsXG5EYWQifQ==",
+      "salt": "",
+      "nonce": "",
+      "kdf_params": null
+    }
+  ],
+  "garden_gifts": [
+    {
+      "id": "2f044006-ea0a-45b6-8e8c-4f152fbc2b88",
+      "type": "animal",
+      "catalog_id": "rabbit",
+      "sentiment_ciphertext": "SSBsZWZ0IGEgcmFiYml0IGluIHlvdXIgZ2FyZGVuLiBTaGUgd2FzIGFsd2F5cyBjYXV0aW91cywgYnV0IHBhdGllbnQuCkdpdmUgaGVyIHRpbWUuIFNoZSdsbCBjb21lIGNsb3NlLg==",
+      "salt": "",
+      "nonce": "",
+      "trigger": {
+        "type": "cumulative_visits",
+        "value": "1"
+      },
+      "placement_hint": "random",
+      "animal_name": null,
+      "animal_collar_color": null
+    },
+    {
+      "id": "d2173ce3-128a-4a55-93dc-d747392874ba",
+      "type": "item",
+      "catalog_id": "plate_of_food",
+      "sentiment_ciphertext": "SSB1c2VkIHRvIHBsYW50IGJ1bGJzIGluIGF1dHVtbiBzbyB5b3UnZCBoYXZlIHNvbWV0aGluZyB0byBsb29rCmZvcndhcmQgdG8gaW4gc3ByaW5nLiBUaGlzIG9uZSB0b29rIGxvbmdlciB0byBibG9vbS4gSSBob3BlIGl0CndhcyB3b3J0aCB0aGUgd2FpdC4=",
+      "salt": "",
+      "nonce": "",
+      "trigger": {
+        "type": "date",
+        "value": "2026-09-24"
+      },
+      "placement_hint": "random",
+      "animal_name": null,
+      "animal_collar_color": null
+    }
+  ],
+  "notification": null,
+  "checksum": "",
+  "hmac": ""
+}

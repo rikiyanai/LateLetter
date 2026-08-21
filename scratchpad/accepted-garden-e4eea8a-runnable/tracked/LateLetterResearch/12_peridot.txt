@@ -1,0 +1,30 @@
+Sources: Peridot Getting Started, Traits and Archetypes, Dot Levels
+Publisher: Niantic Spatial
+URLs:
+  https://nianticspatial.helpshift.com/hc/en/4-peridot/faq/707-getting-started/
+  https://nianticspatial.helpshift.com/hc/en/4-peridot/faq/697-traits-and-archetypes/
+  https://nianticspatial.helpshift.com/hc/en/4-peridot/faq/688-dot-levels/?l=en&p=web
+Accessed: 2026-07-30
+Type: Official help documentation
+
+Relevant findings
+-----------------
+
+Peridot gives each creature a distinct blend of traits, progresses it through
+developmental stages, and awards growth or bond experience for desires and
+interaction. Explicit bond levels make progress legible. The documented bond
+level also decreases over time.
+
+LateLetter transfer
+-------------------
+
+Keep distinct seeded traits, developmental stages and behavior unlocked by
+relationship growth. Reject time-based bond decrease, daily-login pressure and
+task-list desires. LateLetter communicates relationship primarily through
+behavior and retains progress indefinitely.
+
+Limit
+-----
+
+Peridot is an AR collection and breeding game with economy and location
+systems. Those systems are outside the LateLetter transfer.

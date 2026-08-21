@@ -1,0 +1,25 @@
+{
+  "status": "profile_incomplete_timeout",
+  "authority": "diagnostic_only",
+  "source_profile": "recognizer-profile-v10.json",
+  "source_profile_sha256": "972bb6239245d18c964cd3a09ef972641ec74907429a596f559e5f5c27a8992a",
+  "interrupted_at_adapter": "structural-unicode-row",
+  "interrupted_at_fixture_index": 7,
+  "completed": {
+    "tesseract-offline": {
+      "fixtures": 10,
+      "runtime_seconds": 60.0
+    },
+    "fixed-lattice-structural": {
+      "fixtures": 10,
+      "runtime_seconds": 24.2
+    },
+    "structural-unicode-row": {
+      "fixtures": 7,
+      "runtime_seconds": 347.0
+    }
+  },
+  "reason": "unbudgeted profile interrupted while structural span expansion exceeded the bounded execution ceiling",
+  "candidate_or_acceptance_changed": false,
+  "next": "fresh independently budgeted profile; do not resume or promote this snapshot"
+}

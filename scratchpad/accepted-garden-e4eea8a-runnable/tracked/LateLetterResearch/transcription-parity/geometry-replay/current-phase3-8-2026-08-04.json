@@ -1,0 +1,492 @@
+{
+  "counts": {
+    "error": 0,
+    "proved": 26,
+    "rejected": 0,
+    "timeout": 0,
+    "total": 26
+  },
+  "implementation_identity_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/implementation-identity-phase3-8-2026-08-04.json",
+  "implementation_identity_sha256": "e6c297bf6634607659f907f112dee47d47cc6893bdafb7c7c425666354ac461f",
+  "inventory_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/source-inventory-phase3-8-2026-08-04.json",
+  "inventory_record_hash": "143cd186a07e157d2a213d89c49ea4848b1bc2d351c835571d4e63848a5fdf27",
+  "inventory_sha256": "16e0ead0a673cac128d01ff05174447e95720251af3a34a4badb1fc7d0fb8250",
+  "inventory_source_sha256": "66230d3746ef1aa4036574f65ef47bb8d55d85ee295c0b400866b5b76aa61b08",
+  "recorded_at": "2026-08-04T14:28:19.663237+00:00",
+  "records": [
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 19415.116,
+      "evidence_hash": "82039234ba3aa23a9271b6202e43ed329b18090f9bcd50e2a04d682cad7df0fe",
+      "geometry_hash": "9ba8032ae40e21cb55d08dcd8d044be9cc1f4881d339e93fa636633ed673d406",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Screenshot 2026-07-31 at 13.12.04.normalized.png",
+      "source_sha256": "9fee60dd442cc33cf875916a571d213ee06321c5898ee6020e32fad96fad536d",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 11414.951,
+      "evidence_hash": "f29af5fd6cf46b45320cad10e4c49ab087503c5b5bd1aa1548891ec4f67db0b7",
+      "geometry_hash": "5c8a555c3eb527c6afd4e8a94509a6f343b5342148e76b3bf5b647fce3b7dc09",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "4409e4149b1b6827b4b8c44ed8a3772d.normalized.png",
+      "source_sha256": "3b1d1220a072ce51ba0bf6bcdf695a4a489d1635534d473fd99e676ae101b912",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 4271.219,
+      "evidence_hash": "c6c85c7fcbf8c4667fe85beef1dff7e4ea9851ea88b6bcb1e32cba9a56726f1f",
+      "geometry_hash": "a9ac6204680f0cdc747e0e8d809d906a195d83fb2a607046b853ef0f401be5a4",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "570f8131c83cdafded2c3b5be78d4df8.normalized.png",
+      "source_sha256": "afaad62a1a383a62ea0646cd0d2f720f27ded7f97012a4173e55ef31806322b7",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 4921.612,
+      "evidence_hash": "654cbe454375c3a5e98e4842b0143e4b8783ad502b9d19c3d346038d62d4fb59",
+      "geometry_hash": "31292d61bb3dccce48622306a9da747888fb40d6af801ddda710a68717da9338",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "988fd1ab7783d6757e0b68aa9b27ab4d.normalized.png",
+      "source_sha256": "e37d0eb6da6755840401c9cc00d362e2da761b6df51de81eb2a069d4cc410dda",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 7262.089,
+      "evidence_hash": "676ce3fbc57568fc45ee104b58b6f967c0a19ee634d929271bc8ebe094611f52",
+      "geometry_hash": "dd3a8787d19276072f3e450e0d40b927e0c7a821ad03576765ed46f2ebcd4b70",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "9d0cb1893cfa495d1edfdaf8d312108c.normalized.png",
+      "source_sha256": "976162d43548bbd8f59c9944c98c78e69a389eb1204438d14703cb355185c17f",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 48348.91,
+      "evidence_hash": "23fcbe3dff88a63dfb0e0624081db300e328d54918c37c7355c8df3dd658c44c",
+      "geometry_hash": "33c5c469851bf7f96193f6a364ce91d6299bb283165ab2eac725b78867af94a3",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Fish-shell-logo-ascii-black.svg.normalized.png",
+      "source_sha256": "cede3a44f18236133af2aa2724a2520724341d30b6606957dfd9a54b4189b38c",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 12482.739,
+      "evidence_hash": "c759e42d36abf2753b25f2493cd3125160119baf52e36d33e90b68a96fc67ff4",
+      "geometry_hash": "be1681a9916ff24c933800fe6dad6806a5a312aadb71909cf574868f30614a37",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Screenshot 2026-07-31 at 13.14.18.normalized.png",
+      "source_sha256": "bfa54972c6b3d4cd297fe16a451d9eacae47fe07b84149447cd2315721402112",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 10925.123,
+      "evidence_hash": "037794c17ad333e08399b1f094a227803e8cd1abb236c7aabc7e30aa411ad039",
+      "geometry_hash": "4630a4d12f0a848e28fb6244e7870348dbbaeee70064d46eb39fa7ad3303421e",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Screenshot 2026-07-31 at 13.14.25.normalized.png",
+      "source_sha256": "8154e782230e033cafa392e9a75955198da31ed74ed095ce224edfa59caea29b",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 12470.727,
+      "evidence_hash": "3bbc346b5dc0cf721982af5aa066717add67d8277839211825a7f8a8f1b47f05",
+      "geometry_hash": "10e9c2003ee9eb56f5952b36494188c3b17a65dc7712a4acac29fd21069f493d",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Screenshot 2026-07-31 at 13.14.32.normalized.png",
+      "source_sha256": "1f9418c5e49b9af32f345eff73b2ebeccd64194b6e36b628b444978511826807",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 8959.351,
+      "evidence_hash": "f79fa6ee5cf5b488a236972bf189d5279adfd5a851e9509fb6746eb4cd27513c",
+      "geometry_hash": "eb89eab34455e9dd72bd7008af778559863b316e389f6b38164c61aaf256ea6d",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Screenshot 2026-07-31 at 13.16.07.normalized.png",
+      "source_sha256": "ac94476293ccf8d038ec04ca27c4a95619ce014570def8816316cf5355d3847d",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 13070.058,
+      "evidence_hash": "47fbcb1d39310edcdc1a91ef81164291922b1ea42b22e06e6cf4c7dea27b80e9",
+      "geometry_hash": "dea35aed140e101cae04c620f730717b1b716f1d5710dfce7a0ba45ef1d2056b",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Screenshot 2026-07-31 at 13.29.23.normalized.png",
+      "source_sha256": "3e2fcc96a30393245c68f88e2ebc3cf924d46ba9a67e725956bf630fd375d4b1",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 6499.7,
+      "evidence_hash": "46ea5e5a4206c9392854c7e7fed6faf16fa517b774a95b6eddb86d7f06985cbe",
+      "geometry_hash": "952870a9cd2caba313c65e43844678a0a3ed7378a0808704d4572d842ddfbf4d",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "Screenshot 2026-07-31 at 13.30.21.normalized.png",
+      "source_sha256": "7bef5889725fa6746d9ba624be98360ca8b53eabeace7a8f898c269eec591754",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 9025.774,
+      "evidence_hash": "3b551167f21d4d85526817b773cfae7e3d8a70f7105aded80d2f4536e2053fba",
+      "geometry_hash": "e31d882854695816cbc4fff3f69c1cdb0424ece73b45a53fa822762bdf285ed8",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "a8283c5cdb63b130.png!cover_jpg.normalized.png",
+      "source_sha256": "4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 5400.964,
+      "evidence_hash": "9aca913edf75a9c65f93bad995b8627a1d693696e78a114011f80589341b34c2",
+      "geometry_hash": "494d20ec12542940a082c319535a9fac499ea7dee1cd1072394199f40eaab4af",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "bbbb_flowers.normalized.png",
+      "source_sha256": "38eb07a2f8dcebf04dc2ae4bf9cbc9e4231f2ed33e5fcfc90b14ef0008ecf958",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 42845.667,
+      "evidence_hash": "79114ad83470a6b8d963f0fbad2abc439696f913d6d0cc3cf3206fc2a1da6f01",
+      "geometry_hash": "c71bf51ad727696ed704f06d03929caa2e320b89f68ea256d92529b7905fb260",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "c1np1jdixihf1.normalized.png",
+      "source_sha256": "0ddcc935931b3e66b38055befec2a013e78354d0f113b4ad62f57f2935d6d553",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 40001.562,
+      "evidence_hash": "77c887d466eccc55f622440c173ef1ecb36cb2e7eef9329b7a9ec558ef76a9eb",
+      "geometry_hash": "397106ef6c142db3c0f85360f07b0beb4840a0a236a4894cde4dc6fc40ad1960",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized.png",
+      "source_sha256": "0f68d0601f249d33d9472351745755a311accf129b4e7838b83cc49609004429",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 4044.039,
+      "evidence_hash": "0c49ddf825ffcfa660c83725b42fdeabaf8a7a4cd04883fb0f2df27048c4bbb5",
+      "geometry_hash": "0ea9ceb595a64e70db1c445487a75d6319dfdc10cfc4ecc6740674d2b7d8f342",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "d4b66f66373db2f3f46d775ed3cb9eee.normalized.png",
+      "source_sha256": "e1919435a74f80cbc5a8a2f2b501c4801c6b34246f53676def0dca8314249a96",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 5840.836,
+      "evidence_hash": "0f187957bcfd8a781d4e8bc6a6b0a90646a13b1930ccc9fc44cc5d4f07553876",
+      "geometry_hash": "e7cf1f2a3970965d1aa532a55abbffcd5b1553cdacfceb2d3fb0975c951034ef",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "eb861dc84400fc36.png!cover_jpg.normalized.png",
+      "source_sha256": "3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 3873.251,
+      "evidence_hash": "f2125d9bf5ff610d4fd1920ad06e3182cce7fa7c71ee44e36c339a9355842bf2",
+      "geometry_hash": "9ac72a67907acc9a71856c8a2bdb3bf5e95c2aceecbb7c29d06dd64ab2ba5056",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "ebf485c62e6e63738ad4fcb1a4396e28.normalized.png",
+      "source_sha256": "6d022cabc2afd12dda47ba87fd61eda6b1521e6129317ab2f327c9d1c9b78a95",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 11950.416,
+      "evidence_hash": "7ae0d820981c9d71e7d3e5cf61c2baaf4f50ffbf9d15b99c0ee51cf91a7f6fec",
+      "geometry_hash": "3b49b922dc33a8986ff0161841a154ccfe7b809c450801b5164a0abdbbb2fa64",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "images.normalized.png",
+      "source_sha256": "5b0e1f4f0a416c952807fc4a7c6b25651693658cbc7934dfbdc512486d3e1822",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 14169.551,
+      "evidence_hash": "4c389cd47fef932aa6fc27131d7098b8b4c283c8696a1927b8d8865db3882a9c",
+      "geometry_hash": "4be8215e5f0a838da764adcf69139952ec4c3f9e0634dbcb86829fdb33c7cbdc",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "rain-wind-ascii-art-v0-2asg0us8glbf1.normalized.png",
+      "source_sha256": "8a87b1d7f53a93aa297a36f11fe916eddf71afe470f3615abd931c5dac7f001b",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 14624.752,
+      "evidence_hash": "1fac6e8b24368210c3a8ee7913f10038df5e3676f0bb2b692f46e12b5e553fd7",
+      "geometry_hash": "8d37315200dd4da514726fbf067c100195c6ba56a261a69cfbd89f9306f80481",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized.png",
+      "source_sha256": "70526f6720814da888a7bc136ab451a806d71778db003e2a5a29c55f092f75b4",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 26915.113,
+      "evidence_hash": "0df9f5b1eaea3ecc54b49287cf2da86a6f0403f147efd741d70e071064b9db77",
+      "geometry_hash": "c80510ea7c35ab685dfdc56b7cb2a7775d9fdc78efb22f3571333d7fd60b6361",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "stonestoryCross_River_Banner.jpg.normalized.png",
+      "source_sha256": "ef0fd069021412aa71d85d7c61417d19b6fcbfee7a17f0d1e4ba4de4602501c4",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 19573.729,
+      "evidence_hash": "aaa333fb6de4fe27dedc114b8ea88e0ef8561d8e151a54054480dcc4b34eb45e",
+      "geometry_hash": "fbce38f0900d968f88c954e2de6dfb25995bff2fe2082751ea4ac0b716cc137c",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "stonestorycrypt_shop.jpg.normalized.png",
+      "source_sha256": "400c54e85f4252a24c66b10d2a17b27b133fe0ab127e5c2e1f1a0e7997b3c4d3",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 20593.854,
+      "evidence_hash": "360ddfdb05edb2447a986884d04fa4967f1a9749f6fed334ea7706cfee767600",
+      "geometry_hash": "143f9319e6a26f154bfb475a6639dd7165037d046994df8538be74adec06cd12",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "stonestoryranting_tree_rework.jpg.normalized.png",
+      "source_sha256": "c86a7cc08e17062353f925e142e708a93f51ef8029ec8d54c8c89873e65bc70a",
+      "status": "proved"
+    },
+    {
+      "bundle_rejection_reasons": [],
+      "bundle_status": "proved",
+      "elapsed_ms": 19227.155,
+      "evidence_hash": "0214c7f6b86c39b108c8c1efabf098c8acf8ca22d406891887551a912e3bba5d",
+      "geometry_hash": "66fe063ca6e4eed3832e2d11ef8c1a9b3470eed5a76ca0ae268a7d9cf94e67bf",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source": "waterfall-2c.normalized.png",
+      "source_sha256": "b119f63b182d4ddef6bdfb97574e4f8998fcdb566b830197effd8e1e995b6d06",
+      "status": "proved"
+    }
+  ],
+  "release_gate": false,
+  "schema": "lateletter-geometry-replay-4",
+  "source_root": "/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES ",
+  "source_root_external": true,
+  "status": "measurement_complete",
+  "timeout_seconds": 90
+}

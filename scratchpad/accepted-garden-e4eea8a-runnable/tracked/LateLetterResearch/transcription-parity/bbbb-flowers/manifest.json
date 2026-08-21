@@ -1,0 +1,38 @@
+{
+  "reference_id": "bbbb-flowers",
+  "status": "verified_reference_transcription_blocked_raster",
+  "source_png": "source/source.normalized.png",
+  "source_sha256": "f7d6f3d502cac705902885083219bed253a92cc0d5a5c058353c6781b04f7f3e",
+  "source_renderer": "unknown; source is a palette-coloured raster",
+  "raster_parity": "blocked: exact source font and colour renderer unavailable",
+  "transcript": "accepted.txt",
+  "transcript_state": "verified: byte-for-byte copy of attempts/021-final-structural-recognition/machine-cell-ocr.txt",
+  "canvas": {
+    "width_px": 307,
+    "height_px": 318,
+    "background_rgba": "282923ff"
+  },
+  "placement": {
+    "font_path": "/System/Library/Fonts/Menlo.ttc",
+    "font_size_px": 15,
+    "origin_x_px": -71,
+    "first_baseline_y_px": 34,
+    "line_height_px": 19,
+    "glyph_advance_px": 9,
+    "foreground_rgba": "f8f8f2ff",
+    "measurement_state": "grid mechanically recovered from source-ink autocorrelation: 9 px advance, 19 px line pitch; source renderer remains unknown"
+  },
+  "artifacts": {
+    "rerender_png": "rerender.png",
+    "overlay_png": "overlay.png",
+    "diff_png": "diff.png"
+  },
+  "review": {
+    "layout_parity": "accepted",
+    "human_visual_parity": "accepted",
+    "raster_parity": "blocked_unknown_font",
+    "verdict": "approved"
+  },
+  "acceptance_receipt": "acceptance-receipt.json",
+  "accepted_sha256": "6b33a6a36d98dac6e8e50094f3ca949b4ebcc55318a658e2b4535c18c8c20173"
+}

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "catalog_id": "bright-stars-1",
+  "catalog_title": "Bright Star Catalogue, 5th Revised Edition",
+  "catalog_reference": "V/50/catalog",
+  "catalog_url": "https://cdsarc.cds.unistra.fr/viz-bin/cat/V/50",
+  "catalog_rights_url": "https://cds.unistra.fr/vizier-org/licences_vizier.html",
+  "selection": "Named stars with visual magnitude <= 1.86, curated for a small offline naked-eye layer",
+  "fields": ["HR", "Name", "RAJ2000", "DEJ2000", "Vmag"],
+  "retrieved_utc": "2026-07-20T21:41:59Z",
+  "coordinate_algorithm": {
+    "authority": "U.S. Naval Observatory Astronomical Applications Department",
+    "sidereal_time_url": "https://aa.usno.navy.mil/faq/GAST",
+    "altitude_azimuth_url": "https://aa.usno.navy.mil/faq/alt_az",
+    "accuracy_boundary": "UTC approximates UT1 and TT; garden display only, never navigation"
+  }
+}

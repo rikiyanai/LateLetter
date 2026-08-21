@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "id": "garden-atlas-1",
+  "unicode_version": "15.1.0",
+  "profiles": ["ascii-safe", "unicode-cell-safe", "browser-font-locked", "browser-rich"],
+  "semantic_tokens": {
+    "organ_kind_glyphs": {"root": "+", "stem": "|", "branch": "/", "vine": "\\", "leaf": "*", "bloom": "@", "fruit": "o"},
+    "plant_species_glyphs": {"oak": "Y", "pine": "^", "willow": "Y", "cherry": "Y", "maple": "Y", "hydrangea": "*", "wisteria": "v", "meadow_grass": "'", "rosemary": ";", "water_lily": "*", "lavender": "*", "rose": "@", "daisy": "*", "tulip": "u", "sunflower": "O", "fern": "f", "ivy": "v", "herb": ";", "grass": "'", "reed": "|", "lotus": "*"},
+    "animal_tier_glyphs": {"bird": ["v", "V", "w", "W"], "cat": ["c", "C", "m", "M"], "rabbit": ["r", "R", "b", "B"], "turtle": ["t", "T", "o", "O"]},
+    "delivery_frames": {
+      "letterbird": [["  \\      ", " >o<-[✉] ", "  /      "], ["  /      ", " >o<-[✉] ", "  \\      "]],
+      "cat": [["/\\_/\\  ", "(>[✉])  "], ["/\\_/\\  ", "(=[✉])  "]],
+      "bird": [["  >o<   ", " /|\\    ", " [✉]    "], ["  >o<   ", "  |\\    ", " [✉]    "]],
+      "rabbit": [["(\\ /)  ", ".[✉].   "], ["(\\ /)  ", " [✉]    "]],
+      "turtle": [[" (~)    ", "{[✉]}   "], [" (~)    ", "{[✉]}   "]]
+    }
+  },
+  "connected_tiles": {
+    "fence": {"0": ".", "1": "|", "2": "-", "3": "+", "4": "|", "5": "|", "6": "+", "7": "+", "8": "-", "9": "+", "10": "-", "11": "+", "12": "+", "13": "+", "14": "+", "15": "+"},
+    "hedge": {"0": ".", "1": "#", "2": "#", "3": "#", "4": "#", "5": "#", "6": "#", "7": "#", "8": "#", "9": "#", "10": "#", "11": "#", "12": "#", "13": "#", "14": "#", "15": "#"},
+    "path": {"0": ".", "1": ":", "2": "=", "3": "+", "4": ":", "5": ":", "6": "+", "7": "+", "8": "=", "9": "+", "10": "=", "11": "+", "12": "+", "13": "+", "14": "+", "15": "+"},
+    "pond_edge": {"0": ".", "1": "|", "2": "~", "3": "+", "4": "|", "5": "|", "6": "+", "7": "+", "8": "~", "9": "+", "10": "~", "11": "+", "12": "+", "13": "+", "14": "+", "15": "+"},
+    "wall": {"0": ".", "1": "|", "2": "=", "3": "+", "4": "|", "5": "|", "6": "+", "7": "+", "8": "=", "9": "+", "10": "=", "11": "+", "12": "+", "13": "+", "14": "+", "15": "+"}
+  },
+  "assets": [
+    {
+      "id": "fixture.bench", "kind": "fixture", "label": "Bench", "description": "A place to sit and observe.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["="]]}]}},
+      "hotspots": [{"id": "sit", "label": "Sit on the bench", "action": "sit"}], "tags": ["author_placeable"]
+    },
+    {
+      "id": "fixture.fence_gate", "kind": "fixture", "label": "Fence and gate", "description": "A connected garden boundary.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"closed": [{"ticks": 1, "cells": [["+"]]}], "open": [{"ticks": 1, "cells": [["/"]]}]}},
+      "hotspots": [{"id": "gate", "label": "Open or close the gate", "action": "toggle"}], "tags": ["connected", "author_placeable"]
+    },
+    {
+      "id": "fixture.sundial", "kind": "fixture", "label": "Sundial", "description": "Shows garden story time.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["^"]]}]}},
+      "hotspots": [{"id": "inspect", "label": "Inspect the sundial", "action": "inspect"}], "tags": ["time"]
+    },
+    {
+      "id": "fixture.trellis", "kind": "fixture", "label": "Trellis", "description": "Supports trained vines.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["#"]]}]}},
+      "hotspots": [{"id": "train", "label": "Train a plant", "action": "train_plant"}], "tags": ["plant_support"]
+    },
+    {
+      "id": "fixture.birdbath", "kind": "fixture", "label": "Birdbath", "description": "A shallow bath for visiting birds.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"empty": [{"ticks": 1, "cells": [["u"]]}], "full": [{"ticks": 1, "cells": [["U"]]}]}},
+      "hotspots": [{"id": "refill", "label": "Refill the birdbath", "action": "refill"}], "tags": ["animal_affordance"]
+    },
+    {
+      "id": "fixture.lantern", "kind": "fixture", "label": "Lantern", "description": "A warm garden light.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"off": [{"ticks": 1, "cells": [["o"]]}], "on": [{"ticks": 1, "cells": [["*"]]}]}},
+      "hotspots": [{"id": "light", "label": "Light or extinguish the lantern", "action": "toggle"}], "tags": ["evening"]
+    },
+    {
+      "id": "fixture.pond", "kind": "fixture", "label": "Pond", "description": "A small pond with aquatic life.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["~"]]}]}},
+      "hotspots": [{"id": "tend", "label": "Tend the pond", "action": "tend"}], "tags": ["water"]
+    },
+    {
+      "id": "fixture.mailbox", "kind": "fixture", "label": "Memory mailbox", "description": "Holds keepsakes and memories.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"closed": [{"ticks": 1, "cells": [["M"]]}], "open": [{"ticks": 1, "cells": [["m"]]}]}},
+      "hotspots": [{"id": "open", "label": "Open the mailbox", "action": "open"}], "tags": ["memory"]
+    },
+    {
+      "id": "fixture.stepping_stones", "kind": "fixture", "label": "Stepping stones", "description": "A connected garden path.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["."]]}]}},
+      "hotspots": [{"id": "inspect", "label": "Inspect the path", "action": "inspect"}], "tags": ["connected", "path"]
+    },
+    {
+      "id": "fixture.bridge", "kind": "fixture", "label": "Bridge", "description": "Crosses water without breaking the path.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["="]]}]}},
+      "hotspots": [{"id": "cross", "label": "Cross the bridge", "action": "cross"}], "tags": ["connected", "path"]
+    },
+    {
+      "id": "fixture.planter", "kind": "fixture", "label": "Planter", "description": "A container for garden plants.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["U"]]}]}},
+      "hotspots": [{"id": "plant", "label": "Plant in the planter", "action": "plant"}], "tags": ["plant_support"]
+    },
+    {
+      "id": "fixture.table_chairs", "kind": "fixture", "label": "Garden table", "description": "A table and chairs for a quiet pause.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["T"]]}]}},
+      "hotspots": [{"id": "sit", "label": "Sit at the table", "action": "sit"}], "tags": ["shared_space"]
+    },
+    {
+      "id": "fixture.well", "kind": "fixture", "label": "Well", "description": "A garden water source.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["O"]]}]}},
+      "hotspots": [{"id": "draw", "label": "Draw water", "action": "draw_water"}], "tags": ["water"]
+    },
+    {
+      "id": "fixture.arbor", "kind": "fixture", "label": "Arbor", "description": "A shaded arch for vines.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["n"]]}]}},
+      "hotspots": [{"id": "observe", "label": "Stand beneath the arbor", "action": "observe"}], "tags": ["plant_support"]
+    },
+    {
+      "id": "fixture.wind_chime", "kind": "fixture", "label": "Wind chime", "description": "A chime moved by the breeze.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["!"]]}]}},
+      "hotspots": [{"id": "listen", "label": "Listen to the wind chime", "action": "listen"}], "tags": ["ambience"]
+    },
+    {
+      "id": "fixture.shed_edge", "kind": "fixture", "label": "Shed", "description": "The edge of a small tool shed.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"closed": [{"ticks": 1, "cells": [["H"]]}], "open": [{"ticks": 1, "cells": [["h"]]}]}},
+      "hotspots": [{"id": "inspect", "label": "Inspect the shed", "action": "inspect"}], "tags": ["storage"]
+    },
+    {
+      "id": "fixture.tool_rack", "kind": "fixture", "label": "Tool rack", "description": "Keeps garden tools together.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["I"]]}]}},
+      "hotspots": [{"id": "choose", "label": "Choose a tool", "action": "choose_tool"}], "tags": ["tending"]
+    },
+    {
+      "id": "fixture.watering_can", "kind": "fixture", "label": "Watering can", "description": "Used to water plants.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"empty": [{"ticks": 1, "cells": [["w"]]}], "full": [{"ticks": 1, "cells": [["W"]]}]}},
+      "hotspots": [{"id": "water", "label": "Water a plant", "action": "water"}], "tags": ["tending"]
+    },
+    {
+      "id": "fixture.compost", "kind": "fixture", "label": "Compost", "description": "Turns garden scraps into soil.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["C"]]}], "turned": [{"ticks": 1, "cells": [["c"]]}]}},
+      "hotspots": [{"id": "turn", "label": "Turn the compost", "action": "turn"}], "tags": ["tending"]
+    },
+    {
+      "id": "fixture.basket", "kind": "fixture", "label": "Basket", "description": "Holds gathered garden finds.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["U"]]}]}},
+      "hotspots": [{"id": "open", "label": "Open the basket", "action": "open"}], "tags": ["inventory"]
+    },
+    {
+      "id": "fixture.sign", "kind": "fixture", "label": "Garden sign", "description": "A readable garden marker.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["?"]]}]}},
+      "hotspots": [{"id": "read", "label": "Read the sign", "action": "read"}], "tags": ["narrative"]
+    },
+    {
+      "id": "fixture.memorial_stone", "kind": "fixture", "label": "Memorial stone", "description": "A quiet stone with an inscription.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["O"]]}]}},
+      "hotspots": [{"id": "read", "label": "Read the inscription", "action": "read"}], "tags": ["memory"]
+    },
+    {
+      "id": "collectible.pressed_flower", "kind": "collectible", "label": "Pressed flower", "description": "A flower preserved between pages.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["*"]]}]}},
+      "hotspots": [{"id": "collect", "label": "Collect the pressed flower", "action": "collect"}], "tags": ["journal"], "provenance": "author-authored"
+    },
+    {
+      "id": "collectible.feather", "kind": "collectible", "label": "Feather", "description": "A feather left by a garden visitor.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["/"]]}]}},
+      "hotspots": [{"id": "collect", "label": "Collect the feather", "action": "collect"}], "tags": ["journal"], "provenance": "animal-given"
+    },
+    {
+      "id": "collectible.seed_packet", "kind": "collectible", "label": "Seed packet", "description": "A packet of seeds for planting.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["S"]]}]}},
+      "hotspots": [{"id": "collect", "label": "Collect the seed packet", "action": "collect"}], "tags": ["inventory"], "provenance": "recipient-grown"
+    },
+    {
+      "id": "collectible.smooth_stone", "kind": "collectible", "label": "Smooth stone", "description": "A small stone polished by water.", "cell_box": [1, 1],
+      "profiles": {"ascii-safe": {"idle": [{"ticks": 1, "cells": [["o"]]}]}},
+      "hotspots": [{"id": "collect", "label": "Collect the smooth stone", "action": "collect"}], "tags": ["journal"], "provenance": "procedural"
+    }
+  ]
+}

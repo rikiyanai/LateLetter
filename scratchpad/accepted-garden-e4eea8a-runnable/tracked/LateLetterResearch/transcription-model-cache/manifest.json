@@ -1,0 +1,129 @@
+{
+  "all_verified": true,
+  "artifacts": [
+    {
+      "actual_sha256": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+      "artifact_id": "ara",
+      "cache_path": "tesseract_best/ara.traineddata",
+      "license": "Apache-2.0",
+      "sha256": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896",
+      "size_bytes": 12603724,
+      "source_url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/ara.traineddata",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+      "artifact_id": "chi_sim",
+      "cache_path": "tesseract_best/chi_sim.traineddata",
+      "license": "Apache-2.0",
+      "sha256": "4fef2d1306c8e87616d4d3e4c6c67faf5d44be3342290cf8f2f0f6e3aa7e735b",
+      "size_bytes": 13077423,
+      "source_url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/chi_sim.traineddata",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+      "artifact_id": "chi_tra",
+      "cache_path": "tesseract_best/chi_tra.traineddata",
+      "license": "Apache-2.0",
+      "sha256": "1aa60488574cafa69486d919284f079ca9b68fcc7f6ad8dc1ff1b318dfd97028",
+      "size_bytes": 12985735,
+      "source_url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/chi_tra.traineddata",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+      "artifact_id": "eng",
+      "cache_path": "tesseract_best/eng.traineddata",
+      "license": "Apache-2.0",
+      "sha256": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba",
+      "size_bytes": 15400601,
+      "source_url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/eng.traineddata",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+      "artifact_id": "jpn",
+      "cache_path": "tesseract_best/jpn.traineddata",
+      "license": "Apache-2.0",
+      "sha256": "36bdf9ac823f5911e624c30d0553e890b8abc7c31a65b3ef14da943658c40b79",
+      "size_bytes": 14330109,
+      "source_url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/jpn.traineddata",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548",
+      "artifact_id": "jpn_vert",
+      "cache_path": "tesseract_best/jpn_vert.traineddata",
+      "license": "Apache-2.0",
+      "sha256": "1258be6eb2a9851f18043234ad18cca13ed32690bfff62b335c898bbea371548",
+      "size_bytes": 14330809,
+      "source_url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/jpn_vert.traineddata",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff",
+      "artifact_id": "osd",
+      "cache_path": "tesseract_best/osd.traineddata",
+      "license": "Apache-2.0",
+      "sha256": "9cf5d576fcc47564f11265841e5ca839001e7e6f38ff7f7aacf46d15a96b00ff",
+      "size_bytes": 10562727,
+      "source_url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/main/osd.traineddata",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+      "artifact_id": "noto_color_emoji",
+      "cache_path": "emoji/NotoColorEmoji.ttf",
+      "license": "OFL-1.1",
+      "sha256": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+      "size_bytes": 10673480,
+      "source_url": "https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda",
+      "artifact_id": "unicode_emoji_test_17",
+      "cache_path": "emoji/emoji-test.txt",
+      "license": "Unicode-Terms-of-Use",
+      "sha256": "1d8a944f88d7952f7ef7c5167fef3c67995bcae24543949710231b03a201acda",
+      "size_bytes": 669326,
+      "source_url": "https://unicode.org/Public/emoji/latest/emoji-test.txt",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081",
+      "artifact_id": "noto_sans_mono_variable",
+      "cache_path": "fonts/NotoSansMono-Variable.ttf",
+      "license": "OFL-1.1",
+      "sha256": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081",
+      "size_bytes": 1708408,
+      "source_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansmono/NotoSansMono%5Bwdth%2Cwght%5D.ttf",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+      "artifact_id": "noto_sans_cjk_jp_regular",
+      "cache_path": "fonts/NotoSansCJKjp-Regular.otf",
+      "license": "OFL-1.1",
+      "sha256": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+      "size_bytes": 16467736,
+      "source_url": "https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf",
+      "status": "verified"
+    },
+    {
+      "actual_sha256": "ceea25b464a656dc3b26849bab9356740401af62aedf1bfa8b7f0d9b75925b1b",
+      "artifact_id": "noto_sans_arabic_regular",
+      "cache_path": "fonts/NotoSansArabic-Regular.ttf",
+      "license": "OFL-1.1",
+      "sha256": "ceea25b464a656dc3b26849bab9356740401af62aedf1bfa8b7f0d9b75925b1b",
+      "size_bytes": 240456,
+      "source_url": "https://raw.githubusercontent.com/notofonts/noto-fonts/main/hinted/ttf/NotoSansArabic/NotoSansArabic-Regular.ttf",
+      "status": "verified"
+    }
+  ],
+  "offline_runtime": true,
+  "repository": "tesseract-ocr/tessdata_best",
+  "repository_license": "Apache-2.0; emoji font OFL-1.1; Unicode data terms recorded per artifact",
+  "schema_version": "lateletter-transcription-model-cache-1"
+}

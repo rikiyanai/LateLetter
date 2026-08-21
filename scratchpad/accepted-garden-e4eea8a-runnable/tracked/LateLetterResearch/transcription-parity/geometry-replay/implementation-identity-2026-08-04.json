@@ -1,0 +1,39 @@
+{
+  "schema": "lateletter-geometry-implementation-identity-1",
+  "state": "dirty_working_tree",
+  "python": "3.14.3 (main, Feb  3 2026, 15:32:20) [Clang 17.0.0 (clang-1700.6.3.2)]",
+  "platform": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+  "files": [
+    {
+      "path": "src/lateletter/transcription/geometry/evidence.py",
+      "sha256": "7695c83411c26807cbf1d2368902e2e27c75719a149e6dac5bdc66a709f0d351",
+      "size_bytes": 113816
+    },
+    {
+      "path": "src/lateletter/transcription/geometry/router.py",
+      "sha256": "0d1e5542a190bccdbfab4dd7e436c4514cff4cb233ecbcb6975f3c47f39139c7",
+      "size_bytes": 7714
+    },
+    {
+      "path": "src/lateletter/transcription/components.py",
+      "sha256": "11482c5c94f4e1e8633c73acaf6342cca7eac930b92a2cc402cb97447f328ee9",
+      "size_bytes": 5070
+    },
+    {
+      "path": "src/lateletter/transcription/recognition.py",
+      "sha256": "7a39bed089c72dfb84ef8a55d79a2c51a4a8cdd0af57e2712739282260e9713d",
+      "size_bytes": 206638
+    },
+    {
+      "path": "src/lateletter/transcription/model.py",
+      "sha256": "970272eb46a723b0a35bb69c94440691b20655eb54f36e4580b075985dff10fe",
+      "size_bytes": 17233
+    },
+    {
+      "path": "src/lateletter/transcription/schema.py",
+      "sha256": "cfd4abbeb56aa8f45fb20806eb69f02d9b95d3f30e13daec56c9de68416dc84a",
+      "size_bytes": 3878
+    }
+  ],
+  "identity_sha256": "f1cbfc8604bba6de697202b72986939a11722dd405a050fa2f1db1d90fbb186b"
+}

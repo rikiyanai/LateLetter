@@ -1,0 +1,14 @@
+{
+  "reviewer": "occupancy-validator",
+  "verdict": "machine_reviewed",
+  "source_sha256": "f7d6f3d502cac705902885083219bed253a92cc0d5a5c058353c6781b04f7f3e",
+  "occupancy_map": "occupancy-map.json",
+  "occupancy_map_sha256": "63516b6ee98e82ebb32539623497470ba529315b1f096cb549aceee4c15b2cef",
+  "checks": {
+    "unique_cell_records": true,
+    "declared_dimensions": true,
+    "source_hash": true,
+    "calibration_hash": true
+  },
+  "note": "This structural review is not operator visual acceptance and does not promote a transcript."
+}

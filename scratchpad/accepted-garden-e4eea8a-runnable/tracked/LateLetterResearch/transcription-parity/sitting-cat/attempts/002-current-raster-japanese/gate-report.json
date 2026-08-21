@@ -1,0 +1,16 @@
+{
+  "candidate_profile": "psm7-jpn-cjk",
+  "candidate_review": "not_accepted",
+  "candidate_sha256": "7311531e0625147ff3d902990ccaed3a92800854bbd9ed7182ebccaca89212fa",
+  "comparison": "not_run_before_proposal_gate",
+  "geometry_mode": "fixed_lattice",
+  "geometry_status": "proved",
+  "proposal_report_sha256": "6d3cc77bc96ab8a1ed625c235a471335abd08ec7d1864b42b35175d695512cf1",
+  "recognition_input_hash": "a4e907b307fb116a0f60bbe414fa8b14b764353fd0c322d3ecb8fa80ffd62893",
+  "rejection_reasons": [
+    "exact_nfc_target_unavailable",
+    "recognizer_coverage_not_proven",
+    "operator_review_pending"
+  ],
+  "status": "rejected_proposal_only"
+}

@@ -1,0 +1,14 @@
+#!/bin/sh
+# Chaining stub -- see .githooks/README.md
+#
+# This repository sets a repo-local `core.hooksPath` so it can add ONE extra
+# pre-push guard. Doing that overrides the user's global hooks directory for
+# this repository, which would silently disable every global hook -- including
+# the AI-attribution gate and Git LFS. This stub exists purely to hand control
+# back to the global hook of the same name, so nothing is lost.
+#
+# It is deliberately a pass-through with no logic of its own: if the global
+# hook is absent, the stub succeeds rather than inventing a policy.
+GLOBAL="$HOME/.git-hooks/post-merge"
+[ -x "$GLOBAL" ] && exec "$GLOBAL" "$@"
+exit 0

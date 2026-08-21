@@ -1,0 +1,16 @@
+{
+  "schema": "lateletter-recognizer-profile-receipt-1",
+  "status": "profile_only_passed",
+  "authority": "diagnostic_only",
+  "profile_path": "tests/fixtures/transcription-v2/recognizer-profile-v11-post-geometry.json",
+  "profile_sha256": "32d11d873528f15e6694a385e32e9e5fafe4aba89e6a6de4dd8ac5a301d97168",
+  "profile_size_bytes": 162094,
+  "terminal_adapter_fixture_records": 130,
+  "budget_failures": [],
+  "nondeterministic_adapters": [],
+  "max_memory_rss_platform_units": 365641728,
+  "ground_truth_passed_to_adapters": false,
+  "determinism_replay_performed": false,
+  "source": "post-Phase-3.8 profile-only run after geometry admission moved to source-owned anchors",
+  "next_authorized_step": "run full coverage/rank benchmark; do not create TXT, attempts, candidates, or acceptances"
+}

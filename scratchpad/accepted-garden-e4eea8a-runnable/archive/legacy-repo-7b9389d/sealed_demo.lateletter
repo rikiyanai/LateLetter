@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "bundle_id": "e04fd74e-85df-4200-8224-5c0180b3b322",
+  "author_name": "Demo Author",
+  "passphrase_hint": "where flowers grow",
+  "bundle_auth_salt": "teDBuVFwiOF9GM0DLIh6hg==",
+  "garden_seed": 20260721,
+  "messages": [
+    {
+      "id": "a4f2f760-a5a9-428f-87ad-766eeb73d406",
+      "date": "2026-07-21",
+      "ciphertext": "ylqMD+KgPwJWL0lDAta3ObXZ/38dxQsVvsH03jhnBp17VZpgQ3jeMY2WgE0FPg1ZNKlnHFWjXlq62RWohpEz/eh5BF8dY5kw0Fj3nFQcetYIEdMBKzI+uUnXkG3K4nAmvHdXorjEY3rpztu/X6q/cAjThQQi9a0kW6/TERNXAyMaEQ4xxVBiQNwxZF9fEm03rm8Ks4wN/P7n6qhAy58liXURc5X3gEMno/ivOEwHlijfvKSsKSXuxkQEy6zzL7Qbk7aq09N3PzKq+IfNs4rO1FDlKx4ZkJfnMDq7atgyoovwfrWg+TTBIHUEl2JKr6j7NOtx4aJw4XfsmgyXtgsCgQbZZkJjHBU=",
+      "salt": "AVXn5kcIvbKfeNp5MbM5Lg==",
+      "nonce": "VXoJ9ZiKi674mvPl",
+      "kdf_params": {
+        "name": "PBKDF2",
+        "hash": "SHA-256",
+        "iterations": 600000
+      }
+    }
+  ],
+  "garden_gifts": [
+    {
+      "id": "a829cbe9-134e-42f8-b3dc-c1e3f00b2e9e",
+      "type": "animal",
+      "catalog_id": "rabbit",
+      "sentiment_ciphertext": "WcCHJUa1CQqqXG0eScBDYxCtWQgaRGTCpo9p2Osy5k5cDk74aWqPGoH3bWJSIRC9ugWiG6ps6OZuv70inuAJaiFdVuWap9E124nu5A==",
+      "salt": "7XQRmqGyT0+WDyZOzEDVBA==",
+      "nonce": "5zoiRVloFvCo4mlP",
+      "trigger": {
+        "type": "cumulative_visits",
+        "value": "1"
+      },
+      "placement_hint": "by_edge",
+      "animal_name": "Clover",
+      "animal_collar_color": null
+    },
+    {
+      "id": "118ffc4b-47a2-4d78-ac4a-871bd4488ba8",
+      "type": "item",
+      "catalog_id": "coffee_mug",
+      "sentiment_ciphertext": "gjp1OB/laRATskW/xun1Qg7EllBIMRAnbAmlDW4dxSrf6x904TY9eB6jI4sv4GSAMQdKykbArHncyuprHo0drIieX72HT6P08g==",
+      "salt": "qxqnyythHaLWUxaVVJusfQ==",
+      "nonce": "ef+IklI1nfMRu1uz",
+      "trigger": {
+        "type": "date",
+        "value": "2026-07-21"
+      },
+      "placement_hint": "near_tallest_tree",
+      "animal_name": null,
+      "animal_collar_color": null
+    },
+    {
+      "id": "7afa11ff-3fba-4f62-95bb-0d84762122fb",
+      "type": "item",
+      "catalog_id": "pressed_flower",
+      "sentiment_ciphertext": "XCS4eego3XBiE5xyC1F9n6ZyS6C3JB4vT0RcCDMqarhKS7RgLG1ckAFOIkC0vp2qPMPSsT0kERLe4VfqUDKUyv7TeGD7rPIB6RRaYd4UddLk0I4=",
+      "salt": "zJIe6Ia8dLvogQHreBIu7w==",
+      "nonce": "NbLFdTSjS2h96Pwd",
+      "trigger": {
+        "type": "post_letter",
+        "value": "a4f2f760-a5a9-428f-87ad-766eeb73d406"
+      },
+      "placement_hint": "random",
+      "animal_name": null,
+      "animal_collar_color": null
+    }
+  ],
+  "notification": null,
+  "checksum": "f9c9ad7c43522089b4fcdb42ff5073cc0362cdbaccd495b91bff168bc0e9092e",
+  "hmac": "425621eaa5efc59a2417221c34777de587a06ec8c536591eba79ae6da0428378"
+}

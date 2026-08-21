@@ -1,0 +1,108 @@
+{
+  "format": "lateletter-row-joint-transcription-v1",
+  "attempt": "007-row-joint-decode",
+  "source_png": "../../source/source.normalized.png",
+  "source_sha256": "c50bcf5ded3a0499f762762f8bec75db6ac2c9176806061a86c2a6d8317bd8d8",
+  "calibration": {
+    "path": "../006-row-joint-candidate/calibration.json",
+    "sha256": "10746631aa7a32cf75748b0ca54641fefa361478d33bba3c32a01eab7be7dbda"
+  },
+  "transcript": "machine-row-joint.txt",
+  "transcript_sha256": "9de7f705870aa7c64b38210871ebe020ef29906b25367fa81ea564b8eb550be0",
+  "cell_count": 304,
+  "transcript_line_lengths": [
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16,
+    16
+  ],
+  "decoder": {
+    "name": "row-joint-decoder",
+    "version": "row-joint-10-ownership-context-unicode-boundary",
+    "beam_width": 96,
+    "minimum_margin": 0.35,
+    "window_radius_columns": 1,
+    "leave_one_out_templates": true,
+    "recognition_unit": "grapheme_cluster",
+    "unicode_normalization": "NFC",
+    "unicode_data_version": "16.0.0",
+    "non_ascii_policy": "defer_to_unicode_run_decoder"
+  },
+  "grid": {
+    "columns": 16,
+    "rows": 19,
+    "origin_x_px": -15.75,
+    "first_baseline_y_px": 25.0,
+    "cell_advance_x_px": 17.95,
+    "line_height_px": 33.0,
+    "x_phase_px_mod_period": 2,
+    "y_phase_px_mod_period": 25,
+    "cell_crop_top_offset_px": -30,
+    "cell_crop_bottom_offset_px": 3,
+    "row_crop_measurement": {
+      "top": -30,
+      "bottom": 3,
+      "boundary_ink": 0,
+      "boundary_ink_mean": 0.0,
+      "boundary_samples": 18,
+      "inter_row_clearance_px": 0
+    }
+  },
+  "status": "rejected",
+  "unknown_cells": 33,
+  "low_confidence_cells": 33,
+  "structural_conflicts": 3,
+  "forced_blank_conflicts": 0,
+  "canvas": {
+    "width_px": 271,
+    "height_px": 619,
+    "background_rgba": "#ffffffff"
+  },
+  "placement": {
+    "font_path": null,
+    "font_size_px": 16,
+    "first_baseline_y_px": 25.0,
+    "line_height_px": 33.0,
+    "origin_x_px": -15.75,
+    "glyph_advance_px": 17.95,
+    "foreground_rgba": "#fefefeff",
+    "supersample": 1,
+    "resample_filter": "lanczos"
+  },
+  "renderer_configuration": {
+    "mode": "font_independent_structural_comparison",
+    "font_recovered": false,
+    "source_pixels_used_in_candidate": false
+  },
+  "artifacts": {
+    "transcript": "machine-row-joint.txt",
+    "templates": "template-bank.json",
+    "evidence": "row-decoding.json",
+    "rerender_png": "rerender.png",
+    "overlay_png": "overlay.png",
+    "diff_png": "diff.png"
+  },
+  "acceptance": {
+    "operator_review": "pending",
+    "raster_parity": "not_run",
+    "zero_unknown_required": true,
+    "zero_low_confidence_required": true,
+    "zero_structural_conflicts_required": true,
+    "zero_forced_blank_conflicts_required": true
+  }
+}

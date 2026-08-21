@@ -1,0 +1,68 @@
+{
+  "attempt": "005-horse-terminal-fragment",
+  "source_png": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "transcript": "machine-cell-ocr.txt",
+  "status": "machine_candidate_only",
+  "canvas": {
+    "width_px": 424,
+    "height_px": 468,
+    "background_rgba": "#ffffffff"
+  },
+  "placement": {
+    "font_path": "/System/Library/Fonts/Menlo.ttc",
+    "font_size_px": 15,
+    "origin_x_px": -7.0,
+    "first_baseline_y_px": 41.0,
+    "line_height_px": 21.0,
+    "glyph_advance_px": 11.0,
+    "foreground_rgba": "#f1f1ebff"
+  },
+  "grid": {
+    "columns": 40,
+    "rows": 21,
+    "origin_x_px": -7.0,
+    "first_baseline_y_px": 41.0,
+    "advance_x_px": 11.0,
+    "advance_y_px": 21.0
+  },
+  "calibration": {
+    "path": "calibration.json",
+    "sha256": "cee6f9f6442787b88c06bedb80f15f9738935d26d9c15f754260bd07e92eb21a"
+  },
+  "normalization": {
+    "colour_space": "RGB",
+    "ink_threshold_l1": 25,
+    "background_method": "dominant_exact_rgb",
+    "guide_removal": "measured sparse dotted columns at 36px repetition; exact-column erase"
+  },
+  "recognizer": {
+    "name": "tesseract-cell-ocr",
+    "version": "cell-ocr-4-horse-structural-alphabet",
+    "engine_version": "tesseract 5.5.1",
+    "options": [
+      "tesseract",
+      "--psm",
+      "10"
+    ]
+  },
+  "artifacts": {
+    "calibration_png": "calibration.png",
+    "cell_recognition_json": "cell-recognition.json",
+    "rerender_png": "rerender.png",
+    "overlay_png": "overlay.png",
+    "diff_png": "diff.png"
+  },
+  "unknown_cells": 0,
+  "occupancy_review": {
+    "path": "occupancy-review.json",
+    "sha256": "e563c3b84094e1f6646e7087158471fd850c944b6ceb61cf44475fb9d21f4d6b",
+    "verdict": "machine_reviewed"
+  },
+  "review": {
+    "layout_parity": "pending",
+    "raster_parity": "blocked_unknown_font",
+    "human_visual_parity": "pending",
+    "verdict": "not_reviewed"
+  }
+}

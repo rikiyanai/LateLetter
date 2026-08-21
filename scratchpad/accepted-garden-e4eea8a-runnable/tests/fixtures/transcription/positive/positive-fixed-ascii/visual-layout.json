@@ -1,0 +1,23 @@
+{
+  "fixture_id": "positive-fixed-ascii",
+  "logical_rows": 3,
+  "direction": "ltr",
+  "mode": "fixed_lattice",
+  "anchors": [
+    {
+      "row": 0,
+      "x": 12,
+      "baseline": 29
+    },
+    {
+      "row": 1,
+      "x": 12,
+      "baseline": 59
+    },
+    {
+      "row": 2,
+      "x": 12,
+      "baseline": 89
+    }
+  ]
+}

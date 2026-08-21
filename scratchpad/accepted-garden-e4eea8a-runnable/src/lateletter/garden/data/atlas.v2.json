@@ -1,0 +1,4766 @@
+{
+  "version": 2,
+  "id": "garden-atlas-2",
+  "generator_version": "atlas-migrate-2",
+  "unicode_version": "15.1.0",
+  "profiles": [
+    "ascii-safe",
+    "unicode-cell-safe",
+    "browser-font-locked",
+    "browser-rich",
+    "browser-proportional"
+  ],
+  "fonts": {
+    "browser-proportional": {
+      "family": "LateLetter Garden",
+      "size_px": 15,
+      "line_height_px": 17,
+      "weight": 400,
+      "style": "normal",
+      "letter_spacing": "normal",
+      "resource": "web/fonts/lateletter-garden.woff",
+      "resource_sha256": "f6be01765d77f1045d4a098e907219975536ae6403ee8b4dc9928e8f7bce1780"
+    }
+  },
+  "semantic_tokens": {
+    "organ_kind_glyphs": {
+      "root": "+",
+      "stem": "|",
+      "branch": "/",
+      "vine": "\\",
+      "leaf": "*",
+      "bloom": "@",
+      "fruit": "o"
+    },
+    "plant_species_glyphs": {
+      "oak": "Y",
+      "pine": "^",
+      "willow": "Y",
+      "cherry": "Y",
+      "maple": "Y",
+      "hydrangea": "*",
+      "wisteria": "v",
+      "meadow_grass": "'",
+      "rosemary": ";",
+      "water_lily": "*",
+      "lavender": "*",
+      "rose": "@",
+      "daisy": "*",
+      "tulip": "u",
+      "sunflower": "O",
+      "fern": "f",
+      "ivy": "v",
+      "herb": ";",
+      "grass": "'",
+      "reed": "|",
+      "lotus": "*"
+    },
+    "animal_tier_glyphs": {
+      "bird": [
+        "v",
+        "V",
+        "w",
+        "W"
+      ],
+      "cat": [
+        "c",
+        "C",
+        "m",
+        "M"
+      ],
+      "rabbit": [
+        "r",
+        "R",
+        "b",
+        "B"
+      ],
+      "turtle": [
+        "t",
+        "T",
+        "o",
+        "O"
+      ]
+    },
+    "delivery_frames": {
+      "letterbird": [
+        [
+          "  \\      ",
+          " >o<-[✉] ",
+          "  /      "
+        ],
+        [
+          "  /      ",
+          " >o<-[✉] ",
+          "  \\      "
+        ]
+      ],
+      "cat": [
+        [
+          "/\\_/\\  ",
+          "(>[✉])  "
+        ],
+        [
+          "/\\_/\\  ",
+          "(=[✉])  "
+        ]
+      ],
+      "bird": [
+        [
+          "  >o<   ",
+          " /|\\    ",
+          " [✉]    "
+        ],
+        [
+          "  >o<   ",
+          "  |\\    ",
+          " [✉]    "
+        ]
+      ],
+      "rabbit": [
+        [
+          "(\\ /)  ",
+          ".[✉].   "
+        ],
+        [
+          "(\\ /)  ",
+          " [✉]    "
+        ]
+      ],
+      "turtle": [
+        [
+          " (~)    ",
+          "{[✉]}   "
+        ],
+        [
+          " (~)    ",
+          "{[✉]}   "
+        ]
+      ]
+    }
+  },
+  "connected_tiles": {
+    "fence": {
+      "0": ".",
+      "1": "|",
+      "2": "-",
+      "3": "+",
+      "4": "|",
+      "5": "|",
+      "6": "+",
+      "7": "+",
+      "8": "-",
+      "9": "+",
+      "10": "-",
+      "11": "+",
+      "12": "+",
+      "13": "+",
+      "14": "+",
+      "15": "+"
+    },
+    "hedge": {
+      "0": ".",
+      "1": "#",
+      "2": "#",
+      "3": "#",
+      "4": "#",
+      "5": "#",
+      "6": "#",
+      "7": "#",
+      "8": "#",
+      "9": "#",
+      "10": "#",
+      "11": "#",
+      "12": "#",
+      "13": "#",
+      "14": "#",
+      "15": "#"
+    },
+    "path": {
+      "0": ".",
+      "1": ":",
+      "2": "=",
+      "3": "+",
+      "4": ":",
+      "5": ":",
+      "6": "+",
+      "7": "+",
+      "8": "=",
+      "9": "+",
+      "10": "=",
+      "11": "+",
+      "12": "+",
+      "13": "+",
+      "14": "+",
+      "15": "+"
+    },
+    "pond_edge": {
+      "0": ".",
+      "1": "|",
+      "2": "~",
+      "3": "+",
+      "4": "|",
+      "5": "|",
+      "6": "+",
+      "7": "+",
+      "8": "~",
+      "9": "+",
+      "10": "~",
+      "11": "+",
+      "12": "+",
+      "13": "+",
+      "14": "+",
+      "15": "+"
+    },
+    "wall": {
+      "0": ".",
+      "1": "|",
+      "2": "=",
+      "3": "+",
+      "4": "|",
+      "5": "|",
+      "6": "+",
+      "7": "+",
+      "8": "=",
+      "9": "+",
+      "10": "=",
+      "11": "+",
+      "12": "+",
+      "13": "+",
+      "14": "+",
+      "15": "+"
+    }
+  },
+  "assets": [
+    {
+      "id": "fixture.bench",
+      "kind": "fixture",
+      "label": "Bench",
+      "description": "A place to sit and observe.",
+      "cell_box": [
+        9,
+        4
+      ],
+      "anchor": [
+        4,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "|",
+                  "_",
+                  "|",
+                  "_",
+                  "|",
+                  "_",
+                  "|",
+                  " "
+                ],
+                [
+                  "_",
+                  "|",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "|",
+                  "_"
+                ],
+                [
+                  " ",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  " "
+                ],
+                [
+                  " ",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "'",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " |_|_|_| ",
+                "_|_____|_",
+                " |     | ",
+                " '     ' "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "sit",
+          "label": "Sit on the bench",
+          "action": "sit"
+        }
+      ],
+      "tags": [
+        "author_placeable"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "backrest",
+            "role": "separated vertical slats with visible gaps between them"
+          },
+          {
+            "part": "seat",
+            "role": "one horizontal plank, overhanging the legs at both ends"
+          },
+          {
+            "part": "legs",
+            "role": "two supports inset from the plank ends, open beneath"
+          }
+        ],
+        "material": "timber",
+        "affordance": "sit",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 2: open slatted back and inset legs, so it is a bench rather than a sofa.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "3",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.fence_gate",
+      "kind": "fixture",
+      "label": "Fence and gate",
+      "description": "A connected garden boundary.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "closed": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "+"
+                ]
+              ]
+            }
+          ],
+          "open": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "/"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "gate",
+          "label": "Open or close the gate",
+          "action": "toggle"
+        }
+      ],
+      "tags": [
+        "connected",
+        "author_placeable"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.fence_gate was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.sundial",
+      "kind": "fixture",
+      "label": "Sundial",
+      "description": "Shows garden story time.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "^"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Inspect the sundial",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "time"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.sundial was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.trellis",
+      "kind": "fixture",
+      "label": "Trellis",
+      "description": "Supports trained vines.",
+      "cell_box": [
+        10,
+        5
+      ],
+      "anchor": [
+        4,
+        4
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  " "
+                ],
+                [
+                  " ",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  " "
+                ],
+                [
+                  " ",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  " "
+                ],
+                [
+                  " ",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  "/",
+                  "\\",
+                  " "
+                ],
+                [
+                  " ",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " \\/\\/\\/\\/ ",
+                " /\\/\\/\\/\\ ",
+                " \\/\\/\\/\\/ ",
+                " /\\/\\/\\/\\ ",
+                " |      | "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "train",
+          "label": "Train a plant",
+          "action": "train_plant"
+        }
+      ],
+      "tags": [
+        "plant_support"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "lattice",
+            "role": "opposed diagonals crossing, open between them"
+          },
+          {
+            "part": "uprights",
+            "role": "two ground posts carrying the panel"
+          }
+        ],
+        "material": "thin timber lath",
+        "affordance": "climb",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Accepted in round 1 and left untouched: opposed diagonals, not a box grid.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "3",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.birdbath",
+      "kind": "fixture",
+      "label": "Birdbath",
+      "description": "A shallow bath for visiting birds.",
+      "cell_box": [
+        9,
+        4
+      ],
+      "anchor": [
+        4,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "\\",
+                  "~",
+                  "~",
+                  "~",
+                  "~",
+                  "~",
+                  "/",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "'",
+                  "-",
+                  "|",
+                  "-",
+                  "'",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  "|",
+                  "_",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "/",
+                  "_",
+                  "_",
+                  "_",
+                  "\\",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " \\~~~~~/ ",
+                "  '-|-'  ",
+                "   _|_   ",
+                "  /___\\  "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "refill",
+          "label": "Refill the birdbath",
+          "action": "refill"
+        }
+      ],
+      "tags": [
+        "animal_affordance"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "bowl",
+            "role": "shallow dish, wider than it is deep"
+          },
+          {
+            "part": "stem",
+            "role": "narrow column, clearly thinner than bowl and foot"
+          },
+          {
+            "part": "foot",
+            "role": "spread base wider than the stem"
+          }
+        ],
+        "material": "weathered stone",
+        "affordance": "water",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 2: stem narrowed against both bowl and foot so the dish reads as a bath, not a cup.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "3",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.lantern",
+      "kind": "fixture",
+      "label": "Lantern",
+      "description": "A warm garden light.",
+      "cell_box": [
+        7,
+        7
+      ],
+      "anchor": [
+        3,
+        6
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "(",
+                  "*",
+                  ")",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "|",
+                  "|",
+                  "|",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "|",
+                  "|",
+                  "|",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "|",
+                  "|",
+                  "|",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "|",
+                  "|",
+                  "|",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  "/",
+                  "_",
+                  "_",
+                  "_",
+                  "\\",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "   _   ",
+                "  (*)  ",
+                "  |||  ",
+                "  |||  ",
+                "  |||  ",
+                "  |||  ",
+                " /___\\ "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "light",
+          "label": "Light or extinguish the lantern",
+          "action": "toggle"
+        }
+      ],
+      "tags": [
+        "evening"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "light",
+            "role": "single small mass at the top, brighter than anything below"
+          },
+          {
+            "part": "post",
+            "role": "solid column, the tallest run of the silhouette"
+          },
+          {
+            "part": "foot",
+            "role": "spread base the post stands on, wider than the post"
+          }
+        ],
+        "material": "iron post with a glass head",
+        "affordance": "light",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 3: two rows taller, spread base, and a heavy-vertical override so the proportional post is solid rather than gapped.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "4",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.pond",
+      "kind": "fixture",
+      "label": "Pond",
+      "description": "A small pond with aquatic life.",
+      "cell_box": [
+        24,
+        4
+      ],
+      "anchor": [
+        11,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  "'",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  "'",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  "'",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  "'",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "( ~~      ~~~      ~~  )",
+                "(    ~~~      ~~      ~)",
+                "  `-.,_,-~-.,_,-~-.,_-' "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "(   ~~      ~~~      ~~)",
+                "(  ~~~      ~~      ~~ )",
+                "  `-.,_,-~-.,_,-~-.,_-' "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "(     ~~      ~~~    ~ )",
+                "(~~~      ~~      ~~   )",
+                "  `-.,_,-~-.,_,-~-.,_-' "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_,-~-.  ",
+                "(   ~~      ~~~      ~~)",
+                "(  ~~~      ~~      ~~ )",
+                "  `-.,_,-~-.,_,-~-.,_-' "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "tend",
+          "label": "Tend the pond",
+          "action": "tend"
+        }
+      ],
+      "tags": [
+        "water"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "waterline",
+            "role": "uneven upper boundary, no two spans alike"
+          },
+          {
+            "part": "surface",
+            "role": "sparse ripples, offset row to row, never in one band"
+          },
+          {
+            "part": "far_edge",
+            "role": "lower boundary broken by mixed-weight punctuation"
+          }
+        ],
+        "material": "still water",
+        "affordance": "water",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 3 silhouette widened on 2026-08-04 so the path can meet its bank; the 2026-08-05 live review kept that accepted bank and strengthened only the interior ripple train so its side-to-side oscillation reads at full-scene scale.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "4",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.mailbox",
+      "kind": "fixture",
+      "label": "Memory mailbox",
+      "description": "Holds keepsakes and memories.",
+      "cell_box": [
+        7,
+        4
+      ],
+      "anchor": [
+        3,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "7",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  "(",
+                  "_",
+                  "_",
+                  "(",
+                  "_",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  "|",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "_",
+                  "|",
+                  "|",
+                  "_",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "   7   ",
+                " (__(_)",
+                "   ||  ",
+                "  _||_ "
+              ],
+              "accents": {
+                "0,3": "signal"
+              }
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "open",
+          "label": "Open the mailbox",
+          "action": "open"
+        }
+      ],
+      "tags": [
+        "memory"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "flag",
+            "role": "raised signal arm, the identifying part, clear of the body"
+          },
+          {
+            "part": "body",
+            "role": "horizontal drum with a rounded door end"
+          },
+          {
+            "part": "post",
+            "role": "single narrow support"
+          },
+          {
+            "part": "foot",
+            "role": "short ground flare"
+          }
+        ],
+        "material": "painted metal on a timber post",
+        "affordance": "receive",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 2: rebuilt at the operator's ~7-column reference; flag is the only mass above the drum.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "4",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.stepping_stones",
+      "kind": "fixture",
+      "label": "Stepping stones",
+      "description": "A connected garden path.",
+      "cell_box": [
+        12,
+        2
+      ],
+      "anchor": [
+        5,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " (=)  (=)   ",
+                "    (=)  (=)"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Inspect the path",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "connected",
+        "path"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "stones",
+            "role": "low flat-topped slabs, staggered across the route"
+          }
+        ],
+        "material": "river stone",
+        "affordance": "path",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 2: flat top surface instead of an open bowl, so it is stood on, not filled.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "4",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.bridge",
+      "kind": "fixture",
+      "label": "Bridge",
+      "description": "Crosses water without breaking the path.",
+      "cell_box": [
+        11,
+        3
+      ],
+      "anchor": [
+        5,
+        2
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "/",
+                  "=",
+                  "|",
+                  "=",
+                  "|",
+                  "=",
+                  "|",
+                  "=",
+                  "\\",
+                  " "
+                ],
+                [
+                  "_",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  "_"
+                ],
+                [
+                  " ",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "'",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " /=|=|=|=\\ ",
+                "_|       |_",
+                " '       ' "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "cross",
+          "label": "Cross the bridge",
+          "action": "cross"
+        }
+      ],
+      "tags": [
+        "connected",
+        "path"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "ramps",
+            "role": "diagonal approaches rising from each bank onto the deck"
+          },
+          {
+            "part": "deck",
+            "role": "planks and railing balusters interleaved along one run"
+          },
+          {
+            "part": "piers",
+            "role": "two supports, the span open between them"
+          },
+          {
+            "part": "feet",
+            "role": "ground contact under each pier"
+          }
+        ],
+        "material": "timber planking",
+        "affordance": "cross",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 3: drawn from the operator's own sketch -- rising approaches, interleaved deck and railing, open span.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "4",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.planter",
+      "kind": "fixture",
+      "label": "Planter",
+      "description": "A container for garden plants.",
+      "cell_box": [
+        11,
+        4
+      ],
+      "anchor": [
+        5,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  ",",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  "[",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "]",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "\\",
+                  "_",
+                  "|",
+                  "_",
+                  "|",
+                  "_",
+                  "/",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "   Y   Y   ",
+                "  ,|   |,  ",
+                " [_______] ",
+                "  \\_|_|_/  "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "plant",
+          "label": "Plant in the planter",
+          "action": "plant"
+        }
+      ],
+      "tags": [
+        "plant_support"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "tips",
+            "role": "forked stem ends, sparse and clear of each other"
+          },
+          {
+            "part": "stems",
+            "role": "upright runs with one side leaf each, rooted in the box"
+          },
+          {
+            "part": "rim",
+            "role": "upper course, slightly proud of the body"
+          },
+          {
+            "part": "body",
+            "role": "offset brick courses"
+          }
+        ],
+        "material": "brick",
+        "affordance": "plant",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 3: base kept as accepted; growth redrawn with a stem run so it reads as planted, not scattered.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "4",
+          "quote": "reads as just sprouted seedlings, which is fine, but it may need to change as it grows, the ' ' is good touch, and space between the two sprouts",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "pending_requirement": "Round 4: the growth 'may need to change as it grows'. All ten drawn fixtures declare exactly one state, `idle`, in both profiles, so there is nowhere for a second drawing to live. The schema is not the obstacle -- four undrawn placeholders already declare two states each (fence_gate, shed_edge, watering_can, compost), so the capability exists and only the assets with art gave it up. This needs a growth quantity on the planter's world state, a mapping from it to a few named states, a state list on the asset, and then a drawing per state in BOTH profiles, which the existing cross-profile parity rule already requires.",
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.table_chairs",
+      "kind": "fixture",
+      "label": "Garden table",
+      "description": "A table and chairs for a quiet pause.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "T"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "sit",
+          "label": "Sit at the table",
+          "action": "sit"
+        }
+      ],
+      "tags": [
+        "shared_space"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.table_chairs was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.well",
+      "kind": "fixture",
+      "label": "Well",
+      "description": "A garden water source.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "O"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "draw",
+          "label": "Draw water",
+          "action": "draw_water"
+        }
+      ],
+      "tags": [
+        "water"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.well was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.arbor",
+      "kind": "fixture",
+      "label": "Arbor",
+      "description": "A shaded arch for vines.",
+      "cell_box": [
+        11,
+        4
+      ],
+      "anchor": [
+        5,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "~",
+                  "^",
+                  "~",
+                  "^",
+                  "~",
+                  ",",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  "(",
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  ")",
+                  ")",
+                  " "
+                ],
+                [
+                  " ",
+                  "|",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  "|",
+                  " "
+                ],
+                [
+                  " ",
+                  "|",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  "|",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "  ,~^~^~,  ",
+                " ((     )) ",
+                " ||     || ",
+                " ||     || "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "observe",
+          "label": "Stand beneath the arbor",
+          "action": "observe"
+        }
+      ],
+      "tags": [
+        "plant_support"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "crown",
+            "role": "climbing growth over the arch, uneven along its length"
+          },
+          {
+            "part": "arch",
+            "role": "curved shoulders meeting overhead"
+          },
+          {
+            "part": "uprights",
+            "role": "paired posts, open between them"
+          }
+        ],
+        "material": "timber frame under climbing growth",
+        "affordance": "walk_under",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Round 2: curved shoulders and paired uprights so it reads as walk-through, not a doorway.",
+        "historical_review": {
+          "verdict": "accepted",
+          "round": "4",
+          "quote": "READS",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.wind_chime",
+      "kind": "fixture",
+      "label": "Wind chime",
+      "description": "A chime moved by the breeze.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "!"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "listen",
+          "label": "Listen to the wind chime",
+          "action": "listen"
+        }
+      ],
+      "tags": [
+        "ambience"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.wind_chime was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.shed_edge",
+      "kind": "fixture",
+      "label": "Shed",
+      "description": "The edge of a small tool shed.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "closed": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "H"
+                ]
+              ]
+            }
+          ],
+          "open": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "h"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Inspect the shed",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "storage"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.shed_edge was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.tool_rack",
+      "kind": "fixture",
+      "label": "Tool rack",
+      "description": "Keeps garden tools together.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "I"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "choose",
+          "label": "Choose a tool",
+          "action": "choose_tool"
+        }
+      ],
+      "tags": [
+        "tending"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.tool_rack was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.watering_can",
+      "kind": "fixture",
+      "label": "Watering can",
+      "description": "Used to water plants.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "empty": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "w"
+                ]
+              ]
+            }
+          ],
+          "full": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "W"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "water",
+          "label": "Water a plant",
+          "action": "water"
+        }
+      ],
+      "tags": [
+        "tending"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.watering_can was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.compost",
+      "kind": "fixture",
+      "label": "Compost",
+      "description": "Turns garden scraps into soil.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "C"
+                ]
+              ]
+            }
+          ],
+          "turned": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "c"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "turn",
+          "label": "Turn the compost",
+          "action": "turn"
+        }
+      ],
+      "tags": [
+        "tending"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.compost was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.basket",
+      "kind": "fixture",
+      "label": "Basket",
+      "description": "Holds gathered garden finds.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "U"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "open",
+          "label": "Open the basket",
+          "action": "open"
+        }
+      ],
+      "tags": [
+        "inventory"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.basket was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.sign",
+      "kind": "fixture",
+      "label": "Garden sign",
+      "description": "A readable garden marker.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "?"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "read",
+          "label": "Read the sign",
+          "action": "read"
+        }
+      ],
+      "tags": [
+        "narrative"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.sign was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.memorial_stone",
+      "kind": "fixture",
+      "label": "Memorial stone",
+      "description": "A quiet stone with an inscription.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "O"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "read",
+          "label": "Read the inscription",
+          "action": "read"
+        }
+      ],
+      "tags": [
+        "memory"
+      ],
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "fixture.memorial_stone was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "collectible.pressed_flower",
+      "kind": "collectible",
+      "label": "Pressed flower",
+      "description": "A flower preserved between pages.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "*"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "collect",
+          "label": "Collect the pressed flower",
+          "action": "collect"
+        }
+      ],
+      "tags": [
+        "journal"
+      ],
+      "provenance": "author-authored",
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "collectible.pressed_flower was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "collectible.feather",
+      "kind": "collectible",
+      "label": "Feather",
+      "description": "A feather left by a garden visitor.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "/"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "collect",
+          "label": "Collect the feather",
+          "action": "collect"
+        }
+      ],
+      "tags": [
+        "journal"
+      ],
+      "provenance": "animal-given",
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "collectible.feather was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "collectible.seed_packet",
+      "kind": "collectible",
+      "label": "Seed packet",
+      "description": "A packet of seeds for planting.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "S"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "collect",
+          "label": "Collect the seed packet",
+          "action": "collect"
+        }
+      ],
+      "tags": [
+        "inventory"
+      ],
+      "provenance": "recipient-grown",
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "collectible.seed_packet was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "collectible.smooth_stone",
+      "kind": "collectible",
+      "label": "Smooth stone",
+      "description": "A small stone polished by water.",
+      "cell_box": [
+        1,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "o"
+                ]
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "collect",
+          "label": "Collect the smooth stone",
+          "action": "collect"
+        }
+      ],
+      "tags": [
+        "journal"
+      ],
+      "provenance": "procedural",
+      "anchor": [
+        0,
+        0
+      ],
+      "art_lineage": {
+        "source": "placeholder",
+        "note": "collectible.smooth_stone was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed."
+      }
+    },
+    {
+      "id": "fixture.planter_one",
+      "kind": "fixture",
+      "label": "Planter — one",
+      "description": "A container for garden plants.",
+      "cell_box": [
+        11,
+        4
+      ],
+      "anchor": [
+        5,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  ",",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  "[",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "]",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "\\",
+                  "_",
+                  "|",
+                  "_",
+                  "|",
+                  "_",
+                  "/",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "     Y     ",
+                "    ,|     ",
+                " [_______] ",
+                "  \\_|_|_/  "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "plant",
+          "label": "Plant in the planter",
+          "action": "plant"
+        }
+      ],
+      "tags": [
+        "plant_support"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "tips",
+            "role": "forked stem ends, sparse and clear of each other"
+          },
+          {
+            "part": "stems",
+            "role": "upright runs with one side leaf each, rooted in the box"
+          },
+          {
+            "part": "rim",
+            "role": "upper course, slightly proud of the body"
+          },
+          {
+            "part": "body",
+            "role": "offset brick courses"
+          }
+        ],
+        "material": "brick",
+        "affordance": "plant",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded one-blossom planter candidate; the accepted vessel is unchanged.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.planter_three",
+      "kind": "fixture",
+      "label": "Planter — three",
+      "description": "A container for garden plants.",
+      "cell_box": [
+        13,
+        4
+      ],
+      "anchor": [
+        6,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " ",
+                  " ",
+                  "Y",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  ",",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  " ",
+                  " ",
+                  " ",
+                  "|",
+                  ",",
+                  " "
+                ],
+                [
+                  " ",
+                  "[",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "_",
+                  "]",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  "\\",
+                  "_",
+                  "_",
+                  "|",
+                  "_",
+                  "|",
+                  "_",
+                  "_",
+                  "/",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "  Y   Y   Y  ",
+                " ,|   |   |, ",
+                " [_________] ",
+                "  \\__|_|__/  "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "plant",
+          "label": "Plant in the planter",
+          "action": "plant"
+        }
+      ],
+      "tags": [
+        "plant_support"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "tips",
+            "role": "forked stem ends, sparse and clear of each other"
+          },
+          {
+            "part": "stems",
+            "role": "upright runs with one side leaf each, rooted in the box"
+          },
+          {
+            "part": "rim",
+            "role": "upper course, slightly proud of the body"
+          },
+          {
+            "part": "body",
+            "role": "offset brick courses"
+          }
+        ],
+        "material": "brick",
+        "affordance": "plant",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded three-blossom planter candidate with separated stems and a widened authored vessel.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.pond_compact",
+      "kind": "fixture",
+      "label": "Pond — compact",
+      "description": "A small pond with aquatic life.",
+      "cell_box": [
+        20,
+        4
+      ],
+      "anchor": [
+        9,
+        3
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  ")",
+                  " "
+                ],
+                [
+                  "(",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  "-",
+                  ".",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(~~    ~~~    ~~   )",
+                "(    ~~    ~~~    ~)",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(  ~~    ~~~    ~~ )",
+                "( ~~    ~~~    ~   )",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(    ~~    ~~~   ~) ",
+                "(~~~    ~~    ~~   )",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "  _,-~-.,_,-~-.,_-. ",
+                "(  ~~    ~~~    ~~ )",
+                "( ~~    ~~~    ~   )",
+                "  `-.,_,-~-.,_,-'   "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "tend",
+          "label": "Tend the pond",
+          "action": "tend"
+        }
+      ],
+      "tags": [
+        "water"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "waterline",
+            "role": "uneven upper boundary, no two spans alike"
+          },
+          {
+            "part": "surface",
+            "role": "sparse ripples, offset row to row, never in one band"
+          },
+          {
+            "part": "far_edge",
+            "role": "lower boundary broken by mixed-weight punctuation"
+          }
+        ],
+        "material": "still water",
+        "affordance": "water",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded compact pond candidate: the accepted shallow-water grammar in a shorter loop.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.pond_round",
+      "kind": "fixture",
+      "label": "Pond — round",
+      "description": "A small pond with aquatic life.",
+      "cell_box": [
+        22,
+        6
+      ],
+      "anchor": [
+        10,
+        5
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  ",",
+                  "-",
+                  "~",
+                  "-",
+                  ".",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  ",",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  ".",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  "(",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "~",
+                  "~",
+                  " ",
+                  " ",
+                  " ",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  ".",
+                  ",",
+                  "_",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "_",
+                  ",",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "`",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "~",
+                  "-",
+                  "'",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "( ~~    ~~~    ~~    )",
+                "(    ~~    ~~~    ~~ )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "(   ~~    ~~~    ~~  )",
+                "(  ~~    ~~~    ~~   )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "(     ~~    ~~~    ~ )",
+                "(~~~    ~~    ~~~    )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "    _,-~-.,_,-~-.     ",
+                "  ,'             `.   ",
+                "(   ~~    ~~~    ~~  )",
+                "(  ~~    ~~~    ~~   )",
+                "  `-.,_       _,-'    ",
+                "      `-~-~-~-'       "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "tend",
+          "label": "Tend the pond",
+          "action": "tend"
+        }
+      ],
+      "tags": [
+        "water"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "waterline",
+            "role": "uneven upper boundary, no two spans alike"
+          },
+          {
+            "part": "surface",
+            "role": "sparse ripples, offset row to row, never in one band"
+          },
+          {
+            "part": "far_edge",
+            "role": "lower boundary broken by mixed-weight punctuation"
+          }
+        ],
+        "material": "still water",
+        "affordance": "water",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded round pond candidate: greater front-to-back diameter while retaining open water and moving ripple trains.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.stepping_stones_five",
+      "kind": "fixture",
+      "label": "Stepping stones — five",
+      "description": "A connected garden path.",
+      "cell_box": [
+        16,
+        3
+      ],
+      "anchor": [
+        7,
+        2
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " (=)       (=)  ",
+                "    (=)         ",
+                "       (=)  (=) "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Inspect the path",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "connected",
+        "path"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "stones",
+            "role": "low flat-topped slabs, staggered across the route"
+          }
+        ],
+        "material": "river stone",
+        "affordance": "path",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded five-stone path candidate with a longer staggered approach.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.stepping_stones_three",
+      "kind": "fixture",
+      "label": "Stepping stones — three",
+      "description": "A connected garden path.",
+      "cell_box": [
+        10,
+        2
+      ],
+      "anchor": [
+        4,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " ",
+                  " "
+                ],
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "(",
+                  "=",
+                  ")",
+                  " ",
+                  "(",
+                  "=",
+                  ")"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                " (=)      ",
+                "   (=) (=)"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Inspect the path",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "connected",
+        "path"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "stones",
+            "role": "low flat-topped slabs, staggered across the route"
+          }
+        ],
+        "material": "river stone",
+        "affordance": "path",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Seeded three-stone path candidate with a short staggered approach.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.coffee_mug",
+      "kind": "fixture",
+      "label": "Coffee mug",
+      "description": "A mug the operator drew, still steaming.",
+      "cell_box": [
+        5,
+        2
+      ],
+      "anchor": [
+        3,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  ".",
+                  " "
+                ],
+                [
+                  ":",
+                  "c",
+                  "[",
+                  "_",
+                  "]"
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "o",
+                  " "
+                ],
+                [
+                  ":",
+                  "c",
+                  "[",
+                  "_",
+                  "]"
+                ]
+              ]
+            },
+            {
+              "ticks": 10,
+              "cells": [
+                [
+                  " ",
+                  " ",
+                  " ",
+                  "O",
+                  " "
+                ],
+                [
+                  ":",
+                  "c",
+                  "[",
+                  "_",
+                  "]"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 10,
+              "rows": [
+                "   . ",
+                ":c[_]"
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "   o ",
+                ":c[_]"
+              ]
+            },
+            {
+              "ticks": 10,
+              "rows": [
+                "   O ",
+                ":c[_]"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Look at the coffee mug",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "steam",
+            "role": "one mark above the cup's opening, growing along an ordered ramp"
+          },
+          {
+            "part": "handle",
+            "role": "open hook on the left, clear of the body"
+          },
+          {
+            "part": "body",
+            "role": "sealed vessel that holds the liquid"
+          }
+        ],
+        "material": "glazed ceramic",
+        "affordance": "rest",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 with the operator-specified `. o O` static-glyph steam ramp above it.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/coffee-mug.txt",
+          "source_sha256": "112d7db2dc521d26f83b80c4ffe03b3cba4bcf4d552ef86ad80f747e81b9cd0b",
+          "note": "The vessel row is the operator's granted bytes, unchanged. The row above it is the steam the operator asked for, drawn from the ASCII ramp the operator named (`. o O`, mode ramp, size 3). No mark in this asset was invented outside those two instructions."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.ice_cream_cone",
+      "kind": "fixture",
+      "label": "Ice cream cone",
+      "description": "An ice cream cone the operator drew.",
+      "cell_box": [
+        3,
+        2
+      ],
+      "anchor": [
+        2,
+        1
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "(",
+                  "~",
+                  ")"
+                ],
+                [
+                  " ",
+                  " ",
+                  "V"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "(~)",
+                "  V"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Look at the ice cream cone",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "scoop",
+            "role": "rounded mass with a swirl across it"
+          },
+          {
+            "part": "cone",
+            "role": "single stroke tapering away beneath the scoop"
+          }
+        ],
+        "material": "wafer and soft ice cream",
+        "affordance": "treat",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt",
+          "source_sha256": "292657f37f22f77bea75ae497a3cbb78cbcb50ec9af290fe81cca5b52af834d6",
+          "note": "Every mark is the operator's granted bytes, unchanged."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.mixtape",
+      "kind": "fixture",
+      "label": "Mixtape",
+      "description": "A cassette the operator drew.",
+      "cell_box": [
+        5,
+        1
+      ],
+      "anchor": [
+        2,
+        0
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  "[",
+                  "o",
+                  "=",
+                  "o",
+                  "]"
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                "[o=o]"
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "listen",
+          "label": "Listen to the mixtape",
+          "action": "listen"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "shell",
+            "role": "bracketed cassette body enclosing the mechanism"
+          },
+          {
+            "part": "spools",
+            "role": "two hubs joined by the run of tape between them"
+          }
+        ],
+        "material": "moulded plastic",
+        "affordance": "listen",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/mixtape.txt",
+          "source_sha256": "2f1239f4fe94bd81d626962b08cbb83820e1aa0c99cc23fa0674d42bc2f17d14",
+          "note": "Every mark is the operator's granted bytes, unchanged."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    },
+    {
+      "id": "fixture.popsicle",
+      "kind": "fixture",
+      "label": "Popsicle",
+      "description": "A popsicle the operator drew.",
+      "cell_box": [
+        3,
+        3
+      ],
+      "anchor": [
+        1,
+        2
+      ],
+      "profiles": {
+        "ascii-safe": {
+          "idle": [
+            {
+              "ticks": 1,
+              "cells": [
+                [
+                  ".",
+                  "-",
+                  "."
+                ],
+                [
+                  "|",
+                  " ",
+                  "|"
+                ],
+                [
+                  " ",
+                  "|",
+                  " "
+                ]
+              ]
+            }
+          ]
+        },
+        "browser-proportional": {
+          "idle": [
+            {
+              "ticks": 1,
+              "rows": [
+                ".-.",
+                "| |",
+                " | "
+              ]
+            }
+          ]
+        }
+      },
+      "hotspots": [
+        {
+          "id": "inspect",
+          "label": "Look at the popsicle",
+          "action": "inspect"
+        }
+      ],
+      "tags": [
+        "gift",
+        "keepsake"
+      ],
+      "art_lineage": {
+        "source": "drawn for LateLetter",
+        "tradition": "ascii/shift-jis",
+        "structure": [
+          {
+            "part": "cap",
+            "role": "rounded top of the frozen block"
+          },
+          {
+            "part": "block",
+            "role": "two uprights carrying the mass of it"
+          },
+          {
+            "part": "stick",
+            "role": "single stroke below the block, narrower than it"
+          }
+        ],
+        "material": "ice on a wooden stick",
+        "affordance": "treat",
+        "references": [
+          "FL-4208 morphology contract (density, openness, stroke continuity, terminal shape, interior voids, baseline anchoring, scale survival)",
+          "FL-4512 NPR bibliography; Benard et al. Active Strokes -- persistent curve topology kept separate from the stylization path"
+        ],
+        "note": "Operator-granted gift drawing, promoted 2026-08-06 unaltered.",
+        "historical_review": {
+          "verdict": "not_reviewed",
+          "round": "-",
+          "quote": "",
+          "authoritative": false,
+          "superseded_by": "docs/garden-asset-acceptance.json"
+        },
+        "operator_grant": {
+          "granted_at": "2026-08-06",
+          "source": "src/lateletter/garden/data/operator-granted-art/popsicle.txt",
+          "source_sha256": "caa8a3e8a035d13a7c9e308ab7998cc0d596c0b43f66e19940386856265b68b7",
+          "note": "Every mark is the operator's granted bytes. The final row is right-padded with one space so the cell matrix is rectangular; no ink was added."
+        },
+        "supersedes": "browser-local FIXTURE_DECOR and STARTER_FIXTURE_ART"
+      }
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Flower Animation Frames
+  For wind sway, blooming, and growth effects
+  Per docs/SPEC.md §7.1 and §7.2
+═══════════════════════════════════════════════════════════════
+
+
+── WIND SWAY: Small Flower ───────────────────────────────────
+   3 frames, loop: 1→2→3→2→1
+   Timing: ~400ms per frame (gentle breeze)
+
+Frame 1 (center):       Frame 2 (right):      Frame 3 (left):
+   (*)                     (*)                  (*)
+    |                       \                   /
+   /|\                     /|\                 /|\
+
+Frame 1 (center):       Frame 2 (right):      Frame 3 (left):
+   {*}                     {*}                  {*}
+    |                       \                   /
+   /|\                     /|\                 /|\
+
+
+── WIND SWAY: Medium Flower ──────────────────────────────────
+   5 frames, loop: 1→2→3→4→5→4→3→2→1
+   Timing: ~300ms per frame
+
+Frame 1 (still):        Frame 2 (slight R):   Frame 3 (right):
+  .-'-.                   .-'-.                 .-'-.
+ ( o o )                 ( o o )               ( o o )
+  `-.-'                   `-.-'                 `-.-'
+    |                       \                     \
+   /|\                     /|\                   / \
+
+Frame 4 (back center):  Frame 5 (slight L):
+  .-'-.                   .-'-.
+ ( o o )                 ( o o )
+  `-.-'                   `-.-'
+    |                     /
+   /|\                   /|\
+
+
+── WIND SWAY: Tall Sunflower ─────────────────────────────────
+   3 frames, loop: 1→2→3→2→1
+   Timing: ~500ms per frame (heavier, slower sway)
+
+Frame 1 (center):    Frame 2 (lean R):     Frame 3 (lean L):
+   \|/                  \|/                   \|/
+  --@--                --@--                 --@--
+   /|\                  /|\                   /|\
+    |                    \                    /
+    |                     \                  /
+   /|\                   / \                / \
+
+
+── BLOOM ANIMATION: Flower Opening ───────────────────────────
+   6 frames, play once (or reverse for wilting)
+   Timing: ~600ms per frame
+
+Frame 1 (bud):    Frame 2:          Frame 3:
+    .                ,-,              ,-=-,
+    |                | |             ( ' ' )
+   /|\              /|\               `-,-'
+                                        |
+                                       /|\
+
+Frame 4:          Frame 5:          Frame 6 (full):
+  .-'-.            .~=~.             .-===-.
+ ( ' ' )          ( @ @ )          ( @   @ )
+  `-.-'            `-.-'            `-._.-'
+    |                |                  |
+   /|\              /|\                /|\
+
+
+── GROWTH ANIMATION: Seed to Flower ──────────────────────────
+   8 frames, play once
+   Timing: ~800ms per frame (slow growth)
+
+Frame 1:    Frame 2:    Frame 3:    Frame 4:
+   .           .           .           ,
+  _|_         _|_          |          (')
+              /|\         /|\          |
+                                     /|\
+
+Frame 5:    Frame 6:    Frame 7:    Frame 8:
+  ,=,        .-'-.       .-'-.       .-'-.
+ ('o')      ( o o )     ( @ @ )     ( @ @ )
+   |         `-.-'       `-.-'       `-.-'
+  /|\          |           |           |
+              /|\         /||\        /||\
+
+
+── FALLING PETAL ANIMATION ───────────────────────────────────
+   Characters: . , ' ` ~ °
+   Motion: drift diagonally, tumbling
+   Can reuse falling-leaf physics from anim_J_bounce.py
+
+Petal drift pattern (per frame, single petal):
+  .         ,         '         `         ~
+    .         ,         '         `
+      ,         '         `         .
+        '         `         .         ,
+
+
+── WILLOW BRANCH SWAY (per SPEC §7.1) ────────────────────────
+   Willow: wide drooping branches, wind causes sway
+
+Frame 1 (still):         Frame 2 (wind R):       Frame 3 (wind L):
+    ___                      ___                     ___
+   /   \                    /   \                   /   \
+  |     |                  |     |                 |     |
+   \   /                    \   /                   \   /
+  | | | |                  | |  \ \                / /  | |
+  | | | |                  | |   \ \              / /   | |
+  | | | |                  | |    \ \            / /    | |
+  | | | |                  | |     \\           //     | |

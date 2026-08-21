@@ -1,0 +1,38 @@
+{
+  "reference_id": "bbbb-flowers",
+  "recorded_at": "2026-07-31",
+  "operator_verdict": "approved",
+  "layout_parity": "accepted",
+  "human_visual_parity": "accepted",
+  "raster_parity": "blocked_unknown_font",
+  "raster_disclosure": "Exact pixel parity is blocked because the original source font and renderer are unknown; Menlo is a comparison surrogate only.",
+  "source": {
+    "path": "source/source.normalized.png",
+    "sha256": "f7d6f3d502cac705902885083219bed253a92cc0d5a5c058353c6781b04f7f3e"
+  },
+  "candidate": {
+    "path": "attempts/021-final-structural-recognition/machine-cell-ocr.txt",
+    "sha256": "6b33a6a36d98dac6e8e50094f3ca949b4ebcc55318a658e2b4535c18c8c20173"
+  },
+  "accepted": {
+    "path": "accepted.txt",
+    "sha256": "6b33a6a36d98dac6e8e50094f3ca949b4ebcc55318a658e2b4535c18c8c20173",
+    "byte_for_byte_candidate_copy": true
+  },
+  "attempt": {
+    "id": "021-final-structural-recognition",
+    "manifest": "attempts/021-final-structural-recognition/manifest.json",
+    "calibration_sha256": "e127e1a2fd8ef5c937556a5ca7f2140d1bb52a3fb6e8a47274f514a018c0ce86",
+    "occupancy_review_sha256": "76e342c9ff6d713f447e25ed957963806359c97b2d8362edbcc3a63b2e8a2c2f",
+    "rerender_sha256": "f4aad64336c744aca2add8de911ce9b8f45d9c859804bc7c95338c3ca9815934",
+    "overlay_sha256": "9e08653e1c259fece39a3084777eabc7a6e31018057823cfac2a6fefc6803585",
+    "diff_sha256": "9537820ed3036f4047f7238c7cfce153531056740b2a991c66885829aed609af",
+    "unknown_cells": 0,
+    "grid": {
+      "columns": 35,
+      "rows": 16,
+      "advance_x_px": 9.0,
+      "advance_y_px": 19.0
+    }
+  }
+}

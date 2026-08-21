@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "id": "bright-stars-1",
+  "epoch": "J2000.0",
+  "stars": [
+    {"id": "hr-2491", "hr": 2491, "name": "Sirius", "ra_hours": 6.75247222, "dec_degrees": -16.71611111, "visual_magnitude": -1.46},
+    {"id": "hr-2326", "hr": 2326, "name": "Canopus", "ra_hours": 6.39919444, "dec_degrees": -52.69583333, "visual_magnitude": -0.72},
+    {"id": "hr-5340", "hr": 5340, "name": "Arcturus", "ra_hours": 14.26102778, "dec_degrees": 19.1825, "visual_magnitude": -0.04},
+    {"id": "hr-5459", "hr": 5459, "name": "Alpha Centauri", "ra_hours": 14.65997222, "dec_degrees": -60.83527778, "visual_magnitude": -0.01},
+    {"id": "hr-7001", "hr": 7001, "name": "Vega", "ra_hours": 18.61563889, "dec_degrees": 38.78361111, "visual_magnitude": 0.03},
+    {"id": "hr-1708", "hr": 1708, "name": "Capella", "ra_hours": 5.27816667, "dec_degrees": 45.99805556, "visual_magnitude": 0.08},
+    {"id": "hr-1713", "hr": 1713, "name": "Rigel", "ra_hours": 5.24230556, "dec_degrees": -8.20166667, "visual_magnitude": 0.12},
+    {"id": "hr-2943", "hr": 2943, "name": "Procyon", "ra_hours": 7.65502778, "dec_degrees": 5.225, "visual_magnitude": 0.38},
+    {"id": "hr-472", "hr": 472, "name": "Achernar", "ra_hours": 1.62858333, "dec_degrees": -57.23666667, "visual_magnitude": 0.46},
+    {"id": "hr-2061", "hr": 2061, "name": "Betelgeuse", "ra_hours": 5.91952778, "dec_degrees": 7.40694444, "visual_magnitude": 0.5},
+    {"id": "hr-5267", "hr": 5267, "name": "Hadar", "ra_hours": 14.06372222, "dec_degrees": -60.37305556, "visual_magnitude": 0.61},
+    {"id": "hr-7557", "hr": 7557, "name": "Altair", "ra_hours": 19.84638889, "dec_degrees": 8.86833333, "visual_magnitude": 0.77},
+    {"id": "hr-1457", "hr": 1457, "name": "Aldebaran", "ra_hours": 4.59866667, "dec_degrees": 16.50916667, "visual_magnitude": 0.85},
+    {"id": "hr-6134", "hr": 6134, "name": "Antares", "ra_hours": 16.49011111, "dec_degrees": -26.43194444, "visual_magnitude": 0.96},
+    {"id": "hr-5056", "hr": 5056, "name": "Spica", "ra_hours": 13.41988889, "dec_degrees": -11.16138889, "visual_magnitude": 0.98},
+    {"id": "hr-2990", "hr": 2990, "name": "Pollux", "ra_hours": 7.75525, "dec_degrees": 28.02611111, "visual_magnitude": 1.14},
+    {"id": "hr-8728", "hr": 8728, "name": "Fomalhaut", "ra_hours": 22.96086111, "dec_degrees": -29.62222222, "visual_magnitude": 1.16},
+    {"id": "hr-4853", "hr": 4853, "name": "Mimosa", "ra_hours": 12.79533333, "dec_degrees": -59.68861111, "visual_magnitude": 1.25},
+    {"id": "hr-7924", "hr": 7924, "name": "Deneb", "ra_hours": 20.69052778, "dec_degrees": 45.28027778, "visual_magnitude": 1.25},
+    {"id": "hr-4730", "hr": 4730, "name": "Acrux", "ra_hours": 12.44330556, "dec_degrees": -63.09916667, "visual_magnitude": 1.33},
+    {"id": "hr-3982", "hr": 3982, "name": "Regulus", "ra_hours": 10.13952778, "dec_degrees": 11.96722222, "visual_magnitude": 1.35},
+    {"id": "hr-1790", "hr": 1790, "name": "Bellatrix", "ra_hours": 5.41886111, "dec_degrees": 6.34972222, "visual_magnitude": 1.64},
+    {"id": "hr-1791", "hr": 1791, "name": "Elnath", "ra_hours": 5.43819444, "dec_degrees": 28.6075, "visual_magnitude": 1.65},
+    {"id": "hr-5191", "hr": 5191, "name": "Alkaid", "ra_hours": 13.79233333, "dec_degrees": 49.31333333, "visual_magnitude": 1.86}
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "background_rgb": [
+    255,
+    255,
+    255
+  ],
+  "coverage": {
+    "clusters": [
+      {
+        "covered": true,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [],
+        "text": "A"
+      },
+      {
+        "covered": false,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [
+          "U+6F22"
+        ],
+        "text": "漢"
+      },
+      {
+        "covered": true,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [],
+        "text": " "
+      },
+      {
+        "covered": true,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [],
+        "text": "س"
+      },
+      {
+        "covered": true,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [],
+        "text": "ل"
+      },
+      {
+        "covered": true,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [],
+        "text": "ا"
+      },
+      {
+        "covered": true,
+        "font": "DejaVuSans.ttf",
+        "missing_codepoints": [],
+        "text": "م"
+      }
+    ],
+    "complete": false
+  },
+  "degraded": false,
+  "fallback_box_expected": true,
+  "fixture_id": "fallback-mixed-script",
+  "font_chain": {
+    "fallback": "DejaVuSans.ttf"
+  },
+  "font_hashes": {
+    "fallback": "DejaVuSans.ttf"
+  },
+  "font_size_px": 22,
+  "foreground_rgb": [
+    34,
+    37,
+    41
+  ],
+  "generator": "tests/fixtures/transcription-v2/build_corpus_v2.py",
+  "pillow_version": "12.1.0",
+  "renderer": "Pillow"
+}

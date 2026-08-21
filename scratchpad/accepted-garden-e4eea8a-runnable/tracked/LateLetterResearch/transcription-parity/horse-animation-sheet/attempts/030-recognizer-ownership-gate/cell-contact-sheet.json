@@ -1,0 +1,27 @@
+{
+  "format": "lateletter-cell-contact-sheet-v1",
+  "source": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "calibration": "calibration.json",
+  "calibration_sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d",
+  "transcript": "machine-cell-ocr.txt",
+  "transcript_sha256": "9250edb2def32ad44efcad01a95c8c732e31113ad1e9c85ad892535b479bc4fa",
+  "grid": {
+    "columns": 37,
+    "rows": 22,
+    "origin_x_px": -1.5,
+    "first_baseline_y_px": 20.0,
+    "advance_x_px": 11.55,
+    "advance_y_px": 21.0,
+    "crop_top_offset_px": -12.0,
+    "crop_bottom_offset_px": 9.0
+  },
+  "cells_shown": 814,
+  "nonblank_cells_shown": 104,
+  "artifacts": {
+    "all_cells": "cell-contact-sheet.png",
+    "nonblank_cells": "nonblank-contact-sheet.png"
+  },
+  "review_only": true,
+  "note": "This contact sheet is source-cell evidence; it is not a rendered parity result or operator acceptance."
+}

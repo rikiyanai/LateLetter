@@ -1,0 +1,18 @@
+{
+  "anchors": [
+    {
+      "baseline": 30,
+      "row": 0,
+      "x": 12
+    },
+    {
+      "baseline": 62,
+      "row": 1,
+      "x": 12
+    }
+  ],
+  "direction": "ltr",
+  "fixture_id": "positive-fixed-ascii",
+  "logical_rows": 2,
+  "mode": "fixed_lattice"
+}

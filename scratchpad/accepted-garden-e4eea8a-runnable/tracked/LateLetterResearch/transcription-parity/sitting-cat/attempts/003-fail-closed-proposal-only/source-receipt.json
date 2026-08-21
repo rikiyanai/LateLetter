@@ -1,0 +1,11 @@
+{
+  "attempt_source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+  "canvas": {
+    "height": 236,
+    "width": 236
+  },
+  "schema_version": "lateletter-reference-attempt-1",
+  "source_mode": "RGBA-preserved; geometry consumes RGB projection",
+  "source_path": "/Users/r/Projects/LateLetter/tracked/LateLetterResearch/transcription-parity/sitting-cat/source/source.normalized.png",
+  "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275"
+}

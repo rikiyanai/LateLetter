@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+*.egg-info/
+.context/
+# real letter sources hold plaintext letters AND passcodes — never commit
+letters/*
+!letters/letter_source.example.json
+
+# macOS Finder metadata. Eight of these were polluting `git status` on
+# 2026-08-01, which is exactly the noise that makes untracked SOURCE files easy
+# to miss in a long status listing.
+.DS_Store
+
+# Generated review and capture output. These are reproducible from tracked
+# sources and are large (docs/visual-review was 23M across 171 files); the
+# receipts that matter live in tracked/ and docs/.
+docs/visual-review/
+artifacts/
+output/

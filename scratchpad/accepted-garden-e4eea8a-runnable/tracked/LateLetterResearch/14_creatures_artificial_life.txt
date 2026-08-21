@@ -1,0 +1,31 @@
+Source: Creatures: Artificial Life Autonomous Software Agents for Home Entertainment
+Authors: Stephen Grand, Dave Cliff, Anil Malhotra
+Venue: First International Conference on Autonomous Agents, 1997
+DOI: https://doi.org/10.1145/267658.267663
+Accessible record: https://www.researchgate.net/publication/220794226_Creatures_Artificial_Life_Autonomous_Software_Agents_for_Home_Entertainment
+Accessed: 2026-07-30
+Type: Peer-reviewed conference paper
+
+Relevant findings
+-----------------
+
+Creatures implemented virtual pets as autonomous software agents. Its internal
+architecture combined sensory-motor neural networks, behavior selection,
+artificial metabolism/hormones, lifetime learning, development and genetic
+variation. The system demonstrates that artificial-life depth can produce
+emergent individuality rather than a fixed animation sequence.
+
+LateLetter transfer
+-------------------
+
+Use the design goal—autonomy shaped by persistent internal state—but not the
+full biological simulation. A deterministic state machine, legal-action filter,
+utility scorer, hysteresis, personality and bounded episodic memory are more
+auditable and proportionate for LateLetter.
+
+Limit
+-----
+
+The paper describes a substantially larger artificial-life experiment. It
+does not establish that neural networks or simulated biochemistry are necessary
+for a convincing LateLetter animal.

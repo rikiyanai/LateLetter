@@ -1,0 +1,27 @@
+Source: Seed (world generation)
+Publisher: Minecraft Wiki
+URL: https://minecraft.wiki/w/Seed_%28world_generation%29
+Accessed: 2026-07-30
+Type: Community technical reference
+
+Relevant findings
+-----------------
+
+A seed is an input to a particular generation algorithm, not a permanent map
+definition independent of software version. Changes to generation rules or
+random-number systems can change the world produced by the same numerical
+seed. Edition and version also affect structure placement.
+
+LateLetter transfer
+-------------------
+
+Reproducibility means the same seed plus generator/schema version, catalogs,
+author program, and command history. Each persisted world records its generator
+version. A generation change requires migration or continued access to the
+legacy generator; silently regenerating a different memorial garden is barred.
+
+Limit
+-----
+
+This is a community-maintained source. Microsoft documentation is preferred
+for the general generation model; this note supplies the versioning caveat.

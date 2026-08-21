@@ -1,0 +1,55 @@
+{
+  "calibrator": {
+    "name": "LateLetter router lattice calibration emitter",
+    "version": "router-calibration-emitter-1"
+  },
+  "canvas": {
+    "background_rgb": [
+      255,
+      255,
+      255
+    ],
+    "height_px": 192,
+    "width_px": 394
+  },
+  "derived_from": {
+    "evidence_sha256": "02e044299073184b2f14790d3eb558d4f157076bea2bcb92564f018fc338ab93",
+    "geometry_sha256": "26852a8ad7ef3cb681e4294cdae36f43afdfc66bed7e81a9b19811ab0394d7e7",
+    "ownership_signature": "8b72be61614232f5057a397a1aa5398661a108e02ede0932fd5f71969f6def9e",
+    "router": "raster_authority_owner",
+    "selected_foreground_mask_sha256": "af239678dbfe6350b2e2b4d93b45b5517a649b02c8aa74f26730cd2dc881461d",
+    "transcript_input": false,
+    "winning_phase": 0,
+    "winning_pitch": 32
+  },
+  "grid": {
+    "cell_advance_x_px": 18.0,
+    "cell_crop_bottom_offset_px": 1,
+    "cell_crop_top_offset_px": -31,
+    "columns": 22,
+    "first_baseline_y_px": 31.0,
+    "line_height_px": 32.0,
+    "origin_x_px": -1.0,
+    "row_crop_measurement": {
+      "bottom": 1,
+      "boundary_ink": 0,
+      "boundary_samples": 5,
+      "inter_row_clearance_px": 0,
+      "top": -31
+    },
+    "rows": 6,
+    "x_phase_px_mod_period": 17.0,
+    "y_phase_px_mod_period": 0
+  },
+  "guide_columns_px": [],
+  "normalization": {
+    "background_method": "router_selected_foreground_recipe",
+    "colour_space": "RGB",
+    "foreground_mask_sha256": "af239678dbfe6350b2e2b4d93b45b5517a649b02c8aa74f26730cd2dc881461d",
+    "ink_threshold_l1": 12
+  },
+  "schema": "router-emitted-calibration-1",
+  "source_png": "eb861dc84400fc36.png!cover_jpg.normalized.png",
+  "source_sha256": "3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5",
+  "status": "router_emitted"
+}

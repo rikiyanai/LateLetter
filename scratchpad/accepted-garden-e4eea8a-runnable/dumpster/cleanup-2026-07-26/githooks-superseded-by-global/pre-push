@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+#
+# .githooks/pre-push — enforce the AI attribution policy before anything leaves
+# this machine.
+#
+# WHY THIS LIVES IN THE REPO RATHER THAN .git/hooks
+# -------------------------------------------------
+# .git/hooks is not version controlled and does not survive a clone. Keeping
+# hooks in a tracked .githooks/ directory and pointing git at it means the
+# policy travels with the repository. Activate it once per clone with:
+#
+#   git config core.hooksPath .githooks
+#
+# WHAT GIT PASSES US
+# ------------------
+# Git feeds pre-push one line per ref being pushed on stdin:
+#
+#   <local ref> <local sha> <remote ref> <remote sha>
+#
+# `remote sha` is all zeros when the remote does not yet have the branch (a
+# brand-new branch). In that case there is no "since" point on the remote, so
+# we fall back to inspecting the local sha and its ancestors.
+#
+# EXIT STATUS
+#   0 — allow the push
+#   1 — reject the push (git aborts before contacting the remote)
+
+set -euo pipefail
+
+# Resolve the repository root so the checker is found regardless of the
+# subdirectory the user happened to run `git push` from.
+repo_root="$(git rev-parse --show-toplevel)"
+checker="$repo_root/scripts/check_attribution.sh"
+
+if [[ ! -x "$checker" ]]; then
+  printf 'pre-push: %s is missing or not executable; refusing to push blind.\n' \
+    "$checker" >&2
+  exit 1
+fi
+
+# A 40-character all-zero SHA is git's sentinel for "does not exist".
+zero_sha='0000000000000000000000000000000000000000'
+status=0
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  # Deleting a remote branch pushes a zero local sha; there are no commits to
+  # inspect, so allow it through.
+  if [[ "$local_sha" == "$zero_sha" ]]; then
+    continue
+  fi
+
+  if [[ "$remote_sha" == "$zero_sha" ]]; then
+    # New branch on the remote: no common base to diff against, so inspect the
+    # commit and its full ancestry. This mirrors what the CI workflow does for
+    # a first push of a branch.
+    range="$local_sha"
+  else
+    # Existing branch: inspect only what this push actually adds.
+    range="$remote_sha..$local_sha"
+  fi
+
+  if ! "$checker" "$range"; then
+    status=1
+  fi
+done
+
+if [[ "$status" -ne 0 ]]; then
+  printf '\npre-push: AI attribution policy failed. Push aborted.\n' >&2
+  printf 'Rewrite the offending commit(s) (e.g. git commit --amend, git rebase -i) and retry.\n' >&2
+fi
+
+exit "$status"

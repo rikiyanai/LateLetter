@@ -1,0 +1,159 @@
+{
+  "author_name": "Demo Author",
+  "passphrase_hint": "where flowers grow",
+  "garden_seed": 20260721,
+  "messages": [
+    {
+      "date": "2026-07-21",
+      "label": "A demo letter",
+      "body": "Dear friend,\n\nThis is fictional sample text for testing LateLetter. Replace this entire example with your own words in a separate, ignored source file before sealing a real letter.\n\nWith care,\nDemo Author"
+    }
+  ],
+  "garden_program": {
+    "version": 1,
+    "evaluator_version": 1,
+    "world_state_version": 1,
+    "atlas_version": "garden-atlas-1",
+    "astronomy_catalog_version": "bright-stars-1",
+    "author_timezone": "UTC",
+    "variables": {"returns": 0},
+    "entities": [
+      {
+        "id": "demo-bench",
+        "kind": "fixture",
+        "catalog_id": "fixture.bench",
+        "initial_state": {"revealed": false},
+        "placement": "near_tallest_tree"
+      },
+      {
+        "id": "demo-rose",
+        "kind": "plant",
+        "catalog_id": "plant.rose",
+        "initial_state": {"planted": false, "growth_stage": 0},
+        "placement": "near_bench"
+      },
+      {
+        "id": "autumn-keepsake",
+        "kind": "collectible",
+        "catalog_id": "collectible.pressed_flower",
+        "initial_state": {"revealed": false},
+        "placement": "near_bench",
+        "properties": {
+          "label": "a pressed demo flower",
+          "description": "A fictional keepsake for production-path testing."
+        }
+      },
+      {
+        "id": "welcome-keepsake",
+        "kind": "collectible",
+        "catalog_id": "collectible.seed_packet",
+        "initial_state": {"revealed": false},
+        "placement": "near_bench",
+        "properties": {
+          "label": "a packet of demo seeds",
+          "description": "A fictional collectible reachable through the normal sealed flow."
+        }
+      }
+    ],
+    "animals": [
+      {
+        "id": "demo-rabbit",
+        "species": "rabbit",
+        "catalog_id": "animal.rabbit",
+        "name": "Clover",
+        "personality": "cautious, patient, and curious",
+        "routine": "forage at dawn, nap by the hedge, approach after quiet visits",
+        "favorite_places": ["demo-bench"],
+        "prohibited_behaviors": ["startle the recipient", "leave the garden"],
+        "gifts": ["autumn-keepsake"],
+        "milestones": ["arrive-after-letter", "gift-after-bond"],
+        "initial_state": {"present": false}
+      }
+    ],
+    "events": [
+      {
+        "id": "bench-reveal",
+        "conditions": {"fact": "visit.total", "op": ">=", "value": 1},
+        "schedule": null,
+        "occurrence": "once",
+        "priority": 100,
+        "exclusive_group": null,
+        "cooldown": null,
+        "actions": [
+          {"type": "entity.reveal", "target": "demo-bench", "params": {"position": "near_tallest_tree"}},
+          {"type": "narrative.show", "target": null, "params": {"kind": "observation", "label": "A place to pause", "text": "A fictional bench waits beneath the tallest tree."}}
+        ]
+      },
+      {
+        "id": "rabbit-after-letter",
+        "conditions": {"fact": "letter.read", "op": "contains", "ref": "FIRST_MESSAGE"},
+        "schedule": null,
+        "occurrence": "once",
+        "priority": 90,
+        "exclusive_group": null,
+        "cooldown": null,
+        "actions": [
+          {"type": "animal.arrive", "target": "demo-rabbit", "params": {"position": "by_edge", "routine": "forage at dawn, nap by the hedge, approach after quiet visits"}},
+          {"type": "narrative.show", "target": null, "params": {"kind": "memory", "label": "Clover", "text": "Clover is fictional, patient, and always glad you came back."}}
+        ]
+      },
+      {
+        "id": "rose-third-return",
+        "conditions": {
+          "all": [
+            {"fact": "letter.read", "op": "contains", "ref": "FIRST_MESSAGE"},
+            {"fact": "visit.total", "op": ">=", "value": 3}
+          ]
+        },
+        "schedule": null,
+        "occurrence": "once",
+        "priority": 80,
+        "exclusive_group": null,
+        "cooldown": null,
+        "actions": [
+          {"type": "plant.plant", "target": "demo-rose", "params": {"species_id": "rose", "position": "near_bench", "seed": 2307}},
+          {"type": "plant.grow", "target": "demo-rose", "params": {"stage": 3, "amount": 3}},
+          {"type": "event.complete", "target": null, "params": {"event_id": "rose-third-return"}}
+        ]
+      },
+      {
+        "id": "welcome-keepsake-reveal",
+        "conditions": {
+          "all": [
+            {"fact": "letter.read", "op": "contains", "ref": "FIRST_MESSAGE"},
+            {"fact": "visit.total", "op": ">=", "value": 1}
+          ]
+        },
+        "schedule": null,
+        "occurrence": "once",
+        "priority": 75,
+        "exclusive_group": null,
+        "cooldown": null,
+        "actions": [
+          {"type": "entity.reveal", "target": "welcome-keepsake", "params": {"position": "near_bench"}},
+          {"type": "narrative.show", "target": null, "params": {"kind": "memory", "label": "Demo seeds", "text": "A fictional packet appeared after the demo letter was read."}}
+        ]
+      },
+      {
+        "id": "autumn-bond-gift",
+        "conditions": {
+          "all": [
+            {"fact": "animal.bond_tier", "op": ">=", "value": 2},
+            {"fact": "season.current", "op": "==", "value": "autumn"},
+            {"fact": "event.completed", "op": "contains", "ref": "rose-third-return"}
+          ]
+        },
+        "schedule": null,
+        "occurrence": "once",
+        "priority": 70,
+        "exclusive_group": null,
+        "cooldown": null,
+        "actions": [
+          {"type": "animal.present_gift", "target": "demo-rabbit", "params": {"gift_id": "autumn-keepsake"}},
+          {"type": "entity.reveal", "target": "autumn-keepsake", "params": {"position": "near_bench"}},
+          {"type": "narrative.show", "target": null, "params": {"kind": "memory", "label": "A pressed demo flower", "text": "A fictional keepsake arrived through the authored animal arc."}}
+        ]
+      }
+    ]
+  }
+}

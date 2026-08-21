@@ -1,0 +1,231 @@
+{
+  "counts": {
+    "error": 26,
+    "proved": 0,
+    "rejected": 0,
+    "timeout": 0,
+    "total": 26
+  },
+  "implementation_identity_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/implementation-identity-phase3-8-2026-08-04.json",
+  "implementation_identity_sha256": "e6c297bf6634607659f907f112dee47d47cc6893bdafb7c7c425666354ac461f",
+  "inventory_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/source-inventory-2026-08-04.json",
+  "inventory_sha256": "66ab7eddbe1dbb72386bd79d5e5383cb5f6be9e9f4a058e2af3d46bc78796f1c",
+  "inventory_source_sha256": "66230d3746ef1aa4036574f65ef47bb8d55d85ee295c0b400866b5b76aa61b08",
+  "recorded_at": "2026-08-04T14:20:54.058158+00:00",
+  "records": [
+    {
+      "elapsed_ms": 203.746,
+      "mode": "unresolved",
+      "source": "Screenshot 2026-07-31 at 13.12.04.normalized.png",
+      "source_sha256": "f8c56effbac24608060e0e8082d983a32b242034fd8779ba533f9395dbf24410",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected f8c56effbac24608060e0e8082d983a32b242034fd8779ba533f9395dbf24410, got 9fee60dd442cc33cf875916a571d213ee06321c5898ee6020e32fad96fad536d\n"
+    },
+    {
+      "elapsed_ms": 166.217,
+      "mode": "unresolved",
+      "source": "4409e4149b1b6827b4b8c44ed8a3772d.normalized.png",
+      "source_sha256": "840a74ac84cb261bc20086e8fba25ca36797a59b5b66761b8a433bf702e63642",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 840a74ac84cb261bc20086e8fba25ca36797a59b5b66761b8a433bf702e63642, got 3b1d1220a072ce51ba0bf6bcdf695a4a489d1635534d473fd99e676ae101b912\n"
+    },
+    {
+      "elapsed_ms": 158.022,
+      "mode": "unresolved",
+      "source": "570f8131c83cdafded2c3b5be78d4df8.normalized.png",
+      "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275, got afaad62a1a383a62ea0646cd0d2f720f27ded7f97012a4173e55ef31806322b7\n"
+    },
+    {
+      "elapsed_ms": 154.752,
+      "mode": "unresolved",
+      "source": "988fd1ab7783d6757e0b68aa9b27ab4d.normalized.png",
+      "source_sha256": "ca2b6b41778f0bd054aa2284f75d62e9eda2a2f08790e827c1b1b5c900129323",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected ca2b6b41778f0bd054aa2284f75d62e9eda2a2f08790e827c1b1b5c900129323, got e37d0eb6da6755840401c9cc00d362e2da761b6df51de81eb2a069d4cc410dda\n"
+    },
+    {
+      "elapsed_ms": 157.484,
+      "mode": "unresolved",
+      "source": "9d0cb1893cfa495d1edfdaf8d312108c.normalized.png",
+      "source_sha256": "2319f211dae02f4006e22427d9c10eda4e44fafd6aef15a04f85d2d16d4b6731",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 2319f211dae02f4006e22427d9c10eda4e44fafd6aef15a04f85d2d16d4b6731, got 976162d43548bbd8f59c9944c98c78e69a389eb1204438d14703cb355185c17f\n"
+    },
+    {
+      "elapsed_ms": 158.91,
+      "mode": "unresolved",
+      "source": "Fish-shell-logo-ascii-black.svg.normalized.png",
+      "source_sha256": "e3aed07693c67a44a7f33f0bb4d1321179ee2afb80b0acc6f8eda2157f54e405",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected e3aed07693c67a44a7f33f0bb4d1321179ee2afb80b0acc6f8eda2157f54e405, got cede3a44f18236133af2aa2724a2520724341d30b6606957dfd9a54b4189b38c\n"
+    },
+    {
+      "elapsed_ms": 158.052,
+      "mode": "unresolved",
+      "source": "Screenshot 2026-07-31 at 13.14.18.normalized.png",
+      "source_sha256": "15a122e4962b723cddbc607251c295e883ed6abbe725d747bdae9bc7c5a153a2",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 15a122e4962b723cddbc607251c295e883ed6abbe725d747bdae9bc7c5a153a2, got bfa54972c6b3d4cd297fe16a451d9eacae47fe07b84149447cd2315721402112\n"
+    },
+    {
+      "elapsed_ms": 162.373,
+      "mode": "unresolved",
+      "source": "Screenshot 2026-07-31 at 13.14.25.normalized.png",
+      "source_sha256": "3ac4074eac4e9c8cc2f4e9bd466dfb7df937bfd8746d1b64a9bcbf31f341d56e",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 3ac4074eac4e9c8cc2f4e9bd466dfb7df937bfd8746d1b64a9bcbf31f341d56e, got 8154e782230e033cafa392e9a75955198da31ed74ed095ce224edfa59caea29b\n"
+    },
+    {
+      "elapsed_ms": 156.174,
+      "mode": "unresolved",
+      "source": "Screenshot 2026-07-31 at 13.14.32.normalized.png",
+      "source_sha256": "94b1535e71b845ea4fcb754176eb4f8018ff835e9507548efda6201ff71096bb",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 94b1535e71b845ea4fcb754176eb4f8018ff835e9507548efda6201ff71096bb, got 1f9418c5e49b9af32f345eff73b2ebeccd64194b6e36b628b444978511826807\n"
+    },
+    {
+      "elapsed_ms": 156.768,
+      "mode": "unresolved",
+      "source": "Screenshot 2026-07-31 at 13.16.07.normalized.png",
+      "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3, got ac94476293ccf8d038ec04ca27c4a95619ce014570def8816316cf5355d3847d\n"
+    },
+    {
+      "elapsed_ms": 164.491,
+      "mode": "unresolved",
+      "source": "Screenshot 2026-07-31 at 13.29.23.normalized.png",
+      "source_sha256": "f58875dd232ee053f6c1f54ca349a134a6cb96bdd58a090f0ef453cb31ee454c",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected f58875dd232ee053f6c1f54ca349a134a6cb96bdd58a090f0ef453cb31ee454c, got 3e2fcc96a30393245c68f88e2ebc3cf924d46ba9a67e725956bf630fd375d4b1\n"
+    },
+    {
+      "elapsed_ms": 155.346,
+      "mode": "unresolved",
+      "source": "Screenshot 2026-07-31 at 13.30.21.normalized.png",
+      "source_sha256": "55560ba542dc7252703084f631d5bf0e7058d230468e0e30aa82720c4537fff7",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 55560ba542dc7252703084f631d5bf0e7058d230468e0e30aa82720c4537fff7, got 7bef5889725fa6746d9ba624be98360ca8b53eabeace7a8f898c269eec591754\n"
+    },
+    {
+      "elapsed_ms": 155.163,
+      "mode": "unresolved",
+      "source": "a8283c5cdb63b130.png!cover_jpg.normalized.png",
+      "source_sha256": "c50bcf5ded3a0499f762762f8bec75db6ac2c9176806061a86c2a6d8317bd8d8",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected c50bcf5ded3a0499f762762f8bec75db6ac2c9176806061a86c2a6d8317bd8d8, got 4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b\n"
+    },
+    {
+      "elapsed_ms": 158.235,
+      "mode": "unresolved",
+      "source": "bbbb_flowers.normalized.png",
+      "source_sha256": "f7d6f3d502cac705902885083219bed253a92cc0d5a5c058353c6781b04f7f3e",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected f7d6f3d502cac705902885083219bed253a92cc0d5a5c058353c6781b04f7f3e, got 38eb07a2f8dcebf04dc2ae4bf9cbc9e4231f2ed33e5fcfc90b14ef0008ecf958\n"
+    },
+    {
+      "elapsed_ms": 156.62,
+      "mode": "unresolved",
+      "source": "c1np1jdixihf1.normalized.png",
+      "source_sha256": "e57507e58e882b41646edb152f5a2ee50d2a814be3588cb960fb9ca06f0b4fd1",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected e57507e58e882b41646edb152f5a2ee50d2a814be3588cb960fb9ca06f0b4fd1, got 0ddcc935931b3e66b38055befec2a013e78354d0f113b4ad62f57f2935d6d553\n"
+    },
+    {
+      "elapsed_ms": 157.115,
+      "mode": "unresolved",
+      "source": "christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized.png",
+      "source_sha256": "f7c6429f18ccd99bba833fa38a76a262ccdc0e32aebbf3de3947516e6b69377d",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected f7c6429f18ccd99bba833fa38a76a262ccdc0e32aebbf3de3947516e6b69377d, got 0f68d0601f249d33d9472351745755a311accf129b4e7838b83cc49609004429\n"
+    },
+    {
+      "elapsed_ms": 158.337,
+      "mode": "unresolved",
+      "source": "d4b66f66373db2f3f46d775ed3cb9eee.normalized.png",
+      "source_sha256": "b7ef1ae16c8d605c923b18f7c32ebd49305b91738d39ccf6f4147f9fe94080ba",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected b7ef1ae16c8d605c923b18f7c32ebd49305b91738d39ccf6f4147f9fe94080ba, got e1919435a74f80cbc5a8a2f2b501c4801c6b34246f53676def0dca8314249a96\n"
+    },
+    {
+      "elapsed_ms": 159.407,
+      "mode": "unresolved",
+      "source": "eb861dc84400fc36.png!cover_jpg.normalized.png",
+      "source_sha256": "725949a5a44ce353100f56f6afc4494c3554a1da3505d02bfd1f33edc3ce25d1",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 725949a5a44ce353100f56f6afc4494c3554a1da3505d02bfd1f33edc3ce25d1, got 3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5\n"
+    },
+    {
+      "elapsed_ms": 153.936,
+      "mode": "unresolved",
+      "source": "ebf485c62e6e63738ad4fcb1a4396e28.normalized.png",
+      "source_sha256": "5a81e15c8410ca3a9b7348c2f60e4810adfafb3186a5bf08229c73349a57793c",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 5a81e15c8410ca3a9b7348c2f60e4810adfafb3186a5bf08229c73349a57793c, got 6d022cabc2afd12dda47ba87fd61eda6b1521e6129317ab2f327c9d1c9b78a95\n"
+    },
+    {
+      "elapsed_ms": 157.828,
+      "mode": "unresolved",
+      "source": "images.normalized.png",
+      "source_sha256": "5124481a4473227b65bc365516ee1cefc5df57cf940df8bf8efbd1e35ad30838",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 5124481a4473227b65bc365516ee1cefc5df57cf940df8bf8efbd1e35ad30838, got 5b0e1f4f0a416c952807fc4a7c6b25651693658cbc7934dfbdc512486d3e1822\n"
+    },
+    {
+      "elapsed_ms": 158.804,
+      "mode": "unresolved",
+      "source": "rain-wind-ascii-art-v0-2asg0us8glbf1.normalized.png",
+      "source_sha256": "5cb138cfc7496f342b9c8665f1e0bb916d904e75a8bb8ec5684d47d423dddaee",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 5cb138cfc7496f342b9c8665f1e0bb916d904e75a8bb8ec5684d47d423dddaee, got 8a87b1d7f53a93aa297a36f11fe916eddf71afe470f3615abd931c5dac7f001b\n"
+    },
+    {
+      "elapsed_ms": 154.444,
+      "mode": "unresolved",
+      "source": "starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized.png",
+      "source_sha256": "133e0c9f56b8090eff1ec92ac5450a101a7eab5dfcaf050ceed4cbd50b89fadc",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 133e0c9f56b8090eff1ec92ac5450a101a7eab5dfcaf050ceed4cbd50b89fadc, got 70526f6720814da888a7bc136ab451a806d71778db003e2a5a29c55f092f75b4\n"
+    },
+    {
+      "elapsed_ms": 155.278,
+      "mode": "unresolved",
+      "source": "stonestoryCross_River_Banner.jpg.normalized.png",
+      "source_sha256": "f75f237ef39bab0c807bec04e7177136a3edd2c9c4e526adccb94bf68a38bfc9",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected f75f237ef39bab0c807bec04e7177136a3edd2c9c4e526adccb94bf68a38bfc9, got ef0fd069021412aa71d85d7c61417d19b6fcbfee7a17f0d1e4ba4de4602501c4\n"
+    },
+    {
+      "elapsed_ms": 158.984,
+      "mode": "unresolved",
+      "source": "stonestorycrypt_shop.jpg.normalized.png",
+      "source_sha256": "89544ef22fc123179bd7b29494d512308206012eef10f6d3dc31db3b0df06d66",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 89544ef22fc123179bd7b29494d512308206012eef10f6d3dc31db3b0df06d66, got 400c54e85f4252a24c66b10d2a17b27b133fe0ab127e5c2e1f1a0e7997b3c4d3\n"
+    },
+    {
+      "elapsed_ms": 157.638,
+      "mode": "unresolved",
+      "source": "stonestoryranting_tree_rework.jpg.normalized.png",
+      "source_sha256": "8384603877db279fd64ed855262a2c8763e093d7c1b322c2071f5e6aec6a6de3",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected 8384603877db279fd64ed855262a2c8763e093d7c1b322c2071f5e6aec6a6de3, got c86a7cc08e17062353f925e142e708a93f51ef8029ec8d54c8c89873e65bc70a\n"
+    },
+    {
+      "elapsed_ms": 160.132,
+      "mode": "unresolved",
+      "source": "waterfall-2c.normalized.png",
+      "source_sha256": "de676678e65d9033d0d13054809aa692796a588632b0667990a5f249c9a7d687",
+      "status": "error",
+      "stderr": "Traceback (most recent call last):\n  File \"<string>\", line 7, in <module>\n    bundle, decision=route_raster_geometry(source, expected_sha256=expected)\n                     ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/router.py\", line 94, in route_raster_geometry\n    bundle = build_geometry_evidence(\n        source_path,\n        expected_sha256=expected_sha256,\n        configuration=configuration,\n    )\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/geometry/evidence.py\", line 1115, in build_geometry_evidence\n    pixels, source_hash = load_rgb(source_path, expected_sha256=expected_sha256)\n                          ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/r/Projects/LateLetter/src/lateletter/transcription/preprocess.py\", line 21, in load_rgb\n    raise ValueError(f\"source hash mismatch: expected {expected_sha256}, got {actual}\")\nValueError: source hash mismatch: expected de676678e65d9033d0d13054809aa692796a588632b0667990a5f249c9a7d687, got b119f63b182d4ddef6bdfb97574e4f8998fcdb566b830197effd8e1e995b6d06\n"
+    }
+  ],
+  "release_gate": false,
+  "schema": "lateletter-geometry-replay-4",
+  "source_root": "/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES ",
+  "source_root_external": true,
+  "status": "measurement_complete",
+  "timeout_seconds": 90
+}

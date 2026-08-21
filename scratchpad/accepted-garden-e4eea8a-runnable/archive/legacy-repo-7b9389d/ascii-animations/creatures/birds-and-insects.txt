@@ -1,0 +1,185 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Creature ASCII Animations
+  Birds, butterflies, fireflies, and the letter-bird
+  Per docs/SPEC.md §6.3, §7.1, and §7.2
+═══════════════════════════════════════════════════════════════
+
+
+── AMBIENT BIRD (§7.2) ───────────────────────────────────────
+   "Flies across sky in V or > formation"
+   Separate from letter-bird; simple silhouette
+
+Single bird flight (4 frames, loop):
+
+Frame 1:    Frame 2:    Frame 3:    Frame 4:
+  \   /       _   _       .   .       \   /
+   \ /         \ /         \_/         >->
+    V           v           v
+
+
+Minimal bird (2-char, for distant/small):
+
+Frame 1:  Frame 2:  Frame 3:
+  v         ~         ^
+
+Even simpler (1 char, for V-formation):
+  v    ^    ~    `
+
+
+Bird flock / V-formation (moves left-to-right across sky):
+
+Frame 1:                Frame 2:               Frame 3:
+            v                     ~                       ^
+          v   v                 ~   ~                   ^   ^
+        v       v             ~       ~               ^       ^
+
+
+Bird perching (on tree branch):
+
+  Perched:        Taking off:       In flight:
+   (o>             (o>                \(o>/
+   /|               /\>                 |
+   / \             /  \
+
+
+── LETTER-BIRD (§6.3) ────────────────────────────────────────
+   "Visually distinct from ambient bird"
+   "Animated ASCII bird carrying [✉] or folded letter glyph"
+   "Perching on tree top or moving slowly across upper garden"
+   Only appears after bundle authenticated + message due
+
+Letter-bird designs (static):
+
+Design A:           Design B:           Design C:
+  (o>                 \(o>/               .-(o>
+  /| [✉]              |[✉]              /| [✉]
+  / \                 / \                / \
+
+Design D (detailed):     Design E (with count):
+    ___                     (o>
+   (o  >                   /| [✉3]
+   /|\ [✉]                / \
+   / \
+
+Letter-bird flight animation (4 frames):
+
+Frame 1:         Frame 2:         Frame 3:         Frame 4:
+  \(o>/            _(o>_           \(o>/            _(o>_
+    |[✉]            |[✉]            |[✉]            |[✉]
+   / \              / \              | |              / \
+
+Letter-bird perching animation (on tree):
+
+Frame 1 (landing):   Frame 2 (settling):   Frame 3 (perched):
+     \(o>/                 (o>                  (o>
+       |[✉]               /|[✉]               /| [✉]
+  ~~~~~/\~~~~~       ~~~~~/ \~~~~~        ~~~~~/ \~~~~~
+      |||                 |||                  |||
+
+
+── BUTTERFLY (§7.2) ──────────────────────────────────────────
+   "Small >< or ^v^ shape, wanders left-right, occasional up-dip"
+   Spring season animation
+
+Butterfly flight (4 frames, loop):
+
+Frame 1:    Frame 2:    Frame 3:    Frame 4:
+  ><          /\          ><          \/
+              ()                      ()
+
+Alternate butterfly designs:
+
+Design A:         Design B:         Design C:
+  }{ or }{         ^v^               ()()
+                                      \/
+
+Detailed butterfly (larger, for close-up):
+
+Frame 1 (wings up):     Frame 2 (wings mid):    Frame 3 (wings down):
+   /  \                     _  _                    \  /
+  / () \                   | () |                    \()/
+                            |  |
+
+Butterfly wandering path (across 20 chars):
+  Position moves: right 3, up 1, right 2, down 1, right 3, up-dip 2...
+
+  .....><.................
+  ........><..............
+  ...........><...........
+  ..........><............  (up-dip)
+  .........><.............  (up-dip peak)
+  ..........><............
+  .............><.........
+
+
+── FIREFLY / LIGHTNING BUG (§7.2) ────────────────────────────
+   "Small * blinks on/off in lower third, only in night mode"
+   Summer dusk/night animation
+
+Firefly blink cycle (8 frames):
+
+Frame 1-2:  *  (bright, visible)
+Frame 3:    .  (dimming)
+Frame 4-6:     (dark, invisible)
+Frame 7:    .  (warming up)
+Frame 8:    *  (bright again)
+
+Multiple fireflies (lower third of screen, random blink offsets):
+
+Frame 1:     ....*........*...........*....
+Frame 2:     ....*.........*...........*...
+Frame 3:     ...............*..........*...
+Frame 4:     ......*.....................*..
+Frame 5:     ......*..........*............
+Frame 6:     .......*.........*............
+
+Firefly characters by brightness:
+  *  (bold) — full glow
+  *         — normal glow
+  ·         — dim
+  .         — barely visible
+  (space)   — dark
+
+
+── CAT WALKING (from animasci.com reference) ─────────────────
+   Source: animasci.com/play/ceaf4bcc44cd2f690144df14c4170002
+   Not in spec but nice ambient animation for garden
+
+Cat walk cycle (4 frames):
+
+Frame 1:           Frame 2:           Frame 3:           Frame 4:
+  /\_/\              /\_/\              /\_/\              /\_/\
+ ( o.o )            ( o.o )            ( o.o )            ( o.o )
+  > ^ <              > ^ <              > ^ <              > ^ <
+ /|   |\            / |  |\           /|   | \           /  |  |\
+  |   |              |   |             |   |              |   |
+
+Simpler cat silhouette walk (for smaller scale):
+
+Frame 1:    Frame 2:    Frame 3:    Frame 4:
+ /\_ _/\    /\_ _/\    /\_ _/\    /\_ _/\
+(  o o  )  (  o o  )  (  o o  )  (  o o  )
+ |     |    /    |     |     \    |    /
+  \ _ /      \_/        \ _ /      \_/
+
+
+── BEE / POLLINATOR (bonus, from asciiart.website) ───────────
+   From "Rose in a Vase with a Bee" (Joan Stark, art/6909)
+   Could add as spring/summer ambient animation
+
+Bee flight (3 frames):
+
+Frame 1:    Frame 2:    Frame 3:
+  -===-       =-==-       -===-
+   >()>        >()>        >()>
+  -===-       =-==-       -===-
+
+Simple bee (2-char):
+  =)    ()    =)    ()
+
+
+── WORM / CATERPILLAR (bonus garden creature) ────────────────
+   Ambient ground-level animation
+
+Frame 1:    Frame 2:    Frame 3:    Frame 4:
+  _/\~       ~/\_       _/\~       ~/\_

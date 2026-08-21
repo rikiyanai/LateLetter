@@ -1,0 +1,54 @@
+{
+  "format": "lateletter-unknown-neighborhood-review-v1",
+  "source": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "attempt": "../../attempts/031-middle-band-fail-closed",
+  "attempt_manifest_sha256": "d42181992f6f6e3285164c0c5d5230beb49fbbeae9feaf293ca5b567c05a5831",
+  "calibration_sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d",
+  "unknown_centers": [
+    {
+      "row": 7,
+      "column": 6
+    },
+    {
+      "row": 7,
+      "column": 7
+    },
+    {
+      "row": 8,
+      "column": 9
+    },
+    {
+      "row": 8,
+      "column": 10
+    },
+    {
+      "row": 17,
+      "column": 5
+    },
+    {
+      "row": 17,
+      "column": 12
+    },
+    {
+      "row": 18,
+      "column": 9
+    },
+    {
+      "row": 18,
+      "column": 16
+    },
+    {
+      "row": 19,
+      "column": 7
+    },
+    {
+      "row": 19,
+      "column": 13
+    }
+  ],
+  "panel_shape": "3x3",
+  "artifact": "unknown-neighborhoods.png",
+  "review_only": true,
+  "note": "Panels expose neighboring cell ownership; they do not resolve or edit unknown glyphs."
+}

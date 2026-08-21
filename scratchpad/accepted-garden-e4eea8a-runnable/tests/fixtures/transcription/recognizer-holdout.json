@@ -1,0 +1,286 @@
+{
+  "schema_version": "lateletter-transcription-holdout-1",
+  "fixtures": [
+    {
+      "id": "holdout-fixed-small-light",
+      "family": "fixed_ascii",
+      "text": "/\\_ |\n(=)",
+      "font": "/Library/Fonts/DejaVuSansMono.ttf",
+      "size_px": 18,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        255,
+        255,
+        255
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-fixed-small-light/source.png",
+      "source_sha256": "0073a96b36cc0f13aa8a8d537c2c1edb193220a56df7a225e21b3cf0ba07774f",
+      "transcript": "holdout/holdout-fixed-small-light/transcript.txt",
+      "transcript_sha256": "7ccb5b11c7edbb3a74c910d214ce3a48c4f6dd166ead3d7f9b0fe6e70efa37cb",
+      "font_sha256": "dfbac4c793ca4b896c34af5c7ccbbaf37924b46cd521a5ecff9130b9c331f575",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-fixed-large-dark",
+      "family": "fixed_ascii",
+      "text": "--__\\/\n|()|",
+      "font": "/Library/Fonts/DejaVuSansMono.ttf",
+      "size_px": 26,
+      "foreground": [
+        235,
+        235,
+        235
+      ],
+      "background": [
+        26,
+        28,
+        31
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-fixed-large-dark/source.png",
+      "source_sha256": "5e043c96083af87831f7dfa9d306d938e75e65c6e5d062a0315a1bae3c7ec9bd",
+      "transcript": "holdout/holdout-fixed-large-dark/transcript.txt",
+      "transcript_sha256": "ab7480ff2250bca6cb084294b0fb92e9217cc7099a5f4a51142b54969070cfd4",
+      "font_sha256": "dfbac4c793ca4b896c34af5c7ccbbaf37924b46cd521a5ecff9130b9c331f575",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-fixed-gray-rescaled",
+      "family": "fixed_ascii",
+      "text": "  /\\\n--__",
+      "font": "/Library/Fonts/DejaVuSansMono.ttf",
+      "size_px": 22,
+      "foreground": [
+        80,
+        80,
+        80
+      ],
+      "background": [
+        220,
+        220,
+        220
+      ],
+      "rescale": 0.75,
+      "blur": 0.15,
+      "source_png": "holdout/holdout-fixed-gray-rescaled/source.png",
+      "source_sha256": "76a41a7d9df784d45f472104a448ccf9b25c70c83fa5c1b9c201804fa72534bc",
+      "transcript": "holdout/holdout-fixed-gray-rescaled/transcript.txt",
+      "transcript_sha256": "247190f13499f98470ee8a88caa428efe089577d4671507a6b8fb77492ea4bce",
+      "font_sha256": "dfbac4c793ca4b896c34af5c7ccbbaf37924b46cd521a5ecff9130b9c331f575",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-latin-proportional",
+      "family": "proportional_latin",
+      "text": "Late Letter\nkindness",
+      "font": "/Library/Fonts/DejaVuSans.ttf",
+      "size_px": 24,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        255,
+        255,
+        255
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-latin-proportional/source.png",
+      "source_sha256": "0c7f978bbd6cff464d746c2c8f0bedb2a90efb3a65fe897fc846f975d732947c",
+      "transcript": "holdout/holdout-latin-proportional/transcript.txt",
+      "transcript_sha256": "e33a5232b3f431c4162bf3b09900689fd77cb546a9c7413b050894690bcb30fd",
+      "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-kana-latin",
+      "family": "kana_latin",
+      "text": "かな ABC",
+      "font": "/Library/Fonts/DejaVuSans.ttf",
+      "size_px": 24,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        255,
+        255,
+        255
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-kana-latin/source.png",
+      "source_sha256": "d90f80048d64a84c0da12de099afb05aa156e2f6abc0086730337d63f7a8bd27",
+      "transcript": "holdout/holdout-kana-latin/transcript.txt",
+      "transcript_sha256": "6e708ae60011a5dd863eea070b8ac72bcff48b270b52548592ab9077ea0380dd",
+      "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-kanji-halfwidth",
+      "family": "cjk_width",
+      "text": "春 花 ｶﾅ",
+      "font": "/Library/Fonts/DejaVuSans.ttf",
+      "size_px": 24,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        255,
+        255,
+        255
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-kanji-halfwidth/source.png",
+      "source_sha256": "76db8805aae46c0ae9368f3c7366b758059aaaacf5a6d1fb489b6d8659634f29",
+      "transcript": "holdout/holdout-kanji-halfwidth/transcript.txt",
+      "transcript_sha256": "0734b532e11ca8533de193fcb92493d702687d23c9ed6577fbe1bbe66d529255",
+      "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-arabic-latin",
+      "family": "arabic_latin",
+      "text": "سلام A",
+      "font": "/Library/Fonts/DejaVuSans.ttf",
+      "size_px": 24,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        255,
+        255,
+        255
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-arabic-latin/source.png",
+      "source_sha256": "31fea65309c201e0b6dc2b20d159efa04bf617b24b4cbdaddef81528d2bb0113",
+      "transcript": "holdout/holdout-arabic-latin/transcript.txt",
+      "transcript_sha256": "6aa35a4b6b9c4ec17f9df66628c05c3cd03cf69272da83a3beea3c4dc6afc279",
+      "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-combining",
+      "family": "combining",
+      "text": "café é",
+      "font": "/Library/Fonts/DejaVuSans.ttf",
+      "size_px": 24,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        245,
+        248,
+        250
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-combining/source.png",
+      "source_sha256": "b7b846c65757f8d2a322170e58550829e185609fa04e5a53b13f88cc2208670a",
+      "transcript": "holdout/holdout-combining/transcript.txt",
+      "transcript_sha256": "a9cd7cc88c6f35b33d19b6aed2c43daea9c78347e483233a92c1e27ba97bb7af",
+      "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-emoji-color",
+      "family": "emoji_zwj",
+      "text": "👩‍🌾 ❤️",
+      "font": "/Library/Fonts/DejaVuSans.ttf",
+      "size_px": 24,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        255,
+        255,
+        255
+      ],
+      "rescale": 1.0,
+      "source_png": "holdout/holdout-emoji-color/source.png",
+      "source_sha256": "c8b9cf59bd7005449ac19c8b80e1579211648f285908145b68956d3f51724d4c",
+      "transcript": "holdout/holdout-emoji-color/transcript.txt",
+      "transcript_sha256": "d4d958b1c534d1fab665d376e87ea67d5ffade2f3ed588cc7b925a8164059c07",
+      "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    },
+    {
+      "id": "holdout-mixed-rescaled",
+      "family": "mixed_script",
+      "text": "A漢 سلام",
+      "font": "/Library/Fonts/DejaVuSans.ttf",
+      "size_px": 22,
+      "foreground": [
+        34,
+        37,
+        41
+      ],
+      "background": [
+        255,
+        255,
+        255
+      ],
+      "rescale": 1.5,
+      "source_png": "holdout/holdout-mixed-rescaled/source.png",
+      "source_sha256": "b4b5ba9562a5bbef6c012e6d61d9dcab5d50f845af46283cbec0c5b042f811f1",
+      "transcript": "holdout/holdout-mixed-rescaled/transcript.txt",
+      "transcript_sha256": "bf5f81ea4571a3e48cd874bc7d0fadcd99882ffe226084c148a9b633d22cf46d",
+      "font_sha256": "2e108a6d8a628e51da033273afdd043910ca5e6b8dc5618f94d08b35b1a888ee",
+      "provenance": {
+        "origin": "generated-in-repo",
+        "license": "CC0 test fixture",
+        "source": "build_recognizer_holdout.py"
+      }
+    }
+  ]
+}

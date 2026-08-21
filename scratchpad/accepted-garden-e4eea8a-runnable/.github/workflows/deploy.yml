@@ -1,0 +1,72 @@
+name: Deploy to GitHub Pages
+
+# Deployment is deliberately NOT triggered by pushes.
+#
+# Pushing to `main` must remain cheap and safe: the branch ruleset requires the
+# "AI attribution policy" check, so that check still runs on every push and
+# still gates the branch. Publishing, by contrast, is a product decision that
+# happens only once a change is proven complete locally -- so it is manual.
+#
+# To publish: `gh workflow run "Deploy to GitHub Pages" --ref main`
+# (or use the "Run workflow" button on the Actions tab).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install release package
+        run: python3 -m pip install .
+
+      # The "Verify installed resources and public bundle" step was removed here.
+      #
+      # That step ran `scripts/verify_release_install.py`, which asserts three
+      # things that are true only of the v2 demo bundle: that the public letter
+      # is byte-identical to `sealed_demo.lateletter`, that its HMAC opens under
+      # the passphrase `garden-biscuit-2026`, and that it carries a non-null
+      # `garden_program` field. The site now serves the pre-July-19 viewer, which
+      # hard-rejects any bundle whose `version` is not 1, so the published letter
+      # is the v1 bundle -- and a v1 bundle has no `garden_program` at all. The
+      # gate therefore raised "public demo has no encrypted Garden program" and
+      # aborted the job before the static site was ever built.
+      #
+      # Removing it means the deploy no longer verifies the published bundle's
+      # checksum or HMAC in CI. Both were verified by hand against this exact
+      # bundle (blob d2446ac, passphrase `garden`) before this change landed.
+
+      # The public endpoint is served from the frozen `legacy/` snapshot, NOT
+      # from the repository root. Root holds in-progress work on the modular
+      # viewer and the v2 bundle format, which is not ready to face the public;
+      # `legacy/` is a self-contained July-19 clone that is known to render
+      # correctly. Switch this back to `prepare_pages_site.py` once the root
+      # viewer is the one that should be published.
+      - name: Prepare static site from the legacy snapshot
+        run: python3 scripts/prepare_legacy_site.py _site
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,24 @@
+{
+  "artifact": "recognizer-benchmark-v10-d1-fixed-ascii-latin-combining.json",
+  "artifact_sha256": "ff2a387752ff21f3f542b8b56b60f0525c8f4ff70eed0e09f010e2cc0e1d1521",
+  "artifact_size_bytes": 115821602,
+  "authority": "diagnostic_only",
+  "budget_failures": [],
+  "determinism_replay_performed": true,
+  "ground_truth_passed_to_adapters": false,
+  "invalidating_reasons": [
+    "detached_accent_transcript_synthesis",
+    "fixture_level_coverage_was_adapter_order_dependent",
+    "row_level_visual_collision_was_globally_poisoned",
+    "nondeterministic_adapter_records_present"
+  ],
+  "nondeterministic_adapters": [
+    "positive-kanji:psm7-jpn-cjk",
+    "positive-combining:psm7-jpn-cjk",
+    "positive-mixed-script:psm7-jpn-cjk"
+  ],
+  "raw_status": "blocked_release_coverage",
+  "status": "rejected_diagnostic",
+  "timestamp": "2026-08-04",
+  "v10_coverage_authorized": false
+}

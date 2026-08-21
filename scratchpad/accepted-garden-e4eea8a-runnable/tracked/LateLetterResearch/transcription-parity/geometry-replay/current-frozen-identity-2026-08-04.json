@@ -1,0 +1,566 @@
+{
+  "schema": "lateletter-geometry-replay-3",
+  "status": "measurement_only",
+  "recorded_at": "2026-08-04",
+  "source_root": "/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES ",
+  "source_root_external": true,
+  "inventory_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/source-inventory-2026-08-04.json",
+  "inventory_sha256": "8499a71f5cd5b0b81c800906fa8cfbf507f4a4acd5ce267f34b2559399bb294f",
+  "inventory_source_sha256": "66230d3746ef1aa4036574f65ef47bb8d55d85ee295c0b400866b5b76aa61b08",
+  "implementation_identity_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/implementation-identity-2026-08-04.json",
+  "implementation_identity_sha256": "f1cbfc8604bba6de697202b72986939a11722dd405a050fa2f1db1d90fbb186b",
+  "implementation_state": "dirty_working_tree",
+  "timeout_seconds": 90,
+  "counts": {
+    "proved": 12,
+    "rejected": 14,
+    "timeout": 0,
+    "error": 0,
+    "total": 26
+  },
+  "release_gate": false,
+  "records": [
+    {
+      "evidence_hash": "1f12e10fd9b9a03feedaba0479f84a6f15deab6b945fd7dc4e6a5141b98b12fc",
+      "geometry_hash": "585a9316097657993d5620a2777e090055f31b3cf5109222c96678a7acc6a870",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "f8c56effbac24608060e0e8082d983a32b242034fd8779ba533f9395dbf24410",
+      "status": "proved",
+      "source": "Screenshot 2026-07-31 at 13.12.04.normalized.png",
+      "elapsed_ms": 22205.599
+    },
+    {
+      "evidence_hash": "9d87491ada547eb69ce6c2cb994c708f905c307753fc815b71d1fd2dc8e14c6d",
+      "geometry_hash": "e532d22ef7f7b830e59afbbba6f4c6737fc9d613228dfc422115d50070a313c1",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "source_sha256": "840a74ac84cb261bc20086e8fba25ca36797a59b5b66761b8a433bf702e63642",
+      "status": "rejected",
+      "source": "4409e4149b1b6827b4b8c44ed8a3772d.normalized.png",
+      "elapsed_ms": 11402.03
+    },
+    {
+      "evidence_hash": "7a08d8510112ee3c08ad71e86c7bd43bf185d592790230135af91473adcfe1c8",
+      "geometry_hash": "35a71a78d54464b9bd7cb8907033348b17457f469c23628e1d1c018ba790982e",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "periodic_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+      "status": "rejected",
+      "source": "570f8131c83cdafded2c3b5be78d4df8.normalized.png",
+      "elapsed_ms": 4835.977
+    },
+    {
+      "evidence_hash": "3fcc670a6da392039ea96468443a2a96c4b379a611f3f142d443fd15e52b061e",
+      "geometry_hash": "49702efab62b08869d608ad3efd01f409ccd4100b04fca99ce6cf2999f678703",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances"
+      ],
+      "source_sha256": "ca2b6b41778f0bd054aa2284f75d62e9eda2a2f08790e827c1b1b5c900129323",
+      "status": "rejected",
+      "source": "988fd1ab7783d6757e0b68aa9b27ab4d.normalized.png",
+      "elapsed_ms": 5009.434
+    },
+    {
+      "evidence_hash": "0b17ca69c28e4276a7aace849a2e8ad4e3ba909e19dc73f8179048c72b2d23db",
+      "geometry_hash": "1069a30566e02ff71f375bfd7a1ca3c711f1dd0e746848bbe1d7f5b4e5781679",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "source_sha256": "2319f211dae02f4006e22427d9c10eda4e44fafd6aef15a04f85d2d16d4b6731",
+      "status": "rejected",
+      "source": "9d0cb1893cfa495d1edfdaf8d312108c.normalized.png",
+      "elapsed_ms": 7199.078
+    },
+    {
+      "evidence_hash": "812b32ed16e2285727d96eccb8d06b32057bbccd89993112bca9055381678f2a",
+      "geometry_hash": "36c9e383c79143469bd1bf945eb16c229134443199e80c14df9774edb6053948",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "foreground_unresolved",
+        "component_evidence_missing",
+        "fixed_lattice_criterion_missing:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_missing:horizontal_advance_stability",
+        "fixed_lattice_criterion_below_threshold:horizontal_advance_stability",
+        "fixed_lattice_criterion_missing:phase_origin_confidence",
+        "fixed_lattice_criterion_below_threshold:phase_origin_confidence",
+        "fixed_lattice_criterion_missing:fullwidth_multiples",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "fixed_lattice_criterion_missing:boundary_intersections",
+        "fixed_lattice_criterion_below_threshold:boundary_intersections",
+        "fixed_lattice_criterion_missing:horizontal_joins_vs_cuts",
+        "fixed_lattice_criterion_below_threshold:horizontal_joins_vs_cuts",
+        "fixed_lattice_criterion_missing:negative_origin_clipping",
+        "fixed_lattice_criterion_below_threshold:negative_origin_clipping",
+        "fixed_lattice_criterion_missing:cross_row_spill",
+        "fixed_lattice_criterion_below_threshold:cross_row_spill",
+        "fixed_lattice_criterion_missing:foreground_alternatives",
+        "fixed_lattice_criterion_below_threshold:foreground_alternatives",
+        "shaped_runs_criterion_missing:row_bands_baselines",
+        "shaped_runs_criterion_below_threshold:row_bands_baselines",
+        "shaped_runs_criterion_missing:variable_advances",
+        "shaped_runs_criterion_below_threshold:variable_advances",
+        "shaped_runs_criterion_missing:connected_joined_runs",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs",
+        "shaped_runs_criterion_missing:direction_candidates",
+        "shaped_runs_criterion_below_threshold:direction_candidates",
+        "shaped_runs_criterion_missing:vertical_text_candidates",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "source_sha256": "e3aed07693c67a44a7f33f0bb4d1321179ee2afb80b0acc6f8eda2157f54e405",
+      "status": "rejected",
+      "source": "Fish-shell-logo-ascii-black.svg.normalized.png",
+      "elapsed_ms": 285.093
+    },
+    {
+      "evidence_hash": "f46c9da6c6547d6c66bf9f10a8379be1a86e2b82f3a84f29d1afac1859b275f1",
+      "geometry_hash": "166121c58e87438b6d7242dbf73295dc8fc9b45eb356b6a56f2e2993dc343ae4",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "15a122e4962b723cddbc607251c295e883ed6abbe725d747bdae9bc7c5a153a2",
+      "status": "proved",
+      "source": "Screenshot 2026-07-31 at 13.14.18.normalized.png",
+      "elapsed_ms": 14948.355
+    },
+    {
+      "evidence_hash": "c957b71fefb174c20a1bf24530b0d88acfe2b4eb9927b8e1dcb5d6c2a2a4d81b",
+      "geometry_hash": "04613e8d39dd7d93d96f0d147db684b3657cf8a124f96618708887d1bcf462c6",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "3ac4074eac4e9c8cc2f4e9bd466dfb7df937bfd8746d1b64a9bcbf31f341d56e",
+      "status": "proved",
+      "source": "Screenshot 2026-07-31 at 13.14.25.normalized.png",
+      "elapsed_ms": 12440.712
+    },
+    {
+      "evidence_hash": "facf49098585539758b33b0009f83101dc6b69c00defee484d9b76a68882d785",
+      "geometry_hash": "980b2e7d115db9008135bf8545349d6315091b6d6e94e5433dd44eb5102fab70",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "94b1535e71b845ea4fcb754176eb4f8018ff835e9507548efda6201ff71096bb",
+      "status": "proved",
+      "source": "Screenshot 2026-07-31 at 13.14.32.normalized.png",
+      "elapsed_ms": 14840.248
+    },
+    {
+      "evidence_hash": "032cb592565c407c41e581781ae25ac2773c9e167bb26ff272fe960af4dae005",
+      "geometry_hash": "6f507199d07b2316200d677e57a3640244cedb08ae82aa09f198bd99bf8bed9e",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+      "status": "rejected",
+      "source": "Screenshot 2026-07-31 at 13.16.07.normalized.png",
+      "elapsed_ms": 10194.177
+    },
+    {
+      "evidence_hash": "bdc00409b0b0ae9716ede8df6c098cb48a5b2cc12263a7d1cb5413dd9a21b3ed",
+      "geometry_hash": "e6f5c577d421b8da996c28a15d9146bc6f5c3769a12cab0d0dfb26c4d3d696ab",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "f58875dd232ee053f6c1f54ca349a134a6cb96bdd58a090f0ef453cb31ee454c",
+      "status": "proved",
+      "source": "Screenshot 2026-07-31 at 13.29.23.normalized.png",
+      "elapsed_ms": 15414.077
+    },
+    {
+      "evidence_hash": "cb0c7f5356491015e1ce167493b45dd147558c91af4384cd3379d4712985be8c",
+      "geometry_hash": "dd946303bb847a20fcc553cd6a83af99e61d6ac97dafeda13ae5007f3ac20eaf",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "55560ba542dc7252703084f631d5bf0e7058d230468e0e30aa82720c4537fff7",
+      "status": "proved",
+      "source": "Screenshot 2026-07-31 at 13.30.21.normalized.png",
+      "elapsed_ms": 7459.421
+    },
+    {
+      "evidence_hash": "9fad1fd32970bf752ca4eb3b8f9b8f572eba698c4c18a872512b7753702114bc",
+      "geometry_hash": "84a3971bfdc53a79c0eb5fb51066b306af8b33f97f897e30935c1287f6be1658",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "c50bcf5ded3a0499f762762f8bec75db6ac2c9176806061a86c2a6d8317bd8d8",
+      "status": "proved",
+      "source": "a8283c5cdb63b130.png!cover_jpg.normalized.png",
+      "elapsed_ms": 9633.65
+    },
+    {
+      "evidence_hash": "c771e4ffbd9c9725ad2a8938f18604d99ef71d4eceefc6f185b024d2ca52aa96",
+      "geometry_hash": "e7492661aebfe9df0e264559bd1ee4931e4930e0a40af3fcabec3663d286c515",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "f7d6f3d502cac705902885083219bed253a92cc0d5a5c058353c6781b04f7f3e",
+      "status": "proved",
+      "source": "bbbb_flowers.normalized.png",
+      "elapsed_ms": 5634.21
+    },
+    {
+      "evidence_hash": "971ade1eda504b9ac80d6fda3512697bc13cd1a74d4dbdb9bfa2b70a22785e54",
+      "geometry_hash": "4b050579fa49cbacc7e33751e62f2ef5ccc53c54392367fea2bcb00b3d97bff9",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "source_sha256": "e57507e58e882b41646edb152f5a2ee50d2a814be3588cb960fb9ca06f0b4fd1",
+      "status": "rejected",
+      "source": "c1np1jdixihf1.normalized.png",
+      "elapsed_ms": 52472.344
+    },
+    {
+      "evidence_hash": "6af5d75b80fdfbbb7c17bdba19c459f5c4766e20e10c995f19ffe88fa7012b29",
+      "geometry_hash": "68a304965ac750bcc46149c89d1cf23095b60fcecd4bb9592dd286cc39992d1c",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances"
+      ],
+      "source_sha256": "f7c6429f18ccd99bba833fa38a76a262ccdc0e32aebbf3de3947516e6b69377d",
+      "status": "rejected",
+      "source": "christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized.png",
+      "elapsed_ms": 52034.256
+    },
+    {
+      "evidence_hash": "c5be076a914404c3abd34b359533734e4f76945678f8a8999411214bad4a242b",
+      "geometry_hash": "5417166d90fe7ef43ef4ae89f9a73368ade4ca2806492455db263291bedb4c1e",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "source_sha256": "b7ef1ae16c8d605c923b18f7c32ebd49305b91738d39ccf6f4147f9fe94080ba",
+      "status": "rejected",
+      "source": "d4b66f66373db2f3f46d775ed3cb9eee.normalized.png",
+      "elapsed_ms": 4880.931
+    },
+    {
+      "evidence_hash": "0d7c866b9d9e23beaccd4b1944e3a6301d8086c9a4ad146860831d63082cb967",
+      "geometry_hash": "c352d009370825e12b71a7f68bdcc74dfaee1fd9ce837148ee5de0fe3f4c40f0",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "725949a5a44ce353100f56f6afc4494c3554a1da3505d02bfd1f33edc3ce25d1",
+      "status": "proved",
+      "source": "eb861dc84400fc36.png!cover_jpg.normalized.png",
+      "elapsed_ms": 7198.597
+    },
+    {
+      "evidence_hash": "4a2fd5778bfae19082d1069fbcb8c2c2bc1010fd8b7a9bd5a33fa4829a6b0db0",
+      "geometry_hash": "a9df509ec62636be394eb7e9c0dab4deea1bce158437e4be9361ca86968da2d5",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances"
+      ],
+      "source_sha256": "5a81e15c8410ca3a9b7348c2f60e4810adfafb3186a5bf08229c73349a57793c",
+      "status": "rejected",
+      "source": "ebf485c62e6e63738ad4fcb1a4396e28.normalized.png",
+      "elapsed_ms": 4552.14
+    },
+    {
+      "evidence_hash": "5e20703625251317244708dd1ab2ee0a63dc86562827d186f6531aa84d90b61d",
+      "geometry_hash": "5722eadd9cb04bf673260f096eab2da7b35f1daadfdc582a6bc48a64445f7b99",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "source_sha256": "5124481a4473227b65bc365516ee1cefc5df57cf940df8bf8efbd1e35ad30838",
+      "status": "rejected",
+      "source": "images.normalized.png",
+      "elapsed_ms": 15403.935
+    },
+    {
+      "evidence_hash": "3fc9c0ee3543ebb3dbbc0a825050fb3951283dec62b6ec2bb1bf4dcc3ca9af92",
+      "geometry_hash": "90c3f79d72186d424a88f4078e4ab9bc4fa757f10a86030e29a8209956f5dc12",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "5cb138cfc7496f342b9c8665f1e0bb916d904e75a8bb8ec5684d47d423dddaee",
+      "status": "proved",
+      "source": "rain-wind-ascii-art-v0-2asg0us8glbf1.normalized.png",
+      "elapsed_ms": 18281.509
+    },
+    {
+      "evidence_hash": "13cafac6f16e9b4419cb69336d3c629ec390f29d5fbb64201200ad9cea801e2e",
+      "geometry_hash": "d8f25116ee63a9bd729729e27cb78bd5cad2601e2f586352cfb5e8b8f8d23d40",
+      "mode": "shaped_runs",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "133e0c9f56b8090eff1ec92ac5450a101a7eab5dfcaf050ceed4cbd50b89fadc",
+      "status": "proved",
+      "source": "starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized.png",
+      "elapsed_ms": 18402.721
+    },
+    {
+      "evidence_hash": "76cbec2a007559f80f3b110b6639e078c66d2d9188192fa9e4b7aedafdf81305",
+      "geometry_hash": "9145b9cccbdeaf52e2bfe1e11fcd4c63c1b9d4d391abb41032421e7c222d9110",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "source_sha256": "f75f237ef39bab0c807bec04e7177136a3edd2c9c4e526adccb94bf68a38bfc9",
+      "status": "rejected",
+      "source": "stonestoryCross_River_Banner.jpg.normalized.png",
+      "elapsed_ms": 36040.098
+    },
+    {
+      "evidence_hash": "2546fcfc04c6bf2185f267c8139092c83e5479b68836ce1f88250bc363d562f5",
+      "geometry_hash": "165743f4fddb9e0bbbc471896a4905fc2dce82d05d4c452741e8c8aca50ec44b",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "periodic_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "source_sha256": "89544ef22fc123179bd7b29494d512308206012eef10f6d3dc31db3b0df06d66",
+      "status": "rejected",
+      "source": "stonestorycrypt_shop.jpg.normalized.png",
+      "elapsed_ms": 25399.235
+    },
+    {
+      "evidence_hash": "dec4db1db64ec11b2ba39dcefd6a0cdc18f2f373734067683d7827455960d177",
+      "geometry_hash": "a1504a8ff5382f221a94ec664bae4b0302310c7ebf857bda33ca274075ea78b7",
+      "mode": "unresolved",
+      "proof_flags": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "rejection_reasons": [
+        "geometry_unresolved",
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "source_sha256": "8384603877db279fd64ed855262a2c8763e093d7c1b322c2071f5e6aec6a6de3",
+      "status": "rejected",
+      "source": "stonestoryranting_tree_rework.jpg.normalized.png",
+      "elapsed_ms": 26301.786
+    },
+    {
+      "evidence_hash": "7acf0faf55288939b3a01afce92fba330493a620c5ec4c92df828cfd8db5b775",
+      "geometry_hash": "719e3c0f10e1da400057e7990c5d6f30d998dbc7c88dbe9c05c224bf3750b720",
+      "mode": "fixed_lattice",
+      "proof_flags": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "rejection_reasons": [],
+      "source_sha256": "de676678e65d9033d0d13054809aa692796a588632b0667990a5f249c9a7d687",
+      "status": "proved",
+      "source": "waterfall-2c.normalized.png",
+      "elapsed_ms": 24393.059
+    }
+  ]
+}

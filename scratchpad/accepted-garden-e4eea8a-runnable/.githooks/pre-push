@@ -1,0 +1,72 @@
+#!/bin/sh
+# Pre-push guard: refuse to push a commit that drops operator-granted art
+# or the test that guards it.
+#
+# Why this exists
+# ---------------
+# On 2026-08-06 a concurrent lane's DOCS commit (1bdea41) silently deleted all
+# eleven files under src/lateletter/garden/data/operator-granted-art/ -- the
+# operator's own hash-bound ink -- with no mention in its message. Nothing went
+# red, because no test covered their presence. Hours later the same deletion
+# was found staged again, and that time it also staged the deletion of
+# tests/garden_acceptance/test_operator_grant_sources.py, the guard added to
+# catch exactly this. A guard removed alongside the thing it guards is not a
+# guard, which is why this check lives at push time instead of in the suite.
+#
+# Why push time, and not commit time
+# ----------------------------------
+# Every lane in this repository commits through a temp index and
+# `git commit-tree`, because a plain `git commit` from the shared mixed
+# worktree sweeps up whatever another lane has staged. `git commit-tree` is
+# plumbing: it runs NO hooks at all. So no pre-commit hook can ever see these
+# commits. Push is the first real choke point where a hook is guaranteed to
+# run, so it is where the guard has to be.
+#
+# What it checks, and what it deliberately does not
+# -------------------------------------------------
+# It inspects the COMMIT BEING PUSHED, not the working tree, because the
+# working tree is shared and permanently dirty with other lanes' in-flight
+# work. Judging a push by the worktree would produce false refusals.
+#
+# It checks exactly two things, both deterministic:
+#   1. every `operator_grants[].source` named by the acceptance register at
+#      that revision is present at that revision, and
+#   2. the guard test itself is present at that revision.
+# It does NOT run the full lane-boundary census. That census currently exits
+# non-zero on other lanes' legitimate in-flight paths, so wiring it here would
+# refuse every push and be disabled within a day. A gate that cries wolf is
+# worse than no gate.
+#
+# Chaining
+# --------
+# Setting a repo-local core.hooksPath overrides the user's GLOBAL hooks
+# directory, so this hook ends by handing control to the global pre-push
+# (Git LFS). Without that tail call, pushing would stop honouring LFS.
+
+set -e
+
+# Resolve the repository root so the check works from any subdirectory.
+REPO_ROOT=$(git rev-parse --show-toplevel)
+
+# Git feeds pre-push a list of refs on stdin: "<local ref> <local sha>
+# <remote ref> <remote sha>". Read it into a variable so it can be both
+# inspected here AND replayed to the global hook, which needs the same stdin.
+STDIN_PAYLOAD=$(cat)
+
+# Collect the local commit each ref would publish. The all-zero sha means the
+# ref is being DELETED, which carries no content to inspect, so it is skipped.
+REVS=$(printf '%s\n' "$STDIN_PAYLOAD" | awk '$2 !~ /^0+$/ { print $2 }')
+
+for REV in $REVS; do
+  # The guard is verified per pushed revision, using only that revision's
+  # content, via `git show <rev>:<path>` -- never the working tree.
+  python3 "$REPO_ROOT/.githooks/check_granted_sources.py" "$REV" || exit 1
+done
+
+# Hand off to the global pre-push hook (Git LFS), replaying the same stdin it
+# would have received had this hook not been installed.
+GLOBAL="$HOME/.git-hooks/pre-push"
+if [ -x "$GLOBAL" ]; then
+  printf '%s\n' "$STDIN_PAYLOAD" | exec "$GLOBAL" "$@"
+fi
+exit 0

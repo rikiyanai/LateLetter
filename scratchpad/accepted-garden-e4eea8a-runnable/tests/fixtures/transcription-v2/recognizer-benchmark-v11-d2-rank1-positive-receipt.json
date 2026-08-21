@@ -1,0 +1,55 @@
+{
+  "schema": "lateletter-recognizer-benchmark-receipt-1",
+  "status": "passed",
+  "authority": "diagnostic_only",
+  "benchmark_path": "tests/fixtures/transcription-v2/recognizer-benchmark-v11-d2-rank1-positive.json",
+  "benchmark_sha256": "b5780aac83d29ebe45bcf66092b09bbf77a7cc62da04b92cc96bfcfd421a0e4e",
+  "benchmark_size_bytes": 1631708,
+  "source_corpus": "tests/fixtures/transcription-v2/corpus-v2.json",
+  "source_corpus_sha256": "5ded3f119410b088a5cda23044c0c60627009624145d8d698865161419566e42",
+  "fixture_count": 10,
+  "top_k": 5,
+  "budget_failures": [],
+  "nondeterministic_adapters": [],
+  "false_unique_negative_fixtures": [],
+  "positive_missing": [],
+  "ground_truth_passed_to_adapters": false,
+  "determinism_replay_performed": true,
+  "rank1_positive_rows": {
+    "positive-fixed-ascii": [
+      "/\\_|",
+      "(=)"
+    ],
+    "positive-proportional-latin": [
+      "Late letter",
+      "kindness"
+    ],
+    "positive-kana": [
+      "かな カナ"
+    ],
+    "positive-kanji": [
+      "春 花"
+    ],
+    "positive-arabic": [
+      "سلام"
+    ],
+    "positive-combining": [
+      "café é"
+    ],
+    "positive-width-mixture": [
+      "ＡB ｶﾅ"
+    ],
+    "positive-emoji-zwj": [
+      "👩‍🌾 ❤️"
+    ],
+    "positive-mixed-script": [
+      "A漢 سلام"
+    ],
+    "positive-degraded-fixed": [
+      "  /\\",
+      "--__"
+    ]
+  },
+  "rank1_failures": [],
+  "next_authorized_step": "Proceed to machine-authority gates and release/holdout benchmarks before any live attempt, candidate TXT, accepted TXT, horse 065, or queue conversion"
+}

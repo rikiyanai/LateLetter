@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "reference_id": "eb861dc84400fc36",
+  "asset_id": "plant.rose",
+  "recorded_at": "2026-08-03",
+  "operator_verdict": "approved",
+  "authorship": "operator_authored",
+  "operator_statement": "eb861dc84400fc36.provisional-not-pipeline.txt is approved rose bush art asset i just authored. log and track and take in and index",
+  "operator_correction": "trailing spaces.NOO DONT INCLUDE TRAILING SPACES",
+  "accepted": {
+    "path": "accepted.txt",
+    "sha256": "04bce501c712fc071523711a3ea1b67a8af302434a66f0e638c2bdc144b0baac",
+    "bytes": 139,
+    "rows": 6,
+    "trailing_spaces_included": false,
+    "right_trimmed_from_provisional_source": true
+  },
+  "prior_reference_png": {
+    "path_at_intake": "/Users/r/Downloads/STRUCTURAL ASCII ART EXAMPLES /eb861dc84400fc36.png!cover_jpg.normalized.png",
+    "sha256": "725949a5a44ce353100f56f6afc4494c3554a1da3505d02bfd1f33edc3ce25d1",
+    "width_px": 394,
+    "height_px": 192,
+    "authority": "provenance only; the operator-authored TXT is the approved asset"
+  },
+  "pipeline": {
+    "status": "not_run_not_applicable_to_authored_asset",
+    "candidate": null,
+    "attempt": null,
+    "claim": "No recognizer or transcription pipeline produced or validated this art. Approval attaches to the exact authored TXT bytes."
+  },
+  "runtime_integration": {
+    "status": "not_integrated",
+    "current_renderer_placeholder_inherits_approval": false,
+    "required_transfer": "Replace the existing renderer-local rose drawing through a delete-first canonical asset ownership patch; do not alias this receipt to the old placeholder."
+  }
+}

@@ -1,0 +1,506 @@
+/** Sole browser owner for canonical Garden state, persistence, and commands. */
+
+import { normalizeGardenInput } from './garden-input.mjs';
+import {
+  LOAD_GENERATED,
+  advanceGardenLive,
+  canonicalWorldJson,
+  characterizeGardenWorld,
+  dispatchGardenCommand,
+  generateInitialWorld,
+  loadMigratedGardenWorld,
+  materializeGardenProgramEffects,
+  projectGardenScene,
+  reconcileGardenOffline,
+  requireFreshComposition,
+  seedGardenProgramState,
+} from './garden-world.mjs';
+
+export const WORLD_STORAGE_PREFIX = 'lateletter_garden_world_v1_';
+export const LIVE_PERSIST_SECONDS = 5;
+export const PBKDF2_MIN_ITERATIONS = 600000;
+export const PBKDF2_MAX_ITERATIONS = 2000000;
+
+/** Reject attacker-controlled work factors before WebCrypto performs any work. */
+export function validateBrowserPbkdf2Params(params, field = 'kdf_params') {
+  if (!params || typeof params !== 'object' || Array.isArray(params)) {
+    throw new Error(`${field} must be an object`);
+  }
+  const fields = Object.keys(params).sort();
+  if (fields.join(',') !== 'hash,iterations,name') {
+    throw new Error(`${field} must contain exactly hash, iterations, and name`);
+  }
+  if (params.name !== 'PBKDF2' || params.hash !== 'SHA-256') {
+    throw new Error(`${field} uses an unsupported PBKDF2 profile`);
+  }
+  if (typeof params.iterations !== 'number' || !Number.isInteger(params.iterations)) {
+    throw new Error(`${field}.iterations must be an integer, not a boolean`);
+  }
+  if (params.iterations < PBKDF2_MIN_ITERATIONS || params.iterations > PBKDF2_MAX_ITERATIONS) {
+    throw new Error(`${field}.iterations is outside the supported range`);
+  }
+  return params;
+}
+
+/** Decode only canonical padded base64 and enforce the cryptographic field shape. */
+export function decodeStrictBase64(value, { field = 'value', exact = null, minimum = null } = {}) {
+  if (typeof value !== 'string' || value.length === 0 || value.length % 4 !== 0 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value)) {
+    throw new Error(`${field} must be valid padded base64`);
+  }
+  let binary;
+  try { binary = globalThis.atob(value); } catch (_) {
+    throw new Error(`${field} must be valid padded base64`);
+  }
+  const bytes = Uint8Array.from(binary, character => character.charCodeAt(0));
+  if (exact !== null && bytes.length !== exact) {
+    throw new Error(`${field} must decode to exactly ${exact} bytes`);
+  }
+  if (minimum !== null && bytes.length < minimum) {
+    throw new Error(`${field} must decode to at least ${minimum} bytes`);
+  }
+  return bytes;
+}
+
+/** Resolve a semantic modality from the browser event which activated a control. */
+export function inputModalityFromBrowserEvent(event) {
+  if (String(event?.type ?? '').startsWith('key') || event?.detail === 0) {
+    return 'browser_keyboard';
+  }
+  if (event?.pointerType === 'touch' || event?.sourceCapabilities?.firesTouchEvents === true) {
+    return 'touch';
+  }
+  return 'mouse';
+}
+
+/** Reduced-motion preference overrides ambient animation, not saved pause state. */
+export function effectiveAmbientMotion({ prefersReducedMotion = false, motionPaused = false } = {}) {
+  return !prefersReducedMotion && !motionPaused;
+}
+
+export class GardenRuntime {
+  constructor({
+    // Deliberately no starter-content options here. This runtime opens
+    // whatever world `load` returns and generates a default one only when
+    // there is nothing stored. Two content mechanisms already exist and cover
+    // the real cases: an authenticated `program` supplies the
+    // relationship-animal roster in `open` below, and any caller wanting a
+    // specific world can build it with `generateInitialWorld` and hand it back
+    // through `load`. A third, narrower content knob on this constructor would
+    // have had no product caller -- `viewer-bnw.html` passes none of it -- so
+    // it does not live on this surface. Mirrors `TerminalWorldSession.open`.
+    worldId, seed, load, save, program = null,
+    now = () => Math.floor(Date.now() / 1000),
+  }) {
+    this.worldId = String(worldId);
+    this.seed = String(seed);
+    this.loadValue = load;
+    this.saveValue = save;
+    this.program = program;
+    this.now = now;
+    // How the world arrived, and what it is. Both are set by `open` and are
+    // null until then, because before a world has been opened there is no
+    // honest answer -- and a default of "generated" would be a lie told by a
+    // field initializer.
+    this.loadOrigin = null;
+    this.worldOrigin = null;
+    this.state = null;
+    this.projection = null;
+    this.lastResult = null;
+    this.absenceReport = null;
+    this.previousObservedWallTime = null;
+    this.mutationTail = Promise.resolve();
+    this.liveTimer = null;
+    this.liveObserved = null;
+    this.prefersReducedMotion = false;
+    this.onLiveProjection = null;
+    this.persistenceEnabled = true;
+    this.liveDirty = false;
+    this.lastPersistedEffectiveTime = null;
+    this.invalidated = false;
+    this.saveControllers = new Set();
+  }
+
+  get storageKey() { return `${WORLD_STORAGE_PREFIX}${this.worldId}`; }
+
+  assertActive() {
+    if (this.invalidated) throw new Error('Garden runtime was invalidated');
+  }
+
+  /**
+   * Synchronously revoke a runtime and every queued mutation.
+   *
+   * Authenticated recipients call this before dropping their last reference
+   * on pagehide or after a failed transaction.  Clearing state/projection here
+   * prevents a suspended continuation from retaining or republishing authored
+   * plaintext, while the active checks prevent a deferred force-commit.
+   */
+  invalidate() {
+    if (this.invalidated) return;
+    this.invalidated = true;
+    this.persistenceEnabled = false;
+    for (const controller of this.saveControllers) controller.abort();
+    this.saveControllers.clear();
+    this.stopLive({ flush: false });
+    this.onLiveProjection = null;
+    this.state = null;
+    this.projection = null;
+    this.absenceReport = null;
+    this.previousObservedWallTime = null;
+    this.liveDirty = false;
+  }
+
+  enqueueMutation(operation) {
+    const guarded = () => {
+      this.assertActive();
+      return operation();
+    };
+    const pending = this.mutationTail.then(guarded, guarded);
+    this.mutationTail = pending.then(() => undefined, () => undefined);
+    return pending;
+  }
+
+  /**
+   * Open the Garden world.
+   *
+   * @param {object} options
+   * @param {boolean} [options.persist] - whether to write the world back
+   * @param {string} options.composition - REQUIRED, and deliberately has no
+   *   default. `'require_fresh'` refuses anything that is not a world this
+   *   process just generated, BEFORE reconciliation, persistence or
+   *   projection; `'accept_restored'` opens whatever is stored.
+   *
+   *   There is no default because there is no answer that is right for both
+   *   callers, and the wrong one is silent in each direction. A review that
+   *   quietly accepted a restored world is the original defect -- a persisted
+   *   13/22/4/8 world was reviewed as the current starter. A product that
+   *   quietly refused one would delete a recipient's garden. Making every call
+   *   site say which it is turns that into a decision somebody made rather than
+   *   a default nobody read.
+   *
+   *   An earlier version of this had the refusal available as a method and no
+   *   caller invoking it, so the stale world still reconciled, persisted and
+   *   projected; only a later manual call threw, long after the damage.
+   * @returns {Promise<GardenRuntime>} this runtime
+   * @throws {Error} when `composition` is missing or unknown, or when
+   *   `'require_fresh'` was asked for and the world is not fresh
+   */
+  async open({ persist = true, composition } = {}) {
+    if (composition !== 'require_fresh' && composition !== 'accept_restored') {
+      throw new Error(
+        'GardenRuntime.open requires composition: "require_fresh" (a review or '
+        + 'capture, which must see only what this build just generated) or '
+        + '"accept_restored" (the product, which must never discard a '
+        + `recipient's world). Received ${JSON.stringify(composition)}.`,
+      );
+    }
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      this.persistenceEnabled = Boolean(persist);
+      const stored = await this.loadValue(this.storageKey);
+      this.assertActive();
+      let state;
+      if (stored !== null && stored !== undefined && stored !== '') {
+        // Through the migrating loader, not `deserializeWorldState` directly.
+        //
+        // This is the path where the defect actually happened: a persisted
+        // browser world of 13 plants / 22 fixtures / 4 animals / 8
+        // collectibles was opened and read as the current starter, which
+        // makes 2 / 5 / 0 / 0. Loading it raw meant nothing in the runtime
+        // knew, or could say, that the world had come out of storage.
+        const loaded = loadMigratedGardenWorld(stored);
+        state = loaded.state;
+        // Recorded on the runtime so any caller -- above all a visual review --
+        // can ask how this world arrived instead of assuming. No version stamp
+        // can answer this: being loaded is an event, not a lineage.
+        this.loadOrigin = loaded.loadOrigin;
+        if (state.world_id !== this.worldId) throw new Error('stored Garden world identity mismatch');
+      } else {
+        state = await generateInitialWorld(this.worldId, this.seed);
+        this.loadOrigin = LOAD_GENERATED;
+        this.assertActive();
+      }
+      // Characterized on every open, so the fact is available before anything
+      // draws rather than being reconstructed afterwards from what was seen.
+      this.worldOrigin = characterizeGardenWorld(state);
+
+      // THE REFUSAL, and its position in this function is the whole point.
+      //
+      // It is here -- before the author program is seeded, before offline
+      // reconciliation, before `this.state` is assigned, before `persist()`,
+      // before `refreshProjection()` -- so that a world a review must not see
+      // is never saved, never projected and never painted. A guard placed after
+      // any of those would have already written to the recipient's storage and
+      // already produced the picture it exists to prevent.
+      if (composition === 'require_fresh') {
+        requireFreshComposition(state, this.loadOrigin);
+      }
+
+      // An authenticated author program owns the relationship-animal roster.
+      // Adopt it before offline reconciliation so sandbox animals cannot emit
+      // return receipts or absence summaries in a recipient world.
+      if (this.program) state = seedGardenProgramState(state, this.program);
+      this.previousObservedWallTime = state.last_observed_wall_time;
+      const [reconciled, absenceReport] = await reconcileGardenOffline(state, this.now());
+      this.assertActive();
+      state = reconciled;
+      this.absenceReport = absenceReport;
+      this.state = state;
+      await this.persist();
+      this.assertActive();
+      await this.refreshProjection();
+      this.assertActive();
+      return this;
+    });
+  }
+
+  async persist({ force = false } = {}) {
+    this.assertActive();
+    if (!this.state) throw new Error('Garden runtime is not open');
+    if (!this.persistenceEnabled && !force) return false;
+    const state = this.state;
+    const serialized = canonicalWorldJson(state);
+    this.assertActive();
+    const controller = new AbortController();
+    this.saveControllers.add(controller);
+    try {
+      await this.saveValue(this.storageKey, serialized, { signal: controller.signal });
+      this.assertActive();
+      if (controller.signal.aborted) throw new Error('Garden persistence was aborted');
+      if (this.state !== state) throw new Error('Garden runtime changed during persistence');
+      this.lastPersistedEffectiveTime = state.effective_time;
+      this.liveDirty = false;
+      return true;
+    } finally {
+      this.saveControllers.delete(controller);
+    }
+  }
+
+  /** Commit a transactionally opened runtime and enable normal persistence. */
+  async commitPersistence({ enable = true } = {}) {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.state) throw new Error('Garden runtime is not open');
+      await this.persist({ force: true });
+      this.assertActive();
+      this.persistenceEnabled = Boolean(enable);
+      return this;
+    });
+  }
+
+  async flushLivePersistence() {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.liveDirty) return false;
+      return this.persist();
+    });
+  }
+
+  async refreshProjection() {
+    this.assertActive();
+    const state = this.state;
+    const projection = await projectGardenScene(state);
+    // The deployed presentation generator consumed the authored Garden seed
+    // directly. WorldState stores only its digest, so the runtime transports
+    // the constructor's original value to presentation without making it
+    // gameplay state. Renaming a bundle can no longer regenerate the picture.
+    projection.presentation_seed = this.seed;
+    this.assertActive();
+    if (this.state !== state) throw new Error('Garden runtime changed during projection');
+    this.projection = projection;
+    return projection;
+  }
+
+  async tickLive(elapsedSeconds = null) {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.state) throw new Error('Garden runtime is not open');
+      const state = this.state;
+      const observed = this.now();
+      const elapsed = elapsedSeconds === null
+        ? Math.max(0, observed - (this.liveObserved ?? observed))
+        : Math.max(0, Number.parseInt(elapsedSeconds, 10) || 0);
+      this.liveObserved = observed;
+      const updated = await advanceGardenLive(state, elapsed);
+      this.assertActive();
+      if (this.state !== state) throw new Error('Garden runtime changed during live advance');
+      if (canonicalWorldJson(updated) === canonicalWorldJson(state)) return false;
+      this.state = updated;
+      this.liveDirty = true;
+      const explicitTick = elapsedSeconds !== null;
+      const crossedPersistenceBoundary = this.lastPersistedEffectiveTime === null ||
+        Math.floor(this.state.effective_time / LIVE_PERSIST_SECONDS) !==
+          Math.floor(this.lastPersistedEffectiveTime / LIVE_PERSIST_SECONDS);
+      if (explicitTick || crossedPersistenceBoundary) await this.persist();
+      this.assertActive();
+      await this.refreshProjection();
+      this.assertActive();
+      if (this.onLiveProjection) this.onLiveProjection(this.projection, {
+        prefersReducedMotion: this.prefersReducedMotion,
+      });
+      return true;
+    });
+  }
+
+  startLive({ intervalMs = 1000, prefersReducedMotion = false, onProjection = null } = {}) {
+    this.assertActive();
+    this.stopLive({ flush: false });
+    this.prefersReducedMotion = Boolean(prefersReducedMotion);
+    this.onLiveProjection = typeof onProjection === 'function' ? onProjection : null;
+    this.liveObserved = this.now();
+    const delay = Math.max(250, Number.parseInt(intervalMs, 10) || 1000);
+    this.liveTimer = globalThis.setInterval(() => { this.tickLive().catch(() => {}); }, delay);
+    return this;
+  }
+
+  stopLive({ flush = true } = {}) {
+    if (this.liveTimer !== null) globalThis.clearInterval(this.liveTimer);
+    this.liveTimer = null;
+    this.liveObserved = null;
+    if (flush && this.liveDirty) this.flushLivePersistence().catch(() => {});
+  }
+
+  async dispatch(modality, intent, { target_id = null, args = {}, metadata = {} } = {}) {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.state) throw new Error('Garden runtime is not open');
+      const state = this.state;
+      const field = modality === 'browser_keyboard' ? 'binding'
+        : modality === 'terminal' ? 'command' : 'control';
+      const command = await normalizeGardenInput({
+        modality, world_id: state.world_id,
+        sequence: state.command_sequence + 1,
+        [field]: intent, target_id, args, metadata,
+      });
+      this.assertActive();
+      const [updated, result] = await dispatchGardenCommand(state, command);
+      this.assertActive();
+      if (this.state !== state) throw new Error('Garden runtime changed during dispatch');
+      this.lastResult = result;
+      if (result.accepted && result.changed) {
+        // Resuming discards the wall interval spent under the canonical pause;
+        // it must never return later as offline catch-up.
+        if (intent === 'pause_motion' && updated.ui.motion_paused === false) {
+          const observed = this.now();
+          if (updated.last_observed_wall_time !== null) {
+            updated.last_observed_wall_time = Math.max(
+              updated.last_observed_wall_time, observed,
+            );
+          }
+          this.liveObserved = observed;
+        }
+        this.state = updated;
+        await this.persist();
+        this.assertActive();
+        await this.refreshProjection();
+        this.assertActive();
+      }
+      return result;
+    });
+  }
+
+  async materializeProgram(program, evaluation) {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.state) throw new Error('Garden runtime is not open');
+      const state = this.state;
+      const [updated, receipts] = await materializeGardenProgramEffects(
+        state, program, evaluation,
+      );
+      this.assertActive();
+      if (this.state !== state) throw new Error('Garden runtime changed during materialization');
+      this.state = updated;
+      await this.persist();
+      this.assertActive();
+      await this.refreshProjection();
+      this.assertActive();
+      return receipts;
+    });
+  }
+
+  async adoptProgram(program) {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.state) throw new Error('Garden runtime is not open');
+      const state = this.state;
+      const prepared = seedGardenProgramState(state, program);
+      if (canonicalWorldJson(prepared) !== canonicalWorldJson(state)) {
+        this.state = prepared;
+        await this.persist();
+        this.assertActive();
+        await this.refreshProjection();
+        this.assertActive();
+      }
+      return JSON.parse(JSON.stringify(this.state.program_state));
+    });
+  }
+
+  async markStoryComplete(completedAt = null) {
+    return this.enqueueMutation(async () => {
+      this.assertActive();
+      if (!this.state) throw new Error('Garden runtime is not open');
+      if (this.state.program_state.story_complete === true) return false;
+      this.state.program_state.story_complete = true;
+      this.state.program_state.memorial = {
+        active: true,
+        completed_at: Number.isInteger(completedAt) ? completedAt : this.state.effective_time,
+        examined_gifts: this.state.journal.filter(item => item.status === 'examined')
+          .map(item => item.object_id).sort(),
+        lasting: true,
+      };
+      await this.persist();
+      this.assertActive();
+      await this.refreshProjection();
+      this.assertActive();
+      return true;
+    });
+  }
+
+  prepareProgram(program) {
+    this.assertActive();
+    if (!this.state) throw new Error('Garden runtime is not open');
+    return seedGardenProgramState(this.state, program).program_state;
+  }
+
+  focusedObject() {
+    return this.projection?.objects.find(item => item.object_id === this.state?.ui.focus_id) ?? null;
+  }
+
+  /**
+   * Refuse to proceed unless this runtime holds a freshly generated world.
+   *
+   * The review entry point. Item 9 of the operator route reviews ONE fresh
+   * composition beside the deployed legacy, and the whole value of that
+   * comparison depends on the fresh side actually being fresh. Before this
+   * existed the runtime could not tell a generated world from a restored one,
+   * so the reviewer had to -- and once did not.
+   *
+   * @returns {object} the characterization, when it is fresh
+   * @throws {Error} when the world is stale or was loaded rather than
+   *         generated, listing every reason
+   */
+  requireFreshCompositionForReview() {
+    if (!this.state) throw new Error('the Garden runtime has no world open');
+    return requireFreshComposition(this.state, this.loadOrigin ?? LOAD_GENERATED);
+  }
+
+  sceneSummary() {
+    if (!this.projection) return 'Garden unavailable.';
+    const counts = {};
+    for (const object of this.projection.objects) counts[object.kind] = (counts[object.kind] ?? 0) + 1;
+    const contents = Object.keys(counts).sort().map(kind =>
+      `${counts[kind]} ${kind}${counts[kind] === 1 ? '' : 's'}`).join(', ');
+    const focus = this.focusedObject();
+    const scene = this.projection.scene ?? {};
+    const absence = (scene.absence_summary ?? []).slice(0, 3);
+    const missed = (scene.missed_event_summaries ?? []).slice(0, 3);
+    const memorial = scene.memorial?.active
+      ? ` Memorial lasting; ${(scene.memorial.examined_gifts ?? []).length} gifts remembered.` : '';
+    const journal = (scene.journal_entries ?? []).slice(0, 3)
+      .map(item => `${item.label}: ${item.description}`).join(' · ');
+    const objectState = this.projection.objects.slice(0, 24).map(object =>
+      object.semantic_state?.semantic_description ??
+      `${object.semantic_name} at ${object.position[0]},${object.position[1]}.`).join(' ');
+    return `Garden at ${this.projection.camera[0]},${this.projection.camera[1]}; ${contents || 'quiet'}. Inventory: ${this.state.inventory.join(', ') || 'empty'}. Journal: ${journal || 'waiting'}. ${focus ? `Focused ${focus.semantic_name}.` : 'No object focused.'} Motion ${this.projection.motion_paused ? 'paused' : 'enabled'}.${absence.length ? ` Welcome back: ${absence.join(' · ')}.` : ''}${missed.length ? ` While you were away: ${missed.join(' · ')}.` : ''}${memorial} ${objectState}`;
+  }
+}

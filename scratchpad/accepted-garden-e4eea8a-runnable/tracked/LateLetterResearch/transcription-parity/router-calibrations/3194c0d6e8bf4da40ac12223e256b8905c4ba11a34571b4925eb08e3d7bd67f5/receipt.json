@@ -1,0 +1,108 @@
+{
+  "artifact_path": "3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5/calibration.json",
+  "artifact_sha256": "142ada4a364854faba5676c0c8382dcf5ffaa2673fbae7d72abb011d22ad7609",
+  "baseline_regularity": {
+    "baseline_delta_residual_max": 0,
+    "baseline_delta_residuals": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "baseline_deltas": [
+      32,
+      32,
+      32,
+      32,
+      32
+    ],
+    "branch_blank_gap_baseline_regular": true,
+    "interior_residual_max": 0,
+    "interior_residual_tolerance_px": 1,
+    "line_height_px": 32.0,
+    "measured_on": "winning_periodic_row_candidate",
+    "regular": true,
+    "terminal_baseline_clamped": false
+  },
+  "boundary_ink_legality": {
+    "all_ink_inside_cells": true,
+    "column_boundaries_with_ink": 11,
+    "column_boundary_count": 21,
+    "column_boundary_ink_max": 14,
+    "column_boundary_ink_pixels": 82,
+    "ink_coverage_fraction": 1.0,
+    "ink_pixels_inside_cells": 5713,
+    "ink_pixels_outside_cells": 0,
+    "ink_pixels_total": 5713,
+    "row_seam_count": 5,
+    "row_seam_ink_pixels": 0,
+    "row_seams_with_ink": 0
+  },
+  "emitter": {
+    "name": "LateLetter router lattice calibration emitter",
+    "version": "router-calibration-emitter-1"
+  },
+  "evidence_sha256": "02e044299073184b2f14790d3eb558d4f157076bea2bcb92564f018fc338ab93",
+  "geometry_mode": "fixed_lattice",
+  "geometry_sha256": "26852a8ad7ef3cb681e4294cdae36f43afdfc66bed7e81a9b19811ab0394d7e7",
+  "geometry_status": "proved",
+  "grid": {
+    "cell_advance_x_px": 18.0,
+    "cell_crop_bottom_offset_px": 1,
+    "cell_crop_top_offset_px": -31,
+    "columns": 22,
+    "first_baseline_y_px": 31.0,
+    "line_height_px": 32.0,
+    "origin_x_px": -1.0,
+    "row_crop_measurement": {
+      "bottom": 1,
+      "boundary_ink": 0,
+      "boundary_samples": 5,
+      "inter_row_clearance_px": 0,
+      "top": -31
+    },
+    "rows": 6,
+    "x_phase_px_mod_period": 17.0,
+    "y_phase_px_mod_period": 0
+  },
+  "implementation_sha256": {
+    "src/lateletter/transcription/geometry/calibration_emitter.py": "fe7ed0c238a3464ae2b129e43a263cc45f26215461cb839d5e566f4e6c320e3f",
+    "src/lateletter/transcription/geometry/evidence.py": "bdeda7720135b43946d8c5dc5a03d7096a06ad2a987bf1f2f053f36627b3529d",
+    "src/lateletter/transcription/geometry/fixed_lattice.py": "18ebb806591a0dc609be280e44b0c806d60c007382949538066ef87753424f57",
+    "src/lateletter/transcription/geometry/router.py": "af4a2cdbb5829310cf72680115a91cad2d0375614d1d4de7a437d293e068322e",
+    "src/lateletter/transcription/geometry/shaped_runs.py": "402aa282d36438e91be9d9cffd6be975c4af77ac950ab3d930f8704a0f410692",
+    "src/lateletter/transcription/model.py": "970272eb46a723b0a35bb69c94440691b20655eb54f36e4580b075985dff10fe"
+  },
+  "ownership_completeness": {
+    "cross_row_continuation_count": 0,
+    "method": "pixel_interval_with_explicit_seam_continuation",
+    "owned_pixel_count": 5713,
+    "ownership_complete": true,
+    "signature": "8b72be61614232f5057a397a1aa5398661a108e02ede0932fd5f71969f6def9e",
+    "unowned_pixel_count": 0
+  },
+  "phase_margins": {
+    "normalized_phase_margin": 0.08661417322834646,
+    "phase_margin_sufficient": false,
+    "phase_tie_equivalent": false,
+    "winning_phase": 0,
+    "winning_phase_group": "5843280cb10cfa72c10d9e695a31b860fc77eaf6628a5c1ef6375858e06e17d6"
+  },
+  "pitch_margins": {
+    "authority_margin": 0.1,
+    "normalized_pitch_margin": 0.6233766233766234,
+    "pitch_authority_stream": "seam_energy",
+    "pitch_margin_sufficient": true,
+    "pitch_streams_contested": false,
+    "pitch_tie_equivalent": true,
+    "seam_pitch_margin": 0.6233766233766234,
+    "seam_winning_pitch": 32,
+    "winning_pitch": 32
+  },
+  "schema": "router-emitted-calibration-receipt-1",
+  "source_name": "eb861dc84400fc36.png!cover_jpg.normalized.png",
+  "source_sha256": "3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5",
+  "status": "emitted",
+  "transcript_input": false
+}

@@ -1,0 +1,186 @@
+{
+  "schema": "lateletter.garden.adapter-vectors/1",
+  "world_id": "adapter-conformance-world",
+  "vectors": [
+    {
+      "action": "move_focus",
+      "sequence": 1,
+      "target_id": "plant:fern-1",
+      "args": {},
+      "inputs": {
+        "touch": {"control": "move_focus", "metadata": {"gesture": "tap", "pointer_id": 4}},
+        "mouse": {"control": "move_focus", "metadata": {"button": 0, "client_x": 144}},
+        "browser_keyboard": {"binding": "move_focus", "metadata": {"key": "Tab"}},
+        "terminal": {"command": "move_focus", "metadata": {"token": "next"}}
+      }
+    },
+    {
+      "action": "pan",
+      "sequence": 2,
+      "target_id": null,
+      "args": {"dx": 3, "dy": -2},
+      "inputs": {
+        "touch": {"control": "pan", "metadata": {"gesture": "drag", "distance_px": 82}},
+        "mouse": {"control": "pan", "metadata": {"wheel_delta": -120}},
+        "browser_keyboard": {"binding": "pan", "metadata": {"key": "ArrowRight"}},
+        "terminal": {"command": "pan", "metadata": {"token": "pan 3 -2"}}
+      }
+    },
+    {
+      "action": "inspect",
+      "sequence": 3,
+      "target_id": "plant:fern-1",
+      "args": {},
+      "inputs": {
+        "touch": {"control": "inspect", "metadata": {"gesture": "tap_action"}},
+        "mouse": {"control": "inspect", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "inspect", "metadata": {"key": "Enter"}},
+        "terminal": {"command": "inspect", "metadata": {"token": "1"}}
+      }
+    },
+    {
+      "action": "primary_interact",
+      "sequence": 4,
+      "target_id": "fixture:bench-1",
+      "args": {},
+      "inputs": {
+        "touch": {"control": "primary_interact", "metadata": {"gesture": "tap_action"}},
+        "mouse": {"control": "primary_interact", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "primary_interact", "metadata": {"key": "Space"}},
+        "terminal": {"command": "primary_interact", "metadata": {"token": "enter"}}
+      }
+    },
+    {
+      "action": "open_actions",
+      "sequence": 5,
+      "target_id": "animal:rabbit-1",
+      "args": {},
+      "inputs": {
+        "touch": {"control": "open_actions", "metadata": {"gesture": "tap_more"}},
+        "mouse": {"control": "open_actions", "metadata": {"button": 2}},
+        "browser_keyboard": {"binding": "open_actions", "metadata": {"key": "ContextMenu"}},
+        "terminal": {"command": "open_actions", "metadata": {"token": "actions"}}
+      }
+    },
+    {
+      "action": "tend",
+      "sequence": 6,
+      "target_id": "plant:fern-1",
+      "args": {"care": "water"},
+      "inputs": {
+        "touch": {"control": "tend", "metadata": {"gesture": "tap_water"}},
+        "mouse": {"control": "tend", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "tend", "metadata": {"key": "Enter"}},
+        "terminal": {"command": "tend", "metadata": {"token": "water"}}
+      }
+    },
+    {
+      "action": "feed",
+      "sequence": 7,
+      "target_id": "animal:rabbit-1",
+      "args": {"food": "seed_mix"},
+      "inputs": {
+        "touch": {"control": "feed", "metadata": {"gesture": "tap_feed"}},
+        "mouse": {"control": "feed", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "feed", "metadata": {"key": "Enter"}},
+        "terminal": {"command": "feed", "metadata": {"token": "feed 1"}}
+      }
+    },
+    {
+      "action": "play",
+      "sequence": 8,
+      "target_id": "animal:rabbit-1",
+      "args": {"activity": "chase_leaf"},
+      "inputs": {
+        "touch": {"control": "play", "metadata": {"gesture": "tap_play"}},
+        "mouse": {"control": "play", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "play", "metadata": {"key": "Enter"}},
+        "terminal": {"command": "play", "metadata": {"token": "play 1"}}
+      }
+    },
+    {
+      "action": "collect",
+      "sequence": 9,
+      "target_id": "collectible:feather-1",
+      "args": {},
+      "inputs": {
+        "touch": {"control": "collect", "metadata": {"gesture": "tap_collect"}},
+        "mouse": {"control": "collect", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "collect", "metadata": {"key": "Enter"}},
+        "terminal": {"command": "collect", "metadata": {"token": "collect 1"}}
+      }
+    },
+    {
+      "action": "place",
+      "sequence": 10,
+      "target_id": null,
+      "args": {"catalog_id": "bench", "object_kind": "fixture", "rotation": 90, "x": 14, "y": 8},
+      "inputs": {
+        "touch": {"control": "place", "metadata": {"gesture": "tap_confirm", "screen_x": 210}},
+        "mouse": {"control": "place", "metadata": {"button": 0, "client_x": 210}},
+        "browser_keyboard": {"binding": "place", "metadata": {"key": "Enter"}},
+        "terminal": {"command": "place", "metadata": {"token": "place 14 8"}}
+      }
+    },
+    {
+      "action": "move_fixture",
+      "sequence": 11,
+      "target_id": "fixture:bench-1",
+      "args": {"rotation": 180, "x": 18, "y": 9},
+      "inputs": {
+        "touch": {"control": "move_fixture", "metadata": {"gesture": "drag_confirm"}},
+        "mouse": {"control": "move_fixture", "metadata": {"button": 0, "drag_px": 64}},
+        "browser_keyboard": {"binding": "move_fixture", "metadata": {"key": "Enter"}},
+        "terminal": {"command": "move_fixture", "metadata": {"token": "move 18 9"}}
+      }
+    },
+    {
+      "action": "undo",
+      "sequence": 12,
+      "target_id": null,
+      "args": {},
+      "inputs": {
+        "touch": {"control": "undo", "metadata": {"gesture": "tap_undo"}},
+        "mouse": {"control": "undo", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "undo", "metadata": {"key": "z", "meta": true}},
+        "terminal": {"command": "undo", "metadata": {"token": "undo"}}
+      }
+    },
+    {
+      "action": "open_journal",
+      "sequence": 13,
+      "target_id": null,
+      "args": {"filter": "all"},
+      "inputs": {
+        "touch": {"control": "open_journal", "metadata": {"gesture": "tap_journal"}},
+        "mouse": {"control": "open_journal", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "open_journal", "metadata": {"key": "j"}},
+        "terminal": {"command": "open_journal", "metadata": {"token": "journal"}}
+      }
+    },
+    {
+      "action": "pause_motion",
+      "sequence": 14,
+      "target_id": null,
+      "args": {"paused": true},
+      "inputs": {
+        "touch": {"control": "pause_motion", "metadata": {"gesture": "tap_pause"}},
+        "mouse": {"control": "pause_motion", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "pause_motion", "metadata": {"key": "p"}},
+        "terminal": {"command": "pause_motion", "metadata": {"token": "pause"}}
+      }
+    },
+    {
+      "action": "back",
+      "sequence": 15,
+      "target_id": null,
+      "args": {},
+      "inputs": {
+        "touch": {"control": "back", "metadata": {"gesture": "tap_back"}},
+        "mouse": {"control": "back", "metadata": {"button": 0}},
+        "browser_keyboard": {"binding": "back", "metadata": {"key": "Escape"}},
+        "terminal": {"command": "back", "metadata": {"token": "back"}}
+      }
+    }
+  ]
+}

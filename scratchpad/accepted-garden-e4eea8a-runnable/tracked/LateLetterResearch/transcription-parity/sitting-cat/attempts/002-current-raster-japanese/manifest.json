@@ -1,0 +1,25 @@
+{
+  "accepted_txt": null,
+  "artifacts": {
+    "candidate": "candidate.txt",
+    "gate_report": "gate-report.json",
+    "geometry": "geometry.json",
+    "proposal_report": "proposal-report.json",
+    "recognition_inputs": "recognition-inputs.json",
+    "source": "source.png",
+    "source_receipt": "source-receipt.json"
+  },
+  "attempt": "002-current-raster-japanese",
+  "candidate_sha256": "7311531e0625147ff3d902990ccaed3a92800854bbd9ed7182ebccaca89212fa",
+  "gate_report_sha256": "64b6cf23eced4702fc93a4bf2a2e1ed02a97f40593e4d722916883b73aebddd9",
+  "geometry_sha256": "60224bf69c8da4893eb238b748f417522a702ee189d6c8f4c73605a09793d20f",
+  "proposal_report_sha256": "6d3cc77bc96ab8a1ed625c235a471335abd08ec7d1864b42b35175d695512cf1",
+  "recognition_inputs_sha256": "9c90dbdc11c1a8af763ed415ec2eb9f8c7d9e760e88907e4269bde6cbdebf905",
+  "renderer": {
+    "reason": "proposal_gate_rejected",
+    "status": "not_run"
+  },
+  "schema_version": "lateletter-reference-attempt-1",
+  "source_receipt_sha256": "a156a7f98c2b0111826cd511c78138c88f328048b018a7e7f1d37496615b473f",
+  "status": "rejected_proposal_only"
+}

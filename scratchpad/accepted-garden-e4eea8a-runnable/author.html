@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>LateLetter — author desk</title>
+<!--
+  ════════════════════════════════════════════════════════════════════════
+  author.html — the author-only writing desk
+  ════════════════════════════════════════════════════════════════════════
+
+  WHAT THIS PAGE IS
+  -----------------
+  This is where someone writes the letters that another person will read
+  later, possibly years later, possibly after the writer has died. It is a
+  quiet desk: a page to write on, a few questions to help start, a garden to
+  plant, and one careful moment at the end where the letters are locked with
+  a passphrase and saved as a single file.
+
+  WHAT THIS PAGE IS NOT
+  ---------------------
+  It is NOT the reading surface. `viewer-bnw.html` is what the recipient
+  opens; it decrypts and displays. The two pages are deliberately separate
+  files with no link between them in either direction, because mixing them
+  would put the sealing side and the opening side of the same secret inside
+  one document. Nothing here links to the viewer, and nothing in the viewer
+  links here. This page is also marked `noindex` and is not part of the
+  published site.
+
+  WHERE THE DANGEROUS WORK HAPPENS
+  --------------------------------
+  Not here. This page never derives a key, never encrypts anything, and never
+  assembles a bundle. It collects what the author types, shows it back to
+  them truthfully, and hands it to a small service running on this machine
+  (loopback only) which owns all of the cryptography. The browser's whole job
+  on the final step is: send the draft and the passphrase once, receive bytes
+  back, and save those bytes to disk.
+
+  THE PASSPHRASE RULE
+  -------------------
+  The passphrase is the one secret that must never linger. It is held in a
+  single JavaScript variable for as long as it takes to send one request, and
+  then overwritten. It is never written into a `value=` attribute, never put
+  in `localStorage` or `sessionStorage`, never placed in the URL, and never
+  included in the autosaved draft. `web/author-app.mjs` enforces this; the
+  markup below cooperates by giving the two passphrase fields no `value`
+  attribute at all.
+
+  TYPOGRAPHY
+  ----------
+  The letter preview is not an approximation. It runs the same vendored
+  PreText library the recipient's reading surface runs, from the same
+  `web/vendor/pretext/` files, with the same options — so a justified line
+  the author sees here is measured by the same code that will justify it when
+  it is read. See `renderLetterBody` in `web/author-app.mjs`.
+
+  LOOK
+  ----
+  Warm paper on a warm desk, with a serif face shared with the reading
+  surface so the preview tells the truth. It is deliberately *not* the same
+  page as the viewer: the viewer is cool and near-white and almost empty,
+  this is warmer, has a visible desk under the page, a persistent progress
+  rail, and a brown accent the reading surface never uses. An author should
+  never be in doubt about which of the two they are looking at.
+-->
+<style>
+  /* ── Reset ──────────────────────────────────────────────────────────
+     Border-box everywhere so that a padded field is exactly as wide as it
+     is told to be, which is what makes the two-column layouts below line
+     up at every width. */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    /* Desk surface — the darker warm tone *behind* the page. Its only job
+       is to make the page look like a sheet lying on something. */
+    --desk:        #ded3c0;
+    --desk-deep:   #cdbfa8;
+    /* Paper — the sheet the author writes on. Slightly warmer and lighter
+       than the recipient viewer's #f9f8f5, which is the main at-a-glance
+       signal that this is the author side. */
+    --paper:       #fdfaf4;
+    --paper-sunk:  #f6f1e6;   /* recessed wells: preview pane, code areas */
+    --ink:         #17150f;
+    --ink-soft:    #5d564a;
+    --rule:        rgba(23, 21, 15, .14);
+    --rule-strong: rgba(23, 21, 15, .34);
+    /* Accent — a warm ink brown. The reading surface is pure black on
+       near-white and uses no accent at all, so any brown on screen means
+       "you are authoring". */
+    --accent:      #7c5a2c;
+    --accent-soft: rgba(124, 90, 44, .12);
+    /* Status colours, kept muted so an error never feels like an alarm in
+       a room where someone may be writing a goodbye. */
+    --warn:        #8a5a1b;
+    --error:       #8c2f22;
+    --ok:          #4a6b3a;
+
+    --serif: 'Times New Roman', Times, serif;
+
+    /* One radius and one shadow, reused, so the page reads as one object. */
+    --r: 3px;
+    --lift: 0 1px 2px rgba(23, 21, 15, .10), 0 8px 24px rgba(23, 21, 15, .09);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--desk);
+    /* A very soft vignette so the desk has a light source and the page
+       looks lit rather than pasted on. */
+    background-image:
+      radial-gradient(120% 90% at 50% -10%, rgba(255,252,245,.55), transparent 60%),
+      radial-gradient(100% 100% at 50% 120%, rgba(90,72,44,.16), transparent 55%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  /* ── Shell ──────────────────────────────────────────────────────────
+     A three-row grid: masthead, then the body (rail + page), then the
+     footer of navigation controls. `min-height: 100%` rather than a fixed
+     height so long stages simply grow and the whole document scrolls,
+     which is far kinder on a phone than an inner scroll region. */
+  #author-app {
+    min-height: 100%;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 1rem;
+  }
+
+  /* ── Masthead ── */
+  #desk-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+  }
+  .wordmark { font-size: 1.05rem; letter-spacing: .02em; }
+  /* The badge is the loudest author-only marker on the page. It is present
+     in every screenshot, so a captured frame can never be mistaken for the
+     recipient viewer. */
+  .mode-badge {
+    font-size: .68rem; text-transform: lowercase; letter-spacing: .08em;
+    color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 999px; padding: .1rem .55rem; margin-left: .5rem;
+    vertical-align: .12em; white-space: nowrap;
+  }
+
+  /* Save-state chip. One element, four states, driven by a data attribute
+     so the module never has to juggle class lists. */
+  #save-state {
+    font-size: .72rem; color: var(--ink-soft);
+    border: 1px solid var(--rule); border-radius: 999px;
+    padding: .15rem .6rem; background: rgba(255,255,255,.4);
+    white-space: nowrap;
+  }
+  #save-state[data-state="saving"]  { color: var(--ink-soft); }
+  #save-state[data-state="saved"]   { color: var(--ok); border-color: rgba(74,107,58,.4); }
+  #save-state[data-state="unsaved"] { color: var(--warn); border-color: rgba(138,90,27,.45); }
+  #save-state[data-state="offline"],
+  #save-state[data-state="conflict"]{ color: var(--error); border-color: rgba(140,47,34,.45); }
+
+  /* ── Progress rail ──────────────────────────────────────────────────
+     An ordered list, because it *is* an ordered list: seven steps in a
+     sequence. Screen readers get the ordinal for free, and `aria-current`
+     marks where the author is. */
+  #progress ol {
+    list-style: none; display: flex; gap: .15rem;
+    overflow-x: auto; padding-bottom: .25rem;
+    scrollbar-width: thin;
+  }
+  #progress li { flex: 0 0 auto; }
+  .step {
+    display: flex; align-items: center; gap: .4rem;
+    font-size: .74rem; color: var(--ink-soft);
+    background: none; border: 0; border-bottom: 2px solid transparent;
+    font-family: inherit; padding: .3rem .6rem; cursor: pointer;
+    white-space: nowrap; border-radius: var(--r) var(--r) 0 0;
+  }
+  .step:hover:not(:disabled) { color: var(--ink); background: rgba(255,255,255,.35); }
+  .step:disabled { opacity: .45; cursor: default; }
+  /* The number badge doubles as the "this step is done" indicator: once a
+     step has been visited and left, it fills in. */
+  .step-num {
+    width: 1.35rem; height: 1.35rem; border-radius: 50%;
+    border: 1px solid var(--rule-strong); display: grid; place-items: center;
+    font-size: .66rem; line-height: 1;
+  }
+  .step[aria-current="step"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .step[aria-current="step"] .step-num { border-color: var(--accent); color: var(--accent); }
+  .step[data-visited="yes"] .step-num { background: var(--accent-soft); }
+
+  /* ── The page ───────────────────────────────────────────────────────
+     One sheet, lifted off the desk. Everything the author does happens
+     inside it. */
+  #stage-host {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: var(--r);
+    box-shadow: var(--lift);
+    padding: 2rem 2.25rem 2.25rem;
+    /* A faint left margin rule, like a writing pad. Purely atmospheric,
+       and it stops at the padding so it never crosses content. */
+    background-image: linear-gradient(to right,
+      transparent 0, transparent calc(2.25rem - 1px),
+      rgba(124,90,44,.18) calc(2.25rem - 1px), rgba(124,90,44,.18) 2.25rem,
+      transparent 2.25rem);
+  }
+  .stage[hidden] { display: none; }
+  .stage-title { font-size: 1.3rem; font-weight: normal; margin-bottom: .35rem; }
+  .stage-lede  { color: var(--ink-soft); margin-bottom: 1.6rem; max-width: 46em; }
+  /* The heading receives focus on every stage change so a keyboard or
+     screen-reader user is placed at the top of the new step rather than
+     being silently left wherever the previous control was. It is
+     programmatically focusable only, hence no visible outline change until
+     focus is actually there. */
+  .stage-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+  /* ── Fields ── */
+  .field-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.1rem 1.5rem; max-width: 52em;
+  }
+  .field { display: flex; flex-direction: column; gap: .3rem; }
+  .field.wide { grid-column: 1 / -1; }
+  .field > label { font-size: .78rem; color: var(--ink-soft); }
+  .field .note { font-size: .72rem; color: var(--ink-soft); opacity: .85; }
+
+  input[type="text"], input[type="date"], input[type="password"],
+  select, textarea {
+    font-family: inherit; font-size: .95rem; color: var(--ink);
+    background: var(--paper-sunk);
+    border: 1px solid var(--rule); border-radius: var(--r);
+    padding: .5rem .6rem; width: 100%;
+  }
+  textarea { resize: vertical; line-height: 1.6; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 1px;
+    background: #fff;
+  }
+  /* A field the service rejected. The red is on the border and the message,
+     never on the text the author wrote. */
+  [data-invalid="yes"] { border-color: var(--error); }
+  .field-error { font-size: .74rem; color: var(--error); }
+  .field-error:empty { display: none; }
+
+  /* ── Buttons ────────────────────────────────────────────────────────
+     Bracketed text buttons, the same visual language as the reading
+     surface, so the two pages feel like one product even though they are
+     deliberately different rooms. */
+  .btn {
+    font-family: inherit; font-size: .82rem; color: var(--ink);
+    background: none; border: 0; padding: .3rem .1rem; cursor: pointer;
+    opacity: .8;
+  }
+  .btn::before { content: "["; opacity: .5; }
+  .btn::after  { content: "]"; opacity: .5; }
+  .btn:hover:not(:disabled) { opacity: 1; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; opacity: 1; }
+  .btn:disabled { opacity: .32; cursor: not-allowed; }
+  .btn.hi { color: var(--accent); font-weight: bold; opacity: 1; }
+  .btn.quiet { font-size: .74rem; opacity: .6; }
+
+  #desk-foot {
+    display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;
+    padding: 0 .25rem;
+  }
+  #desk-foot .spacer { flex: 1 1 auto; }
+  #stage-hint { font-size: .74rem; color: var(--ink-soft); }
+
+  /* ── Banners ────────────────────────────────────────────────────────
+     Anything the author must notice before continuing: lost connection, a
+     newer version of the draft on disk, a rejected export. Fixed to the
+     bottom so it cannot be scrolled past, and never auto-dismissed for the
+     two states that need a decision. */
+  #banner-host {
+    position: fixed; left: 50%; bottom: 1rem; transform: translateX(-50%);
+    width: min(680px, calc(100% - 2rem)); z-index: 20;
+    display: flex; flex-direction: column; gap: .5rem;
+  }
+  .banner {
+    background: var(--paper); border: 1px solid var(--rule-strong);
+    border-left: 3px solid var(--warn);
+    border-radius: var(--r); box-shadow: var(--lift);
+    padding: .8rem 1rem; font-size: .82rem;
+    display: flex; gap: 1rem; align-items: baseline; flex-wrap: wrap;
+  }
+  .banner[data-tone="error"]   { border-left-color: var(--error); }
+  .banner[data-tone="ok"]      { border-left-color: var(--ok); }
+  .banner p { flex: 1 1 16em; }
+  .banner .banner-actions { display: flex; gap: .9rem; }
+
+  /* ── Question and letter lists ── */
+  .card-list { display: flex; flex-direction: column; gap: 1.1rem; }
+  .card {
+    border: 1px solid var(--rule); border-radius: var(--r);
+    background: var(--paper-sunk); padding: 1rem 1.1rem;
+    display: flex; flex-direction: column; gap: .6rem;
+  }
+  .card-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+  }
+  .card-head h3 { font-size: .95rem; font-weight: normal; }
+  .card-head .card-meta { font-size: .72rem; color: var(--ink-soft); }
+
+  /* Letter switcher: which of the several letters is being edited. */
+  #letter-tabs { display: flex; gap: .3rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .letter-tab {
+    font-family: inherit; font-size: .76rem; padding: .3rem .7rem;
+    border: 1px solid var(--rule); border-radius: 999px;
+    background: var(--paper-sunk); color: var(--ink-soft); cursor: pointer;
+  }
+  .letter-tab[aria-pressed="true"] {
+    border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+  }
+  .letter-tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── The writing pane ───────────────────────────────────────────────
+     Two columns: what the author types on the left, what the recipient
+     will actually see on the right. They are the same width on purpose,
+     so the preview is a fair representation and not a narrow strip. */
+  .compose {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.25rem; align-items: start;
+  }
+  .compose-col { display: flex; flex-direction: column; gap: .4rem; min-width: 0; }
+  .compose-col > .col-label {
+    font-size: .72rem; color: var(--ink-soft); letter-spacing: .04em;
+    display: flex; justify-content: space-between; gap: 1rem;
+  }
+  #letter-body-input { min-height: 340px; }
+
+  /* The preview well. Paper-coloured and inset so it reads as "the page
+     they will hold", not as another form field. */
+  .preview-well {
+    background: var(--paper-sunk); border: 1px solid var(--rule);
+    border-radius: var(--r); padding: 1.4rem 1.5rem;
+    min-height: 340px;
+  }
+  /* Preview letterhead, mirroring the recipient's reading card so the
+     author sees the letter in context rather than as bare text. */
+  .preview-from  { font-size: .78rem; color: var(--ink-soft); }
+  .preview-label { font-size: 1.1rem; margin: .15rem 0; }
+  .preview-date  { font-size: .74rem; color: var(--ink-soft); margin-bottom: 1.4rem; }
+
+  /* ══════════════════════════════════════════════════════════════════
+     Letter body typography — must match the recipient reading surface.
+
+     These four rules are the same shape as the ones in `viewer-bnw.html`
+     because the preview has to lie about nothing. PreText hands back one
+     line at a time; each becomes a `.ll` block, and a line it decided to
+     justify becomes a `.ll-j` flex row whose gaps carry explicit widths.
+     ══════════════════════════════════════════════════════════════════ */
+  .letter-body {
+    font-size: 13px; line-height: 1.65; color: var(--ink);
+  }
+  .letter-body .ll { white-space: pre; display: block; }
+  /* A paragraph break arrives as a line whose text is the empty string, and
+     an empty block box generates no line box at all — it would measure 0px
+     tall and the letter would read as one slab. A zero-width space in
+     generated content gives the row exactly one line box while painting
+     nothing and adding no character to the letter's own text. */
+  .letter-body .ll:empty::after { content: "\200B"; }
+  .letter-body .ll-j { display: flex; align-items: baseline; white-space: nowrap; }
+  .letter-body .ll-j .sp { flex-shrink: 0; }
+
+  /* Shown only if the vendored library genuinely fails to load. The author
+     is told plainly, because a preview that silently stops being the real
+     layout is worse than no preview. */
+  #preview-mode {
+    font-size: .68rem; color: var(--ink-soft); letter-spacing: .04em;
+  }
+  #preview-mode[data-mode="unavailable"] { color: var(--error); }
+
+  /* ── Garden step ── */
+  .chip-set { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chip-opt { position: relative; }
+  .chip-opt input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+  .chip-opt span {
+    display: inline-block; font-size: .78rem; padding: .3rem .75rem;
+    border: 1px solid var(--rule); border-radius: 999px;
+    background: var(--paper-sunk); color: var(--ink-soft);
+  }
+  .chip-opt input:checked + span {
+    border-color: var(--accent); color: var(--accent); background: var(--accent-soft);
+  }
+  .chip-opt input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  details.advanced {
+    margin-top: 1.6rem; border-top: 1px solid var(--rule); padding-top: 1rem;
+  }
+  details.advanced summary {
+    font-size: .8rem; color: var(--accent); cursor: pointer; list-style: revert;
+  }
+  details.advanced summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  details.advanced > *:not(summary) { margin-top: .9rem; }
+  #f-program-json {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .78rem; min-height: 200px;
+  }
+
+  /* ── Review and export ── */
+  .review-block {
+    border: 1px solid var(--rule); border-radius: var(--r);
+    background: var(--paper-sunk); padding: 1rem 1.1rem; margin-bottom: 1rem;
+  }
+  .review-block h3 { font-size: .85rem; font-weight: normal; color: var(--ink-soft); margin-bottom: .5rem; }
+  .review-block dl { display: grid; grid-template-columns: auto 1fr; gap: .3rem 1rem; font-size: .88rem; }
+  .review-block dt { color: var(--ink-soft); font-size: .8rem; }
+
+  #review-errors { list-style: none; display: flex; flex-direction: column; gap: .5rem; }
+  #review-errors li {
+    font-size: .84rem; color: var(--error);
+    border-left: 2px solid var(--error); padding-left: .7rem;
+  }
+  #review-errors:empty { display: none; }
+
+  /* Strength readout. Four discrete segments rather than a percentage,
+     because a passphrase is either long enough and varied enough or it is
+     not, and a moving bar invites fiddling. */
+  .strength { display: flex; gap: .25rem; margin-top: .35rem; }
+  .strength i {
+    height: 3px; flex: 1 1 0; background: var(--rule); border-radius: 2px;
+  }
+  .strength[data-level="1"] i:nth-child(-n+1),
+  .strength[data-level="2"] i:nth-child(-n+2) { background: var(--warn); }
+  .strength[data-level="3"] i:nth-child(-n+3),
+  .strength[data-level="4"] i { background: var(--ok); }
+
+  #export-gate {
+    border: 1px solid var(--rule-strong); border-radius: var(--r);
+    padding: 1.1rem 1.2rem; margin-top: 1.5rem;
+    background: rgba(124, 90, 44, .05);
+    display: flex; flex-direction: column; gap: .8rem;
+    max-width: 44em;
+  }
+  #export-blockers { list-style: none; font-size: .8rem; color: var(--ink-soft); }
+  #export-blockers li::before { content: "· "; }
+  #export-blockers:empty { display: none; }
+
+  .stack { display: flex; flex-direction: column; gap: 1.1rem; max-width: 46em; }
+  .row { display: flex; gap: 1.2rem; align-items: center; flex-wrap: wrap; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+  }
+
+  /* ── Narrow widths ──────────────────────────────────────────────────
+     At 390px the two-column compose pane cannot survive: a preview half a
+     phone wide would misrepresent the line breaks. So the columns stack,
+     the preview keeps its full width, and the author still sees a truthful
+     column — just below the editor instead of beside it. */
+  @media (max-width: 900px) {
+    .compose { grid-template-columns: minmax(0, 1fr); }
+    .field-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 620px) {
+    #author-app { padding: 1rem .75rem 2.5rem; gap: .75rem; }
+    #stage-host { padding: 1.4rem 1.1rem 1.6rem; background-image: none; }
+    .stage-title { font-size: 1.15rem; }
+    .stage-lede { margin-bottom: 1.2rem; }
+    .preview-well { padding: 1.1rem 1rem; }
+    #letter-body-input { min-height: 220px; }
+    .preview-well { min-height: 200px; }
+    #desk-foot { gap: 1rem; }
+    /* The rail stays horizontal and scrollable rather than collapsing to a
+       menu: seeing "4 of 7" in context is the whole point of it. */
+    .step { padding: .3rem .45rem; font-size: .7rem; }
+  }
+
+  /* Honour a reduced-motion preference by having no motion to reduce; this
+     block exists so the intent is explicit to the next reader. */
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div id="author-app">
+
+  <header id="desk-head">
+    <p class="wordmark">LateLetter<span class="mode-badge">author desk</span></p>
+    <p id="save-state" role="status" aria-live="polite" data-state="idle">not saved yet</p>
+  </header>
+
+  <!-- Progress rail. Buttons are written by the module so that a step the
+       author has not reached yet can be disabled rather than merely styled
+       as unavailable. -->
+  <nav id="progress" aria-label="Progress through the letters">
+    <ol id="stage-list"></ol>
+  </nav>
+
+  <main id="stage-host">
+
+    <!-- ── 1. Resume or start ─────────────────────────────────────── -->
+    <section class="stage" data-stage="resume" aria-labelledby="t-resume" hidden>
+      <h2 class="stage-title" id="t-resume" tabindex="-1">Your desk</h2>
+      <p class="stage-lede">
+        Nothing here is sent anywhere. The draft is held on this machine while
+        you write, and only becomes a letter file when you choose to save one
+        at the end.
+      </p>
+      <div class="stack">
+        <div class="review-block">
+          <h3>what is already on the desk</h3>
+          <dl id="resume-summary"><dt>status</dt><dd>looking…</dd></dl>
+        </div>
+        <div class="row">
+          <button class="btn hi" type="button" id="btn-resume">pick up where you left off</button>
+          <button class="btn" type="button" id="btn-start-fresh">start again from empty</button>
+        </div>
+        <p class="note" id="resume-note">
+          Starting again clears the draft on this desk. It never touches a
+          letter file you have already saved.
+        </p>
+      </div>
+    </section>
+
+    <!-- ── 2. Who these letters are for ───────────────────────────── -->
+    <section class="stage" data-stage="people" aria-labelledby="t-people" hidden>
+      <h2 class="stage-title" id="t-people" tabindex="-1">Who these are for</h2>
+      <p class="stage-lede">
+        Their name appears at the top of every letter. Yours appears as the
+        person who planted the garden.
+      </p>
+      <div class="field-grid">
+        <div class="field">
+          <label for="f-author-name">your name</label>
+          <input type="text" id="f-author-name" data-path="author.name" autocomplete="off">
+          <p class="field-error" id="e-author-name" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="f-author-relationship">who you are to them</label>
+          <input type="text" id="f-author-relationship" data-path="author.relationship"
+                 placeholder="mother, friend, grandfather" autocomplete="off">
+          <p class="field-error" id="e-author-relationship" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="f-recipient-name">their name</label>
+          <input type="text" id="f-recipient-name" data-path="recipient.name" autocomplete="off">
+          <p class="field-error" id="e-recipient-name" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="f-recipient-relationship">who they are to you</label>
+          <input type="text" id="f-recipient-relationship" data-path="recipient.relationship"
+                 placeholder="daughter, oldest friend" autocomplete="off">
+          <p class="field-error" id="e-recipient-relationship" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="f-timezone">the dates you choose are read in this timezone</label>
+          <select id="f-timezone" data-path="author.timezone"></select>
+          <p class="field-error" id="e-timezone" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="f-hint">passphrase reminder they will see</label>
+          <input type="text" id="f-hint" data-path="passphrase_hint" autocomplete="off"
+                 placeholder="the road behind grandma's house">
+          <p class="note">
+            A nudge only they would understand. Never the passphrase itself —
+            this line is stored unencrypted inside the file.
+          </p>
+          <p class="field-error" id="e-hint" role="alert"></p>
+        </div>
+        <div class="field wide">
+          <label for="f-seed">garden seed</label>
+          <input type="text" id="f-seed" data-path="garden_seed" autocomplete="off">
+          <p class="note">
+            Decides how their garden is laid out. Any word works, and the same
+            word always grows the same garden.
+          </p>
+          <p class="field-error" id="e-seed" role="alert"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 3. Guided questions ────────────────────────────────────── -->
+    <section class="stage" data-stage="questions" aria-labelledby="t-questions" hidden>
+      <h2 class="stage-title" id="t-questions" tabindex="-1">A few things to start from</h2>
+      <p class="stage-lede">
+        Answer whichever ones open something. Skip the rest — none of them are
+        required, and none of them are shown to anyone. They are here to give
+        you somewhere to begin when the empty page is too wide.
+      </p>
+      <div class="card-list" id="question-list"></div>
+      <div class="row" style="margin-top:1.2rem">
+        <button class="btn" type="button" id="btn-add-question">add a question of your own</button>
+      </div>
+    </section>
+
+    <!-- ── 4. The letters ─────────────────────────────────────────── -->
+    <section class="stage" data-stage="letters" aria-labelledby="t-letters" hidden>
+      <h2 class="stage-title" id="t-letters" tabindex="-1">The letters</h2>
+      <p class="stage-lede">
+        Each letter has a date it becomes readable and a name they will see in
+        their list. On the right is the letter exactly as it will be set when
+        they open it.
+      </p>
+
+      <div id="letter-tabs" role="group" aria-label="Choose a letter to write"></div>
+      <div class="row" style="margin-bottom:1.2rem">
+        <button class="btn" type="button" id="btn-add-letter">add another letter</button>
+        <button class="btn quiet" type="button" id="btn-remove-letter">remove this letter</button>
+      </div>
+
+      <div class="field-grid" style="margin-bottom:1.2rem">
+        <div class="field">
+          <label for="f-letter-date">readable from</label>
+          <input type="date" id="f-letter-date">
+          <p class="field-error" id="e-letter-date" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="f-letter-label">what they see in the list</label>
+          <input type="text" id="f-letter-label" autocomplete="off"
+                 placeholder="On your wedding day">
+          <p class="field-error" id="e-letter-label" role="alert"></p>
+        </div>
+      </div>
+
+      <div class="compose">
+        <div class="compose-col">
+          <span class="col-label" id="l-body">
+            <label for="f-letter-body">what you want to say</label>
+            <span id="letter-counter" aria-live="off"></span>
+          </span>
+          <textarea id="f-letter-body" aria-describedby="l-body"
+                    spellcheck="true" autocomplete="off"></textarea>
+          <p class="field-error" id="e-letter-body" role="alert"></p>
+        </div>
+        <div class="compose-col">
+          <span class="col-label">
+            <span>how it will be set for them</span>
+            <span id="preview-mode" data-mode="pending">preparing…</span>
+          </span>
+          <div class="preview-well">
+            <p class="preview-from"  id="preview-from"></p>
+            <p class="preview-label" id="preview-label"></p>
+            <p class="preview-date"  id="preview-date"></p>
+            <div class="letter-body" id="letter-preview" role="article"
+                 aria-label="Letter as the reader will see it"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── 5. The garden ──────────────────────────────────────────── -->
+    <section class="stage" data-stage="garden" aria-labelledby="t-garden" hidden>
+      <h2 class="stage-title" id="t-garden" tabindex="-1">The garden they arrive in</h2>
+      <p class="stage-lede">
+        Before they read anything they stand in a garden. Choose what is
+        already growing there.
+      </p>
+
+      <div class="stack">
+        <fieldset class="field">
+          <legend class="col-label" style="margin-bottom:.5rem">plants</legend>
+          <div class="chip-set" id="garden-plants"></div>
+        </fieldset>
+        <fieldset class="field">
+          <legend class="col-label" style="margin-bottom:.5rem">things in the garden</legend>
+          <div class="chip-set" id="garden-fixtures"></div>
+        </fieldset>
+        <fieldset class="field">
+          <legend class="col-label" style="margin-bottom:.5rem">an animal who lives there</legend>
+          <div class="chip-set" id="garden-animal"></div>
+        </fieldset>
+        <p class="field-error" id="e-garden" role="alert"></p>
+      </div>
+
+      <details class="advanced">
+        <summary>write the garden's timeline directly</summary>
+        <p class="note" style="max-width:46em">
+          For a garden that changes on its own — something that appears on an
+          anniversary, a letter that only unlocks after another has been read.
+          Leave this empty and the garden simply stays as you set it above.
+        </p>
+        <div class="field">
+          <label for="f-program-json">garden timeline</label>
+          <textarea id="f-program-json" spellcheck="false" autocomplete="off"
+                    placeholder='{"beats": []}'></textarea>
+          <p class="field-error" id="e-program-json" role="alert"></p>
+        </div>
+      </details>
+    </section>
+
+    <!-- ── 6. Review ──────────────────────────────────────────────── -->
+    <section class="stage" data-stage="review" aria-labelledby="t-review" hidden>
+      <h2 class="stage-title" id="t-review" tabindex="-1">Read it back</h2>
+      <p class="stage-lede">
+        Everything as it stands. Checking looks over the whole set and tells
+        you about anything that would stop the file being made.
+      </p>
+
+      <div id="review-summary-host"></div>
+
+      <div class="row" style="margin:1.2rem 0">
+        <button class="btn hi" type="button" id="btn-validate">check everything</button>
+        <span id="validate-state" role="status" aria-live="polite" class="note"></span>
+      </div>
+
+      <ul id="review-errors" aria-label="Things to attend to"></ul>
+    </section>
+
+    <!-- ── 7. Lock and save ───────────────────────────────────────── -->
+    <section class="stage" data-stage="export" aria-labelledby="t-export" hidden>
+      <h2 class="stage-title" id="t-export" tabindex="-1">Lock it</h2>
+      <p class="stage-lede">
+        The passphrase is the only key. It is not stored anywhere — not on this
+        desk, not in the file, not by us. If it is lost the letters cannot be
+        opened by anyone, including you.
+      </p>
+
+      <div id="export-gate">
+        <div class="field">
+          <!-- No `value` attribute, ever. `new-password` keeps a browser from
+               offering a saved credential, and the module never reads these
+               into the draft. -->
+          <label for="pp-new">passphrase</label>
+          <input type="password" id="pp-new" autocomplete="new-password"
+                 spellcheck="false" autocorrect="off" autocapitalize="off">
+          <div class="strength" id="pp-strength" data-level="0" aria-hidden="true">
+            <i></i><i></i><i></i><i></i>
+          </div>
+          <p class="note" id="pp-advice">
+            Four unrelated words is stronger than one clever word. At least 12
+            characters.
+          </p>
+        </div>
+        <div class="field">
+          <label for="pp-confirm">passphrase again</label>
+          <input type="password" id="pp-confirm" autocomplete="new-password"
+                 spellcheck="false" autocorrect="off" autocapitalize="off">
+          <p class="field-error" id="e-passphrase" role="alert"></p>
+        </div>
+        <div class="field">
+          <label for="f-reminder-check">the reminder they will see</label>
+          <p class="note" id="f-reminder-check">—</p>
+        </div>
+
+        <ul id="export-blockers" aria-label="Why this is not ready yet"></ul>
+
+        <div class="row">
+          <button class="btn hi" type="button" id="btn-export" disabled>make the letter file</button>
+          <span id="export-state" role="status" aria-live="polite" class="note"></span>
+        </div>
+      </div>
+
+      <p class="note" style="margin-top:1.5rem; max-width:44em">
+        Give them the file and, separately, the passphrase. Not in the same
+        message.
+      </p>
+    </section>
+
+  </main>
+
+  <footer id="desk-foot">
+    <button class="btn" type="button" id="btn-back">back</button>
+    <button class="btn hi" type="button" id="btn-next">continue</button>
+    <span class="spacer"></span>
+    <span id="stage-hint"></span>
+  </footer>
+
+</div>
+
+<!-- Live region for anything that must interrupt: connection lost, a newer
+     draft on disk, an export that could not be made. -->
+<div id="banner-host" role="region" aria-label="Notices" aria-live="assertive"></div>
+
+<script type="module" src="./web/author-app.mjs"></script>
+
+</body>
+</html>

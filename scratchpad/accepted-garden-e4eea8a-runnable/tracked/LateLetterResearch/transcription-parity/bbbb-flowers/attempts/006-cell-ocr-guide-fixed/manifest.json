@@ -1,0 +1,18 @@
+{
+  "attempt": "006-cell-ocr-guide-fixed",
+  "source": "tracked/LateLetterResearch/transcription-parity/bbbb-flowers/source/source.normalized.png",
+  "status": "machine_candidate_only",
+  "grid": {
+    "columns": 36,
+    "rows": 13,
+    "origin_x": -71.0,
+    "first_baseline_y": 34.0,
+    "advance_x": 9.0,
+    "advance_y": 19.0
+  },
+  "outputs": [
+    "machine-cell-ocr.txt",
+    "cell-recognition.json"
+  ],
+  "unknown_cells": 101
+}

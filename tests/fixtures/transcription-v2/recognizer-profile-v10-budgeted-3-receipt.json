@@ -1,6 +1,6 @@
 {
-  "artifact": "recognizer-profile-v10-budgeted-3.json",
-  "artifact_sha256": "b23ad9ca4755f0401831f6aef60cd0eb38c632f556ce04662cb0818caa268c53",
+  "artifact": "recognizer-profile-v10-budgeted-3.json.gz",
+  "artifact_sha256": "fbca168d2bb7be0434d014dbb3ff3257e883e0fb33fb59cda004285530d9297f",
   "authority": "diagnostic_only",
   "budget_failures": [
     "positive-degraded-fixed:tesseract-offline",

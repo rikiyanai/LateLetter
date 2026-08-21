@@ -1,0 +1,30 @@
+Source: Neko Atsume, How to Play and Support
+Publisher: Hit-Point
+URLs:
+  https://www.nekoatsume.com/sp/en/about.html
+  https://www.nekoatsume.com/en/support.html
+Accessed: 2026-07-30
+Type: Official game documentation
+
+Relevant findings
+-----------------
+
+Neko Atsume centers observation, a Catbook and album, and an environment that
+attracts autonomous visitors. Players set invitations such as food and goods,
+then discover which cats came and what they preferred. The cats are visitors
+with their own timing rather than dependants continuously demanding upkeep.
+
+LateLetter transfer
+-------------------
+
+Animals should initiate visits and choose among plant/fixture affordances.
+Observation, discovered routines, a journal, favorite places, photographs or
+mementos can develop a relationship without exposing a decaying maintenance
+meter. Bundle recipients interact with the composed environment; they do not
+receive placement controls.
+
+Limit
+-----
+
+Neko Atsume includes shop and collection systems. LateLetter adopts indirect
+invitation and autonomous visitation, not its currency or catalog economy.

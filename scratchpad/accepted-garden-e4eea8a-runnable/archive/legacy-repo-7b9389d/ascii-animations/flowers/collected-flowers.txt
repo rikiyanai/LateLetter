@@ -1,0 +1,238 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Collected Flower ASCII Art
+  Source: Christopher Johnson's ASCII Art Collection
+         https://asciiart.website/cat.php?category_id=97
+  Extracted: 2026-04-18
+═══════════════════════════════════════════════════════════════
+
+── ROSE (Unknown artist) ─────────────────────────────────────
+   Dimensions: 27x29  |  Source: asciiart.website/art/3776
+   Notes: Elegant single rose, good for garden detail
+
+        .     .
+    ...  :``..':
+     : ````.'   :''::'
+   ..:..  :     .'' :
+``.    `:    .'     :
+    :    :   :        :
+     :   :   :         :
+     :    :   :        :
+      :    :   :..''''``::.
+       : ...:..'     .''
+       .'   .'  .::::'
+      :..'''``:::::::
+      '         `::::
+                  `::.
+                   `::
+                    :::.
+         ..:```.:'`. ::'`.
+       ..'      `:.: ::
+      .:        .:``:::
+      .:    ..''     :::
+       : .''         .::
+        :          .'`::
+                       ::
+                       ::
+                        :
+                        :
+                        :
+                        :
+                        .
+
+
+── FLOWER ROW (Laura Brown) ──────────────────────────────────
+   Dimensions: 47x4  |  Source: asciiart.website/art/5735
+   Notes: Perfect for ground-level garden border, repeatable pattern
+
+     _    (_)  )Y(  _   (_)   )Y(    _
+    (o)    w   '|' (@)   w    '|'   (o)
+     |   . | .  |   |    |   . | .   |
+___(\|/)_)\|/(_d|b_q|p_(\|/)_)\|/(_(\|/)__  ldb
+
+
+── FLOWER MANDALA (Joan Stark) ───────────────────────────────
+   Dimensions: 29x13  |  Source: asciiart.website/art/5253
+   Notes: Symmetrical, could animate as "blooming" outward
+
+            ,  /\  ,
+        ;-./ '/  \' \.-;
+      .-|  `\;    ;/`  |-.
+    .-'._\   |_.._|   /_.'-.
+   .-\   `;.:::::::.;`   /-.
+   '._;--./:::;;;;:::\.--;_.'
+    <     |::;;;;;;::|     >
+   .`';--'\:::;;;;:::/'--;'`.
+   '-/  _,;'::::::::';,_  \-'
+    '-.' /   |`''`|   \ `;-'
+      '-|  ,/;    ;\,  |-'
+jgs     ;-'\ .\  /. /'-;
+            '  \/  '
+
+
+── SUNFLOWER w/ SUNGLASSES (Laura Brown) ─────────────────────
+   Dimensions: 21x14  |  Source: asciiart.website/art/6148
+   Notes: Playful personality, good for summer season
+
+          .
+    _/ \ / \ / \_
+  _\ \ .'- -'. / /_
+ \_ \,___   ___,/ _/
+< _ ( \__)-(__/ ) _ >
+ /_  -  .___.  -  _\
+  /_ / -.. ..- \ _\
+     \ / \ / \ /
+         |'|_.---._,
+ ,_.---._| |- --- /
+  \ --- -| | '---'
+   '---'_|_|___
+     [_________]
+      \___ldb_/
+
+
+── SUNFLOWER (Hayley Jane Wakenshaw / Flump) ─────────────────
+   Dimensions: 35x15  |  Source: asciiart.website/art/3760
+   Notes: Detailed with radial symmetry, great for tall garden plant
+
+           /:.   ,:\
+     .~=-./::: u  ::\,-~=.
+  ___|::  \    |    /  ::|___
+ \::  `.   \   |   /   .' :::/
+  \:    `.  \  |  /  .'    :/
+.-: `-._  `.;;;;;;.'   _.-' :-.
+\::     `-;;;;;;;;;;;-'     ::/
+ >~------~;;;;;;;;;;;~------~<
+/::    _.-;;;;;;;;;;;-._    ::\
+`-:_.-'   .`;;;;;;;'.   `-._:-'
+   /    .'  /  |  \  `.   :\
+  /::_.'   /   |   \   `._::\
+      |:: /    |    \  ::|
+      `=-'\:::.n.:::/`-=-'      hjw
+           \:'   `:/
+
+
+── FLOWER BOUQUET (Marie Bird / Valkyrie) ────────────────────
+   Dimensions: 36x28  |  Source: asciiart.website/art/3769
+   Notes: Elaborate bouquet with bow, good for special occasions
+
+               ,~.
+              {;@;}
+        ,~.  ..`~' . *  ,~.
+       {;@;}  . ,~. ** {;@;}
+     *..`~'  * {;@;} .  `~'
+   ,~.   .. **  `~'  ** . ,~.
+  {;@;} * ,~.   * ... *  {;@;}
+   `~' ..{;@;} **  ,~. .. `~'
+    ,~. . `~'. .. {;@;}   *..  *
+   {;@;}  .. ,~. ..`~' **   ,~.
+    `~'. ** {;@;}  **   ** {;@;}
+      .. * . `~'  ** ,~. ...`~'
+       * ~~  ** ... {;@;} .
+     .____  ~ *  ~   `~'.~____.
+      \ \ \\  | ||| |  / / / /
+  ____ \___\\ || | || /,/___/ ____
+./___ \_____\\| |||||//______/ ___\.
+ \____/  ,___. | | | .___,   \____/
+        /     \,--. /`__/ \
+       |     \_\   /_      |
+        \ ,--, /`_'\ \    /
+         `____/  /  \____'
+             /  /|\  \\,
+            (  (|||\  \ \
+            /\  \||\\  \ \
+            //\  \|\\)  )
+               )  ) \'`'
+              `'`'          Valkyrie
+
+
+── TULIP (Sebastian Stöcker) ─────────────────────────────────
+   Dimensions: 18x14  |  Source: asciiart.website/art/7042
+   Notes: Elegant tulip with leaf, good small garden plant
+
+          ,'|/\
+         /  | )\
+        /   |/  :
+       :    ;   |
+       :   /    ;
+        \,'   ,'
+         `,,-'
+         //
+  _     // ____
+ /|`.  /;''/  ,`.
+:.:/ \/,`-',-'. ,'
+: `\,// `-.\_\.'
+ `._//
+   // SSt
+
+
+── CAT IN THE GARDEN (Laura Brown) ───────────────────────────
+   Dimensions: 63x7  |  Source: asciiart.website/art/5851
+   Notes: Wide garden scene with cat and flowers, good for panoramic view
+
+   _ _  _ _    _ _         Y                        _ _
+  ( ) )( ( )  ( ) )       ((                       ( ( )
+ (  o  ) o  )(  o  )       ))        .---------.  (  o  )
+  (_(_)(_)_)  (_(_)     ,-'''-,      | Here Be |   (_)_)
+ |\ | /| | /||\ | /|   ( |\_/| )     | Dragons |  |\ | /|
+  \\|//\\|//  \\|//    \\(q p)//     '----,----'   \\|//
+___\|/__\|/____\|/_______M<">M____________|_________\|/_____ldb
+
+
+── SMALL FLOWER (Joan Stark) ─────────────────────────────────
+   Dimensions: 14x10  |  Source: asciiart.website/art/3763
+   Notes: Tiny, good for small garden plants
+
+       _ _
+      (_\_)
+     (__<_{}
+      (_/_)
+     |\ |
+    _| \|  _
+   / |     \
+  |  |      |
+   \_|  .. /
+     |__|_/   jgs
+
+
+═══════════════════════════════════════════════════════════════
+  GARDEN-SCALE FLOWER SPRITES (for LateLetter TUI)
+  These are simplified versions sized for 80x24 terminal
+═══════════════════════════════════════════════════════════════
+
+── Tiny Daisy (3-4 chars wide) ───────────────────────────────
+
+ (*)     (@)     {*}
+  |       |       |
+ /|\     /|\     /|\
+
+
+── Small Rose (5 chars wide) ─────────────────────────────────
+
+  @>->--    @>--->--
+  (rose stem, classic)
+
+
+── Medium Flower (6-8 chars wide) ────────────────────────────
+
+  .-'-.      ,-=-,      .~=~.
+ ( o o )    ( ' ' )    ( @ @ )
+  `-.-'      `-.-'      `-.-'
+    |          |          |
+   /|\        /|\        /|\
+
+
+── Tall Sunflower (8-10 chars, for tall garden accent) ───────
+
+   \|/
+  --@--
+   /|\
+    |
+    |
+   /|\
+
+
+── Lily (short, wide head per spec §7.1) ────────────────────
+
+  \\ //     () ()     >\/<
+   )|(       \|/       )|(
+    |         |         |
+   /|\       /|\       /|\

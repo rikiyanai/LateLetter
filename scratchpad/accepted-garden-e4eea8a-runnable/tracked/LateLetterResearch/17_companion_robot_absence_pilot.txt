@@ -1,0 +1,29 @@
+Source: Long-term effect of the absence of a companion robot on older adults:
+a preliminary pilot study
+Publisher: Frontiers in Computer Science, 2023
+URL: https://www.frontiersin.org/journals/computer-science/articles/10.3389/fcomp.2023.1129506/full
+Accessed: 2026-07-30
+Type: Peer-reviewed preliminary pilot study
+
+Relevant findings
+-----------------
+
+The study investigated attachment during in-home companion-robot use and the
+possible emotional effect of later removing the robot. It reports a small,
+specific older-adult context and explicitly treats distress after removal as a
+design and study concern.
+
+LateLetter transfer
+-------------------
+
+Do not manufacture dependence through guilt, threats of departure, sickness,
+death, expiring affection, or claims that the animal suffers when the recipient
+is absent. Preserve local durable state and design explicit lifecycle/export
+behavior so a relationship is not casually erased by software changes.
+
+Limit
+-----
+
+This is preliminary and population-specific. It illustrates a plausible ethical
+risk; it does not establish that LateLetter users would experience the same
+effect.

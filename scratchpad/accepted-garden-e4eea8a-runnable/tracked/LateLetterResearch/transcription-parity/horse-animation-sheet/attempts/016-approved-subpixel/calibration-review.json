@@ -1,0 +1,19 @@
+{
+  "attempt": "016-approved-subpixel",
+  "operator_verdict": "approved",
+  "source_png": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "calibration_json": "calibration.json",
+  "calibration_sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d",
+  "calibration_png": "calibration.png",
+  "calibration_png_sha256": "42d8f73b7056de6027e9be502e0e987de65292093c3ed38291cd08ff30f4fb7e",
+  "contact_sheet": "calibration-candidates.png",
+  "contact_sheet_sha256": "685d9346e28a8c8bffe7809446c5bfe6b78850f2ec0bbcba190ffb353011d14b",
+  "checks": {
+    "vertical_boundaries_in_gutters": true,
+    "no_substantive_glyph_strokes_divided": true,
+    "visible_rows_and_columns_covered": true,
+    "horizontal_baselines_and_crops_approved": true
+  },
+  "note": "Explicit operator approval supplied in continuation order; calibration copied byte-for-byte from attempt 015. This receipt is not transcript acceptance."
+}

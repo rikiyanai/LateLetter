@@ -1,0 +1,24 @@
+{
+  "source": "tracked/LateLetterResearch/transcription-parity/bbbb-flowers/source/source.normalized.png",
+  "pixel_size": {
+    "width": 307,
+    "height": 318
+  },
+  "background_rgb": [
+    40,
+    41,
+    35
+  ],
+  "measured_period_px": {
+    "x": 9,
+    "y": 19
+  },
+  "declared_grid_px": {
+    "x": 9.0,
+    "y": 19.0
+  },
+  "origin_x": -71.0,
+  "first_baseline_y": 34.0,
+  "status": "machine_candidate_only",
+  "note": "Question marks are unresolved cells, not glyph guesses."
+}

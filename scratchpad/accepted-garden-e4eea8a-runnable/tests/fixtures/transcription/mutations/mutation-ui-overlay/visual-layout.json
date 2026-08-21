@@ -1,0 +1,13 @@
+{
+  "fixture_id": "mutation-ui-overlay",
+  "logical_rows": 1,
+  "direction": "ltr",
+  "mode": "unresolved",
+  "anchors": [
+    {
+      "row": 0,
+      "x": 12,
+      "baseline": 29
+    }
+  ]
+}

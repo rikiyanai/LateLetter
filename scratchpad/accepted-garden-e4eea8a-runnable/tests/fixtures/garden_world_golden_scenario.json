@@ -1,0 +1,121 @@
+{
+  "schema": "lateletter.garden.world-scenario/1",
+  "initial_state": {
+    "schema_version": 1,
+    "engine_version": "garden-world-internal-v1",
+    "world_id": "world-golden",
+    "seed": "60cf6b80414c9a0c1c643cb56595eca4042ada0d4af8a65bf4107c51ab8e7101",
+    "world_width": 40,
+    "world_height": 30,
+    "effective_time": 1720000000,
+    "last_observed_wall_time": 1720000000,
+    "command_sequence": 0,
+    "plants": [
+      {
+        "plant_id": "plant:rose",
+        "species_id": "rose",
+        "position": [4, 5],
+        "topology": [],
+        "growth_points": 0,
+        "tended_count": 0,
+        "last_tended_at": null,
+        "growth_period_seconds": 86400
+      }
+    ],
+    "fixtures": [
+      {
+        "fixture_id": "fixture:bench",
+        "catalog_id": "bench",
+        "position": [8, 5],
+        "rotation": 0,
+        "authored": false
+      }
+    ],
+    "animals": [
+      {
+        "animal_id": "animal:rabbit",
+        "species_id": "rabbit",
+        "position": [12, 5],
+        "high_level_state": "awake",
+        "bond_points": 0,
+        "bond_tier": 0,
+        "interaction_counts": {},
+        "session_interactions": [],
+        "recent_memories": [],
+        "personality": {
+          "boldness": 50,
+          "sociability": 50,
+          "curiosity": 50,
+          "playfulness": 50,
+          "patience": 50,
+          "routine_strength": 50,
+          "food_motivation": 50,
+          "day_preference": 50
+        },
+        "energy": 60,
+        "social_appetite": 50,
+        "play_appetite": 50,
+        "rest_appetite": 40,
+        "choreography_lock": null
+      }
+    ],
+    "collectibles": [
+      {
+        "collectible_id": "collectible:feather",
+        "family": "animal_trace",
+        "provenance": "animal-given",
+        "label": "A small feather",
+        "description": "A soft feather left beside the path.",
+        "position": [16, 5],
+        "collected": false,
+        "authored": false
+      }
+    ],
+    "inventory": [],
+    "journal": [],
+    "ui": {
+      "focus_id": null,
+      "camera": [0, 0],
+      "actions_open_for": null,
+      "journal_open": false,
+      "motion_paused": false
+    },
+    "undo_stack": [],
+    "milestone_receipts": [],
+    "processed_commands": [],
+    "event_trace": []
+  },
+  "commands": [
+    {"sequence": 1, "kind": "move_focus", "target_id": "animal:rabbit", "args": {}, "modality": "touch", "metadata": {"gesture": "tap"}},
+    {"sequence": 2, "kind": "pan", "target_id": null, "args": {"dx": 3, "dy": 2}, "modality": "mouse", "metadata": {"wheel_delta": -120}},
+    {"sequence": 3, "kind": "inspect", "target_id": "plant:rose", "args": {}, "modality": "browser_keyboard", "metadata": {"key": "Enter"}},
+    {"sequence": 4, "kind": "primary_interact", "target_id": "animal:rabbit", "args": {}, "modality": "terminal", "metadata": {"token": "enter"}},
+    {"sequence": 5, "kind": "open_actions", "target_id": "animal:rabbit", "args": {}, "modality": "touch", "metadata": {"gesture": "tap_more"}},
+    {"sequence": 6, "kind": "tend", "target_id": "plant:rose", "args": {"care_action": "water"}, "modality": "mouse", "metadata": {"button": 0}},
+    {"sequence": 7, "kind": "feed", "target_id": "animal:rabbit", "args": {}, "modality": "browser_keyboard", "metadata": {"key": "Enter"}},
+    {"sequence": 8, "kind": "play", "target_id": "animal:rabbit", "args": {}, "modality": "terminal", "metadata": {"token": "play 1"}},
+    {"sequence": 9, "kind": "collect", "target_id": "collectible:feather", "args": {}, "modality": "touch", "metadata": {"gesture": "tap_collect"}},
+    {"sequence": 10, "kind": "place", "target_id": null, "args": {"object_id": "fixture:lantern-golden", "object_kind": "fixture", "catalog_id": "lantern", "x": 20, "y": 10}, "modality": "mouse", "metadata": {"button": 0}},
+    {"sequence": 11, "kind": "move_fixture", "target_id": "fixture:lantern-golden", "args": {"x": 21, "y": 10, "rotation": 90}, "modality": "browser_keyboard", "metadata": {"key": "Enter"}},
+    {"sequence": 12, "kind": "undo", "target_id": null, "args": {}, "modality": "terminal", "metadata": {"token": "undo"}},
+    {"sequence": 13, "kind": "open_journal", "target_id": null, "args": {}, "modality": "touch", "metadata": {"gesture": "tap_journal"}},
+    {"sequence": 14, "kind": "pause_motion", "target_id": null, "args": {"paused": true}, "modality": "mouse", "metadata": {"button": 0}},
+    {"sequence": 15, "kind": "back", "target_id": null, "args": {}, "modality": "browser_keyboard", "metadata": {"key": "Escape"}}
+  ],
+  "final_expectations": {
+    "command_sequence": 15,
+    "camera": [3, 2],
+    "plant_growth_points": 2,
+    "plant_tended_count": 1,
+    "animal_bond_points": 8,
+    "animal_bond_tier": 1,
+    "animal_interaction_counts": {"feed": 1, "observe": 1, "play": 1},
+    "inventory": ["collectible:feather"],
+    "placed_fixture_position": [20, 10],
+    "placed_fixture_rotation": 0,
+    "journal_open": false,
+    "motion_paused": true,
+    "trace_count": 15,
+    "undo_depth": 1
+  }
+}

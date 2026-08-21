@@ -1,0 +1,13 @@
+{
+  "fixture_id": "negative-disconnected-combining",
+  "logical_rows": 1,
+  "direction": "ltr",
+  "mode": "shaped_runs",
+  "anchors": [
+    {
+      "row": 0,
+      "x": 12,
+      "baseline": 29
+    }
+  ]
+}

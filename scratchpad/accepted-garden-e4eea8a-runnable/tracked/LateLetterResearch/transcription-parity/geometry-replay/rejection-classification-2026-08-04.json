@@ -1,0 +1,271 @@
+{
+  "schema": "lateletter-geometry-rejection-classification-1",
+  "recorded_at": "2026-08-04T00:00:00Z",
+  "authority": "measurement_only",
+  "source_inventory_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/source-inventory-2026-08-04.json",
+  "source_inventory_sha256": "66ab7eddbe1dbb72386bd79d5e5383cb5f6be9e9f4a058e2af3d46bc78796f1c",
+  "implementation_identity_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/implementation-identity-2026-08-04.json",
+  "implementation_identity_sha256": "a5cc083454087110bc239b2d4e06b33ff7170fcedb8c6b0ac2dc29787a94f2a1",
+  "replay_path": "tracked/LateLetterResearch/transcription-parity/geometry-replay/current-frozen-identity-2026-08-04.json",
+  "replay_sha256": "4be81e486bcdd9062c11b703140438341e14f989991a01c5fb4824343506137a",
+  "counts": {
+    "rejected_total": 14,
+    "supported_profile_wrongly_rejected": 13,
+    "intentional_fail_closed": 1
+  },
+  "dominant_rejecting_mechanisms": [
+    {
+      "mechanism": "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+      "count": 12,
+      "code_refs": ["src/lateletter/transcription/geometry/evidence.py:1264", "src/lateletter/transcription/geometry/evidence.py:2299"]
+    },
+    {
+      "mechanism": "fixed_lattice_criterion_below_threshold:row_periodicity",
+      "count": 11,
+      "code_refs": ["src/lateletter/transcription/geometry/evidence.py:1261", "src/lateletter/transcription/geometry/evidence.py:2299"]
+    },
+    {
+      "mechanism": "shaped_runs_criterion_below_threshold:connected_joined_runs",
+      "count": 8,
+      "code_refs": ["src/lateletter/transcription/geometry/evidence.py:1507", "src/lateletter/transcription/geometry/evidence.py:2299"]
+    },
+    {
+      "mechanism": "periodic_authority_unresolved/phase_authority_unresolved/ownership_authority_unresolved",
+      "count": 7,
+      "code_refs": ["src/lateletter/transcription/geometry/evidence.py:1567", "src/lateletter/transcription/geometry/evidence.py:1594"]
+    },
+    {
+      "mechanism": "shaped_runs_criterion_below_threshold:vertical_text_candidates",
+      "count": 6,
+      "code_refs": ["src/lateletter/transcription/geometry/evidence.py:1509", "src/lateletter/transcription/geometry/evidence.py:2299"]
+    },
+    {
+      "mechanism": "shaped_runs_criterion_below_threshold:variable_advances",
+      "count": 6,
+      "code_refs": ["src/lateletter/transcription/geometry/evidence.py:1506", "src/lateletter/transcription/geometry/evidence.py:2299"]
+    },
+    {
+      "mechanism": "row_baselines_undersegmented",
+      "count": 4,
+      "code_refs": ["src/lateletter/transcription/geometry/evidence.py:1187", "src/lateletter/transcription/geometry/evidence.py:1567"]
+    }
+  ],
+  "records": [
+    {
+      "source": "4409e4149b1b6827b4b8c44ed8a3772d.normalized.png",
+      "source_sha256": "840a74ac84cb261bc20086e8fba25ca36797a59b5b66761b8a433bf702e63642",
+      "source_inventory_basis": "monospace row/column pitch from visible AA grid",
+      "expected_profile": "fixed_lattice_monospace",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "repair_owner": "generic_fixed_lattice_admission"
+    },
+    {
+      "source": "570f8131c83cdafded2c3b5be78d4df8.normalized.png",
+      "source_sha256": "e9b08e31960ffd6fe6e5e52e84107fd22ad80b645b6f1de2e21f4e9a20444275",
+      "source_inventory_basis": "monospace row/column pitch from visible AA grid",
+      "expected_profile": "fixed_lattice_monospace",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "periodic_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "repair_owner": "generic_periodic_baseline_and_ownership_admission"
+    },
+    {
+      "source": "988fd1ab7783d6757e0b68aa9b27ab4d.normalized.png",
+      "source_sha256": "ca2b6b41778f0bd054aa2284f75d62e9eda2a2f08790e827c1b1b5c900129323",
+      "source_inventory_basis": "monospace row/column pitch from visible AA grid",
+      "expected_profile": "fixed_lattice_monospace",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances"
+      ],
+      "repair_owner": "generic_fixed_lattice_admission"
+    },
+    {
+      "source": "9d0cb1893cfa495d1edfdaf8d312108c.normalized.png",
+      "source_sha256": "2319f211dae02f4006e22427d9c10eda4e44fafd6aef15a04f85d2d16d4b6731",
+      "source_inventory_basis": "monospace row/column pitch from visible AA grid",
+      "expected_profile": "fixed_lattice_monospace",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "repair_owner": "generic_periodic_baseline_and_ownership_admission"
+    },
+    {
+      "source": "Fish-shell-logo-ascii-black.svg.normalized.png",
+      "source_sha256": "e3aed07693c67a44a7f33f0bb4d1321179ee2afb80b0acc6f8eda2157f54e405",
+      "source_inventory_basis": "transparent source; grid estimated from logo stroke cadence",
+      "expected_profile": "unsupported_transparent_logo_input",
+      "classification": "intentional_fail_closed",
+      "rejecting_criteria": [
+        "foreground_unresolved",
+        "component_evidence_missing",
+        "fixed_lattice_criterion_missing:*",
+        "shaped_runs_criterion_missing:*"
+      ],
+      "repair_owner": "none_until_source_is_a_supported_screenshot_or_foreground_is_source-proved"
+    },
+    {
+      "source": "Screenshot 2026-07-31 at 13.16.07.normalized.png",
+      "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+      "source_inventory_basis": "monospace screenshot grid",
+      "expected_profile": "fixed_lattice_monospace",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "repair_owner": "generic_fixed_lattice_admission"
+    },
+    {
+      "source": "c1np1jdixihf1.normalized.png",
+      "source_sha256": "e57507e58e882b41646edb152f5a2ee50d2a814be3588cb960fb9ca06f0b4fd1",
+      "source_inventory_basis": "large-cell Unicode art; measured from repeated face glyphs",
+      "expected_profile": "shaped_or_large_cell_unicode_runs",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "repair_owner": "generic_shaped_run_admission"
+    },
+    {
+      "source": "christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized.png",
+      "source_sha256": "f7c6429f18ccd99bba833fa38a76a262ccdc0e32aebbf3de3947516e6b69377d",
+      "source_inventory_basis": "large-cell Unicode art; measured from repeated tree rows",
+      "expected_profile": "shaped_or_large_cell_unicode_runs",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances"
+      ],
+      "repair_owner": "generic_shaped_run_admission"
+    },
+    {
+      "source": "d4b66f66373db2f3f46d775ed3cb9eee.normalized.png",
+      "source_sha256": "b7ef1ae16c8d605c923b18f7c32ebd49305b91738d39ccf6f4147f9fe94080ba",
+      "source_inventory_basis": "monospace row/column pitch from visible AA grid",
+      "expected_profile": "fixed_lattice_monospace",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "repair_owner": "generic_fixed_lattice_admission"
+    },
+    {
+      "source": "ebf485c62e6e63738ad4fcb1a4396e28.normalized.png",
+      "source_sha256": "5a81e15c8410ca3a9b7348c2f60e4810adfafb3186a5bf08229c73349a57793c",
+      "source_inventory_basis": "large-cell Unicode art; measured from four visible rows",
+      "expected_profile": "shaped_or_large_cell_unicode_runs",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:variable_advances"
+      ],
+      "repair_owner": "generic_shaped_run_admission"
+    },
+    {
+      "source": "images.normalized.png",
+      "source_sha256": "5124481a4473227b65bc365516ee1cefc5df57cf940df8bf8efbd1e35ad30838",
+      "source_inventory_basis": "monospace row/column pitch from visible AA grid",
+      "expected_profile": "fixed_lattice_monospace",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "repair_owner": "generic_periodic_baseline_and_ownership_admission"
+    },
+    {
+      "source": "stonestoryCross_River_Banner.jpg.normalized.png",
+      "source_sha256": "f75f237ef39bab0c807bec04e7177136a3edd2c9c4e526adccb94bf68a38bfc9",
+      "source_inventory_basis": "Stone Story terminal grid; visible foreground rows counted",
+      "expected_profile": "fixed_lattice_terminal_grid",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "repair_owner": "generic_periodic_baseline_and_ownership_admission"
+    },
+    {
+      "source": "stonestorycrypt_shop.jpg.normalized.png",
+      "source_sha256": "89544ef22fc123179bd7b29494d512308206012eef10f6d3dc31db3b0df06d66",
+      "source_inventory_basis": "Stone Story terminal grid; visible foreground rows counted",
+      "expected_profile": "fixed_lattice_terminal_grid",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "periodic_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs",
+        "shaped_runs_criterion_below_threshold:vertical_text_candidates"
+      ],
+      "repair_owner": "generic_periodic_baseline_and_ownership_admission"
+    },
+    {
+      "source": "stonestoryranting_tree_rework.jpg.normalized.png",
+      "source_sha256": "8384603877db279fd64ed855262a2c8763e093d7c1b322c2071f5e6aec6a6de3",
+      "source_inventory_basis": "Stone Story terminal grid; visible foreground rows counted",
+      "expected_profile": "fixed_lattice_terminal_grid",
+      "classification": "supported_profile_wrongly_rejected",
+      "rejecting_criteria": [
+        "row_baselines_undersegmented",
+        "periodic_authority_unresolved",
+        "pitch_authority_unresolved",
+        "phase_authority_unresolved",
+        "ownership_authority_unresolved",
+        "fixed_lattice_criterion_below_threshold:row_periodicity",
+        "fixed_lattice_criterion_below_threshold:fullwidth_multiples",
+        "shaped_runs_criterion_below_threshold:connected_joined_runs"
+      ],
+      "repair_owner": "generic_periodic_baseline_and_ownership_admission"
+    }
+  ],
+  "next_step": {
+    "phase": "Phase 3.8",
+    "action": "replace class-eliminating admission gates with generic source-derived evidence for the supported classes, preserving a single geometry authority owner and intentional fail-closed handling for unsupported input profiles"
+  }
+}

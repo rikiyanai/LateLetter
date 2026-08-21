@@ -1,0 +1,527 @@
+{
+  "schema": 1,
+  "purpose": "The per-asset visual acceptance registry required by SPEC 7.10.2. Until this file existed the rule was written down and unenforceable, and unaccepted drawings reached live product frames repeatedly.",
+  "operator_grants": [
+    {
+      "granted_at": "2026-08-01",
+      "scope": "legacy plant art and legacy animation frames",
+      "source": "archive/legacy-repo-7b9389d/ascii-animations/",
+      "statement": "PLANTS ANIMATIONS IN LEGACY ARE APPROVED VISUALLY",
+      "effect": "The archived drawings and frame sequences are accepted as ART. An exact, provenance-verified migration into the atlas retains that approval; moving ownership does not require the operator to approve the same pixels/characters again. New drawings, changed frames, invented poses, or other visual changes do not inherit it. Plants and animals remain release-blocking while their current owner is renderer-local."
+    },
+    {
+      "granted_at": "2026-08-01",
+      "scope": "legacy art items currently serving rikiworld.com/lateletter",
+      "source": "legacy/viewer-bnw.html and archive/legacy-repo-7b9389d/",
+      "statement": "I EXPLICTLY FUCKING APPROVED THE GODDMANF UCKNG FIXTURES U GAVE IN TEH FUCKING HTML AND THE FUCKING LEGACY ART",
+      "effect": "Records the operator's broader approval exactly without guessing an inventory from it. An item proven identical to the deployed/archive legacy art retains approval when migrated. Similar, newly invented, or materially altered renderer art does not inherit approval merely because it has the same category name. Composition acceptance remains separate."
+    },
+    {
+      "granted_at": "2026-08-01",
+      "scope": "renderer-authored sky decoration",
+      "statement": "clouds and distant birds identified in a live frame as unapproved",
+      "effect": "Removed from the default scene. See _drawSkyLife in web/garden-renderer.mjs."
+    },
+    {
+      "granted_at": "2026-08-03",
+      "scope": "exact operator-authored rose-bush TXT art asset",
+      "asset_id": "plant.rose",
+      "source": "tracked/LateLetterResearch/transcription-parity/eb861dc84400fc36/accepted.txt",
+      "source_sha256": "04bce501c712fc071523711a3ea1b67a8af302434a66f0e638c2bdc144b0baac",
+      "statement": "eb861dc84400fc36.provisional-not-pipeline.txt is approved rose bush art asset i just authored. log and track and take in and index",
+      "correction": "trailing spaces.NOO DONT INCLUDE TRAILING SPACES",
+      "effect": "The exact six-line, 139-byte operator-authored TXT with trailing spaces excluded is accepted as rose-bush art. This is not a transcription-pipeline verdict and does not approve or release the different renderer-local rose placeholder. Runtime use requires a delete-first transfer into the canonical gameplay-art owner."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored coffee-mug TXT art asset, plus its operator-specified steam ramp",
+      "asset_id": "fixture.coffee_mug",
+      "source": "src/lateletter/garden/data/operator-granted-art/coffee-mug.txt",
+      "source_sha256": "112d7db2dc521d26f83b80c4ffe03b3cba4bcf4d552ef86ad80f747e81b9cd0b",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that four of them -- coffee mug, ice cream cone, mixtape, popsicle -- be promoted to usable atlas assets, and that the coffee mug carry a static-glyph smoke animation on the ASCII ramp `. o O` (mode ramp, size 3). Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact six-byte operator-authored TXT is the mug's vessel row and it is unaltered in every frame. The row above it holds one steam mark drawn from the ramp the operator named, and nothing else; the ramp advances `.` then `o` then `O` and wraps, three frames at ten ticks each, matching the pond's cadence. The steam is the operator's instruction realised, not an assistant-invented embellishment: no mark exists in this asset that was not either drawn by the operator or named by the operator. The atlas asset is fixture.coffee_mug, 5x2, anchored at [3,1]. This grant covers the ART. It is not a composition verdict: nothing here places a mug in any recipient's garden.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding. The bytes recorded here are what was received."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored ice-cream-cone TXT art asset",
+      "asset_id": "fixture.ice_cream_cone",
+      "source": "src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt",
+      "source_sha256": "292657f37f22f77bea75ae497a3cbb78cbcb50ec9af290fe81cca5b52af834d6",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that this one be promoted to a usable atlas asset. Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact eight-byte operator-authored TXT is promoted unaltered as fixture.ice_cream_cone, 3x2, anchored at [2,1] -- the column the cone stroke stands on rather than the arithmetic middle of the box. Every mark in the asset is the operator's. This grant covers the ART and is not a composition verdict.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored mixtape TXT art asset",
+      "asset_id": "fixture.mixtape",
+      "source": "src/lateletter/garden/data/operator-granted-art/mixtape.txt",
+      "source_sha256": "2f1239f4fe94bd81d626962b08cbb83820e1aa0c99cc23fa0674d42bc2f17d14",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that this one be promoted to a usable atlas asset. Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact six-byte operator-authored TXT is promoted unaltered as fixture.mixtape, 5x1, anchored at [2,0]. It is one row tall because that is how the operator drew it; it was not padded out with invented rows to look more like the other assets. This grant covers the ART and is not a composition verdict.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "exact operator-authored popsicle TXT art asset",
+      "asset_id": "fixture.popsicle",
+      "source": "src/lateletter/garden/data/operator-granted-art/popsicle.txt",
+      "source_sha256": "caa8a3e8a035d13a7c9e308ab7998cc0d596c0b43f66e19940386856265b68b7",
+      "statement": "Operator granted the ten gift drawings as approved art and then directed that this one be promoted to a usable atlas asset. Recorded as an instruction, not as a verbatim quotation.",
+      "effect": "The exact eleven-byte operator-authored TXT is promoted as fixture.popsicle, 3x3, anchored at [1,2] -- the column the stick stands on. The drawing's final line is two characters (` |`) and the atlas cell matrix must be rectangular, so it carries one trailing space in the lattice. That adds no ink and changes no mark; it is the same distinction the rose grant's trailing-space correction drew between the operator's file and a storage format's padding. This grant covers the ART and is not a composition verdict.",
+      "fidelity_caveat": "The granted bytes were transcribed from a chat message, which can alter trailing spaces and line ends in transit. Re-supplying the drawing as a file would raise the confidence of this binding."
+    },
+    {
+      "granted_at": "2026-08-06",
+      "scope": "the six granted gift drawings that were NOT promoted",
+      "statement": "Operator granted ten gift drawings; four were directed for promotion and the rest were not.",
+      "effect": "Pendant necklace, both brooches, bone and teddy bear remain granted ART but are not paintable: every non-ASCII codepoint in them is absent from the cmap of web/fonts/lateletter-garden.woff, and the atlas additionally requires an ascii-safe profile of one printable ASCII character per cell for every asset. Each needs an ASCII redraw, or font work plus an ASCII fallback drawing anyway. The sideways rose is pure ASCII but is a letter-ending decoration seventeen columns wide, so it belongs to the letter surface rather than to the garden atlas. None of the six has an atlas identity and none may acquire one on the strength of this grant. Recorded here so the absence is a decision rather than an oversight."
+    }
+  ],
+  "withdrawn_acceptances": [],
+  "review_candidates": [
+    "fixture.planter_one",
+    "fixture.planter_three",
+    "fixture.pond_compact",
+    "fixture.pond_round",
+    "fixture.stepping_stones_five",
+    "fixture.stepping_stones_three"
+  ],
+  "review_candidates_note": "Seeded fixture-room variants authored on 2026-08-05 are licensed only on the local unreleased review surface. They are separate atlas identities so none inherits the accepted base drawing's verdict. Public paint authority excludes them until each drawing is explicitly accepted.",
+  "legacy_ported_renderer_art": {
+    "note": "Renderer-local drawings that are now transcriptions of the archive rather than renderer-authored placeholders, ported 2026-08-01 under the operator grant of the same date. Each key is an art identity inside web/garden-legacy-art.mjs and each value is the archive file and section it was transcribed from. This section records ART provenance only. It does NOT clear the gameplay_art_outside_atlas blocker: plants and animals are still painted renderer-locally and have not been migrated into the versioned atlas, so they still carry no per-asset atlas verdict.",
+    "ported": {
+      "plant.oak.large": "nature/seasonal-trees.txt :: OAK / FULL CANOPY :: Broad canopy",
+      "plant.oak.medium": "nature/seasonal-trees.txt :: SEASONAL VARIANTS :: SUMMER (full)",
+      "plant.oak.small": "nature/seasonal-trees.txt :: SEASONAL VARIANTS :: SPRING (blossoms)",
+      "plant.willow.large": "nature/trees-and-leaves.txt :: WILLOW TREE :: Willow wind sway (3 frames)",
+      "plant.willow.medium": "nature/trees-and-leaves.txt :: WILLOW TREE :: Static willow (medium)",
+      "plant.willow.small": "nature/seasonal-trees.txt :: WILLOW DESIGNS :: wind sway chars",
+      "plant.pine.large": "nature/trees-and-leaves.txt :: CONIFER / PINE :: Large pine",
+      "plant.pine.medium": "nature/trees-and-leaves.txt :: CONIFER / PINE :: Medium pine",
+      "plant.pine.small": "nature/trees-and-leaves.txt :: CONIFER / PINE :: Small pine",
+      "plant.sunflower.large": "nature/trees-and-leaves.txt :: SUNFLOWER - TALL + flowers/flower-animations.txt :: WIND SWAY: Tall Sunflower",
+      "plant.sunflower.medium": "flowers/flower-animations.txt :: WIND SWAY: Medium Flower",
+      "plant.sunflower.small": "flowers/flower-animations.txt :: WIND SWAY: Small Flower",
+      "plant.water_lily.large": "nature/trees-and-leaves.txt :: LILY :: Lily pad (water)",
+      "plant.water_lily.medium": "nature/trees-and-leaves.txt :: LILY :: Medium lily",
+      "plant.water_lily.small": "nature/trees-and-leaves.txt :: LILY :: Small lily",
+      "animal.cat": "creatures/birds-and-insects.txt :: CAT WALKING",
+      "animal.bird": "creatures/animasci-frames.txt :: BIRD FLAPPING + creatures/birds-and-insects.txt :: Bird perching"
+    },
+    "not_ported": {
+      "note": "The operator's instruction was to replace placeholders with legacy art 'WHEN POSSIBLE'. The archive names oak, willow, pine, sunflower and lily, and draws cats and birds. It names none of the following, so these keep renderer-authored placeholders, carry no acceptance of any kind, and stay out of the default scene.",
+      "plants": [
+        "rose",
+        "tulip",
+        "hydrangea",
+        "wisteria",
+        "lavender",
+        "rosemary",
+        "ivy",
+        "meadow_grass"
+      ],
+      "animals": [
+        "rabbit",
+        "turtle"
+      ],
+      "poses": [
+        "A resting animal reads as asleep and the archive contains no sleeping anything, so the cat's rest pose is still a renderer-authored placeholder even though the rest of the cat is ported."
+      ]
+    }
+  },
+  "assets": [
+    {
+      "asset_id": "collectible.feather",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "collectible.feather was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "collectible.pressed_flower",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "collectible.pressed_flower was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "collectible.seed_packet",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "collectible.seed_packet was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "collectible.smooth_stone",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "collectible.smooth_stone was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.arbor",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T06:03:29Z",
+      "art_lineage": "Round 2: curved shoulders and paired uprights so it reads as walk-through, not a doorway.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t060329-3296eefa"
+    },
+    {
+      "asset_id": "fixture.basket",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.basket was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.bench",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T05:05:55Z",
+      "art_lineage": "Round 2: open slatted back and inset legs, so it is a bench rather than a sofa.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t050555-3296eefa"
+    },
+    {
+      "asset_id": "fixture.birdbath",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T05:05:55Z",
+      "art_lineage": "Round 2: stem narrowed against both bowl and foot so the dish reads as a bath, not a cup.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t050555-3296eefa"
+    },
+    {
+      "asset_id": "fixture.bridge",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T06:03:29Z",
+      "art_lineage": "Round 3: drawn from the operator's own sketch -- rising approaches, interleaved deck and railing, open span.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t060329-3296eefa"
+    },
+    {
+      "asset_id": "fixture.compost",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.compost was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.fence_gate",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.fence_gate was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.lantern",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T06:03:29Z",
+      "art_lineage": "Round 3: two rows taller, spread base, and a heavy-vertical override so the proportional post is solid rather than gapped.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t060329-3296eefa"
+    },
+    {
+      "asset_id": "fixture.mailbox",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T06:03:29Z",
+      "art_lineage": "Round 2: rebuilt at the operator's ~7-column reference; flag is the only mass above the drum.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t060329-3296eefa"
+    },
+    {
+      "asset_id": "fixture.memorial_stone",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.memorial_stone was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.planter",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T06:03:29Z",
+      "art_lineage": "Round 3: base kept as accepted; growth redrawn with a stem run so it reads as planted, not scattered.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t060329-3296eefa"
+    },
+    {
+      "asset_id": "fixture.pond",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T06:03:29Z",
+      "art_lineage": "Round 3: wide flat basin, ripples spaced apart and offset row to row instead of one solid band.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t060329-3296eefa"
+    },
+    {
+      "asset_id": "fixture.shed_edge",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.shed_edge was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.sign",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.sign was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.stepping_stones",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T06:03:29Z",
+      "art_lineage": "Round 2: flat top surface instead of an open bowl, so it is stood on, not filled.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t060329-3296eefa"
+    },
+    {
+      "asset_id": "fixture.sundial",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.sundial was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.table_chairs",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.table_chairs was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.tool_rack",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.tool_rack was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.trellis",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-07-31T05:05:55Z",
+      "art_lineage": "Accepted in round 1 and left untouched: opposed diagonals, not a box grid.",
+      "capture": "docs/operator-decision-record.md#operator--2026-07-31t050555-3296eefa"
+    },
+    {
+      "asset_id": "fixture.watering_can",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.watering_can was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.well",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.well was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.wind_chime",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "fixture.wind_chime was carried from atlas v1 unchanged. v1 holds no artwork: every asset is a single glyph in a 1x1 box. This asset still needs to be drawn and individually reviewed.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.planter_one",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded one-blossom planter review candidate. It preserves the accepted planter grammar but is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.planter_three",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded three-blossom planter review candidate. It preserves the accepted planter grammar but is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.pond_compact",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded compact pond review candidate with a shorter loop and the same lateral-ripple grammar. It is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.pond_round",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded round pond review candidate with greater front-to-back diameter. It is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.stepping_stones_five",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded five-stone path review candidate. It is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.stepping_stones_three",
+      "profile": "browser-proportional",
+      "states_reviewed": [],
+      "verdict": "not_reviewed",
+      "reviewed_at": null,
+      "art_lineage": "Seeded three-stone path review candidate. It is a new drawing and inherits no verdict.",
+      "capture": null
+    },
+    {
+      "asset_id": "fixture.coffee_mug",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted byte-exactly from the hash-bound grant above. The vessel row is the granted six bytes and is unaltered in all three frames; the row above it holds one mark from the `. o O` ramp the operator named for the steam. Nothing here was drawn by an assistant. The capture is the granted file itself rather than a review screenshot, because what was accepted is the operator's ink, not a rendering of it.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/coffee-mug.txt"
+    },
+    {
+      "asset_id": "fixture.ice_cream_cone",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted byte-exactly and unaltered from the hash-bound grant above.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/ice-cream-cone.txt"
+    },
+    {
+      "asset_id": "fixture.mixtape",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted byte-exactly and unaltered from the hash-bound grant above. One row tall because that is how it was drawn.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/mixtape.txt"
+    },
+    {
+      "asset_id": "fixture.popsicle",
+      "profile": "browser-proportional",
+      "states_reviewed": [
+        "idle"
+      ],
+      "verdict": "accepted",
+      "reviewed_at": "2026-08-06",
+      "art_lineage": "The operator's own drawing, promoted from the hash-bound grant above. The only difference from the granted bytes is one trailing space on the final row, which the rectangular cell matrix requires and which adds no ink.",
+      "capture": "src/lateletter/garden/data/operator-granted-art/popsicle.txt"
+    }
+  ],
+  "presentation_recipe_register": {
+    "file": "docs/garden-presentation-recipes.json",
+    "note": "Companion register. This file answers 'is this DRAWING of a gameplay object accepted' (the atlas chain). That file answers 'is this VISIBLE LANGUAGE for disposable presentation accepted' (the recipe chain). The two identity spaces must stay disjoint: a recipe verdict may never confer acceptance on an atlas asset, and an asset verdict may never cover a recipe."
+  },
+  "release_policy": {
+    "note": "PERMANENT rules. These never empty and must never be asserted empty. They state what makes a release unacceptable, not what is currently wrong.",
+    "rules": [
+      "A nonblank emitted cell with no visual_source_id is anonymous paint and blocks a release.",
+      "A visual_source_id naming no record in either register is unknown paint and blocks a release.",
+      "A reachable visual source blocks a release when its verdict is not accepted or accepted_as_deployed.",
+      "review_candidates may appear only in the local unreleased review surface. It never licenses a production deploy.",
+      "A recipe_id and an asset_id may never be equal.",
+      "A recipe record may never carry an object_id, at any nesting depth; object_id is inherited only from canonical projection.",
+      "Paint location is never a release criterion. Renderer-local paint is permitted; anonymous paint is not.",
+      "A law is never the visual source of an emitted cell. A law decides how cells look and is reached through law_refs; naming one as a cell's source hides which recipe drew it.",
+      "Acceptance and presence are separate. 'The operator asked for this' (presence_requirement) never substitutes for a verdict on the drawing, and a required presentation that is absent blocks a release exactly as a rejected one does.",
+      "A source reference is provenance, not approval. Only a decision_ref resolving to a real anchor, quoting the operator verbatim, is evidence that anything was accepted."
+    ]
+  },
+  "active_release_blockers": {
+    "note": "COMPUTED conditions, recomputed by scripts/validate_presentation_identity.py. This list can legitimately become empty, and a root-product deploy requires exactly that. Do not hand-edit: regenerate. The KEYS below are asserted to equal the keys the validator returns, so a condition cannot be added in code and left undocumented here, or described here and never computed. TEMPORARY EXCEPTION: unresolvable_paint_call_forms and writers_that_cannot_record_identity are frozen static-analyzer diagnostics retained only as a conservative stop sign until the public runtime-frame invariant lands. They are not acceptance authority and must be deleted, along with the writer graph and synthetic internal-Raster authority, in the same patch that installs the runtime PresentationFrame check.",
+    "computed_by": "scripts/validate_presentation_identity.py",
+    "conditions": {
+      "unaccepted_atlas_assets": "atlas assets whose verdict is not accepted",
+      "unaccepted_recipes": "registered recipes whose verdict is not accepted or accepted_as_deployed",
+      "required_presentation_absent": "recipes the operator required whose candidate counterpart is absent or rejected; here the DEFECT IS THE ABSENCE, so no amount of correct drawing elsewhere clears it",
+      "divergent_implementations_claiming_approval": "painted frame sources citing an accepted_as_deployed id from an implementation that does not reproduce the deployed one exactly (candidate_status is not 'exact'), which would launder an unreviewed drawing through an approved id. Reported from the composed gate frame's painted sources since 2026-08-03; clears at the legacy-presentation restoration step, whose exit is exact reproduction.",
+      "gameplay_art_outside_atlas": "plantArt, animalArt, collectibleArt and the fixtureArt fallback, painted renderer-locally with no per-asset verdict row and not yet versioned atlas assets",
+      "operator_review_outstanding": "the four DIRECT ACCEPTANCE verdicts in docs/garden-review-verdicts.json -- assets, composition, motion package, emotional moments -- that the operator has not given. The one gate no machine can clear: every other condition here measures structure, and none of them can say whether the Garden is worth looking at. Blocked separately because they fail for different reasons; collapsing them would let three unexamined judgements ride on the easiest one. No test result, density number, opened screenshot or successful build can clear any of them.",
+      "unaccepted_starter_composition": "the STARTER COMPOSITION -- which population the recipient's world opens with -- when the operator has not accepted it. Distinct from the per-asset verdicts above: a garden can be made entirely of accepted drawings and still be the wrong garden. Cleared only by a matching record in docs/garden-composition-acceptance.json, keyed on the composition revision AND the roster fingerprint together, so re-rostering under the same revision inherits nothing. This is what makes that register live policy instead of a file only tests read.",
+      "runtime_frame_violations": "the public runtime-frame invariant, installed 2026-08-03 in the same patch that deleted the frozen static-analyzer diagnostics it replaces. scripts/compose_frame_check.mjs composes the starter frame through the public GardenPresentation interface under the committed accepted-paint authority and applies every clause of the executable presentation contract to the primitives that come back: emitted-primitive identity, paint authority, visible-subset-of-attempted, region ownership, determinism, hostname independence, and zero suppression -- a release frame that needed suppression tried to paint something unaccepted. Anonymous paint, unknown ids and laws named as sources all surface here, as properties of an actually composed frame rather than of source text."
+    }
+  },
+  "registry_invariants_note": "Invariants this registry asserts about ITSELF, named by ID. The sentences behind the IDs live in scripts/validate_presentation_identity.py (REGISTRY_INVARIANTS), which is the only place they can be changed. There is deliberately no free-form list here: a rule written in prose reads as authority to the next person while no check can tell it apart from the rules that belong. Release conditions are not invariants and are not here -- they live in release_policy (permanent) and active_release_blockers (computed).",
+  "registry_invariants": [
+    "asset_verdict_vocabulary_is_enumerated",
+    "machine_checks_are_admission_not_acceptance",
+    "unaccepted_assets_get_no_acceptance_vocabulary"
+  ]
+}

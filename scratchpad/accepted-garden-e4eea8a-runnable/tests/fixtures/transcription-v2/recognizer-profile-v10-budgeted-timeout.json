@@ -1,0 +1,14 @@
+{
+  "status": "profile_incomplete_timeout_boundary_bug",
+  "authority": "diagnostic_only",
+  "source_profile": "recognizer-profile-v10-budgeted.json",
+  "source_profile_sha256": "ac29842fd363107afdfe4b35ed14be827d8b62c32af63fee5e85ca2dbdf8bb5d",
+  "completed_snapshot": {
+    "tesseract-offline": 10,
+    "fixed-lattice-structural": 10,
+    "structural-unicode-row": 8
+  },
+  "reason": "SIGALRM was converted into an adapter-exception record by the benchmark's Exception boundary; this snapshot is not a valid budget result",
+  "candidate_or_acceptance_changed": false,
+  "next": "fresh profile after non-Exception budget signal correction"
+}

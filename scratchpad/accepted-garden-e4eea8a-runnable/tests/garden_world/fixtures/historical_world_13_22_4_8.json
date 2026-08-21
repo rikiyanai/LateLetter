@@ -1,0 +1,3399 @@
+{
+ "animals": [
+  {
+   "animal_id": "animal:0dd8989a30fbc9d9cc616d1c",
+   "authored_preferences": [],
+   "authored_prohibitions": [],
+   "bond_points": 0,
+   "bond_tier": 0,
+   "choreography_lock": null,
+   "cooldowns": {},
+   "current_intent": "idle",
+   "decision_index": 0,
+   "display_name": null,
+   "energy": 60,
+   "favorite_fixture_ids": [],
+   "high_level_state": "awake",
+   "intent_started_at": 0,
+   "interaction_counts": {},
+   "minimum_dwell_until": 0,
+   "personality": {
+    "boldness": 43,
+    "curiosity": 67,
+    "day_preference": 44,
+    "food_motivation": 40,
+    "patience": 35,
+    "playfulness": 67,
+    "routine_strength": 72,
+    "sociability": 61
+   },
+   "personality_note": null,
+   "play_appetite": 50,
+   "position": [
+    14,
+    53
+   ],
+   "recent_memories": [],
+   "rest_appetite": 40,
+   "session_interactions": [],
+   "social_appetite": 50,
+   "species_id": "bird"
+  },
+  {
+   "animal_id": "animal:0e4e72e28edff66ddd7d2af3",
+   "authored_preferences": [],
+   "authored_prohibitions": [],
+   "bond_points": 0,
+   "bond_tier": 0,
+   "choreography_lock": null,
+   "cooldowns": {},
+   "current_intent": "idle",
+   "decision_index": 0,
+   "display_name": null,
+   "energy": 60,
+   "favorite_fixture_ids": [],
+   "high_level_state": "awake",
+   "intent_started_at": 0,
+   "interaction_counts": {},
+   "minimum_dwell_until": 0,
+   "personality": {
+    "boldness": 69,
+    "curiosity": 61,
+    "day_preference": 67,
+    "food_motivation": 44,
+    "patience": 45,
+    "playfulness": 21,
+    "routine_strength": 50,
+    "sociability": 63
+   },
+   "personality_note": null,
+   "play_appetite": 50,
+   "position": [
+    42,
+    61
+   ],
+   "recent_memories": [],
+   "rest_appetite": 40,
+   "session_interactions": [],
+   "social_appetite": 50,
+   "species_id": "cat"
+  },
+  {
+   "animal_id": "animal:1aa1330eb3615cfd54a218f5",
+   "authored_preferences": [],
+   "authored_prohibitions": [],
+   "bond_points": 0,
+   "bond_tier": 0,
+   "choreography_lock": null,
+   "cooldowns": {},
+   "current_intent": "idle",
+   "decision_index": 0,
+   "display_name": null,
+   "energy": 60,
+   "favorite_fixture_ids": [],
+   "high_level_state": "awake",
+   "intent_started_at": 0,
+   "interaction_counts": {},
+   "minimum_dwell_until": 0,
+   "personality": {
+    "boldness": 74,
+    "curiosity": 39,
+    "day_preference": 72,
+    "food_motivation": 41,
+    "patience": 67,
+    "playfulness": 25,
+    "routine_strength": 33,
+    "sociability": 64
+   },
+   "personality_note": null,
+   "play_appetite": 50,
+   "position": [
+    27,
+    40
+   ],
+   "recent_memories": [],
+   "rest_appetite": 40,
+   "session_interactions": [],
+   "social_appetite": 50,
+   "species_id": "turtle"
+  },
+  {
+   "animal_id": "animal:495fc4997961f8359542bbb3",
+   "authored_preferences": [],
+   "authored_prohibitions": [],
+   "bond_points": 0,
+   "bond_tier": 0,
+   "choreography_lock": null,
+   "cooldowns": {},
+   "current_intent": "idle",
+   "decision_index": 0,
+   "display_name": null,
+   "energy": 60,
+   "favorite_fixture_ids": [],
+   "high_level_state": "awake",
+   "intent_started_at": 0,
+   "interaction_counts": {},
+   "minimum_dwell_until": 0,
+   "personality": {
+    "boldness": 79,
+    "curiosity": 66,
+    "day_preference": 30,
+    "food_motivation": 50,
+    "patience": 22,
+    "playfulness": 58,
+    "routine_strength": 54,
+    "sociability": 50
+   },
+   "personality_note": null,
+   "play_appetite": 50,
+   "position": [
+    87,
+    41
+   ],
+   "recent_memories": [],
+   "rest_appetite": 40,
+   "session_interactions": [],
+   "social_appetite": 50,
+   "species_id": "rabbit"
+  }
+ ],
+ "collectibles": [
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:52cbedd24c36a2d721827938",
+   "description": "A leaf showing the oak's branching veins.",
+   "family": "plant_species",
+   "label": "Oak leaf",
+   "position": [
+    40,
+    24
+   ],
+   "provenance": "recipient-grown"
+  },
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:52cbedd24c36a2d721827938#legacy3",
+   "description": "A leaf showing the oak's branching veins.",
+   "family": "plant_species",
+   "label": "Oak leaf",
+   "position": [
+    46,
+    24
+   ],
+   "provenance": "recipient-grown"
+  },
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:52cbedd24c36a2d721827938#legacy6",
+   "description": "A leaf showing the oak's branching veins.",
+   "family": "plant_species",
+   "label": "Oak leaf",
+   "position": [
+    49,
+    24
+   ],
+   "provenance": "recipient-grown"
+  },
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:68771918bfd0022c1664596d",
+   "description": "A small autumn find beneath the trees.",
+   "family": "seasonal_natural_find",
+   "label": "Fallen acorn",
+   "position": [
+    25,
+    61
+   ],
+   "provenance": "procedural"
+  },
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:68771918bfd0022c1664596d#legacy4",
+   "description": "A small autumn find beneath the trees.",
+   "family": "seasonal_natural_find",
+   "label": "Fallen acorn",
+   "position": [
+    32,
+    61
+   ],
+   "provenance": "procedural"
+  },
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:68771918bfd0022c1664596d#legacy7",
+   "description": "A small autumn find beneath the trees.",
+   "family": "seasonal_natural_find",
+   "label": "Fallen acorn",
+   "position": [
+    35,
+    61
+   ],
+   "provenance": "procedural"
+  },
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:a1dc7753eb110f19d8236f07",
+   "description": "A fragrant sprig from a tended lavender plant.",
+   "family": "plant_species",
+   "label": "Lavender sprig",
+   "position": [
+    73,
+    51
+   ],
+   "provenance": "recipient-grown"
+  },
+  {
+   "authored": false,
+   "collected": false,
+   "collectible_id": "collectible:a1dc7753eb110f19d8236f07#legacy5",
+   "description": "A fragrant sprig from a tended lavender plant.",
+   "family": "plant_species",
+   "label": "Lavender sprig",
+   "position": [
+    81,
+    51
+   ],
+   "provenance": "recipient-grown"
+  }
+ ],
+ "command_sequence": 0,
+ "composition_fingerprint": null,
+ "composition_version": null,
+ "effective_time": 0,
+ "engine_version": "garden-world-internal-v1",
+ "event_trace": [],
+ "fixtures": [
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "stepping_stones",
+   "fixture_id": "fixture:7e8ba440508c6a0511c96438",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    31,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "stepping_stones",
+   "fixture_id": "fixture:7e8ba440508c6a0511c96438#legacy10",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    43,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "stepping_stones",
+   "fixture_id": "fixture:7e8ba440508c6a0511c96438#legacy15",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    48,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "stepping_stones",
+   "fixture_id": "fixture:7e8ba440508c6a0511c96438#legacy20",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    53,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "stepping_stones",
+   "fixture_id": "fixture:7e8ba440508c6a0511c96438#legacy5",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    38,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "mailbox",
+   "fixture_id": "fixture:806aee7214ef24e5dc7675d6",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    60,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "mailbox",
+   "fixture_id": "fixture:806aee7214ef24e5dc7675d6#legacy11",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    73,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "mailbox",
+   "fixture_id": "fixture:806aee7214ef24e5dc7675d6#legacy16",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    78,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "mailbox",
+   "fixture_id": "fixture:806aee7214ef24e5dc7675d6#legacy21",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    83,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "mailbox",
+   "fixture_id": "fixture:806aee7214ef24e5dc7675d6#legacy6",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    68,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "lantern",
+   "fixture_id": "fixture:87022569819b5f74506147b0",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    74,
+    51
+   ],
+   "rotation": 90
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "lantern",
+   "fixture_id": "fixture:87022569819b5f74506147b0#legacy12",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    88,
+    51
+   ],
+   "rotation": 90
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "lantern",
+   "fixture_id": "fixture:87022569819b5f74506147b0#legacy17",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    93,
+    51
+   ],
+   "rotation": 90
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "lantern",
+   "fixture_id": "fixture:87022569819b5f74506147b0#legacy7",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    83,
+    51
+   ],
+   "rotation": 90
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "bench",
+   "fixture_id": "fixture:bf2b75284b99c298e3403fef",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    45,
+    51
+   ],
+   "rotation": 180
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "bench",
+   "fixture_id": "fixture:bf2b75284b99c298e3403fef#legacy13",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    60,
+    51
+   ],
+   "rotation": 180
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "bench",
+   "fixture_id": "fixture:bf2b75284b99c298e3403fef#legacy18",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    65,
+    51
+   ],
+   "rotation": 180
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "bench",
+   "fixture_id": "fixture:bf2b75284b99c298e3403fef#legacy8",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    55,
+    51
+   ],
+   "rotation": 180
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "planter",
+   "fixture_id": "fixture:e7945c0dc485a549f602f331",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    88,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "planter",
+   "fixture_id": "fixture:e7945c0dc485a549f602f331#legacy14",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    104,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "planter",
+   "fixture_id": "fixture:e7945c0dc485a549f602f331#legacy19",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    109,
+    51
+   ],
+   "rotation": 270
+  },
+  {
+   "authored": false,
+   "authored_state": {},
+   "catalog_id": "planter",
+   "fixture_id": "fixture:e7945c0dc485a549f602f331#legacy9",
+   "interaction_count": 0,
+   "last_interaction": null,
+   "position": [
+    99,
+    51
+   ],
+   "rotation": 270
+  }
+ ],
+ "generator_version": null,
+ "inventory": [],
+ "journal": [],
+ "last_observed_wall_time": null,
+ "migrated_from_schema": null,
+ "milestone_receipts": [],
+ "plants": [
+  {
+   "dormant": false,
+   "growth_period_seconds": 86400,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:4ccc1908e92b6deb3008b012",
+   "position": [
+    10,
+    25
+   ],
+   "species_id": "oak",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": 6782,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "branch",
+     "kind": "branch",
+     "maturity_time": 20588,
+     "node_id": "organ:053924724b2c1901f0cf208f",
+     "parent_id": "organ:b1312a4a619fa84bb8f86300"
+    },
+    {
+     "birth_time": 56746,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 64823,
+     "node_id": "organ:09b6b0a70400c3194ed72421",
+     "parent_id": "organ:5282786428adb97aaa48deb7"
+    },
+    {
+     "birth_time": 83200,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 94614,
+     "node_id": "organ:18419698a090d3c439d70726",
+     "parent_id": "organ:58dd79a486c304f3d3b79c0a"
+    },
+    {
+     "birth_time": -8379,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": 2724,
+     "node_id": "organ:460196cb3608b4182787e43d",
+     "parent_id": "organ:b902565545d20fc0e0bd8064"
+    },
+    {
+     "birth_time": 17580,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 21258,
+     "node_id": "organ:4ab93a8bfeb8b3bf1a2dbf89",
+     "parent_id": "organ:64a22132fd7aff9f0ecbb5a3"
+    },
+    {
+     "birth_time": -19250,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -5968,
+     "node_id": "organ:4f2b2e3a7147e3b9f03c2f6a",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": 2004,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 12227,
+     "node_id": "organ:5282786428adb97aaa48deb7",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": -43232,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -29272,
+     "node_id": "organ:5422a0cdaa17d79e0d165bf5",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": -19900,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": -15043,
+     "node_id": "organ:58dd79a486c304f3d3b79c0a",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": -34122,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -22350,
+     "node_id": "organ:64a22132fd7aff9f0ecbb5a3",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": -67500,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -67500,
+     "node_id": "organ:882d28f2de3129faaf243b0a",
+     "parent_id": null
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 4797,
+     "node_id": "organ:8ff4d5e8408b14339b0a7830",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": -20754,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -12265,
+     "node_id": "organ:92e5915d1a284eb52d1ea6fd",
+     "parent_id": "organ:58dd79a486c304f3d3b79c0a"
+    },
+    {
+     "birth_time": 49470,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 53558,
+     "node_id": "organ:afd8f847dc152271b3157a57",
+     "parent_id": "organ:b902565545d20fc0e0bd8064"
+    },
+    {
+     "birth_time": -64191,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -53614,
+     "node_id": "organ:b1312a4a619fa84bb8f86300",
+     "parent_id": "organ:882d28f2de3129faaf243b0a"
+    },
+    {
+     "birth_time": -24779,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -14592,
+     "node_id": "organ:b902565545d20fc0e0bd8064",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": -35540,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -28522,
+     "node_id": "organ:bd6c03d5b3eb599f80837e90",
+     "parent_id": "organ:c21b8f907b7a8595ccdc908c"
+    },
+    {
+     "birth_time": -13160,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": -7245,
+     "node_id": "organ:bf2b7e267d7bbcef66dab331",
+     "parent_id": "organ:053924724b2c1901f0cf208f"
+    },
+    {
+     "birth_time": -56876,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "broadleaf",
+     "kind": "stem",
+     "maturity_time": -42532,
+     "node_id": "organ:c21b8f907b7a8595ccdc908c",
+     "parent_id": "organ:b1312a4a619fa84bb8f86300"
+    },
+    {
+     "birth_time": 34590,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": 44639,
+     "node_id": "organ:c6c377028207bb3654cffc57",
+     "parent_id": "organ:b902565545d20fc0e0bd8064"
+    },
+    {
+     "birth_time": -49542,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "broadleaf",
+     "kind": "stem",
+     "maturity_time": -41719,
+     "node_id": "organ:cf1d92b1648b7c86d3d49cae",
+     "parent_id": "organ:c21b8f907b7a8595ccdc908c"
+    },
+    {
+     "birth_time": -12445,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -3859,
+     "node_id": "organ:d58cc16bdcce377cb8fbeed0",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": 24640,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 38571,
+     "node_id": "organ:da1eb5571245c7c5664e3a0d",
+     "parent_id": "organ:64a22132fd7aff9f0ecbb5a3"
+    },
+    {
+     "birth_time": -21156,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -9085,
+     "node_id": "organ:e86f8423c2043a332303dc87",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 86400,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:4ccc1908e92b6deb3008b012#legacy8",
+   "position": [
+    19,
+    25
+   ],
+   "species_id": "oak",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": 6782,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "branch",
+     "kind": "branch",
+     "maturity_time": 20588,
+     "node_id": "organ:053924724b2c1901f0cf208f",
+     "parent_id": "organ:b1312a4a619fa84bb8f86300"
+    },
+    {
+     "birth_time": 56746,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 64823,
+     "node_id": "organ:09b6b0a70400c3194ed72421",
+     "parent_id": "organ:5282786428adb97aaa48deb7"
+    },
+    {
+     "birth_time": 83200,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 94614,
+     "node_id": "organ:18419698a090d3c439d70726",
+     "parent_id": "organ:58dd79a486c304f3d3b79c0a"
+    },
+    {
+     "birth_time": -8379,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": 2724,
+     "node_id": "organ:460196cb3608b4182787e43d",
+     "parent_id": "organ:b902565545d20fc0e0bd8064"
+    },
+    {
+     "birth_time": 17580,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 21258,
+     "node_id": "organ:4ab93a8bfeb8b3bf1a2dbf89",
+     "parent_id": "organ:64a22132fd7aff9f0ecbb5a3"
+    },
+    {
+     "birth_time": -19250,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -5968,
+     "node_id": "organ:4f2b2e3a7147e3b9f03c2f6a",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": 2004,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 12227,
+     "node_id": "organ:5282786428adb97aaa48deb7",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": -43232,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -29272,
+     "node_id": "organ:5422a0cdaa17d79e0d165bf5",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": -19900,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": -15043,
+     "node_id": "organ:58dd79a486c304f3d3b79c0a",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": -34122,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -22350,
+     "node_id": "organ:64a22132fd7aff9f0ecbb5a3",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": -67500,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -67500,
+     "node_id": "organ:882d28f2de3129faaf243b0a",
+     "parent_id": null
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 4797,
+     "node_id": "organ:8ff4d5e8408b14339b0a7830",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": -20754,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -12265,
+     "node_id": "organ:92e5915d1a284eb52d1ea6fd",
+     "parent_id": "organ:58dd79a486c304f3d3b79c0a"
+    },
+    {
+     "birth_time": 49470,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 53558,
+     "node_id": "organ:afd8f847dc152271b3157a57",
+     "parent_id": "organ:b902565545d20fc0e0bd8064"
+    },
+    {
+     "birth_time": -64191,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -53614,
+     "node_id": "organ:b1312a4a619fa84bb8f86300",
+     "parent_id": "organ:882d28f2de3129faaf243b0a"
+    },
+    {
+     "birth_time": -24779,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -14592,
+     "node_id": "organ:b902565545d20fc0e0bd8064",
+     "parent_id": "organ:cf1d92b1648b7c86d3d49cae"
+    },
+    {
+     "birth_time": -35540,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -28522,
+     "node_id": "organ:bd6c03d5b3eb599f80837e90",
+     "parent_id": "organ:c21b8f907b7a8595ccdc908c"
+    },
+    {
+     "birth_time": -13160,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": -7245,
+     "node_id": "organ:bf2b7e267d7bbcef66dab331",
+     "parent_id": "organ:053924724b2c1901f0cf208f"
+    },
+    {
+     "birth_time": -56876,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "broadleaf",
+     "kind": "stem",
+     "maturity_time": -42532,
+     "node_id": "organ:c21b8f907b7a8595ccdc908c",
+     "parent_id": "organ:b1312a4a619fa84bb8f86300"
+    },
+    {
+     "birth_time": 34590,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": 44639,
+     "node_id": "organ:c6c377028207bb3654cffc57",
+     "parent_id": "organ:b902565545d20fc0e0bd8064"
+    },
+    {
+     "birth_time": -49542,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "broadleaf",
+     "kind": "stem",
+     "maturity_time": -41719,
+     "node_id": "organ:cf1d92b1648b7c86d3d49cae",
+     "parent_id": "organ:c21b8f907b7a8595ccdc908c"
+    },
+    {
+     "birth_time": -12445,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -3859,
+     "node_id": "organ:d58cc16bdcce377cb8fbeed0",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    },
+    {
+     "birth_time": 24640,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 38571,
+     "node_id": "organ:da1eb5571245c7c5664e3a0d",
+     "parent_id": "organ:64a22132fd7aff9f0ecbb5a3"
+    },
+    {
+     "birth_time": -21156,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -9085,
+     "node_id": "organ:e86f8423c2043a332303dc87",
+     "parent_id": "organ:bd6c03d5b3eb599f80837e90"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 86400,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:52b302180504b22b699ebe1a",
+   "position": [
+    105,
+    16
+   ],
+   "species_id": "willow",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": -32041,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "branch",
+     "maturity_time": -17723,
+     "node_id": "organ:0397f5610d35f68a6e80be0e",
+     "parent_id": "organ:284cc0bf8298ad1505988496"
+    },
+    {
+     "birth_time": -85093,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "stem",
+     "maturity_time": -80017,
+     "node_id": "organ:09a4fb7f92d7e660cb65903a",
+     "parent_id": "organ:ae350d13e283abe8b51141cb"
+    },
+    {
+     "birth_time": 42513,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "leaf",
+     "maturity_time": 49307,
+     "node_id": "organ:180713dde3934c90f61aa98e",
+     "parent_id": "organ:ae350d13e283abe8b51141cb"
+    },
+    {
+     "birth_time": 57125,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 64308,
+     "node_id": "organ:2791aad0f59059d163431b40",
+     "parent_id": "organ:0397f5610d35f68a6e80be0e"
+    },
+    {
+     "birth_time": -68648,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -58339,
+     "node_id": "organ:284cc0bf8298ad1505988496",
+     "parent_id": "organ:e1130659c203596cde00c7b9"
+    },
+    {
+     "birth_time": -83572,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -72123,
+     "node_id": "organ:2a6f335507197012164c7336",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": -61558,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -54068,
+     "node_id": "organ:2b0187c6a3335f8bf75a835f",
+     "parent_id": "organ:bb16f8a579fa32db96cb9c37"
+    },
+    {
+     "birth_time": 6787,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "drooping-leaf",
+     "kind": "leaf",
+     "maturity_time": 11447,
+     "node_id": "organ:383c028395ff391c6c15756e",
+     "parent_id": "organ:55cb3c266fb48a79a951dc2b"
+    },
+    {
+     "birth_time": -71451,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -65551,
+     "node_id": "organ:55cb3c266fb48a79a951dc2b",
+     "parent_id": "organ:f9e0a3320ae7e8b83fe93900"
+    },
+    {
+     "birth_time": -53759,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "branch",
+     "maturity_time": -41900,
+     "node_id": "organ:6ba7d8be6ffea60659d7a15f",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": -43483,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -37625,
+     "node_id": "organ:74d3ff455b60e168ce563362",
+     "parent_id": "organ:55cb3c266fb48a79a951dc2b"
+    },
+    {
+     "birth_time": -75252,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -66922,
+     "node_id": "organ:7fd1a5e1e19d7780a719186c",
+     "parent_id": "organ:f9e0a3320ae7e8b83fe93900"
+    },
+    {
+     "birth_time": -94337,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -89599,
+     "node_id": "organ:ae350d13e283abe8b51141cb",
+     "parent_id": "organ:c83383b4d1fec1aec0bb923a"
+    },
+    {
+     "birth_time": -58317,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -53186,
+     "node_id": "organ:bb16f8a579fa32db96cb9c37",
+     "parent_id": "organ:c83383b4d1fec1aec0bb923a"
+    },
+    {
+     "birth_time": -99427,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -99427,
+     "node_id": "organ:c83383b4d1fec1aec0bb923a",
+     "parent_id": null
+    },
+    {
+     "birth_time": 2365,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 8778,
+     "node_id": "organ:db67409ec8101f612bd6132b",
+     "parent_id": "organ:284cc0bf8298ad1505988496"
+    },
+    {
+     "birth_time": -65209,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -55503,
+     "node_id": "organ:dbff48f2142fe9d59489f64e",
+     "parent_id": "organ:55cb3c266fb48a79a951dc2b"
+    },
+    {
+     "birth_time": 12875,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 17403,
+     "node_id": "organ:de9fb48c7a862adae0e82fe0",
+     "parent_id": "organ:dbff48f2142fe9d59489f64e"
+    },
+    {
+     "birth_time": -59485,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -49345,
+     "node_id": "organ:e1130659c203596cde00c7b9",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": -18187,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -13875,
+     "node_id": "organ:edfbc61b8f86c73ce09563f6",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 9571,
+     "node_id": "organ:efdc5c6ed2ea9d65daae3463",
+     "parent_id": "organ:7fd1a5e1e19d7780a719186c"
+    },
+    {
+     "birth_time": -49532,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": -45671,
+     "node_id": "organ:f3ca71208970e5a94a66e28f",
+     "parent_id": "organ:bb16f8a579fa32db96cb9c37"
+    },
+    {
+     "birth_time": -71599,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -63924,
+     "node_id": "organ:f9e0a3320ae7e8b83fe93900",
+     "parent_id": "organ:c83383b4d1fec1aec0bb923a"
+    },
+    {
+     "birth_time": -2323,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "leaf",
+     "maturity_time": 8450,
+     "node_id": "organ:ff97f44bcb3e21302faaf67c",
+     "parent_id": "organ:db67409ec8101f612bd6132b"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 86400,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:52b302180504b22b699ebe1a#legacy9",
+   "position": [
+    115,
+    16
+   ],
+   "species_id": "willow",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": -32041,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "branch",
+     "maturity_time": -17723,
+     "node_id": "organ:0397f5610d35f68a6e80be0e",
+     "parent_id": "organ:284cc0bf8298ad1505988496"
+    },
+    {
+     "birth_time": -85093,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "stem",
+     "maturity_time": -80017,
+     "node_id": "organ:09a4fb7f92d7e660cb65903a",
+     "parent_id": "organ:ae350d13e283abe8b51141cb"
+    },
+    {
+     "birth_time": 42513,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "leaf",
+     "maturity_time": 49307,
+     "node_id": "organ:180713dde3934c90f61aa98e",
+     "parent_id": "organ:ae350d13e283abe8b51141cb"
+    },
+    {
+     "birth_time": 57125,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 64308,
+     "node_id": "organ:2791aad0f59059d163431b40",
+     "parent_id": "organ:0397f5610d35f68a6e80be0e"
+    },
+    {
+     "birth_time": -68648,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -58339,
+     "node_id": "organ:284cc0bf8298ad1505988496",
+     "parent_id": "organ:e1130659c203596cde00c7b9"
+    },
+    {
+     "birth_time": -83572,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -72123,
+     "node_id": "organ:2a6f335507197012164c7336",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": -61558,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -54068,
+     "node_id": "organ:2b0187c6a3335f8bf75a835f",
+     "parent_id": "organ:bb16f8a579fa32db96cb9c37"
+    },
+    {
+     "birth_time": 6787,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "drooping-leaf",
+     "kind": "leaf",
+     "maturity_time": 11447,
+     "node_id": "organ:383c028395ff391c6c15756e",
+     "parent_id": "organ:55cb3c266fb48a79a951dc2b"
+    },
+    {
+     "birth_time": -71451,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -65551,
+     "node_id": "organ:55cb3c266fb48a79a951dc2b",
+     "parent_id": "organ:f9e0a3320ae7e8b83fe93900"
+    },
+    {
+     "birth_time": -53759,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "branch",
+     "maturity_time": -41900,
+     "node_id": "organ:6ba7d8be6ffea60659d7a15f",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": -43483,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -37625,
+     "node_id": "organ:74d3ff455b60e168ce563362",
+     "parent_id": "organ:55cb3c266fb48a79a951dc2b"
+    },
+    {
+     "birth_time": -75252,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -66922,
+     "node_id": "organ:7fd1a5e1e19d7780a719186c",
+     "parent_id": "organ:f9e0a3320ae7e8b83fe93900"
+    },
+    {
+     "birth_time": -94337,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -89599,
+     "node_id": "organ:ae350d13e283abe8b51141cb",
+     "parent_id": "organ:c83383b4d1fec1aec0bb923a"
+    },
+    {
+     "birth_time": -58317,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "trunk",
+     "kind": "branch",
+     "maturity_time": -53186,
+     "node_id": "organ:bb16f8a579fa32db96cb9c37",
+     "parent_id": "organ:c83383b4d1fec1aec0bb923a"
+    },
+    {
+     "birth_time": -99427,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -99427,
+     "node_id": "organ:c83383b4d1fec1aec0bb923a",
+     "parent_id": null
+    },
+    {
+     "birth_time": 2365,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 8778,
+     "node_id": "organ:db67409ec8101f612bd6132b",
+     "parent_id": "organ:284cc0bf8298ad1505988496"
+    },
+    {
+     "birth_time": -65209,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -55503,
+     "node_id": "organ:dbff48f2142fe9d59489f64e",
+     "parent_id": "organ:55cb3c266fb48a79a951dc2b"
+    },
+    {
+     "birth_time": 12875,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": 17403,
+     "node_id": "organ:de9fb48c7a862adae0e82fe0",
+     "parent_id": "organ:dbff48f2142fe9d59489f64e"
+    },
+    {
+     "birth_time": -59485,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "branch",
+     "kind": "stem",
+     "maturity_time": -49345,
+     "node_id": "organ:e1130659c203596cde00c7b9",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": -18187,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "drooping-leaf",
+     "kind": "branch",
+     "maturity_time": -13875,
+     "node_id": "organ:edfbc61b8f86c73ce09563f6",
+     "parent_id": "organ:09a4fb7f92d7e660cb65903a"
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "trunk",
+     "kind": "leaf",
+     "maturity_time": 9571,
+     "node_id": "organ:efdc5c6ed2ea9d65daae3463",
+     "parent_id": "organ:7fd1a5e1e19d7780a719186c"
+    },
+    {
+     "birth_time": -49532,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "branch",
+     "kind": "leaf",
+     "maturity_time": -45671,
+     "node_id": "organ:f3ca71208970e5a94a66e28f",
+     "parent_id": "organ:bb16f8a579fa32db96cb9c37"
+    },
+    {
+     "birth_time": -71599,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "trunk",
+     "kind": "stem",
+     "maturity_time": -63924,
+     "node_id": "organ:f9e0a3320ae7e8b83fe93900",
+     "parent_id": "organ:c83383b4d1fec1aec0bb923a"
+    },
+    {
+     "birth_time": -2323,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "drooping-leaf",
+     "kind": "leaf",
+     "maturity_time": 8450,
+     "node_id": "organ:ff97f44bcb3e21302faaf67c",
+     "parent_id": "organ:db67409ec8101f612bd6132b"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 32400,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:57199e4a32f1ac968d574332",
+   "position": [
+    67,
+    58
+   ],
+   "species_id": "lavender",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": 2752,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "lavender-bloom",
+     "kind": "leaf",
+     "maturity_time": 11941,
+     "node_id": "organ:0dfe6fc18f0494a481e4e35a",
+     "parent_id": "organ:8f41a28a56f0a153d10fc5bb"
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "lavender-bloom",
+     "kind": "leaf",
+     "maturity_time": 4255,
+     "node_id": "organ:25d687fd39bdb245cb73a571",
+     "parent_id": "organ:c9a1ccbf92b2fed6723eb1c5"
+    },
+    {
+     "birth_time": -21388,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "lavender-bloom",
+     "kind": "stem",
+     "maturity_time": -12709,
+     "node_id": "organ:2c963f2abc26c9005ba58212",
+     "parent_id": "organ:c9a1ccbf92b2fed6723eb1c5"
+    },
+    {
+     "birth_time": -10930,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "narrow-leaf",
+     "kind": "stem",
+     "maturity_time": 609,
+     "node_id": "organ:342631f64d5630e3236e6bad",
+     "parent_id": "organ:8f41a28a56f0a153d10fc5bb"
+    },
+    {
+     "birth_time": 10772,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "lavender-bloom",
+     "kind": "leaf",
+     "maturity_time": 20492,
+     "node_id": "organ:8b93bbdaa24c3711fbc1291e",
+     "parent_id": "organ:0dfe6fc18f0494a481e4e35a"
+    },
+    {
+     "birth_time": -17454,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -13097,
+     "node_id": "organ:8f41a28a56f0a153d10fc5bb",
+     "parent_id": "organ:2c963f2abc26c9005ba58212"
+    },
+    {
+     "birth_time": 9671,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "narrow-leaf",
+     "kind": "bloom",
+     "maturity_time": 13942,
+     "node_id": "organ:93ecb161a5b97f5d36ff4e6d",
+     "parent_id": "organ:c9a1ccbf92b2fed6723eb1c5"
+    },
+    {
+     "birth_time": 17832,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "lavender-bloom",
+     "kind": "bloom",
+     "maturity_time": 22719,
+     "node_id": "organ:9c28366f8e8c5537843ae32e",
+     "parent_id": "organ:25d687fd39bdb245cb73a571"
+    },
+    {
+     "birth_time": -25000,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -25000,
+     "node_id": "organ:c9a1ccbf92b2fed6723eb1c5",
+     "parent_id": null
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 32400,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:57199e4a32f1ac968d574332#legacy10",
+   "position": [
+    78,
+    58
+   ],
+   "species_id": "lavender",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": 2752,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "lavender-bloom",
+     "kind": "leaf",
+     "maturity_time": 11941,
+     "node_id": "organ:0dfe6fc18f0494a481e4e35a",
+     "parent_id": "organ:8f41a28a56f0a153d10fc5bb"
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "lavender-bloom",
+     "kind": "leaf",
+     "maturity_time": 4255,
+     "node_id": "organ:25d687fd39bdb245cb73a571",
+     "parent_id": "organ:c9a1ccbf92b2fed6723eb1c5"
+    },
+    {
+     "birth_time": -21388,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "lavender-bloom",
+     "kind": "stem",
+     "maturity_time": -12709,
+     "node_id": "organ:2c963f2abc26c9005ba58212",
+     "parent_id": "organ:c9a1ccbf92b2fed6723eb1c5"
+    },
+    {
+     "birth_time": -10930,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "narrow-leaf",
+     "kind": "stem",
+     "maturity_time": 609,
+     "node_id": "organ:342631f64d5630e3236e6bad",
+     "parent_id": "organ:8f41a28a56f0a153d10fc5bb"
+    },
+    {
+     "birth_time": 10772,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "lavender-bloom",
+     "kind": "leaf",
+     "maturity_time": 20492,
+     "node_id": "organ:8b93bbdaa24c3711fbc1291e",
+     "parent_id": "organ:0dfe6fc18f0494a481e4e35a"
+    },
+    {
+     "birth_time": -17454,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -13097,
+     "node_id": "organ:8f41a28a56f0a153d10fc5bb",
+     "parent_id": "organ:2c963f2abc26c9005ba58212"
+    },
+    {
+     "birth_time": 9671,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "narrow-leaf",
+     "kind": "bloom",
+     "maturity_time": 13942,
+     "node_id": "organ:93ecb161a5b97f5d36ff4e6d",
+     "parent_id": "organ:c9a1ccbf92b2fed6723eb1c5"
+    },
+    {
+     "birth_time": 17832,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "lavender-bloom",
+     "kind": "bloom",
+     "maturity_time": 22719,
+     "node_id": "organ:9c28366f8e8c5537843ae32e",
+     "parent_id": "organ:25d687fd39bdb245cb73a571"
+    },
+    {
+     "birth_time": -25000,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -25000,
+     "node_id": "organ:c9a1ccbf92b2fed6723eb1c5",
+     "parent_id": null
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 43200,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:581d5f3639b4a032d6691e27",
+   "position": [
+    28,
+    34
+   ],
+   "species_id": "water_lily",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": -7400,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "rhizome",
+     "kind": "leaf",
+     "maturity_time": -604,
+     "node_id": "organ:29bcfea250886d9ccb0d3b46",
+     "parent_id": "organ:d262358419be367dd5752772"
+    },
+    {
+     "birth_time": -9441,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "lily-pad",
+     "kind": "leaf",
+     "maturity_time": 1735,
+     "node_id": "organ:32bbf50cbdc99b6fdb77f0bb",
+     "parent_id": "organ:29bcfea250886d9ccb0d3b46"
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "lily-pad",
+     "kind": "leaf",
+     "maturity_time": 11544,
+     "node_id": "organ:34ea0ab02660c1d206b9aa36",
+     "parent_id": "organ:d262358419be367dd5752772"
+    },
+    {
+     "birth_time": -21204,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -21204,
+     "node_id": "organ:67ce3e06e0218a62da2e8e9a",
+     "parent_id": null
+    },
+    {
+     "birth_time": 5896,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "lily-pad",
+     "kind": "bloom",
+     "maturity_time": 11392,
+     "node_id": "organ:b7e05d6eee07f2d01b547b4c",
+     "parent_id": "organ:34ea0ab02660c1d206b9aa36"
+    },
+    {
+     "birth_time": -17557,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "rhizome",
+     "kind": "leaf",
+     "maturity_time": -10072,
+     "node_id": "organ:d262358419be367dd5752772",
+     "parent_id": "organ:67ce3e06e0218a62da2e8e9a"
+    },
+    {
+     "birth_time": 10194,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "rhizome",
+     "kind": "bloom",
+     "maturity_time": 14342,
+     "node_id": "organ:e3465dfadf156b8414880316",
+     "parent_id": "organ:d262358419be367dd5752772"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 43200,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:581d5f3639b4a032d6691e27#legacy11",
+   "position": [
+    40,
+    34
+   ],
+   "species_id": "water_lily",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": -7400,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "rhizome",
+     "kind": "leaf",
+     "maturity_time": -604,
+     "node_id": "organ:29bcfea250886d9ccb0d3b46",
+     "parent_id": "organ:d262358419be367dd5752772"
+    },
+    {
+     "birth_time": -9441,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "lily-pad",
+     "kind": "leaf",
+     "maturity_time": 1735,
+     "node_id": "organ:32bbf50cbdc99b6fdb77f0bb",
+     "parent_id": "organ:29bcfea250886d9ccb0d3b46"
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "lily-pad",
+     "kind": "leaf",
+     "maturity_time": 11544,
+     "node_id": "organ:34ea0ab02660c1d206b9aa36",
+     "parent_id": "organ:d262358419be367dd5752772"
+    },
+    {
+     "birth_time": -21204,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -21204,
+     "node_id": "organ:67ce3e06e0218a62da2e8e9a",
+     "parent_id": null
+    },
+    {
+     "birth_time": 5896,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "lily-pad",
+     "kind": "bloom",
+     "maturity_time": 11392,
+     "node_id": "organ:b7e05d6eee07f2d01b547b4c",
+     "parent_id": "organ:34ea0ab02660c1d206b9aa36"
+    },
+    {
+     "birth_time": -17557,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 2,
+     "glyph_family": "rhizome",
+     "kind": "leaf",
+     "maturity_time": -10072,
+     "node_id": "organ:d262358419be367dd5752772",
+     "parent_id": "organ:67ce3e06e0218a62da2e8e9a"
+    },
+    {
+     "birth_time": 10194,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "rhizome",
+     "kind": "bloom",
+     "maturity_time": 14342,
+     "node_id": "organ:e3465dfadf156b8414880316",
+     "parent_id": "organ:d262358419be367dd5752772"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 64800,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:a5e40a121f94d974ec52a0d3",
+   "position": [
+    81,
+    35
+   ],
+   "species_id": "rose",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": -34385,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "rose-bloom",
+     "kind": "stem",
+     "maturity_time": -29926,
+     "node_id": "organ:01ff611099f8e6dff850a55e",
+     "parent_id": "organ:2ac4a0516ee9e334eff1a80f"
+    },
+    {
+     "birth_time": -21112,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "branch",
+     "maturity_time": -16502,
+     "node_id": "organ:13b17097dff3207ca46ea7a3",
+     "parent_id": "organ:3db56a01e84f06a8c16ddb18"
+    },
+    {
+     "birth_time": 5318,
+     "bloom_state": "bud",
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 18724,
+     "node_id": "organ:1c50d2a9e95051f87f492e91",
+     "parent_id": "organ:ee3b56ef070430a0479f83c2"
+    },
+    {
+     "birth_time": -39132,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -39132,
+     "node_id": "organ:2ac4a0516ee9e334eff1a80f",
+     "parent_id": null
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 11879,
+     "node_id": "organ:31706a2427e0c65815cb1e85",
+     "parent_id": "organ:6d29ce51c0de37a745fce774"
+    },
+    {
+     "birth_time": -20505,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -16656,
+     "node_id": "organ:3db56a01e84f06a8c16ddb18",
+     "parent_id": "organ:81391be7ff409945be88993d"
+    },
+    {
+     "birth_time": -12687,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "thorn",
+     "kind": "branch",
+     "maturity_time": -7817,
+     "node_id": "organ:523a008394dd85c5d20e76de",
+     "parent_id": "organ:13b17097dff3207ca46ea7a3"
+    },
+    {
+     "birth_time": 12244,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "rose-bloom",
+     "kind": "branch",
+     "maturity_time": 20865,
+     "node_id": "organ:6d29ce51c0de37a745fce774",
+     "parent_id": "organ:c7f285a12bfb62fdf1958a61"
+    },
+    {
+     "birth_time": -29310,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -19841,
+     "node_id": "organ:81391be7ff409945be88993d",
+     "parent_id": "organ:01ff611099f8e6dff850a55e"
+    },
+    {
+     "birth_time": 38440,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 50840,
+     "node_id": "organ:b9e0791d6c312e8e4992400a",
+     "parent_id": "organ:523a008394dd85c5d20e76de"
+    },
+    {
+     "birth_time": -792,
+     "bloom_state": "bud",
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 11704,
+     "node_id": "organ:c3b88ae1401551a425f1139d",
+     "parent_id": "organ:81391be7ff409945be88993d"
+    },
+    {
+     "birth_time": -5931,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "rose-bloom",
+     "kind": "branch",
+     "maturity_time": 5424,
+     "node_id": "organ:c7f285a12bfb62fdf1958a61",
+     "parent_id": "organ:01ff611099f8e6dff850a55e"
+    },
+    {
+     "birth_time": -10422,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "branch",
+     "maturity_time": -607,
+     "node_id": "organ:ee3b56ef070430a0479f83c2",
+     "parent_id": "organ:01ff611099f8e6dff850a55e"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 64800,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:a5e40a121f94d974ec52a0d3#legacy12",
+   "position": [
+    94,
+    35
+   ],
+   "species_id": "rose",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": -34385,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "rose-bloom",
+     "kind": "stem",
+     "maturity_time": -29926,
+     "node_id": "organ:01ff611099f8e6dff850a55e",
+     "parent_id": "organ:2ac4a0516ee9e334eff1a80f"
+    },
+    {
+     "birth_time": -21112,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "branch",
+     "maturity_time": -16502,
+     "node_id": "organ:13b17097dff3207ca46ea7a3",
+     "parent_id": "organ:3db56a01e84f06a8c16ddb18"
+    },
+    {
+     "birth_time": 5318,
+     "bloom_state": "bud",
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 18724,
+     "node_id": "organ:1c50d2a9e95051f87f492e91",
+     "parent_id": "organ:ee3b56ef070430a0479f83c2"
+    },
+    {
+     "birth_time": -39132,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -39132,
+     "node_id": "organ:2ac4a0516ee9e334eff1a80f",
+     "parent_id": null
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 11879,
+     "node_id": "organ:31706a2427e0c65815cb1e85",
+     "parent_id": "organ:6d29ce51c0de37a745fce774"
+    },
+    {
+     "birth_time": -20505,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -16656,
+     "node_id": "organ:3db56a01e84f06a8c16ddb18",
+     "parent_id": "organ:81391be7ff409945be88993d"
+    },
+    {
+     "birth_time": -12687,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "thorn",
+     "kind": "branch",
+     "maturity_time": -7817,
+     "node_id": "organ:523a008394dd85c5d20e76de",
+     "parent_id": "organ:13b17097dff3207ca46ea7a3"
+    },
+    {
+     "birth_time": 12244,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "rose-bloom",
+     "kind": "branch",
+     "maturity_time": 20865,
+     "node_id": "organ:6d29ce51c0de37a745fce774",
+     "parent_id": "organ:c7f285a12bfb62fdf1958a61"
+    },
+    {
+     "birth_time": -29310,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -19841,
+     "node_id": "organ:81391be7ff409945be88993d",
+     "parent_id": "organ:01ff611099f8e6dff850a55e"
+    },
+    {
+     "birth_time": 38440,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 50840,
+     "node_id": "organ:b9e0791d6c312e8e4992400a",
+     "parent_id": "organ:523a008394dd85c5d20e76de"
+    },
+    {
+     "birth_time": -792,
+     "bloom_state": "bud",
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "thorn",
+     "kind": "bloom",
+     "maturity_time": 11704,
+     "node_id": "organ:c3b88ae1401551a425f1139d",
+     "parent_id": "organ:81391be7ff409945be88993d"
+    },
+    {
+     "birth_time": -5931,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "rose-bloom",
+     "kind": "branch",
+     "maturity_time": 5424,
+     "node_id": "organ:c7f285a12bfb62fdf1958a61",
+     "parent_id": "organ:01ff611099f8e6dff850a55e"
+    },
+    {
+     "birth_time": -10422,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "thorn",
+     "kind": "branch",
+     "maturity_time": -607,
+     "node_id": "organ:ee3b56ef070430a0479f83c2",
+     "parent_id": "organ:01ff611099f8e6dff850a55e"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 64800,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:be4c5514dfddf584f0da256f",
+   "position": [
+    44,
+    45
+   ],
+   "species_id": "hydrangea",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": 0,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "stem",
+     "kind": "bloom",
+     "maturity_time": 13166,
+     "node_id": "organ:2e61f3509aef18e99c060896",
+     "parent_id": "organ:f5e542f899eef0125e267376"
+    },
+    {
+     "birth_time": -41436,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "cluster-bloom",
+     "kind": "stem",
+     "maturity_time": -36900,
+     "node_id": "organ:42355b4d4555207798079f0e",
+     "parent_id": "organ:f375ef702844954f5b3e9a20"
+    },
+    {
+     "birth_time": -31537,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -21919,
+     "node_id": "organ:4943bef0b1ddca0ba3ea3a3f",
+     "parent_id": "organ:42355b4d4555207798079f0e"
+    },
+    {
+     "birth_time": -7672,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": 1572,
+     "node_id": "organ:53cc9952519c970277a693db",
+     "parent_id": "organ:6113b5799ba8a91578b98cea"
+    },
+    {
+     "birth_time": -32098,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": -27099,
+     "node_id": "organ:6113b5799ba8a91578b98cea",
+     "parent_id": "organ:f375ef702844954f5b3e9a20"
+    },
+    {
+     "birth_time": 17280,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 1,
+     "glyph_family": "broadleaf",
+     "kind": "bloom",
+     "maturity_time": 29989,
+     "node_id": "organ:66b1862969f44191fa6d3a72",
+     "parent_id": "organ:e20f4ce8d78315f8bef5072d"
+    },
+    {
+     "birth_time": -3913,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "cluster-bloom",
+     "kind": "bloom",
+     "maturity_time": 825,
+     "node_id": "organ:7558934798564ff2b946e45f",
+     "parent_id": "organ:6113b5799ba8a91578b98cea"
+    },
+    {
+     "birth_time": -52000,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -52000,
+     "node_id": "organ:7f340db62f25a798c5e46ab1",
+     "parent_id": null
+    },
+    {
+     "birth_time": -36676,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "stem",
+     "kind": "branch",
+     "maturity_time": -31399,
+     "node_id": "organ:9c6bf2fd3dccfbff42394b43",
+     "parent_id": "organ:4943bef0b1ddca0ba3ea3a3f"
+    },
+    {
+     "birth_time": -37210,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "broadleaf",
+     "kind": "branch",
+     "maturity_time": -31412,
+     "node_id": "organ:bf3c2f9aa7b562f5f32756db",
+     "parent_id": "organ:9c6bf2fd3dccfbff42394b43"
+    },
+    {
+     "birth_time": 22866,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "cluster-bloom",
+     "kind": "bloom",
+     "maturity_time": 34453,
+     "node_id": "organ:c5e5f7695dec1ad07cbfe681",
+     "parent_id": "organ:4943bef0b1ddca0ba3ea3a3f"
+    },
+    {
+     "birth_time": -7935,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "cluster-bloom",
+     "kind": "branch",
+     "maturity_time": 5459,
+     "node_id": "organ:e20f4ce8d78315f8bef5072d",
+     "parent_id": "organ:6113b5799ba8a91578b98cea"
+    },
+    {
+     "birth_time": -48843,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "cluster-bloom",
+     "kind": "stem",
+     "maturity_time": -41252,
+     "node_id": "organ:f375ef702844954f5b3e9a20",
+     "parent_id": "organ:7f340db62f25a798c5e46ab1"
+    },
+    {
+     "birth_time": 3500,
+     "bloom_state": "bud",
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "cluster-bloom",
+     "kind": "bloom",
+     "maturity_time": 17528,
+     "node_id": "organ:f5e542f899eef0125e267376",
+     "parent_id": "organ:9c6bf2fd3dccfbff42394b43"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 21600,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:d750e7383c716050ad996ec0",
+   "position": [
+    56,
+    46
+   ],
+   "species_id": "meadow_grass",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": -5636,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "seed-head",
+     "kind": "leaf",
+     "maturity_time": 4502,
+     "node_id": "organ:10dbe3a76eec1381fd0ebbcd",
+     "parent_id": "organ:4429ac2e4be985dbd02c9a0e"
+    },
+    {
+     "birth_time": -6227,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "blade",
+     "kind": "stem",
+     "maturity_time": -1209,
+     "node_id": "organ:1238936ae9a60e4e4b1d0847",
+     "parent_id": "organ:74af80fc09fb5d97cc1534f0"
+    },
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "blade",
+     "kind": "leaf",
+     "maturity_time": 4053,
+     "node_id": "organ:2b0134f64c99ddb857f277e8",
+     "parent_id": "organ:4429ac2e4be985dbd02c9a0e"
+    },
+    {
+     "birth_time": -23960,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -23960,
+     "node_id": "organ:2c829eacfa0643747bf2ee99",
+     "parent_id": null
+    },
+    {
+     "birth_time": 4504,
+     "bloom_state": "bud",
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "blade",
+     "kind": "bloom",
+     "maturity_time": 13140,
+     "node_id": "organ:344f37e6d496645de7df4b13",
+     "parent_id": "organ:4429ac2e4be985dbd02c9a0e"
+    },
+    {
+     "birth_time": -18997,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "seed-head",
+     "kind": "stem",
+     "maturity_time": -13673,
+     "node_id": "organ:4429ac2e4be985dbd02c9a0e",
+     "parent_id": "organ:2c829eacfa0643747bf2ee99"
+    },
+    {
+     "birth_time": -13756,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "blade",
+     "kind": "stem",
+     "maturity_time": -3304,
+     "node_id": "organ:74af80fc09fb5d97cc1534f0",
+     "parent_id": "organ:4429ac2e4be985dbd02c9a0e"
+    },
+    {
+     "birth_time": 3557,
+     "bloom_state": "bud",
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "blade",
+     "kind": "bloom",
+     "maturity_time": 7573,
+     "node_id": "organ:f7083cff2cd1b340da80f8b3",
+     "parent_id": "organ:1238936ae9a60e4e4b1d0847"
+    }
+   ]
+  },
+  {
+   "dormant": false,
+   "growth_period_seconds": 32400,
+   "growth_points": 0,
+   "last_tended_at": null,
+   "plant_id": "plant:de76cdaf9655ea66c7e68b03",
+   "position": [
+    109,
+    26
+   ],
+   "species_id": "sunflower",
+   "tended_count": 0,
+   "topology": [
+    {
+     "birth_time": 0,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "sunflower-bloom",
+     "kind": "leaf",
+     "maturity_time": 7160,
+     "node_id": "organ:06fbe3388cc8b3e246b2c6b9",
+     "parent_id": "organ:d85af03cb057950dbf64dbc4"
+    },
+    {
+     "birth_time": -11435,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -4983,
+     "node_id": "organ:13dc6de676c9c08082e50489",
+     "parent_id": "organ:880ebe8bc3d6e444ad4596b6"
+    },
+    {
+     "birth_time": -5854,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "sunflower-bloom",
+     "kind": "leaf",
+     "maturity_time": -995,
+     "node_id": "organ:1b1147298391ac20d12973ad",
+     "parent_id": "organ:78853431c355200cc0436d88"
+    },
+    {
+     "birth_time": 4209,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 3,
+     "glyph_family": "sunflower-bloom",
+     "kind": "leaf",
+     "maturity_time": 9681,
+     "node_id": "organ:3404f52f41ef6b6f4b428646",
+     "parent_id": "organ:13dc6de676c9c08082e50489"
+    },
+    {
+     "birth_time": 21061,
+     "bloom_state": "bud",
+     "final_direction": [
+      1,
+      0
+     ],
+     "final_length": 4,
+     "glyph_family": "stem",
+     "kind": "bloom",
+     "maturity_time": 29804,
+     "node_id": "organ:508500126d0b40d3785629ea",
+     "parent_id": "organ:606f331c6995191597269374"
+    },
+    {
+     "birth_time": -21635,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "broadleaf",
+     "kind": "stem",
+     "maturity_time": -13989,
+     "node_id": "organ:606f331c6995191597269374",
+     "parent_id": "organ:9216fdc48b25c73b9f033cf2"
+    },
+    {
+     "birth_time": 14947,
+     "bloom_state": "bud",
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 2,
+     "glyph_family": "sunflower-bloom",
+     "kind": "bloom",
+     "maturity_time": 28487,
+     "node_id": "organ:618c160246e572793fbaf2f2",
+     "parent_id": "organ:1b1147298391ac20d12973ad"
+    },
+    {
+     "birth_time": -32879,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "root",
+     "kind": "root",
+     "maturity_time": -32879,
+     "node_id": "organ:78853431c355200cc0436d88",
+     "parent_id": null
+    },
+    {
+     "birth_time": -13517,
+     "bloom_state": null,
+     "final_direction": [
+      -1,
+      0
+     ],
+     "final_length": 3,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": 509,
+     "node_id": "organ:880ebe8bc3d6e444ad4596b6",
+     "parent_id": "organ:606f331c6995191597269374"
+    },
+    {
+     "birth_time": -26861,
+     "bloom_state": null,
+     "final_direction": [
+      1,
+      -1
+     ],
+     "final_length": 4,
+     "glyph_family": "stem",
+     "kind": "stem",
+     "maturity_time": -22712,
+     "node_id": "organ:9216fdc48b25c73b9f033cf2",
+     "parent_id": "organ:78853431c355200cc0436d88"
+    },
+    {
+     "birth_time": -15545,
+     "bloom_state": null,
+     "final_direction": [
+      0,
+      -1
+     ],
+     "final_length": 1,
+     "glyph_family": "sunflower-bloom",
+     "kind": "leaf",
+     "maturity_time": -6999,
+     "node_id": "organ:d85af03cb057950dbf64dbc4",
+     "parent_id": "organ:880ebe8bc3d6e444ad4596b6"
+    }
+   ]
+  }
+ ],
+ "processed_commands": [],
+ "program_state": {},
+ "schema_version": 1,
+ "seed": "b382f1c179bf1a5d586c62a59f150dfd50eb9f9ad6514a8b00f546270b7e7209",
+ "ui": {
+  "actions_open_for": null,
+  "camera": [
+   60,
+   51
+  ],
+  "focus_id": null,
+  "journal_open": false,
+  "motion_paused": false
+ },
+ "undo_stack": [],
+ "world_height": 80,
+ "world_id": "historical-world",
+ "world_width": 120
+}

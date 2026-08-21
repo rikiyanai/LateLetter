@@ -1,0 +1,46 @@
+{
+  "superseded_by": "recognizer-benchmark-v2.json",
+  "status": "blocked_release_coverage",
+  "inventory": {
+    "platform": "macOS-15.7.7-arm64-arm-64bit-Mach-O",
+    "python": "3.14.3",
+    "tesseract": {
+      "path": "/opt/homebrew/bin/tesseract",
+      "binary_sha256": "f6684b4e366dfc22bc0f1a509a6c237df3833af4c7105ecd78b9c998a5ab4656",
+      "version": "tesseract 5.5.1",
+      "languages": ["eng", "osd", "snum"]
+    },
+    "adapters": [
+      {"name": "tesseract-offline", "supported_scripts": ["ascii", "latin", "digits"], "status": "proposal_only"},
+      {"name": "fixed-lattice-structural", "supported_scripts": ["ascii", "digits"], "status": "proposal_only"}
+    ],
+    "unicode_database": "Python unicodedata 16.0.0",
+    "uax29": "regex/2026.5.9",
+    "wcwidth": "0.3.3",
+    "pillow": "12.1.0",
+    "harfbuzz": "not-installed",
+    "freetype": "not-recorded"
+  },
+  "results": [
+    {
+      "adapter": "tesseract-offline",
+      "version": "5.5.1-or-local",
+      "supported_scripts": ["ascii", "latin", "digits"],
+      "release_fixture_count": 10,
+      "unsupported_release_fixtures": ["positive-kana", "positive-kanji", "positive-arabic", "positive-combining", "positive-width-mixture", "positive-emoji-zwj", "positive-mixed-script"],
+      "status": "blocked_release_coverage",
+      "acceptance_oracle": false
+    },
+    {
+      "adapter": "fixed-lattice-structural",
+      "version": "1",
+      "supported_scripts": ["ascii", "digits"],
+      "release_fixture_count": 10,
+      "unsupported_release_fixtures": ["positive-kana", "positive-kanji", "positive-arabic", "positive-combining", "positive-width-mixture", "positive-emoji-zwj", "positive-mixed-script"],
+      "status": "blocked_release_coverage",
+      "acceptance_oracle": false
+    }
+  ],
+  "reason": "no pinned offline whole-run Unicode recognizer covers the release scripts",
+  "next_authority": "do not proceed to shaping/decode/release queue until a licensed offline whole-run adapter is pinned"
+}

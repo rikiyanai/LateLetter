@@ -1,0 +1,89 @@
+{
+  "files": [
+    {
+      "path": "src/lateletter/transcription/geometry/evidence.py",
+      "sha256": "ac9a21c5fae64c31d4aa0ffdfe028f3adf577ca8bb8cc925be7b8028c8704e1f",
+      "size": 114628
+    },
+    {
+      "path": "src/lateletter/transcription/geometry/router.py",
+      "sha256": "28132b45e80f8a6c6c5ee4f92e9656bdff43da49096b2fda8ebe344505d05a21",
+      "size": 7790
+    },
+    {
+      "path": "src/lateletter/transcription/geometry/fixed_lattice.py",
+      "sha256": "18ebb806591a0dc609be280e44b0c806d60c007382949538066ef87753424f57",
+      "size": 686
+    },
+    {
+      "path": "src/lateletter/transcription/geometry/shaped_runs.py",
+      "sha256": "402aa282d36438e91be9d9cffd6be975c4af77ac950ab3d930f8704a0f410692",
+      "size": 558
+    },
+    {
+      "path": "src/lateletter/transcription/components.py",
+      "sha256": "11482c5c94f4e1e8633c73acaf6342cca7eac930b92a2cc402cb97447f328ee9",
+      "size": 5070
+    },
+    {
+      "path": "src/lateletter/transcription/schema.py",
+      "sha256": "cfd4abbeb56aa8f45fb20806eb69f02d9b95d3f30e13daec56c9de68416dc84a",
+      "size": 3878
+    },
+    {
+      "path": "src/lateletter/transcription/model.py",
+      "sha256": "970272eb46a723b0a35bb69c94440691b20655eb54f36e4580b075985dff10fe",
+      "size": 17233
+    },
+    {
+      "path": "tests/transcription/test_geometry_raster.py",
+      "sha256": "ef776f5df7350c5c181a58af547bb043893c364750896cb8be13edc6d30c57a6",
+      "size": 19431
+    },
+    {
+      "path": "tests/transcription/test_geometry_router.py",
+      "sha256": "83bf43075b81f38219dbe65a58ab86c43695646e05de6d82d1073417d69b7d9b",
+      "size": 2408
+    }
+  ],
+  "git_head": "0e1734440a9a08e7b7565b808a8b0ff1fe65b58b",
+  "git_status_porcelain": [
+    " M docs/FAILURE_LOG.md",
+    " M docs/SPEC.md",
+    " M docs/ownership-lanes.json",
+    " M scripts/garden_fixture_art.py",
+    " M scripts/migrate_atlas_v2.py",
+    " M src/lateletter/garden/data/atlas.v2.json",
+    " M src/lateletter/garden/world/fixtures.py",
+    " M src/lateletter/garden/world/generation.py",
+    " M src/lateletter/garden/world/model.py",
+    " M src/lateletter/garden/world/provenance.py",
+    " M src/lateletter/transcription/geometry/evidence.py",
+    " M src/lateletter/transcription/geometry/router.py",
+    " M tests/garden_adapters/test_garden_renderer.mjs",
+    " M tests/garden_adapters/test_review_refuses_restored_world.mjs",
+    " M tests/garden_adapters/test_world_browser_conformance.py",
+    " M tests/garden_adapters/test_world_composition_versioning.mjs",
+    " M tests/garden_world/fixtures/README.md",
+    " M tests/garden_world/test_composition_versioning.py",
+    " M tests/transcription/test_geometry_raster.py",
+    " M viewer-bnw.html",
+    " M web/garden-atlas-art.mjs",
+    " M web/garden-painting.mjs",
+    " M web/garden-presentation.mjs",
+    " M web/garden-world.mjs",
+    "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin-combining.json",
+    "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii-latin.json",
+    "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-fixed-ascii.json",
+    "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10-d1-row-ocr-gap.json",
+    "?? tests/fixtures/transcription-v2/recognizer-benchmark-v10.json",
+    "?? tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted-2.json",
+    "?? tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted-3.json",
+    "?? tests/fixtures/transcription-v2/recognizer-profile-v10-budgeted.json",
+    "?? tests/fixtures/transcription-v2/recognizer-profile-v10.json",
+    "?? tests/test_letter_typography_e2e_browser.py"
+  ],
+  "identity_sha256": "e13a23bae9f774f1bdcef5e89b5a3d314f55c01db07cf20356ec0ad9408b6a85",
+  "recorded_at": "2026-08-04T14:20:49.857825+00:00",
+  "schema": "lateletter-geometry-implementation-identity-1"
+}

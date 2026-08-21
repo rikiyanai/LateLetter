@@ -1,0 +1,48 @@
+name: AI attribution policy
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: AI attribution policy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      # The policy logic itself lives in scripts/check_attribution.sh so that
+      # this workflow and the local pre-push hook run byte-identical checks and
+      # cannot drift apart. That script is also what makes the policy runnable
+      # for free on a developer machine, instead of only on a metered runner.
+      - name: Reject prohibited commit attribution
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          # Choose the narrowest range that still covers everything new:
+          #  - pull_request: just the commits the PR adds;
+          #  - push onto an existing branch: just what the push added;
+          #  - first push of a branch (BEFORE_SHA is all zeros): the head
+          #    commit and its ancestry, since there is no "before" point.
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            commit_range="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+          elif [[ -n "$BEFORE_SHA" && ! "$BEFORE_SHA" =~ ^0+$ ]] \
+            && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+            commit_range="${BEFORE_SHA}..${CURRENT_SHA}"
+          else
+            commit_range="$CURRENT_SHA"
+          fi
+
+          scripts/check_attribution.sh "$commit_range"

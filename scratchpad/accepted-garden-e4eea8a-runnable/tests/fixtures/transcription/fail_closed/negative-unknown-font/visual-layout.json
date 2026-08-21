@@ -1,0 +1,13 @@
+{
+  "fixture_id": "negative-unknown-font",
+  "logical_rows": 1,
+  "direction": "rtl",
+  "mode": "shaped_runs",
+  "anchors": [
+    {
+      "row": 0,
+      "x": 12,
+      "baseline": 29
+    }
+  ]
+}

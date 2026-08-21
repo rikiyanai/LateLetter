@@ -1,0 +1,9 @@
+{
+  "purpose": "Operator verdicts on Garden STARTER COMPOSITIONS -- which population of plants, fixtures, animals and collectibles the recipient's world opens with. Separate from docs/garden-asset-acceptance.json, which judges how a single thing is DRAWN; a composition can be made entirely of accepted drawings and still be the wrong garden.",
+  "why_this_is_not_a_version_number": "A world's composition_version is written by the code that generated it. A verdict is given by a person. Holding both in one field made every generated world claim an approval nobody had granted, which is how an empty 0/0/0/0 world characterized as an approved composition. The stamp says which candidate a world came from; this file says what the operator thought of it.",
+  "binding": "A verdict binds to a composition_version AND the exact roster fingerprint that revision produced. Re-rostering under the same revision number produces a different fingerprint and therefore inherits nothing: approval attaches to what was looked at, not to a number that can be reused.",
+  "fingerprint_form": "plants=<sorted species ids>|fixtures=<sorted catalog ids>|animals=<sorted species ids>|collectibles=<sorted families>. Deliberately readable rather than digested, so a rejected world shows a reviewer WHICH species differ instead of only that something did.",
+  "vocabulary": ["accepted", "not_reviewed", "rejected"],
+  "records": {},
+  "standing": "EMPTY, and correctly so as of 2026-08-03. No starter composition has ever been submitted for operator review. The failure log records that the previous five-plant, one-cat, one-collectible starter was rejected on sight and the roster was emptied to two plants and five fixtures pending per-asset approval; that reduced roster has not been reviewed either. Any code that reports a composition as accepted while this file holds no matching record is reporting something that did not happen."
+}

@@ -1,0 +1,151 @@
+═══════════════════════════════════════════════════════════════
+  LateLetter — Seasonal Tree Variations
+  From research: asciiart.eu, ascii.co.uk, PyBonsai, cbonsai
+  Date: 2026-04-18
+═══════════════════════════════════════════════════════════════
+
+
+── SEASONAL VARIANTS (same tree, 4 seasons) ──────────────────
+
+SPRING (blossoms):        SUMMER (full):
+       .o.o.                    @@@
+      .o.O.o.                  @@@@@
+     .o.O.O.o.                @@@@@@@
+    .o.O.o.O.o.              @@@@@@@@@
+   .o.O.O.o.O.o.            @@@@@@@@@@@
+       |||                       |||
+       |||                       |||
+
+AUTUMN (sparse):          WINTER (bare):
+       .o.                    /\  /\
+      .o .o                  /  \/  \
+     .  o. .                /\  /\  /\
+    .o      .                \/  \/
+   .    .o    .   o           \  /
+       |||      .              ||
+       |||    o                ||
+
+
+── OAK / FULL CANOPY ─────────────────────────────────────────
+
+Full oak (Loss):
+         &&& &&  & &&
+      && &\/&\|& ()|/ @, &&
+      &\/(/&/&||/& /_/)_&/_&
+   &() &\/&|()|/&\/ '%" & ()
+  &_\_&&_\ |& |&&/&__%_/_& &&
+&&   && & &| &| /& & % ()& /&&
+ ()&_---()&\&\|&&-Loss--%---()~
+     &&     \|||
+             |||
+             |||
+             |||
+         , -=-~  .-^- _
+
+Broad canopy (jgs-style with leaf chars):
+        #{
+       ###}
+      ###{
+     ####}
+    {#####
+   {######}
+  {#######}
+  {########}
+   `||//`
+    ||||
+    ||||
+    ||||
+  .-~~~~-.
+ /________\
+
+
+── WILLOW DESIGNS ────────────────────────────────────────────
+
+Willow for wind animation (branches as strings to shift):
+       ___
+      /   \
+     / .-. \
+    | ( * ) |
+    |  '-'  |
+   /| )|( |\
+  ( | )|( | )
+   \| )|( |/
+    | )|( |
+    |  ||  |
+    |  ||  |
+    | _||_ |
+    '------'
+
+Wind sway chars:
+  Still:      )|(
+  Left:       (|(
+  Right:      )|)
+  Far left:   ((  or /|
+  Far right:  ))  or |\
+
+Amplitude by depth:
+  Trunk (depth=0): no sway
+  Inner branches: ±1 char
+  Outer branches: ±2-3 chars
+  Willow tendrils: ±3-5 chars
+
+
+── BARE / DEAD TREES ─────────────────────────────────────────
+
+Dead tree (spooky):
+      , - ~ ~ ~ - ,
+   ,  '             ' ,
+  ,                     ,
+ ,    /\          /\     ,
+,    /  \   /\   /  \     ,
+,   /    \_/  \_/    \    ,
+ \ /                  \ /
+  |        |           |
+  |        |           |
+  |       /|\          |
+   \     / | \        /
+    |   /  |  \      |
+    |  /   |   \     |
+    | /    |    \    |
+    |/     |     \   |
+           |
+
+Skeleton tree (minimal):
+     /\
+    /  \/\
+   /      \
+  /\  /\   \
+ /  \/  \   |
+/        \  |
+    |   /   |
+    |  /    |
+    | /     |
+    |/      |
+    |
+    |
+
+Very simple bare (5 lines):
+  /\  /\
+ /  \/  \
+  \ /\ /
+   \||/
+    ||
+
+
+── PYBONSAI / CBONSAI GENERATION NOTES ───────────────────────
+
+Branch chars by direction:
+  Horizontal: "/~"
+  Left lean:  "\\|"
+  Vertical:   "/|\\"
+  Right lean: "|/"
+
+Leaf chars (configurable): & % # @
+Growth: recursive fractal with life counter
+  - Normal distribution branching (mu=2, sigma=0.5)
+  - Start length: 15, leaf length: 4, layers: 8
+  - Angle: ~40 degrees
+  - Probabilistic direction changes via dice rolls (0-9)
+
+For LateLetter: can pre-generate trees using seed for
+deterministic garden layout (per garden_seed in .lateletter bundle)

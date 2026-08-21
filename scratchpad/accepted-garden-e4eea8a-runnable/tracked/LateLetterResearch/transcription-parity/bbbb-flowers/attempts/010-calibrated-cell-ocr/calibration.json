@@ -1,0 +1,112 @@
+{
+  "calibrator": {
+    "name": "LateLetter monospace grid calibrator",
+    "version": "grid-calibrator-1"
+  },
+  "source_png": "/Users/r/Projects/LateLetter/tracked/LateLetterResearch/transcription-parity/bbbb-flowers/source/source.normalized.png",
+  "source_sha256": "f7d6f3d502cac705902885083219bed253a92cc0d5a5c058353c6781b04f7f3e",
+  "canvas": {
+    "width_px": 307,
+    "height_px": 318,
+    "background_rgb": [
+      40,
+      41,
+      35
+    ]
+  },
+  "normalization": {
+    "colour_space": "RGB",
+    "ink_threshold_l1": 25,
+    "background_method": "dominant_exact_rgb",
+    "guide_removal": "three columns at 36px repetition; 5px erase band"
+  },
+  "guide_columns_px": [
+    22,
+    58,
+    94,
+    132,
+    168
+  ],
+  "grid": {
+    "columns": 35,
+    "rows": 17,
+    "origin_x_px": -7.0,
+    "first_baseline_y_px": 15.0,
+    "cell_advance_x_px": 9.0,
+    "line_height_px": 19.0,
+    "x_phase_px_mod_period": 2,
+    "y_phase_px_mod_period": 15,
+    "cell_crop_top_offset_px": -18,
+    "cell_crop_bottom_offset_px": 5
+  },
+  "font_model": {
+    "path": "/System/Library/Fonts/Menlo.ttc",
+    "size_px": 15,
+    "bbox_anchor": "ls"
+  },
+  "measurement": {
+    "x_autocorrelation": {
+      "6": 0.14707251707318297,
+      "7": 0.2675807302095596,
+      "8": 0.3619137266306672,
+      "9": 0.3935564436979106,
+      "10": 0.34927832587499147,
+      "11": 0.2499020121872247,
+      "12": 0.13076722180419362,
+      "13": 0.049608731886095284,
+      "14": 0.03150583077844564
+    },
+    "y_autocorrelation": {
+      "14": 0.173029921370328,
+      "15": 0.15120268361129702,
+      "16": 0.18473782082279777,
+      "17": 0.2240273575431185,
+      "18": 0.31435424054293,
+      "19": 0.45178073780044004,
+      "20": 0.25217623319011806,
+      "21": 0.1869957316470819,
+      "22": 0.1625548890239156,
+      "23": 0.12296414056953824,
+      "24": 0.15102693128134598
+    },
+    "x_phase_boundary_ink": {
+      "0": 258.0,
+      "1": 129.0,
+      "2": 63.0,
+      "3": 66.0,
+      "4": 78.0,
+      "5": 177.0,
+      "6": 278.0,
+      "7": 478.0,
+      "8": 457.0
+    },
+    "y_phase_horizontal_ink": {
+      "0": 502.0,
+      "1": 468.0,
+      "2": 437.0,
+      "3": 397.0,
+      "4": 321.0,
+      "5": 332.0,
+      "6": 406.0,
+      "7": 500.0,
+      "8": 580.0,
+      "9": 608.0,
+      "10": 630.0,
+      "11": 641.0,
+      "12": 654.0,
+      "13": 679.0,
+      "14": 715.0,
+      "15": 764.0,
+      "16": 737.0,
+      "17": 662.0,
+      "18": 575.0
+    },
+    "ink_bbox_without_guides": {
+      "left_px": 49,
+      "top_px": 1,
+      "right_px": 200,
+      "bottom_px": 262
+    }
+  },
+  "status": "calibration_candidate"
+}

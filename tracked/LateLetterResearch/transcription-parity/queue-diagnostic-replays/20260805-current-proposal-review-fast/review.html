@@ -1,0 +1,1243 @@
+<!doctype html><meta charset='utf-8'><title>LateLetter fresh PNG→TXT proposal review</title><style>body{font-family:system-ui,-apple-system,sans-serif;margin:24px;background:#f6f6f6;color:#111}h1{margin-bottom:4px}.note{max-width:1050px;line-height:1.45}.summary{border-collapse:collapse;margin:16px 0;background:white}.summary td{border:1px solid #ccc;padding:6px 10px}.card{background:white;border:1px solid #ccc;border-radius:10px;margin:18px 0;padding:16px}.meta{font-size:13px;color:#333;display:grid;gap:4px;margin:8px 0 12px}.compare{display:grid;grid-template-columns:minmax(240px,0.8fr) minmax(360px,1.2fr);gap:18px;align-items:start}figure{margin:0}figcaption{font-weight:700;margin-bottom:8px}img{max-width:100%;background:white;border:1px solid #ddd}.proposal{margin:0 0 12px}.rank{font-size:12px;color:#555;font-weight:700}.proposal pre{white-space:pre;overflow:auto;background:#1f1f1f;color:#f7f7f7;padding:10px;border-radius:8px;font:16px/1.2 ui-monospace,Menlo,monospace}.empty{background:#eee;border:1px dashed #999;border-radius:8px;padding:18px;color:#555;font-weight:700}.adapter{border-top:1px solid #ddd;padding:8px 0}.adapter summary{cursor:pointer;font-weight:700}.unsupported{font:12px ui-monospace,monospace;color:#666;margin:6px 0}.codes{background:#f2f2f2;padding:8px;overflow:auto}code{font-family:ui-monospace,monospace;font-size:12px}</style><h1>Fresh proposal-only replay: current offline recognizers over 26 PNGs</h1><p class='note'>This is not a conversion result. It does not read old TXT, accepted TXT, historical attempts, or provisional candidates. It runs current source-only recognizer adapters and displays their proposal evidence so bad recognizer output can be inspected directly.</p><table class='summary'><tr><td>accepted_txt_read</td><td>False</td></tr><tr><td>accepted_written</td><td>0</td></tr><tr><td>budget_failure_count</td><td>135</td></tr><tr><td>budget_profile</td><td>review</td></tr><tr><td>candidate_written</td><td>0</td></tr><tr><td>geometry:proved</td><td>26</td></tr><tr><td>harness_error_count</td><td>0</td></tr><tr><td>historical_attempts_read</td><td>False</td></tr><tr><td>nondeterministic_count</td><td>0</td></tr><tr><td>old_txt_read</td><td>False</td></tr><tr><td>proposal_authority</td><td>diagnostic_only</td></tr><tr><td>source_count</td><td>26</td></tr><tr><td>sources_with_any_proposal</td><td>23</td></tr><tr><td>sources_with_no_proposal</td><td>3</td></tr></table>
+            <section class="card">
+              <h2>4409e4149b1b6827b4b8c44ed8a3772d.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>3b1d1220a072ce51ba0bf6bcdf695a4a489d1635534d473fd99e676ae101b912</code></div>
+                <div><b>Size:</b> 386×669</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/001-4409e4149b1b6827b4b8c44ed8a3772d-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>....__... ___--___-____
+\ --
+....._--_...___...._..................-............._.._....__.._._._._.._._.
+.......
+____-__-_--____</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5003.639 ms · budget exceeded; nondeterministic; 4409e4149b1b6827b4b8c44ed8a3772d.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 215.698 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>....__... ___--___-____
+\ --
+....._--_...___...._..................-............._.._....__.._._._._.._._.
+.......
+____-__-_--____</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 659.062 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4003.661 ms · budget exceeded; nondeterministic; 4409e4149b1b6827b4b8c44ed8a3772d.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4001.815 ms · budget exceeded; nondeterministic; 4409e4149b1b6827b4b8c44ed8a3772d.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4002.307 ms · budget exceeded; nondeterministic; 4409e4149b1b6827b4b8c44ed8a3772d.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 163.023 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 163.711 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 161.91 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4000.682 ms · budget exceeded; nondeterministic; 4409e4149b1b6827b4b8c44ed8a3772d.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>570f8131c83cdafded2c3b5be78d4df8.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>afaad62a1a383a62ea0646cd0d2f720f27ded7f97012a4173e55ef31806322b7</code></div>
+                <div><b>Size:</b> 236×236</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/002-570f8131c83cdafded2c3b5be78d4df8-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>_
+(
+_  _
+-- -____
+|
+/.   \     /
+_|         |
+|_-|    (    )
+.. \-_\/</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5004.527 ms · budget exceeded; nondeterministic; 570f8131c83cdafded2c3b5be78d4df8.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 98.048 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>_
+(
+_  _
+-- -____
+|
+/.   \     /
+_|         |
+|_-|    (    )
+.. \-_\/</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 111.559 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4003.553 ms · budget exceeded; nondeterministic; 570f8131c83cdafded2c3b5be78d4df8.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4000.854 ms · budget exceeded; nondeterministic; 570f8131c83cdafded2c3b5be78d4df8.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4006.005 ms · budget exceeded; nondeterministic; 570f8131c83cdafded2c3b5be78d4df8.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 84.66 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 84.559 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 84.33 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 750.835 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>988fd1ab7783d6757e0b68aa9b27ab4d.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>e37d0eb6da6755840401c9cc00d362e2da761b6df51de81eb2a069d4cc410dda</code></div>
+                <div><b>Size:</b> 268×256</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/003-988fd1ab7783d6757e0b68aa9b27ab4d-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>AM</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>--_</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>psm7-eng — rejected · 165.242 ms</summary><div class='unsupported'>empty_proposal</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>psm13-eng — proposal_only · 140.324 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>AM</pre></div></details><details class='adapter'><summary>psm7-jpn-cjk — rejected · 325.647 ms</summary><div class='unsupported'>empty_proposal</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>psm7-ara — rejected · 80.009 ms</summary><div class='unsupported'>empty_proposal</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 63.902 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>--_</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 183.691 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4003.21 ms · budget exceeded; nondeterministic; 988fd1ab7783d6757e0b68aa9b27ab4d.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4003.094 ms · budget exceeded; nondeterministic; 988fd1ab7783d6757e0b68aa9b27ab4d.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4005.094 ms · budget exceeded; nondeterministic; 988fd1ab7783d6757e0b68aa9b27ab4d.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 40.972 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 40.985 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 41.325 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4001.407 ms · budget exceeded; nondeterministic; 988fd1ab7783d6757e0b68aa9b27ab4d.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>9d0cb1893cfa495d1edfdaf8d312108c.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>976162d43548bbd8f59c9944c98c78e69a389eb1204438d14703cb355185c17f</code></div>
+                <div><b>Size:</b> 351×320</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/004-9d0cb1893cfa495d1edfdaf8d312108c-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>......................._._._...._._..._..-..--.
+\
+....</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>             \
+               = ／</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>             \
+               =／</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>             \
+               ／ =</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>             \
+               ／=</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5003.226 ms · budget exceeded; nondeterministic; 9d0cb1893cfa495d1edfdaf8d312108c.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 506.078 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>......................._._._...._._..._..-..--.
+\
+....</pre></div></details><details class='adapter'><summary>structural-unicode-row — proposal_only · 3476.129 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='proposal'><div class='rank'>rank 1</div><pre>             \
+               = ／</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>             \
+               =／</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>             \
+               ／ =</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>             \
+               ／=</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>             \
+               = ノ</pre></div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4005.446 ms · budget exceeded; nondeterministic; 9d0cb1893cfa495d1edfdaf8d312108c.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4002.559 ms · budget exceeded; nondeterministic; 9d0cb1893cfa495d1edfdaf8d312108c.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4002.967 ms · budget exceeded; nondeterministic; 9d0cb1893cfa495d1edfdaf8d312108c.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 473.511 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 479.933 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 474.144 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4003.543 ms · budget exceeded; nondeterministic; 9d0cb1893cfa495d1edfdaf8d312108c.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Fish-shell-logo-ascii-black.svg.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>cede3a44f18236133af2aa2724a2520724341d30b6606957dfd9a54b4189b38c</code></div>
+                <div><b>Size:</b> 1280×1014</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/005-fish-shell-logo-ascii-black-svg-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>___======____=---= )
+\_--=== )
+(    \    (    )           \-              \_-== )
+\                     /    ) ) --              \-= )
+\\___/       ) ) ) ---           \ )
+\_____/ ) ) ) ----              \
+(/_\\)\__  \---_---        \___
+( \\ )        ( \\\ ) _                                      \==__
+_-              \\\ )    ===_____           \\\\\\
+_- )                  \_ )    \\\\ ) ) \) \ )
+/ ) \)        ) ) ) ) )
+( ) ) )  |     \           )
+(        )</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5003.161 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 1320.274 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>___======____=---= )
+\_--=== )
+(    \    (    )           \-              \_-== )
+\                     /    ) ) --              \-= )
+\\___/       ) ) ) ---           \ )
+\_____/ ) ) ) ----              \
+(/_\\)\__  \---_---        \___
+( \\ )        ( \\\ ) _                                      \==__
+_-              \\\ )    ===_____           \\\\\\
+_- )                  \_ )    \\\\ ) ) \) \ )
+/ ) \)        ) ) ) ) )
+( ) ) )  |     \           )
+(        )</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 2200.217 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4002.304 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4004.957 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4002.803 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected_budget_exceeded · 1010.486 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:paddleocr-offline exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected_budget_exceeded · 1009.676 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:independent-offline-easyocr exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected_budget_exceeded · 1006.751 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:independent-offline-surya exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4005.987 ms · budget exceeded; nondeterministic; Fish-shell-logo-ascii-black.svg.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Screenshot 2026-07-31 at 13.12.04.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>9fee60dd442cc33cf875916a571d213ee06321c5898ee6020e32fad96fad536d</code></div>
+                <div><b>Size:</b> 956×486</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/006-screenshot-2026-07-31-at-13-12-04-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>|||
+\
+\/
+--
+-------</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               --</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               -=</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               -＿</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               -￣</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5005.394 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.12.04.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 2497.352 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>|||
+\
+\/
+--
+-------</pre></div></details><details class='adapter'><summary>structural-unicode-row — proposal_only · 6101.268 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='proposal'><div class='rank'>rank 1</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               --</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               -=</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               -＿</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               -￣</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>          ノ
+           =
+            |
+              \
+                |
+                                                               =-</pre></div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4002.493 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.12.04.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4002.138 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.12.04.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4000.643 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.12.04.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected_budget_exceeded · 1001.623 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.12.04.normalized:paddleocr-offline exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected_budget_exceeded · 1003.335 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.12.04.normalized:independent-offline-easyocr exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected_budget_exceeded · 1004.001 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.12.04.normalized:independent-offline-surya exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 2871.402 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Screenshot 2026-07-31 at 13.14.18.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>bfa54972c6b3d4cd297fe16a451d9eacae47fe07b84149447cd2315721402112</code></div>
+                <div><b>Size:</b> 944×230</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/007-screenshot-2026-07-31-at-13-14-18-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>------------------------------------------------</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>                |</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>                フ</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>                ミ</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>                ノ</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5006.06 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.18.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 380.497 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>------------------------------------------------</pre></div></details><details class='adapter'><summary>structural-unicode-row — proposal_only · 3502.275 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='proposal'><div class='rank'>rank 1</div><pre>                |</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>                フ</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>                ミ</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>                ノ</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>                x</pre></div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4004.499 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.18.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4003.242 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.18.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4004.972 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.18.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 333.275 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 335.242 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 340.584 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 463.358 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Screenshot 2026-07-31 at 13.14.25.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>8154e782230e033cafa392e9a75955198da31ed74ed095ce224edfa59caea29b</code></div>
+                <div><b>Size:</b> 874×130</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/008-screenshot-2026-07-31-at-13-14-25-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>doar em J ]</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>{ ta</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>أل امس مط</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>🤯</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>🧙🏾‍♂️</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>psm7-eng — rejected · 223.119 ms</summary><div class='unsupported'>empty_proposal</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>psm13-eng — proposal_only · 256.686 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>doar em J ]</pre></div></details><details class='adapter'><summary>psm7-jpn-cjk — proposal_only · 621.482 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>{ ta</pre></div></details><details class='adapter'><summary>psm7-ara — proposal_only · 224.148 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>أل امس مط</pre></div></details><details class='adapter'><summary>fixed-lattice-structural — rejected · 142.11 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>structural-unicode-row — rejected · 3958.098 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4002.55 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.25.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4002.694 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.25.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4000.464 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.25.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 126.16 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 122.099 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 122.27 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — proposal_only · 2997.557 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>🤯</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>🧙🏾‍♂️</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>🧙🏻‍♂️</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>🧙🏽‍♂️</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>🧙‍♂️</pre></div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Screenshot 2026-07-31 at 13.14.32.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> false</div>
+                <div><b>SHA-256:</b> <code>1f9418c5e49b9af32f345eff73b2ebeccd64194b6e36b628b444978511826807</code></div>
+                <div><b>Size:</b> 1086×148</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/009-screenshot-2026-07-31-at-13-14-32-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='empty'>NO PROPOSALS FROM ANY ADAPTER</div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5010.881 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.32.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — rejected · 164.975 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>structural-unicode-row — rejected · 492.754 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4000.578 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.32.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4003.24 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.32.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4004.612 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.32.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 104.191 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 103.725 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 102.192 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4005.334 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.14.32.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Screenshot 2026-07-31 at 13.16.07.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>ac94476293ccf8d038ec04ca27c4a95619ce014570def8816316cf5355d3847d</code></div>
+                <div><b>Size:</b> 424×468</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/010-screenshot-2026-07-31-at-13-16-07-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>---_______
+\\_--  \\\---
+...       ...
+--_-_____ ____
+/  /   -\--/-/   \  \\\
+-_-_____-___.</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5011.813 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.16.07.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 135.065 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>---_______
+\\_--  \\\---
+...       ...
+--_-_____ ____
+/  /   -\--/-/   \  \\\
+-_-_____-___.</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 262.636 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4004.289 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.16.07.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4006.434 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.16.07.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4003.591 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.16.07.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 119.0 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 114.692 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 113.888 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4005.702 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.16.07.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Screenshot 2026-07-31 at 13.29.23.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>3e2fcc96a30393245c68f88e2ebc3cf924d46ba9a67e725956bf630fd375d4b1</code></div>
+                <div><b>Size:</b> 586×538</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/011-screenshot-2026-07-31-at-13-29-23-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>..  _-______-____-__-____  -_
+...............................-....................-....._.......-_........_...._......-.....-...............................-..........--__.....--.........--...........-__.....--....................-...........-.......................................</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5000.946 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.29.23.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 282.898 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>..  _-______-____-__-____  -_
+...............................-....................-....._.......-_........_...._......-.....-...............................-..........--__.....--.........--...........-__.....--....................-...........-.......................................</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 765.485 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4001.618 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.29.23.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4005.377 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.29.23.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4005.496 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.29.23.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 231.343 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 210.756 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 207.47 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4005.181 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.29.23.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>Screenshot 2026-07-31 at 13.30.21.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>7bef5889725fa6746d9ba624be98360ca8b53eabeace7a8f898c269eec591754</code></div>
+                <div><b>Size:</b> 508×150</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/012-screenshot-2026-07-31-at-13-30-21-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>-</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>               ＿＿</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>               ￣￣</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>               -／</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>               =／</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5005.76 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.30.21.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 296.642 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>-</pre></div></details><details class='adapter'><summary>structural-unicode-row — proposal_only · 3503.855 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='proposal'><div class='rank'>rank 1</div><pre>               ＿＿</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>               ￣￣</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>               -／</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>               =／</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>               _／</pre></div></details><details class='adapter'><summary>unicode-template-latin — proposal_only · 3822.741 ms</summary><div class='unsupported'>candidate_margin_insufficient, template_residual_excessive, unicode_visual_collision</div><div class='proposal'><div class='rank'>rank 1</div><pre>&quot; &quot;&quot; &quot;&quot; &quot; &quot;&quot; ®W &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; 
+          J7 ÌÌ                
+          h¿ ÌÌ JÒ ¦_ ;        
+À ÌÌ ÌÌ ( Lt Ç¨ __ {x }Ì ÌÌ ÌÌ </pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>&quot; &quot;&quot; &quot;&quot; &quot; &quot;&quot; ®W &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; 
+          J7 ÌÌ                
+          h¿ ÌÌ JÒ ¦_ ;        
+À ÌÌ ÌÌ ( Lt Ç¨ __ {x }Ì ÌÌ ÌÌ!</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>&quot; &quot;&quot; &quot;&quot; &quot; &quot;&quot; ®W &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; 
+          J7 ÌÌ                
+          h¿ ÌÌ JÒ ¦_ ;        
+À ÌÌ ÌÌ ( Lt Ç¨ __ {x }Ì ÌÌ ÌÌ&quot;</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>&quot; &quot;&quot; &quot;&quot; &quot; &quot;&quot; ®W &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; 
+          J7 ÌÌ                
+          h¿ ÌÌ JÒ ¦_ ;        
+À ÌÌ ÌÌ ( Lt Ç¨ __ {x }Ì ÌÌ ÌÌ#</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>&quot; &quot;&quot; &quot;&quot; &quot; &quot;&quot; ®W &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; &quot;&quot; 
+          J7 ÌÌ                
+          h¿ ÌÌ JÒ ¦_ ;        
+À ÌÌ ÌÌ ( Lt Ç¨ __ {x }Ì ÌÌ ÌÌ$</pre></div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4005.356 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.30.21.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4006.007 ms · budget exceeded; nondeterministic; Screenshot 2026-07-31 at 13.30.21.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 270.795 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 259.71 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 259.117 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 358.768 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>a8283c5cdb63b130.png!cover_jpg.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>4125debb430e1ed424e0759fefc0427d91d18dd15c66c0ca196001abb256151b</code></div>
+                <div><b>Size:</b> 271×619</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/013-a8283c5cdb63b130-pngcover-jpg-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>/-_-\
+//\
+//\
+\\/
+\_\_/
+\\
+-\\_
+\\//
+_\\/_/
+\\-//
+\_\//-
+-//
+\\
+//
+//-
+-//
+//
+\\
+\\</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5002.627 ms · budget exceeded; nondeterministic; a8283c5cdb63b130.png!cover_jpg.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 2976.938 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>/-_-\
+//\
+//\
+\\/
+\_\_/
+\\
+-\\_
+\\//
+_\\/_/
+\\-//
+\_\//-
+-//
+\\
+//
+//-
+-//
+//
+\\
+\\</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 7270.721 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4005.508 ms · budget exceeded; nondeterministic; a8283c5cdb63b130.png!cover_jpg.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4003.757 ms · budget exceeded; nondeterministic; a8283c5cdb63b130.png!cover_jpg.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4005.444 ms · budget exceeded; nondeterministic; a8283c5cdb63b130.png!cover_jpg.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected_budget_exceeded · 1003.364 ms · budget exceeded; nondeterministic; a8283c5cdb63b130.png!cover_jpg.normalized:paddleocr-offline exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected_budget_exceeded · 1005.515 ms · budget exceeded; nondeterministic; a8283c5cdb63b130.png!cover_jpg.normalized:independent-offline-easyocr exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected_budget_exceeded · 1002.359 ms · budget exceeded; nondeterministic; a8283c5cdb63b130.png!cover_jpg.normalized:independent-offline-surya exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 3348.184 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>bbbb_flowers.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>38eb07a2f8dcebf04dc2ae4bf9cbc9e4231f2ed33e5fcfc90b14ef0008ecf958</code></div>
+                <div><b>Size:</b> 307×318</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/014-bbbb-flowers-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>))
+((        --
+___-
+___--___    ---__
+/         ..
+\
+-______-</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5002.701 ms · budget exceeded; nondeterministic; bbbb_flowers.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 91.375 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>))
+((        --
+___-
+___--___    ---__
+/         ..
+\
+-______-</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 137.903 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4000.975 ms · budget exceeded; nondeterministic; bbbb_flowers.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4001.148 ms · budget exceeded; nondeterministic; bbbb_flowers.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4005.838 ms · budget exceeded; nondeterministic; bbbb_flowers.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 87.556 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 94.33 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 82.227 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 715.181 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>c1np1jdixihf1.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>0ddcc935931b3e66b38055befec2a013e78354d0f113b4ad62f57f2935d6d553</code></div>
+                <div><b>Size:</b> 1280×1184</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/015-c1np1jdixihf1-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>.|  ..|                                  )    (
+|  |                                  (    )
+|  |
+.|                            /   \         /   \
+|  |                         /                        \
+|  |                         \.                         \
+|  |                                .|    |.                /
+/   \  _|.     /   \                       ------               /
+/           \    \                                \  /
+\                          \         //-
+-                      .
+.|   |.                /
+/</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5003.612 ms · budget exceeded; nondeterministic; c1np1jdixihf1.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 852.885 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>.|  ..|                                  )    (
+|  |                                  (    )
+|  |
+.|                            /   \         /   \
+|  |                         /                        \
+|  |                         \.                         \
+|  |                                .|    |.                /
+/   \  _|.     /   \                       ------               /
+/           \    \                                \  /
+\                          \         //-
+-                      .
+.|   |.                /
+/</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 918.154 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4004.261 ms · budget exceeded; nondeterministic; c1np1jdixihf1.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4004.59 ms · budget exceeded; nondeterministic; c1np1jdixihf1.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4002.495 ms · budget exceeded; nondeterministic; c1np1jdixihf1.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 435.668 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 406.679 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 406.811 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 2712.306 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>0f68d0601f249d33d9472351745755a311accf129b4e7838b83cc49609004429</code></div>
+                <div><b>Size:</b> 1242×1071</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/016-christmas-tree-ascii-art-v0-ekeq2fa67que1-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>/(
+)
+_____--
+.|..   ____  |   __  |        _- __
+)
+|   / ._|    ||
+-- )  )</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5004.937 ms · budget exceeded; nondeterministic; christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 601.126 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>/(
+)
+_____--
+.|..   ____  |   __  |        _- __
+)
+|   / ._|    ||
+-- )  )</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 1032.747 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4002.342 ms · budget exceeded; nondeterministic; christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4003.936 ms · budget exceeded; nondeterministic; christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4003.747 ms · budget exceeded; nondeterministic; christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 360.07 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 349.749 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 351.418 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4000.563 ms · budget exceeded; nondeterministic; christmas-tree-ascii-art-v0-ekeq2fa67que1.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>d4b66f66373db2f3f46d775ed3cb9eee.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>e1919435a74f80cbc5a8a2f2b501c4801c6b34246f53676def0dca8314249a96</code></div>
+                <div><b>Size:</b> 236×313</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/017-d4b66f66373db2f3f46d775ed3cb9eee-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>WED kader pET bN aF) eE</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>WED Kader PET BN AF) EE</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>Et
+WED kader pET bN aF) eE</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>Et
+WED Kader PET BN AF) EE</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>LU
+ロー ミミ (ユナ ュー だ ミミ ニー コー ニュ コニー ご ミ</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>psm7-eng — proposal_only · 395.599 ms</summary><div class='unsupported'>empty_proposal</div><div class='proposal'><div class='rank'>rank 1</div><pre>WED kader pET bN aF) eE</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>WED Kader PET BN AF) EE</pre></div></details><details class='adapter'><summary>psm13-eng — proposal_only · 402.708 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>Et
+WED kader pET bN aF) eE</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>Et
+WED Kader PET BN AF) EE</pre></div></details><details class='adapter'><summary>psm7-jpn-cjk — proposal_only · 1147.997 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>LU
+ロー ミミ (ユナ ュー だ ミミ ニー コー ニュ コニー ご ミ</pre></div></details><details class='adapter'><summary>psm7-ara — proposal_only · 352.154 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>و
+لبنتدةبي بض تمعد تتاف عقي مضي</pre></div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 48.462 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>/||</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 77.629 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4002.153 ms · budget exceeded; nondeterministic; d4b66f66373db2f3f46d775ed3cb9eee.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4003.219 ms · budget exceeded; nondeterministic; d4b66f66373db2f3f46d775ed3cb9eee.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4004.448 ms · budget exceeded; nondeterministic; d4b66f66373db2f3f46d775ed3cb9eee.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 30.007 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 28.984 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 28.451 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 1997.004 ms</summary><div class='unsupported'>candidate_margin_insufficient, emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>eb861dc84400fc36.png!cover_jpg.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>3194c0d6e8bf4da40ac12223e256b8905c4ba11a34571b4925eb08e3d7bd67f5</code></div>
+                <div><b>Size:</b> 394×192</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/018-eb861dc84400fc36-pngcover-jpg-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>/\/|///
+_\|/_
+|_|
+||</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>               |    |</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>               l    |</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>               │    |</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>               \    |</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5003.307 ms · budget exceeded; nondeterministic; eb861dc84400fc36.png!cover_jpg.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 479.565 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>/\/|///
+_\|/_
+|_|
+||</pre></div></details><details class='adapter'><summary>structural-unicode-row — proposal_only · 3943.109 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='proposal'><div class='rank'>rank 1</div><pre>               |    |</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>               l    |</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>               │    |</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>               \    |</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>               l</pre></div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4001.497 ms · budget exceeded; nondeterministic; eb861dc84400fc36.png!cover_jpg.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4005.359 ms · budget exceeded; nondeterministic; eb861dc84400fc36.png!cover_jpg.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4004.127 ms · budget exceeded; nondeterministic; eb861dc84400fc36.png!cover_jpg.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 477.701 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 484.684 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 475.878 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 642.717 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>ebf485c62e6e63738ad4fcb1a4396e28.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>6d022cabc2afd12dda47ba87fd61eda6b1521e6129317ab2f327c9d1c9b78a95</code></div>
+                <div><b>Size:</b> 236×236</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/019-ebf485c62e6e63738ad4fcb1a4396e28-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>hk
+ｃｅｅ)</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>hk
+c ee)</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>hk
+ce e)</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>hk
+cee )</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>hk
+cee)</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>psm7-eng — proposal_only · 566.291 ms</summary><div class='unsupported'>empty_proposal</div><div class='proposal'><div class='rank'>rank 1</div><pre>hk
+ｃｅｅ)</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>hk
+c ee)</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>hk
+ce e)</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>hk
+cee )</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>hk
+cee)</pre></div></details><details class='adapter'><summary>psm13-eng — proposal_only · 608.672 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>Ah
+Ｃoo？
+h~~Jy
+ｃｅｅ)</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>Ah
+Ｃoo？
+h~~Jy
+c ee)</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>Ah
+Ｃoo？
+h~~Jy
+ce e)</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>Ah
+Ｃoo？
+h~~Jy
+cee )</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>Ah
+Ｃoo？
+h~~Jy
+cee)</pre></div></details><details class='adapter'><summary>psm7-jpn-cjk — proposal_only · 1589.74 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>人
+Ｃ、。７
+下 ~、 多
+じじ と)</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>人
+Ｃ、。７
+下 ~、 多
+じじと )</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>人
+Ｃ、。７
+下 ~、 多
+じじ と )</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>人
+C 、 。7
+下 ~、 多
+じじ と)</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>人
+C 、 。7
+下 ~、 多
+じじと )</pre></div></details><details class='adapter'><summary>psm7-ara — proposal_only · 312.064 ms</summary><div class='unsupported'>empty_proposal</div><div class='proposal'><div class='rank'>rank 1</div><pre>7
+ت اثا</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>7
+تا ثا</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>7
+تاث ا</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>7
+تاثا</pre></div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 62.509 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>|\  -  \
+)</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 81.924 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4004.086 ms · budget exceeded; nondeterministic; ebf485c62e6e63738ad4fcb1a4396e28.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4004.291 ms · budget exceeded; nondeterministic; ebf485c62e6e63738ad4fcb1a4396e28.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4003.412 ms · budget exceeded; nondeterministic; ebf485c62e6e63738ad4fcb1a4396e28.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 47.104 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 49.613 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 50.695 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 388.336 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>images.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>5b0e1f4f0a416c952807fc4a7c6b25651693658cbc7934dfbdc512486d3e1822</code></div>
+                <div><b>Size:</b> 528×581</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/020-images-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>./            /          /       /
+/             /          /        /
+/      /
+/  / / |--  .\     /     /
+---- |        \
+_   _|
+/           .|  __     ___---____      ./       /
+/               /  \ - -_-    /        /
+|        |.       )
+/                                      /
+/            (      )    /     /
+.          |   -      _-      .        .
+).-/</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5004.588 ms · budget exceeded; nondeterministic; images.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 473.838 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>./            /          /       /
+/             /          /        /
+/      /
+/  / / |--  .\     /     /
+---- |        \
+_   _|
+/           .|  __     ___---____      ./       /
+/               /  \ - -_-    /        /
+|        |.       )
+/                                      /
+/            (      )    /     /
+.          |   -      _-      .        .
+).-/</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 568.094 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4003.232 ms · budget exceeded; nondeterministic; images.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4001.71 ms · budget exceeded; nondeterministic; images.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4004.196 ms · budget exceeded; nondeterministic; images.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 344.202 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 360.939 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 329.499 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected · 2266.501 ms</summary><div class='unsupported'>emoji_modality_not_evidenced</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>rain-wind-ascii-art-v0-2asg0us8glbf1.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>8a87b1d7f53a93aa297a36f11fe916eddf71afe470f3615abd931c5dac7f001b</code></div>
+                <div><b>Size:</b> 640×589</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/021-rain-wind-ascii-art-v0-2asg0us8glbf1-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>rd Va Va Va
+nt 4) :</pre></div>
+<div class='proposal'><div class='rank'>rank 2</div><pre>A
+The,
+Ht dae</pre></div>
+<div class='proposal'><div class='rank'>rank 3</div><pre>アメ \ アア ト &gt;
+7 2 、</pre></div>
+<div class='proposal'><div class='rank'>rank 4</div><pre>7 و و ص
+‎١ ِ‏ 2 م</pre></div>
+<div class='proposal'><div class='rank'>rank 5</div><pre>////
+_--_-_-____</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>psm7-eng — proposal_only · 817.884 ms</summary><div class='unsupported'>empty_proposal</div><div class='proposal'><div class='rank'>rank 1</div><pre>rd Va Va Va
+nt 4) :</pre></div></details><details class='adapter'><summary>psm13-eng — proposal_only · 946.884 ms</summary><div class='unsupported'></div><div class='proposal'><div class='rank'>rank 1</div><pre>A
+The,
+Ht dae</pre></div></details><details class='adapter'><summary>psm7-jpn-cjk — proposal_only · 1507.535 ms</summary><div class='unsupported'>empty_proposal</div><div class='proposal'><div class='rank'>rank 1</div><pre>アメ \ アア ト &gt;
+7 2 、</pre></div></details><details class='adapter'><summary>psm7-ara — proposal_only · 646.94 ms</summary><div class='unsupported'>empty_proposal</div><div class='proposal'><div class='rank'>rank 1</div><pre>7 و و ص
+‎١ ِ‏ 2 م</pre></div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 543.51 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>////
+_--_-_-____</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 4978.715 ms</summary><div class='unsupported'>run_level_budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4001.595 ms · budget exceeded; nondeterministic; rain-wind-ascii-art-v0-2asg0us8glbf1.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4002.974 ms · budget exceeded; nondeterministic; rain-wind-ascii-art-v0-2asg0us8glbf1.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4004.666 ms · budget exceeded; nondeterministic; rain-wind-ascii-art-v0-2asg0us8glbf1.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 468.864 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 483.137 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 469.936 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4002.995 ms · budget exceeded; nondeterministic; rain-wind-ascii-art-v0-2asg0us8glbf1.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>70526f6720814da888a7bc136ab451a806d71778db003e2a5a29c55f092f75b4</code></div>
+                <div><b>Size:</b> 640×573</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/022-starlit-sky-ascii-art-v0-yen1svc4afuf1-jpeg-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>--........</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5005.345 ms · budget exceeded; nondeterministic; starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 255.699 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>--........</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 752.702 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4003.905 ms · budget exceeded; nondeterministic; starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4000.59 ms · budget exceeded; nondeterministic; starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4003.579 ms · budget exceeded; nondeterministic; starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected · 179.576 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected · 177.484 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected · 179.436 ms</summary><div class='unsupported'>recognizer_unavailable</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4001.666 ms · budget exceeded; nondeterministic; starlit-sky-ascii-art-v0-yen1svc4afuf1.jpeg.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>stonestoryCross_River_Banner.jpg.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>ef0fd069021412aa71d85d7c61417d19b6fcbfee7a17f0d1e4ba4de4602501c4</code></div>
+                <div><b>Size:</b> 1210×642</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/023-stonestorycross-river-banner-jpg-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>__  __            _
+/                      ( (                                __
+/     /                   -
+_                _              -|                                                                        _
+-                                                   /
+\          --/
+-_ __                                                                                     _ /--
+- -                                                                                   _   /   /
+_   __ -       /
+-__  _                                                                                      _           -   - / -   /   -         -     __
+=                    _  _  _        _      _        _                            /           -                __ -           /
+-   -   - -   -           .               _  -_  _-          ------      __ __ / __   / __     /     /- __     /       _   /     /
+_     __                            -  -_  --                   -_ _____    _     - _   -            __   _ _-         _ _---  /     /
+_-                             . .  -  _   _                                         __         _-      --                      _- --
+/-                                     -           -         -                                        -       -     /        _        / --
+_  -         _                                                 -\           _/        ___
+_                        _  -                                                     _     / -   _____
+-_             -                      -                                                                \
+_                                  -       -  -                                                                       |-
+/                _         -    _                                                                             --
+-                -                -    -
+-</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5006.814 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 2398.162 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>__  __            _
+/                      ( (                                __
+/     /                   -
+_                _              -|                                                                        _
+-                                                   /
+\          --/
+-_ __                                                                                     _ /--
+- -                                                                                   _   /   /
+_   __ -       /
+-__  _                                                                                      _           -   - / -   /   -         -     __
+=                    _  _  _        _      _        _                            /           -                __ -           /
+-   -   - -   -           .               _  -_  _-          ------      __ __ / __   / __     /     /- __     /       _   /     /
+_     __                            -  -_  --                   -_ _____    _     - _   -            __   _ _-         _ _---  /     /
+_-                             . .  -  _   _                                         __         _-      --                      _- --
+/-                                     -           -         -                                        -       -     /        _        / --
+_  -         _                                                 -\           _/        ___
+_                        _  -                                                     _     / -   _____
+-_             -                      -                                                                \
+_                                  -       -  -                                                                       |-
+/                _         -    _                                                                             --
+-                -                -    -
+-</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 2656.479 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4004.84 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4001.588 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4005.49 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected_budget_exceeded · 1007.36 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:paddleocr-offline exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected_budget_exceeded · 1008.72 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:independent-offline-easyocr exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected_budget_exceeded · 1010.958 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:independent-offline-surya exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4009.599 ms · budget exceeded; nondeterministic; stonestoryCross_River_Banner.jpg.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>stonestorycrypt_shop.jpg.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> false</div>
+                <div><b>SHA-256:</b> <code>400c54e85f4252a24c66b10d2a17b27b133fe0ab127e5c2e1f1a0e7997b3c4d3</code></div>
+                <div><b>Size:</b> 748×761</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/024-stonestorycrypt-shop-jpg-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='empty'>NO PROPOSALS FROM ANY ADAPTER</div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5016.814 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — rejected_budget_exceeded · 3022.202 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:fixed-lattice-structural exceeded 3.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>structural-unicode-row — rejected · 4034.033 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4003.071 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4002.951 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4004.047 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected_budget_exceeded · 1008.661 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:paddleocr-offline exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected_budget_exceeded · 1005.542 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:independent-offline-easyocr exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected_budget_exceeded · 1007.509 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:independent-offline-surya exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4007.929 ms · budget exceeded; nondeterministic; stonestorycrypt_shop.jpg.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>stonestoryranting_tree_rework.jpg.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> false</div>
+                <div><b>SHA-256:</b> <code>c86a7cc08e17062353f925e142e708a93f51ef8029ec8d54c8c89873e65bc70a</code></div>
+                <div><b>Size:</b> 894×655</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/025-stonestoryranting-tree-rework-jpg-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='empty'>NO PROPOSALS FROM ANY ADAPTER</div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5006.544 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — rejected_budget_exceeded · 3020.128 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:fixed-lattice-structural exceeded 3.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>structural-unicode-row — rejected · 4984.268 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4007.636 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4008.131 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4005.153 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected_budget_exceeded · 1009.377 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:paddleocr-offline exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected_budget_exceeded · 1009.429 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:independent-offline-easyocr exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected_budget_exceeded · 1008.662 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:independent-offline-surya exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4007.361 ms · budget exceeded; nondeterministic; stonestoryranting_tree_rework.jpg.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            
+
+            <section class="card">
+              <h2>waterfall-2c.normalized.png</h2>
+              <div class="meta">
+                <div><b>Authority:</b> proposal_only_diagnostic</div>
+                <div><b>Geometry:</b> proved</div>
+                <div><b>Any proposal:</b> true</div>
+                <div><b>SHA-256:</b> <code>b119f63b182d4ddef6bdfb97574e4f8998fcdb566b830197effd8e1e995b6d06</code></div>
+                <div><b>Size:</b> 756×762</div>
+              </div>
+              <div class="compare">
+                <figure>
+                  <figcaption>Current source normalized PNG</figcaption>
+                  <img src="sources/026-waterfall-2c-normalized.png" />
+                </figure>
+                <figure>
+                  <figcaption>Union/order diagnostic proposals — not candidates</figcaption>
+                  <div class='proposal'><div class='rank'>rank 1</div><pre>\ | /               \ |                   \-        -   |   \     |          |
+-                -                           |          |
+|                                           / |        |          |
+_-   ---                                (
+) (                                  _  / |    |                |
+( )                                     |    |   \
+) (                                         |     \
+/   \ \                  ( )       _     |            |
+/ | \ |           \   |     \     |
+-                             /   \      _     |    |      |
+/ |    |   \     |        |            |
+-  _-  _  -  -  -  _  --_  _            \   |   \
+|      |    |    |  |    |        |    |                |    |    |      |
+--  ---  --  --  -  -  --               |    |          |
+---    --      -    ---    -                     |
+-  -_-  _  -_  _  -__                  \
+-        -    -           /
+_    _      _    -
+-          -    --    -                   \         \ \
+_    -  _      -      _    _
+_  -      _      -
+-            -      -        -                   \
+-    -      -        -                       \         \   \
+-            -      --          -                 \</pre></div>
+                </figure>
+              </div>
+              <details>
+                <summary>Geometry rejection codes</summary>
+                <pre class="codes">[]</pre>
+              </details>
+              <div class="adapters">
+                <details class='adapter'><summary>tesseract-offline — rejected_budget_exceeded · 5001.284 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:tesseract-offline exceeded 5.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>fixed-lattice-structural — proposal_only · 1185.689 ms</summary><div class='unsupported'>ascii_structural_run_unresolved</div><div class='proposal'><div class='rank'>rank 1</div><pre>\ | /               \ |                   \-        -   |   \     |          |
+-                -                           |          |
+|                                           / |        |          |
+_-   ---                                (
+) (                                  _  / |    |                |
+( )                                     |    |   \
+) (                                         |     \
+/   \ \                  ( )       _     |            |
+/ | \ |           \   |     \     |
+-                             /   \      _     |    |      |
+/ |    |   \     |        |            |
+-  _-  _  -  -  -  _  --_  _            \   |   \
+|      |    |    |  |    |        |    |                |    |    |      |
+--  ---  --  --  -  -  --               |    |          |
+---    --      -    ---    -                     |
+-  -_-  _  -_  _  -__                  \
+-        -    -           /
+_    _      _    -
+-          -    --    -                   \         \ \
+_    -  _      -      _    _
+_  -      _      -
+-            -      -        -                   \
+-    -      -        -                       \         \   \
+-            -      --          -                 \</pre></div></details><details class='adapter'><summary>structural-unicode-row — rejected · 1254.589 ms</summary><div class='unsupported'>structural_display_basis_unresolved</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-latin — rejected_budget_exceeded · 4005.534 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:unicode-template-latin exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-combining — rejected_budget_exceeded · 4003.368 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:unicode-template-combining exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>unicode-template-kana — rejected_budget_exceeded · 4006.791 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:unicode-template-kana exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>paddleocr-offline — rejected_budget_exceeded · 1017.437 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:paddleocr-offline exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-easyocr — rejected_budget_exceeded · 1011.976 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:independent-offline-easyocr exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>independent-offline-surya — rejected_budget_exceeded · 1009.588 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:independent-offline-surya exceeded 1.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details><details class='adapter'><summary>emoji-grapheme-atlas — rejected_budget_exceeded · 4003.87 ms · budget exceeded; nondeterministic; waterfall-2c.normalized:emoji-grapheme-atlas exceeded 4.000s</summary><div class='unsupported'>budget_exceeded</div><div class='empty'>no whole-source proposals</div></details>
+              </div>
+            </section>
+            

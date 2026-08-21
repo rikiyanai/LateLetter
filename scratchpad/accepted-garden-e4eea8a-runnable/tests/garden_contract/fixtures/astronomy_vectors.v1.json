@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "authority": "USNO GAST and altitude/azimuth equations",
+  "vectors": [
+    {
+      "timestamp": "2026-01-01T00:00:00+00:00",
+      "latitude": 35.0,
+      "longitude": 139.0,
+      "ra_hours": 6.75247222,
+      "dec_degrees": -16.71611111,
+      "gast_hours": 6.710820696484084,
+      "altitude_degrees": -48.71413916598359,
+      "azimuth_degrees": 285.38247265045777
+    },
+    {
+      "timestamp": "2026-07-21T12:00:00+00:00",
+      "latitude": 41.0,
+      "longitude": -74.0,
+      "ra_hours": 18.61563889,
+      "dec_degrees": 38.78361111,
+      "gast_hours": 7.95141105413992,
+      "altitude_degrees": 3.717643844449076,
+      "azimuth_degrees": 320.8258799016559
+    },
+    {"timestamp":"2026-03-20T12:00:00+00:00","latitude":0.0,"longitude":0.0,"ra_hours":0.0,"dec_degrees":0.0,"gast_hours":23.869055231656986,"altitude_degrees":88.0358284748548,"azimuth_degrees":90.0},
+    {"timestamp":"2026-06-21T00:00:00+00:00","latitude":51.0,"longitude":0.0,"ra_hours":14.261,"dec_degrees":19.1825,"gast_hours":17.94723482981313,"altitude_degrees":36.42542218114997,"azimuth_degrees":254.78738558591044},
+    {"timestamp":"2026-12-21T06:00:00+00:00","latitude":-34.0,"longitude":151.0,"ra_hours":6.75247222,"dec_degrees":-16.71611111,"gast_hours":11.98860272312659,"altitude_degrees":-20.755535905112197,"azimuth_degrees":128.80312186052862},
+    {"timestamp":"2026-09-22T18:00:00+00:00","latitude":65.0,"longitude":25.0,"ra_hours":2.53030103,"dec_degrees":89.26410944,"gast_hours":18.107552133979116,"altitude_degrees":64.84560138070304,"azimuth_degrees":1.6976627702680507},
+    {"timestamp":"2026-02-14T03:30:00+00:00","latitude":-23.0,"longitude":-46.0,"ra_hours":12.4433,"dec_degrees":-63.099,"gast_hours":13.111659786011202,"altitude_degrees":43.274942606734534,"azimuth_degrees":158.589474366158},
+    {"timestamp":"2026-05-01T21:00:00+00:00","latitude":35.0,"longitude":-120.0,"ra_hours":5.919529,"dec_degrees":-52.69566,"gast_hours":11.653496362066711,"altitude_degrees":-2.557390161792053,"azimuth_degrees":160.17475247168377},
+    {"timestamp":"2026-08-15T09:45:00+00:00","latitude":1.0,"longitude":104.0,"ra_hours":19.846389,"dec_degrees":8.868322,"gast_hours":7.3380044587191815,"altitude_degrees":6.451871538254449,"azimuth_degrees":81.18778749989202},
+    {"timestamp":"2026-10-31T23:59:00+00:00","latitude":60.0,"longitude":-150.0,"ra_hours":16.490129,"dec_degrees":-26.431946,"gast_hours":2.669938848648331,"altitude_degrees":3.5395811733018916,"azimuth_degrees":182.41963951721795},
+    {"timestamp":"2026-11-11T11:11:00+00:00","latitude":-45.0,"longitude":170.0,"ra_hours":7.655033,"dec_degrees":5.225,"gast_hours":14.557704279025765,"altitude_degrees":-1.198381767188646,"azimuth_degrees":83.80585540665909},
+    {"timestamp":"2026-04-05T04:00:00+00:00","latitude":90.0,"longitude":0.0,"ra_hours":18.61563889,"dec_degrees":38.78361111,"gast_hours":16.89850165250384,"altitude_degrees":38.78361111000001,"azimuth_degrees":154.24294143755762}
+  ]
+}

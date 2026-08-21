@@ -1,0 +1,60 @@
+{
+  "background_rgb": [
+    255,
+    255,
+    255
+  ],
+  "coverage": {
+    "clusters": [
+      {
+        "covered": true,
+        "font": "NotoSansArabic-Regular.ttf",
+        "missing_codepoints": [],
+        "text": "س"
+      },
+      {
+        "covered": true,
+        "font": "NotoSansArabic-Regular.ttf",
+        "missing_codepoints": [],
+        "text": "ل"
+      },
+      {
+        "covered": true,
+        "font": "NotoSansArabic-Regular.ttf",
+        "missing_codepoints": [],
+        "text": "ا"
+      },
+      {
+        "covered": true,
+        "font": "NotoSansArabic-Regular.ttf",
+        "missing_codepoints": [],
+        "text": "م"
+      }
+    ],
+    "complete": true
+  },
+  "degraded": false,
+  "fallback_box_expected": false,
+  "fixture_id": "positive-arabic",
+  "font_chain": {
+    "NotoColorEmoji.ttf": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+    "NotoSansArabic-Regular.ttf": "ceea25b464a656dc3b26849bab9356740401af62aedf1bfa8b7f0d9b75925b1b",
+    "NotoSansCJKjp-Regular.otf": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+    "NotoSansMono-Variable.ttf": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081"
+  },
+  "font_hashes": {
+    "NotoColorEmoji.ttf": "72a635cb3d2f3524c51620cdde406b217204e8a6a06c6a096ff8ed4b5fd6e27b",
+    "NotoSansArabic-Regular.ttf": "ceea25b464a656dc3b26849bab9356740401af62aedf1bfa8b7f0d9b75925b1b",
+    "NotoSansCJKjp-Regular.otf": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+    "NotoSansMono-Variable.ttf": "2cb2adb378a8f574213e23df697050b83c54c27df465a2015552740b2769a081"
+  },
+  "font_size_px": 22,
+  "foreground_rgb": [
+    34,
+    37,
+    41
+  ],
+  "generator": "tests/fixtures/transcription-v2/build_corpus_v2.py",
+  "pillow_version": "12.1.0",
+  "renderer": "Pillow"
+}

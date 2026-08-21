@@ -1,0 +1,11 @@
+[
+  {"name": "bundle", "version": 1, "path": []},
+  {"name": "message", "version": 1, "path": ["messages", 0]},
+  {"name": "message-kdf", "version": 1, "path": ["messages", 0, "kdf_params"]},
+  {"name": "gift", "version": 1, "path": ["garden_gifts", 0]},
+  {"name": "trigger", "version": 1, "path": ["garden_gifts", 0, "trigger"]},
+  {"name": "notification", "version": 1, "path": ["notification"]},
+  {"name": "bundle-auth-kdf", "version": 2, "path": ["bundle_auth_kdf_params"]},
+  {"name": "garden-program", "version": 2, "path": ["garden_program"]},
+  {"name": "garden-program-kdf", "version": 2, "path": ["garden_program", "kdf_params"]}
+]

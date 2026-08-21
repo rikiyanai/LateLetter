@@ -1,7 +1,7 @@
 {
-  "artifact": "recognizer-benchmark-v10-d1-row-ocr-gap.json",
-  "artifact_sha256": "4a148a53eca8650d1294ebd1149834602c5b20c86de049d209d749e992e01a85",
-  "artifact_size_bytes": 117931267,
+  "artifact": "recognizer-benchmark-v10-d1-row-ocr-gap.json.gz",
+  "artifact_sha256": "a59634928b5ac4282e31922e2b04f3ba438e09df8666bc65d399df3ba0939d7f",
+  "artifact_size_bytes": 2407420,
   "authority": "diagnostic_only",
   "budget_failures": [
     "positive-degraded-fixed:psm7-jpn-cjk"

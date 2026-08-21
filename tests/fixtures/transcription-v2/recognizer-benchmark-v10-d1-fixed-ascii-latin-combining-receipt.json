@@ -1,7 +1,7 @@
 {
-  "artifact": "recognizer-benchmark-v10-d1-fixed-ascii-latin-combining.json",
-  "artifact_sha256": "ff2a387752ff21f3f542b8b56b60f0525c8f4ff70eed0e09f010e2cc0e1d1521",
-  "artifact_size_bytes": 115821602,
+  "artifact": "recognizer-benchmark-v10-d1-fixed-ascii-latin-combining.json.gz",
+  "artifact_sha256": "700c7f3c107449b9bec7ebf1ddb6d38a22605440a68725b8cf1995490f473373",
+  "artifact_size_bytes": 2340773,
   "authority": "diagnostic_only",
   "budget_failures": [],
   "determinism_replay_performed": true,

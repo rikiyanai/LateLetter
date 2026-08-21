@@ -1,0 +1,26 @@
+{
+  "author_draft": {
+    "author_name": "Riki",
+    "author_relationship": "",
+    "recipient_name": "Mara",
+    "recipient_relationship": "",
+    "author_timezone": "UTC",
+    "passphrase_hint": "the room with the yellow table",
+    "garden_seed": 4056303718,
+    "letters": [
+      {
+        "id": "letter.56209171c0ba4bff87793c6cf8a55215",
+        "date": "2026-08-11",
+        "label": "The yellow kitchen",
+        "body": "Dear Mara,\n\nThe yellow kitchen.\n\nLove, Riki",
+        "shape": "",
+        "used_prompt_ids": [],
+        "permission_opt_in": false
+      }
+    ],
+    "gifts": [],
+    "garden_story_enabled": false,
+    "rabbit_name": "Clover"
+  },
+  "author_draft_revision": 3
+}

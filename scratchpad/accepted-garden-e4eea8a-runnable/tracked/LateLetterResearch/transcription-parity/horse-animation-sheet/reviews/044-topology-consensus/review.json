@@ -1,0 +1,28 @@
+{
+  "format": "lateletter-unknown-neighborhood-review-v1",
+  "source": "../../source/source.normalized.png",
+  "source_sha256": "9ea8eab2c0b378ed89ad2337515a6baea4ec81d0eace6ba042fab4abee63a3d3",
+  "attempt": "../../attempts/044-topology-consensus",
+  "attempt_manifest_sha256": "1efc4104762cb8fc3148976318222ed461ac88c0af91e20b2ac379d60d5cd446",
+  "evidence": "../../attempts/044-topology-consensus/row-decoding.json",
+  "evidence_sha256": "3be265ab01ea01cbacf181fef342aaa860b08ec1058478423dc8bdbfdb28982d",
+  "calibration_sha256": "fe22ce7075c1f12907edb2c261bb738b7800688f883d12a3903d5f4a3997242d",
+  "unknown_centers": [
+    {
+      "row": 17,
+      "column": 5
+    },
+    {
+      "row": 19,
+      "column": 7
+    },
+    {
+      "row": 19,
+      "column": 13
+    }
+  ],
+  "panel_shape": "3x3",
+  "artifact": "unknown-neighborhoods.png",
+  "review_only": true,
+  "note": "Panels expose neighboring cell ownership; they do not resolve or edit unknown glyphs."
+}
