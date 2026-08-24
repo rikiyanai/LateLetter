@@ -2,6 +2,25 @@
 
 Check this file before making fixes. Add a short entry for each user-visible bug, spec contradiction, security flaw, or failed implementation attempt, including the outcome.
 
+## 2026-08-24
+
+### Public unslop pass: the LateLetter-derived raster-to-ASCII converter is clean of internal IDs, but `docs/provenance.md` still reads in process language
+
+- **Why this is a LateLetter entry.** `rikiyanai/screenshot-of-ascii-art-to-txt-converter` is public and is the repository LateLetter parents. Its `docs/provenance.md` records extraction from private `rikiyanai/lateletter` at observed HEAD `fad00c6bb8f2b93faaa5c7e79cabc2b7faee77f6` on 2026-08-11, listing three copied paths with source and packaged SHA-256 for each. LateLetter is the source owner, so its public surface is logged here.
+- **Routing correction.** The operator's 2026-08-24 instruction said the Xu repository findings should be logged in this file. That is the wrong owner, and they are not logged here. `Xu-structured-ascii-art-algorithm-reproduction-experiments/docs/ATTRIBUTION.md:3` names `rikiyanai/asciicker-Y9-2` as its primary private source, and every identifier it leaks (FL-4512, FL-4547, FL-4561, FL-4482) belongs to Y9-2. Those findings are logged as **FL-4778 in `asciicker-Y9-2/docs/FAILURE_LOG.md`**, alongside FL-4776 (CP437 runtime), FL-4777 (XP sprite inspector) and FL-4779 (unicode glyph explorer). The converter repo above is the only public repository LateLetter actually parents.
+- **Audited 2026-08-24** by cloning `main` and grepping it, not by reading the previous session's summary. **Zero `FL-NNNN` identifiers outside the failure log.** The 2026-08-23 README rewrite (commit `9c9e3e08`) holds up on inspection: it states the measured limit without strengthening it — "40 of 78 emitted non-space cells remain unresolved", with the honest rider that source characters OCR missed entirely are not counted, so total coverage is unknown — labels the demo GIF "a README comparison, not evidence that the converter is generally accurate", and calls the bundled output "an OCR candidate, not an accepted reconstruction". That README needs no further rewrite.
+- **What the pass missed: `docs/provenance.md` was never touched.** It still addresses a public audience in internal process language. Lines 17–19 describe "its receipt", "the 2026-08-12 acceptance re-audit", and "The receipt binds them to the source and generated `machine-ocr.txt` hashes". The provenance table itself — source paths, SHA-256 pairs, and the note that only `source_png` was rewritten to a relative path — is good material and must survive any rewrite untouched. Only the surrounding sentences are the problem.
+- **In scope vs. out of scope.** One further artifact repeats that word in a filename a reader sees: the comparison JSON sitting beside the GIF under `docs/`. Four files use the same word as a variable name or a command-line flag — `run-sample.sh`, `scripts/generate_visual_evidence.py`, `tests/test_contract.py` — and those are functional identifiers, deliberately **not** in scope. Renaming them would be churn with no reader benefit.
+- **Status:** **OPEN — prose only.** Next action: rewrite the three prose lines in `docs/provenance.md` so the table and hashes stay byte-identical while the surrounding sentences explain in plain terms that the GIF and its JSON were generated in the standalone repository, and which file hashes they were built from. Optionally rename that JSON to `...-comparison.json` and update the constant at `tests/test_contract.py:16`.
+- **Falsifier for the clean half of this entry:** any `FL-NNNN` occurrence on `main` outside `docs/FAILURE_LOG.md`. None existed at audit time.
+
+## 2026-08-23
+
+### Stone Story RPG ASCII Art References Extracted and Tracked
+- **Action:** Copied 9 developer-authored `.txt` ASCII art sheets from the Discord Help export into `ascii-animations/stone-story-references/` and tracked them in Git.
+- **Purpose:** Serve as reference material for editing and creating new txt art for the LateLetter garden, as instructed by the operator.
+- **Status:** **TRACKED**. Ready for visual editing and integration.
+
 ## 2026-08-01
 
 ### The operator gave explicit per-asset approval to all ten HTML fixtures and an assistant withdrew all of them
