@@ -73,8 +73,7 @@ README-facing aliases were applied to `main`.
 
 | Surface | README asset | SHA-256 | GIF checks |
 |---|---|---|---|
-| current root candidate | `docs/lateletter-viewer-current.gif` | `fb985c3f7a0f3ad03f174d2a5ab827493feb6c1c02c2573e173386e8424671ff` | 960×600, 16 frames, 16 unique frames, loop=0, frame delays 220/900/1000 ms |
-| production legacy viewer | `docs/lateletter-viewer-legacy.gif` | `7aacf341739ce23b1bd0467db2ddef739532c04fc75998944669e8e775fc6a87` | 960×600, 16 frames, 16 unique frames, loop=0, frame delays 220/900/1000 ms |
+| legacy recipient walkthrough | `docs/lateletter-legacy-recipient-clickthrough.gif` | `7051f8b7df126aed7ca1583c870056c088296a15025cf8b8b3da19c393512f5a` | 960×600, 10 frames, loop=0, recipient demo flow through welcome, garden, passphrase, archive, reading, and return |
 
 The GIF-level mechanical checks pass. A person must still review the rendered
 motion before calling either capture visual acceptance.

@@ -1,42 +1,48 @@
 # LateLetter
 
-Letters that arrive after you're gone.
+LateLetter is a small tool for writing private letters that someone can open
+later in a browser.
 
-A tool for writing time-delayed letters to loved ones, delivered through a living ASCII garden in the browser.
+It is built for messages that should feel cared for after the author is not
+there to send them: birthday notes, grief letters, instructions, memories,
+apologies, encouragement, or anything else that should reach one person at the
+right time.
 
-## Browser viewer previews
+The recipient experience is intentionally simple: open a link or `.lateletter`
+file, enter the passphrase, walk through a quiet ASCII garden, and read the
+letters that are available for that date.
 
-The production URL currently serves the frozen legacy viewer while the newer
-root viewer completes its acceptance work. The two GIFs below are README-facing
-browser-flow captures. On `main`, the root candidate opens `viewer-bnw.html`.
-The production legacy viewer is pinned by the safety tag and release linked
-below, because the live Pages deployment is still served from the retained
-legacy tree on `restore/pre-jul19-viewer`.
+## Recipient walkthrough
 
-[![Current root HTML viewer candidate](docs/lateletter-viewer-current.gif)](docs/lateletter-viewer-current.gif)
+This is the legacy browser viewer currently used for the public LateLetter
+experience: load the demo, open the letters, enter the passphrase, choose a
+letter, read it, and return to the garden.
 
-[![Production legacy HTML viewer](docs/lateletter-viewer-legacy.gif)](docs/lateletter-viewer-legacy.gif)
-
-The legacy Pages fingerprint, deployment commit, and safe tag/release plan are
-recorded in [`docs/legacy-pages-release-plan.md`](docs/legacy-pages-release-plan.md).
-
-![LateLetter TUI demo](docs/demo.gif)
+[![Legacy recipient click-through](docs/lateletter-legacy-recipient-clickthrough.gif)](docs/lateletter-legacy-recipient-clickthrough.gif)
 
 ## How it works
 
-**Author** writes letters, sets delivery dates, and chooses a passphrase. Letters are bundled into a `.lateletter` file.
+LateLetter has two parts:
 
-**Recipient** opens the file in their browser. A garden grows while they wait. Letters appear on their scheduled dates. Animals visit. The garden remembers.
+- The author tool turns letter drafts, dates, hints, and garden details into a
+  sealed `.lateletter` bundle.
+- The browser viewer lets the recipient open that bundle. The passphrase opens
+  the private letter text; the garden, author name, hint, and delivery dates are
+  visible around it.
+
+The point is not just storage. The garden gives the recipient a place to arrive,
+wait, and return to, instead of handing them a bare encrypted file.
 
 ## Quick start
 
 Open `viewer-bnw.html` in a browser. Click **[get demo letter]** to load the
-demo bundle, or drop your own `.lateletter` file. The public URL remains on the
-tagged legacy Pages snapshot until the root viewer's release gates are complete.
+demo bundle, or drop your own `.lateletter` file.
 
 Demo passphrase: `garden-biscuit-2026`
 
-**[get passcode-locked demo]** loads a demo whose private content can only be opened with passcode `garden-biscuit-2026`. A wrong passcode is rejected. Internally, the output bundle uses PBKDF2-SHA256 and AES-256-GCM.
+The passcode-locked demo opens only with that passphrase. A wrong passphrase is
+rejected. Sealed bundles use PBKDF2-SHA256 and AES-256-GCM for the private
+letter body.
 
 ## Send a real letter
 
@@ -74,6 +80,15 @@ Heads-up: your author name, the passphrase hint, and delivery dates are
 plaintext in the bundle, so anyone with the URL (or browsing the repo)
 can see those — the letter body and gift sentiments stay sealed.
 Demo link once deployed: https://rikiworld.com/lateletter/to-a-friend/ (passcode `garden-biscuit-2026`).
+
+## Production safety note
+
+`https://rikiworld.com/lateletter/` currently serves the legacy pretext-monolith
+viewer. That deployed version is kept as a rollback-safe release:
+[`lateletter-legacy-pages-2026-07-28`](https://github.com/rikiyanai/lateletter/releases/tag/lateletter-legacy-pages-2026-07-28).
+
+The newer root viewer work lives on `main`, but the public site should remain on
+the legacy viewer until an intentional release replaces it.
 
 ## Project structure
 
