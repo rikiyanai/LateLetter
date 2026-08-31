@@ -1,6 +1,8 @@
 # LateLetter legacy Pages safety release plan
 
-Status: prepared for root review; no tag or GitHub release has been created.
+Status: safety tag and GitHub release created on 2026-08-31; the production
+Pages URL still serves the frozen legacy viewer while the root viewer remains a
+candidate.
 
 ## Observed production identity
 
@@ -21,22 +23,26 @@ unchanged in the deployed commit `e55593a`. The deployment commit is the
 artifact identity; `c1ab652`/`7b9389d` are the viewer-code lineage. They must
 not be collapsed into one claim.
 
-GitHub currently reports no tags and no releases for this repository.
+GitHub now reports the annotated tag
+`lateletter-legacy-pages-2026-07-28` and the release
+`LateLetter legacy Pages snapshot — 2026-07-28`.
 
-## Safe tag and release plan
+## Safe tag and release receipt
 
-After root review of the complete dirty-worktree boundary:
+Root review was followed by these actions on 2026-08-31:
 
-1. Create an annotated, immutable-in-practice safety tag named
+1. Created an annotated, immutable-in-practice safety tag named
    `lateletter-legacy-pages-2026-07-28` at the exact deployment commit
-   `e55593aae1d34427b2d384e75244eeb45556f090`.
-2. Verify the tag resolves to that commit, the `legacy/viewer-bnw.html` blob
+   `e55593aae1d34427b2d384e75244eeb45556f090`. The tag object is
+   `5166cb9eeb2a7f766fb45b149d1373e3cf519988`.
+2. Verified the tag resolves to that commit, the `legacy/viewer-bnw.html` blob
    has the SHA-256 above, and `scripts/prepare_legacy_site.py` reproduces the
    expected artifact layout without extra files.
-3. Create a GitHub release from that tag titled
-   `LateLetter legacy Pages snapshot — 2026-07-28`. Describe it as the
-   production safety snapshot, include the deployment-run URL, the entrypoint
-   hash, and the fact that it contains the pre-July-19 viewer lineage.
+3. Created a GitHub release from that tag titled
+   `LateLetter legacy Pages snapshot — 2026-07-28`:
+   `https://github.com/rikiyanai/lateletter/releases/tag/lateletter-legacy-pages-2026-07-28`.
+   It is the production safety snapshot and contains the deployment-run
+   reference, entrypoint hash, and pre-July-19 viewer lineage.
 4. Keep the release as the rollback reference. Do not repoint Pages at the
    root viewer until its acceptance evidence and operator visual review are
    complete; a README GIF is evidence of motion only, not that acceptance.
@@ -44,8 +50,9 @@ After root review of the complete dirty-worktree boundary:
    safety commit or restore the exact tagged tree, then recheck the live URL
    hash and response headers.
 
-This plan is documentation only. No tag, release, Pages dispatch, or remote
-mutation was performed during this audit.
+No Pages dispatch was performed during the release publication. Pages remains
+on the legacy snapshot until an intentional deployment changes it and the live
+URL hash is rechecked.
 
 ## Prepared About description
 
