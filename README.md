@@ -4,6 +4,21 @@ Letters that arrive after you're gone.
 
 A tool for writing time-delayed letters to loved ones, delivered through a living ASCII garden in the browser.
 
+## Browser viewer previews
+
+The production URL currently serves the frozen legacy viewer while the newer
+root viewer completes its acceptance work. These are candidate-only motion
+captures from the same browser route used by the repository's visual-review
+harness; the legacy capture matches the deployed HTML surface, while the root
+capture is explicitly not a production claim.
+
+[![Current root HTML viewer candidate](docs/lateletter-viewer-current.gif)](docs/lateletter-viewer-current.gif)
+
+[![Production legacy HTML viewer](docs/lateletter-viewer-legacy.gif)](docs/lateletter-viewer-legacy.gif)
+
+The legacy Pages fingerprint, deployment commit, and safe tag/release plan are
+recorded in [`docs/legacy-pages-release-plan.md`](docs/legacy-pages-release-plan.md).
+
 ![LateLetter TUI demo](docs/demo.gif)
 
 ## How it works
@@ -14,7 +29,10 @@ A tool for writing time-delayed letters to loved ones, delivered through a livin
 
 ## Quick start
 
-Open `viewer-bnw.html` in a browser. Click **[get demo letter]** to load the demo bundle, or drop your own `.lateletter` file.
+Open `viewer-bnw.html` in a browser. Click **[get demo letter]** to load the
+demo bundle, or drop your own `.lateletter` file. The public URL is intentionally
+served from `legacy/viewer-bnw.html`; the root viewer is the newer development
+candidate until its release gates are complete.
 
 Demo passphrase: `garden-biscuit-2026`
 
@@ -63,6 +81,8 @@ Demo link once deployed: https://rikiworld.com/lateletter/to-a-friend/ (passcode
 viewer-bnw.html          Single-file browser viewer (garden + letter reader)
 test_fixture.lateletter  Demo bundle (Buddy's letter)
 src/lateletter/          Python author tools (CLI, intake, bundling)
+legacy/                  Frozen pre-July-19 browser viewer used by Pages
+docs/visual-review/      Browser captures, masters, stills, and validation receipts
 ```
 
 ## Garden

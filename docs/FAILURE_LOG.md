@@ -17184,3 +17184,78 @@ were found by executing the combined sweep and repaired in the same pass.
   decision: restored Garden destination after return review (2026-08-11),
   item 5 superseded; Wayfinder refinement: close product E2E and Garden as
   independent acceptance lanes (2026-08-11).
+
+### Stone Story Discord art bundle located and intake grounded in the external source owner (2026-08-21)
+
+The requested source was not a repository file or a loose `.txt` collection.
+It is the saved DiscordChatExporter HTML plus its companion attachment directory
+at `/Users/r/Pictures/ASCIICKER Y9-2/Godot References/Discord Help/stonestory:world fountain:gamedev`.
+The HTML is `Stone Story RPG - World Fountain - gamedev [463768875490869259].html`
+(SHA-256 `9c4728ce6679180fe1ccc6013d1972b60402eaee9b95e4444f25c726da591bc1`).
+Its footer records 12,045 messages in UTC-5; structural inspection found 12,033
+message containers, 1,765 attachment blocks, and 3,034 `standardcombo` posts.
+The same directory contains the referenced media and nine preserved `.txt` art
+sheets.
+
+`docs/research/2026-07-19-stone-story-ascii-animation.md` now records the exact
+source identity, hashes for all nine text sheets, their evidence roles, and six
+directly supported production findings. The stale `16,000+` assertion was
+corrected to the primary-source-supported “more than 10,000”; the raw external
+bundle remains the source owner and no third-party art was promoted into the
+runtime or operator-granted atlas.
+
+- **Status:** INTAKED AS RESEARCH AND PROVENANCE; NOT RUNTIME ART, NOT AN
+  OPERATOR GRANT, AND NOT VISUAL ACCEPTANCE. Next implementation work may use
+  the extracted action-first sheets, stage-bound composition, pose lineage,
+  negative-space discipline, and motion corpus as design evidence, but any
+  LateLetter asset still requires its own authorship/grant and in-product
+  acceptance.
+
+### Production legacy Pages revision fingerprinted and rollback plan prepared (2026-08-31)
+
+The live `https://rikiworld.com/lateletter/` entrypoint was fetched and hashed
+against the local repository. Its HTML SHA-256 is
+`93d239576b94328c3164a9a2781bd8cf7ef1825f709b2b35dfa06b843af50faa`, exactly
+matching `legacy/viewer-bnw.html`. GitHub Actions identifies the successful
+Pages deployment as run `30392909905` from commit
+`e55593aae1d34427b2d384e75244eeb45556f090` on
+`restore/pre-jul19-viewer`. The viewer-code blob is the same as root
+`viewer-bnw.html` at `c1ab652` and the archived `7b9389d`; `d888f19` introduced
+the frozen `legacy/` copy. The artifact/deployment commit and viewer lineage
+are recorded separately so a future audit cannot mistake a copied path for a
+second implementation.
+
+The repository had no tags or releases at audit time. The exact proposed
+annotated safety tag, release title, verification sequence, and prepared About
+description are in `docs/legacy-pages-release-plan.md`. No remote mutation was
+performed. This closes the provenance unknown and exposes the process gap that
+the README did not distinguish the production legacy viewer from the newer root
+candidate; the README now labels both surfaces and links candidate-only motion
+captures with their receipts.
+
+- **Status:** PROVENANCE VERIFIED; SAFETY TAG/RELEASE PLAN PREPARED; NO TAG,
+  RELEASE, OR OPERATOR VISUAL ACCEPTANCE CLAIMED.
+
+### README browser motion captures regenerated with system Chrome (2026-08-31)
+
+The canonical capture harness was first unable to open a browser because the
+Playwright-managed `ffmpeg-mac` executable was absent. A reversible local shim
+to the installed system FFmpeg allowed the documented system-Chrome route to
+run without downloading a browser. Two fresh packages were produced under
+`docs/visual-review/2026-08-31/lateletter-readme-system-chrome/`, with public
+README copies at `docs/lateletter-viewer-current.gif` and
+`docs/lateletter-viewer-legacy.gif`.
+
+Both GIFs pass the mechanical GIF contract: 960×600, 10 fps, 100 frames,
+10.0 seconds, infinite loop, and at least 30 unique decoded frames (60 current,
+91 legacy). The complete capture receipts remain candidate-only. The legacy
+receipt records an empty ARIA object-count summary because that older viewer
+does not implement the newer summary contract. The current-root receipt records
+only 2 unique desktop and 1 unique mobile DOM samples, below the default 5,
+although its GIF has 60 unique decoded frames. These are motion previews, not
+acceptance evidence; a human visual review remains required.
+
+- **Status:** GENERATED AND MECHANICALLY VERIFIED; VISUAL SIGN-OFF OPEN. The
+  missing Playwright FFmpeg asset and the mismatch between legacy/current
+  accessibility summaries are recorded process gaps, not silently treated as
+  product acceptance.
