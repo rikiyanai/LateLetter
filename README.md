@@ -7,10 +7,10 @@ A tool for writing time-delayed letters to loved ones, delivered through a livin
 ## Browser viewer previews
 
 The production URL currently serves the frozen legacy viewer while the newer
-root viewer completes its acceptance work. These are candidate-only motion
-captures from the same browser route used by the repository's visual-review
-harness; the legacy capture matches the deployed HTML surface, while the root
-capture is explicitly not a production claim.
+root viewer completes its acceptance work. The two GIFs below are README-facing
+browser-flow captures from the real HTML routes: the root candidate opens
+`viewer-bnw.html`, and the legacy capture opens `legacy/viewer-bnw.html`, the
+surface retained for `rikiworld.com/lateletter`.
 
 [![Current root HTML viewer candidate](docs/lateletter-viewer-current.gif)](docs/lateletter-viewer-current.gif)
 
