@@ -124,6 +124,12 @@ def prepare_pages_site(output: Path) -> None:
     )
     if errors:
         raise RuntimeError("Source browser graph is not closed:\n" + "\n".join(sorted(errors)))
+    pretext_license = REPOSITORY_ROOT / "web/vendor/pretext/LICENSE"
+    if any(
+        source.relative_to(REPOSITORY_ROOT).parts[:3] == ("web", "vendor", "pretext")
+        for source in closure
+    ) and pretext_license.is_file():
+        closure.add(pretext_license)
     for source in sorted(closure):
         relative = source.relative_to(REPOSITORY_ROOT)
         destination = output / (Path("index.html") if relative == ENTRYPOINT else relative)

@@ -4,6 +4,22 @@ Letters that arrive after you're gone.
 
 A tool for writing time-delayed letters to loved ones, delivered through a living ASCII garden in the browser.
 
+## Browser viewer previews
+
+The production URL currently serves the frozen legacy viewer while the newer
+root viewer completes its acceptance work. The two GIFs below are README-facing
+browser-flow captures. On `main`, the root candidate opens `viewer-bnw.html`.
+The production legacy viewer is pinned by the safety tag and release linked
+below, because the live Pages deployment is still served from the retained
+legacy tree on `restore/pre-jul19-viewer`.
+
+[![Current root HTML viewer candidate](docs/lateletter-viewer-current.gif)](docs/lateletter-viewer-current.gif)
+
+[![Production legacy HTML viewer](docs/lateletter-viewer-legacy.gif)](docs/lateletter-viewer-legacy.gif)
+
+The legacy Pages fingerprint, deployment commit, and safe tag/release plan are
+recorded in [`docs/legacy-pages-release-plan.md`](docs/legacy-pages-release-plan.md).
+
 ![LateLetter TUI demo](docs/demo.gif)
 
 ## How it works
@@ -14,7 +30,9 @@ A tool for writing time-delayed letters to loved ones, delivered through a livin
 
 ## Quick start
 
-Open `viewer-bnw.html` in a browser. Click **[get demo letter]** to load the demo bundle, or drop your own `.lateletter` file.
+Open `viewer-bnw.html` in a browser. Click **[get demo letter]** to load the
+demo bundle, or drop your own `.lateletter` file. The public URL remains on the
+tagged legacy Pages snapshot until the root viewer's release gates are complete.
 
 Demo passphrase: `garden-biscuit-2026`
 
@@ -63,6 +81,7 @@ Demo link once deployed: https://rikiworld.com/lateletter/to-a-friend/ (passcode
 viewer-bnw.html          Single-file browser viewer (garden + letter reader)
 test_fixture.lateletter  Demo bundle (Buddy's letter)
 src/lateletter/          Python author tools (CLI, intake, bundling)
+docs/                    README GIFs, release notes, visual-review receipts
 ```
 
 ## Garden
