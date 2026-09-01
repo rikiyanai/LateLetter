@@ -12,13 +12,17 @@ The recipient experience is intentionally simple: open a link or `.lateletter`
 file, enter the passphrase, walk through a quiet ASCII garden, and read the
 letters that are available for that date.
 
-## Recipient walkthrough
+## What it looks like
 
-This is the legacy browser viewer currently used for the public LateLetter
-experience: load the demo, open the letters, enter the passphrase, choose a
-letter, read it, and return to the garden.
+The public viewer is a quiet ASCII garden. Letters open from that garden when
+the recipient has the passphrase and the delivery date has arrived.
 
-[![Legacy recipient click-through](docs/lateletter-legacy-recipient-clickthrough.gif)](docs/lateletter-legacy-recipient-clickthrough.gif)
+[![Legacy nighttime garden](docs/lateletter-legacy-night-garden.gif)](docs/lateletter-legacy-night-garden.gif)
+
+The terminal authoring flow is separate. It helps the author draft and package
+the letter before anything is sent.
+
+![LateLetter terminal authoring demo](docs/demo.gif)
 
 ## How it works
 

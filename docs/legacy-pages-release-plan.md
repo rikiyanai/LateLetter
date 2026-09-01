@@ -1,8 +1,7 @@
 # LateLetter legacy Pages safety release plan
 
 Status: safety tag and GitHub release created on 2026-08-31; the production
-Pages URL still serves the frozen legacy viewer while the root viewer remains a
-candidate.
+Pages URL still serves the legacy viewer.
 
 ## Observed production identity
 
@@ -44,8 +43,7 @@ Root review was followed by these actions on 2026-08-31:
    It is the production safety snapshot and contains the deployment-run
    reference, entrypoint hash, and pre-July-19 viewer lineage.
 4. Keep the release as the rollback reference. Do not repoint Pages at the
-   root viewer until its acceptance evidence and operator visual review are
-   complete; a README GIF is evidence of motion only, not that acceptance.
+   root viewer until an intentional replacement release is reviewed and chosen.
 5. If Pages must be rolled back, dispatch the existing workflow from the
    safety commit or restore the exact tagged tree, then recheck the live URL
    hash and response headers.
@@ -56,24 +54,19 @@ URL hash is rechecked.
 
 ## Prepared About description
 
-> A local-first, encrypted time-delayed letter tool: write messages for loved
-> ones, seal them into `.lateletter` bundles, and deliver them through a living
-> ASCII garden in the browser. GitHub Pages remains on the frozen legacy viewer
-> while the newer root viewer completes acceptance.
+> Local-first encrypted delayed letters delivered through a living ASCII garden;
+> Pages retains a verified legacy rollback release.
 
-This wording is prepared for the repository About field and has not been
-applied remotely.
+This wording matches the repository About field observed through GitHub
+readback on 2026-08-31.
 
-## README motion captures
+## README motion capture
 
-README-facing browser-flow captures were regenerated on 2026-08-31. The root
-candidate capture was made from `viewer-bnw.html`. The legacy capture was made
-from the retained `legacy/viewer-bnw.html` route on the legacy branch before the
-README-facing aliases were applied to `main`.
+The README GIF was regenerated on 2026-08-31 from the retained legacy viewer.
+It shows the nighttime garden only, without the passphrase or letter panes.
 
 | Surface | README asset | SHA-256 | GIF checks |
 |---|---|---|---|
-| legacy recipient walkthrough | `docs/lateletter-legacy-recipient-clickthrough.gif` | `7051f8b7df126aed7ca1583c870056c088296a15025cf8b8b3da19c393512f5a` | 960×600, 10 frames, loop=0, recipient demo flow through welcome, garden, passphrase, archive, reading, and return |
+| legacy nighttime garden | `docs/lateletter-legacy-night-garden.gif` | `e10780da837c4856e76f229101f90b39c7ffd4d8ecc8f9a3426114f7a837c3ef` | 960×600, 6 frames, loop=0, legacy garden view with HUD hidden for README clarity |
 
-The GIF-level mechanical checks pass. A person must still review the rendered
-motion before calling either capture visual acceptance.
+The GIF dimensions, frame count, and hash were checked after generation.
